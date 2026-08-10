@@ -78,8 +78,14 @@ honest "not known yet"; this is the part worth the hours.
 
 ## What CI enforces
 
-Every pull request touching `tasks/**` runs `scripts/validate.mjs` (locally:
-`npm install && npm run check`). It checks shape, not science:
+| workflow | runs on | what it does | required |
+|---|---|---|---|
+| `validate / validate` | every pull request; pushes to `main` | the static shape rules below, via `scripts/validate.mjs` | yes |
+| `validate-exec` | a `/validate` PR comment from a maintainer, or manual dispatch | real docker builds of `environment/` and `tests/`; oracle and nop runs are printed, not run, until the harness is wired in; GPU tasks run on maintainer hardware until a GPU backend lands | no |
+| `label`, `label-fields` | PRs touching `tasks/`; issues opened | apply the `sciaccel-task` label, and the field label the issue form's dropdown names | no |
+
+The static gate (locally: `npm install && npm run check`) checks shape, not
+science:
 
 - the package has the file set its claimed tier requires, and nothing
   unexpected at the task root;
@@ -97,10 +103,6 @@ Every pull request touching `tasks/**` runs `scripts/validate.mjs` (locally:
 - when `tests/` exists, `tests/test.sh` speaks the reward contract above;
 - `record` is written by us when an official run lands — never by the
   submitting PR.
-
-Execution checks (build, oracle run, do-nothing run) are a separate,
-maintainer-triggered workflow; GPU tasks run on maintainer hardware until a
-GPU backend is attached.
 
 Review happens on the pull request, in public, under the reviewer's name. The
 checklist in the PR template is the four screening axes — builds and runs,
