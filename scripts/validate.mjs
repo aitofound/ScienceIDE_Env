@@ -581,6 +581,17 @@ if (process.env.BASE_REF) {
   }
 }
 
+/* Registry freshness. registry/index.yaml and registry.json are generated
+   projections of the packages — the site's one-fetch render surface and
+   Harbor's dataset manifest — and a merged package the projection does not
+   reflect is a task the site cannot see. gen-index.mjs re-derives both in
+   --check mode and fails on drift, the same gate ScienceMysteryBench runs. */
+try {
+  execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'gen-index.mjs'), '--check'], { stdio: 'pipe' });
+} catch {
+  errors.push('registry files are stale — run: node scripts/gen-index.mjs');
+}
+
 if (errors.length) {
   console.error(`${errors.length} violation(s) across ${count} task package(s):\n`);
   for (const e of errors) console.error(`  ${e}`);

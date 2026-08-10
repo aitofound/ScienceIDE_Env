@@ -24,9 +24,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      # npm ci is needed only for smol-toml, the manifest parser, but a
-      # partial install is more fragile than a full one on a runner that
-      # starts cold anyway.
+      # npm ci is needed only for smol-toml and yaml — the manifest parser
+      # and the registry projection — but a partial install is more fragile
+      # than a full one on a runner that starts cold anyway. npm run check
+      # also runs gen-index.mjs --check, so registry staleness fails here
+      # without a step of its own.
       - run: npm ci
       # The baseline for the slug-permanence check: a PR may not delete or
       # rename a registered tasks/sa-NNNN/ directory, because its slug is a
