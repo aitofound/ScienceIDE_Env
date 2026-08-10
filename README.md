@@ -64,17 +64,13 @@ claimed that does not exist. `retired` keeps its files.
 | **Task** | 2–5 hours | Copy [`TEMPLATE/`](TEMPLATE/) to `tasks/sa-NNNN/` (next free number — check the directory and the open PRs) and open a pull request. |
 
 Start wherever you are. No account beyond GitHub — your GitHub identity is the
-signature, and the owner named in `task.toml` is the byline. An entry with an
-honest "to be authored with the code's owner" is more useful to us than a
-polished one that quietly guesses.
-
-The heart of a task is its **equivalence criteria** — the
-`equivalence_explanation` field: what the person who owns the code would
-accept as "the port still computes the same answer" — which quantities, over
-what horizon, at what tolerance, and why that tolerance is scientifically
-justified. A task without them has no verifier, and a fast port its owner does
-not trust is not a result. Everything else in the template may start as an
-honest "not known yet"; this is the part worth the hours.
+signature, and the owner named in `task.toml` is the byline.
+[CONTRIBUTING.md](CONTRIBUTING.md) is the authoring guide, field by field; the
+short version is that the heart of a task is its **equivalence criteria** —
+what the person who owns the code would accept as "the port still computes the
+same answer" — and everything else may start as an honest "not known yet". An
+entry with an honest "to be authored with the code's owner" is more useful to
+us than a polished one that quietly guesses.
 
 ## What CI enforces
 
@@ -116,3 +112,7 @@ the accept.
 
 Questions that fit neither form: open a blank issue, or start from the
 [project page](https://aitonomy.org/projects/sci-accel).
+
+Task statements, equivalence criteria and manifests are CC BY 4.0
+([LICENSE](LICENSE)); the legacy codebases that tasks point at keep their own
+licences, named per task.
