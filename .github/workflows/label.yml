@@ -1,0 +1,19 @@
+# Labels any pull request touching the registry with `sciaccel-task`, which is
+# the label the site's pending-leaves fetch filters on — the label is what
+# makes an open PR appear on the forest. pull_request_target (not
+# pull_request) so the job has permission to label PRs from forks; it runs the
+# trusted labeler action against .github/labeler.yml from the base branch and
+# never executes code from the incoming PR.
+name: label
+
+on: pull_request_target
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/labeler@v5
