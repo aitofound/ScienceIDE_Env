@@ -38,16 +38,18 @@ description = ""                 # one line of science a reviewer outside the
 
 # The scientist submitting — the person who defines equivalence and receives
 # the port. Repeat the whole block for each additional author. Mirror the
-# owner key in [metadata] below.
+# owner key in [metadata.sciaccel] below.
 # [[task.authors]]
 # name = ""                      # name; add the affiliation in owner below
 # email = ""
 
 # ------------------------------------------------------------------------------
-# Everything SciAccel-specific lives in [metadata]; Harbor treats it as an
-# opaque table, our validator and the site read it.
+# Everything SciAccel-specific lives in [metadata.sciaccel]; Harbor treats it
+# as an opaque table, our validator and the site read it. Harbor's own
+# conventional keys — difficulty, category, tags — may sit directly under
+# [metadata]; nothing else may.
 # ------------------------------------------------------------------------------
-[metadata]
+[metadata.sciaccel]
 slug = "sa-0000"                 # permanent; must equal the directory name;
                                  # becomes the URL and never changes
 title = ""                       # e.g. "PLUTO ct_flux module — C to CUDA"
@@ -141,9 +143,9 @@ it is the headline event.
 
 # resource_class = ""            # R0–R5, the runtime budget class; see the
                                  # open-problems verifier table
-# record =                       # the standing speedup record, ×incumbent.
-                                 # Written by us when an official run lands —
-                                 # never by the submitting PR
+# (The standing speedup record is not a package key. It lives in
+# registry/records.yaml, written by us when an official run lands — a
+# package that writes `record` is rejected.)
 # verifier_command = ""          # the command that checks equivalence, if
                                  # written before the package has tests/ —
                                  # once packaged, tests/ is the harness's home
