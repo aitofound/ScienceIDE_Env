@@ -38,3 +38,26 @@ jobs:
       - run: npm run check
         env:
           BASE_REF: ${{ github.event_name == 'pull_request' && 'origin/main' || '' }}
+      # The two vendored-byte-identical files this repo shares with its twin.
+      # scripts/validate-core.mjs is the common validator chassis and
+      # registry/fields.json the common field vocabulary; both live as full
+      # copies in each repo so either stays clonable and runnable alone, and
+      # this step is what keeps "copy" from decaying into "fork" — it fetches
+      # the counterpart's raw files and compares byte for byte. An unreachable
+      # counterpart is a warning, not a failure: this check is required on
+      # every PR, and a network blip must not wedge them all.
+      - name: counterpart drift
+        run: |
+          set -u
+          for f in scripts/validate-core.mjs registry/fields.json; do
+            tmp="$(mktemp)"
+            if ! curl -fsSL --max-time 30 "https://raw.githubusercontent.com/HHHHHejia/ScienceMysteryBench/main/$f" -o "$tmp"; then
+              echo "::warning::could not fetch ScienceMysteryBench's $f — skipping the byte-identity check for this run"
+              continue
+            fi
+            if ! cmp -s "$f" "$tmp"; then
+              echo "::error::$f differs from ScienceMysteryBench's copy — the file is vendored byte-identical in both repos; land the same bytes on both sides"
+              diff "$f" "$tmp" || true
+              exit 1
+            fi
+          done
