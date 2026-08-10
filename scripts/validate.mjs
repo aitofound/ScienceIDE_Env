@@ -11,6 +11,7 @@
  *   node scripts/validate.mjs
  */
 
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -63,18 +64,31 @@ if (!fs.existsSync(DIR)) {
   process.exit(1);
 }
 
-/* TEMPLATE.yaml lives at the repo root, outside the scanned directory; the
-   sa- prefix in the glob keeps any stray copy out of the scan regardless. */
-const files = fs.readdirSync(DIR)
-  .filter((f) => /^sa-.*\.ya?ml$/.test(f))
-  .sort();
+const errors = [];
 
-if (!files.length) {
+/* Audit the whole directory, not just the files the glob likes: a misnamed
+   task, a smuggled non-YAML file, a symlink or a subdirectory would otherwise
+   merge green and then silently never render — the site's own filter is
+   exactly ^sa-NNNN.yaml$, so anything else in tasks/ is a mistake by
+   construction. TEMPLATE.yaml lives at the repo root, outside this scan. */
+const entries = fs.readdirSync(DIR, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name));
+const files = [];
+for (const e of entries) {
+  if (!e.isFile() || !/^sa-\d{4}\.yaml$/.test(e.name)) {
+    errors.push(
+      `${e.name}: tasks/ entries must be regular files named sa-NNNN.yaml — ` +
+      `anything else is invisible to the site${/\.yml$/.test(e.name) ? " ('.yml' is not rendered; use '.yaml')" : ''}`,
+    );
+    continue;
+  }
+  files.push(e.name);
+}
+
+if (!files.length && !errors.length) {
   console.error('tasks/ has no sa-*.yaml files');
   process.exit(1);
 }
 
-const errors = [];
 const seen = new Map(); // slug -> first filename that used it
 let count = 0;
 
@@ -82,6 +96,13 @@ const blank = (v) => v === undefined || v === null || String(v).trim() === '';
 
 for (const file of files) {
   const full = path.join(DIR, file);
+  /* A registry entry is prose about a codebase, not the codebase — anything
+     approaching a megabyte is data smuggled into the registry. */
+  const size = fs.statSync(full).size;
+  if (size > 1_000_000) {
+    errors.push(`${file}: ${(size / 1e6).toFixed(1)} MB exceeds the 1 MB cap for a registry entry`);
+    continue;
+  }
   let doc;
   try {
     doc = YAML.parse(fs.readFileSync(full, 'utf8'));
@@ -102,8 +123,8 @@ for (const file of files) {
     if (!/^sa-[0-9]{4}$/.test(String(slug))) {
       errors.push(`${file}: slug '${slug}' does not match sa-NNNN`);
     }
-    if (`${slug}.yaml` !== file && `${slug}.yml` !== file) {
-      errors.push(`${file}: filename does not match slug '${slug}'`);
+    if (`${slug}.yaml` !== file) {
+      errors.push(`${file}: filename must be '${slug}.yaml' exactly`);
     }
     if (seen.has(slug)) {
       errors.push(`${file}: slug '${slug}' already used by ${seen.get(slug)}`);
@@ -145,6 +166,34 @@ for (const file of files) {
   }
   if (!blank(doc.resource_class) && !RESOURCE_CLASSES.has(String(doc.resource_class))) {
     errors.push(`${file}: resource_class '${doc.resource_class}' is not one of R0–R5`);
+  }
+}
+
+/* Slug permanence. TEMPLATE.yaml calls the slug "permanent; becomes the URL
+   and never changes" — so a PR may not delete or rename a registered file,
+   which would kill a citable /tasks/<slug> URL and free the slug for reuse.
+   CI sets BASE_REF to origin/main on pull requests; locally the check runs
+   whenever a baseline ref is passed the same way. Retirement is a status, not
+   a deletion. */
+if (process.env.BASE_REF) {
+  try {
+    const baseline = execFileSync(
+      'git', ['ls-tree', '--name-only', process.env.BASE_REF, '--', 'tasks/'],
+      { cwd: ROOT, encoding: 'utf8' },
+    )
+      .split('\n')
+      .map((l) => path.basename(l.trim()))
+      .filter((n) => /^sa-\d{4}\.yaml$/.test(n));
+    for (const name of baseline) {
+      if (!files.includes(name)) {
+        errors.push(
+          `${name}: registered in ${process.env.BASE_REF} but missing here — ` +
+          `slugs are permanent; retire a task with 'status: retired' instead of deleting or renaming it`,
+        );
+      }
+    }
+  } catch (e) {
+    errors.push(`baseline check against '${process.env.BASE_REF}' failed to run — ${e.message}`);
   }
 }
 
