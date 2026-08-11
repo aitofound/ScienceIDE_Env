@@ -53,14 +53,18 @@ exist. The full ladder — file sets, the field-by-field record, the order to
 build in — lives in [CONTRIBUTING.md](CONTRIBUTING.md); this page stays the
 charter.
 
-## Two ways in
+## How a task arrives
 
-| | Time | What you produce |
-|---|---|---|
-| **Idea** | 15–30 min | [Open an issue](../../issues/new?template=sciaccel-task.yml) naming the code and where it lives. We help with the packaging. |
-| **Task** | 2–5 hours | Copy [`TEMPLATE/`](TEMPLATE/) to `tasks/sa-NNNN/` (next free number — check the directory and the open PRs) and open a pull request. |
+**A pull request, and only a pull request.** Copy [`TEMPLATE/`](TEMPLATE/) to
+`tasks/sa-NNNN/` (next free number — check the directory and the open PRs) and
+open it as soon as you have the repository and the instruction. That is the
+first rung, not a failed attempt; the rest lands on the same branch, CI reports
+the rung on every push, and merge means an agent can run the package end to
+end.
 
-Start wherever you are. No account beyond GitHub — your GitHub identity is the
+An issue cannot be merged, so nothing arrives through one —
+[open one](../../issues/new?template=sciaccel-task.yml) to ask whether a code
+is worth packaging before you spend the hours on it. No account beyond GitHub — your GitHub identity is the
 signature, and the owner named in `task.toml` is the byline.
 [CONTRIBUTING.md](CONTRIBUTING.md) is the authoring guide, field by field; the
 short version is that the heart of a task is its **equivalence criteria** —
@@ -75,7 +79,7 @@ us than a polished one that quietly guesses.
 |---|---|---|---|
 | `validate / validate` | every pull request; pushes to `main` | the static shape rules below, via `scripts/validate.mjs` | yes |
 | `validate-exec` | a `/validate` PR comment from a maintainer, or manual dispatch | real docker builds of `environment/` and `tests/`; oracle and nop runs are printed, not run, until the harness is wired in; GPU tasks run on maintainer hardware until a GPU backend lands | no |
-| `label`, `label-fields` | PRs touching `tasks/`; issues opened | apply the `sciaccel-task` label, and the field label the issue form's dropdown names | no |
+| `label`, `label-fields` | PRs touching `tasks/`; issues opened | apply the `sciaccel-task` label, and the field label — from the manifest's `domain` on a PR, from the form's dropdown on an issue | no |
 
 The static gate (locally: `npm install && npm run check`) checks shape, not
 science: the claimed tier's file set, the closed `[metadata.sciaccel]`

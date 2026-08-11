@@ -1,12 +1,17 @@
-# The idea tier of SciAccel-Bench submission: for the scientist who owns a
-# codebase but not the hours a package takes. The label is what makes the
-# issue a pending entry on the site's dashboard, so it must stay
-# `sciaccel-task`. The Field dropdown's options are the eight field codes
-# verbatim — label-fields.yml maps the chosen value to the same-named label,
-# so the options here and the label names must move together.
-name: SciAccel-Bench task idea
-description: "The 15–30 minute way in: name the code, we help with the packaging."
-labels: [sciaccel-task]
+# Where an idea is argued about before anyone spends a week on it.
+#
+# This is NOT a submission. An issue cannot be merged, so nothing that arrives
+# through one can become a task — a task is a pull request adding
+# tasks/sa-NNNN/, opened early and finished on its branch. The label here is
+# deliberately `sciaccel-idea` and not `sciaccel-task`: the site's dashboard
+# filters the queue on the latter, and a conversation is not in the queue.
+#
+# The Field dropdown's options are the eight field codes verbatim —
+# label-fields.yml maps the chosen value to the same-named label, so the
+# options here and the label names must move together.
+name: SciAccel-Bench — discuss a code
+description: "Not a submission: ask whether a codebase is worth packaging, before you package it."
+labels: [sciaccel-idea]
 body:
   - type: input
     id: code
@@ -33,6 +38,15 @@ body:
     attributes:
       label: How would we know a port is still correct?
       description: Rough equivalence criteria — which quantities, what tolerance, why. "I don't know yet" is an honest answer.
+  - type: textarea
+    id: oneshot
+    attributes:
+      label: Has a frontier agent already ported it?
+      description: >-
+        If you have handed it to Claude Code or Codex once and it failed, say what
+        it tried — that failure is the difficulty floor and it will be required in
+        the pull request. If you have not tried, say so; that is what this thread
+        is for.
   - type: dropdown
     id: field
     attributes:
