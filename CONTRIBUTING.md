@@ -267,6 +267,15 @@ and only the files listed in `task.toml`'s top-level `artifacts` reach the
 verifier, recreated at the same absolute paths — so list the outputs the
 equivalence checks read: the ported code, result files, timing logs.
 
+"Separate" is a claim the manifest has to make, not one the directory layout
+implies: `[verifier] environment_mode = "separate"` is what makes Harbor build
+this image from `tests/` at all. Its default is `"shared"`, and a package that
+ships `tests/Dockerfile` without the declaration fails silently in the worst
+direction — the image is never built, so the pinned grading stack inside it
+does not exist, and the references it was holding back are recreated inside
+the container the solver worked in. The template ships the line uncommented
+and the validator errors as soon as `tests/Dockerfile` appears without it.
+
 `test.sh` is the entrypoint, and pass/fail is the reward **file**, never the
 exit code: it must write `/logs/verifier/reward.json` with the two named
 parts, `{"equivalence_pass": 0|1, "speedup": float}`. The validator checks

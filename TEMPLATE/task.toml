@@ -230,5 +230,16 @@ why the scope line is drawn where it is.
 
 # [agent]
 # timeout_sec =                  # float; the solver's whole time budget
-# [verifier]
+
+# The one runtime key that is NOT a measurement, and so ships uncommented:
+# every SciAccel package grades in a container of its own. Harbor builds that
+# container from tests/ as its build context, but only when this says
+# "separate" — the default is "shared", which runs the grader inside the
+# agent's own container instead. A package that ships tests/Dockerfile without
+# this line does not fail loudly: the image is silently never built, so the
+# pinned grading stack inside it does not exist, and the equivalence
+# references it holds are recreated in the room the solver worked in. The
+# validator makes this an error as soon as tests/Dockerfile appears.
+[verifier]
+environment_mode = "separate"
 # timeout_sec =                  # float; Harbor's default 600 is often too low
