@@ -30,13 +30,33 @@ figure.
 ## How to start
 
 ```bash
+# 0. Do you already have these? Both should print a version number.
+git --version
+node --version
+
+#    If either said "command not found", install both first:
+#      macOS    brew install git node                  (Homebrew: https://brew.sh)
+#      Windows  winget install --id Git.Git -e
+#               winget install --id OpenJS.NodeJS.LTS -e   then reopen PowerShell
+#      Linux    sudo apt-get install -y git nodejs npm     (Debian/Ubuntu)
+
+# 1. The agent that does the packaging.
+npm install -g @anthropic-ai/claude-code
+
+# 2. The registry, and the validator it checks your package against.
 git clone https://github.com/AItonomyFoundation/ScienceAccelBench.git
 cd ScienceAccelBench
-npm install    # the validator; a fresh clone has no node_modules
+npm install    # a fresh clone has no node_modules
 
+# 3. Now say what you have. This is the only line you write yourself.
 claude "Help me package our lab's MHD solver as a ScienceAccelBench task —
         the flux update loop is the bottleneck. Repository: <url>."
 ```
+
+Step 0 is written out because it is where people actually stop. The scientist
+whose code we most want is not necessarily someone who has a package manager
+installed, and `npm: command not found` with nothing after it has already cost
+us one volunteer.
 
 Say it in whatever words fit your code; that sentence has only to name the
 codebase and which part of it is slow. From there the
