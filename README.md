@@ -73,6 +73,16 @@ same answer" — and everything else may start as an honest "not known yet". An
 entry with an honest "to be authored with the code's owner" is more useful to
 us than a polished one that quietly guesses.
 
+Containerising a twenty-year-old code is engineering, and it is engineering we
+do with you rather than homework we leave you. From a checkout of this
+repository, an agent that loads the
+[`package-sciaccel-task`](.claude/skills/package-sciaccel-task/) skill will
+read the target codebase, put the equivalence and incumbent questions to you,
+fill the template, and verify as far as your machine allows — including on a
+laptop with no GPU, where it says so instead of pretending otherwise. It walks
+[CONTRIBUTING.md](CONTRIBUTING.md); it does not replace it, and it will not
+invent a tolerance you did not give it.
+
 ## What CI enforces
 
 | workflow | runs on | what it does | required |
