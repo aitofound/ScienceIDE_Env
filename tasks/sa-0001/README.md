@@ -26,18 +26,22 @@ cannot be compared across the year. PLUTO is GPL-2.0, which is precisely the
 licence that permits redistributing unmodified source, and `repo_url` still
 points at the project's own site as the origin.
 
-**2. gPLUTO exists, and the earlier draft did not know.** The draft treated
-astrophysics as an unclaimed field. It is not: **gPLUTO** is a full C++
-rewrite by the same group with GPU support through OpenACC, funded by the
-SPACE EU Centre of Excellence, publicly released (v0.91, June 2026) at
-<https://gitlab.com/PLUTO-code/gPLUTO>, and described by the project as
-"meant to replace the previous CPU-only version".
+**2. The draft's account of gPLUTO was already right, and an earlier version
+of this package wrongly said otherwise.** While packaging I found gPLUTO on
+the project's site and wrote it up as a discovery — a correction the draft
+supposedly needed. It did not: the manifest already carried gPLUTO, with
+*better* detail than I had written, including the arXiv reference
+(2511.20337), the ~9x-per-node measurement, and the scope nuance that gPLUTO
+covers Eulerian classical MHD only. That richer text has been restored and my
+weaker replacement discarded.
 
-That is the "incumbent fairness" review axis — *an existing human port is
-named, not ignored* — and this task was failing it. It now has the same shape
-as sa-0004: the CPU build is the entry price, the project's own GPU successor
-is the record. A submission that ignores gPLUTO is not competing with the
-state of the art of this code.
+The lesson is worth keeping in the package: I checked the upstream project
+before I checked the manifest I was editing, and briefly destroyed better
+information than I added. The scope nuance is the part that matters most for
+whoever attempts this — gPLUTO's classical-MHD coverage means the bar there is
+high, while the modules it does not yet cover (relativistic MHD, non-ideal
+physics, particles, AMR) are the genuinely open surface, and a future task on
+this code might be better aimed at those.
 
 ## Building PLUTO without a terminal
 
