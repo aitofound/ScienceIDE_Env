@@ -215,8 +215,16 @@ why the scope line is drawn where it is.
 [environment]
 # cpus =                         # int
 # memory_mb =                    # int
-# gpus =                         # int
-# gpu_types = []                 # e.g. ["A100", "H100"]
+# gpus =                         # int; the ladder's step is the WIDTH of the
+                                 # port, not the agent's patience: R1 is one
+                                 # device, R2 is two (the port must decompose),
+                                 # R3 is a full node of eight
+# gpu_types = []                 # the default allocation is H100 — leave this
+                                 # key out unless the science needs something
+                                 # else named. Do name it where FP64 throughput
+                                 # is load-bearing: it differs by an order of
+                                 # magnitude between consumer and datacentre
+                                 # parts. e.g. ["H100"]
 # build_timeout_sec =            # float; Harbor's default 600 is too low for
                                  # large scientific builds — set it explicitly
 
