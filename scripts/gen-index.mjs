@@ -28,7 +28,7 @@ import YAML from 'yaml';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const TASKS = path.join(ROOT, 'tasks');
-const GIT_URL = 'https://github.com/AItonomyFoundation/sciaccel-bench.git';
+const GIT_URL = 'https://github.com/AItonomyFoundation/SciAccelerationBench.git';
 
 const check = process.argv.includes('--check');
 const blank = (v) => v === undefined || v === null || String(v).trim() === '';
