@@ -24,6 +24,12 @@ if [ ! -f "$ROOT/scripts/validate.mjs" ] || [ ! -d "$ROOT/TEMPLATE" ] || [ ! -d 
   exit 1
 fi
 say "repository   $ROOT"
+if [ ! -d "$ROOT/node_modules" ]; then
+  say "             DEPENDENCIES MISSING — run: npm install"
+  say "             A fresh clone has no node_modules, and the validator imports"
+  say "             yaml and smol-toml. Every rung below rung 1 is unreachable"
+  say "             until this is done, and rung 1 is the authority."
+fi
 say ""
 
 # --- the toolchain -------------------------------------------------------
