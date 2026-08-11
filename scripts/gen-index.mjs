@@ -33,6 +33,25 @@ const GIT_URL = 'https://github.com/AItonomyFoundation/SciAccelerationBench.git'
 const check = process.argv.includes('--check');
 const blank = (v) => v === undefined || v === null || String(v).trim() === '';
 
+/* Are the public inputs actually COMMITTED, or does environment/data/ only
+   hold the pin for inputs fetched at image build?
+
+   The distinction is the whole point of this bit, and the existence of the
+   directory does not capture it: a package that hosts 692 MB of graphs
+   externally still commits a checksums.sha256 there, because the package must
+   assert what it expects independently of the host that serves it. Counting
+   that lone manifest as committed data would tell the project page a package
+   ships inputs it does not ship. Hashes and git housekeeping are therefore not
+   data; anything else in the directory is. */
+const DATA_PIN_FILES = new Set(['checksums.sha256', '.gitkeep', '.gitignore', 'README.md']);
+const hasCommittedData = (dir) => {
+  const data = path.join(dir, 'environment', 'data');
+  if (!fs.existsSync(data)) return false;
+  return fs
+    .readdirSync(data, { withFileTypes: true })
+    .some((e) => !DATA_PIN_FILES.has(e.name));
+};
+
 const overlayDoc = YAML.parse(fs.readFileSync(path.join(ROOT, 'registry', 'records.yaml'), 'utf8'));
 const overlay = overlayDoc && typeof overlayDoc === 'object' ? overlayDoc : {};
 
@@ -59,7 +78,9 @@ for (const slug of slugs) {
      the package's parts actually exist. `environment` means something can
      build (a Dockerfile, a compose file, or a pinned image); `data` means
      public inputs are committed under environment/data/ — inputs fetched at
-     image build are invisible to this bit, honestly so. The tier is the
+     image build are invisible to this bit, honestly so, and a directory
+     holding only their checksum manifest does not count as committing them.
+     The tier is the
      ladder the files support, which the site can show beside the claimed
      status; the validator separately enforces that the claim never exceeds
      the files. */
@@ -71,7 +92,7 @@ for (const slug of slugs) {
       !blank(toml.environment?.docker_image),
     tests: has('tests', 'Dockerfile') && has('tests', 'test.sh'),
     solution: has('solution', 'solve.sh'),
-    data: has('environment', 'data'),
+    data: hasCommittedData(dir),
   };
   const tier =
     completeness.environment && completeness.tests && completeness.solution ? 'L3'
