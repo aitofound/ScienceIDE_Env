@@ -379,19 +379,25 @@ tasks:
       the intended workload and as a known-failing one, not as a timed baseline.
 
 
-      What is not yet known is whether that is a property of the deck, of the
-      build,
+      Diagnosed further, and the diagnosis narrows it usefully:
 
-      or of the machine. The prime suspect is the platform: this image was built
-      and
+        - The SCF is CORRECT. It converges to a total energy of -76.057127425169
+          Hartree, which is the textbook RHF/cc-pVTZ value for this geometry. So the
+          build, the basis library, the geometry and the integrals are all sound; it
+          is specifically the TCE stage that dies.
+        - The signal is SIGBUS, not SIGSEGV (exit 135 = 128+7). SIGBUS is an
+          alignment fault rather than a bad pointer, which is the classic signature
+          of a portability bug on AARCH64 rather than of a misconfigured run.
+        - It reproduces identically whether nwchem is launched bare or under
+          `mpirun -np 1`, so it is not an MPI-launch problem.
 
-      run on aarch64, and NWChem's Global Arrays / ARMCI layer plus the TCE is
-      the
+      The remaining suspect is therefore the platform. The first thing to try is
+      an
 
-      least-travelled combination there. The `memory total 2000 mb` line in the
-      deck
+      x86-64 host; if it runs there, this is an aarch64 alignment issue in the
+      TCE
 
-      and the container's memory limit are the other things to vary first.
+      and the package should either pin the build platform or carry the fix.
       Nobody
 
       should treat this workload as validated until it completes somewhere.
