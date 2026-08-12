@@ -69,7 +69,8 @@ npm install    # a fresh clone has no node_modules
 
 # 3. Now say what you have. This is the only line you write yourself.
 claude "Help me package our lab's MHD solver as a ScienceAccelBench task —
-        the flux update loop is the bottleneck. Repository: <url>."
+        the flux update loop is the bottleneck. Repository: <url>.
+        Follow tasks/sa-0001 as the worked example."
 ```
 
 Step 0 is written out because it is where people actually stop. The scientist
