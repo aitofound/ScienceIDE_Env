@@ -97,11 +97,25 @@ the registry holds packages an agent can run, and nothing else.
 One rung has a requirement that is not a file. Beyond `draft`, the manifest
 must carry **`oneshot_failure`** — what happened when a frontier agent (Claude
 Code, Codex, whatever you run) was handed this task once and did not produce a
-passing port, with the transcript committed under `evidence/`. It is the
-difficulty floor: a task a current model ports on its first attempt is
+passing port — and **`oneshot_transcript`**, a link to the raw session file. It
+is the difficulty floor: a task a current model ports on its first attempt is
 saturated the day it lands, and the trace is evidence rather than an opinion
 about it. One attempt, not a best-of-N campaign — the claim is that the task
 is not trivial, not that it is impossible.
+
+**The transcript is hosted and linked, never committed.** Put it in a Hugging
+Face dataset or on Google Drive — anywhere a reviewer can open without asking
+you for access — and put the URL in `oneshot_transcript`. Two reasons, and the
+first is the one that decides it:
+
+- It must be the **raw session file the tool wrote**: Claude Code's
+  `~/.claude/projects/<project>/<session>.jsonl`, or Codex's equivalent session
+  log. Not a summary you wrote afterwards, not an edited excerpt. The whole
+  value of the artifact is that it is a record rather than an opinion, and a
+  tidied version is an opinion.
+- Those files are large. Real sessions run from about 4 MB to nearly 70 MB, and
+  the largest still gzips to 36 MB. A registry every clone pays for cannot
+  carry them, and the 1 MB per-text-file cap below would reject them anyway.
 
 You do **not** need a working GPU port of your own. The original code computes
 the reference answer at run time, so the verifier never needs one; if your lab
