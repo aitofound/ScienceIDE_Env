@@ -20,6 +20,16 @@ Claude Code discovers that file on its own. Codex and every other agent that
 reads AGENTS.md is being told about it here, which is the whole reason this
 file exists — the skill's content lives in one place and is not duplicated.
 
+## If you are being asked to verify the tasks on a GPU machine
+
+**Read [`HANDOFF-GPU.md`](HANDOFF-GPU.md) first.** Every package in this
+registry was built and verified on a machine with no NVIDIA driver, which
+leaves three things nobody has been able to establish: whether the CUDA runtime
+path works in these images at all, whether the equivalence bands accept a real
+GPU port, and whether the tasks are hard enough to be worth publishing. That
+document says what is already verified, what is explicitly not, and the order to
+work in.
+
 ## Whatever you are doing here
 
 Two rules govern any change to this repository, and they are the two ways
