@@ -139,7 +139,7 @@ const result = run({
      that claim is not checkable without it. */
   requiredBeyondDraft: [
     'title', 'domain', 'repo_url', 'equivalence_explanation', 'owner',
-    'oneshot_failure',
+    'oneshot_failure', 'oneshot_transcript',
   ],
   /* The tier ladder's plain file claims. Files beyond the claimed tier are
      fine — a draft that already ships an environment under-claims, which is
@@ -194,6 +194,23 @@ const slugs = packages.map((p) => p.slug);
 for (const pkg of packages) {
   const { slug, dir: base, toml: doc, ns } = pkg;
   const has = (...p) => fs.existsSync(path.join(base, ...p));
+
+  /* The one-shot transcript is a LINK, and the check exists because the field
+     used to mean a path inside the package. Anyone working from an older
+     template, or reasoning by analogy with every other artifact here, will
+     write "evidence/claude-code.jsonl" — which parses fine, reads fine, and
+     points at nothing a reviewer can open. Real sessions run to tens of
+     megabytes and are hosted rather than committed, so a value that is not a
+     URL is a mistake every time. */
+  const transcript = ns?.oneshot_transcript;
+  if (!blank(transcript) && !/^https?:\/\//.test(String(transcript).trim())) {
+    errors.push(
+      `${slug}/task.toml: oneshot_transcript is '${transcript}' — it must be an ` +
+      `https:// link to the RAW agent session file, hosted where a reviewer can ` +
+      `open it (a Hugging Face dataset, Google Drive). Transcripts are not ` +
+      `committed to this repository: they run to tens of megabytes.`,
+    );
+  }
 
   /* Agent image hygiene: the environment/ Dockerfile builds the container
      the solver works in, and neither the oracle nor the verifier may leak
