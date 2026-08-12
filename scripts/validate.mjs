@@ -62,7 +62,8 @@ const NAMESPACE_KEYS = new Set([
   'incumbent_description', 'incumbent_runtime', 'incumbent_hardware', 'incumbent_source',
   'resource_class',
   'verifier_command', 'verifier_repo',
-  'oneshot_failure', 'oneshot_transcript',
+  'oneshot_claude_failure', 'oneshot_claude_transcript',
+  'oneshot_codex_failure', 'oneshot_codex_transcript',
   'exploit_description', 'exploit_score',
   'references', 'notes',
 ]);
@@ -139,7 +140,8 @@ const result = run({
      that claim is not checkable without it. */
   requiredBeyondDraft: [
     'title', 'domain', 'repo_url', 'equivalence_explanation', 'owner',
-    'oneshot_failure', 'oneshot_transcript',
+    'oneshot_claude_failure', 'oneshot_claude_transcript',
+  'oneshot_codex_failure', 'oneshot_codex_transcript',
   ],
   /* The tier ladder's plain file claims. Files beyond the claimed tier are
      fine — a draft that already ships an environment under-claims, which is
@@ -202,14 +204,16 @@ for (const pkg of packages) {
      points at nothing a reviewer can open. Real sessions run to tens of
      megabytes and are hosted rather than committed, so a value that is not a
      URL is a mistake every time. */
-  const transcript = ns?.oneshot_transcript;
-  if (!blank(transcript) && !/^https?:\/\//.test(String(transcript).trim())) {
-    errors.push(
-      `${slug}/task.toml: oneshot_transcript is '${transcript}' — it must be an ` +
-      `https:// link to the RAW agent session file, hosted where a reviewer can ` +
-      `open it (a Hugging Face dataset, Google Drive). Transcripts are not ` +
-      `committed to this repository: they run to tens of megabytes.`,
-    );
+  for (const key of ['oneshot_claude_transcript', 'oneshot_codex_transcript']) {
+    const transcript = ns?.[key];
+    if (!blank(transcript) && !/^https?:\/\//.test(String(transcript).trim())) {
+      errors.push(
+        `${slug}/task.toml: ${key} is '${transcript}' — it must be an ` +
+        `https:// link to the RAW agent session file, hosted where a reviewer can ` +
+        `open it (a Hugging Face dataset, Google Drive). Transcripts are not ` +
+        `committed to this repository: they run to tens of megabytes.`,
+      );
+    }
   }
 
   /* Agent image hygiene: the environment/ Dockerfile builds the container
