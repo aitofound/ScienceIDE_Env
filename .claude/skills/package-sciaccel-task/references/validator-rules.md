@@ -83,7 +83,10 @@ CI does not mean:
 - whether the incumbent is the code's real production configuration or a
   strawman
 - whether an existing human GPU port was found and named
-- whether `oneshot_failure` describes a run that actually happened
+- whether the four `oneshot_*` notes describe runs that actually happened, on
+  the models named, and really failed — CI checks the keys are there and that
+  both transcript URLs resolve; that they ARE Claude Code and Codex on the
+  stated models is read out of the raw session, by a reviewer
 - whether the tolerances were measured or chosen to make something pass
 
 A green `npm run check` means the package is well-formed. It says nothing

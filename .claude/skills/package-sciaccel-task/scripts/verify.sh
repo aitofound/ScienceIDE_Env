@@ -41,6 +41,15 @@ echo ""
 
 # --- rung 1: the validator, the authority --------------------------------
 if have node; then
+  # BASE_REF makes the difficulty-floor gate an error rather than a warning, by
+  # telling the validator which packages this branch touches — the same thing CI
+  # sets on a pull request. Without it an author's local run reports the missing
+  # floor as a warning and the first real failure arrives on the PR, which is the
+  # slowest possible place to learn it. Falls back to a warning-level run when
+  # there is no origin/main to compare against.
+  if git -C "$ROOT" rev-parse --verify --quiet origin/main >/dev/null 2>&1; then
+    export BASE_REF=origin/main
+  fi
   if npm run --silent check; then
     pass "1 npm run check" 1
   else
