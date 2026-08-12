@@ -21,6 +21,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        # HEAD^ must exist for the push baseline below; the default depth of 1
+        # does not provide it.
+        with:
+          fetch-depth: 2
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -35,9 +39,20 @@ jobs:
       # citable URL. Retirement is a status, not a deletion.
       - if: github.event_name == 'pull_request'
         run: git fetch --depth=1 origin main
+      # BASE_REF is ALWAYS set now. Besides slug permanence it answers "which
+      # packages does this change touch", which is what the difficulty-floor
+      # merge gate is scoped by — and the validator degrades that gate to
+      # warnings when it cannot tell, so an unset BASE_REF is a quietly open
+      # gate rather than a loud failure. On a pull request the baseline is main;
+      # on a push it is the commit before, which is what that push introduced.
+      #
+      # CHECK_LINKS fetches every transcript URL to prove a reviewer can open
+      # it. Pull requests only: it is the proposed change that needs proving,
+      # and re-fetching the same URLs on the merge commit buys nothing.
       - run: npm run check
         env:
-          BASE_REF: ${{ github.event_name == 'pull_request' && 'origin/main' || '' }}
+          BASE_REF: ${{ github.event_name == 'pull_request' && 'origin/main' || 'HEAD^' }}
+          CHECK_LINKS: ${{ github.event_name == 'pull_request' && '1' || '' }}
       # The two vendored-byte-identical files this repo shares with its twin.
       # scripts/validate-core.mjs is the common validator chassis and
       # registry/fields.json the common field vocabulary; both live as full

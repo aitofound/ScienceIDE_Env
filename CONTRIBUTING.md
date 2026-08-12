@@ -130,6 +130,35 @@ checked when the status claims `review`, not when the branch appears. The same
 is true of [the form on aitonomy.org](https://aitonomy.org/projects/sci-accel/submit),
 which saves a draft you can come back to as many times as you like.
 
+#### The floor is a merge gate, not a rung
+
+**A package cannot be merged without all four keys.** They used to be required
+only "beyond draft", which gated nothing: `status` is written by the submitter,
+every package in this registry declares `draft`, and so the tier a package was
+held to was chosen by the package. Pull requests shipping a complete
+`environment/`, `tests/` and `solution/` — an L3 file set by the generator's own
+reckoning — declared `draft`, and CI passed them. It was not wrong. It had
+validated a well-formed draft.
+
+So `scripts/validate.mjs` now requires the four keys in **every package a pull
+request adds or edits, at every tier, draft included**, and CI fetches both URLs
+to prove a reviewer can open them — a link that returns 404 fails the run, the
+same as no link at all.
+
+**Open the pull request before you have them.** The gate is on the merge, not on
+the branch: land the task, the data and the criteria, run the two agents when you
+get to the machine, and push the evidence to the same branch. A red check on a
+draft you are still writing is information, not a rejection.
+
+What no validator can check is whether the transcript is really Claude Code, on
+the model you named, actually failing. That is the reviewer's, read out of the
+raw session — which is why the raw session is what we ask for and why a tidied
+summary is not accepted in its place.
+
+Packages merged before this rule are exempt until someone edits them, and CI
+prints one warning per exempt package on every run, so the exempt list is
+visible and shrinks.
+
 **The transcripts are hosted and linked, never committed.** Put them in a
 Hugging Face dataset or on Google Drive — anywhere a reviewer can open without
 asking you for access. Two reasons, and the first is the one that decides it:
