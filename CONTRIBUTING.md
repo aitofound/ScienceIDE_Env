@@ -94,6 +94,8 @@ the claim, so a branch can sit at `draft` for a fortnight and CI will keep
 telling you honestly where it is. What does not happen is a merge below L3:
 the registry holds packages an agent can run, and nothing else.
 
+### The difficulty floor
+
 One rung has a requirement that is not a file, and it is the one that decides
 whether a task is worth having at all. Beyond `draft`, the manifest must show
 that the task **defeated both of these**:
