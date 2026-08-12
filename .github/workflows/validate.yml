@@ -71,8 +71,20 @@ jobs:
               continue
             fi
             if ! cmp -s "$f" "$tmp"; then
-              echo "::error::$f differs from ScienceMysteryBench's copy — the file is vendored byte-identical in both repos; land the same bytes on both sides"
               diff "$f" "$tmp" || true
-              exit 1
+              # A change to a vendored file cannot land in both repositories at
+              # the same instant, so on a pull request divergence is expected and
+              # is a warning: whichever side merges first WILL differ from the
+              # other's main until the twin lands. Making it fatal here deadlocks
+              # the pair outright once `validate` is a required check — neither
+              # side can merge, because each is waiting for the other to have
+              # merged. On main it stays fatal, so the debt is loud and clears
+              # itself the moment the twin lands.
+              if [ "${{ github.event_name }}" = "pull_request" ]; then
+                echo "::warning::$f differs from ScienceMysteryBench's main — land the same bytes there too; main will stay red until you do"
+              else
+                echo "::error::$f differs from ScienceMysteryBench's copy — the file is vendored byte-identical in both repos; land the same bytes on both sides"
+                exit 1
+              fi
             fi
           done
