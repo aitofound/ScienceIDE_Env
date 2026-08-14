@@ -47,6 +47,10 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
       build-essential gfortran cmake git ca-certificates \
       python3 python3-pip \
+      # `time` is not in the CUDA base and its absence is not obvious: a solver
+      # reaching for /usr/bin/time gets "No such file or directory", which reads
+      # as a broken command rather than a missing package. Cheap to ship.
+      time \
       # libopenmpi-dev openmpi-bin libhdf5-dev libfftw3-dev \
     && rm -rf /var/lib/apt/lists/*
 
