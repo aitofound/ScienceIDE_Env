@@ -219,7 +219,7 @@ under `[metadata]`; nothing else may):
 | `slug`, `title`, `short_title`, `status` | the permanent directory name, the display title, the chart's 26-character label, and the tier claim: `draft` \| `review` \| `published` \| `retired` |
 | `repo_url`, `repo_commit`, `license` | the original code, pinned to a full 40-hex SHA ("latest" is not an answer), and its licence — GPL is fine, "no licence file" is a blocker |
 | `language_from`, `language_to`, `loc_in_scope` | e.g. "C99 + MPI" to "CUDA C++" (or open, solver's choice), and roughly how many lines the port must touch |
-| `domain` | one of the eight field codes: `mathematics`, `computer-systems`, `physics-astronomy`, `chemistry`, `biology-biomedicine`, `medicine-clinical`, `earth-climate`, `materials-engineering` |
+| `domain` | one of the thirteen field codes in [`registry/fields.json`](registry/fields.json): `mathematics`, `computer-systems`, `physics-astronomy`, `chemistry`, `materials-engineering`, `earth-climate`, `biology-biomedicine`, `medicine-clinical`, and the sciences of people — `psychology`, `economics`, `political-science`, `sociology`, `anthropology` |
 | `science_summary`, `owner` | two sentences a reviewer outside the field can follow, and the scientist who defines equivalence and receives the port — name + affiliation, ORCID if available |
 | `public_inputs`, `hidden_inputs_note` | the practice inputs, and how the official held-out inputs differ *in kind* — not their values |
 | `equivalence_explanation`, `precision_policy` | the heart (below), and whether mixed precision is allowed |
