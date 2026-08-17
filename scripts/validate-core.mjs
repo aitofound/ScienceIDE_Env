@@ -97,6 +97,12 @@ function* walk(abs, rel) {
  *   slugInNamespace      whether the namespace carries an explicit slug key that
  *                        must equal the directory name (the third identity leg)
  *   requiredBeyondDraft  namespace keys that must be non-blank once status leaves draft
+ *   requiredOnChange     namespace keys that must be non-blank in every package the
+ *                        pull request adds or edits, at EVERY tier including draft —
+ *                        the merge gate, scoped by BASE_REF so a rule introduced
+ *                        today does not retroactively fail packages already in main
+ *   linkKeys             namespace keys whose value must be an https:// URL, and
+ *                        whose liveness CI checks separately (see CHECK_LINKS)
  *   tierFiles            { status: [path | { path, note }] } — files each claimed
  *                        status must ship; checked, not trusted
  *   rootFiles, rootDirs  the package-root allowlist
@@ -211,6 +217,38 @@ export function run(config) {
   }
   if (!dirs.length && !errors.length) {
     errors.push(`tasks/ has no ${config.prefix}-NNNN/ packages`);
+  }
+
+  /* Which packages this change touches, for the merge gate below.
+     `null` means "could not tell": a run with no baseline, or a git call that
+     failed. The gate then reports as warnings rather than errors, and says so in
+     one loud line — because a clean checkout of main has touched nothing, and a
+     validator that fails there is a validator everyone learns to ignore, which
+     is worse than one that gates narrowly. The workflow always sets BASE_REF:
+     origin/main on a pull request, HEAD^ on a push. If that line is ever seen in
+     CI output, the gate is not running and the workflow is what to fix. */
+  let changed = null;
+  if (!process.env.BASE_REF && (config.requiredOnChange ?? []).length) {
+    warnings.push(
+      'MERGE GATE NOT EVALUATED: BASE_REF is unset, so this run cannot tell which packages ' +
+      'changed and the difficulty floor is reported as warnings. On a pull request CI sets it ' +
+      'and the floor blocks the merge. Seeing this line in CI means the workflow needs fixing.',
+    );
+  }
+  if (process.env.BASE_REF) {
+    try {
+      const out = execFileSync(
+        'git', ['diff', '--name-only', process.env.BASE_REF, '--', 'tasks/'],
+        { cwd: root, encoding: 'utf8' },
+      );
+      changed = new Set(
+        out.split('\n')
+          .map((l) => l.trim().split('/')[1] ?? '')
+          .filter((slug) => dirRe.test(slug)),
+      );
+    } catch {
+      changed = null;
+    }
   }
 
   for (const slug of dirs) {
@@ -382,6 +420,64 @@ export function run(config) {
           if (blank(ns[req])) {
             errors.push(`${slug}/task.toml: status '${pkg.status}' requires a non-blank [metadata.${config.namespace}] '${req}'`);
           }
+        }
+      }
+
+      /* The merge gate. `requiredBeyondDraft` turned out to gate nothing: status
+         is written by the submitter, every package in both registries declares
+         `draft`, and the tier a package is HELD to is therefore chosen by the
+         package. Three pull requests shipped a complete environment/, tests/ and
+         solution/ — an L3 file set by the generator's own reckoning — while
+         declaring draft, so the difficulty floor they were subject to was L1's,
+         which is nothing. CI went green on all three. It was not wrong: it had
+         validated a well-formed draft.
+
+         So these keys are required at every tier, draft included, in any package
+         this change touches. Not "beyond draft", because nothing ever leaves it.
+
+         Scoped to touched packages on purpose. A rule introduced today cannot
+         retroactively fail the sixteen packages already merged without it —
+         that would paint main red for work nobody is doing and teach everyone
+         to ignore the check, which is how a gate becomes decoration. They are
+         listed as warnings instead, on every run, so the exempt set is visible
+         and shrinks: the moment anyone edits one, it is held to the rule. */
+      if ((config.requiredOnChange ?? []).length) {
+        const missing = config.requiredOnChange.filter((k) => blank(ns[k]));
+        if (missing.length) {
+          if (changed !== null && changed.has(slug)) {
+            errors.push(
+              `${slug}/task.toml: missing ${missing.map((k) => `'${k}'`).join(', ')} — ` +
+              `a package may not be merged without the difficulty floor: what Claude Code ` +
+              `did and what Codex did, and a raw session link for each. Required at every ` +
+              `tier, draft included. Open the pull request anyway if you have not run them ` +
+              `yet — add them to the same branch before asking for the merge.`,
+            );
+          } else if (changed === null) {
+            warnings.push(
+              `${slug}: no ${missing.join(', ')} — the difficulty floor. Reported rather than ` +
+              `failed because this run has no baseline to say what changed; on a pull request ` +
+              `it is an error and blocks the merge.`,
+            );
+          } else {
+            warnings.push(
+              `${slug}: merged before the difficulty floor was required, and still has no ` +
+              `${missing.join(', ')}. Not failing this run — it predates the rule — but the ` +
+              `next change to this package must bring it.`,
+            );
+          }
+        }
+      }
+
+      /* Shape check for the links, wherever they are declared. Liveness is CI's
+         (CHECK_LINKS), because a validator that needs the network is a validator
+         that fails on a train. */
+      for (const key of config.linkKeys ?? []) {
+        const v = ns[key];
+        if (!blank(v) && !/^https?:\/\//.test(String(v).trim())) {
+          errors.push(
+            `${slug}/task.toml: ${key} is '${v}' — it must be an https:// link to the RAW ` +
+            `session file, hosted where a reviewer can open it. Transcripts are not committed here.`,
+          );
         }
       }
       for (const entry of config.tierFiles?.[pkg.status] ?? []) {
