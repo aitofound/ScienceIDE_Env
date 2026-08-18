@@ -126,9 +126,7 @@ is that the task is not trivial, not that it is impossible.
 **Open the pull request before you have any of this.** A package at `draft` is a
 first rung, not a failed attempt: write down the code and the criteria, push,
 run the two agents whenever you get to them, and push again. The floor is
-checked when the status claims `review`, not when the branch appears. The same
-is true of [the form on aitonomy.org](https://aitonomy.org/projects/sci-accel/submit),
-which saves a draft you can come back to as many times as you like.
+checked when the status claims `review`, not when the branch appears.
 
 #### The floor is a merge gate, not a rung
 

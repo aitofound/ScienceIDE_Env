@@ -27,14 +27,27 @@ issue_form: sciaccel-task.yml
 seed_task: tasks/sa-0001
 
 # --------------------------------------------------------------- the way in
-# The last line of the getting-started block, and the only one a submitter
-# writes themselves. It names a seed task because the shape of a package is a
-# file the agent can read, which it is good at, rather than a format it has to
-# be told about, which prose is worst at.
+# There is one way in, and it is an agent reading the skill. The submitter
+# writes these three lines into whatever agent they already use — Claude Code,
+# Codex, Cursor, Gemini CLI — and nothing else. No form, no template to fill,
+# no `claude` on the front because naming one runtime made the other three look
+# unsupported.
+#
+# It names a URL rather than a checkout because a scientist should not have to
+# know what a checkout is to start, and it names a seed task because the shape
+# of a package is a file the agent can read, which it is good at, rather than a
+# format it has to be told about, which prose is worst at.
+#
+# skill_url serves the same bytes as
+# .claude/skills/package-sciaccel-task/SKILL.md in this repository. It is a
+# proxy, not a copy — see the comment at the top of this file for why a second
+# copy is not an option.
+skill_url: https://aitonomy.org/projects/sci-accel/submit/skill.md
+
 start_prompt:
-  - 'claude "Help me package our lab''s MHD solver as a ScienceAccelBench task —'
-  - '        the flux update loop is the bottleneck. Repository: <url>.'
-  - '        Follow tasks/sa-0001 as the worked example."'
+  - 'Read https://aitonomy.org/projects/sci-accel/submit/skill.md and follow it.'
+  - 'Our code is <url> — the <name> loop is the bottleneck.'
+  - 'Follow tasks/sa-0001 as the worked example.'
 
 # --------------------------------------------------- the difficulty floor
 # Required beyond draft, enforced key-wise by scripts/validate.mjs and stated
