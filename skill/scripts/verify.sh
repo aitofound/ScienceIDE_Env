@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The verification ladder for one SciAccel task package.
 #
-#   bash .claude/skills/package-sciaccel-task/scripts/verify.sh sa-0001
+#   bash skill/scripts/verify.sh sa-0001
 #
 # Runs as far as this machine allows, stops at the first real failure, and
 # prints a verdict naming the rung actually reached. A rung skipped for a
