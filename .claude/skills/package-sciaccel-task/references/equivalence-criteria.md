@@ -43,16 +43,20 @@ they make by eye. Useful moves, roughly in order:
 - **"If a student handed you this ported code, what would you run before
   putting your name on the paper?"** The final one. It gets the whole
   acceptance procedure at once.
+- **"Is any quantity here an invariant of a loop rather than of a
+  snapshot?"** A circulation, a closure, a discrete connection around a
+  cycle. If yes, `field_l2` will not see it break. That is `holonomy`.
 
 When they give a tolerance, always ask **why that number**. "It seemed tight
 enough" is not a justification and the reviewer will say so. "The scheme's own
 truncation error at this resolution is 1e-8, so 1e-6 is loose by two orders
 and still catches a broken flux" is.
 
-## The four shapes
+## The shapes
 
-`tests/check_equivalence.py` implements these four. Between them they cover
-most of what "the same answer" turns out to mean.
+`tests/check_equivalence.py` implements these five. Between them they cover
+most of what "the same answer" turns out to mean. Add a function and a
+`kind` rather than bending one of these out of recognition.
 
 ### `conserved` — an invariant the physics promises
 
@@ -118,6 +122,39 @@ across four resolutions.
 
 Include it unless the code genuinely has no order to preserve. It is cheap
 and it closes an entire class of exploit.
+
+### `holonomy` — a loop composition the snapshot cannot see
+
+The composition of transport maps around a named cycle matches a reference
+holonomy, or the identity if the connection is flat. This is the criterion
+for a code whose load-bearing quantity is an invariant of a *loop* — a
+magnetic connection, a calibration around a closed baseline, a discrete
+parallel transport — not a field at a named step.
+
+`conserved` already covers a scalar that should stay put (energy, div B).
+Do not use holonomy for those. Use it when the object is a composition of
+maps, and when a port can hold `field_l2` on the snapshot and still
+scramble the connection.
+
+Three forms, chosen by `rule.form`:
+
+- `relative_frobenius` — ||H − H_ref||_F / ||H_ref||_F. Default. The
+  port wrote a matrix; the incumbent wrote one too.
+- `phase` — geodesic distance on the circle. Scalar U(1) holonomy; the
+  array is an angle in radians, or a length-2 (real, imag) pair.
+- `distance_to_identity` — ||H − I||_F. Flat connection; no reference
+  file. The physics promises the loop is the identity.
+
+*Constrained MHD / discrete connections:* the holonomy of the magnetic
+connection around each mesh plaquette stays within the incumbent's own
+run-to-run drift. Justified because a correct port of a constrained
+scheme preserves the connection; a port that only matches primitives at
+one step can still have rotated the frame around a cell.
+
+Watch for: treating holonomy as a novelty claim about the science. It is
+a check, not a theorem. The tolerance still has to come from the
+incumbent's drift or the scheme's stated conservation of the connection.
+If the scientist cannot name the cycle, delete the entry.
 
 ## Where tolerances legitimately come from
 
