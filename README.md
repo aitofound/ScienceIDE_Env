@@ -81,7 +81,7 @@ us one volunteer.
 
 Say it in whatever words fit your code; that sentence has only to name the
 codebase and which part of it is slow. From there the
-[`package-sciaccel-task`](.claude/skills/package-sciaccel-task/) skill reads
+[`package-sciaccel-task`](skill/) skill reads
 the target repository, asks the questions only you can answer, fills
 `TEMPLATE/` into `tasks/sa-NNNN/`, and runs the verification ladder as far as
 your machine allows, ending at a pull request.
@@ -102,7 +102,7 @@ Checking a package, yours or an existing one:
 
 ```bash
 npm run check                                                        # the validator
-bash .claude/skills/package-sciaccel-task/scripts/verify.sh sa-0001  # the ladder
+bash skill/scripts/verify.sh sa-0001  # the ladder
 ```
 
 ## 1  What a task is
