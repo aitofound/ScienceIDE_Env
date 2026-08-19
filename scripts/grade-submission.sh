@@ -65,6 +65,15 @@ if ! docker build --tag "$IMG" "$SUB" > "$OUT/logs/build.log" 2>&1; then
   exit 0
 fi
 BUILD_T1=$(date +%s.%N)
+# The submission declares its target as image labels; a Dockerfile cannot
+# request a device, but it can say what it compiled for, and reading that
+# here turns "no kernel image available for execution on device" twenty
+# minutes in into one legible line now. Report, and let the operator judge —
+# an absent label is a warning, not a grade.
+docker inspect --format '{{json .Config.Labels}}' "$IMG" 2>/dev/null \
+  | tee "$OUT/results/submission_labels.json" \
+  | grep -q sciaccel.target \
+  || say "   note: submission declares no sciaccel.target.* labels — instruction.md asks for them"
 printf '{"build_seconds": %s}\n' "$(echo "$BUILD_T1 $BUILD_T0" | awk '{printf "%.3f", $1-$2}')" \
   > "$OUT/results/build.json"
 say "   build ok ($(cat "$OUT/results/build.json"))"
