@@ -216,7 +216,12 @@ const result = run({
   /* What may sit at a package root — the Harbor layout plus the housekeeping
      files git conventionally allows. */
   rootFiles: ['task.toml', 'instruction.md', 'README.md', 'LICENSE', '.gitignore', '.gitattributes'],
-  rootDirs: ['environment', 'tests', 'solution', 'authoring'],
+  /* `cases` and `patches` are the v2 layout. A case is one configuration of
+     the codebase, built as a self-contained image; `patches` holds our diffs
+     against a pristine upstream clone, because a package distributes a link
+     and a commit rather than someone else's source. `environment`, `tests` and
+     `solution` remain for the v1 packages, which are not being rewritten. */
+  rootDirs: ['environment', 'tests', 'solution', 'authoring', 'cases', 'patches'],
   /* Text is capped low because a megabyte of prose is data smuggled into a
      manifest; blobs are capped at 50 MB hard because larger data is hosted
      externally and fetched at image build, pinned and checksummed; 10 MB

@@ -35,7 +35,14 @@ import YAML from 'yaml';
 /* The lifecycle vocabulary and the runtime-budget ladder are the same four
    words and six classes in both benchmarks — chassis, not science, which is
    why they may live here rather than in per-bench config. */
-const STATUSES = new Set(['draft', 'review', 'published', 'retired']);
+/* `example` is not a rung on the ladder. It marks a package that exists to
+   show contributors the shape of a task, and that is NOT a scored benchmark
+   task — so it is exempt from the difficulty floor and excluded from official
+   runs. The exemption is the whole point: a worked example has to be easy
+   enough to read, and the floor exists to reject easy tasks. Conflating the
+   two would either bar the registry from having an example at all, or force
+   someone to write a false claim into `oneshot_claude_failure`. */
+const STATUSES = new Set(['draft', 'review', 'published', 'retired', 'example']);
 const RESOURCE_CLASSES = new Set(['R0', 'R1', 'R2', 'R3', 'R4', 'R5']);
 
 export const blank = (v) => v === undefined || v === null || String(v).trim() === '';
@@ -414,7 +421,14 @@ export function run(config) {
       errors.push(`${slug}/task.toml: status '${rawStatus ?? ''}' is not one of draft | review | published | retired`);
     } else {
       pkg.status = String(rawStatus);
-      pkg.beyondDraft = pkg.status !== 'draft';
+      /* `example` is not a claim of completeness, so neither the
+         requiredBeyondDraft set nor the difficulty floor applies to it. An
+         example package exists to show contributors the shape of a task; it
+         has no scientist signed on to its criteria and it is not asserted to
+         be hard. Holding it to either gate would force a false claim into
+         `owner` or into `oneshot_claude_failure`, which is worse than an
+         honest blank. */
+      pkg.beyondDraft = pkg.status !== 'draft' && pkg.status !== 'example';
       if (pkg.beyondDraft) {
         for (const req of config.requiredBeyondDraft ?? []) {
           if (blank(ns[req])) {
@@ -441,7 +455,7 @@ export function run(config) {
          to ignore the check, which is how a gate becomes decoration. They are
          listed as warnings instead, on every run, so the exempt set is visible
          and shrinks: the moment anyone edits one, it is held to the rule. */
-      if ((config.requiredOnChange ?? []).length) {
+      if ((config.requiredOnChange ?? []).length && pkg.status !== 'example') {
         const missing = config.requiredOnChange.filter((k) => blank(ns[k]));
         if (missing.length) {
           if (changed !== null && changed.has(slug)) {
