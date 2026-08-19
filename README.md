@@ -85,10 +85,13 @@ could mislead you.
 | | |
 |---|---|
 | **codebase** | what you contribute — one real code, pinned at one commit. `tasks/sa-NNNN/` |
-| **task** | one configuration of it: a deck, a grid size, a physics option. One Dockerfile, run with no arguments |
-| **cell** | one task against one target device. A submission delivers one image per cell |
+| **case** | one configuration of it: a deck, a grid size, a physics option. One Dockerfile, run with no arguments |
+| **cell** | one case against one target device. A submission delivers one image per cell |
 
-So a single codebase yields several tasks, and each task can be requested
+The directory is called `tasks/` for historical reasons — slugs are permanent —
+but what lives there is a codebase.
+
+So a single codebase yields several cases, and each case can be requested
 against several devices. Contributing **one codebase** is a whole unit of work,
 not one row in a table — which is why one merged codebase earns the coauthor
 line.
