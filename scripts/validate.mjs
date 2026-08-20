@@ -401,8 +401,24 @@ for (const pkg of packages) {
   if (!blank(ns.exploit_score) && typeof ns.exploit_score !== 'number') {
     errors.push(`${slug}/task.toml: exploit_score '${ns.exploit_score}' must be a number`);
   }
-  if (!blank(ns.repo_commit) && !/^[0-9a-f]{40}$/.test(String(ns.repo_commit))) {
-    errors.push(`${slug}/task.toml: repo_commit '${ns.repo_commit}' is not a full 40-hex SHA — "latest" is not an answer`);
+  /* The pin. Its job is to name exact bytes, and a git SHA is only one way to
+     do that: plenty of scientific codes are distributed as a tarball from the
+     authors' own server with no public repository to name a commit in. PLUTO
+     is the first here (sa-0001, pluto-4.4-patch4.tar.gz from
+     plutocode.ph.unito.it) and will not be the last, so `sha256:<64 hex>` is
+     accepted alongside a 40-hex commit. It is if anything the stronger pin:
+     a git SHA names a tree, a sha256 names the archive byte for byte, and the
+     Dockerfile verifies it at build time.
+
+     What is still rejected is the thing this check exists for - a moving
+     target. "latest", a tag, a branch name, an abbreviated SHA. */
+  if (!blank(ns.repo_commit)
+      && !/^[0-9a-f]{40}$/.test(String(ns.repo_commit))
+      && !/^sha256:[0-9a-f]{64}$/.test(String(ns.repo_commit))) {
+    errors.push(
+      `${slug}/task.toml: repo_commit '${ns.repo_commit}' pins nothing — it must be a ` +
+      `full 40-hex git SHA, or 'sha256:<64 hex>' for a code distributed as an archive. ` +
+      `"latest", a tag and a branch name are all moving targets.`);
   }
 
   /* The conditional half of the tier ladder: review and published claim an
