@@ -143,6 +143,36 @@ the target language and toolchain (or "solver's choice, justified"), what may
 not change, and where the build must succeed. Once the environment exists,
 every path in it is absolute and every output the verifier reads is named.
 
+`README.md` is reviewer-facing and never mounted into a container. It has a
+contract, because a package points at **someone else's code** and has to say
+whose, where, and what to cite. CI enforces the first two:
+
+```markdown
+# sa-NNNN — <code> : <what the port is>
+
+## Science          what the code computes, who runs it, why it matters
+## The code         a table: repository, pinned commit, licence, scope
+## Notes            honest status - what is missing, what needs an owner
+## References       the paper, or a plain statement that there is none
+```
+
+Two hard rules:
+
+- **The repository URL must appear verbatim in `README.md`.** A reader reaches
+  the code without opening `task.toml`.
+- **There must be a `## References` section.** Name the paper. If the code has
+  none, say so — an absent citation and an unrecorded one look identical to a
+  reviewer.
+
+Put `## Science` first and `## References` last; everything between them is
+yours. A package that has more to explain — a pinned scheme, where a tolerance
+came from, a patch against upstream — should add sections rather than compress.
+`references` in `task.toml` is the machine-readable copy the registry projects,
+so fill both.
+
+And say plainly if the code's own group has not reviewed the package. `owner`
+staying blank already encodes that; the README should not imply otherwise.
+
 Run `bash skill/scripts/verify.sh sa-NNNN`,
 then open the PR.
 
