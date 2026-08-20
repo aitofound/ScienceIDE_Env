@@ -482,6 +482,43 @@ export function run(config) {
         }
       }
 
+      /* The README contract. A package points at someone else's code, so the
+         reviewer-facing file has to say WHOSE, WHERE, and WHAT TO CITE — a task
+         that borrows a codebase without crediting it is not one we would merge.
+
+         This codifies what sa-0001..sa-0008 were already doing by hand, rather
+         than inventing a convention: every one of them carries `## References`
+         and the repository URL. The check exists so the ninth package cannot
+         quietly drop it, which is exactly what happened. */
+      if (config.readmeContract) {
+        const readme = path.join(base, 'README.md');
+        if (!fs.existsSync(readme)) {
+          errors.push(`${slug}/README.md: missing — it carries the citation and the link to the code`);
+        } else {
+          const text = fs.readFileSync(readme, 'utf8');
+          const url = String(ns.repo_url ?? '').trim();
+          if (url && !text.includes(url)) {
+            errors.push(
+              `${slug}/README.md: does not contain repo_url '${url}'. A reader of the ` +
+              `README must be able to reach the code without opening task.toml.`,
+            );
+          }
+          if (!/^#{1,3}\s+(references|citation|citations|how to cite)\b/im.test(text)) {
+            errors.push(
+              `${slug}/README.md: no '## References' section. Name the paper if one ` +
+              `exists, or say plainly that there is none — an absent citation and an ` +
+              `unrecorded one look identical to a reviewer.`,
+            );
+          }
+          if (blank(ns.references)) {
+            warnings.push(
+              `${slug}/task.toml: 'references' is empty. The README cites the work; this ` +
+              `field is the machine-readable copy the registry projects.`,
+            );
+          }
+        }
+      }
+
       /* Shape check for the links, wherever they are declared. Liveness is CI's
          (CHECK_LINKS), because a validator that needs the network is a validator
          that fails on a train. */
