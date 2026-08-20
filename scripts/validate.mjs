@@ -233,6 +233,10 @@ const result = run({
     warn: 10_000_000,
     blobAdvice: 'host large data externally, download at image build pinned to a commit, verify with sha256sum -c',
   },
+  /* Every package borrows someone else's code. The README must reach it and
+     credit it: the repo URL a reader can follow, and a References section
+     naming the paper — or saying there is none. */
+  readmeContract: true,
   canaryToml: CANARY_TOML,
   canaryMd: CANARY_MD,
   canaryLine: CANARY_LINE,
