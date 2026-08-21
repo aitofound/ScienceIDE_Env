@@ -5,7 +5,7 @@
 
     python3 scripts/check-validators.py [sa-NNNN ...]
 
-SPEC 3.4 / D-057. A case decides whether a submission passes with one function
+A case decides whether a submission passes with one function
 it ships itself:
 
     cases/<case>/validate.py ::  validate(reference, candidate) -> dict
@@ -98,8 +98,8 @@ def check(slug, name, d, fails):
                if not os.path.isfile(os.path.join(d, f))]
     if missing:
         bad('no pass policy - missing %s. Every case decides with one '
-            'function it ships (SPEC 3.4), and proves it discriminates with '
-            'its own fixtures (D-057).' % ', '.join(missing))
+            'function it ships, and proves it discriminates with '
+            'its own fixtures.' % ', '.join(missing))
         return
 
     try:
@@ -128,7 +128,7 @@ def check(slug, name, d, fails):
     if not any(t.startswith('accept') for t in trees):
         bad('no accept* fixture - a validator nothing passes is not tested')
     if not any(t.startswith('reject') for t in trees):
-        bad('no reject* fixture - discrimination is the requirement (D-057)')
+        bad('no reject* fixture - discrimination is the requirement')
     if not any('near-miss' in t for t in trees):
         bad('no reject-near-miss fixture. An open predicate must be shown to '
             'reject an output that is correct on the checked observable and '
@@ -174,7 +174,7 @@ def main(argv):
     if not found:
         print('no cases found', file=sys.stderr)
         return 1
-    print('pass policies (SPEC 3.4, D-057)')
+    print('pass policies')
     fails = []
     for slug, name, d in found:
         check(slug, name, d, fails)

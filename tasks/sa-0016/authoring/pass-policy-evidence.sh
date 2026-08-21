@@ -10,7 +10,7 @@
 # case's own deck under each:
 #
 #   off     -O3 -fdefault-real-8 -ffp-contract=off
-#           the reference arithmetic, and what the case images pin (D-022)
+#           the reference arithmetic, and what the case images pin
 #
 #   fast    -O3 -fdefault-real-8 -ffp-contract=fast -march=x86-64-v3
 #           -funroll-loops
@@ -117,7 +117,7 @@ Frames are matched BY INDEX, never by position in a sorted list: a run that
 died early has fewer frames, and pairing last-with-last silently compares two
 different times and reports a number that means nothing.
 
-D-044: normalise by the norm of the WHOLE graded reference state, never by the
+Normalise by the norm of the WHOLE graded reference state, never by the
 variable's own norm.
 """
 import sys, os, glob, struct

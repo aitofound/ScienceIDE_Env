@@ -137,8 +137,8 @@ answers.
 **Why bitwise identity is even possible** is a property of the method, not of
 the effort: cells are independent, and the only global reduction is the CFL
 timestep, which is a `min` — exact and order-independent, so a device tree
-reduction returns the same bits as a host loop. No sum, no reassociation. See
-D-055; the same reading predicts LAPS's spectral floor at O(ε) and RMHD's at
+reduction returns the same bits as a host loop. No sum, no reassociation. The
+same reading predicts LAPS's spectral floor at O(ε) and RMHD's at
 its Newton solver's `acc = 1.e-11`.
 
 **Bounds on the claim.** The agent had about an hour and could compile locally
@@ -164,7 +164,7 @@ legitimate for correctness — IEEE binary64 is the same arithmetic on both part
 SASS so the next submission does not need the substitution.
 
 *The manifest's `oneshot_*` fields cannot hold this result: they are named for
-failure, and this was a success. That is a gap in the gate, recorded in D-055.*
+failure, and this was a success. That is a gap in the gate.*
 
 ## What is here, and what is not
 
