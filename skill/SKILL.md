@@ -210,9 +210,9 @@ failing is one agent's bad day, which is why one is not enough.
 
 | key | what goes in it |
 | --- | --- |
-| `oneshot_claude_failure` | Claude Code: model, reasoning level, date, what it produced, which criterion it failed — or where it stopped |
+| `oneshot_claude_outcome` | Claude Code: model, reasoning level, date, what it produced, which criterion it failed — or where it stopped |
 | `oneshot_claude_transcript` | `https://` link to the raw session |
-| `oneshot_codex_failure` | the same, for Codex |
+| `oneshot_codex_outcome` | the same, for Codex |
 | `oneshot_codex_transcript` | `https://` link to the raw session |
 
 **Do NOT commit the transcript.** An earlier version of this skill said to put

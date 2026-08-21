@@ -45,9 +45,9 @@ reference for what a package coming back should look like.
 
 ## What is live
 
-`tasks/` holds PLUTO and LAPS. `registry.json` lists sa-0016 alone, because
-sa-0001 is still `draft` — it has no difficulty floor. Archiving the others
-changed no runnable dataset.
+`tasks/` holds PLUTO and LAPS, both at `status = "example"`. That is what they
+are: worked demonstrations of how a package is built, not scored tasks with an
+owner behind them. Both are runnable.
 
 ## Coming back
 

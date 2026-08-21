@@ -238,8 +238,8 @@ CLAUDE_FORCE_OAUTH=1 CLAUDE_CODE_OAUTH_TOKEN=... \
 Then record four manifest keys — all of them, or the package cannot leave
 `draft`:
 
-    oneshot_claude_failure   oneshot_claude_transcript
-    oneshot_codex_failure    oneshot_codex_transcript
+    oneshot_claude_outcome   oneshot_claude_transcript
+    oneshot_codex_outcome    oneshot_codex_transcript
 
 - The two `*_failure` keys — which model, on what date, what it produced, and
   which equivalence criterion it failed; or, if it never got that far, where it
