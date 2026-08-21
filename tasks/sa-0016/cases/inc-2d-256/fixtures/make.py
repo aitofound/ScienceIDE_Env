@@ -47,6 +47,7 @@ The three that carry the weight:
 """
 import io
 import json
+import math
 import os
 import shutil
 import struct
@@ -91,14 +92,20 @@ def base_state(k):
 
 
 def unit(i, k):
-    """A fixed direction of unit L2 norm - integer arithmetic, exact."""
+    """A fixed direction whose LARGEST component is 1 - integer arithmetic.
+
+    Normalised by max-abs rather than by L2 because the statistic is pointwise.
+    That makes `perturbed(ref, s)` land the validator's statistic on exactly
+    `s`, so `tol/1e3` and `tol*100` mean what they read as instead of being off
+    by a factor of sqrt(ncell) that changes with the fixture grid.
+    """
     n = np.arange(NCELL, dtype=np.int64)
     p = ((n * 7919 + i * 104729 + k * 1299709) % 1009).astype(np.float64)
     p = p / 1009.0 - 0.5
-    return p / float(np.linalg.norm(p))
+    return p / float(np.max(np.abs(p)))
 
 
-def write_tree(d, states, steps=None, dts=None, drop_last=False):
+def write_tree(d, states, steps=None, dts=None, times=None, drop_last=False):
     if os.path.isdir(d):
         shutil.rmtree(d)
     os.makedirs(d)
@@ -118,16 +125,22 @@ def write_tree(d, states, steps=None, dts=None, drop_last=False):
             f.write(states[k].astype('<f8').tobytes(order='F'))
         rows.append('%8d %23.16e %23.16e'
                     % (k * 10 if steps is None else steps[k],
-                       k * 0.01, DT if dts is None else dts[k]))
+                       k * 0.01 if times is None else times[k],
+                       DT if dts is None else dts[k]))
     io.open(os.path.join(d, 'times.dat'), 'w', encoding='utf-8',
             newline='\n').write('\n'.join(rows) + '\n')
 
 
 def perturbed(ref, size, only=None):
+    """The reference with a perturbation that scores exactly `size`.
+
+    The denominator matches the validator's: the RMS of the whole graded
+    reference state, not the L2 norm, because the numerator is pointwise.
+    """
     out = []
     for k, a in enumerate(ref):
         b = a.copy()
-        scale = float(np.linalg.norm(a[:, GRADED]))
+        scale = float(np.linalg.norm(a[:, GRADED])) / math.sqrt(NCELL)
         for i in GRADED:
             if only is not None and VARS[i] != only:
                 continue
@@ -197,6 +210,14 @@ def main(argv):
     dts = [DT] * NFRAME
     dts[-1] = DT * (1.0 + 1e-3)
     write_tree(os.path.join(out, 'reject-dt'), ref, dts=dts)
+
+    # Every dt right, the accumulated time wrong. The validator used to unpack
+    # this column and throw it away while the rubric claimed it was checked, so
+    # this tree passed. `time` is the running sum of dt and a port that matches
+    # dt matches it - but "implied" is not "tested".
+    times = [k * 0.01 for k in range(NFRAME)]
+    times[-1] *= 1.0 + 1e-3
+    write_tree(os.path.join(out, 'reject-time'), ref, times=times)
 
     # --- must fail: the port blew up ---------------------------------------
     # These exist because their absence was the worst defect this package has
