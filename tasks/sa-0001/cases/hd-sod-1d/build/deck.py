@@ -9,7 +9,7 @@ keeps the case honest. Nothing downstream of a run is touched, and no value a
 correct port would have to derive is written anywhere.
 
 This is the only thing sa-0001 ships that touches PLUTO's files. The source
-itself is fetched at a pinned sha256 and never vendored (D-039); each case
+itself is fetched at a pinned sha256 and never vendored; each case
 copies the pristine deck out of the tarball and applies this.
 
 Why each is set:
@@ -31,7 +31,7 @@ Why each is set:
 
   cells  The other half of that trade. Shortening tstop makes a case cheaper,
          so the cost is bought back with resolution - which raises the work
-         without growing the noise (D-054). Only X1 is set; every tier-A case
+         without growing the noise. Only X1 is set; every tier-A case
          is one-dimensional.
 """
 import io

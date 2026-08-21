@@ -45,8 +45,9 @@ all three are in the case Dockerfiles with the reasoning attached:
 - `src_incompressible` puts large automatic arrays on the stack and segfaults at
   `np = 4` for any grid at or above 64³ under the default 8 MB limit.
   `-fmax-stack-var-size=65536` moves them to static storage, **inside the
-  image**, so the case still runs under a plain `docker run` with no `--ulimit`
-  (D-035). Verified bitwise identical to a stack build at a size both survive.
+  image**, so the case still runs under a plain `docker run` with no
+  `--ulimit`. Verified bitwise identical to a stack build at a size both
+  survive.
 
 **And one upstream defect that is not fixed, only worked around.**
 `src_incompressible/2D/mhdoutput.f90:96` reads `uu_prim(:,:,:,4)` into output

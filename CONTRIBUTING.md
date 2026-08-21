@@ -438,6 +438,14 @@ cannot run the incumbent is a claim, not a proof, and a task does not reach
 Data generators, checksums, evidence. CI whitelists it and never inspects
 it; the runtime never mounts it.
 
+### Write the reason, not a reference to it
+
+Every rule this repository follows is stated where it applies, in words. Do
+not cite a decision by number — `(D-044)`, `SPEC §3.4` — even if you have such
+a log in front of you. The log is not in this repository, so to everyone
+reading the file the tag is an opaque token, and the tag outlives the log.
+A reviewer should be able to check the reasoning without leaving the file.
+
 ## Testing locally
 
 ```
