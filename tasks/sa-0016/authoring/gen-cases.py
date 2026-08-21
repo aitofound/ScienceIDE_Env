@@ -611,9 +611,28 @@ def build_rubric(c):
                 # at 256^3 sqrt(N) is 4096, so a single cell off by 4e-7
                 # relative passed a 1e-10 test. The criterion was named
                 # pointwise the whole time; now the rule matches the name.
-                "kind": "field_rel_linf",
-                "statistic": "max over cells of |v_cand - v_ref|, divided by "
-                             "the RMS of the whole graded reference state",
+                "kind": "field_abs_linf",
+                "statistic": "max over cells of |v_cand - v_ref|. An absolute "
+                             "difference: no norm, no denominator, no "
+                             "normalisation. Every cell of every graded "
+                             "variable must be within the bound of the "
+                             "incumbent's value there.",
+                "statistic_basis":
+                    "Absolute rather than relative because these fields are "
+                    "O(1) - rho and Bx are 1, press0 is 1, the perturbation "
+                    "amplitude db0 is 0.1 - so the bound reads the same either "
+                    "way on the quantities that carry the physics, and the "
+                    "absolute form has no denominator to get wrong. It also "
+                    "retires D-044 for this codebase rather than obeying it: "
+                    "that rule exists because dividing a variable by its own "
+                    "norm compares noise to noise on a component that is "
+                    "identically zero by symmetry, and an absolute difference "
+                    "cannot make that mistake. Two earlier forms are worth "
+                    "recording as wrong. A relative L2 over the cells AVERAGES "
+                    "- one cell wrong by d scores d/sqrt(N), so at 256^3 a "
+                    "single cell off by 4e-7 passed a 1e-10 bound. Replacing "
+                    "the numerator with a max-abs over an RMS denominator "
+                    "fixed the averaging and kept a division nobody needed.",
                 # NOT a list. The list has the frame count in it, which is a
                 # result. The verifier holds the reference and enumerates from
                 # that; the solver gets the pattern and the rule.
@@ -640,24 +659,27 @@ def build_rubric(c):
                 # are a solver output on THIS deck. See graded_variables_basis.
                 "graded_variables": [VARS[i] for i in graded(c)[0]],
                 "graded_variables_basis": graded(c)[1],
-                "rule": {"tolerance_rel": TOL},
+                "rule": {"tolerance_abs": TOL},
                 "justification": JUSTIFY.format(
                     tmax=TMAX, pct=100.0 * TMAX / PERIOD),
                 "evidence": {
                     "basis": ("measured" if MEASURED[task]['floor'] is not None
                               else "asserted"),
                     "noise_floor": MEASURED[task]['floor'],
-                    # THE FLOOR AND CEILING WERE MEASURED IN RELATIVE L2, AND
-                    # THE RULE IS NOW POINTWISE. Both numbers below are
-                    # therefore lower bounds on their Linf equivalents, not the
-                    # equivalents themselves. On the one deck where both were
-                    # recorded, two correct builds sat at 1.0e-15 in L2 and
-                    # 4.1e-15 in Linf - a factor of four, with five orders of
-                    # headroom either way, so the bound is not in question.
-                    # What is missing is a measured Linf number per case, and
-                    # saying that plainly is cheaper than implying otherwise.
-                    "noise_floor_metric": "relative L2 - see the note; the "
-                                          "rule is relative Linf",
+                    # THE FLOOR AND CEILING WERE MEASURED AS A RELATIVE L2,
+                    # AND THE RULE IS AN ABSOLUTE MAX-ABS DIFFERENCE. The two
+                    # numbers below are therefore not in the rule's units.
+                    # They are close enough to be informative and not close
+                    # enough to be quoted as the rule's floor: these fields are
+                    # O(1), so relative and absolute agree to within a small
+                    # factor, and on the one deck where both a norm and a
+                    # max-abs were recorded the max-abs was 4x the L2 - five
+                    # orders inside the bound either way. What is missing is a
+                    # measured absolute number per case, and saying that
+                    # plainly is cheaper than implying otherwise.
+                    "noise_floor_metric":
+                        "relative L2 - see the note; the rule is an ABSOLUTE "
+                        "max-abs difference",
                     "noise_floor_basis": noise_floor_basis(c),
                     "ceiling": MEASURED[task]['defect'],
                     "ceiling_basis": (
@@ -686,16 +708,21 @@ def build_rubric(c):
             },
             {
                 "name": "time_base",
-                "kind": "series_rel",
+                "kind": "series_abs",
                 "file": "times.dat",
                 "format": "(i8, 2(1x,e23.16)) -> istep, time, dt",
-                "rule": {"tolerance_rel": TOL},
+                "rule": {"tolerance_abs": TOL},
                 "justification": (
                     "The snapshot header stores time as real(4), which caps "
                     "any time check at ~1e-7. The sidecar carries step, time "
                     "and dt at full double precision so the port's time base "
                     "- and therefore its CFL and step sequence - is "
-                    "verifiable to f64 noise."
+                    "verifiable to f64 noise. BOTH columns are compared, per "
+                    "step, at the same absolute bound as the fields, and "
+                    "istep must match exactly. time is the running sum of dt, "
+                    "so a port that matches dt matches it - but implied is "
+                    "not tested, and a port that accumulates differently "
+                    "would otherwise go unnoticed."
                 ),
                 "evidence": {
                     "basis": "measured",
