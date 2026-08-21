@@ -1,9 +1,13 @@
-# Retired packages
+# Archived packages
 
-Eight packages carry `status = "retired"`. Nothing is deleted and no slug moves
-— slugs are permanent, and `registry/runs.yaml` still names some of these, so a
-retired package keeps its directory and its history. Restoring one is a single
-edit to its `status`.
+Seven packages live in `archive/` with `status = "retired"`. Nothing is
+deleted and no slug is reused: `archive/` is a second package root that the
+validator scans exactly like `tasks/`, so an archived package is still held to
+the manifest, the layout and the canaries. An archived package that has quietly
+rotted is not archived, it is lost. Restoring one is a `git mv` back plus a
+status edit.
+
+`tasks/` holds **sa-0001 (PLUTO)** and **sa-0016 (LAPS)**.
 
 ## Why
 
@@ -41,9 +45,9 @@ reference for what a package coming back should look like.
 
 ## What is live
 
-`sa-0016` alone — the one package whose criterion, science and status agree.
-`registry.json` already listed only sa-0016, so retiring the others changed no
-runnable dataset.
+`tasks/` holds PLUTO and LAPS, both at `status = "example"`. That is what they
+are: worked demonstrations of how a package is built, not scored tasks with an
+owner behind them. Both are runnable.
 
 ## Coming back
 
