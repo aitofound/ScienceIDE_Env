@@ -25,7 +25,61 @@ SHA = 'a625806931a82ba3342f35906955e6806081d219'
 TMAX = 0.1
 DTOUT = 0.01
 NFRAMES = int(round(TMAX / DTOUT))          # 10 graded, plus out000 at t=0
-TOL = 1e-10
+# NO PACKAGE-WIDE TOLERANCE (SPEC 3.4 rule 2). Every case states its own, with
+# a reason that names what sets the floor on ITS configuration. The module-scope
+# `TOL = 1e-10` that used to sit here was inherited by both cases and both
+# criteria; sa-0001 shipped the same shape and one of its cases turned out to
+# reach a Newton iteration with a 1.e-11 convergence test, which the inherited
+# number would have graded ten times too tight.
+#
+# THE FLOOR HERE IS SET BY A SUM, and that is the whole story for this codebase
+# (D-055). LAPS is pseudo-spectral: every right-hand side goes through a
+# forward and inverse FFT, which is a reduction over the whole grid. Additions
+# reassociate, so bitwise identity is NOT achievable at any effort - unlike a
+# Godunov code, whose only global reduction is a CFL `min` and which does come
+# back bitwise. What IS achievable is O(eps), and that is what the tolerance is
+# built on.
+WARRANT = {
+    128: dict(
+        tol=1e-10, basis='asserted', floor='eps-scale',
+        reason=(
+            "eps-scale, set by the FFT and by nothing else on this deck's "
+            "path. Every right-hand side in LAPS is evaluated spectrally, so "
+            "the state passes through a reduction over the whole grid on "
+            "every step; additions reassociate, so two correct f64 "
+            "implementations cannot agree bitwise and the honest floor is "
+            "O(eps), eps = 2.2e-16, with a log2(128) = 7-level butterfly. "
+            "The sweep for discrete choices made by comparing floats - the "
+            "mechanism catalogue in the packaging skill's rule 3 - comes back "
+            "empty for this codebase, and that is a property of being "
+            "pseudo-spectral: no limiter, no shock detector, no Riemann "
+            "solver, no conservative-to-primitive inversion, no per-cell "
+            "branch on a float anywhere in the state path. There is no "
+            "iterative solve to stop one step early and no scheme to switch. "
+            "Asserted on that sweep rather than on a theorem about "
+            "straight-line arithmetic, which would not cover a reduction. "
+            "Corroborated rather than relied upon: four independent "
+            "implementations of this codebase landed within two orders of "
+            "eps of the incumbent, five to eight orders below this "
+            "tolerance - including one at 1.08e-15 that carried f64 in "
+            "software on a device with no hardware f64 at all.")),
+    256: dict(
+        tol=1e-10, basis='asserted', floor='eps-scale',
+        reason=(
+            "eps-scale, on the same reading as aw-128 - the FFT is the only "
+            "reduction and the pseudo-spectral formulation leaves no "
+            "float-compared branch on the path - with the one difference "
+            "between the two cases stated rather than assumed. At 256^3 the "
+            "butterfly is one level deeper (log2(256) = 8), there are eight "
+            "times the modes, and dt is halved by the CFL condition so the "
+            "graded window costs twice the steps. All three lengthen the "
+            "accumulation, and none of them changes its ORDER: reassociation "
+            "error in an FFT grows like sqrt(log N) in the mean, so the floor "
+            "moves by a factor near one and stays at O(eps). That is why the "
+            "two cases share a tolerance - which is a conclusion here, not an "
+            "inheritance. The corroboration is aw-128's: four independent "
+            "implementations within two orders of eps.")),
+}
 RANKS = 4
 
 RESOLUTIONS = [128, 256]
@@ -195,7 +249,21 @@ def write(path, text, executable=False):
         os.chmod(path, os.stat(path).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
+# Enforced, not merely intended: a resolution with no warrant does not ship.
+REQUIRED = ('tol', 'basis', 'floor', 'reason')
+
+
 def main():
+    missing = [(nn, [k for k in REQUIRED if not WARRANT.get(nn, {}).get(k)])
+               for nn in RESOLUTIONS]
+    missing = [(nn, m) for nn, m in missing if m]
+    if missing:
+        raise SystemExit(
+            "no case may inherit a tolerance (SPEC 3.4 rule 2). A tolerance is "
+            "a property of THIS case's configuration and its reason has to "
+            "name it.\n"
+            + '\n'.join('  aw-%-6s missing %s' % (nn, ', '.join(m))
+                         for nn, m in missing))
     period = 2 * 3.141592653589793
     for nn in RESOLUTIONS:
         task = 'aw-%d' % nn
@@ -260,22 +328,13 @@ def main():
                         "shape": [nn, nn, nn, 8],
                         "variables": ["rho", "Ux", "Uy", "Uz", "Bx", "By", "Bz", "P"]
                     },
-                    "rule": {"tolerance_rel": TOL},
+                    "rule": {"tolerance_rel": WARRANT[nn]['tol']},
                     "justification": JUSTIFY.format(
                         tmax=TMAX, pct=100.0 * TMAX / period),
                     "evidence": {
-                        "basis": "asserted",
-                        "noise_floor": "eps-scale",
-                        "noise_floor_basis":
-                            "Two correct f64 implementations differ by floating-point "
-                            "reassociation, FMA contraction and reduction order. Over a "
-                            "window this short that is O(eps), eps = 2.2e-16. Asserted "
-                            "rather than measured, because measuring it confirms a "
-                            "theorem. Four independent implementations of this codebase "
-                            "were nevertheless compared against the incumbent and landed "
-                            "within two orders of eps, five to eight orders below the "
-                            "tolerance - including one at 1.08e-15 that carried f64 in "
-                            "software on a device with no hardware f64 at all.",
+                        "basis": WARRANT[nn]['basis'],
+                        "noise_floor": WARRANT[nn]['floor'],
+                        "noise_floor_basis": WARRANT[nn]['reason'],
                         "ceiling": "not measured, deliberately",
                         "ceiling_basis":
                             "A ceiling is a claim about how large an error is still "
@@ -303,14 +362,14 @@ def main():
                     "kind": "series_rel",
                     "file": "times.dat",
                     "format": "(i8, 2(1x,e23.16)) -> istep, time, dt",
-                    "rule": {"tolerance_rel": TOL},
+                    "rule": {"tolerance_rel": WARRANT[nn]['tol']},
                     "justification": (
                         "The snapshot header stores time as real(4), which caps any "
                         "time check at ~1e-7. The sidecar carries step, time and dt at "
                         "full double precision so the port's time base - and therefore "
                         "its CFL and step sequence - is verifiable to f64 noise."
                     ),
-                    "evidence": {"basis": "asserted", "note": "Same eps-scale floor. dt comes from a reduction over the grid, so it is where reassociation enters first. Note that no value of dt appears anywhere in this rubric: deriving it from the CFL condition is part of what is being checked."}
+                    "evidence": {"basis": WARRANT[nn]['basis'], "note": "Same eps-scale floor, and for the same reason - see this case's noise_floor_basis above; the number is not inherited from a package default. dt comes from a reduction over the grid, so it is where reassociation enters first. Note that no value of dt appears anywhere in this rubric: deriving it from the CFL condition is part of what is being checked."}
                 }
             ]
         }
