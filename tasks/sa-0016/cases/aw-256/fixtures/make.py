@@ -7,7 +7,7 @@
 writes `OUTDIR/reference/`, one or more `accept*/` trees and one or more
 `reject*/` trees. CI runs the case's own validate.py over every pair and
 asserts the verdicts: accept passes, reject fails. A case whose validator
-accepts one of its own rejects does not merge (D-057).
+accepts one of its own rejects does not merge.
 
 SYNTHETIC AND GENERATED, not recorded. These exercise the PREDICATE, not the
 physics, and the grid here is 6**3 rather than 256**3 because
@@ -28,9 +28,9 @@ The three that carry the weight:
                         denormals produces exactly this. It passes trivially
                         under an absolute rule, and that is the point: a
                         validator normalising by the variable's own norm FAILS
-                        it. That is D-044, found by measurement on THIS
-                        package, where a correct port scored 0.17 on a
-                        component that is identically zero. Kept as a
+                        it. Found by measurement on THIS package, where a
+                        correct port scored 0.17 on a component that is
+                        identically zero. Kept as a
                         regression test against anyone reintroducing a
                         denominator.
 

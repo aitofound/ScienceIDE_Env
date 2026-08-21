@@ -33,11 +33,11 @@ handles none of them:
 
 `sa-0001`, `sa-0003` and `sa-0007` *are* expressible in the current model. They
 are retired for a different reason: none has an owner or a difficulty floor, and
-`sa-0001` in particular is the worked example of a standard (D-056) that the
+`sa-0001` in particular is the worked example of a standard that the
 packages beside it never met. A registry where the exemplar and the stubs sit at
 the same status teaches the wrong thing about where the bar is.
 
-`sa-0001` is retired **at its best state**, with D-056 fully applied: every
+`sa-0001` is retired **at its best state**, with that standard fully applied: every
 tolerance bound to its own case, each with a reason naming that deck's
 configuration, and `rhd-shocktube-1d` rederived to `1e-8` from the `tol=1.e-11`
 in `Src/RHD/rhd_energy_solve.c:41`. None of that work is lost, and it is the

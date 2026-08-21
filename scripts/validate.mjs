@@ -189,7 +189,7 @@ const result = run({
      happen - and in the whole life of that rule not one package ever filled a
      field. PLUTO settled it: its first graded submission passed 5/5 with four
      cells bitwise identical, the strongest saturation signal measured here, and
-     there was nowhere to write it down (D-055). A floor that can only express
+     there was nowhere to write it down. A floor that can only express
      failure hides exactly the finding it exists to surface. It
      joins the list at the same point as the criteria — a status beyond draft
      claims the package is worth a reviewer's time, and that claim is not
@@ -281,7 +281,7 @@ for (const pkg of packages) {
      URL is a mistake every time. */
   /* The transcript links are checked by the core now, via linkKeys. */
 
-  /* Every case carries its own pass policy (SPEC 3.4, D-057).
+  /* Every case carries its own pass policy.
 
      Whether a submission passes a case is decided by ONE function the case
      ships itself — `validate(reference, candidate) -> dict`, with `passed` as
@@ -315,8 +315,8 @@ for (const pkg of packages) {
         if (!fs.existsSync(path.join(cdir, rel))) {
           errors.push(
             `${slug}/cases/${name}: no ${rel.replace(/\\/g, '/')} — ${why}. ` +
-            `A case decides with one function it ships (SPEC 3.4) and proves ` +
-            `that function discriminates with its own fixtures (D-057).`,
+            `A case decides with one function it ships and proves ` +
+            `that function discriminates with its own fixtures.`,
           );
         }
       }

@@ -79,7 +79,7 @@ ls -la "$RESULTS" | head -20
 #   apptainer run --nv --containall --bind "$RESULTS":/app/results "$IMG"
 #
 # --nv injects the host NVIDIA driver stack. The CUDA runtime still comes from
-# inside the image, which is the point of D-022: the toolchain is the solver's
+# inside the image, which is the point: the toolchain is the solver's
 # choice and the harness carries none of it.
 #
 # MPI: the container's own OpenMPI launches its ranks within this one node,

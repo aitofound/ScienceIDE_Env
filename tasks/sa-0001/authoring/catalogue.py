@@ -6,7 +6,7 @@ This file is the reason sa-0001 can ship hundreds of cases without a hand
 written tolerance for each one. A bound is not typed in per case; it is
 DERIVED here from the mechanisms that this deck's configuration actually puts
 on the state's path, and the warrant is composed from the same mechanisms, so
-the number and its reason cannot drift apart (D-056, D-057).
+the number and its reason cannot drift apart.
 
 Three kinds of constant, and the distinction is the whole point:
 
