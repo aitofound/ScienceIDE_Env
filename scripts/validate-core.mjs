@@ -428,7 +428,15 @@ export function run(config) {
          be hard. Holding it to either gate would force a false claim into
          `owner` or into `oneshot_claude_failure`, which is worse than an
          honest blank. */
-      pkg.beyondDraft = pkg.status !== 'draft' && pkg.status !== 'example';
+      /* `retired` joins `example` here, for the same reason and a sharper one.
+         The status vocabulary is not a single ladder: draft, review and
+         published rank completeness, while `retired` sits off it and claims the
+         package is not being OFFERED. Reading it as "beyond draft" inverts the
+         meaning - it demanded an `owner` from eight packages whose missing
+         owner is a stated reason for retiring them, which would force a false
+         name into the field rather than leave an honest blank. */
+      const OFF_LADDER = new Set(['example', 'retired']);
+      pkg.beyondDraft = pkg.status !== 'draft' && !OFF_LADDER.has(pkg.status);
       if (pkg.beyondDraft) {
         for (const req of config.requiredBeyondDraft ?? []) {
           if (blank(ns[req])) {
@@ -454,8 +462,16 @@ export function run(config) {
          that would paint main red for work nobody is doing and teach everyone
          to ignore the check, which is how a gate becomes decoration. They are
          listed as warnings instead, on every run, so the exempt set is visible
-         and shrinks: the moment anyone edits one, it is held to the rule. */
-      if ((config.requiredOnChange ?? []).length && pkg.status !== 'example') {
+         and shrinks: the moment anyone edits one, it is held to the rule.
+
+         And not for a RETIRED package. The floor detects a task that is
+         saturated on arrival - a claim about a task being offered to solvers,
+         and nobody is asked to solve a retired one. Requiring it here would
+         mean a package can never be retired unless it first meets the bar it
+         is being retired for missing, which makes exactly the underspecified
+         packages permanently unretirable. */
+      const exemptFromFloor = OFF_LADDER;
+      if ((config.requiredOnChange ?? []).length && !exemptFromFloor.has(pkg.status)) {
         const missing = config.requiredOnChange.filter((k) => blank(ns[k]));
         if (missing.length) {
           if (changed !== null && changed.has(slug)) {

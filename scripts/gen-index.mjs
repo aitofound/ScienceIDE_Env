@@ -112,7 +112,12 @@ try {
 } catch {
   /* fine outside a git checkout; the --check path always runs inside one */
 }
-const runnable = rows.filter((r) => r.status && r.status !== 'draft');
+/* Retired is not runnable. The filter used to read `!== 'draft'`, which
+   would have published a retired package into registry.json as a live
+   task the moment anything was retired - the opposite of what retiring
+   it means. */
+const NOT_RUNNABLE = new Set(['draft', 'retired']);
+const runnable = rows.filter((r) => r.status && !NOT_RUNNABLE.has(r.status));
 const registryBody =
   JSON.stringify(
     {
