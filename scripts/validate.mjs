@@ -255,6 +255,10 @@ const result = run({
      migration commit itself satisfies permanence. */
   /* Packages are named after the codebase, not numbered: `pluto`, `laps`.
      A serial number is not a name, and nothing was citing the old ones. */
+  /* Deliberate renames, so the old slug stays resolvable for anything that
+     cited it and an ACCIDENTAL disappearance is still caught. Keep this inline
+     while it is a handful; move it to registry/ if it ever grows. */
+  slugRenames: { 'sa-0001': 'pluto', 'sa-0016': 'laps' },
   dirRe: /^[a-z][a-z0-9-]*$/,
   legacyRe: /^[a-z][a-z0-9-]*\.ya?ml$/,
   dirShape: 'a lowercase codebase name (pluto, laps)',

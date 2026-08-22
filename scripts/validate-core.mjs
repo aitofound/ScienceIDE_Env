@@ -120,6 +120,7 @@ function* walk(abs, rel) {
  *   templateSlug         the placeholder slug TEMPLATE/ must keep, e.g. 'sa-0000'
  *   issueForm            repo-relative path of the idea-tier issue form
  *   dirRe / legacyRe     optional slug-shape overrides; default `<prefix>-NNNN`
+ *   slugRenames          optional { oldSlug: newSlug } declaring deliberate renames
  *   dirShape             optional human name for that shape, used in errors
  *   baselineMapper       optional (name) => slug | null for legacy baseline
  *                        shapes; defaults to <prefix>-NNNN and <prefix>-NNNN.ya?ml
@@ -652,9 +653,12 @@ export function run(config) {
     }
   }
 
-  /* Slug permanence. Both templates call the slug "permanent" — so a PR may
-     not delete or rename a registered directory, which would kill a citable
-     /tasks/<slug> URL and free the slug for reuse. CI sets BASE_REF to
+  /* A registered slug may not just VANISH. Deleting a directory kills a
+     citable /tasks/<slug> URL and frees the slug for reuse, and the common
+     way it happens is by accident. A deliberate rename is a different act and
+     is allowed, but it has to be DECLARED in config.slugRenames so the old
+     name stays resolvable by anyone who cited it — an undeclared disappearance
+     is still an error. CI sets BASE_REF to
      origin/main on pull requests; locally the check runs whenever a baseline
      ref is passed the same way. Retirement is a status, not a deletion. The
      baseline may still be the flat-YAML registry both benches migrated from:
@@ -666,6 +670,7 @@ export function run(config) {
       if (dirRe.test(name)) return name;
       return null;
     });
+    const renames = config.slugRenames ?? {};
     try {
       const baseline = execFileSync(
         'git', ['ls-tree', '--name-only', process.env.BASE_REF, '--', 'tasks/'],
@@ -677,12 +682,17 @@ export function run(config) {
       for (const name of baseline) {
         const oldSlug = mapper(name);
         if (!oldSlug) continue;
-        if (!dirs.includes(oldSlug)) {
-          errors.push(
-            `${oldSlug}: registered in ${process.env.BASE_REF} but missing here — ` +
-            `slugs are permanent; retire a task with status = "retired" instead of deleting or renaming its directory`,
-          );
-        }
+        if (dirs.includes(oldSlug)) continue;
+        const renamedTo = renames[oldSlug];
+        if (renamedTo && dirs.includes(renamedTo)) continue;
+        errors.push(
+          renamedTo
+            ? `${oldSlug}: declared renamed to '${renamedTo}', but tasks/${renamedTo}/ is not here`
+            : `${oldSlug}: registered in ${process.env.BASE_REF} but missing here — ` +
+              `a slug may not just vanish. Retire it with status = "retired", or, if this ` +
+              `is a deliberate rename, declare it in the validator's slugRenames map so the ` +
+              `old name stays resolvable.`,
+        );
       }
     } catch (e) {
       errors.push(`baseline check against '${process.env.BASE_REF}' failed to run — ${e.message}`);
