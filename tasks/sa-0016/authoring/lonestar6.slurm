@@ -10,7 +10,7 @@
 #
 #   # on a machine with docker, targeting LS6's x86_64:
 #   docker buildx build --platform linux/amd64 \
-#          -f cases/aw-128/Dockerfile -t sa-0016-aw-128:amd64 .
+#          -f checks/aw-128/Dockerfile -t sa-0016-aw-128:amd64 .
 #   docker save sa-0016-aw-128:amd64 -o sa-0016-aw-128.tar
 #   scp sa-0016-aw-128.tar ls6:$SCRATCH/images/
 #

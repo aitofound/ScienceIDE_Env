@@ -38,7 +38,7 @@ packages beside it never met. A registry where the exemplar and the stubs sit at
 the same status teaches the wrong thing about where the bar is.
 
 `sa-0001` is retired **at its best state**, with that standard fully applied: every
-tolerance bound to its own case, each with a reason naming that deck's
+tolerance bound to its own check, each with a reason naming that deck's
 configuration, and `rhd-shocktube-1d` rederived to `1e-8` from the `tol=1.e-11`
 in `Src/RHD/rhd_energy_solve.c:41`. None of that work is lost, and it is the
 reference for what a package coming back should look like.
@@ -62,7 +62,7 @@ Set `status` back, once the package has all of:
    is a scientific judgement, not an agent's to invent. An agent may draft the
    package around it; three things must be signed by someone who runs the code —
    the **observable**, the **allowed-variation set**, and the **discrimination
-   case**.
+   check**.
 3. **A measured floor**, obtained by running the incumbent against itself in
    every way a correct implementation is allowed to differ — compiler flags for
    a deterministic code, **the seed** for a stochastic one, the tie-break order

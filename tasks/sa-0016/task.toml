@@ -16,7 +16,7 @@ short_title = "LAPS Hall-MHD to GPU"
 status = "example"
 
 # `example`, not `draft`. This package exists to show contributors the shape of
-# a v2 task - cases/, patches/, a generated rubric, a restart-based initial
+# a v2 task - checks/, patches/, a generated rubric, a restart-based initial
 # condition - and it is NOT a scored benchmark task. Two measurements say so
 # plainly, and both are worth having on the record:
 #
@@ -29,7 +29,7 @@ status = "example"
 #   * The tolerance USED to be provisional, and this bullet used to say so:
 #     "the evidence band has not been measured at this window: nothing has yet
 #     shown that 1e-10 would REJECT a physically broken port." The saboteur run
-#     has now landed, on all eight cases. Both edges are measured:
+#     has now landed, on all eight checks. Both edges are measured:
 #
 #       two correct CPU builds of the same source   1e-17 .. 6e-16
 #       ---- 1e-10 ----
@@ -37,7 +37,7 @@ status = "example"
 #       CFL 0.5 -> 0.499                            4.8e-04
 #       dealiasing disabled                         3.8e-03
 #
-#     Each case carries its own numbers in its rubric, under
+#     Each check carries its own numbers in its rubric, under
 #     criteria[0].evidence.noise_floor and .ceiling, with basis = "measured".
 #
 # The difficulty has to come from cells this same machinery already reaches:
@@ -46,7 +46,7 @@ status = "example"
 # no FP64 at all.
 #
 # Two findings from that run belong at package level, because they are
-# properties of LAPS rather than of any one case:
+# properties of LAPS rather than of any one check:
 #
 #   * Rank count is BITWISE invariant. np = 1, 2 and 4 give byte-identical
 #     output over a 708-step window. A port may decompose the domain however it
@@ -56,10 +56,10 @@ status = "example"
 #     reads uu_prim(:,:,:,4) while mhdinit.f90:132 allocates uu_prim with 1:3,
 #     so output slot 8 is an out-of-bounds read: NaN in one build of the
 #     incumbent and 252.0 in another, on the same deck, with every physical
-#     variable agreeing to 5e-15. The two 2D incompressible cases therefore
+#     variable agreeing to 5e-15. The two 2D incompressible checks therefore
 #     grade seven variables and say so in their rubrics. The 3D file has that
 #     same line commented out (mhdoutput.f90:102), where nvarPrim is a named
-#     constant rather than a literal 3, so the 3D incompressible cases grade
+#     constant rather than a literal 3, so the 3D incompressible checks grade
 #     all eight and slot 8 there reproduces to 3.4e-20. This is upstream's
 #     defect to fix, not ours to paper over, and it is recorded here so nobody
 #     has to rediscover it.

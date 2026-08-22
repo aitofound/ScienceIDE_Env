@@ -36,7 +36,7 @@ they make by eye. Useful moves, roughly in order:
   losing its inertial range.
 - **"What in this output is physics, and what is one particular trajectory?"**
   This is the conserved-quantity-versus-trajectory distinction, and it
-  usually unlocks the chaotic cases.
+  usually unlocks the chaotic checks.
 - **"Your paper reports this to three significant figures. Is a fourth-figure
   difference a bug?"** Published precision is a defensible tolerance floor,
   and it is a number they have already stood behind in print.

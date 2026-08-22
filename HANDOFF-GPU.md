@@ -297,7 +297,7 @@ Amdahl, not a defect, but it means the task cannot reach the registry's
 ×10/×20/×50 record tiers by construction. Whether to keep the scope or widen it
 to the dynamical core (as sa-0001 does for PLUTO, where there is no ceiling) is
 recorded as an open question in `task.toml` notes. **Do not decide it
-unilaterally.** Also: the case runs Morrison double-moment (`mp_physics = 10`),
+unilaterally.** Also: the check runs Morrison double-moment (`mp_physics = 10`),
 deliberately — the shipped Kessler scheme puts microphysics at 0.9 %.
 
 **sa-0001 PLUTO.** The Dockerfile asserts four settings in the generated

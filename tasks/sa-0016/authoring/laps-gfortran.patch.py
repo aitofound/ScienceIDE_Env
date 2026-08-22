@@ -20,10 +20,10 @@ Two other things modern gfortran tightens are handled at the command line
 rather than here, because they are diagnostics rather than invalid code:
 -fallow-argument-mismatch (one generic MPI interface called with REAL(8) in
 one place and INTEGER(4) in another, in src_incompressible/2D) and
--std=legacy. Both are in the case Dockerfiles with the same reasoning.
+-std=legacy. Both are in the check Dockerfiles with the same reasoning.
 
 Applying to a variant that does not need it is a no-op and reports zero sites,
-so all four case families can run the same two patchers unconditionally. It is
+so all four check families can run the same two patchers unconditionally. It is
 deliberately NOT an error to find zero sites: three of the four variants are
 clean, and a patcher that insisted on finding work would fail those builds.
 What IS an error is upstream growing a site this does not match, and that
