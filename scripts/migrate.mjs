@@ -42,7 +42,7 @@ const CONVENTIONAL_KEYS = ['difficulty', 'category', 'tags'];
 
 const manifests = fs
   .readdirSync(DIR, { withFileTypes: true })
-  .filter((e) => e.isDirectory() && /^sa-\d{4}$/.test(e.name))
+  .filter((e) => e.isDirectory() && /^[a-z][a-z0-9-]*$/.test(e.name))
   .map((e) => ({ label: `tasks/${e.name}`, file: path.join(DIR, e.name, 'task.toml'), slug: e.name }))
   .sort((a, b) => a.slug.localeCompare(b.slug));
 manifests.push({ label: 'TEMPLATE', file: path.join(ROOT, 'TEMPLATE', 'task.toml'), slug: null });
