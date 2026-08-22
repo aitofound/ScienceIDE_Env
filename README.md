@@ -97,8 +97,8 @@ could mislead you.
 | **check** | one configuration of it: a deck, a grid size, a physics option. One Dockerfile, run with no arguments |
 | **cell** | one check against one target device. A submission delivers one image per cell |
 
-The directory is called `tasks/` for historical reasons — slugs are permanent —
-but what lives there is a codebase.
+The directory is called `tasks/` for historical reasons, and a slug is the
+codebase's own name — `pluto`, `laps` — but what lives there is a codebase.
 
 So a single codebase yields several checks, and each check can be requested
 against several devices. Contributing **one codebase** is a whole unit of work,
@@ -341,7 +341,7 @@ npm install -g @anthropic-ai/claude-code
 #    the skill clones this registry and takes it from there.
 claude "Read https://aitonomy.org/projects/sci-accel/submit/skill.md and follow it.
         Our code is <url> — the <name> loop is the bottleneck.
-        Follow tasks/sa-0001 as the worked example."
+        Follow tasks/pluto as the worked example."
 ```
 
 Step 0 is written out because it is where people actually stop. The scientist
@@ -371,7 +371,7 @@ Checking a package, yours or an existing one:
 
 ```bash
 npm run check                                                        # the validator
-bash skill/scripts/verify.sh sa-0001  # the ladder
+bash skill/scripts/verify.sh pluto  # the ladder
 ```
 
 ## 6  Contributing

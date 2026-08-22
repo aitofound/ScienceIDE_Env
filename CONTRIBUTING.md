@@ -89,9 +89,10 @@ disagreement is a bug worth an issue.
 ## The package
 
 Copy [`TEMPLATE/`](TEMPLATE/) to `tasks/sa-NNNN/` (next free number — check
-the directory and the open PRs; the directory name is the slug and is
-**permanent**: it becomes the citable URL, and a PR may not rename or delete
-a registered directory — retirement is a status, not a deletion). The
+the directory and the open PRs; the directory name is the slug, and it is the
+codebase's own name — `pluto`, `laps` — not a serial number. Renaming a slug
+after anything cites it breaks that citation, so pick the name once and mean
+it; retirement is a status, not a deletion. The
 template's commentary is the documentation — delete it as you fill in. Leave
 out any key you have no answer for: an absent key is honest, a guessed value
 is not.

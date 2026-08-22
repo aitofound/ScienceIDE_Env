@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The verification ladder for one SciAccel task package.
 #
-#   bash skill/scripts/verify.sh sa-0001
+#   bash skill/scripts/verify.sh pluto
 #
 # Runs as far as this machine allows, stops at the first real failure, and
 # prints a verdict naming the rung actually reached. A rung skipped for a
@@ -14,7 +14,7 @@ set -uo pipefail
 
 SLUG="${1:-}"
 if [ -z "$SLUG" ]; then
-  echo "usage: verify.sh <slug>   e.g. verify.sh sa-0001" >&2
+  echo "usage: verify.sh <slug>   e.g. verify.sh pluto" >&2
   exit 2
 fi
 

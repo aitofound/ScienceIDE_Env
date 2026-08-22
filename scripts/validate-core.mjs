@@ -119,6 +119,9 @@ function* walk(abs, rel) {
  *   canaryLine           the marker substring warned about elsewhere
  *   templateSlug         the placeholder slug TEMPLATE/ must keep, e.g. 'sa-0000'
  *   issueForm            repo-relative path of the idea-tier issue form
+ *   dirRe / legacyRe     optional slug-shape overrides; default `<prefix>-NNNN`
+ *   slugRenames          optional { oldSlug: newSlug } declaring deliberate renames
+ *   dirShape             optional human name for that shape, used in errors
  *   baselineMapper       optional (name) => slug | null for legacy baseline
  *                        shapes; defaults to <prefix>-NNNN and <prefix>-NNNN.ya?ml
  */
@@ -135,8 +138,14 @@ export function run(config) {
      difficulty, category, tags are Harbor's to read, not ours. Anything else
      directly under [metadata] is a science key that missed the namespace. */
   const conventionalKeys = new Set(['difficulty', 'category', 'tags', config.namespace]);
-  const dirRe = new RegExp(`^${config.prefix}-\\d{4}$`);
-  const legacyRe = new RegExp(`^${config.prefix}-\\d{4}\\.ya?ml$`);
+  /* A slug is a directory name. Its SHAPE is a per-bench choice, not a
+     fact about validation: sciaccel-bench names packages after the
+     codebase (`pluto`, `laps`) because a serial number tells a reader
+     nothing, while a bench that prefers `xx-NNNN` keeps it by saying
+     nothing here. The defaults reproduce the previous behaviour exactly. */
+  const dirRe = config.dirRe ?? new RegExp(`^${config.prefix}-\\d{4}$`);
+  const legacyRe = config.legacyRe ?? new RegExp(`^${config.prefix}-\\d{4}\\.ya?ml$`);
+  const dirShape = config.dirShape ?? `${config.prefix}-NNNN`;
   const caps = config.sizeCaps;
 
   /* ------------------------------------------------- the field vocabulary.
@@ -230,14 +239,14 @@ export function run(config) {
         ? ' (the flat-YAML registry was migrated to packages — a task is a directory now)'
         : '';
       errors.push(
-        `${e.name}: tasks/ entries must be directories named ${config.prefix}-NNNN — ` +
+        `${e.name}: tasks/ entries must be directories named ${dirShape} — ` +
         `anything else is invisible to the site${yamlHint}`,
       );
     }
   }
   dirs.sort();
   if (!dirs.length && !errors.length) {
-    errors.push(`tasks/ has no ${config.prefix}-NNNN/ packages`);
+    errors.push(`tasks/ has no ${dirShape}/ packages`);
   }
 
   /* Which packages this change touches, for the merge gate below.
@@ -518,7 +527,7 @@ export function run(config) {
          reviewer-facing file has to say WHOSE, WHERE, and WHAT TO CITE — a task
          that borrows a codebase without crediting it is not one we would merge.
 
-         This codifies what sa-0001..sa-0008 were already doing by hand, rather
+         This codifies what pluto..sa-0008 were already doing by hand, rather
          than inventing a convention: every one of them carries `## References`
          and the repository URL. The check exists so the ninth package cannot
          quietly drop it, which is exactly what happened. */
@@ -644,9 +653,12 @@ export function run(config) {
     }
   }
 
-  /* Slug permanence. Both templates call the slug "permanent" — so a PR may
-     not delete or rename a registered directory, which would kill a citable
-     /tasks/<slug> URL and free the slug for reuse. CI sets BASE_REF to
+  /* A registered slug may not just VANISH. Deleting a directory kills a
+     citable /tasks/<slug> URL and frees the slug for reuse, and the common
+     way it happens is by accident. A deliberate rename is a different act and
+     is allowed, but it has to be DECLARED in config.slugRenames so the old
+     name stays resolvable by anyone who cited it — an undeclared disappearance
+     is still an error. CI sets BASE_REF to
      origin/main on pull requests; locally the check runs whenever a baseline
      ref is passed the same way. Retirement is a status, not a deletion. The
      baseline may still be the flat-YAML registry both benches migrated from:
@@ -658,6 +670,7 @@ export function run(config) {
       if (dirRe.test(name)) return name;
       return null;
     });
+    const renames = config.slugRenames ?? {};
     try {
       const baseline = execFileSync(
         'git', ['ls-tree', '--name-only', process.env.BASE_REF, '--', 'tasks/'],
@@ -669,12 +682,17 @@ export function run(config) {
       for (const name of baseline) {
         const oldSlug = mapper(name);
         if (!oldSlug) continue;
-        if (!dirs.includes(oldSlug)) {
-          errors.push(
-            `${oldSlug}: registered in ${process.env.BASE_REF} but missing here — ` +
-            `slugs are permanent; retire a task with status = "retired" instead of deleting or renaming its directory`,
-          );
-        }
+        if (dirs.includes(oldSlug)) continue;
+        const renamedTo = renames[oldSlug];
+        if (renamedTo && dirs.includes(renamedTo)) continue;
+        errors.push(
+          renamedTo
+            ? `${oldSlug}: declared renamed to '${renamedTo}', but tasks/${renamedTo}/ is not here`
+            : `${oldSlug}: registered in ${process.env.BASE_REF} but missing here — ` +
+              `a slug may not just vanish. Retire it with status = "retired", or, if this ` +
+              `is a deliberate rename, declare it in the validator's slugRenames map so the ` +
+              `old name stays resolvable.`,
+        );
       }
     } catch (e) {
       errors.push(`baseline check against '${process.env.BASE_REF}' failed to run — ${e.message}`);

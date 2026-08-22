@@ -38,7 +38,7 @@ const overlay = overlayDoc && typeof overlayDoc === 'object' ? overlayDoc : {};
 
 const slugs = fs
   .readdirSync(TASKS, { withFileTypes: true })
-  .filter((e) => e.isDirectory() && /^sa-\d{4}$/.test(e.name))
+  .filter((e) => e.isDirectory() && /^[a-z][a-z0-9-]*$/.test(e.name))
   .map((e) => e.name)
   .sort();
 
