@@ -87,7 +87,7 @@ Two keys are fixed, so a file cannot drift away from the check it belongs to:
 
 ```jsonc
 {
-  "codebase": "sa-0001",     // must equal the package slug
+  "codebase": "pluto",     // must equal the package slug
   "check":    "hd-sod-01"    // must equal the directory name
 }
 ```
@@ -108,7 +108,7 @@ answer, and writing one into a rubric answers it for scientists who never asked.
 **State rules, never results.** The rubric is visible to the solver, so anything
 in it is given away, and anything that exists only because someone ran the
 incumbent is part of the answer. Deck parameters may appear — the solver already
-has the deck. Anything a correct port must *derive* may not. `sa-0016` once
+has the deck. Anything a correct port must *derive* may not. `laps` once
 shipped `dt` to seventeen digits two entries above the criterion that checked
 `dt` to 1e-10.
 

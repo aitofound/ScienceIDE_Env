@@ -13,7 +13,7 @@
  * dialects. Measured on 2026-08-12:
  *
  *   "passed"   sa-0002, sa-0004, sa-0005, sa-0008
- *   "pass"     sa-0001, sa-0003, sa-0006, sa-0007
+ *   "pass"     pluto, sa-0003, sa-0006, sa-0007
  *
  * with top levels that differ too: one carries a `speedup` object, another a
  * `timing` dict, a third a `criteria_passed: "4/4"` string, a fourth packs every

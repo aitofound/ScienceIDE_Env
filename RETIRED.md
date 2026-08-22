@@ -7,7 +7,7 @@ the manifest, the layout and the canaries. An archived package that has quietly
 rotted is not archived, it is lost. Restoring one is a `git mv` back plus a
 status edit.
 
-`tasks/` holds **sa-0001 (PLUTO)** and **sa-0016 (LAPS)**.
+`tasks/` holds **pluto (PLUTO)** and **laps (LAPS)**.
 
 ## Why
 
@@ -31,13 +31,13 @@ handles none of them:
 - **non-uniqueness** — many outputs are equally correct
 - **chaos** — deterministic and unique, but ε grows exponentially
 
-`sa-0001`, `sa-0003` and `sa-0007` *are* expressible in the current model. They
+`pluto`, `sa-0003` and `sa-0007` *are* expressible in the current model. They
 are retired for a different reason: none has an owner or a difficulty floor, and
-`sa-0001` in particular is the worked example of a standard that the
+`pluto` in particular is the worked example of a standard that the
 packages beside it never met. A registry where the exemplar and the stubs sit at
 the same status teaches the wrong thing about where the bar is.
 
-`sa-0001` is retired **at its best state**, with that standard fully applied: every
+`pluto` is retired **at its best state**, with that standard fully applied: every
 tolerance bound to its own check, each with a reason naming that deck's
 configuration, and `rhd-shocktube-1d` rederived to `1e-8` from the `tol=1.e-11`
 in `Src/RHD/rhd_energy_solve.c:41`. None of that work is lost, and it is the

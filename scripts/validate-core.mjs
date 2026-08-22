@@ -119,6 +119,8 @@ function* walk(abs, rel) {
  *   canaryLine           the marker substring warned about elsewhere
  *   templateSlug         the placeholder slug TEMPLATE/ must keep, e.g. 'sa-0000'
  *   issueForm            repo-relative path of the idea-tier issue form
+ *   dirRe / legacyRe     optional slug-shape overrides; default `<prefix>-NNNN`
+ *   dirShape             optional human name for that shape, used in errors
  *   baselineMapper       optional (name) => slug | null for legacy baseline
  *                        shapes; defaults to <prefix>-NNNN and <prefix>-NNNN.ya?ml
  */
@@ -135,8 +137,14 @@ export function run(config) {
      difficulty, category, tags are Harbor's to read, not ours. Anything else
      directly under [metadata] is a science key that missed the namespace. */
   const conventionalKeys = new Set(['difficulty', 'category', 'tags', config.namespace]);
-  const dirRe = new RegExp(`^${config.prefix}-\\d{4}$`);
-  const legacyRe = new RegExp(`^${config.prefix}-\\d{4}\\.ya?ml$`);
+  /* A slug is a directory name. Its SHAPE is a per-bench choice, not a
+     fact about validation: sciaccel-bench names packages after the
+     codebase (`pluto`, `laps`) because a serial number tells a reader
+     nothing, while a bench that prefers `xx-NNNN` keeps it by saying
+     nothing here. The defaults reproduce the previous behaviour exactly. */
+  const dirRe = config.dirRe ?? new RegExp(`^${config.prefix}-\\d{4}$`);
+  const legacyRe = config.legacyRe ?? new RegExp(`^${config.prefix}-\\d{4}\\.ya?ml$`);
+  const dirShape = config.dirShape ?? `${config.prefix}-NNNN`;
   const caps = config.sizeCaps;
 
   /* ------------------------------------------------- the field vocabulary.
@@ -230,14 +238,14 @@ export function run(config) {
         ? ' (the flat-YAML registry was migrated to packages — a task is a directory now)'
         : '';
       errors.push(
-        `${e.name}: tasks/ entries must be directories named ${config.prefix}-NNNN — ` +
+        `${e.name}: tasks/ entries must be directories named ${dirShape} — ` +
         `anything else is invisible to the site${yamlHint}`,
       );
     }
   }
   dirs.sort();
   if (!dirs.length && !errors.length) {
-    errors.push(`tasks/ has no ${config.prefix}-NNNN/ packages`);
+    errors.push(`tasks/ has no ${dirShape}/ packages`);
   }
 
   /* Which packages this change touches, for the merge gate below.
@@ -518,7 +526,7 @@ export function run(config) {
          reviewer-facing file has to say WHOSE, WHERE, and WHAT TO CITE — a task
          that borrows a codebase without crediting it is not one we would merge.
 
-         This codifies what sa-0001..sa-0008 were already doing by hand, rather
+         This codifies what pluto..sa-0008 were already doing by hand, rather
          than inventing a convention: every one of them carries `## References`
          and the repository URL. The check exists so the ninth package cannot
          quietly drop it, which is exactly what happened. */
