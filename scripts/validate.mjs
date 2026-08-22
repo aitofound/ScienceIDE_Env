@@ -224,12 +224,12 @@ const result = run({
   /* What may sit at a package root — the Harbor layout plus the housekeeping
      files git conventionally allows. */
   rootFiles: ['task.toml', 'instruction.md', 'README.md', 'LICENSE', '.gitignore', '.gitattributes'],
-  /* `cases` and `patches` are the v2 layout. A case is one configuration of
+  /* `checks` and `patches` are the v2 layout. A check is one configuration of
      the codebase, built as a self-contained image; `patches` holds our diffs
      against a pristine upstream clone, because a package distributes a link
      and a commit rather than someone else's source. `environment`, `tests` and
      `solution` remain for the v1 packages, which are not being rewritten. */
-  rootDirs: ['environment', 'tests', 'solution', 'authoring', 'cases', 'patches'],
+  rootDirs: ['environment', 'tests', 'solution', 'authoring', 'checks', 'patches'],
   /* Text is capped low because a megabyte of prose is data smuggled into a
      manifest; blobs are capped at 50 MB hard because larger data is hosted
      externally and fetched at image build, pinned and checksummed; 10 MB
@@ -281,9 +281,9 @@ for (const pkg of packages) {
      URL is a mistake every time. */
   /* The transcript links are checked by the core now, via linkKeys. */
 
-  /* Every case carries its own pass policy.
+  /* Every check carries its own pass policy.
 
-     Whether a submission passes a case is decided by ONE function the case
+     Whether a submission passes a check is decided by ONE function the check
      ships itself — `validate(reference, candidate) -> dict`, with `passed` as
      the single required key. Before this, the rubric DESCRIBED passing and the
      grader IMPLEMENTED passing, which is two artifacts free to drift; the
@@ -294,7 +294,7 @@ for (const pkg of packages) {
      `fixtures/make.py` is what makes discrimination testable rather than
      merely requested. The validator is visible to the solver — it has to be,
      since whether a mixed-precision path is admissible depends on the bound —
-     and a visible predicate can be targeted. So each case generates trees its
+     and a visible predicate can be targeted. So each check generates trees its
      validator must accept and trees it must reject, and CI runs them:
      scripts/check-validators.py, `npm run check:validators`. This rule is the
      static half — the files exist; that script is the half that runs them.
@@ -302,8 +302,8 @@ for (const pkg of packages) {
      Retired packages are exempt. archive/ holds work that is not being graded,
      and the point of retiring rather than deleting is that a slug stays
      citable, not that it stays current. */
-  if (has('cases') && pkg?.status !== 'retired') {
-    const casesDir = path.join(base, 'cases');
+  if (has('checks') && pkg?.status !== 'retired') {
+    const casesDir = path.join(base, 'checks');
     for (const name of fs.readdirSync(casesDir).sort()) {
       const cdir = path.join(casesDir, name);
       if (!fs.statSync(cdir).isDirectory()) continue;
@@ -314,8 +314,8 @@ for (const pkg of packages) {
       ]) {
         if (!fs.existsSync(path.join(cdir, rel))) {
           errors.push(
-            `${slug}/cases/${name}: no ${rel.replace(/\\/g, '/')} — ${why}. ` +
-            `A case decides with one function it ships and proves ` +
+            `${slug}/checks/${name}: no ${rel.replace(/\\/g, '/')} — ${why}. ` +
+            `A check decides with one function it ships and proves ` +
             `that function discriminates with its own fixtures.`,
           );
         }

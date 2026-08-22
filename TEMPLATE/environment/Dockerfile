@@ -26,7 +26,7 @@
 # toolchain there. So this image needs the legacy code's stack, not the
 # target's:
 #
-#   ubuntu:24.04                           the usual case — Fortran/C/MPI
+#   ubuntu:24.04                           the usual check — Fortran/C/MPI
 #   nvidia/cuda:12.6.2-devel-ubuntu24.04   only when the INCUMBENT is already
 #                                          GPU code (a GPU-source task)
 #

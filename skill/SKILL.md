@@ -179,7 +179,7 @@ then open the PR.
 ### Phase 3 · The environment (L2)
 
 Write `environment/Dockerfile` from the skeleton. `references/dockerfile-recipes.md`
-covers the cases that actually come up: CUDA base images, MPI, Fortran
+covers the checks that actually come up: CUDA base images, MPI, Fortran
 toolchains, autoconf trees that predate the compiler, conda and spack, data
 too large to commit, and build timeouts (Harbor's 600 s default is far too low
 for a scientific build).
@@ -245,13 +245,13 @@ carrying its justification — and extend `check_equivalence.py` where the four
 shipped shapes do not fit. Bake the reference outputs into `tests/Dockerfile`.
 
 **Which tier a sentence belongs in.** `instruction.md` carries what is true of
-the codebase; `rubric.json` carries what is true of the case. The test:
-**does the sentence contain a value that could differ between cases?** If it
+the codebase; `rubric.json` carries what is true of the check. The test:
+**does the sentence contain a value that could differ between checks?** If it
 does, it is a second source for a number that already has one, in a file with
 no way to learn the number moved — delete it and point at the rubric. If it is
 structural ("there are two criteria, a field check and a time base"), it is
 orientation and it stays. Both shipped packages had to be thinned for this:
-one of them named the wrong case as the loosely-graded one, in a sentence that
+one of them named the wrong check as the loosely-graded one, in a sentence that
 was true when it was written.
 
 **Six rules on what a criterion may say**. Every
@@ -299,7 +299,7 @@ is a catalogue that is still growing — it asks you to add to it.
    #### Known floor-lifting mechanisms
 
    Each of these has been found in a real package. Read the list, then look
-   for each one in the path *your case's configuration actually reaches* — a
+   for each one in the path *your check's configuration actually reaches* — a
    constant in a module the deck switches off is not your problem, and
    deciding which is which is exactly the judgement no script can do for you.
 
@@ -308,7 +308,7 @@ is a catalogue that is still growing — it asks you to add to it.
    | **an iterative solver's convergence test** | two builds stop one step apart in one cell; the answer moves by the solver's own tolerance, times whatever the run amplifies it by | the solve's tolerance constant, and the `if` that reads it |
    | **a hard-coded tolerance constant anywhere on the path** | same, but the constant may be nowhere near a solver — a quadrature, a root finder, a table lookup | `grep` (below) |
    | **a scheme-switching flag** | a shock detector or entropy switch changes *which discretisation runs* in that cell, so the gap is truncation level, not roundoff level | `grep` for the flag, then find what it selects |
-   | **a floor fix** (`smallDensity`, pressure clamps) | a branch on a float that fires only in the regime that approaches it — irrelevant to a shock tube, decisive in a strongly cooled or rarefied run | `grep`, then ask whether *this case* gets near it |
+   | **a floor fix** (`smallDensity`, pressure clamps) | a branch on a float that fires only in the regime that approaches it — irrelevant to a shock tube, decisive in a strongly cooled or rarefied run | `grep`, then ask whether *this check* gets near it |
    | **a limiter branch** | usually self-limiting, because the quantity that flips is the one already near zero — but check rather than assume | reading the limiter |
 
    A *fixed* iteration count is safe. Unconditional arithmetic is safe. It is
@@ -329,7 +329,7 @@ is a catalogue that is still growing — it asks you to add to it.
    is the point — a single house tolerance would be wrong at both ends:
 
    ```
-   Cooling/cooling_source.c:56    min_tol = 2.e-5     a cooling case graded at
+   Cooling/cooling_source.c:56    min_tol = 2.e-5     a cooling check graded at
    Cooling/MINEq/jacobian.c:149   eps     = 1.e-4       1e-10 fails every correct port
    States/mp5_states.c:598        eps     = 1.e-6     only if the deck selects MP5
    RHD|RMHD/*_energy_solve.c      acc     = 1.e-11    the c2p Newton iteration
@@ -374,7 +374,7 @@ is a catalogue that is still growing — it asks you to add to it.
    #### The one thing worth measuring
 
    Everything above is reading. What is worth one run is a property of the
-   **codebase**, not of a case: do two legitimately different builds of the
+   **codebase**, not of a check: do two legitimately different builds of the
    incumbent agree over the window? Make the contrast a real one — flipping
    `-ffp-contract` alone on a baseline `-march` produces a byte-identical
    binary, and a check that cannot fail is not a check.
@@ -385,19 +385,19 @@ is a catalogue that is still growing — it asks you to add to it.
    being correct for the graded window and cheap after it. Do not make the
    draw per grading run — the same submission must not score differently twice.
 
-5. **Buy a case's cost with resolution, not with simulated time.** This is
+5. **Buy a check's cost with resolution, not with simulated time.** This is
    what makes rule 4 safe. The whole run has to sit inside the window
    where roundoff has not grown, or a drawn late frame fails a *correct* port.
    Grid size sets what the run costs and does not grow noise; `tstop` grows
-   noise. If a candidate case only gets interesting after an instability
+   noise. If a candidate check only gets interesting after an instability
    develops, it is not a fidelity task.
 
-6. **The case decides, in one function you ship with it**. A rubric
+6. **The check decides, in one function you ship with it**. A rubric
    that *describes* passing while a grader *implements* passing is two
-   artifacts free to drift. So every case carries
+   artifacts free to drift. So every check carries
 
    ```
-   cases/<case>/validate.py ::  validate(reference, candidate) -> dict
+   checks/<check>/validate.py ::  validate(reference, candidate) -> dict
    ```
 
    and that function is the rule. `rubric.json` stays as the warrant — what is
@@ -406,15 +406,15 @@ is a catalogue that is still growing — it asks you to add to it.
    down twice is a number that will drift.
 
    - `reference` and `candidate` are **lists** of output directories: length 1
-     for a deterministic case, length `replications` for a stochastic one. The
+     for a deterministic check, length `replications` for a stochastic one. The
      harness performs the runs; the validator only ever reads bytes, so the
      non-determinism lives in the orchestration and never in the predicate.
    - The dict has **exactly one required key, `passed: bool`.** It is the only
-     thing that means the same across cases, and the benchmark's headline is a
+     thing that means the same across checks, and the benchmark's headline is a
      pass rate over them. Everything else is free-form — a fixed verdict schema
      would need a spec revision the first time a code class wanted a key nobody
      imagined.
-   - **The case never mentions reward.** It reports what happened; scalarising
+   - **The check never mentions reward.** It reports what happened; scalarising
      is the harness's job. Whatever reward is derived must be dominated by
      `passed` — no partial credit may lift a failing submission above a passing
      one. Approximately-right is a race condition at 0.999 correlation.
@@ -425,7 +425,7 @@ is a catalogue that is still growing — it asks you to add to it.
    `outcome` (`no_output` / `wrong_shape` / `time_base` / `diverged` /
    `passed` — for a training loop, *crashed* and *diverged at 3e-7* are
    different situations that a scalar flattens together), and per-frame detail.
-   Copy `tasks/sa-0001/cases/hd-sod-1d/validate.py` and add what your case
+   Copy `tasks/sa-0001/checks/hd-sod-1d/validate.py` and add what your check
    needs. Conventions spread by copying and change by PR.
 
    **The validator is visible to the solver**, so write it to be read: the
@@ -433,12 +433,12 @@ is a catalogue that is still growing — it asks you to add to it.
    rule 3 made you find. Three consequences follow, and they are not optional —
    the validator never imports or executes anything from the candidate
    directory (`sys.path.insert(0, candidate)` anywhere is a one-line escape);
-   the harness grades with the pinned case revision, never the copy in the
+   the harness grades with the pinned check revision, never the copy in the
    submitted tree; and it stays pure — no clock, no network, no environment, no
    RNG. What stops a stored answer is not secrecy but the accelerator gate.
 
    **And because it is visible, it can be targeted — so discrimination is now a
-   test.** Ship `cases/<case>/fixtures/make.py`, which writes a `reference/`
+   test.** Ship `checks/<check>/fixtures/make.py`, which writes a `reference/`
    tree, `accept*/` trees a correct port could plausibly produce and `reject*/`
    trees it could not. `npm run check:validators` runs your validator over them
    in CI and fails the merge if any verdict is wrong. Two fixtures carry the

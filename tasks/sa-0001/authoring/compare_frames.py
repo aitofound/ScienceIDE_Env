@@ -6,10 +6,10 @@
 
 Used by authoring/codebase-check.sh and by the verifier. Reads dbl.out for the
 frame index and the variable names rather than being told them, so it needs no
-per-case configuration and cannot go stale against a deck.
+per-check configuration and cannot go stale against a deck.
 
 THE DENOMINATOR IS THE WHOLE STATE, NOT THE VARIABLE. A variable that
-is zero by symmetry - vx2 and vx3 in every 1D case here - contains nothing but
+is zero by symmetry - vx2 and vx3 in every 1D check here - contains nothing but
 roundoff in a correct run. In hd-sod-1d the incumbent leaves values around
 1e-210 there, denormals from the Riemann solver, and a device that flushes
 denormals to zero would write exact 0. Dividing that difference by the
