@@ -20,7 +20,7 @@
   "notes": [
     "METAL SHADING LANGUAGE HAS NO double TYPE. Verified on this machine: the runtime compiler REJECTS a kernel declaring 'device double*'. There is no slow FP64 to fall back on - there is none at all.",
     "Reaching 1e-10 therefore requires constructing extended precision from fp32: double-single / double-double (Dekker two-sum, Knuth two-product with fma), compensated summation, or an equivalent error-free transformation.",
-    "Double-single gives ~48 mantissa bits against IEEE binary64's 53 - roughly 32x coarser per operation. A CUDA port of this same case measured 2.8e-17 against the reference, so a ~32x coarser port should land near 1e-15, still far inside 1e-10. That is an estimate, not a guarantee.",
+    "Double-single gives ~48 mantissa bits against IEEE binary64's 53 - roughly 32x coarser per operation. A CUDA port of this same check measured 2.8e-17 against the reference, so a ~32x coarser port should land near 1e-15, still far inside 1e-10. That is an estimate, not a guarantee.",
     "There is NO cuFFT equivalent. MetalPerformanceShaders does not provide a general 3D double-precision FFT. You must write the transform yourself.",
     "float2 is 8 bytes, exactly like a double, so double-single costs no extra memory traffic - only ALU.",
     "Unified memory means no explicit host-device transfer is required; use MTLResourceStorageModeShared."
