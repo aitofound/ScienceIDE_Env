@@ -49,7 +49,8 @@ import sys
 import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-REQUIRED_FILES = ('rubric.json', 'validate.py', 'fixtures/make.py')
+REQUIRED_FILES = ('Dockerfile', 'rubric.json', 'validate.py',
+                  'fixtures/make.py')
 
 
 def status_of(pkg):
@@ -62,8 +63,21 @@ def status_of(pkg):
 
 
 def checks(slugs):
-    """-> [(slug, check name, check dir)] over tasks/, skipping retired."""
+    """-> [(slug, check name, check dir)] over tasks/ and TEMPLATE/.
+
+    TEMPLATE/checks/ is included on purpose. The template is how a submitter
+    learns the shape, and a specimen that is only described rots into a
+    description of something that no longer works. Holding it to the same gate
+    as a real check means it cannot: if the example's fixtures stop
+    discriminating, this script goes red on the next push.
+    """
     out = []
+    tpl = os.path.join(ROOT, 'TEMPLATE', 'checks')
+    if os.path.isdir(tpl) and (not slugs or 'TEMPLATE' in slugs):
+        for name in sorted(os.listdir(tpl)):
+            d = os.path.join(tpl, name)
+            if os.path.isdir(d):
+                out.append(('TEMPLATE', name, d))
     tasks = os.path.join(ROOT, 'tasks')
     for slug in sorted(os.listdir(tasks)):
         pkg = os.path.join(tasks, slug)

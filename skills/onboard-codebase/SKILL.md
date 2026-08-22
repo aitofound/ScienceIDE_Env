@@ -219,7 +219,11 @@ operation count is data-dependent, split three ways:
 Every entry cites `file:line` against the pin. See
 `references/determinism-triage.md`.
 
-**B. The authoring skill** — `.claude/skills/author-<codebase>-check/SKILL.md`.
+**B. The authoring skill** — `tasks/<codebase>/authoring/SKILL.md`. It sits
+with the provenance it depends on, travels with the package it serves, and is
+not tied to any one agent runtime — keep it out of a vendor's dot-directory.
+If a runtime needs it discoverable somewhere specific, put a pointer there,
+never the content.
 It must contain, in this order:
 
 1. **Scope** — the unit of one agent's work. Pick the level at which the
