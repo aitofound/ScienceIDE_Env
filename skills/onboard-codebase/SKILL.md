@@ -9,6 +9,16 @@ You are given a scientific codebase and asked to turn it into graded checks.
 This is the pipeline. It ends with a human approving every pass policy, and it
 does not end any earlier.
 
+**Working documents live OUTSIDE the package.** `<workdir>` below is a
+directory of your choosing outside the registry checkout (for example
+`../<codebase>-onboarding/`). It holds the map, the run log, the landscape
+page, the hazard register and the proposals — the working out. None of it is
+committed: a grid package is a closed set (`CONTRIBUTING.md`, "The grid
+package") and CI rejects anything beside the checks, the targets and the
+three root files. What survives into the package is the product of this
+pipeline — checks whose rubrics carry their measured evidence — and what
+survives for the record goes in the pull request, not the tree.
+
 **This skill is codebase-agnostic on purpose.** It never assumes a language, a
 build system, a physics, or a file format. Everything specific to a codebase is
 *produced* by Phase 4 — as its own skill — rather than written here.
@@ -114,7 +124,7 @@ Classify every test you found by **oracle class** — see
 `references/oracle-classes.md`. Classify per test, not per repository; mixed
 codebases are normal.
 
-> **Deliverable** — `tasks/<codebase>/authoring/MAP.md`: the pin, the build
+> **Deliverable** — `<workdir>/MAP.md`: the pin, the build
 > system, the test inventory with one row per test, and each row's oracle class.
 >
 > **Gate** — every test directory in the tree appears in the inventory, and
@@ -154,7 +164,7 @@ which reads like a wonderful result and means nothing. Confirm the two binaries
 differ (`sha256sum`) and that the intended instructions actually changed before
 believing a floor of `0.0`.
 
-> **Deliverable** — `tasks/<codebase>/authoring/RUNS.md`: per test, build/run
+> **Deliverable** — `<workdir>/RUNS.md`: per test, build/run
 > status, wall time, outputs produced, oracle verdict, determinism verdict, and
 > the measured floor with how it was produced.
 >
@@ -180,14 +190,14 @@ explicit list of what is **not** gradeable and why.
 **Serve it on localhost. Do not publish it.**
 
 ```sh
-python3 -m http.server 8000 --directory tasks/<codebase>/authoring/
+python3 -m http.server 8000 --directory <workdir>/
 ```
 
 Then give the human the URL. This is a standing constraint of this repository:
 onboarding pages are internal working documents, they contain unreviewed claims
 about someone else's software, and they are not for an external host.
 
-> **Deliverable** — `tasks/<codebase>/authoring/landscape.html`, served locally.
+> **Deliverable** — `<workdir>/landscape.html`, served locally.
 >
 > **Gate** — the page states, in numbers, how many candidate checks exist and
 > how many are ruled out, and every ruled-out group names its reason.
@@ -206,7 +216,7 @@ but only if the procedure is written down and the work is genuinely disjoint.
 
 Produce two artifacts:
 
-**A. The hazard register** — `tasks/<codebase>/authoring/HAZARDS.md`. Every
+**A. The hazard register** — `<workdir>/HAZARDS.md`. Every
 place in the source that makes a discrete choice by comparing floats, or whose
 operation count is data-dependent, split three ways:
 
@@ -219,7 +229,7 @@ operation count is data-dependent, split three ways:
 Every entry cites `file:line` against the pin. See
 `references/determinism-triage.md`.
 
-**B. The authoring skill** — `tasks/<codebase>/authoring/SKILL.md`. It sits
+**B. The authoring skill** — `<workdir>/SKILL.md`. It sits
 with the provenance it depends on, travels with the package it serves, and is
 not tied to any one agent runtime — keep it out of a vendor's dot-directory.
 If a runtime needs it discoverable somewhere specific, put a pointer there,
@@ -305,7 +315,7 @@ check itself:
 - **DEFER** — the check is not honestly gradeable yet; it stays out of the
   package and the reason is written down
 
-> **Deliverable** — `tasks/<codebase>/authoring/proposals/` and an approval
+> **Deliverable** — `<workdir>/proposals/` and an approval
 > record per check.
 >
 > **Gate** — every shipped check carries an APPROVE line. Any check without one
