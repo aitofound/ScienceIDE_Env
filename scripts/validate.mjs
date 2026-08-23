@@ -228,13 +228,13 @@ const result = run({
   /* What may sit at a package root — the Harbor layout plus the housekeeping
      files git conventionally allows, plus the package's way in.
 
-     `start-episode.sh` is the entrance: it assembles the workspace a solving
-     agent is handed and writes the prompt into it. It is at the root and not
-     under authoring/ because authoring/ is the working out — nothing there is
-     mounted or graded, so a solver's operator has no reason to look in it, and
-     the one command they DO run must not be hiding behind that sign. Optional:
-     the v1 packages are handed out by Harbor and have none. */
-  rootFiles: ['task.toml', 'instruction.md', 'README.md', 'LICENSE', '.gitignore', '.gitattributes', 'start-episode.sh'],
+     `SKILL.md` is the entrance, and it is a document rather than a script on
+     purpose. A coding agent can clone a repository, apply a patch, run make
+     and read a JSON file; what it cannot do is guess which files matter. So
+     the entrance tells it what to do and where to look, and nothing runs on
+     its behalf. Optional: the v1 packages are handed out by Harbor and have
+     none. */
+  rootFiles: ['task.toml', 'instruction.md', 'README.md', 'SKILL.md', 'LICENSE', '.gitignore', '.gitattributes'],
   /* `checks` and `patches` are the v2 layout. A check is one configuration of
      the codebase, built as a self-contained image; `patches` holds our diffs
      against a pristine upstream clone, because a package distributes a link
