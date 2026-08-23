@@ -289,14 +289,52 @@ export function run(config) {
     /* Structure: nothing unexpected at the package root. A Dockerfile at the
        root, a stray script, a data file — all of these belong inside one of
        the allowed directories, and anything unlisted here would be invisible
-       to the runtime by construction. */
+       to the runtime by construction.
+
+       A package with targets/ is the GRID model and gets the closed set:
+       exactly three files and two directories. The list being closed is the
+       point — the spec is enforced here, not negotiated per pull request. */
+    const isGrid = fs.existsSync(path.join(base, 'targets'));
+    const rootFiles = isGrid && config.gridRootFiles ? config.gridRootFiles : config.rootFiles;
+    const rootDirs = isGrid && config.gridRootDirs ? config.gridRootDirs : config.rootDirs;
     for (const e of fs.readdirSync(base, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
-      const ok = e.isDirectory() ? config.rootDirs.includes(e.name) : (e.isFile() && config.rootFiles.includes(e.name));
+      const ok = e.isDirectory() ? rootDirs.includes(e.name) : (e.isFile() && rootFiles.includes(e.name));
       if (!ok) {
         errors.push(
-          `${slug}/${e.name}: unexpected at the package root — allowed files: ` +
-          `${config.rootFiles.join(', ')}; allowed directories: ${config.rootDirs.join(', ')}`,
+          `${slug}/${e.name}: unexpected at the ${isGrid ? 'grid-package' : 'package'} root — allowed files: ` +
+          `${rootFiles.join(', ')}; allowed directories: ${rootDirs.join(', ')}`,
         );
+      }
+    }
+
+    /* One machine, one file. Every entry under targets/ — commented-out
+       (`_`-prefixed) ones included, because a commented-out target that has
+       rotted is not commented out, it is lost — is a directory holding
+       exactly target.json, which parses and carries `runner` and `host`. */
+    if (isGrid) {
+      const tdir = path.join(base, 'targets');
+      for (const e of fs.readdirSync(tdir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+        if (!e.isDirectory()) {
+          errors.push(`${slug}/targets/${e.name}: not a directory — a target is targets/<id>/target.json`);
+          continue;
+        }
+        const entries = fs.readdirSync(path.join(tdir, e.name)).sort();
+        for (const f of entries.filter((f) => f !== 'target.json')) {
+          errors.push(`${slug}/targets/${e.name}/${f}: one machine is ONE file — everything about a target, its host included, lives inside target.json`);
+        }
+        const tj = path.join(tdir, e.name, 'target.json');
+        if (!fs.existsSync(tj)) {
+          errors.push(`${slug}/targets/${e.name}: no target.json`);
+          continue;
+        }
+        let t;
+        try { t = JSON.parse(fs.readFileSync(tj, 'utf8')); } catch (err) {
+          errors.push(`${slug}/targets/${e.name}/target.json: does not parse — ${err.message}`);
+          continue;
+        }
+        for (const k of ['runner', 'host']) {
+          if (!(k in t)) errors.push(`${slug}/targets/${e.name}/target.json: no \`${k}\` — the runner says what the deliverable is, and the host is where the reference is produced in situ`);
+        }
       }
     }
 
