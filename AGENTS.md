@@ -10,7 +10,7 @@ are the older Harbor form.
 
 ## If you are being asked to package or submit a task
 
-**Read [`skill/SKILL.md`](skill/SKILL.md)
+**Read [`skills/package-sciaccel-task/SKILL.md`](skills/package-sciaccel-task/SKILL.md)
 and follow it exactly.** It is the guided path from a repository and a rough
 idea to a merged pull request: six phases, four reference documents read on
 demand, and a verification ladder. Its `references/` directory has the detail
@@ -79,7 +79,7 @@ that teaches a shape asserts nothing.
 npm install                                                          # fresh clones have no node_modules
 npm run check                                                        # the validator — the authority
 node scripts/gen-index.mjs                                           # registry/ is generated; regenerate after any package edit
-bash skill/scripts/verify.sh <slug>    # the full ladder, as far as this machine goes
+bash skills/package-sciaccel-task/scripts/verify.sh <slug>    # the full ladder, as far as this machine goes
 ```
 
 `verify.sh` reports the rung it actually reached. **Never describe a rung it

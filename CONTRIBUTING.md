@@ -75,7 +75,7 @@ This document is the specification, and reading it end to end is never wrong.
 But packaging a twenty-year-old MHD code into a container that builds on
 someone else's machine is engineering, and we said on the project page that it
 is engineering we do with you rather than homework we leave you. The
-[`package-sciaccel-task`](skill/) skill is the
+[`package-sciaccel-task`](skills/package-sciaccel-task/) skill is the
 first half of that promise, automated: from a checkout of this repository, an
 agent that loads it will read the target codebase, put the questions only you
 can answer to you, fill `TEMPLATE/` into `tasks/sa-NNNN/`, and run the

@@ -33,7 +33,7 @@ container — the solver never sees it.
 
 **A guided path through all of this exists.** From a checkout of this
 repository, an agent with the `package-sciaccel-task` skill
-(`skill/`) will read the target codebase, ask
+(`skills/package-sciaccel-task/`) will read the target codebase, ask
 you the questions only you can answer, fill this template, and run the
 verification ladder as far as your machine allows. It does not replace this
 document — it walks it.
