@@ -316,7 +316,7 @@ def validate(reference, candidate):
         if e > worst:
             worst, worst_at, worst_var = e, na, names[int(np.argmax(errs))]
         v['frames_ok'] += int(e <= tol)
-        v['detail'].append({'frame': na, 'rel_l2': e, 'ok': e <= tol})
+        v['detail'].append({'frame': na, 'max_abs': e, 'ok': e <= tol})
 
     if v['frames_scored'] == 0:
         v['outcome'] = 'no_output'
