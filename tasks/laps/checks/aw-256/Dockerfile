@@ -4,7 +4,18 @@
 #
 # Build context is the PACKAGE root (tasks/laps), not this directory:
 #   docker build -f checks/aw-256/Dockerfile -t sciaccel/laps-aw-256 .
-FROM debian:bookworm-slim
+#
+# PINNED BY DIGEST, not by tag. `debian:bookworm-slim` is a moving target: the
+# tag is repointed on every point release, so an image built from it in six
+# months is built against a different libc and a different gfortran than the
+# one that produced the reference these checks are graded against. The digest
+# is content-addressed, so it either yields exactly this base or fails loudly.
+#
+# This is the OCI image INDEX digest, not a per-architecture manifest digest,
+# so it resolves correctly on amd64 and arm64 alike - verified on both. It is
+# the same digest TEMPLATE/checks/example-check pins, deliberately: one base
+# for the registry means one thing to re-pin when it is time to move.
+FROM debian:bookworm-slim@sha256:1caf1c703c8f7e15dcf2e7769b35000c764e6f50e4d7401c355fb0248f3ddfdb
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates git make gfortran python3 \
