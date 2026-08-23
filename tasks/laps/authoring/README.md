@@ -245,15 +245,19 @@ is exactly the comparison the registry exists to make.
 
 ## Running an episode
 
-    bash authoring/make-workspace.sh <episode-dir> <out-dir> [--build]
+    bash tasks/laps/start-episode.sh <episode-dir> <out-dir> [--build]
 
 An episode is handed to a coding agent as a directory, not as a repository.
 This is the only supported way to produce one, so "what the solver saw" is
 reproducible from a commit and an episode id rather than from somebody's memory
 of which files they copied.
 
-    bash authoring/make-workspace.sh authoring/episodes/dual-4070-m1ultra \
-         ~/laps-ws --build
+The script sits at the package root, not in here, because it is the one thing
+in the package a *solver's* operator runs — everything in `authoring/` is the
+working out and is never mounted anywhere.
+
+    bash tasks/laps/start-episode.sh \
+         tasks/laps/authoring/episodes/dual-4070-m1ultra ~/laps-ws --build
 
     ~/laps-ws/app/PROMPT.md            instruction.md + the episode block,
                                        headed by where /app and /opt/LAPS are
@@ -300,8 +304,8 @@ target** — it is the CPU incumbent, so it needs a container runtime and nothin
 else. The M1 Ultra has one (colima); what it cannot containerise is the
 submission's Metal product. So:
 
-    on the 4070 box   make-workspace, then grade the linux-docker cell
-    on the M1 Ultra   make-workspace again from the same commit, then grade
+    on the 4070 box   start-episode, then grade the linux-docker cell
+    on the M1 Ultra   start-episode again from the same commit, then grade
                       the macos-native cell
 
 `scripts/grade-cell.sh` is the worked example of the first, and reports the
