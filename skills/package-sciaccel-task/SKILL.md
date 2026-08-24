@@ -70,7 +70,10 @@ checks/<check>/
   rubric.json       what is compared, to what bound, and the measurement
                     that justifies the bound
   validate.py       validate(reference, candidate) -> dict with `passed`;
-                    reads every bound from rubric.json, none from its body
+                    reads every bound from rubric.json, none from its body.
+                    A byte-identical candidate passes WITH a warning:
+                    identity is what the self-check produces by construction,
+                    and what no real port of floating-point code does
   fixtures/make.py  accept/reject trees CI grades the validator against
 ```
 
@@ -151,7 +154,8 @@ Traps already paid for — lessons, not rules:
    docker build -t ref checks/<check>
    docker run --name a --network=none ref && docker cp a:/app/results /tmp/A && docker rm a
    docker run --name b --network=none ref && docker cp b:/app/results /tmp/B && docker rm b
-   python3 checks/<check>/validate.py /tmp/A /tmp/B      # must pass
+   python3 checks/<check>/validate.py /tmp/A /tmp/B      # must pass — expect
+                                             # the byte-identity warning
    npm run check:validators                              # every fixture grades as declared
    ```
 
