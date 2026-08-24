@@ -78,9 +78,10 @@ is engineering we do with you rather than homework we leave you. The
 [`package-sciaccel-task`](skills/package-sciaccel-task/) skill is the
 first half of that promise, automated: from a checkout of this repository, an
 agent that loads it will read the target codebase, put the questions only you
-can answer to you, fill `TEMPLATE/` into `tasks/sa-NNNN/`, and run the
-verification ladder as far as your machine allows — reporting honestly where
-it stopped rather than claiming a rung it did not reach.
+can answer to you, write `tasks/<codebase>/` in the shape of `tasks/laps`, and
+close each check with its own build-run-twice-validate loop as far as your
+machine allows — reporting honestly what ran rather than claiming a step it
+did not reach.
 
 It navigates this document; it does not replace or reinterpret it. Where the
 skill and `scripts/validate.mjs` disagree, the validator is right, and the
