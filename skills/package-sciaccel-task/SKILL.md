@@ -70,7 +70,10 @@ checks/<check>/
   rubric.json       what is compared, to what bound, and the measurement
                     that justifies the bound
   validate.py       validate(reference, candidate) -> dict with `passed`;
-                    reads every bound from rubric.json, none from its body
+                    reads every bound from rubric.json, none from its body.
+                    A byte-identical candidate passes WITH a warning:
+                    identity is what the self-check produces by construction,
+                    and what no real port of floating-point code does
   fixtures/make.py  accept/reject trees CI grades the validator against
 ```
 
@@ -81,6 +84,14 @@ patch carry two copies. Duplication is the design; the thing that keeps
 copies honest is that each check must reproduce itself and validate itself,
 not that they share a source. Whatever generated the checks stays out of
 the tree.
+
+And a check directory is not yet a check. **Every check must validate
+against itself before it is a check at all**: built, run twice, the two
+result trees handed to its own `validate.py`, and the verdict a pass —
+carrying the byte-identity warning. An image that cannot reproduce its own
+output is not producing a reference, and every bound measured against it is
+measuring the wrong thing. CI never runs this loop; the author runs it
+(step 4 below) and records the result in the package.
 
 The check contract in full — the output contract, what `validate.py` must
 return, what the fixtures must prove, and what CI runs — is
@@ -151,7 +162,8 @@ Traps already paid for — lessons, not rules:
    docker build -t ref checks/<check>
    docker run --name a --network=none ref && docker cp a:/app/results /tmp/A && docker rm a
    docker run --name b --network=none ref && docker cp b:/app/results /tmp/B && docker rm b
-   python3 checks/<check>/validate.py /tmp/A /tmp/B      # must pass
+   python3 checks/<check>/validate.py /tmp/A /tmp/B      # must pass — expect
+                                             # the byte-identity warning
    npm run check:validators                              # every fixture grades as declared
    ```
 
