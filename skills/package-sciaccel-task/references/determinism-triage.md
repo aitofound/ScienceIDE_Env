@@ -1,10 +1,12 @@
 # Determinism triage
 
-Phases 2 and 4. The question is not "is this code correct" — assume it is. The
+Read this when the incumbent will not reproduce itself, or before measuring
+any floor. The question is not "is this code correct" — assume it is. The
 question is: **if someone reimplements this faithfully on different hardware,
 how far apart can the two answers legitimately be?**
 
-That distance is the **floor**. It sets the bound, and the bound is the check.
+That distance is the **floor**. Whatever shape the check's pass policy takes,
+no bound below its floor is reachable — a correct port would fail it.
 
 ---
 
@@ -40,8 +42,8 @@ tie-break in a sort. Two correct builds then do genuinely different amounts of
 work, and an elementwise difference between their outputs measures nothing.
 
 DEFER does not mean "ungradeable". It means **this observable is wrong for this
-configuration.** The repair is a different observable — see
-`pass-policy-shapes.md` — not a looser tolerance.
+configuration.** The repair is a different observable — an invariant, a
+statistic, a spectrum — not a looser tolerance.
 
 ---
 
@@ -76,14 +78,6 @@ threshold, panics, and demotes a clean check.
 **NOT LIVE** — inside an `#if` that is off by default, inside a comment, in a
 file no build includes. Name these explicitly, with the reason. A register that
 lists only live hazards gets re-derived from scratch every time.
-
-### The register is read-only during fan-out
-
-Twenty agents appending to one file collide. The rule: agents **read** the
-register and report new findings in their own note under a `## New hazards`
-heading; a human merges them in serially. Say this in the generated skill.
-
----
 
 ## Reachability is not the same as existence
 

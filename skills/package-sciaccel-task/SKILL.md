@@ -151,7 +151,6 @@ Traps already paid for — lessons, not rules:
 
    Pin the arithmetic, not just the versions (`-ffp-contract=off` or the
    compiler's equivalent — FMA is baseline on arm64 and not on x86-64).
-   `references/dockerfile-recipes.md` covers legacy builds.
 5. **Justify every bound** and write the evidence into the rubric.
    A check with an asserted tolerance does not ship.
 6. **Targets.** The device owner writes `target.json` from the machine —
@@ -196,7 +195,5 @@ hardware; say in the PR what is ready for it.
 - `TEMPLATE/checks/CONTRACT.md` — the check contract, in full.
 - `tasks/laps/` — the worked example: four checks, three targets, rubrics
   whose evidence blocks show one way to justify a bound.
-- `references/dockerfile-recipes.md` — containerising legacy scientific
-  builds: MPI, Fortran, autoconf, conda, large data.
 - `references/determinism-triage.md` — when the incumbent will not
-  reproduce itself.
+  reproduce itself, and before measuring any floor.
