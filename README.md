@@ -130,19 +130,22 @@ claude "Read https://aitonomy.org/projects/sci-accel/submit/skill.md and follow 
 
 The [`package-sciaccel-task`](skills/package-sciaccel-task/) skill reads the
 repository, asks the questions only you can answer, writes the package, and
-runs the verification ladder as far as your machine allows, ending at a pull
-request. **Docker and a GPU are both optional** — the skill reports the rung
-it reached and does not claim one it did not. Codex, Cursor, Amp and Gemini
-CLI read [`AGENTS.md`](AGENTS.md), which points at the same file; nothing
-requires an agent at all — `CONTRIBUTING.md` is the specification and
-`tasks/laps` is the worked example.
+closes each check with its build-run-twice-validate loop as far as your
+machine allows, ending at a pull request. **Docker and a GPU are both
+optional** — the skill reports what ran and does not claim a step it did
+not. Codex, Cursor, Amp and Gemini CLI read [`AGENTS.md`](AGENTS.md), which
+points at the same file; nothing requires an agent at all — `CONTRIBUTING.md`
+is the specification and `tasks/laps` is the worked example.
 
 Checking a package, yours or an existing one:
 
 ```bash
 npm run check                                        # the validator
-bash skills/package-sciaccel-task/scripts/verify.sh <slug>   # the ladder
+npm run check:validators                             # every check's fixtures through its validate.py
 ```
+
+Then build each check, run it twice, and hand the two results to its own
+`validate.py` — the loop is spelled out in the skill.
 
 ### If you are here to solve one, not to write one
 
