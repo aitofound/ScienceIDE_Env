@@ -487,12 +487,6 @@ The registry files (`registry/index.yaml`, `registry.json`) are generated
 projections of the packages — never hand-edited, and CI fails a pull request
 whose registry is stale, so re-run the generator after every package edit.
 
-The execution tier (`validate-exec`) runs on a maintainer's `/validate`
-comment or manual dispatch: real docker builds of `environment/` and
-`tests/`. Honesty about its current reach: oracle and nop harness runs are
-printed, not run, until the harness is wired in, and GPU tasks build on
-maintainer hardware.
-
 ## Stage three — the pull request
 
 The PR template carries the submitter declaration and the reviewer
