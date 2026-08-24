@@ -85,6 +85,14 @@ copies honest is that each check must reproduce itself and validate itself,
 not that they share a source. Whatever generated the checks stays out of
 the tree.
 
+And a check directory is not yet a check. **Every check must validate
+against itself before it is a check at all**: built, run twice, the two
+result trees handed to its own `validate.py`, and the verdict a pass —
+carrying the byte-identity warning. An image that cannot reproduce its own
+output is not producing a reference, and every bound measured against it is
+measuring the wrong thing. CI never runs this loop; the author runs it
+(step 4 below) and records the result in the package.
+
 The check contract in full — the output contract, what `validate.py` must
 return, what the fixtures must prove, and what CI runs — is
 `TEMPLATE/checks/CONTRACT.md`. Read it once.
