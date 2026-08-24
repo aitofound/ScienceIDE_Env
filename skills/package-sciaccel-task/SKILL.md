@@ -180,9 +180,9 @@ failure this skill exists to prevent.
 ## Grading, in one paragraph
 
 A submission is one directory per cell: a `product/` that runs the port on
-that target (a Dockerfile for `linux-docker`, build + run scripts and a
-manifest for `macos-native`) and a `skill/` telling the grading agent how to
-build, run and grade it. The grader builds the product, runs it with the
+that target — containerised where the device can live in a container, run
+scripts only where it cannot — and a `skill/` telling the grading agent how
+to build, run and grade it. The grader builds the product, runs it with the
 device granted and the network off, builds the check image on the same host
 and runs it — that is the reference, produced in situ and deleted with the
 verdict — and hands both trees to the check's `validate.py`, which alone
