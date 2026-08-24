@@ -140,8 +140,8 @@ own `validate.py`:
     validate(reference, candidate)    MUST return passed = true
 ```
 
-`authoring/verify-images.sh` in this template does exactly that, for every
-check in a package, and it is meant to be copied.
+`scripts/verify-images.sh <package-dir>` does exactly that, for every check
+in a package.
 
 This is the weakest claim a check can make, and **everything stronger depends
 on it**. An image that cannot reproduce its own output is not producing a
@@ -310,7 +310,7 @@ This is where a check is actually held to account.
 
 ### What CI does *not* run: the self-validation gate
 
-`authoring/verify-images.sh` is **not** run by CI, and you should not read a
+`scripts/verify-images.sh` is **not** run by CI, and you should not read a
 green build as evidence that a check image works. CI never builds a check
 image. It cannot afford to: a real check builds a scientific code from source
 and then runs it twice, which is minutes and gigabytes for a large grid — a
@@ -321,9 +321,8 @@ So this one is on the author, before review:
 - run it on every check you touched
 - **record the result in the package's own notes** — the checks, the host, the
   architecture, and the verdict. A gate whose result lives only in someone's
-  terminal is a gate nobody can audit. `tasks/laps/README.md` under *Verifying
-  the images* is the shape to copy.
-- a reviewer is entitled to ask for that table and to refuse a check without
+  terminal is a gate nobody can audit.
+- a reviewer is entitled to ask for that record and to refuse a check without
   one
 
 The fixture gate above and this gate cover different halves and neither

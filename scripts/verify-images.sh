@@ -3,7 +3,7 @@
 #
 # THE MINIMAL BAR. Put each check image on both sides of its own loop.
 #
-#     bash authoring/verify-images.sh [check ...]      # default: all of them
+#     bash scripts/verify-images.sh <package-dir> [check ...]   # default: all checks
 #
 # For each check: build the image, run it TWICE with no arguments and no
 # mounts, and hand the two output directories to that check's own validate.py.
@@ -39,18 +39,19 @@
 # the same -O3, and the second architecture is where you find out.
 #
 # ---------------------------------------------------------------------------
-# COPY THIS FILE. It is codebase-agnostic: the results directory is read from
-# each check's rubric.json (output.workdir), so the only thing your package has
-# to do is declare where its checks write. Nothing below knows what the
-# codebase computes.
+# Codebase-agnostic, and maintained here rather than copied into packages: the
+# results directory is read from each check's rubric.json (output.workdir), so
+# the only thing a package supplies is a declaration it already owes. Nothing
+# below knows what the codebase computes.
 #
 # Budget disk before running it on a large check. Two runs of a check that
 # writes gigabytes per frame will write twice that; trees are removed as each
 # check finishes, but the peak is real.
 set -uo pipefail
 
-PKG="$(cd "$(dirname "$0")/.." && pwd)"
-SLUG="$(basename "$PKG")"
+PKG="$(cd "${1:?usage: verify-images.sh <package-dir> [check ...]}" && pwd)"
+shift
+SLUG="$(basename "$PKG" | tr 'A-Z' 'a-z')"   # docker tags must be lowercase
 WORK="${WORK:-$(mktemp -d)}"
 
 CHECKS=("$@")
@@ -89,8 +90,10 @@ for c in "${CHECKS[@]}"; do
   docker rm -f "verify-${c}-a" "verify-${c}-b" >/dev/null 2>&1
 
   t0=$(date +%s)
-  # Build context is the PACKAGE root, so patches/ and config are reachable.
-  if ! docker build -q -f "$PKG/checks/$c/Dockerfile" -t "$img" "$PKG" \
+  # The build context is the check directory itself - a check is
+  # self-contained, and building it any other way proves nothing about how
+  # the grader builds it (scripts/grade-cell.sh does exactly this).
+  if ! docker build -q -t "$img" "$PKG/checks/$c" \
        > "$out/build.log" 2>&1; then
     printf '%-22s %8s %8s %10s  BUILD FAILED\n' "$c" - - -
     tail -8 "$out/build.log"; fail=1; continue
