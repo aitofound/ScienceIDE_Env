@@ -78,7 +78,7 @@ SHA and patches, never someone else's source), not helper scripts, not
 reference output. Adding a device is one file; the grid grows by one column
 and no prose changes.
 
-The archived packages and `TEMPLATE/` are the older v1
+The archived packages are the older v1
 [Harbor](https://www.harborframework.com/) two-container layout. They are
 records, not the model.
 
