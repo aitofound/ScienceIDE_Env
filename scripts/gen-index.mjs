@@ -7,8 +7,8 @@
  *
  * registry/index.yaml is the render surface: one row per task carrying
  * everything the site needs — the whole [metadata.sciaccel] namespace, the
- * [task] description, the [environment] resource ask, the instruction, the
- * package's completeness and computed tier, and the operator overlay
+ * [task] description, the instruction, the package's grid shape (checks,
+ * targets, and the cells they multiply to), and the operator overlay
  * (registry/records.yaml: record, solve_rate) — so the site fetches ONE file
  * for the list and the chart, and nothing else for a detail page. Generated,
  * never hand-edited: the packages are the truth, this file is their
@@ -45,38 +45,29 @@ const slugs = fs
 const rows = [];
 for (const slug of slugs) {
   const dir = path.join(TASKS, slug);
-  const toml = parseTOML(fs.readFileSync(path.join(dir, 'task.toml'), 'utf8'));
+  const tomlPath = path.join(dir, 'task.toml');
+  /* A directory with no manifest is not yet a task - a placeholder
+     mid-rebuild projects as nothing rather than crashing the generator. */
+  if (!fs.existsSync(tomlPath)) continue;
+  const toml = parseTOML(fs.readFileSync(tomlPath, 'utf8'));
   const ns = toml.metadata?.sciaccel ?? {};
   const authors = (toml.task?.authors ?? []).map((a) => a.name).filter(Boolean);
-  const has = (...p) => fs.existsSync(path.join(dir, ...p));
 
   const instructionPath = path.join(dir, 'instruction.md');
   const instruction = fs.existsSync(instructionPath)
     ? fs.readFileSync(instructionPath, 'utf8').replace(/^<!--.*?-->\s*/s, '').trim()
     : null;
 
-  /* Completeness is read off the tree, not off the status claim: which of
-     the package's parts actually exist. `environment` means something can
-     build (a Dockerfile, a compose file, or a pinned image); `data` means
-     public inputs are committed under environment/data/ — inputs fetched at
-     image build are invisible to this bit, honestly so. The tier is the
-     ladder the files support, which the site can show beside the claimed
-     status; the validator separately enforces that the claim never exceeds
-     the files. */
-  const completeness = {
-    instruction: has('instruction.md'),
-    environment:
-      has('environment', 'Dockerfile') ||
-      has('environment', 'docker-compose.yaml') ||
-      !blank(toml.environment?.docker_image),
-    tests: has('tests', 'Dockerfile') && has('tests', 'test.sh'),
-    solution: has('solution', 'solve.sh'),
-    data: has('environment', 'data'),
-  };
-  const tier =
-    completeness.environment && completeness.tests && completeness.solution ? 'L3'
-      : completeness.environment ? 'L2'
-        : 'L1';
+  /* The grid, read off the tree rather than off the status claim: how many
+     checks, how many live targets, and the cells they multiply to. This
+     replaces the v1 completeness/tier projection, which read directories
+     (environment/, tests/, solution/) no grid package has - under it every
+     grid package rendered as L1 with nothing built. */
+  const dirsIn = (d, keep = () => true) => (fs.existsSync(d)
+    ? fs.readdirSync(d, { withFileTypes: true }).filter((e) => e.isDirectory() && keep(e.name)).length
+    : 0);
+  const nChecks = dirsIn(path.join(dir, 'checks'));
+  const nTargets = dirsIn(path.join(dir, 'targets'), (n) => !n.startsWith('_'));
 
   /* The namespace spreads last of the package's own fields, so ns.slug and
      ns.title land under their own names (the validator holds ns.slug equal
@@ -89,9 +80,9 @@ for (const slug of slugs) {
     description: toml.task?.description ?? null,
     owner_name: authors[0] ?? null,
     instruction,
-    environment: toml.environment ?? null,
-    completeness,
-    tier,
+    checks: nChecks,
+    targets: nTargets,
+    cells: nChecks * nTargets,
     ...ns,
     references: ns.references ?? [],
     ...(overlay[slug] ?? {}),
