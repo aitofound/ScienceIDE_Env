@@ -79,8 +79,8 @@ reference output. Adding a device is one file; the grid grows by one column
 and no prose changes.
 
 The archived packages and `TEMPLATE/` are the older v1
-[Harbor](https://www.harborframework.com/) two-container layout, run with
-`scripts/run-task.sh`. They are records, not the model.
+[Harbor](https://www.harborframework.com/) two-container layout. They are
+records, not the model.
 
 ## Correctness, then speed
 
@@ -180,7 +180,6 @@ configuration; and are the named exploits caught.
 | workflow | runs on | what it does | required |
 |---|---|---|---|
 | `validate / validate` | every pull request; pushes to `main` | the static shape rules, via `scripts/validate.mjs` | yes |
-| `validate-exec` | a `/validate` PR comment from a maintainer, or manual dispatch | real docker builds; GPU tasks on maintainer hardware | no |
 | `label`, `label-fields` | PRs touching `tasks/`; issues opened | labels | no |
 
 A green check means the package is well-formed — the closed layout, the

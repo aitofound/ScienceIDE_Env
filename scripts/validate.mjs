@@ -490,8 +490,7 @@ for (const pkg of packages) {
 
      A warning rather than an error, and static rather than structural: this
      reads the grader's source for the key it writes, which a sufficiently
-     indirect grader will hide from it. scripts/check-report.mjs checks the
-     produced file, which is the authority. This is the early nudge. */
+     indirect grader will hide from it. This is the early nudge. */
   if (has('tests', 'check_equivalence.py')) {
     const graderPath = path.join(base, 'tests', 'check_equivalence.py');
     const grader = fs.readFileSync(graderPath, 'utf8');
