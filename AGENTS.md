@@ -79,10 +79,12 @@ that teaches a shape asserts nothing.
 npm install                                                          # fresh clones have no node_modules
 npm run check                                                        # the validator — the authority
 node scripts/gen-index.mjs                                           # registry/ is generated; regenerate after any package edit
-bash skills/package-sciaccel-task/scripts/verify.sh <slug>    # the full ladder, as far as this machine goes
+npm run check:validators                                             # every check's fixtures through its own validate.py
 ```
 
-`verify.sh` reports the rung it actually reached. **Never describe a rung it
-skipped as passing** — "builds locally, oracle not run, no GPU on this machine"
-is a useful report; "verified" when the oracle never ran is the failure this
-whole apparatus exists to prevent.
+Then, for every check, the self-reproduction loop the skill states: build the
+check image, run it twice, hand the two trees to its own `validate.py`. There
+is no script for this on purpose. **Never describe a step you skipped as
+passing** — "builds and reproduces locally, no GPU on this machine" is a
+useful report; "verified" when the loop never ran is the failure this whole
+apparatus exists to prevent.
