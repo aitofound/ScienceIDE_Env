@@ -92,7 +92,7 @@
         "tolerance_abs": 1e-10
       },
       "precision": "The floor on this deck is roundoff and the bound sits at it with headroom; a state kept in single precision lands near 1e-7 absolute and fails every frame - as a consequence of the bound, not as a precision rule. Nothing in this check tests precision directly.",
-      "justification": "This deck advects a weak magnetic field loop, B0=1e-3, through a uniform flow v0=sqrt(5) on a doubly periodic box where density, pressure and velocity stay near uniform and essentially all the interesting physics lives in the CT-carried field, Bx1, Bx2, Bx1s and Bx2s. A pointwise absolute bound is right because that field is small and smoothly varying, so a wrong flux, a dropped CT term or a cheaper solver shows as absolute smearing of the loop: swapping roe for tvdlf moves Bx2s by up to 4.919e-04 by the final frame, six orders above the bound, while rho/vx/prs stay near roundoff even under that defect. The Roe entropy fix (Src/MHD/roe.c:100, delta=1e-6) and the CT degenerate-Bx branch (Src/MHD/CT/ct_flux.c:179, threshold 1e-9) are this scheme's catalogued risks, but the loop's field and constant-direction flow never approach the states that trip them, so two correct builds land within 1.421e-14 absolute (an FMA-contraction contrast, worst case on prs), 3.8 orders under the bound with dt and step count matching exactly - well clear of single precision, which this bound does not admit.",
+      "justification": "This deck advects a weak magnetic field loop, B0=1e-3, through a uniform flow v0=sqrt(5) on a doubly periodic box where density, pressure and velocity stay near uniform and essentially all the interesting physics lives in the CT-carried field, Bx1, Bx2, Bx1s and Bx2s. A pointwise absolute bound is right because that field is small and smoothly varying, so a wrong flux, a dropped CT term or a cheaper solver shows as absolute smearing of the loop: swapping roe for tvdlf moves Bx2s by up to 4.919e-04 by the final frame, six orders above the bound, while rho/vx/prs stay near roundoff even under that defect. The Roe entropy fix (Src/MHD/roe.c:100, delta=1e-6) is this scheme's catalogued risk, but the loop's field and constant-direction flow never approach the state that trips it, so two correct builds land within 1.421e-14 absolute (an FMA-contraction contrast, worst case on prs), 3.8 orders under the bound with dt and step count matching exactly - well clear of single precision, which this bound does not admit.",
       "evidence": {
         "basis": "measured",
         "a_priori_bound": 1e-10,
@@ -104,17 +104,11 @@
             "constant": 1e-06,
             "cite": "Src/MHD/roe.c:100",
             "what": "Roe entropy fix delta=1.e-6 (+roe.c:347, :647)"
-          },
-          {
-            "kind": "branch",
-            "constant": 1e-09,
-            "cite": "Src/MHD/CT/ct_flux.c:179",
-            "what": "CT degenerate Bx->0 limit when fabs(SaR-SaL) <= 1.e-9*fabs(SR-SL)"
           }
         ],
+        "mechanisms_note": "The CT degenerate-Bx branch (Src/MHD/CT/ct_flux.c:182, inside the CT_EMF_AVERAGE == UCT_HLLD block spanning ct_flux.c:117-232, #error for RMHD at :121) is not compiled for this deck: definitions_01.h sets CT_EMF_AVERAGE to CT_CONTACT, so that branch never builds and is not a risk on this path.",
         "branch_risks": [
-          "mhd_roe_fix",
-          "ct_degenerate"
+          "mhd_roe_fix"
         ],
         "chaos": "none",
         "noise_floor": 1.4210854715202004e-14,
