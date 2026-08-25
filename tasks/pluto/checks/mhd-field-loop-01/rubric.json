@@ -103,10 +103,10 @@
             "kind": "branch",
             "constant": 1e-06,
             "cite": "Src/MHD/roe.c:100",
-            "what": "Roe entropy fix delta=1.e-6 (+roe.c:347, :647)"
+            "what": "Roe entropy fix delta=1.e-6, applied at roe.c:608, :611, :615, :618"
           }
         ],
-        "mechanisms_note": "The CT degenerate-Bx branch (Src/MHD/CT/ct_flux.c:182, inside the CT_EMF_AVERAGE == UCT_HLLD block spanning ct_flux.c:117-232, #error for RMHD at :121) is not compiled for this deck: definitions_01.h sets CT_EMF_AVERAGE to CT_CONTACT, so that branch never builds and is not a risk on this path.",
+        "mechanisms_note": "The CT degenerate-Bx branch (Src/MHD/CT/ct_flux.c:182, inside the CT_EMF_AVERAGE == UCT_HLLD block spanning ct_flux.c:117-232, #error for RMHD at :121) is not compiled for this deck: definitions_01.h sets CT_EMF_AVERAGE to CT_CONTACT, so that branch never builds and is not a risk on this path. The Roe entropy fix citation previously also pointed at roe.c:347 and :647; roe.c:347 is the bt2 > 1.e-18*b2 transverse-field guard, unrelated to delta, and roe.c:647 sits inside the #if CHECK_ROE_MATRIX == YES debug block, which defaults to NO (pluto.h:577) and is not overridden by definitions_01.h, so it never compiles. Delta is set once at roe.c:100 and the entropy fix itself is applied at roe.c:608, :611, :615, :618, which is what the citation now points to.",
         "branch_risks": [
           "mhd_roe_fix"
         ],
