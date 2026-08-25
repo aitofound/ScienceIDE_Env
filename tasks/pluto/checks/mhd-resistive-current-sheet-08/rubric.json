@@ -106,7 +106,7 @@
             "kind": "branch",
             "constant": 1e-06,
             "cite": "Src/MHD/roe.c:100",
-            "what": "Roe entropy fix delta=1.e-6 (+roe.c:347, :647)"
+            "what": "Roe entropy fix delta=1.e-6, set at :100, applied :608-:618"
           },
           {
             "kind": "branch",
@@ -125,7 +125,7 @@
         "ceiling": 0.48979799219769543,
         "ceiling_basis": "The mildest realistic wrong answer constructed for this deck: Riemann solver roe -> tvdlf in the deck. It conserves mass and energy to roundoff and moves the fields by 4.898e-01 absolute, 5.7 orders above the tolerance; the step count differed. Not a claim about physically acceptable error - only that correct and incorrect implementations sit orders apart.",
         "self_reproduction": "built and run twice on arm64 docker Darwin: validate(A, B) passed, byte-identical, 10 frames graded, reference run 180s, results 28.9 MB",
-        "mechanisms_note": "The CT degenerate Bx->0 branch (Src/MHD/CT/ct_flux.c:191, guarded by #if CT_EMF_AVERAGE == UCT_HLLD at :117-232) never compiles into this build: this deck sets CT_EMF_AVERAGE CT_CONTACT (definitions_08.h:34), a different EMF averaging scheme entirely."
+        "mechanisms_note": "The CT degenerate Bx->0 branch (Src/MHD/CT/ct_flux.c:191, guarded by #if CT_EMF_AVERAGE == UCT_HLLD at :117-232) never compiles into this build: this deck sets CT_EMF_AVERAGE CT_CONTACT (definitions_08.h:34), a different EMF averaging scheme entirely. The Roe entropy fix's earlier citation of roe.c:347 and :647 alongside :100 was also wrong: :347 is the unrelated bt2 > 1.e-18*b2 tangential-field guard, and :647 sits inside #if CHECK_ROE_MATRIX == YES (roe.c:640), which defaults to NO in pluto.h:577 and is left unset by this deck, so it never compiles either. delta is set once at roe.c:100 and applied in the entropy fix at roe.c:608-618; the citation now names only those lines."
       }
     },
     {
