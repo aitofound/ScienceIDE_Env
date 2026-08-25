@@ -108,13 +108,16 @@ def main(argv):
     write_tree(os.path.join(output, "accept-printed-dt"), reference, dts=dts)
 
     # Reject: local and broad field errors, shape/time errors, wrong mode, and
-    # non-finite values.  The near-miss changes only one named field.
-    write_tree(os.path.join(output, "reject-large"), shifted(reference, tolerance * 100.0))
+    # non-finite values.  At this check's 1e-48 bound, an O(1) synthetic value
+    # cannot represent a 100x perturbation in binary64, so use a representable
+    # absolute defect while keeping the near-miss tied to the rubric bound.
+    defect = max(tolerance * 100.0, 1e-12)
+    write_tree(os.path.join(output, "reject-large"), shifted(reference, defect))
     write_tree(os.path.join(output, "reject-near-miss"),
-               shifted(reference, tolerance * 100.0, "ENR"))
+               shifted(reference, defect, "ENR"))
     write_tree(os.path.join(output, "reject-one-cell"), [
         item if frame != 2 else item + np.where(
-            np.indices(item.shape)[0] == 4, tolerance * 20.0, 0.0)
+            np.indices(item.shape)[0] == 4, max(tolerance * 20.0, 1e-12), 0.0)
         for frame, item in enumerate(reference)])
     write_tree(os.path.join(output, "reject-missing-frame"), reference, omit_last=True)
     changed_steps = [frame * 11 for frame in range(NFRAME)]
