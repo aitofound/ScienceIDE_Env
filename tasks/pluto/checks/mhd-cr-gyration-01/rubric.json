@@ -119,12 +119,6 @@
             "what": "Roe entropy fix delta=1.e-6 (+roe.c:347, :647)"
           },
           {
-            "kind": "branch",
-            "constant": 1e-09,
-            "cite": "Src/MHD/CT/ct_flux.c:179",
-            "what": "CT degenerate Bx->0 limit when fabs(SaR-SaL) <= 1.e-9*fabs(SR-SL)"
-          },
-          {
             "kind": "regulariser",
             "constant": 1e-18,
             "cite": "Src/Particles/particles_cr_update.c:363",
@@ -132,15 +126,15 @@
           }
         ],
         "branch_risks": [
-          "mhd_roe_fix",
-          "ct_degenerate"
+          "mhd_roe_fix"
         ],
         "chaos": "none",
         "noise_floor": 0.0,
         "noise_floor_basis": "MEASURED on this deck, on arm64 docker Darwin. Two legitimately different builds of the same source - the reference at -ffp-contract=off and a contrast (-ffp-contract=fast vs off, same source, same -O3), binaries differ (sha256 4e1e832e265f733a vs c533cfff4ce7b094) - run over this exact deck disagreed by at most 0.000e+00 absolute over 10 graded frames (worst at frame 1 in rho). The step count matched and dt agreed to 0.0e+00 relative. No bound below this floor is reachable; the tolerance sits inf orders above it.",
         "ceiling": 0.0,
         "ceiling_basis": "The mildest realistic wrong answer constructed for this deck: PARTICLES_CR_E_MC 1.0 -> 1.001 in definitions.h (a 0.1% wrong charge-to-mass ratio in the particle mover; the fluid Riemann solver never reaches the particles on a uniform background with feedback off). It conserves mass and energy to roundoff and moves the fields by 0.000e+00 absolute, -inf orders above the tolerance; the step count matched. Not a claim about physically acceptable error - only that correct and incorrect implementations sit orders apart.",
-        "self_reproduction": "built and run twice on arm64 docker Darwin: validate(A, B) passed, byte-identical, 10 frames graded, reference run 3s, results 14.6 MB"
+        "self_reproduction": "built and run twice on arm64 docker Darwin: validate(A, B) passed, byte-identical, 10 frames graded, reference run 3s, results 14.6 MB",
+        "mechanisms_note": "The CT degenerate-Bx branch (Src/MHD/CT/ct_flux.c:182, inside the CT_EMF_AVERAGE == UCT_HLLD block at ct_flux.c:117-232) was removed from this list: this deck sets CT_EMF_AVERAGE CT_CONTACT (Test_Problems/Particles/CR/Gyration/definitions_01.h), so that branch is never compiled on this deck."
       }
     },
     {
