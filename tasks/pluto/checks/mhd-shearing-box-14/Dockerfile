@@ -50,7 +50,7 @@ RUN cp $PLUTO_DIR/Test_Problems/MHD/Shearing_Box/init.c                ./init.c 
     && cp $PLUTO_DIR/Test_Problems/MHD/Shearing_Box/definitions_14.h ./definitions.h \
     && cp $PLUTO_DIR/Test_Problems/MHD/Shearing_Box/pluto_14.ini     ./pluto.ini \
     && cp $PLUTO_DIR/Test_Problems/MHD/Shearing_Box/tc_kappa.c ./tc_kappa.c
-RUN python3 /app/build/deck.py ./pluto.ini 36 3.6 32 32 4
+RUN python3 /app/build/deck.py ./pluto.ini 36 3.6 48 48 6
 
 # setup.py is an ncurses menu, and its --no-curses fallback calls raw_input(),
 # which does not exist in Python 3. The way through is documented in
