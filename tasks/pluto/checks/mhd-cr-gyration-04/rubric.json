@@ -115,8 +115,8 @@
           {
             "kind": "branch",
             "constant": 1e-06,
-            "cite": "Src/MHD/roe.c:100",
-            "what": "Roe entropy fix delta=1.e-6 (+roe.c:347, :647)"
+            "cite": "Src/MHD/roe.c:608-619",
+            "what": "Roe entropy fix, unconditional every call: alambda[K*] compared against 0.5*delta with delta=1.e-6 (delta itself is only assigned at roe.c:100)"
           },
           {
             "kind": "regulariser",
@@ -128,7 +128,7 @@
         "branch_risks": [
           "mhd_roe_fix"
         ],
-        "mechanisms_note": "The CT degenerate Bx->0 branch (Src/MHD/CT/ct_flux.c:182) is compiled only under #if CT_EMF_AVERAGE == UCT_HLLD (ct_flux.c:117-232); this deck's definitions_04.h sets CT_EMF_AVERAGE CT_CONTACT, so that branch never builds here and was removed from the mechanism list.",
+        "mechanisms_note": "The CT degenerate Bx->0 branch (Src/MHD/CT/ct_flux.c:182) is compiled only under #if CT_EMF_AVERAGE == UCT_HLLD (ct_flux.c:117-232); this deck's definitions_04.h sets CT_EMF_AVERAGE CT_CONTACT, so that branch never builds here and was removed from the mechanism list. Separately, roe.c:100 only assigns delta=1.e-6; the entropy-fix comparisons that use it are the unconditional alambda[K*] < 0.5*delta checks at roe.c:608-619, so the citation now points there. roe.c:647 sits inside '#if CHECK_ROE_MATRIX == YES', which defaults NO (roe.c:51) and is unset in definitions_04.h, so that earlier citation was dead code and has been dropped rather than replaced.",
         "chaos": "none",
         "noise_floor": 0.0,
         "noise_floor_basis": "MEASURED on this deck, on arm64 docker Darwin. Two legitimately different builds of the same source - the reference at -ffp-contract=off and a contrast (-ffp-contract=fast vs off, same source, same -O3), binaries differ (sha256 4e1e832e265f733a vs c533cfff4ce7b094) - run over this exact deck disagreed by at most 0.000e+00 absolute over 10 graded frames (worst at frame 1 in rho). The step count matched and dt agreed to 0.0e+00 relative. No bound below this floor is reachable; the tolerance sits inf orders above it.",
