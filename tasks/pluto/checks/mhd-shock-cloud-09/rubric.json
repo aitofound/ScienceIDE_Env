@@ -114,7 +114,7 @@
             "kind": "branch",
             "constant": 1e-06,
             "cite": "Src/MHD/roe.c:100",
-            "what": "Roe entropy fix delta=1.e-6 (+roe.c:347, :647)"
+            "what": "Roe entropy fix delta=1.e-6, applied at roe.c:608, :611, :615, :618 (KFASTM/KFASTP/KSLOWM/KSLOWP)"
           },
           {
             "kind": "branch",
@@ -127,7 +127,7 @@
           "mhd_roe_fix",
           "entropy_switch_flag"
         ],
-        "mechanisms_note": "The CT degenerate Bx->0 branch (ct_flux.c:182, not :179) sits inside #if CT_EMF_AVERAGE == UCT_HLLD (ct_flux.c:117-232); this deck's definitions_09.h sets CT_EMF_AVERAGE ARITHMETIC, so that branch never compiles here and is removed from the mechanisms on this path.",
+        "mechanisms_note": "The CT degenerate Bx->0 branch (ct_flux.c:182, not :179) sits inside #if CT_EMF_AVERAGE == UCT_HLLD (ct_flux.c:117-232); this deck's definitions_09.h sets CT_EMF_AVERAGE ARITHMETIC, so that branch never compiles here and is removed from the mechanisms on this path. The Roe entropy-fix citation is corrected the same way: :100 sets delta, but :347 is the unrelated bt2 > 1.e-18*b2 transverse-field guard and :647 sits inside #if CHECK_ROE_MATRIX == YES (Src/MHD/roe.c:640-660), which defaults to NO at Src/pluto.h:576-577 and is turned on only by Shock_Cloud configs 01 and 06, not 09 - so that debug block never compiles on this deck either. The fix is actually applied at :608, :611, :615, :618, one line per characteristic family (KFASTM, KFASTP, KSLOWM, KSLOWP), and the citation now points there.",
         "chaos": "watch",
         "noise_floor": 9.059899446350883e-05,
         "noise_floor_basis": "MEASURED on this deck, on arm64 docker Darwin. Two legitimately different builds of the same source - the reference at -ffp-contract=off and a contrast (-ffp-contract=fast vs off, same source, same -O3), binaries differ (sha256 907f7cc721720e98 vs 89f8fadc5ee5d1a9) - run over this exact deck disagreed by at most 9.060e-05 absolute in Bx3, the variable outside the split that sets this base bound (vx3, the other unraised variable, holds even tighter at 2.314e-05). The step count matched and dt agreed to 2.7e-04 relative. No bound below this floor is reachable for the base group; the tolerance sits 1.0 orders above it. Every other variable's own floor and bound is in evidence.split below.",
