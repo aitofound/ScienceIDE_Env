@@ -119,12 +119,6 @@
             "what": "Roe entropy fix delta=1.e-6 (+roe.c:347, :647)"
           },
           {
-            "kind": "branch",
-            "constant": 1e-09,
-            "cite": "Src/MHD/CT/ct_flux.c:179",
-            "what": "CT degenerate Bx->0 limit when fabs(SaR-SaL) <= 1.e-9*fabs(SR-SL)"
-          },
-          {
             "kind": "regulariser",
             "constant": 1e-18,
             "cite": "Src/Particles/particles_cr_update.c:363",
@@ -132,9 +126,9 @@
           }
         ],
         "branch_risks": [
-          "mhd_roe_fix",
-          "ct_degenerate"
+          "mhd_roe_fix"
         ],
+        "mechanisms_note": "The CT degenerate Bx->0 branch (Src/MHD/CT/ct_flux.c:182) is compiled only under #if CT_EMF_AVERAGE == UCT_HLLD (ct_flux.c:117-232); this deck's definitions_04.h sets CT_EMF_AVERAGE CT_CONTACT, so that branch never builds here and was removed from the mechanism list.",
         "chaos": "none",
         "noise_floor": 0.0,
         "noise_floor_basis": "MEASURED on this deck, on arm64 docker Darwin. Two legitimately different builds of the same source - the reference at -ffp-contract=off and a contrast (-ffp-contract=fast vs off, same source, same -O3), binaries differ (sha256 4e1e832e265f733a vs c533cfff4ce7b094) - run over this exact deck disagreed by at most 0.000e+00 absolute over 10 graded frames (worst at frame 1 in rho). The step count matched and dt agreed to 0.0e+00 relative. No bound below this floor is reachable; the tolerance sits inf orders above it.",
