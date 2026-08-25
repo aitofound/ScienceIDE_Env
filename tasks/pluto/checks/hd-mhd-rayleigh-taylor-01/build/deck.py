@@ -60,7 +60,7 @@ def one(pattern, repl, label):
     text = rx.sub(repl, text, count=1)
 
 
-one(r'^([ \t]*tstop[ \t]+)(\S+)([ \t]*)$',
+one(r'^([ \t]*tstop[ \t]+)(\S+)([ \t]*(?:#.*)?)$',
     lambda m: m.group(1) + tstop + m.group(3), 'tstop')
 one(r'^([ \t]*dbl[ \t]+).*$',
     lambda m: m.group(1) + interval + '  -1   single_file', 'dbl output')
