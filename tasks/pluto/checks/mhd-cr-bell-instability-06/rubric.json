@@ -117,21 +117,15 @@
             "what": "Roe entropy fix delta=1.e-6 (+roe.c:347, :647)"
           },
           {
-            "kind": "branch",
-            "constant": 1e-09,
-            "cite": "Src/MHD/CT/ct_flux.c:179",
-            "what": "CT degenerate Bx->0 limit when fabs(SaR-SaL) <= 1.e-9*fabs(SR-SL)"
-          },
-          {
             "kind": "regulariser",
             "constant": 1e-18,
             "cite": "Src/Particles/particles_cr_update.c:363",
             "what": "CR Boris mover carries only denominator guards (1.e-18, 1.e-12 at :406,:553); LoadUniform placement is closed-form; weights checks are QUIT assertions. NOT floor-lifters"
           }
         ],
+        "mechanisms_note": "The CT degenerate Bx->0 branch (Src/MHD/CT/ct_flux.c:182) is guarded by #if CT_EMF_AVERAGE == UCT_HLLD (ct_flux.c:117-232); this deck's definitions_06.h sets CT_EMF_AVERAGE to CT_CONTACT, not UCT_HLLD, so that branch never compiles into this deck's binary and was removed from mechanisms_on_path and branch_risks.",
         "branch_risks": [
-          "mhd_roe_fix",
-          "ct_degenerate"
+          "mhd_roe_fix"
         ],
         "chaos": "chaotic",
         "noise_floor": 2.67513561902355e-06,
