@@ -32,8 +32,8 @@ COPY build/deck.py /app/build/deck.py
 RUN cp $PLUTO_DIR/Test_Problems/RHD/Blast3D/init.c                ./init.c \
     && cp $PLUTO_DIR/Test_Problems/RHD/Blast3D/definitions_04.h ./definitions.h \
     && cp $PLUTO_DIR/Test_Problems/RHD/Blast3D/pluto_04.ini     ./pluto.ini
-# The shipped tstop is 100; 50 keeps this three-dimensional RK3 run inside the
-# reproducible comparison window while retaining the blast evolution.
+# The shipped tstop is 100; 50 is the intended authoring window for this
+# three-dimensional RK3 run and must be confirmed by the required contrast run.
 RUN python3 /app/build/deck.py ./pluto.ini 50.0 5.0
 
 RUN printf 'ARCH         = sciaccel.defs\n' > makefile \
