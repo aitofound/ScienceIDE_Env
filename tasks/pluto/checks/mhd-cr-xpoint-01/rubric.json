@@ -127,10 +127,10 @@
         ],
         "chaos": "none",
         "noise_floor": 4.902744876744691e-13,
-        "noise_floor_basis": "MEASURED on this deck, on arm64 docker Darwin. Two legitimately different builds of the same source - the reference at -ffp-contract=off and a contrast (-ffp-contract=fast vs off, same source, same -O3), binaries differ (sha256 b5abf2b9c18239d4 vs 5fe3d3946318a599) - run over this exact deck disagreed by at most 4.903e-13 absolute over 10 graded frames (worst at frame 10 in Ep). The step count matched and dt agreed to 0.0e+00 relative. No bound below this floor is reachable; the tolerance sits 2.3 orders above it.",
+        "noise_floor_basis": "MEASURED on this deck, on arm64 docker Darwin. Two legitimately different builds of the same source - the reference at -ffp-contract=off and a contrast (-ffp-contract=fast vs off, same source, same -O3), binaries differ (sha256 971ee35a1a189f9f vs c88ced0fe769cb8e) - run over this exact deck disagreed by at most 4.903e-13 absolute over 10 graded frames (worst at frame 10 in Ep). The step count matched and dt agreed to 0.0e+00 relative. No bound below this floor is reachable; the tolerance sits 2.3 orders above it.",
         "ceiling": 68.42390486415698,
         "ceiling_basis": "The mildest realistic wrong answer constructed for this deck: PARTICLES_CR_E_MC 1.0 -> 1.001 in definitions.h (a 0.1% wrong charge-to-mass ratio in the particle mover; the fluid Riemann solver never reaches the particles on a uniform background with feedback off). It conserves mass and energy to roundoff and moves the fields by 6.842e+01 absolute, 11.8 orders above the tolerance; the step count matched. Not a claim about physically acceptable error - only that correct and incorrect implementations sit orders apart.",
-        "self_reproduction": "built and run twice on arm64 docker Darwin: validate(A, B) passed, NOT byte-identical, 10 frames graded, reference run 67s, results 1151.3 MB"
+        "self_reproduction": "built and run twice on arm64 docker Darwin: validate(A, B) passed, byte-identical, 10 frames graded, reference run 48s, results 1151.3 MB"
       }
     },
     {
@@ -142,7 +142,7 @@
       "rule": {
         "tolerance_abs": 1e-10
       },
-      "justification": "PARTICLES_CR_FEEDBACK is off, so the roughly one million relativistic Boris-pushed particles ride the static X-point field and gain energy from the constant reconnection electric field EMAG_Z without ever touching the fluid: their positions and velocities are the only thing this run actually computes, so a pointwise absolute bound on them is the right test. Two legitimate builds of the same source agree to 3.638e-12 absolute (the measured floor, worst field x1, 1.4 orders under the 1e-10 bound), because the Boris mover in Src/Particles/particles_cr_update.c carries only denominator guards - 1.e-18 at :363 and 1.e-12 at :406 and :553 - that never trip on a field this far from zero, and particle placement is closed-form. The same 0.1% charge-to-mass error used for the field ceiling moves particle positions by up to 12.66 absolute by the last frame, 11.1 orders above the bound, and because it shifts exactly when a fast particle crosses the outflow boundary it also changes which particles survive to the last two frames by one id each - a set mismatch the shipped validator treats as an outright fail, an even stronger signal than the numeric bound already carries.",
+      "justification": "PARTICLES_CR_FEEDBACK is off, so the roughly one million relativistic Boris-pushed particles ride the static X-point field and gain energy from the constant reconnection electric field EMAG_Z without ever touching the fluid: their positions and velocities are the only thing this run actually computes, so a pointwise absolute bound on them is the right test. Two legitimate builds of the same source agree to 3.638e-12 absolute (the measured floor, worst field x1, 1.4 orders under the 1e-10 bound), because the Boris mover in Src/Particles/particles_cr_update.c carries only denominator guards - 1.e-18 at :363 and 1.e-12 at :406 and :553 - that never trip on a field this far from zero, and particle placement is closed-form. The same 0.1% charge-to-mass error used for the field ceiling moves particle positions by up to 12.66 absolute by the last frame, 11.1 orders above the bound, and because it shifts exactly when a fast particle crosses the outflow boundary it also changes which particles survive to the last two frames by one id each - a set mismatch the shipped validator treats as an outright fail, an even stronger signal than the numeric bound already carries. That fail-outright behaviour on a particle-count mismatch is safe rather than brittle: between the two independently correct builds used to measure the floor, particle survival at the outflow boundary matched exactly, id for id, on all ten graded frames, so at this deck's noise floor a boundary crossing never lands within a step of the reference and the shape check never fires on a correct port - only the 0.1% charge-to-mass defect, which detunes the gyration enough to shift a crossing by a whole step, trips it.",
       "evidence": {
         "basis": "measured",
         "noise_floor": 3.637978807091713e-12,
@@ -155,7 +155,7 @@
           "vx1": 1.1088352458443751e-13,
           "vx2": 4.53859172466764e-13,
           "vx3": 2.8954616482224083e-13,
-          "mass": 1.3228521987531e-310,
+          "mass": 0.0,
           "tinj": 0.0,
           "color": 0.0
         },
@@ -167,7 +167,7 @@
           "vx1": 0.31698132867758133,
           "vx2": 2.0406359450782894,
           "vx3": 1.156967066629882,
-          "mass": 6.3770392616186e-311,
+          "mass": 0.0,
           "tinj": 0.0,
           "color": 0.0
         },
