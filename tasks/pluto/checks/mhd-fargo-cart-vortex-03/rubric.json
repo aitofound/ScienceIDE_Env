@@ -90,7 +90,7 @@
         "tolerance_abs": 1e-06
       },
       "precision": "The bound was raised to 1e-6 by the measured floor, well above single precision's roughly 1e-7 absolute noise on these O(1) fields; a state kept in FP32 lands under the bound and the check does not test precision.",
-      "justification": "This deck drives a magnetized vortex through a Mach-20 tanh shear layer in a periodic-in-y, reflecting-in-x square box, integrated with PLUTO's FARGO orbital-advection scheme under constrained transport, so density, all three velocities, all three field components and both staggered CT faces carry real structure with no symmetry-zero filler, making a plain pointwise absolute difference a real test. A real fault lands hard: swapping Roe for tvdlf moves the fields 0.224 absolute, 5.3 orders above the 1e-6 tolerance. The bound is not the 1e-10 first derived from the Roe entropy fix and the CT degenerate limit, because FARGO's orbital shift (fargo.c:278) rounds a real number to a whole-cell integer, and a few-ULP build difference tips that rounding near t=3, offsetting the sheared field by one cell for a step; two correct builds then measure 7.16e-8, so the bound is raised to 1e-6 and reported as measured. The grid is halved to 130 squared, a multiple of five only so PLUTO's staggered CT faces parse evenly per frame; tstop is unchanged, so the vortex and shear evolve as shipped. At 1e-6 the bound admits a single-precision state; this check tests equivalence, not precision.",
+      "justification": "This deck drives a magnetized vortex through a Mach-20 tanh shear layer in a periodic-in-y, reflecting-in-x square box, integrated with PLUTO's FARGO orbital-advection scheme under constrained transport, so density, all three velocities, all three field components and both staggered CT faces carry real structure with no symmetry-zero filler, making a plain pointwise absolute difference a real test. A real fault lands hard: swapping Roe for tvdlf moves the fields 0.224 absolute, 5.3 orders above the 1e-6 tolerance. The bound is not the 1e-10 first derived from the Roe entropy fix, because FARGO's orbital shift (fargo.c:278) rounds a real number to a whole-cell integer, and a few-ULP build difference tips that rounding near t=3, offsetting the sheared field by one cell for a step; two correct builds then measure 7.16e-8, so the bound is raised to 1e-6 and reported as measured. The grid is halved to 130 squared, a multiple of five only so PLUTO's staggered CT faces parse evenly per frame; tstop is unchanged, so the vortex and shear evolve as shipped. At 1e-6 the bound admits a single-precision state; this check tests equivalence, not precision.",
       "evidence": {
         "basis": "measured",
         "a_priori_bound": 1e-10,
@@ -104,20 +104,14 @@
           },
           {
             "kind": "branch",
-            "constant": 1e-09,
-            "cite": "Src/MHD/CT/ct_flux.c:179",
-            "what": "CT degenerate Bx->0 limit when fabs(SaR-SaL) <= 1.e-9*fabs(SR-SL)"
-          },
-          {
-            "kind": "branch",
             "constant": null,
             "cite": "Src/Fargo/fargo.c:278",
             "what": "orbital advection shifts m = (int)floor(dL/dphi + 0.5) whole cells - float to int"
           }
         ],
+        "mechanisms_note": "ct_degenerate (Src/MHD/CT/ct_flux.c:182) was cited in an earlier draft but never compiles on this deck: that branch lives inside #if CT_EMF_AVERAGE == UCT_HLLD (ct_flux.c:117-232), and this deck's definitions_03.h sets CT_EMF_AVERAGE to CT_CONTACT.",
         "branch_risks": [
           "mhd_roe_fix",
-          "ct_degenerate",
           "fargo_shift"
         ],
         "chaos": "none",
