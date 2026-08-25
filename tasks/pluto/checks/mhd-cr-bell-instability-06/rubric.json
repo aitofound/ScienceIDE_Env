@@ -114,7 +114,7 @@
             "kind": "branch",
             "constant": 1e-06,
             "cite": "Src/MHD/roe.c:100",
-            "what": "Roe entropy fix delta=1.e-6 (+roe.c:347, :647)"
+            "what": "Roe entropy fix delta=1.e-6, set at roe.c:100 and applied to the four characteristic families at roe.c:608, :611, :615, :618"
           },
           {
             "kind": "regulariser",
@@ -123,7 +123,7 @@
             "what": "CR Boris mover carries only denominator guards (1.e-18, 1.e-12 at :406,:553); LoadUniform placement is closed-form; weights checks are QUIT assertions. NOT floor-lifters"
           }
         ],
-        "mechanisms_note": "The CT degenerate Bx->0 branch (Src/MHD/CT/ct_flux.c:182) is guarded by #if CT_EMF_AVERAGE == UCT_HLLD (ct_flux.c:117-232); this deck's definitions_06.h sets CT_EMF_AVERAGE to CT_CONTACT, not UCT_HLLD, so that branch never compiles into this deck's binary and was removed from mechanisms_on_path and branch_risks.",
+        "mechanisms_note": "The CT degenerate Bx->0 branch (Src/MHD/CT/ct_flux.c:182) is guarded by #if CT_EMF_AVERAGE == UCT_HLLD (ct_flux.c:117-232); this deck's definitions_06.h sets CT_EMF_AVERAGE to CT_CONTACT, not UCT_HLLD, so that branch never compiles into this deck's binary and was removed from mechanisms_on_path and branch_risks. The Roe entry's two line citations were also re-checked against roe.c: :347 is `if (bt2 > 1.e-18*b2)`, the unrelated transverse-field guard used to pick beta_y/beta_z, not the entropy fix, and :647 sits inside `#if CHECK_ROE_MATRIX == YES`, which pluto.h defaults to NO (pluto.h:576-577) and definitions_06.h does not override, so it never compiles for this deck either. The delta constant this deck actually exercises is set once at roe.c:100 and applied to the four characteristic families (KFASTM/KFASTP/KSLOWM/KSLOWP) at roe.c:608, :611, :615, :618; the citation above was corrected to those lines.",
         "branch_risks": [
           "mhd_roe_fix"
         ],
