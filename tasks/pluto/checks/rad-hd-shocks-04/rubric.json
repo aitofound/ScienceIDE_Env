@@ -96,7 +96,7 @@
         "tolerance_abs": 0.0001
       },
       "precision": "This bound is set by a convergence iteration in the source, not by roundoff, and it admits a state kept in single precision: an FP32 port lands near 1e-7 absolute on these fields, under the bound, and is a faithful port under this check's own warrant. Nothing in this check tests precision; only the bound binds.",
-      "justification": "This deck is PLUTO's supercritical radiative shock test (Melon Fuksman et al. 2021, Sec. 4.1, config 04): gas driven at V0=-20 into a reflective wall builds a strong shock coupled to grey radiation transport, so density, velocity, pressure, radiation energy and flux carry the postshock spike and its precursor. A pointwise absolute bound on every field, every frame, is right here: a real fault - a wrong Riemann flux, a dropped radiation term, a cheaper solver - misplaces the jump or precursor as soon as it appears rather than averaging away; the measured defect (hllc->tvdlf on gas, hll->hllc on radiation) misses by 49 absolute in prs, 5.7 orders above the bound, and changes the step count. The 1e-4 bound is set by the implicit matter-radiation Newton solve converging to RADIATION_ERROR=1e-7 (radiation.h:87), not roundoff, so it admits an FP32 state and this check does not test precision. A correct port lands far under it: two builds differing only in FMA contraction agree to 4.98e-9, four orders below the bound, since the HD and radiation branch points (hllc.c:177, reconstruct.c:62) are self-limiting at their switch.",
+      "justification": "This deck is PLUTO's supercritical radiative shock test (Melon Fuksman et al. 2021, Sec. 4.1, config 04): gas driven at V0=-20 into a reflective wall builds a strong shock coupled to grey radiation transport, so density, velocity, pressure, radiation energy and flux carry the postshock spike and its precursor. A pointwise absolute bound on every field, every frame, is right here: a real fault - a wrong Riemann flux, a dropped radiation term, a cheaper solver - misplaces the jump or precursor as soon as it appears rather than averaging away; the measured defect (hllc->tvdlf on gas, hll->hllc on radiation) misses by 49 absolute in prs, 5.7 orders above the bound, and changes the step count. The 1e-4 bound is set by the implicit matter-radiation Newton solve converging to RADIATION_ERROR=1e-7 (radiation.h:87), not roundoff, so it admits an FP32 state and this check does not test precision. A correct port lands far under it: two builds differing only in FMA contraction agree to 4.98e-9, four orders below the bound, since the HD solver's flux-side branch (hllc.c:177) is self-limiting at its switch and the deck's actual reconstruction, WENO3 (definitions_04.h), never drives a discrete branch either - its own smoothness regulariser (weno3_states.c:96, dx^2 added to each one-sided indicator) blends continuously and has no switch to flip.",
       "evidence": {
         "basis": "measured",
         "a_priori_bound": 0.0001,
@@ -110,16 +110,10 @@
             "what": "HLLC picks the flux side on the sign of the contact speed, if (vs >= 0.0). Self-limiting: at vs = 0 both sides equal the star flux by the HLL consistency condition, so a flip costs roundoff, not truncation. (The fabs(scrh) > 1.e-9 at hllc.c:169 sits inside a commented-out consistency check and is dead.)"
           },
           {
-            "kind": "branch",
-            "constant": 1e-12,
-            "cite": "Src/reconstruct.c:62",
-            "what": "MP5 monotonicity test (f-F[j])*(f-fMP) <= 1.e-12 picks between two reconstructions"
-          },
-          {
             "kind": "regulariser",
-            "constant": 1e-06,
-            "cite": "Src/States/mp5_states.c:598",
-            "what": "WENO smoothness eps in denominator - defines the scheme, NOT a floor-lifter"
+            "constant": null,
+            "cite": "Src/States/weno3_states.c:96",
+            "what": "finite-volume WENO3 (weno3_states.c): dx^2 added to each smoothness indicator (:96-99) - a grid-set regulariser, NOT a floor-lifter"
           },
           {
             "kind": "convergence",
@@ -128,16 +122,16 @@
             "what": "implicit matter-radiation coupling to RADIATION_ERROR=1e-7, MAXITER 200 (rad_step.c:218,:401)"
           }
         ],
+        "mechanisms_note": "An earlier pass of this list cited Src/reconstruct.c:62 (MP5_Reconstruct's (f-F[j])*(f-fMP)<=1e-12 test) and Src/States/mp5_states.c:598 (MP5's own WENO smoothness eps) as mechanisms on this deck's path. Both are MP5-only: this deck sets RECONSTRUCTION WENO3 (definitions_04.h), so PLUTO's States() dispatches to Src/States/weno3_states.c on every sweep and MP5_Reconstruct is never called - those two entries never fire here and have been removed. The mechanism WENO3 actually contributes is weno3_states.c:96-99, where dx^2 is added to each of the two one-sided smoothness indicators before they are blended; it is a continuous, grid-set regulariser rather than a monotonicity branch, so nothing here flips discretely under FMA reordering.",
         "branch_risks": [
-          "hd_hllc_branch",
-          "mp5_limiter_branch"
+          "hd_hllc_branch"
         ],
         "chaos": "none",
         "noise_floor": 4.977152912033489e-09,
-        "noise_floor_basis": "MEASURED on this deck, on arm64 docker Darwin. Two legitimately different builds of the same source - the reference at -ffp-contract=off and a contrast (-ffp-contract=fast vs off, same source, same -O3), binaries differ (sha256 0e767bc63ff81c51 vs 91101740cfcf80cf) - run over this exact deck disagreed by at most 4.977e-09 absolute over 10 graded frames (worst at frame 2 in prs). The step count matched and dt agreed to 0.0e+00 relative. No bound below this floor is reachable; the tolerance sits 4.3 orders above it.",
+        "noise_floor_basis": "MEASURED on this deck, on arm64 docker Darwin. Two legitimately different builds of the same source - the reference at -ffp-contract=off and a contrast (-ffp-contract=fast vs off, same source, same -O3), binaries differ (sha256 0e767bc63ff81c51 vs 91101740cfcf80cf) - run over this exact deck disagreed by at most 4.977e-09 absolute across the graded frames, worst in prs. The step count matched and dt agreed to 0.0e+00 relative. No bound below this floor is reachable; the tolerance sits 4.3 orders above it.",
         "ceiling": 49.04708593910465,
         "ceiling_basis": "The mildest realistic wrong answer constructed for this deck: Riemann solver hllc -> tvdlf and RadSolver hll <-> hllc in the deck (cheaper solvers on both the gas and the radiation system). It conserves mass and energy to roundoff and moves the fields by 4.905e+01 absolute, 5.7 orders above the tolerance; the step count differed. Not a claim about physically acceptable error - only that correct and incorrect implementations sit orders apart.",
-        "self_reproduction": "built and run twice on arm64 docker Darwin: validate(A, B) passed, byte-identical, 10 frames graded, reference run 54s, results 2.7 MB"
+        "self_reproduction": "built and run twice on arm64 docker Darwin: validate(A, B) passed, byte-identical. Frame count and per-frame timing follow from tstop, the dbl interval and the CFL condition, and are not restated here."
       }
     },
     {
