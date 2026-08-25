@@ -113,12 +113,6 @@
           },
           {
             "kind": "branch",
-            "constant": 1e-09,
-            "cite": "Src/MHD/CT/ct_flux.c:179",
-            "what": "CT degenerate Bx->0 limit when fabs(SaR-SaL) <= 1.e-9*fabs(SR-SL)"
-          },
-          {
-            "kind": "branch",
             "constant": 5.0,
             "cite": "Src/flag_shock.c:70",
             "what": "shock flag on gradp > 5.0*pt_min switches reconstruction per zone"
@@ -132,7 +126,6 @@
         ],
         "branch_risks": [
           "rmhd_hllc_mb_switch",
-          "ct_degenerate",
           "shock_flatten"
         ],
         "chaos": "none",
@@ -140,7 +133,8 @@
         "noise_floor_basis": "MEASURED on this deck, on arm64 docker Darwin. Two legitimately different builds of the same source - the reference at -ffp-contract=off and a contrast (-ffp-contract=fast vs off, same source, same -O3), binaries differ (sha256 5b6f4cd6273f5ca2 vs 0869461c5a9b726d) - run over this exact deck disagreed by at most 5.620e-06 absolute over 9 graded frames (worst at frame 9 in fr1). The step count matched and dt agreed to 0.0e+00 relative. No bound below this floor is reachable; the tolerance sits 1.3 orders above it.",
         "ceiling": 0.159486121872273,
         "ceiling_basis": "The mildest realistic wrong answer constructed for this deck: Riemann solver hllc -> tvdlf in the deck. It conserves mass and energy to roundoff and moves the fields by 1.595e-01 absolute, 3.2 orders above the tolerance; the step count matched. Not a claim about physically acceptable error - only that correct and incorrect implementations sit orders apart.",
-        "self_reproduction": "built and run twice on arm64 docker Darwin: validate(A, B) passed, byte-identical, 9 frames graded, reference run 104s, results 155.6 MB"
+        "self_reproduction": "built and run twice on arm64 docker Darwin: validate(A, B) passed, byte-identical, 9 frames graded, reference run 104s, results 155.6 MB",
+        "mechanisms_note": "The CT degenerate Bx->0 limit (Src/MHD/CT/ct_flux.c:182) was dropped from mechanisms_on_path and ct_degenerate from branch_risks: that test sits inside #if CT_EMF_AVERAGE == UCT_HLLD (ct_flux.c:117-232, with an #error at :121 for any non-MHD PHYSICS including this deck's RMHD), and definitions_01.h:39 sets CT_EMF_AVERAGE to ARITHMETIC, so the branch never compiles into this build at all."
       }
     },
     {
