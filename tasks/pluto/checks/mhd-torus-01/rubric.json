@@ -93,7 +93,7 @@
         "tolerance_abs": 1e-09
       },
       "precision": "The floor on this deck is roundoff and the bound sits at it with headroom; a state kept in single precision lands near 1e-7 absolute and fails every frame - as a consequence of the bound, not as a precision rule. Nothing in this check tests precision directly.",
-      "justification": "This deck evolves a magnetized torus in equilibrium around a point mass, in 3D polar coordinates with constrained transport holding div B to roundoff, so the physics lives in rho, the velocity and field components, pressure, and the tracer tr1 that init.c sets to a sharp 0/1 step marking the torus against the atmosphere. A pointwise absolute difference is right because every field is O(1) with nowhere to hide behind a norm, and the ceiling shows a real fault crossing it: swapping hll for tvdlf smears the boundary and poloidal velocity by up to 0.267, eight orders above the bound. The a priori 1e-10, from the hll and CT degenerate branches alone, undershot what two correct builds produce: those branches stay near epsilon, but the tstop clamp in Src/main.c:176-177 recomputes the last dt as tstop minus accumulated time rather than from CFL, and that subtraction differs enough between builds to move the sharp tr1 interface by 3.9e-11 on the final frame, above every other frame and field. The bound is raised to 1e-9, an order above the floor and eight below the ceiling.",
+      "justification": "This deck evolves a magnetized torus in equilibrium around a point mass, in 3D polar coordinates with constrained transport holding div B to roundoff, so the physics lives in rho, the velocity and field components, pressure, and the tracer tr1 that init.c sets to a sharp 0/1 step marking the torus against the atmosphere. A pointwise absolute difference is right because every field is O(1) with nowhere to hide behind a norm, and the ceiling shows a real fault crossing it: swapping hll for tvdlf smears the boundary and poloidal velocity by up to 0.267, eight orders above the bound. The a priori 1e-10, from the hll branch alone, undershot what two correct builds produce: that branch stays near epsilon, but the tstop clamp in Src/main.c:176-177 recomputes the last dt as tstop minus accumulated time rather than from CFL, and that subtraction differs enough between builds to move the sharp tr1 interface by 3.9e-11 on the final frame, above every other frame and field. The bound is raised to 1e-9, an order above the floor and eight below the ceiling.",
       "evidence": {
         "basis": "measured",
         "a_priori_bound": 1e-10,
@@ -107,21 +107,15 @@
             "what": "divergence-driven branch fabs(dF[BX]) > 1.e-9"
           },
           {
-            "kind": "branch",
-            "constant": 1e-09,
-            "cite": "Src/MHD/CT/ct_flux.c:179",
-            "what": "CT degenerate Bx->0 limit when fabs(SaR-SaL) <= 1.e-9*fabs(SR-SL)"
-          },
-          {
             "kind": "timestep-clamp",
             "constant": 1e-08,
             "cite": "Src/main.c:176-177",
             "what": "last step's dt is recomputed as (runtime.tstop - g_time) whenever g_time+g_dt >= tstop*(1-1e-8), replacing the CFL-derived dt with a subtraction against the accumulated integration time"
           }
         ],
+        "mechanisms_note": "The CT degenerate Bx->0 branch (Src/MHD/CT/ct_flux.c:182) is compiled only under CT_EMF_AVERAGE == UCT_HLLD (ct_flux.c:117-232, #error for RMHD at :121); this deck sets CT_EMF_AVERAGE UCT_HLL (Test_Problems/MHD/Torus/definitions_01.h:38), so that branch never builds here and was removed from mechanisms_on_path and branch_risks.",
         "branch_risks": [
-          "mhd_hll_branch",
-          "ct_degenerate"
+          "mhd_hll_branch"
         ],
         "chaos": "watch",
         "noise_floor": 3.935224368589729e-11,
