@@ -65,9 +65,19 @@ def bounds():
         r = json.load(f)
     by = dict((c['name'], c) for c in r['criteria'])
     part = by.get('particles_pointwise')
-    return (float(by['primitives_pointwise']['rule']['tolerance_abs']),
+    prim = by['primitives_pointwise']['rule']
+    byvar = dict((k, float(v)) for k, v in (prim.get('tolerance_abs_by_variable') or {}).items())
+    return (float(prim['tolerance_abs']),
             float(by['time_base']['rule']['tolerance_rel']),
-            float(part['rule']['tolerance_abs']) if part else None)
+            float(part['rule']['tolerance_abs']) if part else None,
+            byvar)
+
+
+def var_bound(name, tol, byvar):
+    """This variable's own tolerance_abs, honouring a rule.tolerance_abs_by_variable
+    override (a SPLIT check) so a fixture that perturbs one named variable is sized
+    against the bound that variable is actually graded at, not the shared default."""
+    return byvar.get(name, tol)
 
 
 def base_state(k):
@@ -172,7 +182,7 @@ def main(argv):
         sys.stderr.write('usage: make.py OUTDIR\n')
         return 2
     out = argv[1]
-    tol, tol_time, tol_part = bounds()
+    tol, tol_time, tol_part, byvar = bounds()
     ref = [base_state(k) for k in range(NFRAME)]
     parts = [base_particles(k) for k in range(NFRAME)] if PARTICLES else None
     os.makedirs(out, exist_ok=True)
@@ -194,12 +204,12 @@ def main(argv):
 
     # --- must fail ---------------------------------------------------------
     W('reject-diverged', perturbed(ref, tol * 100))
-    W('reject-near-miss', perturbed(ref, tol * 100, only='prs'))
+    W('reject-near-miss', perturbed(ref, var_bound('prs', tol, byvar) * 100, only='prs'))
     one = [[a.copy() for a in b] for b in ref]
-    one[2][3][5] += tol * 10
+    one[2][3][5] += var_bound(VARS[2], tol, byvar) * 10
     W('reject-one-cell', one)
     stag = [[a.copy() for a in b] for b in ref]
-    stag[2][VARS.index('Bx2s')][NX * NY + 3] += tol * 10     # inside the y-staggered block
+    stag[2][VARS.index('Bx2s')][NX * NY + 3] += var_bound('Bx2s', tol, byvar) * 10     # inside the y-staggered block
     W('reject-staggered-one-cell', stag)
     W('reject-frames', ref, drop_last=True)
     steps = [k * 10 for k in range(NFRAME)]
