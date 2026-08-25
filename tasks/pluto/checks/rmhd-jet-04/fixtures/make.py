@@ -206,7 +206,7 @@ def main(argv):
     W('reject-diverged', perturbed(ref, tol * 100))
     W('reject-near-miss', perturbed(ref, var_bound('prs', tol, byvar) * 100, only='prs'))
     one = [[a.copy() for a in b] for b in ref]
-    one[2][3][5] += var_bound(VARS[2], tol, byvar) * 10
+    one[2][3][5] += var_bound(VARS[3], tol, byvar) * 10
     W('reject-one-cell', one)
     stag = [[a.copy() for a in b] for b in ref]
     stag[2][VARS.index('Bx2s')][NX * NY + 3] += var_bound('Bx2s', tol, byvar) * 10     # inside the y-staggered block
