@@ -105,22 +105,14 @@
             "what": "RMHD energy inversion acc=1.e-11; amplification measured 70x on rmhd-sod-1d"
           },
           {
-            "kind": "branch",
-            "constant": 1e-12,
-            "cite": "Src/reconstruct.c:62",
-            "what": "MP5 monotonicity test (f-F[j])*(f-fMP) <= 1.e-12 picks between two reconstructions"
-          },
-          {
             "kind": "regulariser",
-            "constant": 1e-06,
-            "cite": "Src/States/mp5_states.c:598",
-            "what": "WENO smoothness eps in denominator - defines the scheme, NOT a floor-lifter"
+            "constant": 1e-40,
+            "cite": "Src/States/mp5_states.c:517",
+            "what": "WENOZ_States smoothness eps in the b0/b1/b2 denominators - defines the scheme, NOT a floor-lifter. This deck's RECONSTRUCTION=WENOZ dispatches here, not to WENO3_States (mp5_states.c:598, eps=1.e-6) or MP5_Reconstruct (reconstruct.c:38, a different reconstruction function entirely)"
           }
         ],
-        "mechanisms_note": "The CT degenerate Bx->0 branch (Src/MHD/CT/ct_flux.c:182, inside the fabs(SaR-SaL) <= 1.e-9*fabs(SR-SL) test) is compiled only under #if CT_EMF_AVERAGE == UCT_HLLD (ct_flux.c:117-232), which itself #errors for PHYSICS != MHD at ct_flux.c:121; this deck's definitions_06.h sets CT_EMF_AVERAGE UCT_GFORCE and PHYSICS RMHD, so the branch is never compiled on this deck and is removed from mechanisms_on_path and branch_risks.",
-        "branch_risks": [
-          "mp5_limiter_branch"
-        ],
+        "mechanisms_note": "The CT degenerate Bx->0 branch (Src/MHD/CT/ct_flux.c:182, inside the fabs(SaR-SaL) <= 1.e-9*fabs(SR-SL) test) is compiled only under #if CT_EMF_AVERAGE == UCT_HLLD (ct_flux.c:117-232), which itself #errors for PHYSICS != MHD at ct_flux.c:121; this deck's definitions_06.h sets CT_EMF_AVERAGE UCT_GFORCE and PHYSICS RMHD, so the branch is never compiled on this deck and is removed from mechanisms_on_path and branch_risks. Also corrected: mechanisms_on_path previously cited reconstruct.c:62 (MP5_Reconstruct's monotonicity test, declared reconstruct.c:38) and mp5_states.c:598 (WENO3_States' 1.e-6 eps); neither compiles into this deck's reconstruction path, since RECONSTRUCTION=WENOZ dispatches to WENOZ_States (mp5_states.c:517) instead - that entry now replaces both, and mp5_limiter_branch is dropped from branch_risks for the same reason.",
+        "branch_risks": [],
         "chaos": "none",
         "noise_floor": 6.650235917504688e-14,
         "noise_floor_basis": "MEASURED on this deck, on arm64 docker Darwin. Two legitimately different builds of the same source - the reference at -ffp-contract=off and a contrast (-ffp-contract=fast vs off, same source, same -O3), binaries differ (sha256 b702c86fbdad85a8 vs 1c284a4b4f732e0b) - run over this exact deck disagreed by at most 6.650e-14 absolute over 10 graded frames, worst at frame 10, taken as the aggregate maximum across every graded variable, centered and staggered. The step count matched and dt agreed to 0.0e+00 relative. No bound below this floor is reachable; the tolerance sits 5.2 orders above it.",
