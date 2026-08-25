@@ -108,12 +108,6 @@
           },
           {
             "kind": "branch",
-            "constant": 1e-09,
-            "cite": "Src/MHD/CT/ct_flux.c:179",
-            "what": "CT degenerate Bx->0 limit when fabs(SaR-SaL) <= 1.e-9*fabs(SR-SL)"
-          },
-          {
-            "kind": "branch",
             "constant": 5.0,
             "cite": "Src/flag_shock.c:70",
             "what": "shock flag on gradp > 5.0*pt_min switches reconstruction per zone"
@@ -125,9 +119,8 @@
             "what": "this deck sets RADIATION_ERROR 1e-2 in its own definitions.h, overriding the 1e-7 #ifndef fallback in Src/Radiation/radiation.h:87; the implicit matter-radiation coupling (rad_step.c:218,:401, MAXITER 200) stops at that looser threshold on this deck"
           }
         ],
-        "mechanisms_note": "an earlier pass of this check cited Src/Radiation/radiation.h:87 (RADIATION_ERROR 1e-7) for the radiation coupling; that line is only the #ifndef fallback used when a deck does not set its own value, and this deck does - definitions_03.h:44 defines RADIATION_ERROR 1e-2, two orders looser than the 1e-4 field bound. The corrected entry above cites the value PLUTO actually compiles for this deck.",
+        "mechanisms_note": "an earlier pass of this check cited Src/Radiation/radiation.h:87 (RADIATION_ERROR 1e-7) for the radiation coupling; that line is only the #ifndef fallback used when a deck does not set its own value, and this deck does - definitions_03.h:44 defines RADIATION_ERROR 1e-2, two orders looser than the 1e-4 field bound. The corrected entry above cites the value PLUTO actually compiles for this deck. A later review found the CT degenerate Bx->0 branch cited above (Src/MHD/CT/ct_flux.c:182, mis-cited as :179) sits inside #if CT_EMF_AVERAGE == UCT_HLLD (ct_flux.c:117-232, #error for RMHD at :121), but this deck sets CT_EMF_AVERAGE ARITHMETIC (definitions_03.h:39), so that branch never compiles here and has been removed from mechanisms_on_path and branch_risks.",
         "branch_risks": [
-          "ct_degenerate",
           "shock_flatten"
         ],
         "chaos": "none",
