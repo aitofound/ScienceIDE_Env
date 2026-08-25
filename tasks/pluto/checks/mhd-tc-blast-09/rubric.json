@@ -94,7 +94,7 @@
     "tolerance_abs": 1e-10
    },
    "precision": "The floor on this deck is roundoff and the bound sits at it with headroom; a state kept in single precision lands near 1e-7 absolute and fails every frame - as a consequence of the bound, not as a precision rule. Nothing in this check tests precision directly.",
-   "justification": "This deck detonates a hot, dense circular cloud into a colder ambient medium threaded by a uniform field tilted 30 degrees off the grid, under constrained transport and anisotropic Legendre-accelerated thermal conduction, so density, the velocities, pressure, all three field components and the CT face-centered Bx1s/Bx2s carry the shock front, the field-aligned heat-conduction layer trailing it, and the divergence-free bookkeeping, none of it symmetry-zero filler. A pointwise absolute difference on every field, every frame, is a direct test of the flux, the RKL sub-stepping and the CT update: swapping hll for tvdlf changes which of those branches fire and where the front sits, moving the fields by a measured 3.571e-01, 9.6 orders above the 1e-10 bound. A correct port lands far under it: two builds of the same source, one with FMA fusion and one without, differ by only 1.298e-13 despite crossing PLUTO's own 1e-9 hll-divergence and CT-degenerate thresholds and taking a different RKL stage count, showing none of those branches actually flips for this deck's data, 2.9 orders of headroom. The deck runs as shipped, native 256x256, full tstop.",
+   "justification": "This deck detonates a hot, dense circular cloud into a colder ambient medium threaded by a uniform field tilted 30 degrees off the grid, under constrained transport and anisotropic Legendre-accelerated thermal conduction, so density, the velocities, pressure, all three field components and the CT face-centered Bx1s/Bx2s carry the shock front, the field-aligned heat-conduction layer trailing it, and the divergence-free bookkeeping, none of it symmetry-zero filler. A pointwise absolute difference on every field, every frame, is a direct test of the flux, the RKL sub-stepping and the CT update: swapping hll for tvdlf changes which of those branches fire and where the front sits, moving the fields by a measured 3.571e-01, 9.6 orders above the 1e-10 bound. A correct port lands far under it: two builds of the same source, one with FMA fusion and one without, differ by only 1.298e-13 despite crossing PLUTO's own 1e-9 hll-divergence threshold and taking a different RKL stage count, showing neither branch actually flips for this deck's data, 2.9 orders of headroom. The deck runs as shipped, native 256x256, full tstop.",
    "evidence": {
     "basis": "measured",
     "a_priori_bound": 1e-10,
@@ -105,12 +105,6 @@
       "constant": 1e-09,
       "cite": "Src/MHD/hll.c:161",
       "what": "divergence-driven branch fabs(dF[BX]) > 1.e-9"
-     },
-     {
-      "kind": "branch",
-      "constant": 1e-09,
-      "cite": "Src/MHD/CT/ct_flux.c:179",
-      "what": "CT degenerate Bx->0 limit when fabs(SaR-SaL) <= 1.e-9*fabs(SR-SL)"
      },
      {
       "kind": "branch",
@@ -127,9 +121,9 @@
     ],
     "branch_risks": [
      "mhd_hll_branch",
-     "ct_degenerate",
      "rkl_substeps"
     ],
+    "mechanisms_note": "The CT degenerate Bx->0 branch (Src/MHD/CT/ct_flux.c:182) is compiled only under CT_EMF_AVERAGE == UCT_HLLD (ct_flux.c:117-232); this deck sets CT_EMF_AVERAGE UCT_HLL (Test_Problems/MHD/Thermal_conduction/Blast/definitions_09.h), so that branch never builds and was removed from mechanisms_on_path and branch_risks.",
     "chaos": "none",
     "noise_floor": 1.297850715786808e-13,
     "noise_floor_basis": "MEASURED on this deck, on arm64 docker Darwin. Two legitimately different builds of the same source - the reference at -ffp-contract=off and a contrast (-ffp-contract=fast vs off, same source, same -O3), binaries differ (sha256 ea3bfc5173adc299 vs 8199e5d6501cc435) - run over this exact deck disagreed by at most 1.298e-13 absolute over 10 graded frames (worst at frame 8 in vx2). The step count matched and dt agreed to 0.0e+00 relative. No bound below this floor is reachable; the tolerance sits 2.9 orders above it.",
