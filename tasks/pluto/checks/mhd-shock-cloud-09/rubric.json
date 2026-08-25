@@ -118,12 +118,6 @@
           },
           {
             "kind": "branch",
-            "constant": 1e-09,
-            "cite": "Src/MHD/CT/ct_flux.c:179",
-            "what": "CT degenerate Bx->0 limit when fabs(SaR-SaL) <= 1.e-9*fabs(SR-SL)"
-          },
-          {
-            "kind": "branch",
             "constant": 0.05,
             "cite": "Src/flag_shock.c:74",
             "what": "ENTROPY_SWITCH un-flags on gradp > 0.05*pt_min, energy vs entropy per cell"
@@ -131,9 +125,9 @@
         ],
         "branch_risks": [
           "mhd_roe_fix",
-          "ct_degenerate",
           "entropy_switch_flag"
         ],
+        "mechanisms_note": "The CT degenerate Bx->0 branch (ct_flux.c:182, not :179) sits inside #if CT_EMF_AVERAGE == UCT_HLLD (ct_flux.c:117-232); this deck's definitions_09.h sets CT_EMF_AVERAGE ARITHMETIC, so that branch never compiles here and is removed from the mechanisms on this path.",
         "chaos": "watch",
         "noise_floor": 9.059899446350883e-05,
         "noise_floor_basis": "MEASURED on this deck, on arm64 docker Darwin. Two legitimately different builds of the same source - the reference at -ffp-contract=off and a contrast (-ffp-contract=fast vs off, same source, same -O3), binaries differ (sha256 907f7cc721720e98 vs 89f8fadc5ee5d1a9) - run over this exact deck disagreed by at most 9.060e-05 absolute in Bx3, the variable outside the split that sets this base bound (vx3, the other unraised variable, holds even tighter at 2.314e-05). The step count matched and dt agreed to 2.7e-04 relative. No bound below this floor is reachable for the base group; the tolerance sits 1.0 orders above it. Every other variable's own floor and bound is in evidence.split below.",
