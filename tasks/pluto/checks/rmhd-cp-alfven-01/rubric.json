@@ -110,17 +110,10 @@
             "constant": 1e-05,
             "cite": "Src/RMHD/hlld.c:295",
             "what": "HLLD iterates total pressure in the fan, stops on fabs(dp)<1.e-5*p || fabs(f)<1.e-6 - iteration in the FLUX"
-          },
-          {
-            "kind": "branch",
-            "constant": 1e-09,
-            "cite": "Src/MHD/CT/ct_flux.c:179",
-            "what": "CT degenerate Bx->0 limit when fabs(SaR-SaL) <= 1.e-9*fabs(SR-SL)"
           }
         ],
-        "branch_risks": [
-          "ct_degenerate"
-        ],
+        "mechanisms_note": "The CT degenerate Bx->0 branch (Src/MHD/CT/ct_flux.c:182, inside the #if CT_EMF_AVERAGE == UCT_HLLD block at :117-232) is not on this deck's path: definitions_01.h sets CT_EMF_AVERAGE ARITHMETIC, not UCT_HLLD, and the block itself #errors for PHYSICS != MHD at :121, so it cannot compile for this RMHD deck under any EMF averaging choice it could take.",
+        "branch_risks": [],
         "chaos": "none",
         "noise_floor": 3.191058528528856e-13,
         "noise_floor_basis": "MEASURED on this deck, on arm64 docker Darwin. Two legitimately different builds of the same source - the reference at -ffp-contract=off and a contrast (-ffp-contract=fast vs off, same source, same -O3), binaries differ (sha256 aa5f851417ba8cd9 vs 3f3b1d4fdbe52e3e) - run over this exact deck disagreed by at most 3.191e-13 absolute over 10 graded frames (worst at frame 9 in Bx3). The step count matched and dt agreed to 0.0e+00 relative. No bound below this floor is reachable; the tolerance sits 4.5 orders above it.",
