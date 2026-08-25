@@ -108,14 +108,8 @@
           {
             "kind": "branch",
             "constant": 1e-12,
-            "cite": "Src/reconstruct.c:62",
-            "what": "MP5 monotonicity test (f-F[j])*(f-fMP) <= 1.e-12 picks between two reconstructions"
-          },
-          {
-            "kind": "regulariser",
-            "constant": 1e-06,
-            "cite": "Src/States/mp5_states.c:598",
-            "what": "WENO smoothness eps in denominator - defines the scheme, NOT a floor-lifter"
+            "cite": "Src/States/mp5_states.c:485",
+            "what": "MP5 monotonicity test (f-F[i])*(f-fMP) <= 1.e-12 in MP5_States picks between two reconstructions"
           },
           {
             "kind": "branch",
@@ -124,6 +118,7 @@
             "what": "CT degenerate Bx->0 limit when fabs(SaR-SaL) <= 1.e-9*fabs(SR-SL)"
           }
         ],
+        "mechanisms_note": "Two citations in the prior pass pointed at code this deck never executes. The MP5 limiter was cited at Src/reconstruct.c:62 (MP5_Reconstruct), but that function is called only from Src/fd_flux.c (the finite-difference driver, selected by a RECONSTRUCTION ending in _FD, not this deck's plain MP5) and from Src/ring_average.c under GEOMETRY POLAR or SPHERICAL (this deck is CARTESIAN); it is corrected to Src/States/mp5_states.c:485, the epsm=1.e-12 test inside MP5_States, which Src/States/mp5_states.c's States() dispatches to under `#if RECONSTRUCTION == MP5` and is what this deck's sweep actually calls - same constant, same physical test, right file. A fourth entry citing Src/States/mp5_states.c:598 (WENO3_States, eps=1.e-6) is dropped outright: that function is compiled only under HIGH_ORDER with HO_ORDER_REDUCTION==WENO3, and definitions_21.h sets neither, so it is dead code for this deck, not a mechanism on its path.",
         "branch_risks": [
           "mhd_hlld_switch",
           "mp5_limiter_branch",
