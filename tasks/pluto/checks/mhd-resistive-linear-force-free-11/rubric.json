@@ -109,9 +109,16 @@
             "kind": "regulariser",
             "constant": null,
             "cite": "Src/MHD/GLM/glm.c:390",
-            "what": "glm_ch = MAX over eigenvalues - a smooth grid reduction, perturbed O(eps) not branched. NOT a floor-lifter"
+            "what": "GLM_Init's glm_ch = MAX over eigenvalues, guarded by 'if (glm_ch < 0.0)' (glm.c:342-347) - runs ONCE at the start of the run (called from main.c:411), not every step. Not the live mechanism."
+          },
+          {
+            "kind": "regulariser",
+            "constant": null,
+            "cite": "Src/main.c:572",
+            "what": "The live per-step update: glm_ch = runtime->cfl*dxmin/dtnext, recomputed every cycle from a grid-wide MAX-reduction of the fastest signal speed over dtnext. A smooth reduction, not a branch, so still not a floor-lifter in kind - but on Hall_MHD/Whistler_Waves#02 (PR #107) this same reduction hit a roundoff-sensitive tie and raised psi_glm's floor to 4.39e-10, three orders above that deck's other fields. On this deck it measures inert: psi_glm's floor is 3.36e-14, the smallest of the eight graded variables (rho leads at 4.03e-13, see noise_floor_basis)."
           }
         ],
+        "mechanisms_note": "The proposal's mechanisms_on_path cited only glm.c:390 (GLM_Init) for GLM div-cleaning. That path is a one-time initializer guarded by glm_ch<0 and runs once at cycle start (main.c:411), not every step - #107 (Hall_MHD/Whistler_Waves#02) traced the live per-step recomputation to main.c:572, glm_ch = cfl*dxmin/dtnext, and found it lifts psi_glm's floor on that deck via a roundoff-sensitive tie in the grid-wide MAX-reduction. Both citations are now listed here. On this deck the live path is present but measures inert - psi_glm's own floor (3.36e-14) is the smallest of the eight graded variables, well under rho's 4.03e-13 - so the correction changes the catalogue entry, not the tolerance or the band.",
         "branch_risks": [
           "mhd_roe_fix",
           "rkl_substeps"
