@@ -25,7 +25,7 @@ COPY build/deck.py /app/build/deck.py
 RUN cp $PLUTO_DIR/Test_Problems/MHD/CP_Alfven/init.c ./init.c \
     && cp $PLUTO_DIR/Test_Problems/MHD/CP_Alfven/definitions_11.h ./definitions.h \
     && cp $PLUTO_DIR/Test_Problems/MHD/CP_Alfven/pluto_11.ini ./pluto.ini
-RUN python3 /app/build/deck.py ./pluto.ini 0.7071067811865475 0.1178511301977579 128 128
+RUN python3 /app/build/deck.py ./pluto.ini 0.25 0.0416666666666667 128 128
 RUN printf 'ARCH         = sciaccel.defs\n' > makefile \
     && python3 $PLUTO_DIR/setup.py --auto-update \
     && make -j"$(nproc)" \
