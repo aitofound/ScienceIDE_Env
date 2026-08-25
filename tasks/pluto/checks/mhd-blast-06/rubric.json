@@ -97,7 +97,8 @@
         "basis": "measured",
         "a_priori_bound": 1e-10,
         "a_priori_basis": "derived",
-        "a_priori_note": "The catalogued mechanism (ct_flux.c:179, the CT degenerate Bx->0 limit) sits inside the #if CT_EMF_AVERAGE == UCT_HLLD block of that file. This deck's definitions_06.h sets CT_EMF_AVERAGE to UCT_GFORCE, which is a different #if block in the same file (lines 72-113) and never compiles the HLLD branch in; the cited threshold does not exist in this deck's binary, so the a priori bound built on it did not hold - confirmed by measurement (floor 1.42e-8 abs, over 100x the 1e-10 a priori bound). The mechanism that does explain the floor is cited below.",
+        "a_priori_note": "The catalogued mechanism (ct_flux.c:182, the CT degenerate Bx->0 limit) is gated by #if CT_EMF_AVERAGE == UCT_HLLD, a block spanning ct_flux.c:117-232 with an #error guard for RMHD at :121. This deck's definitions_06.h sets CT_EMF_AVERAGE to UCT_GFORCE, so that block and its 1e-9 threshold never compile into this deck's binary; the a priori bound built on it did not hold - confirmed by measurement (floor 1.42e-8 abs, over 100x the 1e-10 a priori bound). The mechanism that does explain the floor is cited below.",
+        "mechanisms_note": "ct_degenerate (ct_flux.c:182, CT_EMF_AVERAGE == UCT_HLLD, ct_flux.c:117-232) is not compiled on this deck, which sets CT_EMF_AVERAGE to UCT_GFORCE, so it is correctly absent from mechanisms_on_path below.",
         "mechanisms_on_path": [
           {
             "kind": "cancellation",
