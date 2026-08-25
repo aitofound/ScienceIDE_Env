@@ -50,7 +50,7 @@ RUN cp $PLUTO_DIR/Test_Problems/HD/Jet/init.c                ./init.c \
     && cp $PLUTO_DIR/Test_Problems/HD/Jet/definitions_01.h ./definitions.h \
     && cp $PLUTO_DIR/Test_Problems/HD/Jet/pluto_01.ini     ./pluto.ini \
     && cp $PLUTO_DIR/Test_Problems/HD/Jet/userdef_output.c ./userdef_output.c
-RUN python3 /app/build/deck.py ./pluto.ini 1.0 0.1
+RUN python3 /app/build/deck.py ./pluto.ini 1.5 0.15
 
 # setup.py is an ncurses menu, and its --no-curses fallback calls raw_input(),
 # which does not exist in Python 3. The way through is documented in
