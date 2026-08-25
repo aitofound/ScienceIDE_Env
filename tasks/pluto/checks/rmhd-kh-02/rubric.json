@@ -91,13 +91,13 @@
       "rule": {
         "tolerance_abs": 1e-06
       },
-      "precision": "The floor on this deck is roundoff and the bound sits at it with headroom; a state kept in single precision lands near 1e-7 absolute and fails every frame - as a consequence of the bound, not as a precision rule. Nothing in this check tests precision directly.",
+      "precision": "tolerance_abs=1e-6 sits 1.3 orders above the measured floor (5.434e-08) but above single-precision roundoff for these O(1) fields (~1e-7 absolute): a state kept in FP32 lands under the bound and passes every frame. That is a consequence of the raised bound, not a precision rule this check enforces - nothing here tests precision directly, and an FP32 port is a faithful pass under this check.",
       "justification": "This deck is the Mignone et al. (2012) relativistic KH test: a tanh-sheared, CT-staggered magnetized shear layer seeded with a sinusoidal kink, run to t=10 through ten frames spanning the instability's linear growth into its nonlinear billow. Every graded field carries that physics, so a pointwise absolute difference is the right observable: swapping hlld for the diffusive tvdlf solver wrongly damps the billow and displaces the state by 4.6 absolute within the first frame, 6.7 orders above the bound - a physically wrong answer, not a subtle drift. The bound is measured rather than a priori because the RMHD energy-inversion tolerance alone (Src/RMHD/rmhd_energy_solve.c:53, acc=1e-11) does not discriminate at this scale. A correct port lands under it because the tightest thing on this path is HLLD's fan-pressure iteration (Src/RMHD/hlld.c:295, |f|<1e-6): two legitimately different correct builds (reference vs an FMA-fused contrast) disagreed by at most 5.4e-8 across the run, rising mildly as the Lyapunov-sensitive billow amplifies FMA rounding, never nearing the ceiling, so tstop needed no shortening. tolerance_abs=1e-6, 1.3 orders above that floor, also admits a single-precision state, which this check does not test for.",
       "evidence": {
         "basis": "measured",
         "a_priori_bound": 0.01,
         "a_priori_basis": "measured-only",
-        "band_note": "a priori derivation reaches the discrimination ceiling (rmhd_hlld_iter); the bound is whatever the measured band supports, starting from the 1e-8 the energy inversion alone gives",
+        "band_note": "BOUND RAISED 1e-8 -> 1e-6: the a priori bound from the energy inversion alone (1e-8) does not discriminate at this deck's scale, so mkcheck started the rubric at that placeholder and let measurement set the real bound (WORKER.md section 5). The measured floor (5.434e-08) exceeds 1e-8/10, so the bound is re-derived as the smallest power of ten at least floor*10, giving 1e-6 - 1.3 orders above the floor and five orders under ceiling/10 (0.462), closing the band with large margin.",
         "mechanisms_on_path": [
           {
             "kind": "convergence",
