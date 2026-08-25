@@ -49,7 +49,7 @@ COPY build/deck.py /app/build/deck.py
 RUN cp $PLUTO_DIR/Test_Problems/MHD/CP_Alfven/init.c                ./init.c \
     && cp $PLUTO_DIR/Test_Problems/MHD/CP_Alfven/definitions_11.h ./definitions.h \
     && cp $PLUTO_DIR/Test_Problems/MHD/CP_Alfven/pluto_11.ini     ./pluto.ini
-RUN python3 /app/build/deck.py ./pluto.ini 0.16 0.016
+RUN python3 /app/build/deck.py ./pluto.ini 0.096 0.0096
 
 # setup.py is an ncurses menu, and its --no-curses fallback calls raw_input(),
 # which does not exist in Python 3. The way through is documented in

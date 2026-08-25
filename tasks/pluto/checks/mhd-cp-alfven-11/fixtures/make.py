@@ -70,6 +70,18 @@ def bounds():
             float(part['rule']['tolerance_abs']) if part else None)
 
 
+def var_bound(name):
+    """The bound a variable is actually graded at: its own entry in
+    rule.tolerance_abs_by_variable (a SPLIT check) or tolerance_abs. A
+    near-miss fixture must perturb a variable past ITS bound, or a raised
+    variable absorbs a perturbation sized for the base and the fixture
+    wrongly passes."""
+    with io.open(os.path.join(CHECK, 'rubric.json'), encoding='utf-8') as f:
+        r = json.load(f)
+    rule = dict((c['name'], c) for c in r['criteria'])['primitives_pointwise']['rule']
+    return float((rule.get('tolerance_abs_by_variable') or {}).get(name, rule['tolerance_abs']))
+
+
 def base_state(k):
     """Frame k of the reference: a list of blocks. Pure arithmetic, no RNG."""
     out = []
@@ -143,8 +155,10 @@ def write_tree(d, frames, nsteps=None, dts=None, drop_last=False,
         write_grid(d)
 
 
-def perturbed(ref, size, only=None):
-    """ref plus an absolute perturbation of max-abs `size`."""
+def perturbed(ref, factor, only=None):
+    """ref plus an absolute perturbation of max-abs `factor` times each
+    variable's OWN bound (var_bound), so accept/reject trees stay correct on
+    a SPLIT check whose variables are graded at different bounds."""
     out = []
     for k, blocks in enumerate(ref):
         new = []
@@ -152,7 +166,7 @@ def perturbed(ref, size, only=None):
             if only is not None and name != only:
                 new.append(a.copy())
             else:
-                new.append(a + size * unit(a.size, i, k))
+                new.append(a + factor * var_bound(name) * unit(a.size, i, k))
         out.append(new)
     return out
 
@@ -182,7 +196,7 @@ def main(argv):
 
     # --- must pass ---------------------------------------------------------
     W('accept-identity', ref)
-    W('accept-roundoff', perturbed(ref, tol / 1e3))
+    W('accept-roundoff', perturbed(ref, 1e-3))
     flushed = [[np.zeros_like(a) if nm == 'vx3' else a.copy() for nm, a in zip(VARS, b)] for b in ref]
     W('accept-flushed', flushed)
     dts = [DT] * NFRAME
@@ -193,13 +207,13 @@ def main(argv):
         W('accept-particles-roundoff', ref, parts=[p + tol_part / 1e3 * (np.arange(p.shape[0])[:, None] % 2) * (np.arange(p.shape[1])[None, :] > 0) for p in parts])
 
     # --- must fail ---------------------------------------------------------
-    W('reject-diverged', perturbed(ref, tol * 100))
-    W('reject-near-miss', perturbed(ref, tol * 100, only='prs'))
+    W('reject-diverged', perturbed(ref, 100.0))
+    W('reject-near-miss', perturbed(ref, 100.0, only='prs'))
     one = [[a.copy() for a in b] for b in ref]
-    one[2][3][5] += tol * 10
+    one[2][3][5] += var_bound(VARS[3]) * 10
     W('reject-one-cell', one)
     stag = [[a.copy() for a in b] for b in ref]
-    stag[2][VARS.index('Bx2s')][NX * NY + 3] += tol * 10     # inside the y-staggered block
+    stag[2][VARS.index('Bx2s')][NX * NY + 3] += var_bound('Bx2s') * 10     # inside the y-staggered block
     W('reject-staggered-one-cell', stag)
     W('reject-frames', ref, drop_last=True)
     steps = [k * 10 for k in range(NFRAME)]
