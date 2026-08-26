@@ -5,7 +5,8 @@
     python3 make.py OUTDIR
 
 The trees are synthetic predicate fixtures, not stored PLUTO reference output.
-They include CT face variables so the fixture exercises the raw-file segment
+They use the variable set of the official MHD/Shock_Cloud configuration 01,
+including CT face variables, so the fixture exercises the raw-file segment
 layout as well as the numerical and time-base predicates.
 """
 import io
@@ -18,9 +19,9 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CHECK = os.path.dirname(HERE)
-VARS = ['rho', 'vx1', 'vx2', 'vx3', 'Bx1', 'Bx2', 'Bx3',
-        'Bx1s', 'Bx2s', 'Bx3s']
-CELLS = (4, 4, 2)
+VARS = ['rho', 'vx1', 'vx2', 'vx3', 'Bx1', 'Bx2', 'Bx3', 'prs',
+        'Bx1s', 'Bx2s']
+CELLS = (4, 4, 1)
 NFRAME = 4
 DT = 0.025
 
@@ -34,17 +35,16 @@ def bound():
 
 def lengths():
     n = CELLS[0] * CELLS[1] * CELLS[2]
-    return [n, n, n, n, n, n, n,
+    return [n, n, n, n, n, n, n, n,
             n * (CELLS[0] + 1) // CELLS[0],
-            n * (CELLS[1] + 1) // CELLS[1],
-            n * (CELLS[2] + 1) // CELLS[2]]
+            n * (CELLS[1] + 1) // CELLS[1]]
 
 
 def config_text():
     return ('[Grid]\n\n'
             'X1-grid    1   -2.0   4   u   2.0\n'
             'X2-grid    1   -2.0   4   u   2.0\n'
-            'X3-grid    1   -0.5   2   u   0.5\n')
+            'X3-grid    1   0.0   1   u   1.0\n')
 
 
 def state(frame):
