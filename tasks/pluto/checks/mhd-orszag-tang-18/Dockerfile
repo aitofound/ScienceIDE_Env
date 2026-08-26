@@ -27,7 +27,7 @@ RUN { curl -fsSL -o /tmp/pluto.tar.gz "$PLUTO_URL" \
 ENV PLUTO_DIR=/opt/PLUTO
 
 # Add a package-owned compiler definition; do not replace PLUTO's Config files.
-COPY build/sciaccel.defs $PLUTO_DIR/Config/sciaccel.defs
+COPY sciaccel.defs $PLUTO_DIR/Config/sciaccel.defs
 ARG CODEGEN="-ffp-contract=off"
 RUN sed -i "s|-ffp-contract=off|$CODEGEN|" $PLUTO_DIR/Config/sciaccel.defs \
     && grep '^CFLAGS' $PLUTO_DIR/Config/sciaccel.defs
