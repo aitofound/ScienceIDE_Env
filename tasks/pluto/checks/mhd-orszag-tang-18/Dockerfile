@@ -52,6 +52,4 @@ LABEL sciaccel.codebase="pluto" \
       sciaccel.upstream_config="definitions_18.h + pluto_18.ini" \
       sciaccel.config_path="/app/build/pluto.ini"
 
-COPY run.sh /app/run.sh
-RUN chmod +x /app/run.sh
-ENTRYPOINT ["/app/run.sh"]
+ENTRYPOINT ["/bin/sh", "-c", "set -eu; mkdir -p /app/results; cp /app/build/pluto.ini /app/results/pluto.ini; cd /app/results; exec /app/build/pluto"]
