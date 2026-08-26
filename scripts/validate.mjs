@@ -177,14 +177,16 @@ const result = run({
      actually require of a package - checks that can be graded, targets to
      grade them on - is checked below as a rule, not a file list. */
   tierFiles: {},
-  /* What may sit at a package root. The v1 Harbor directories
-     (environment/, tests/, solution/) are archive-era history and no longer
-     allowed anywhere; 'patches' and 'authoring' remain ONLY because the
-     pre-grid pluto tree still carries them - trim both to ['checks',
-     'targets'] when its rebuild lands. */
+  /* The generic allowlist covers two generations. Current grid/pre-grid
+     packages are grandfathered; new packages use Harbor's environment/tests/
+     solution roots plus ScienceAccel's target/comment extensions. The bundled
+     Harbor layout validator applies the generation-specific closed list. */
   rootFiles: ['task.toml', 'instruction.md', 'README.md', 'LICENSE', '.gitignore', '.gitattributes'],
-  rootDirs: ['checks', 'targets', 'patches', 'authoring'],
-  /* THE GRID PACKAGE, and its closed set. A package with a targets/ directory
+  rootDirs: [
+    'checks', 'targets', 'patches', 'authoring',
+    'environment', 'tests', 'solution', 'target', 'comment',
+  ],
+  /* THE GRANDFATHERED GRID PACKAGE, and its closed set. A package with a targets/ directory
      is the grid model: the package is the request (every check times every
      target), each check is self-contained down to its own patches and build
      context, and NOTHING is shared. Its spec is this list, and the list is
@@ -210,7 +212,9 @@ const result = run({
   /* Every package borrows someone else's code. The README must reach it and
      credit it: the repo URL a reader can follow, and a References section
      naming the paper — or saying there is none. */
-  readmeContract: true,
+  /* New Harbor-module roots intentionally reject README.md; the legacy README
+     citation contract is enforced below only for grandfathered packages. */
+  readmeContract: false,
   canaryToml: CANARY_TOML,
   canaryMd: CANARY_MD,
   canaryLine: CANARY_LINE,
@@ -259,6 +263,8 @@ const CHECK_FILES = [
 for (const pkg of packages) {
   const { slug, dir: base, toml: doc, ns } = pkg;
   const has = (...p) => fs.existsSync(path.join(base, ...p));
+  const isHarborModule = ['environment', 'tests', 'solution', 'target', 'comment']
+    .some((name) => has(name));
 
   /* The one-shot transcript is a LINK, and the check exists because the field
      used to mean a path inside the package. Anyone working from an older
@@ -290,7 +296,7 @@ for (const pkg of packages) {
      Retired packages are exempt. archive/ holds work that is not being graded,
      and the point of retiring rather than deleting is that a slug stays
      citable, not that it stays current. */
-  if (has('checks') && pkg?.status !== 'retired') {
+  if (!isHarborModule && has('checks') && pkg?.status !== 'retired') {
     const checksDir = path.join(base, 'checks');
     for (const name of fs.readdirSync(checksDir).sort()) {
       const cdir = path.join(checksDir, name);
@@ -349,6 +355,28 @@ for (const pkg of packages) {
 
   if (!ns) continue;
 
+  /* Grandfathered grid/pre-grid packages keep their reviewer-facing README
+     citation contract. New Harbor-module roots intentionally have no README;
+     preparation prose belongs under runtime-hidden comment/. */
+  if (!isHarborModule) {
+    const readme = path.join(base, 'README.md');
+    if (!fs.existsSync(readme)) {
+      errors.push(`${slug}/README.md: missing — it carries the citation and the link to the code`);
+    } else {
+      const text = fs.readFileSync(readme, 'utf8');
+      const url = String(ns.repo_url ?? '').trim();
+      if (url && !text.includes(url)) {
+        errors.push(`${slug}/README.md: does not contain repo_url '${url}'. A reader must be able to reach the code without opening task.toml.`);
+      }
+      if (!/^#{1,3}\s+(references|citation|citations|how to cite)\b/im.test(text)) {
+        errors.push(`${slug}/README.md: no References/Citation section`);
+      }
+      if (blank(ns.references)) {
+        warnings.push(`${slug}/task.toml: 'references' is empty; README.md is the human-readable copy`);
+      }
+    }
+  }
+
   /* The operator's numbers never enter a package — the pointed error the
      core's generic unknown-key check stands aside for. */
   for (const k of OPERATOR_KEYS) {
@@ -383,10 +411,10 @@ for (const pkg of packages) {
       `"latest", a tag and a branch name are all moving targets.`);
   }
 
-  /* Beyond draft a package must be gradeable: at least one check, and at
-     least one live (non-underscore) target. Not a file list - a claim about
-     what the grid multiplies to. */
-  if (pkg.status === 'review' || pkg.status === 'published') {
+  /* Beyond draft a package must be gradeable. Grid packages need a check×target
+     cell; Harbor-module packages need test.sh plus one active target, enforced
+     structurally by the bundled validator. */
+  if ((pkg.status === 'review' || pkg.status === 'published') && !isHarborModule) {
     const dirsIn = (d, keep = () => true) => (fs.existsSync(d)
       ? fs.readdirSync(d, { withFileTypes: true }).filter((e) => e.isDirectory() && keep(e.name)).length
       : 0);

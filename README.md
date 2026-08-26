@@ -131,24 +131,20 @@ claude "Read https://aitonomy.org/projects/sci-accel/submit/skill.md and follow 
         Our code is <url> — the <name> loop is the bottleneck."
 ```
 
-The [`package-sciaccel-task`](skills/package-sciaccel-task/) skill reads the
-repository, asks the questions only you can answer, writes the package, and
-closes each check with its build-run-twice-validate loop as far as your
-machine allows, ending at a pull request. **Docker and a GPU are both
-optional** — the skill reports what ran and does not claim a step it did
-not. Codex, Cursor, Amp and Gemini CLI read [`AGENTS.md`](AGENTS.md), which
-points at the same file; nothing requires an agent at all — `CONTRIBUTING.md`
-is the specification and `tasks/laps` is the worked example.
+The thin [`package-sciaccel-task`](skills/package-sciaccel-task/) skill defines
+the closed Harbor-module filesystem and bundles its mechanical validator. New
+tasks follow that shape; current `tasks/laps`, `tasks/pluto`, and `TEMPLATE/`
+are grandfathered grid/pre-grid packages rather than examples to copy.
 
-Checking a package, yours or an existing one:
+Checking the repository:
 
 ```bash
-npm run check                                        # the validator
-npm run check:validators                             # every check's fixtures through its validate.py
+npm run check                                        # both task generations
+npm run check:validators                             # grandfathered grid validators
 ```
 
-Then build each check, run it twice, and hand the two results to its own
-`validate.py` — the loop is spelled out in the skill.
+For a new task, run the Harbor Oracle/verifier path and report the exact targets
+exercised. Never claim an unrun GPU or verifier step passed.
 
 ### If you are here to solve one, not to write one
 
@@ -156,12 +152,12 @@ Then build each check, run it twice, and hand the two results to its own
 git clone https://github.com/aitofound/ScienceAccelBench.git
 ```
 
-> Read `tasks/laps/instruction.md` and implement it.
+> Read the chosen task's `instruction.md` and implement it.
 
-That file is the whole task and the package is the request. Nothing is
-assembled for the agent and no script runs on its behalf; no reference is
-stored anywhere, so it can produce its own and grade itself with each check's
-`validate.py` before submitting.
+For a new Harbor-module task, the runner binds one active `target/*.json` and
+Harbor grades through `tests/test.sh` against the CPU Oracle in
+`solution/solve.sh`; preparation-only `comment/` is not given to the coding
+agent. `tasks/laps` and `tasks/pluto` retain their existing grid contracts.
 
 ## Contributing
 

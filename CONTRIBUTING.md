@@ -75,58 +75,38 @@ owner named in `task.toml` is the byline.
 
 ## The guided path
 
-This document is the specification, and reading it end to end is never wrong.
-But packaging a twenty-year-old MHD code into a container that builds on
-someone else's machine is engineering, and we said on the project page that it
-is engineering we do with you rather than homework we leave you. The
-[`package-sciaccel-task`](skills/package-sciaccel-task/) skill is the
-first half of that promise, automated: from a checkout of this repository, an
-agent that loads it will read the target codebase, put the questions only you
-can answer to you, write `tasks/<codebase>/` in the shape of `tasks/laps`, and
-close each check with its own build-run-twice-validate loop as far as your
-machine allows — reporting honestly what ran rather than claiming a step it
-did not reach.
+For a new task, read the thin
+[`package-sciaccel-task`](skills/package-sciaccel-task/) skill. It owns the
+exact filesystem and bundles the mechanical validator. Where the skill and the
+validator disagree, that is a bug.
 
-It navigates this document; it does not replace or reinterpret it. Where the
-skill and `scripts/validate.mjs` disagree, the validator is right, and the
-disagreement is a bug worth an issue.
+## New module tasks — the closed set
 
-## The package — the closed set
+One independent scientific or numerical module is one Harbor task:
 
-A package's layout is a closed list that `scripts/validate.mjs` enforces:
+    tasks/<module>/
+      task.toml
+      instruction.md
+      environment/       Dockerfile plus free-form Harbor build dependencies
+      tests/              Dockerfile, test.sh, and free-form verifier content
+      solution/           solve.sh CPU oracle plus its dependencies
+      target/             flat *.json ScienceAccel target descriptors
+      comment/            optional, free-form preparation narrative; runtime-hidden
 
-    tasks/<codebase>/
-      README.md          what the codebase is; human-facing, nothing else
-      instruction.md     the whole task, and the entrance for a solving agent
-      task.toml          the registry's manifest
-      checks/<check>/    self-contained: deck, rubric.json (the pass policy,
-                         with the evidence behind it), validate.py, fixtures/,
-                         and the Dockerfile + patches/ that pin and build the
-                         incumbent — the directory is the whole build context
-      targets/<id>/      exactly ONE file, target.json: the device, its
-                         `runner`, and under `host` the machine it sits in.
-                         A `_` prefix on the directory comments the target out.
+Only `target/` and `comment/` extend Harbor. The root is closed;
+`environment/`, `tests/`, `solution/`, and `comment/` are opaque below their
+required entry files. Run:
 
-The package **is** the request: every check times every non-`_` target is a
-cell, id `<check>-<target-id>`. Nothing is shared between checks — not the
-codebase (each Dockerfile fetches the pin itself), not patches, not helper
-scripts — and nothing is assembled for the solver. The list above is closed on
-purpose: a file not on it is a violation the validator rejects, never a
-convention waiting to happen. The derivation of a tolerance lives in that
-check's rubric under `criteria[].evidence`; scaffolding that produced a check
-lives in git history, not in the tree.
+```bash
+python3 skills/package-sciaccel-task/scripts/validate-harbor-task.py tasks/<module>
+npm run check
+```
 
-[`TEMPLATE/`](TEMPLATE/) models this shape and its
-`checks/example-check/` is a complete working specimen, CI-exercised so it
-cannot rot. The directory name is the slug, and it is the codebase's own name
-— `pluto`, `laps` — not a serial number. Renaming a slug after anything cites
-it breaks that citation, so pick the name once and mean it; retirement is a
-status, not a deletion.
-
-Seven packages under [`archive/`](archive/) keep the older v1 Harbor
-two-container shape; [`archive/README.md`](archive/README.md) records what
-that was. They are records, not the model — a new package is a grid package,
-always.
+Current `tasks/laps`, `tasks/pluto`, and `TEMPLATE/` are grandfathered
+grid/pre-grid packages. They remain valid without migration, but are not the
+model for new tasks. The grid-specific `checks/`, `targets/`, cell, image
+reproduction, and per-check validator sections below apply only when modifying
+those existing packages.
 
 ### The difficulty floor
 
@@ -267,7 +247,7 @@ a restatement of any number a rubric already owns. A task without a policy
 its owner would sign has no verifier, and a fast port its owner does not
 trust is not a result.
 
-### 3. `checks/` — what gets graded
+### 3. Grandfathered grid `checks/` — what gets graded
 
 One directory per configuration, self-contained, and the directory is the
 whole Docker build context. The contract in full — the required files, the
@@ -299,7 +279,7 @@ lesson paid for in the 2026-08-12 sweep when a CPU-only submission carried a
 `compute_apps` signal (processes holding a device context) over utilisation
 sampling, which lies on shared hosts.
 
-### 4. `targets/` — the machines, described
+### 4. Grandfathered grid `targets/` — the machines, described
 
 One machine, one file, written **by the device owner, from the machine** —
 nobody else can run a command there, and the solver has no device at all, so
