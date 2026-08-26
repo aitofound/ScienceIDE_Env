@@ -50,8 +50,8 @@ code.
 
 Checks are named `<physics>-<test-dir>-<config>` — `mhd-orszag-tang-22` is
 `Test_Problems/MHD/Orszag_Tang/definitions_22.h` — so every check is traceable
-to the upstream test it came from. An HD variant shipped inside an MHD
-directory keeps the directory in its name (`hd-mhd-jet-18`).
+to the upstream test it came from. The corrected Orszag-Tang check is named
+`mhd-orszag-tang-18`, matching `definitions_18.h` in that directory.
 
 ### The pass policy
 
