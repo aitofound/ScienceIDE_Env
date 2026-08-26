@@ -26,12 +26,6 @@ RUN { curl -fsSL -o /tmp/pluto.tar.gz "$PLUTO_URL" \
     && rm /tmp/pluto.tar.gz
 ENV PLUTO_DIR=/opt/PLUTO
 
-# Add a package-owned compiler definition; do not replace PLUTO's Config files.
-COPY sciaccel.defs $PLUTO_DIR/Config/sciaccel.defs
-ARG CODEGEN="-ffp-contract=off"
-RUN sed -i "s|-ffp-contract=off|$CODEGEN|" $PLUTO_DIR/Config/sciaccel.defs \
-    && grep '^CFLAGS' $PLUTO_DIR/Config/sciaccel.defs
-
 WORKDIR /app/build
 # Both the source and deck are copied unchanged from the official adjacent
 # PLUTO test. In particular, the shipped tstop, grid and output cadence are
@@ -42,7 +36,7 @@ RUN cp "$PLUTO_DIR/Test_Problems/MHD/Orszag_Tang/init.c" ./init.c \
 
 # setup.py's --auto-update path is non-interactive when makefile already names
 # the architecture definition.
-RUN printf 'ARCH         = sciaccel.defs\n' > makefile \
+RUN printf 'ARCH         = Linux.gcc.defs\n' > makefile \
     && python3 $PLUTO_DIR/setup.py --auto-update \
     && make -j"$(nproc)" \
     && test -x ./pluto
