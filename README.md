@@ -21,7 +21,8 @@ The authoring loop is deliberately collaborative:
 3. iterate with the module owner to choose coverage, physical pass policy, and
    tolerances from evidence rather than guesswork;
 4. package checks that force the module port, compare it with the CPU original,
-   and include a clearly labelled `ACCELERATION-*` workload;
+   with at least one materially worthwhile direct check labelled
+   `acceleration` in its `check.json`;
 5. run and self-test the original CPU/oracle path before submitting; and
 6. record determinism/noise evidence, commands, hazards, decisions, blind spots,
    and unresolved questions in optional `comment/` notes.
@@ -50,7 +51,9 @@ tasks/<group>/<module-slug>/          # <group>/ may be omitted
 │   ├── Dockerfile                     # separate CPU verifier environment
 │   ├── test.sh                        # only verifier entrance; non-binary reward
 │   ├── checks/
-│   │   ├── ACCELERATION-<workload>/  # at least one direct acceleration check
+│   │   ├── <check>/                   # ordinary stable direct check name
+│   │   │   ├── check.json             # optional labels metadata
+│   │   │   └── ...
 │   │   └── <other-check>/             # optional breadth/correctness checks
 │   └── ...
 ├── solution/
@@ -76,9 +79,12 @@ that target. `comment/` is repository-visible preparation material but hidden
 from Harbor runtime and scoring; it is optional and non-normative.
 
 Checks should cover the module's breadth and physical consistency with the CPU
-original. Their rubrics and tolerances are authored with the human owner. At
-least one direct `ACCELERATION-*` check must represent a workload materially
-worth accelerating; the static validator checks the convention, not the science.
+original. Their rubrics and tolerances are authored with the human owner. A
+direct check may carry an optional `check.json`; it must be a JSON object whose
+only key is `labels`, an array of unique, nonempty lower-kebab-case strings.
+Every Harbor leaf must have at least one direct check with the exact
+`acceleration` label. A direct `ACCELERATION-*` directory name is invalid; the
+static validator checks the metadata contract, not the science.
 
 ## CPU oracle and scoring
 
@@ -109,14 +115,14 @@ npm run check:validators
 
 The Harbor validator discovers direct and one-level grouped leaves and checks
 only their structural boundaries: required entries, one real codebase root,
-`tests/checks/`, a direct `ACCELERATION-*` directory, flat active targets, and
-strict target JSON. It does not recursively inspect source, scientific content,
-or opaque runtime/check internals. The repository validator also checks Harbor
-manifest shape and generated registry projections.
+`tests/checks/`, direct check directories, optional `check.json` label metadata,
+flat active targets, and strict target JSON. It does not recursively inspect
+source, scientific content, or opaque runtime/check internals. The repository
+validator also checks Harbor manifest shape and generated registry projections.
 
 ## Legacy packages
 
-Current `tasks/laps`, `tasks/pluto`, and `archive/templates/grid-v1/` are grandfathered
+Current `tasks/pluto/` and `archive/templates/grid-v1/` are grandfathered
 pre-grid/grid packages. Their plural `checks/` × `targets/` contracts, image
 verification, and existing projections remain valid and are intentionally not
 migrated by this revision. Do not mix that legacy shape with a new leaf's
