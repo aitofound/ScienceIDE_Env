@@ -158,8 +158,7 @@ python3 skills/package-sciaccel-task/scripts/validate-harbor-task.py \
   tasks/<group>/<module-slug>
 ```
 
-Discover direct and one-level grouped leaves while leaving current legacy
-packages alone:
+Discover direct and one-level grouped leaves:
 
 ```bash
 python3 skills/package-sciaccel-task/scripts/validate-harbor-task.py --all tasks
@@ -177,15 +176,5 @@ BASE_REF=origin/main npm run check
 npm run check:validators
 ```
 
-`npm run check:validators` belongs to the current grandfathered grid checks;
-it is not a reason to add a validator self-test file to this skill or to a new
-leaf.
-
-## Legacy boundary
-
-Current `tasks/laps`, `tasks/pluto`, and `TEMPLATE/` are grandfathered
-grid/pre-grid packages. Their `checks/` × `targets/` contracts, image
-verification, and existing projections remain valid and are intentionally not
-migrated here. New work uses the self-sufficient Harbor leaf tree above; do not
-copy the legacy grid shape or mix its plural `targets/` and `checks/` roots with
-Harbor's singular `target/` and `tests/checks/` roots.
+Do not add a validator self-test file to this skill or to a task. Validate the
+actual task leaves and repository gates instead.
