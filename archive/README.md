@@ -10,9 +10,10 @@ status edit.
 `tasks/` holds **laps (LAPS)**, the worked grid package, and **pluto
 (PLUTO)**, reset on 2026-08-23 and being rebuilt from scratch.
 
-Two records of the v1-era GPU verification campaign live here beside the
-packages they ran against: [`HANDOFF-GPU.md`](HANDOFF-GPU.md) and
-[`RESULTS-GPU-2026-08-12.md`](RESULTS-GPU-2026-08-12.md).
+Two records of the v1-era GPU verification campaign are preserved separately
+from the retired packages under `docs/history/gpu/`:
+[`HANDOFF-GPU.md`](../docs/history/gpu/HANDOFF-GPU.md) and
+[`RESULTS-GPU-2026-08-12.md`](../docs/history/gpu/RESULTS-GPU-2026-08-12.md).
 
 ## Why
 
@@ -52,7 +53,7 @@ reference for what a package coming back should look like.
 
 `tasks/laps` is at `status = "example"`: a worked demonstration of how a grid
 package is built, not a scored task with an owner behind it — runnable, solved
-and graded 8/8 (see `submissions/laps/2026-08-23/`). `tasks/pluto` is a
+and graded 8/8 (see `runs/laps/2026-08-23/`). `tasks/pluto` is a
 placeholder mid-rebuild; nothing in it is usable yet.
 
 ## Coming back
