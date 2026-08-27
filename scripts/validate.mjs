@@ -184,8 +184,13 @@ const result = run({
   rootFiles: ['task.toml', 'instruction.md', 'README.md', 'LICENSE', '.gitignore', '.gitattributes'],
   rootDirs: [
     'checks', 'targets', 'patches', 'authoring',
-    'environment', 'tests', 'solution', 'target', 'comment',
+    'code', 'environment', 'tests', 'solution', 'target', 'comment',
   ],
+  /* A Harbor leaf has a deliberately smaller closed root than legacy grid
+     packages. The bundled Python validator checks the immediate code/ and
+     tests/checks/ edges; core uses this allowlist to reject root drift too. */
+  harborRootFiles: ['task.toml', 'instruction.md'],
+  harborRootDirs: ['code', 'environment', 'tests', 'solution', 'target', 'comment'],
   /* THE GRANDFATHERED GRID PACKAGE, and its closed set. A package with a targets/ directory
      is the grid model: the package is the request (every check times every
      target), each check is self-contained down to its own patches and build
@@ -263,8 +268,8 @@ const CHECK_FILES = [
 for (const pkg of packages) {
   const { slug, dir: base, toml: doc, ns } = pkg;
   const has = (...p) => fs.existsSync(path.join(base, ...p));
-  const isHarborModule = ['environment', 'tests', 'solution', 'target', 'comment']
-    .some((name) => has(name));
+  const isHarborModule = has('code')
+    || ['environment', 'tests', 'solution', 'target'].every((name) => has(name));
 
   /* The one-shot transcript is a LINK, and the check exists because the field
      used to mean a path inside the package. Anyone working from an older
