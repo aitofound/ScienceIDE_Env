@@ -233,10 +233,14 @@ const result = run({
   /* Deliberate renames, so the old slug stays resolvable for anything that
      cited it and an ACCIDENTAL disappearance is still caught. Keep this inline
      while it is a handful; move it to registry/ if it ever grows. */
-  slugRenames: { 'sa-0001': 'pluto', 'sa-0016': 'laps' },
+  slugRenames: {
+    'sa-0001': 'pluto',
+    'sa-0016': 'laps-3d-compressible',
+    'laps': 'laps-3d-compressible',
+  },
   dirRe: /^[a-z][a-z0-9-]*$/,
   legacyRe: /^[a-z][a-z0-9-]*\.ya?ml$/,
-  dirShape: 'a lowercase codebase name (pluto, laps)',
+  dirShape: 'a lowercase codebase/task name (pluto, laps-3d-compressible)',
   baselineMapper: (name) => {
     if (/^[a-z][a-z0-9-]*\.ya?ml$/.test(name)) return name.replace(/\.ya?ml$/, '');
     if (/^[a-z][a-z0-9-]*$/.test(name)) return name;
