@@ -8,6 +8,8 @@ original. A task is not a toy kernel: it is one independently meaningful module
 with a complete source snapshot, a human-curated verifier, and an acceleration
 workload worth running on a device.
 
+Repository path ownership is documented in [`docs/root-layout.md`](docs/root-layout.md).
+
 ## Authoring a task
 
 Start with the canonical [packaging skill](skills/package-sciaccel-task/SKILL.md).
@@ -114,7 +116,7 @@ manifest shape and generated registry projections.
 
 ## Legacy packages
 
-Current `tasks/laps`, `tasks/pluto`, and `TEMPLATE/` are grandfathered
+Current `tasks/laps`, `tasks/pluto`, and `archive/templates/grid-v1/` are grandfathered
 pre-grid/grid packages. Their plural `checks/` × `targets/` contracts, image
 verification, and existing projections remain valid and are intentionally not
 migrated by this revision. Do not mix that legacy shape with a new leaf's

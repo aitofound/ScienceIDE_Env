@@ -137,7 +137,7 @@ CPU-oracle, self-test, or verifier step passed unless it actually ran.
 
 ## Grandfathered packages
 
-`tasks/laps`, `tasks/pluto`, and `TEMPLATE/` retain their existing
+`tasks/laps`, `tasks/pluto`, and `archive/templates/grid-v1/` retain their existing
 pre-grid/grid contracts and are intentionally untouched. Their plural
 `checks/` × `targets/` roots, per-check image flow, and legacy projection rules
 are valid for those packages only. They are not examples for a new Harbor leaf;
