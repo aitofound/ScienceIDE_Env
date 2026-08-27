@@ -66,10 +66,11 @@ jobs:
                 ...context.repo, pull_number: number, per_page: 100,
               });
               const manifest = files
+                .filter((f) => f.status !== 'removed')
                 .map((f) => f.filename)
-                .find((n) => /^tasks\/[^/]+\/task\.toml$/.test(n));
+                .find((n) => /^tasks\/[^/]+(?:\/[^/]+)?\/task\.toml$/.test(n));
               if (!manifest) {
-                core.notice('no tasks/*/task.toml in this pull request — nothing to file under a science.');
+                core.notice('no added or modified task manifest in this pull request — nothing to file under a science.');
                 return;
               }
               const { data } = await github.rest.repos.getContent({
