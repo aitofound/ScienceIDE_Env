@@ -14,7 +14,7 @@
 #
 # This is the OCI image INDEX digest, not a per-architecture manifest digest,
 # so it resolves correctly on amd64 and arm64 alike - verified on both. It is
-# the same digest TEMPLATE/checks/example-check pins, deliberately: one base
+# the same digest archive/templates/grid-v1/checks/example-check pins, deliberately: one base
 # for the registry means one thing to re-pin when it is time to move.
 FROM debian:bookworm-slim@sha256:1caf1c703c8f7e15dcf2e7769b35000c764e6f50e4d7401c355fb0248f3ddfdb
 

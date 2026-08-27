@@ -49,7 +49,7 @@ checks/<check>/
                                   definition, an input deck, a patch script.
 ```
 
-`TEMPLATE/checks/example-check/` is a complete, working specimen of all of
+`archive/templates/grid-v1/checks/example-check/` is a complete, working specimen of all of
 this, small enough to read in a minute. CI runs its fixtures through its
 validator on every push, so it cannot rot into a description of something that
 no longer works. Copy it.
@@ -307,7 +307,7 @@ shipped `dt` to seventeen digits two entries above the criterion that checked
 - the four required files exist
 - `rubric.json` parses, and its `check` and `codebase` match their directory and
   package
-- `TEMPLATE/checks/` holds at least one specimen, and it satisfies the same
+- `archive/templates/grid-v1/checks/` holds at least one specimen, and it satisfies the same
   rules plus an `output` block — the template may not teach a shape the
   registry rejects, nor omit one it requires
 
