@@ -27,10 +27,10 @@ carrying the complete pinned codebase and its own Harbor files.
    which tolerances are scientifically defensible; this skill supplies none.
 4. **Package checks.** Prefer multiple checks under `tests/checks/`. Together
    they should force a full module port, compare the accelerated result with
-   the CPU original under the human-decided policy, and include at least one
-   clearly labelled, materially worthwhile acceleration workload in a direct
-   `ACCELERATION-*` check directory. A check's scientific content is opaque to
-   the static validator; the check itself and its verifier own the policy.
+   the CPU original under the human-decided policy, and give at least one
+   materially worthwhile direct check the `acceleration` label in its
+   `check.json`. A check's scientific content is opaque to the static
+   validator; the check itself and its verifier own the policy.
 5. **Run the original path before submission.** `solution/solve.sh` prepares or
    caches oracle outputs from the original CPU implementation. Run the same
    `tests/test.sh` against those outputs as a self-test. It must pass before
@@ -68,9 +68,10 @@ tasks/<group>/<module-slug>/       # <group>/ may be omitted
 │   ├── Dockerfile                 # separate CPU verifier environment
 │   ├── test.sh                    # the only verifier entrance; emits reward
 │   ├── checks/
-│   │   ├── ACCELERATION-<name>/   # at least one direct acceleration workload
+│   │   ├── <check>/               # ordinary stable direct check name
+│   │   │   ├── check.json         # optional labels metadata
 │   │   │   └── ...                # check-owned rubric, fixtures, scripts, data
-│   │   └── <other-check>/         # optional breadth/correctness checks
+│   │   └── <other-check>/          # optional breadth/correctness checks
 │   └── ...                        # free-form verifier inputs and dependencies
 ├── solution/
 │   ├── solve.sh                   # trusted CPU/oracle preparation entry point
@@ -113,6 +114,15 @@ runtime and scoring, and never a substitute for `instruction.md`, a test, or an
 oracle. The target descriptors are runtime inputs, while `environment/` is the
 coding-agent environment and `tests/` is the separate CPU verifier environment.
 
+### Check labels
+
+Direct check directories use ordinary stable names. A direct check may contain
+an optional `check.json`, which must be a JSON object whose only key is
+`labels`. `labels` is an array of unique, nonempty lower-kebab-case strings.
+Every Harbor leaf must have at least one direct check whose `check.json` carries
+the exact `acceleration` label. A legacy `ACCELERATION-*` direct directory name
+is invalid; the path is never interpreted as a label.
+
 ## Instruction and checks
 
 `instruction.md` must tell a solving agent which module to port, preserved
@@ -124,13 +134,13 @@ active descriptor.
 
 Tests should cover the module's breadth rather than one convenient kernel. A
 well-curated set has checks for the important paths and physical consistency
-with the CPU original, plus one directly named `ACCELERATION-*` workload whose
-size or repeated work is worth accelerating. The human owner writes the
-rubric, tolerances, invariants, determinism/noise treatment, and any stochastic
-pass policy. Do not invent a fixed determinism taxonomy or registry-wide
-scientific tolerance. A check may be exact, tolerance-based, statistical, or
-otherwise appropriate to its science, provided the owner documents and
-validates it.
+with the CPU original, plus one direct check labelled `acceleration` in
+`check.json` whose size or repeated work is worth accelerating. The human owner
+writes the rubric, tolerances, invariants, determinism/noise treatment, and any
+stochastic pass policy. Do not invent a fixed determinism taxonomy or
+registry-wide scientific tolerance. A check may be exact, tolerance-based,
+statistical, or otherwise appropriate to its science, provided the owner
+documents and validates it.
 
 ## Oracle, reward, and validation loop
 
@@ -165,9 +175,10 @@ python3 skills/package-sciaccel-task/scripts/validate-harbor-task.py --all tasks
 ```
 
 The validator checks only the closed boundary, required entry points, one real
-codebase directory, `tests/checks/` and a direct `ACCELERATION-*` directory,
-flat active targets, and strict target JSON. It does not inspect scientific
-content, source internals, or opaque environment/test/solution/check subtrees.
+codebase directory, `tests/checks/`, direct check directories, optional
+`check.json` label metadata, flat active targets, and strict target JSON. It
+does not inspect scientific content, source internals, or opaque
+environment/test/solution/check subtrees.
 The repository validator additionally checks manifests and generated registry
 projections:
 
