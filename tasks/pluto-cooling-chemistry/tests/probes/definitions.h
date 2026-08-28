@@ -1,0 +1,33 @@
+#ifndef PROBE_DEFINITIONS_H
+#define PROBE_DEFINITIONS_H
+#ifndef PHYSICS
+#define PHYSICS HD
+#endif
+#define DIMENSIONS 1
+#define GEOMETRY CARTESIAN
+#define BODY_FORCE NO
+#define RECONSTRUCTION LINEAR
+#define TIME_STEPPING RK2
+#define NTRACER 0
+#define PARTICLES NO
+#define USER_DEF_PARAMETERS 0
+#ifndef EOS
+#define EOS IDEAL
+#endif
+#ifndef COOLING
+#define COOLING NO
+#endif
+#define ENTROPY_SWITCH NO
+#define DIVB_CONTROL NO
+#define BACKGROUND_FIELD NO
+#define AMBIPOLAR_DIFFUSION NO
+#define RESISTIVITY NO
+#define HALL_MHD NO
+#define THERMAL_CONDUCTION NO
+#define VISCOSITY NO
+#define ROTATING_FRAME NO
+#define WARNING_MESSAGES NO
+#define UNIT_DENSITY (CONST_amu*200.0)
+#define UNIT_LENGTH (2.5e15)
+#define UNIT_VELOCITY (1.e5)
+#endif
