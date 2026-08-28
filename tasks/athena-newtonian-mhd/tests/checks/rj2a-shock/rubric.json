@@ -1,0 +1,102 @@
+{
+  "rubric_version": "athena-mhd-rubric-v1",
+  "case": "rj2a-shock",
+  "description": "Exact-pin Athena++ Newtonian ideal-MHD rj2a-shock check; exact identity is provisional self-wiring evidence, not a final scientific tolerance.",
+  "upstream_deck": "code/athena/inputs/mhd/athinput.rj2a",
+  "check_deck": "config/athinput.rj2a",
+  "deck_provenance": {
+    "relationship": "documented check-local derivative; not an exact upstream copy",
+    "parent_sha256": "4fec54e7fb70b44e44f461834be462e7cc365af4599ee54c5b94eb627e85f4ee",
+    "derived_sha256": "67d6fb1feae09a502d8d81939d05766d9bf5e7e58c892fb256aa04228db99b66",
+    "exact_changes": [
+      "added output2/variable=prim declaration so the check-owned TAB output override has an explicit variable",
+      "added meshblock section with nx1=256, nx2=1, nx3=1; run_case.py overrides these values for the check"
+    ],
+    "effective_cli_overrides": [
+      "output2/file_type=tab",
+      "output2/variable=prim",
+      "output2/dt=0.2",
+      "time/tlim=0.2",
+      "time/ncycle_out=0",
+      "mesh/nx1=64",
+      "mesh/nx2=1",
+      "mesh/nx3=1",
+      "meshblock/nx1=64",
+      "meshblock/nx2=1",
+      "meshblock/nx3=1",
+      "problem/compute_error=true"
+    ],
+    "effective_runner_selectors": [
+      "--problem shock_tube",
+      "--eos adiabatic",
+      "--flux hlld",
+      "--dimensions 64,1,1",
+      "--meshblock 64,1,1",
+      "--tlim 0.2",
+      "--output-dt 0.2",
+      "--boundary outflow"
+    ]
+  },
+  "problem": "shock_tube",
+  "eos": "adiabatic",
+  "flux": "hlld",
+  "dimensions": [
+    64,
+    1,
+    1
+  ],
+  "meshblock_dimensions": [
+    64,
+    1,
+    1
+  ],
+  "tlim": 0.2,
+  "output_dt": 0.2,
+  "frame_count": 2,
+  "expected_times": [
+    0.0,
+    0.2
+  ],
+  "boundary_policy": "outflow",
+  "required_pipeline": [
+    "src/hydro/calculate_fluxes.cpp",
+    "src/hydro/add_flux_divergence.cpp",
+    "src/field/calculate_corner_e.cpp",
+    "src/field/ct.cpp",
+    "src/task_list/time_integrator.cpp"
+  ],
+  "artifact_schema": "athena-mhd-state/v1",
+  "variables": [
+    "x1",
+    "x2",
+    "x3",
+    "rho",
+    "press",
+    "vel1",
+    "vel2",
+    "vel3",
+    "Bcc1",
+    "Bcc2",
+    "Bcc3"
+  ],
+  "comparison_policy": "self_wiring_exact_identity_pending_jason_science_policy",
+  "scientific_status": "Face fields are represented by explicit shape/hash diagnostics derived from native Bcc output; exact identity is provisional and Jason owns final CT/div-B tolerances.",
+  "native_output": "Athena++ formatted TAB variable=prim with Bcc1/Bcc2/Bcc3; output2/dt=tlim creates exact initial/final endpoints.",
+  "required_observables": [
+    "full finite state rows",
+    "cell-centred Bcc1/Bcc2/Bcc3",
+    "face-field locations/shapes/hash",
+    "discrete div-B l1/linf/max",
+    "conserved mass/momentum/energy",
+    "CT source-path evidence"
+  ],
+  "failure_modes_rejected": [
+    "hydro fallback",
+    "missing transverse dimensions",
+    "missing Bcc or CT sidecar",
+    "scalar error-row replay",
+    "non-finite or non-positive states",
+    "malformed/symlink/extra artifacts"
+  ],
+  "operational_cap_seconds": 120
+}
