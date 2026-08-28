@@ -23,6 +23,11 @@ codebase. Before packaging, the author should:
 6. record actual commands, configurations, oracle/noise/determinism evidence,
    hazards, tolerance decisions, blind spots, and unresolved points.
 
+Merge does **not** require a Claude/Codex/frontier-agent implementation attempt,
+one-shot run, candidate port, or raw session transcript. Such evidence is
+optional and may be recorded when it exists; its absence or an honest `UNRUN`
+never fails static CI or blocks merge.
+
 Do not invent scientific facts. Tolerances, stochastic policies, precision
 choices, runtime claims, and physical invariants come from the human owner or a
 measurement. There is no universal tolerance or fixed determinism taxonomy.
