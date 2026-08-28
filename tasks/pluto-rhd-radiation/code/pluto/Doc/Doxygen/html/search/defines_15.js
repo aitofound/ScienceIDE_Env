@@ -1,0 +1,25 @@
+var searchData=
+[
+  ['uct0_0',['UCT0',['../ct_8h.html#a58d8abe445d5acfa19852e8b35678117',1,'ct.h']]],
+  ['uct_5fcontact_1',['UCT_CONTACT',['../ct_8h.html#a13591b250b668ef964a0c79be5a41303',1,'ct.h']]],
+  ['uct_5fgforce_2',['UCT_GFORCE',['../ct_8h.html#a5ebb9cd86e543648410874690da9f9dd',1,'ct.h']]],
+  ['uct_5fhll_3',['UCT_HLL',['../ct_8h.html#aa5edac81d7eb4d2603e00eff08332d0a',1,'ct.h']]],
+  ['uct_5fhlld_4',['UCT_HLLD',['../ct_8h.html#acf7a4142b4a28e90e9fbd42fd37e08b5',1,'ct.h']]],
+  ['um_5',['UM',['../math__rand__mt19937-64_8c.html#a4b9cfb88c6beb4254e2971abacbd8aab',1,'UM:&#160;math_rand_mt19937-64.c'],['../math__random_8c.html#a4b9cfb88c6beb4254e2971abacbd8aab',1,'UM:&#160;math_random.c']]],
+  ['umist_5flim_6',['UMIST_LIM',['../pluto_8h.html#a98032e0abb58bd2ed81bd2316cb942f0',1,'pluto.h']]],
+  ['uniform_5fcartesian_5fgrid_7',['UNIFORM_CARTESIAN_GRID',['../plm__coeffs_8h.html#a00bc6ec721480339970c847a6b841961',1,'plm_coeffs.h']]],
+  ['uniform_5fgrid_8',['UNIFORM_GRID',['../pluto_8h.html#a3935536e2a7977cc161708001f2b5c7d',1,'pluto.h']]],
+  ['unit_5fdensity_9',['UNIT_DENSITY',['../pluto_8h.html#a1e411ee12bfbc3e7b61dd978a2faf737',1,'pluto.h']]],
+  ['unit_5flength_10',['UNIT_LENGTH',['../euler___n_o___l_e_s_2definitions_8h.html#a1b2dfce30d2dd62f2c1a7b3782d50d14',1,'UNIT_LENGTH:&#160;definitions.h'],['../pseudo___d_n_s_2definitions_8h.html#a1b2dfce30d2dd62f2c1a7b3782d50d14',1,'UNIT_LENGTH:&#160;definitions.h'],['../selective___l_e_s_2definitions_8h.html#a1b2dfce30d2dd62f2c1a7b3782d50d14',1,'UNIT_LENGTH:&#160;definitions.h'],['../standard___l_e_s_2definitions_8h.html#a1b2dfce30d2dd62f2c1a7b3782d50d14',1,'UNIT_LENGTH:&#160;definitions.h'],['../pluto_8h.html#a1b2dfce30d2dd62f2c1a7b3782d50d14',1,'UNIT_LENGTH:&#160;pluto.h']]],
+  ['unit_5fmagfield_11',['UNIT_MAGFIELD',['../particles_8h.html#a79a3f0794147fc543e0e2c8424ea54ee',1,'particles.h']]],
+  ['unit_5ftime_12',['UNIT_TIME',['../particles_8h.html#a703954deace186f4a0ec8ab725563736',1,'particles.h']]],
+  ['unit_5fvelocity_13',['UNIT_VELOCITY',['../pluto_8h.html#a038fb4c48089f0cc2e50e9936c1895d8',1,'pluto.h']]],
+  ['update_5fvector_5fpotential_14',['UPDATE_VECTOR_POTENTIAL',['../pluto_8h.html#a8961ac9f3c4354960ada142b04dffb4f',1,'pluto.h']]],
+  ['upwind_5faverage_15',['UPWIND_AVERAGE',['../ct__emf__average_8c.html#a1a803552c4c44eecc9e4b60b9e32be04',1,'ct_emf_average.c']]],
+  ['use_5fcma_16',['USE_CMA',['../adv__flux_8c.html#a820d7afc3c04204891656ade305cb819',1,'adv_flux.c']]],
+  ['use_5fpr_5fgradient_17',['USE_PR_GRADIENT',['../_r_m_h_d_2rhs_8c.html#a7a019559f0cf5e5c0854ee1db979663a',1,'USE_PR_GRADIENT:&#160;rhs.c'],['../_semi_r_m_h_d_2rhs_8c.html#a7a019559f0cf5e5c0854ee1db979663a',1,'USE_PR_GRADIENT:&#160;rhs.c']]],
+  ['use_5fprs_5fgradient_18',['USE_PRS_GRADIENT',['../_m_h_d_2rhs_8c.html#a8917bc1da53f3f18b6077c53edb6969d',1,'USE_PRS_GRADIENT:&#160;rhs.c'],['../rad__rhs_8c.html#a8917bc1da53f3f18b6077c53edb6969d',1,'USE_PRS_GRADIENT:&#160;rad_rhs.c']]],
+  ['user_5fdef_5fconstants_19',['USER_DEF_CONSTANTS',['../euler___n_o___l_e_s_2definitions_8h.html#abfc9e17d2eb4fa28172bd70b770bd0d9',1,'USER_DEF_CONSTANTS:&#160;definitions.h'],['../pseudo___d_n_s_2definitions_8h.html#abfc9e17d2eb4fa28172bd70b770bd0d9',1,'USER_DEF_CONSTANTS:&#160;definitions.h'],['../selective___l_e_s_2definitions_8h.html#abfc9e17d2eb4fa28172bd70b770bd0d9',1,'USER_DEF_CONSTANTS:&#160;definitions.h'],['../standard___l_e_s_2definitions_8h.html#abfc9e17d2eb4fa28172bd70b770bd0d9',1,'USER_DEF_CONSTANTS:&#160;definitions.h']]],
+  ['user_5fdef_5fparameters_20',['USER_DEF_PARAMETERS',['../euler___n_o___l_e_s_2definitions_8h.html#a737f0a05ecb1ce4ddaa23a24fa600a9f',1,'USER_DEF_PARAMETERS:&#160;definitions.h'],['../pseudo___d_n_s_2definitions_8h.html#a737f0a05ecb1ce4ddaa23a24fa600a9f',1,'USER_DEF_PARAMETERS:&#160;definitions.h'],['../selective___l_e_s_2definitions_8h.html#a737f0a05ecb1ce4ddaa23a24fa600a9f',1,'USER_DEF_PARAMETERS:&#160;definitions.h'],['../standard___l_e_s_2definitions_8h.html#a737f0a05ecb1ce4ddaa23a24fa600a9f',1,'USER_DEF_PARAMETERS:&#160;definitions.h']]],
+  ['userdef_21',['USERDEF',['../pluto_8h.html#a103dd83572f6655baa24a406757403b0',1,'pluto.h']]]
+];
