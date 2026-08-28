@@ -1,0 +1,13 @@
+var searchData=
+[
+  ['t_0',['t',['../sedov_8c.html#a61787117e25ec7c6bc84492653c8afe8',1,'sedov.c']]],
+  ['tagcells_2ecpp_1',['TagCells.cpp',['../_h_d_2_disk___planet_2_tag_cells_8cpp.html',1,'(Global Namespace)'],['../_h_d_2_stellar___wind_2_tag_cells_8cpp.html',1,'(Global Namespace)'],['../_m_h_d_2_resistive___m_h_d_2_current___sheet_2_tag_cells_8cpp.html',1,'(Global Namespace)'],['../_radiation_2_relativistic_2_r_h_d___shadow_2_tag_cells_8cpp.html',1,'(Global Namespace)'],['../_r_h_d_2_jet_2_tag_cells_8cpp.html',1,'(Global Namespace)'],['../_r_m_h_d_2_k_h_2_tag_cells_8cpp.html',1,'(Global Namespace)']]],
+  ['tc_5fflux_2',['TC_Flux',['../tc__flux_8c.html#ad2d31d7f47c7485a012ce68cf90152d4',1,'tc_flux.c']]],
+  ['tc_5fflux_2ec_3',['tc_flux.c',['../tc__flux_8c.html',1,'']]],
+  ['tc_5fkappa_4',['TC_kappa',['../_shearing___box_2_bodo__etal_82012_2tc__kappa_8c.html#a3ee757c758cdef3b1a3461b9dd76de29',1,'TC_kappa(double *v, double x1, double x2, double x3, double *kappar, double *kapnor, double *phi):&#160;tc_kappa.c'],['../_shearing___box_2tc__kappa_8c.html#a5c19f8bcfbe2e52441affa6ead23b70f',1,'TC_kappa(double *v, double x1, double x2, double x3, double *kpar, double *knor, double *phi):&#160;tc_kappa.c'],['../_thermal___conduction_2_blast_2tc__kappa_8c.html#a5c19f8bcfbe2e52441affa6ead23b70f',1,'TC_kappa(double *v, double x1, double x2, double x3, double *kpar, double *knor, double *phi):&#160;tc_kappa.c'],['../_thermal___conduction_2_t_c_front_2tc__kappa_8c.html#a3ee757c758cdef3b1a3461b9dd76de29',1,'TC_kappa(double *v, double x1, double x2, double x3, double *kappar, double *kapnor, double *phi):&#160;tc_kappa.c'],['../tc__kappa_8new_8c.html#a3ee757c758cdef3b1a3461b9dd76de29',1,'TC_kappa(double *v, double x1, double x2, double x3, double *kappar, double *kapnor, double *phi):&#160;tc_kappa.new.c'],['../tc__kappa_8old_8c.html#a3ee757c758cdef3b1a3461b9dd76de29',1,'TC_kappa(double *v, double x1, double x2, double x3, double *kappar, double *kapnor, double *phi):&#160;tc_kappa.old.c']]],
+  ['tc_5fkappa_2ec_5',['tc_kappa.c',['../_shearing___box_2_bodo__etal_82012_2tc__kappa_8c.html',1,'(Global Namespace)'],['../_shearing___box_2tc__kappa_8c.html',1,'(Global Namespace)'],['../_thermal___conduction_2_blast_2tc__kappa_8c.html',1,'(Global Namespace)'],['../_thermal___conduction_2_t_c_front_2tc__kappa_8c.html',1,'(Global Namespace)']]],
+  ['tc_5fkappa_2enew_2ec_6',['tc_kappa.new.c',['../tc__kappa_8new_8c.html',1,'']]],
+  ['tc_5fkappa_2eold_2ec_7',['tc_kappa.old.c',['../tc__kappa_8old_8c.html',1,'']]],
+  ['test_20problems_8',['Pluto 4.4 Test Problems',['../index.html',1,'']]],
+  ['true_9',['TRUE',['../sedov_8c.html#aa8cecfc5c5c054d2875c03e77b7be15d',1,'sedov.c']]]
+];
