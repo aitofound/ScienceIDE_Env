@@ -30,8 +30,14 @@ the final gate.
 - [ ] The reward equation, weights, range, failure semantics, target count, and
   check-by-target cell count are written down; expensive checks have intentional
   weight.
-- [ ] The check portfolio covers module breadth, includes a meaningful direct
-  `acceleration` check, and rejects the important cheap shortcuts.
+- [ ] An auditable coverage ledger maps every declared owned production path,
+  algorithm, mode, and configuration family to at least one direct executable
+  acceptance check.
+- [ ] The check portfolio executes the full declared module boundary, includes a
+  meaningful direct `acceleration` check, and rejects the important cheap
+  shortcuts. No in-scope row is silently omitted or left staged, blocked,
+  unsupported, or zero-reward; any approved scope reduction is recorded before
+  review.
 - [ ] Every measured claim names the exact configuration/window/build/hardware.
   After a deck/window change, calibration was rerun or the claim is explicitly
   downgraded to bounded extrapolation—never silently called the “exact deck.”
