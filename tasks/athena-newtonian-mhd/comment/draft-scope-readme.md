@@ -119,3 +119,14 @@ be mistaken for the v2.2 Harbor leaf described in the packaging skill.
   `10.3847/1538-4365/ab929b` (as recorded in frozen `CITATION.cff` and
   `README.md`).
 - Athena++ repository: <https://github.com/PrincetonUniversity/athena>.
+
+## Leaf conversion status
+
+This original boundary-only scope draft is retained as provenance. The task root
+now contains the independent v2.2 leaf conversion: complete pinned source,
+CPU/oracle solution, candidate runners, strict verifier, five check rubrics, one
+active CPU self-check target, and source manifest. The current verifier's exact
+identity is explicitly provisional self-wiring evidence only; the native TAB
+mode exposes cell-centred Bcc rather than a face checkpoint, so face reconstruction,
+div-B, and CT counter limitations remain disclosed for Jason's final scientific
+policy. No accelerator port, tolerance, performance, or speedup claim is made.
