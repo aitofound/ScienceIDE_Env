@@ -14,6 +14,7 @@ SCHEMA = "athena-hydro-primitive-tab/v1"
 VARIABLES = ["x1", "x2", "x3", "rho", "press", "vel1", "vel2", "vel3"]
 PRIMITIVES = VARIABLES[3:]
 POLICY = "option_a_pointwise_primitive_tolerance"
+PROVISIONAL_POLICY = "provisional_parameterized"
 COORDINATE_POLICY = "exact"
 CYCLE_POLICY = "nonnegative_integer_diagnostic_not_compared"
 ABS_TOLERANCE = 1e-12
@@ -139,20 +140,29 @@ def _validate_rubric(rubric: Any) -> tuple[bool, str]:
         return False, "rubric time schedule is malformed"
     if not all(_number(value) for value in expected_times):
         return False, "rubric time schedule contains a non-finite value"
-    for field in ("schedule_abs_tolerance", "primitive_abs_tolerance", "primitive_rel_tolerance"):
-        if not _number(rubric[field]) or float(rubric[field]) < 0.0:
-            return False, f"rubric {field} is malformed"
+    if not _number(rubric["schedule_abs_tolerance"]) or float(rubric["schedule_abs_tolerance"]) < 0.0:
+        return False, "rubric schedule_abs_tolerance is malformed"
     if float(rubric["schedule_abs_tolerance"]) != 1e-12:
         return False, "rubric schedule tolerance is not the approved 1e-12"
-    if float(rubric["primitive_abs_tolerance"]) != ABS_TOLERANCE:
-        return False, "rubric absolute primitive tolerance is not approved"
-    if float(rubric["primitive_rel_tolerance"]) != REL_TOLERANCE:
-        return False, "rubric relative primitive tolerance is not approved"
     if rubric["source_format"] != SOURCE_FORMAT:
         return False, "rubric source format is malformed"
     if rubric.get("artifact") != ARTIFACT_DECLARATION:
         return False, "rubric artifact declaration is malformed"
-    if rubric["comparison_policy"] != POLICY:
+    policy = rubric["comparison_policy"]
+    if policy == POLICY:
+        if not _number(rubric["primitive_abs_tolerance"]) or not _number(rubric["primitive_rel_tolerance"]):
+            return False, "approved rubric primitive tolerances are malformed"
+        if float(rubric["primitive_abs_tolerance"]) != ABS_TOLERANCE:
+            return False, "rubric absolute primitive tolerance is not approved"
+        if float(rubric["primitive_rel_tolerance"]) != REL_TOLERANCE:
+            return False, "rubric relative primitive tolerance is not approved"
+    elif policy == PROVISIONAL_POLICY:
+        if rubric["primitive_abs_tolerance"] is not None or rubric["primitive_rel_tolerance"] is not None:
+            return False, "provisional rubric must not assert a final numeric tolerance"
+        params = rubric.get("comparison_parameters")
+        if not isinstance(params, dict) or params.get("status") != "human_decision_required":
+            return False, "provisional rubric must declare human parameter decision"
+    else:
         return False, "rubric comparison policy is unsupported"
     if rubric["coordinate_policy"] != COORDINATE_POLICY:
         return False, "rubric coordinate policy is unsupported"
@@ -320,8 +330,31 @@ def _compare(reference: dict[str, Any], candidate: dict[str, Any], rubric: dict[
     max_difference = 0.0
     max_ratio = 0.0
     coordinate_mismatch: tuple[int, int, int] | None = None
-    abs_tolerance = float(rubric["primitive_abs_tolerance"])
-    rel_tolerance = float(rubric["primitive_rel_tolerance"])
+    policy = rubric["comparison_policy"]
+    abs_tolerance = None
+    rel_tolerance = None
+    if policy == POLICY:
+        abs_tolerance = float(rubric["primitive_abs_tolerance"])
+        rel_tolerance = float(rubric["primitive_rel_tolerance"])
+    else:
+        # A provisional rubric is deliberately identity-only unless a future
+        # human-approved parameter is supplied by the verifier environment.
+        # This is self-test support, never a final scientific equivalence claim.
+        params = rubric.get("comparison_parameters", {})
+        abs_name, rel_name = params.get("abs_env"), params.get("rel_env")
+        abs_text, rel_text = os.environ.get(abs_name or ""), os.environ.get(rel_name or "")
+        if bool(abs_text) != bool(rel_text):
+            return _failure("provisional comparison requires both tolerance parameters", policy=policy, case=rubric["case"])
+        if abs_text and rel_text:
+            try:
+                abs_tolerance, rel_tolerance = float(abs_text), float(rel_text)
+            except (TypeError, ValueError):
+                return _failure("provisional comparison parameters are not numeric", policy=policy, case=rubric["case"])
+            if not all(math.isfinite(v) and v >= 0.0 for v in (abs_tolerance, rel_tolerance)):
+                return _failure("provisional comparison parameters are not finite/nonnegative", policy=policy, case=rubric["case"])
+        else:
+            abs_tolerance = 0.0
+            rel_tolerance = 0.0
     try:
         for frame_index, (ref_frame, cand_frame) in enumerate(zip(reference["frames"], candidate["frames"])):
             for row_index, (ref_row, cand_row) in enumerate(zip(ref_frame["rows"], cand_frame["rows"])):
@@ -339,13 +372,25 @@ def _compare(reference: dict[str, Any], candidate: dict[str, Any], rubric: dict[
                             case=rubric["case"],
                         )
                     tolerance = abs_tolerance + rel_tolerance * max(abs(ref_value), abs(cand_value))
-                    if not math.isfinite(tolerance) or tolerance <= 0.0:
+                    if not math.isfinite(tolerance) or tolerance < 0.0:
                         return _failure(
                             "primitive tolerance became non-finite",
-                            policy=POLICY,
+                            policy=policy,
                             case=rubric["case"],
                         )
-                    ratio = difference / tolerance
+                    # Provisional rubrics default to exact identity for the
+                    # required self-test. Equal values have zero error; any
+                    # nonzero difference with a zero tolerance fails closed.
+                    if tolerance == 0.0:
+                        if difference != 0.0:
+                            return _failure(
+                                "provisional identity comparison found a difference",
+                                policy=policy,
+                                case=rubric["case"],
+                            )
+                        ratio = 0.0
+                    else:
+                        ratio = difference / tolerance
                     if not math.isfinite(ratio):
                         return _failure(
                             "normalized tolerance ratio became non-finite",
@@ -366,6 +411,8 @@ def _compare(reference: dict[str, Any], candidate: dict[str, Any], rubric: dict[
             "coordinate mismatch at frame {}, row {}, coordinate {}"
             .format(*coordinate_mismatch)
         )
+    elif passed and policy == PROVISIONAL_POLICY:
+        reason = "provisional identity-only self-test passed; not final scientific equivalence"
     elif passed:
         reason = "approved Option A primitive tolerance passed"
     else:
@@ -373,7 +420,7 @@ def _compare(reference: dict[str, Any], candidate: dict[str, Any], rubric: dict[
     return {
         "passed": passed,
         "case": rubric["case"],
-        "policy": POLICY,
+        "policy": policy,
         "coordinate_policy": COORDINATE_POLICY,
         "cycle_policy": CYCLE_POLICY,
         "max_abs_primitive_difference": max_difference,

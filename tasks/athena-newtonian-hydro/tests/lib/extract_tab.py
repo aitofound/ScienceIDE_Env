@@ -21,7 +21,7 @@ def finite(value: float) -> float:
     return value
 
 
-def parse_file(path: Path, require_all_coordinates: bool = False) -> tuple[int, float, int, list[list[float]]]:
+def parse_file(path: Path, required_coordinates: tuple[bool, bool, bool] = (True, False, False)) -> tuple[int, float, int, list[list[float]]]:
     match = FRAME_RE.search(path.name)
     if not match:
         raise ValueError(f"unexpected TAB filename: {path.name}")
@@ -40,9 +40,10 @@ def parse_file(path: Path, require_all_coordinates: bool = False) -> tuple[int, 
         columns = {name: index for index, name in enumerate(header)}
     except Exception as exc:
         raise ValueError(f"invalid TAB column header: {path.name}") from exc
-    required = {"x1v", "rho", "press", "vel1", "vel2", "vel3"}
-    if require_all_coordinates:
-        required.update({"x2v", "x3v"})
+    required = {"rho", "press", "vel1", "vel2", "vel3"}
+    for coordinate_name, required_axis in zip(("x1v", "x2v", "x3v"), required_coordinates):
+        if required_axis:
+            required.add(coordinate_name)
     if not required.issubset(columns):
         raise ValueError(f"TAB does not contain complete primitive columns: {path.name}")
     rows: list[list[float]] = []
@@ -81,13 +82,13 @@ def main() -> int:
     if len(dimensions) != 3 or any(value <= 0 for value in dimensions):
         raise SystemExit("--dimensions must be three positive integers")
     expected_rows = dimensions[0] * dimensions[1] * dimensions[2]
-    require_all_coordinates = dimensions[1] > 1 or dimensions[2] > 1
+    required_coordinates = tuple(value > 1 for value in dimensions)
     parsed: dict[int, tuple[float, int, list[list[float]]]] = {}
     paths = sorted(args.input.glob("*.tab"))
     if not paths:
         raise SystemExit("no native Athena TAB files found")
     for path in paths:
-        frame, time, cycle, rows = parse_file(path, require_all_coordinates=require_all_coordinates)
+        frame, time, cycle, rows = parse_file(path, required_coordinates=required_coordinates)
         if frame in parsed:
             old_time, old_cycle, old_rows = parsed[frame]
             if old_time != time or old_cycle != cycle:
