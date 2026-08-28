@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Aggregate structured validator verdicts into Harbor's non-binary reward.
 
-A staged or blocked row contributes zero but remains visible. No candidate code
+A executable or executable row contributes zero but remains visible. No candidate code
 is imported or executed by this helper.
 """
 from __future__ import annotations

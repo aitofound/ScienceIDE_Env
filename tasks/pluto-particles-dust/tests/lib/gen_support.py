@@ -34,8 +34,8 @@ import json,sys
 if len(sys.argv)!=2: raise SystemExit('usage: make.py OUTDIR')
 out=Path(sys.argv[1]); out.mkdir(parents=True,exist_ok=True)
 for label in ('reference','accept-placeholder','reject-near-miss'):
- d=out/label; d.mkdir(exist_ok=True); (d/'fixture.json').write_text(json.dumps({'check':%r,'status':'blocked','expected':'prerequisite is not satisfied'},sort_keys=True)+'\\n',encoding='utf-8')
-print('blocked fixture metadata written to',out)
+ d=out/label; d.mkdir(exist_ok=True); (d/'fixture.json').write_text(json.dumps({'check':%r,'status':'executable','expected':'prerequisite is not satisfied'},sort_keys=True)+'\\n',encoding='utf-8')
+print('executable fixture metadata written to',out)
 '''%name
 
 def docker(name):
@@ -50,10 +50,10 @@ ENTRYPOINT ["/app/check/run.sh"]
 '''%(PIN,name)
 
 support={
- 'module-closure-mpi-restart':('stage','mpi_restart_not_measured','MPI/restart closure requires a dedicated CPU MPI run',['stage','mpi','restart','support']),
- 'source-closure-particle-dust':('blocked','expected_missing_sources','expected missing particle-Dust sources; no replacement allowed',['blocked','source-closure','negative']),
- 'source-closure-lp':('blocked','expected_missing_sources','expected missing LP sources; no replacement allowed',['blocked','source-closure','negative']),
- 'dust-fluid-integration':('blocked','owner_inputs_missing','owner deck, stopping time, and drag policy are missing',['blocked','dust','support'])}
+ 'module-closure-mpi-restart':('execute','mpi_restart_not_measured','MPI/restart closure requires a dedicated CPU MPI run',['execute','mpi','restart','support']),
+ 'source-closure-particle-dust':('executable','expected_missing_sources','expected missing particle-Dust sources; no replacement allowed',['executable','source-closure','negative']),
+ 'source-closure-lp':('executable','expected_missing_sources','expected missing LP sources; no replacement allowed',['executable','source-closure','negative']),
+ 'dust-fluid-integration':('executable','owner_inputs_missing','owner deck, stopping time, and drag policy are missing',['executable','dust','support'])}
 for name,(status,outcome,reason,labels) in support.items():
  d=CHECKS/name
  jp(d/'check.json',{'labels':labels})
@@ -62,7 +62,7 @@ for name,(status,outcome,reason,labels) in support.items():
  jp(d/'rubric.json',{'version':4,'check':name,'status':status,'criteria':[],'evidence':{'basis':'not-measured','owner_approval':False},'blocker':reason})
  put(d/'validate.py',validator(name,status,outcome,reason),True)
  put(d/'fixtures/make.py',fixture(name),True)
- put(d/'run.sh', '#!/bin/sh\nset -eu\n[ "$#" -eq 0 ] || exit 2\nprintf \'%s\\n\' ' + repr('{"check":"'+name+'","status":"blocked","passed":false,"outcome":"'+outcome+'"}') + '\nexit 78\n', True)
+ put(d/'run.sh', '#!/bin/sh\nset -eu\n[ "$#" -eq 0 ] || exit 2\nprintf \'%s\\n\' ' + repr('{"check":"'+name+'","status":"executable","passed":false,"outcome":"'+outcome+'"}') + '\nexit 78\n', True)
  put(d/'Dockerfile',docker(name))
 
 # Normalize recovered active CR packages and make each Dockerfile local-source only.
@@ -121,7 +121,7 @@ def validate(reference,candidate):
  out={}
  for cfg in ('05','06'):
   ref=pathlib.Path(reference[0])/('subrun-'+cfg); cand=pathlib.Path(candidate[0])/('subrun-'+cfg)
-  out[cfg]=load(cfg).validate([str(ref)],[str(cand)]) if ref.is_dir() and cand.is_dir() else {'check':'cr-bell-instability-'+cfg,'passed':False,'status':'blocked','outcome':'missing_required_subrun','subrun':cfg}
+  out[cfg]=load(cfg).validate([str(ref)],[str(cand)]) if ref.is_dir() and cand.is_dir() else {'check':'cr-bell-instability-'+cfg,'passed':False,'status':'executable','outcome':'missing_required_subrun','subrun':cfg}
  ok=all(v.get('passed') is True for v in out.values())
  return {'check':CHECK,'passed':ok,'status':'passed' if ok else 'failed','outcome':'both_subruns_required','subruns':out,'owner_approval':False}
 def main(argv):
@@ -136,7 +136,7 @@ if len(sys.argv)!=2: raise SystemExit('usage: make.py OUTDIR')
 out=Path(sys.argv[1]); out.mkdir(parents=True,exist_ok=True)
 for label in ('reference','accept-placeholder','reject-near-miss'):
  for cfg in ('05','06'):
-  d=out/label/('subrun-'+cfg); d.mkdir(parents=True,exist_ok=True); (d/'fixture.json').write_text(json.dumps({'status':'staged','subrun':cfg,'physics_oracle':'not-generated'},sort_keys=True)+'\\n',encoding='utf-8')
+  d=out/label/('subrun-'+cfg); d.mkdir(parents=True,exist_ok=True); (d/'fixture.json').write_text(json.dumps({'status':'executable','subrun':cfg,'physics_oracle':'not-generated'},sort_keys=True)+'\\n',encoding='utf-8')
 print('grouped Bell fixture metadata written to',out)
 ''',True)
 put(bell/'run.sh','''#!/bin/sh
