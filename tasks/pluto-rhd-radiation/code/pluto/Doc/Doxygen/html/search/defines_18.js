@@ -1,0 +1,27 @@
+var searchData=
+[
+  ['x12_5fplane_0',['X12_PLANE',['../pluto_8h.html#a48c9f2d5fe3b13dca04264c84f20f608',1,'pluto.h']]],
+  ['x13_5fplane_1',['X13_PLANE',['../pluto_8h.html#a59b88d679d014729dbd6ce7f83fbf4a3',1,'pluto.h']]],
+  ['x1_5fbeg_2',['X1_BEG',['../pluto_8h.html#a4c014b824bba953bdcf8ca48ff9f7a3c',1,'pluto.h']]],
+  ['x1_5fbeg_5floop_3',['X1_BEG_LOOP',['../macros_8h.html#af469ae5de10a84f293a1405580e662dc',1,'macros.h']]],
+  ['x1_5fend_4',['X1_END',['../pluto_8h.html#adb15f3199d491aa3077b84efacf2e11e',1,'pluto.h']]],
+  ['x1_5fend_5floop_5',['X1_END_LOOP',['../macros_8h.html#af97ba860fe9dfab0bf77b278af5bf943',1,'macros.h']]],
+  ['x1edge_6',['X1EDGE',['../pluto_8h.html#a27007b083001c71e5ef348ad722a5745',1,'pluto.h']]],
+  ['x1face_7',['X1FACE',['../pluto_8h.html#a1269d1528756babe2fa27e58a87f00c1',1,'pluto.h']]],
+  ['x23_5fplane_8',['X23_PLANE',['../pluto_8h.html#a81b54cb05d41b0f07f3cab863387258d',1,'pluto.h']]],
+  ['x2_5fbeg_9',['X2_BEG',['../pluto_8h.html#aaf5e74bb9113753de11c76d7802a9eea',1,'pluto.h']]],
+  ['x2_5fbeg_5floop_10',['X2_BEG_LOOP',['../macros_8h.html#aaf52e73d314fe8132813faa6db00c9ce',1,'macros.h']]],
+  ['x2_5fend_11',['X2_END',['../pluto_8h.html#a52d6403c5c865c6f33f5ffd64f936212',1,'pluto.h']]],
+  ['x2_5fend_5floop_12',['X2_END_LOOP',['../macros_8h.html#a64b59d3351209923a22d3d20b888bfb2',1,'macros.h']]],
+  ['x2edge_13',['X2EDGE',['../pluto_8h.html#aadca23ee402c1de16f05731b26048410',1,'pluto.h']]],
+  ['x2face_14',['X2FACE',['../pluto_8h.html#aeb67b8a4f1d2045648c62806754b237f',1,'pluto.h']]],
+  ['x3_5fbeg_15',['X3_BEG',['../pluto_8h.html#aa989a7ec1710c398e719db9f4bda5093',1,'pluto.h']]],
+  ['x3_5fbeg_5floop_16',['X3_BEG_LOOP',['../macros_8h.html#ad79a01d5bce80061b46894ba2e9c43f1',1,'macros.h']]],
+  ['x3_5fend_17',['X3_END',['../pluto_8h.html#aef96c2e36404c8e100dd4b9472dd1ce5',1,'pluto.h']]],
+  ['x3_5fend_5floop_18',['X3_END_LOOP',['../macros_8h.html#a503c088bc8a2a3adfafe4de66494dc0a',1,'macros.h']]],
+  ['x3edge_19',['X3EDGE',['../pluto_8h.html#aff847b2b41f3b7396de930dee57fb726',1,'pluto.h']]],
+  ['x3face_20',['X3FACE',['../pluto_8h.html#acc095d0d8b148ec9fbe14b89ce63a3eb',1,'pluto.h']]],
+  ['x_5fh2_21',['X_H2',['../cooling_8h.html#a391f56713c926ca4b7d4d2a2e2769456',1,'cooling.h']]],
+  ['x_5fhi_22',['X_HI',['../cooling_8h.html#ad2c54b9879efe98693113d40cdb413fa',1,'cooling.h']]],
+  ['x_5fhii_23',['X_HII',['../cooling_8h.html#ac8ff494487671a38f4def5575199f1f4',1,'cooling.h']]]
+];
