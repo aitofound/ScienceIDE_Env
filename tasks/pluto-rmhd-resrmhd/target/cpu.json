@@ -1,0 +1,27 @@
+{
+  "id": "cpu",
+  "runner": "linux-docker",
+  "vendor": "generic",
+  "device": "CPU reference verifier",
+  "gpu": null,
+  "count": 1,
+  "memory_gb_per_device": 4,
+  "api": "C17 / POSIX process",
+  "toolchain": {
+    "compiler": "gcc",
+    "mpi": "optional per official PLUTO configuration",
+    "python": "3.x with NumPy for verifier",
+    "container_image": "debian:bookworm-slim@sha256:1caf1c703c8f7e15dcf2e7769b35000c764e6f50e4d7401c355fb0248f3ddfdb"
+  },
+  "host": {
+    "os": "Linux container",
+    "memory_gb": 4,
+    "network_during_verify": false,
+    "source": "local code/pluto copy with verified PLUTO 4.4-patch4 archive SHA-256 1ba5527b76d49fdd78ae24dbfbdad085ec83393748f1e618516a9d63bd945787"
+  },
+  "notes": [
+    "This is an active correctness target, not a performance claim.",
+    "Reference preparation and candidate execution are separate from the verifier; no network is required while checking outputs.",
+    "Radiation stage gates and the absent ResRMHD/IMEX boundary remain fail-closed."
+  ]
+}
