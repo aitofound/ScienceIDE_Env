@@ -1,0 +1,1759 @@
+{
+  "schema": "pluto-rhd-radiation.row-contract.v1",
+  "contract_version": 1,
+  "codebase": "pluto-rhd-radiation",
+  "row_count": 18,
+  "required_exact_row_count": 18,
+  "rows": [
+    {
+      "id": "rhd-shocktube-01",
+      "package": "tests/checks/rhd-shocktube-01",
+      "classification": "implement-now",
+      "official": {
+        "family": "Test_Problems/RHD/Shock_Tubes",
+        "init": "code/pluto/Test_Problems/RHD/Shock_Tubes/init.c",
+        "definitions": "code/pluto/Test_Problems/RHD/Shock_Tubes/definitions_01.h",
+        "ini": "code/pluto/Test_Problems/RHD/Shock_Tubes/pluto_01.ini",
+        "configuration": "Test_Problems/RHD/Shock_Tubes/01",
+        "number": "01"
+      },
+      "physics": {
+        "eos": "ideal",
+        "gamma": 1.333333333333,
+        "gamma_source": "literal GAMMA_EOS value in the official pluto_01.ini:57 ('GAMMA_EOS   1.333333333333', not the normalized 4/3 double), applied via Test_Problems/RHD/Shock_Tubes/init.c:63 g_gamma = g_inputParam[GAMMA_EOS]; not PLUTO's compiled-in 5/3 default",
+        "dimensions": 1,
+        "fixture_dimensions": [
+          16,
+          1,
+          1
+        ],
+        "geometry": "cartesian"
+      },
+      "schema": {
+        "binary": "data.%04d.dbl",
+        "metadata": "dbl.out",
+        "grid": "grid.out",
+        "dtype": "<f8",
+        "layout": "variable-major",
+        "variables": [
+          "rho",
+          "vx1",
+          "vx2",
+          "vx3",
+          "prs"
+        ],
+        "required_files": [
+          "grid.out",
+          "dbl.out"
+        ],
+        "frame_pattern": "data.%04d.dbl"
+      },
+      "observables": [
+        "state_scale",
+        "shock_contact_positions"
+      ],
+      "fixtures": {
+        "accept": [
+          "identity",
+          "arithmetic-variation-signed-zero",
+          "side-files"
+        ],
+        "reject": [
+          "near-miss",
+          "nan",
+          "wrong-nstep",
+          "wrong-dt",
+          "omitted-variable",
+          "wrong-name",
+          "extra-file",
+          "missing-grid",
+          "malformed-grid",
+          "wrong-endian"
+        ]
+      },
+      "fixture_directories": {
+        "accept": [
+          "accept-identity",
+          "accept-arithmetic-variation",
+          "accept-with-side-files"
+        ],
+        "reject": [
+          "reject-near-miss",
+          "reject-nan",
+          "reject-wrong-nstep",
+          "reject-wrong-dt",
+          "reject-omitted-variable",
+          "reject-wrong-name",
+          "reject-extra-file",
+          "reject-missing-grid",
+          "reject-malformed-grid",
+          "reject-wrong-endian"
+        ]
+      }
+    },
+    {
+      "id": "rhd-shocktube-05-entropy",
+      "package": "tests/checks/rhd-shocktube-05-entropy",
+      "classification": "implement-now",
+      "official": {
+        "family": "Test_Problems/RHD/Shock_Tubes",
+        "init": "code/pluto/Test_Problems/RHD/Shock_Tubes/init.c",
+        "definitions": "code/pluto/Test_Problems/RHD/Shock_Tubes/definitions_05.h",
+        "ini": "code/pluto/Test_Problems/RHD/Shock_Tubes/pluto_05.ini",
+        "configuration": "Test_Problems/RHD/Shock_Tubes/05",
+        "number": "05"
+      },
+      "physics": {
+        "eos": "ideal",
+        "gamma": 1.333333333333,
+        "gamma_source": "literal GAMMA_EOS value in the official pluto_05.ini:57 ('GAMMA_EOS   1.333333333333', not the normalized 4/3 double), applied via Test_Problems/RHD/Shock_Tubes/init.c:63 g_gamma = g_inputParam[GAMMA_EOS]; not PLUTO's compiled-in 5/3 default",
+        "dimensions": 1,
+        "fixture_dimensions": [
+          16,
+          1,
+          1
+        ],
+        "geometry": "cartesian",
+        "entropy_formula": "ideal (internal recovery; not emitted by this official deck)",
+        "entropy_switch": "SELECTIVE (Test_Problems/RHD/Shock_Tubes/definitions_05.h:15)"
+      },
+      "schema": {
+        "binary": "data.%04d.dbl",
+        "metadata": "dbl.out",
+        "grid": "grid.out",
+        "dtype": "<f8",
+        "layout": "variable-major",
+        "variables": [
+          "rho",
+          "vx1",
+          "vx2",
+          "vx3",
+          "prs"
+        ],
+        "required_files": [
+          "grid.out",
+          "dbl.out"
+        ],
+        "frame_pattern": "data.%04d.dbl"
+      },
+      "observables": [
+        "state_scale",
+        "shock_contact_positions"
+      ],
+      "fixtures": {
+        "accept": [
+          "identity",
+          "arithmetic-variation-signed-zero",
+          "side-files"
+        ],
+        "reject": [
+          "near-miss",
+          "nan",
+          "wrong-nstep",
+          "wrong-dt",
+          "omitted-variable",
+          "wrong-name",
+          "extra-file",
+          "missing-grid",
+          "malformed-grid",
+          "wrong-endian"
+        ]
+      },
+      "fixture_directories": {
+        "accept": [
+          "accept-identity",
+          "accept-arithmetic-variation",
+          "accept-with-side-files"
+        ],
+        "reject": [
+          "reject-near-miss",
+          "reject-nan",
+          "reject-wrong-nstep",
+          "reject-wrong-dt",
+          "reject-omitted-variable",
+          "reject-wrong-name",
+          "reject-extra-file",
+          "reject-missing-grid",
+          "reject-malformed-grid",
+          "reject-wrong-endian"
+        ]
+      }
+    },
+    {
+      "id": "rhd-sedov2d-01-weno",
+      "package": "tests/checks/rhd-sedov2d-01-weno",
+      "classification": "implement-now",
+      "official": {
+        "family": "Test_Problems/RHD/Sedov2D",
+        "init": "code/pluto/Test_Problems/RHD/Sedov2D/init.c",
+        "definitions": "code/pluto/Test_Problems/RHD/Sedov2D/definitions_01.h",
+        "ini": "code/pluto/Test_Problems/RHD/Sedov2D/pluto_01.ini",
+        "configuration": "Test_Problems/RHD/Sedov2D/01",
+        "number": "01"
+      },
+      "physics": {
+        "eos": "ideal",
+        "gamma": 1.6666666666666667,
+        "gamma_source": "PLUTO's compiled-in default (Src/globals.h:118 g_gamma = 5./3.); Test_Problems/RHD/Sedov2D/init.c and pluto_01.ini set no GAMMA_EOS parameter and never assign g_gamma",
+        "dimensions": 2,
+        "fixture_dimensions": [
+          6,
+          6,
+          1
+        ],
+        "geometry": "cartesian"
+      },
+      "schema": {
+        "binary": "data.%04d.dbl",
+        "metadata": "dbl.out",
+        "grid": "grid.out",
+        "dtype": "<f8",
+        "layout": "variable-major",
+        "variables": [
+          "rho",
+          "vx1",
+          "vx2",
+          "vx3",
+          "prs"
+        ],
+        "required_files": [
+          "grid.out",
+          "dbl.out"
+        ],
+        "frame_pattern": "data.%04d.dbl"
+      },
+      "observables": [
+        "state_scale",
+        "radial_profile",
+        "angular_scatter"
+      ],
+      "fixtures": {
+        "accept": [
+          "identity",
+          "arithmetic-variation-signed-zero",
+          "side-files"
+        ],
+        "reject": [
+          "near-miss",
+          "nan",
+          "wrong-nstep",
+          "wrong-dt",
+          "omitted-variable",
+          "wrong-name",
+          "extra-file",
+          "missing-grid",
+          "malformed-grid",
+          "wrong-endian"
+        ]
+      },
+      "fixture_directories": {
+        "accept": [
+          "accept-identity",
+          "accept-arithmetic-variation",
+          "accept-with-side-files"
+        ],
+        "reject": [
+          "reject-near-miss",
+          "reject-nan",
+          "reject-wrong-nstep",
+          "reject-wrong-dt",
+          "reject-omitted-variable",
+          "reject-wrong-name",
+          "reject-extra-file",
+          "reject-missing-grid",
+          "reject-malformed-grid",
+          "reject-wrong-endian"
+        ]
+      }
+    },
+    {
+      "id": "rhd-sedov2d-05-taub",
+      "package": "tests/checks/rhd-sedov2d-05-taub",
+      "classification": "implement-now",
+      "official": {
+        "family": "Test_Problems/RHD/Sedov2D",
+        "init": "code/pluto/Test_Problems/RHD/Sedov2D/init.c",
+        "definitions": "code/pluto/Test_Problems/RHD/Sedov2D/definitions_05.h",
+        "ini": "code/pluto/Test_Problems/RHD/Sedov2D/pluto_05.ini",
+        "configuration": "Test_Problems/RHD/Sedov2D/05",
+        "number": "05"
+      },
+      "physics": {
+        "eos": "taub",
+        "gamma": null,
+        "gamma_source": "not applicable: EOS==TAUB (Test_Problems/RHD/Sedov2D/definitions_05.h:14), under which g_gamma is not even a declared/linkable symbol (Src/globals.h:117-121, Src/pluto.h:925-929 both guard it to '#if EOS == IDEAL'); init.c never references gamma. A prior contract's gamma=4/3 for this row was a guess, not sourced -- do not substitute 5/3 either.",
+        "dimensions": 2,
+        "fixture_dimensions": [
+          6,
+          6,
+          1
+        ],
+        "geometry": "cartesian",
+        "taub_closure": "independent verifier reconstruction required"
+      },
+      "schema": {
+        "binary": "data.%04d.dbl",
+        "metadata": "dbl.out",
+        "grid": "grid.out",
+        "dtype": "<f8",
+        "layout": "variable-major",
+        "variables": [
+          "rho",
+          "vx1",
+          "vx2",
+          "vx3",
+          "prs"
+        ],
+        "required_files": [
+          "grid.out",
+          "dbl.out"
+        ],
+        "frame_pattern": "data.%04d.dbl"
+      },
+      "observables": [
+        "state_scale",
+        "radial_profile",
+        "angular_scatter"
+      ],
+      "fixtures": {
+        "accept": [
+          "identity",
+          "arithmetic-variation-signed-zero",
+          "side-files"
+        ],
+        "reject": [
+          "near-miss",
+          "nan",
+          "wrong-nstep",
+          "wrong-dt",
+          "omitted-variable",
+          "wrong-name",
+          "extra-file",
+          "missing-grid",
+          "malformed-grid",
+          "wrong-endian"
+        ]
+      },
+      "fixture_directories": {
+        "accept": [
+          "accept-identity",
+          "accept-arithmetic-variation",
+          "accept-with-side-files"
+        ],
+        "reject": [
+          "reject-near-miss",
+          "reject-nan",
+          "reject-wrong-nstep",
+          "reject-wrong-dt",
+          "reject-omitted-variable",
+          "reject-wrong-name",
+          "reject-extra-file",
+          "reject-missing-grid",
+          "reject-malformed-grid",
+          "reject-wrong-endian"
+        ]
+      }
+    },
+    {
+      "id": "rhd-jet-01-taub",
+      "package": "tests/checks/rhd-jet-01-taub",
+      "classification": "implement-now",
+      "official": {
+        "family": "Test_Problems/RHD/Jet",
+        "init": "code/pluto/Test_Problems/RHD/Jet/init.c",
+        "definitions": "code/pluto/Test_Problems/RHD/Jet/definitions_01.h",
+        "ini": "code/pluto/Test_Problems/RHD/Jet/pluto_01.ini",
+        "configuration": "Test_Problems/RHD/Jet/01",
+        "number": "01"
+      },
+      "physics": {
+        "eos": "taub",
+        "gamma": null,
+        "gamma_source": "not applicable: EOS==TAUB (Test_Problems/RHD/Jet/definitions_01.h:14), under which g_gamma is not a declared symbol (Src/globals.h:117-121). Jet/init.c:55 does read 'g_gamma = 5.0/3.0;', but it sits inside '#if EOS == IDEAL' (init.c:54..56) and never compiles for this TAUB row -- dead code, not evidence of a real gamma. A prior contract's gamma=4/3 for this row was a guess, not sourced.",
+        "dimensions": 2,
+        "fixture_dimensions": [
+          6,
+          6,
+          1
+        ],
+        "geometry": "cylindrical",
+        "taub_closure": "independent verifier reconstruction required",
+        "auxiliary_source": "TagCells.cpp"
+      },
+      "schema": {
+        "binary": "data.%04d.dbl",
+        "metadata": "dbl.out",
+        "grid": "grid.out",
+        "dtype": "<f8",
+        "layout": "variable-major",
+        "variables": [
+          "rho",
+          "vx1",
+          "vx2",
+          "vx3",
+          "prs"
+        ],
+        "required_files": [
+          "grid.out",
+          "dbl.out"
+        ],
+        "frame_pattern": "data.%04d.dbl"
+      },
+      "observables": [
+        "state_scale",
+        "geometry_weighted_fields",
+        "jet_head_and_cocoon"
+      ],
+      "fixtures": {
+        "accept": [
+          "identity",
+          "arithmetic-variation-signed-zero",
+          "side-files"
+        ],
+        "reject": [
+          "near-miss",
+          "nan",
+          "wrong-nstep",
+          "wrong-dt",
+          "omitted-variable",
+          "wrong-name",
+          "extra-file",
+          "missing-grid",
+          "malformed-grid",
+          "wrong-endian"
+        ]
+      },
+      "fixture_directories": {
+        "accept": [
+          "accept-identity",
+          "accept-arithmetic-variation",
+          "accept-with-side-files"
+        ],
+        "reject": [
+          "reject-near-miss",
+          "reject-nan",
+          "reject-wrong-nstep",
+          "reject-wrong-dt",
+          "reject-omitted-variable",
+          "reject-wrong-name",
+          "reject-extra-file",
+          "reject-missing-grid",
+          "reject-malformed-grid",
+          "reject-wrong-endian"
+        ]
+      }
+    },
+    {
+      "id": "rhd-jet-04-taub-entropy",
+      "package": "tests/checks/rhd-jet-04-taub-entropy",
+      "classification": "implement-now",
+      "official": {
+        "family": "Test_Problems/RHD/Jet",
+        "init": "code/pluto/Test_Problems/RHD/Jet/init.c",
+        "definitions": "code/pluto/Test_Problems/RHD/Jet/definitions_04.h",
+        "ini": "code/pluto/Test_Problems/RHD/Jet/pluto_04.ini",
+        "configuration": "Test_Problems/RHD/Jet/04",
+        "number": "04"
+      },
+      "physics": {
+        "eos": "taub",
+        "gamma": null,
+        "gamma_source": "not applicable: EOS==TAUB (Test_Problems/RHD/Jet/definitions_04.h:14); same dead-code guard as rhd-jet-01-taub around Jet/init.c:55 (wrapped in '#if EOS == IDEAL', never compiled here). Entropy recovery for this row uses the gamma-free Taub-Mathews formula (Src/RHD/rhd_energy_solve.c:198-199), so no gamma is needed for entropy either.",
+        "dimensions": 2,
+        "fixture_dimensions": [
+          6,
+          6,
+          1
+        ],
+        "geometry": "spherical",
+        "entropy_formula": "taub (internal recovery; not emitted by this official deck)",
+        "entropy_switch": "SELECTIVE (Test_Problems/RHD/Jet/definitions_04.h:15)",
+        "taub_closure": "independent verifier reconstruction required"
+      },
+      "schema": {
+        "binary": "data.%04d.dbl",
+        "metadata": "dbl.out",
+        "grid": "grid.out",
+        "dtype": "<f8",
+        "layout": "variable-major",
+        "variables": [
+          "rho",
+          "vx1",
+          "vx2",
+          "vx3",
+          "prs"
+        ],
+        "required_files": [
+          "grid.out",
+          "dbl.out"
+        ],
+        "frame_pattern": "data.%04d.dbl"
+      },
+      "observables": [
+        "state_scale",
+        "geometry_weighted_fields",
+        "jet_head_and_cocoon"
+      ],
+      "fixtures": {
+        "accept": [
+          "identity",
+          "arithmetic-variation-signed-zero",
+          "side-files"
+        ],
+        "reject": [
+          "near-miss",
+          "nan",
+          "wrong-nstep",
+          "wrong-dt",
+          "omitted-variable",
+          "wrong-name",
+          "extra-file",
+          "missing-grid",
+          "malformed-grid",
+          "wrong-endian"
+        ]
+      },
+      "fixture_directories": {
+        "accept": [
+          "accept-identity",
+          "accept-arithmetic-variation",
+          "accept-with-side-files"
+        ],
+        "reject": [
+          "reject-near-miss",
+          "reject-nan",
+          "reject-wrong-nstep",
+          "reject-wrong-dt",
+          "reject-omitted-variable",
+          "reject-wrong-name",
+          "reject-extra-file",
+          "reject-missing-grid",
+          "reject-malformed-grid",
+          "reject-wrong-endian"
+        ]
+      }
+    },
+    {
+      "id": "rhd-blast3d-03-taub",
+      "package": "tests/checks/rhd-blast3d-03-taub",
+      "classification": "implement-now",
+      "official": {
+        "family": "Test_Problems/RHD/Blast3D",
+        "init": "code/pluto/Test_Problems/RHD/Blast3D/init.c",
+        "definitions": "code/pluto/Test_Problems/RHD/Blast3D/definitions_03.h",
+        "ini": "code/pluto/Test_Problems/RHD/Blast3D/pluto_03.ini",
+        "configuration": "Test_Problems/RHD/Blast3D/03",
+        "number": "03"
+      },
+      "physics": {
+        "eos": "taub",
+        "gamma": null,
+        "gamma_source": "not applicable: EOS==TAUB (Test_Problems/RHD/Blast3D/definitions_03.h:14), under which g_gamma is not a declared symbol (Src/globals.h:117-121). Blast3D/init.c has no g_gamma assignment at all; its local (non-EOS) variable also named 'gamma' (init.c:60,93 = 4./3.) only converts the initial blast energy deposit to a pressure profile (init.c:95 us[PRS] = (gamma-1)*ENRG0/vol) and is never assigned to g_gamma. A prior contract mistook that local variable for the EOS gamma.",
+        "dimensions": 3,
+        "fixture_dimensions": [
+          4,
+          4,
+          4
+        ],
+        "geometry": "cartesian",
+        "taub_closure": "independent verifier reconstruction required",
+        "source_branch": "vector body-force source branch is exercised by the direct PLUTO run; acceptance uses strict raw fields plus finite geometry-weighted diagnostics, not an independently reconstructed force budget"
+      },
+      "schema": {
+        "binary": "data.%04d.dbl",
+        "metadata": "dbl.out",
+        "grid": "grid.out",
+        "dtype": "<f8",
+        "layout": "variable-major",
+        "variables": [
+          "rho",
+          "vx1",
+          "vx2",
+          "vx3",
+          "prs"
+        ],
+        "required_files": [
+          "grid.out",
+          "dbl.out"
+        ],
+        "frame_pattern": "data.%04d.dbl"
+      },
+      "observables": [
+        "state_scale",
+        "angular_scatter",
+        "material_pressure_norm"
+      ],
+      "fixtures": {
+        "accept": [
+          "identity",
+          "arithmetic-variation-signed-zero",
+          "side-files"
+        ],
+        "reject": [
+          "near-miss",
+          "nan",
+          "wrong-nstep",
+          "wrong-dt",
+          "omitted-variable",
+          "wrong-name",
+          "extra-file",
+          "missing-grid",
+          "malformed-grid",
+          "wrong-endian"
+        ]
+      },
+      "fixture_directories": {
+        "accept": [
+          "accept-identity",
+          "accept-arithmetic-variation",
+          "accept-with-side-files"
+        ],
+        "reject": [
+          "reject-near-miss",
+          "reject-nan",
+          "reject-wrong-nstep",
+          "reject-wrong-dt",
+          "reject-omitted-variable",
+          "reject-wrong-name",
+          "reject-extra-file",
+          "reject-missing-grid",
+          "reject-malformed-grid",
+          "reject-wrong-endian"
+        ]
+      }
+    },
+    {
+      "id": "rhd-riemann2d-01",
+      "package": "tests/checks/rhd-riemann2d-01",
+      "classification": "implement-now",
+      "official": {
+        "family": "Test_Problems/RHD/Riemann_2D",
+        "init": "code/pluto/Test_Problems/RHD/Riemann_2D/init.c",
+        "definitions": "code/pluto/Test_Problems/RHD/Riemann_2D/definitions_01.h",
+        "ini": "code/pluto/Test_Problems/RHD/Riemann_2D/pluto_01.ini",
+        "configuration": "Test_Problems/RHD/Riemann_2D/01",
+        "number": "01"
+      },
+      "physics": {
+        "eos": "ideal",
+        "gamma": 1.6666666666666667,
+        "gamma_source": "PLUTO's compiled-in default (Src/globals.h:118 g_gamma = 5./3.); Test_Problems/RHD/Riemann_2D/init.c and pluto_01.ini set no GAMMA_EOS parameter and never assign g_gamma",
+        "dimensions": 2,
+        "fixture_dimensions": [
+          6,
+          6,
+          1
+        ],
+        "geometry": "cartesian"
+      },
+      "schema": {
+        "binary": "data.%04d.dbl",
+        "metadata": "dbl.out",
+        "grid": "grid.out",
+        "dtype": "<f8",
+        "layout": "variable-major",
+        "variables": [
+          "rho",
+          "vx1",
+          "vx2",
+          "vx3",
+          "prs"
+        ],
+        "required_files": [
+          "grid.out",
+          "dbl.out"
+        ],
+        "frame_pattern": "data.%04d.dbl"
+      },
+      "observables": [
+        "state_scale",
+        "quadrant_wave_cuts",
+        "shock_contact_positions"
+      ],
+      "fixtures": {
+        "accept": [
+          "identity",
+          "arithmetic-variation-signed-zero",
+          "side-files"
+        ],
+        "reject": [
+          "near-miss",
+          "nan",
+          "wrong-nstep",
+          "wrong-dt",
+          "omitted-variable",
+          "wrong-name",
+          "extra-file",
+          "missing-grid",
+          "malformed-grid",
+          "wrong-endian"
+        ]
+      },
+      "fixture_directories": {
+        "accept": [
+          "accept-identity",
+          "accept-arithmetic-variation",
+          "accept-with-side-files"
+        ],
+        "reject": [
+          "reject-near-miss",
+          "reject-nan",
+          "reject-wrong-nstep",
+          "reject-wrong-dt",
+          "reject-omitted-variable",
+          "reject-wrong-name",
+          "reject-extra-file",
+          "reject-missing-grid",
+          "reject-malformed-grid",
+          "reject-wrong-endian"
+        ]
+      }
+    },
+    {
+      "id": "rad-rhd-shock-01-default",
+      "package": "tests/checks/rad-rhd-shock-01-default",
+      "classification": "active",
+      "official": {
+        "family": "Test_Problems/Radiation/Relativistic/RHD_Shock_Tube",
+        "init": "code/pluto/Test_Problems/Radiation/Relativistic/RHD_Shock_Tube/init.c",
+        "definitions": "code/pluto/Test_Problems/Radiation/Relativistic/RHD_Shock_Tube/definitions_01.h",
+        "ini": "code/pluto/Test_Problems/Radiation/Relativistic/RHD_Shock_Tube/pluto_01.ini",
+        "configuration": "Test_Problems/Radiation/Relativistic/RHD_Shock_Tube/01",
+        "number": "01"
+      },
+      "physics": {
+        "physics": "RHD",
+        "eos": "ideal",
+        "gamma": 1.6666666666666667,
+        "dimensions": 1,
+        "fixture_dimensions": [
+          16,
+          1,
+          1
+        ],
+        "geometry": "cartesian",
+        "radiation": true,
+        "radiation_fields": [
+          "enr",
+          "fr1",
+          "fr2",
+          "fr3"
+        ],
+        "coupled_source_check": true
+      },
+      "schema": {
+        "binary": "data.%04d.dbl",
+        "metadata": "dbl.out",
+        "grid": "grid.out",
+        "dtype": "<f8",
+        "layout": "variable-major",
+        "variables": [
+          "rho",
+          "vx1",
+          "vx2",
+          "vx3",
+          "prs",
+          "enr",
+          "fr1",
+          "fr2",
+          "fr3"
+        ],
+        "required_files": [
+          "grid.out",
+          "dbl.out"
+        ],
+        "frame_pattern": "data.%04d.dbl"
+      },
+      "observables": [
+        "state_scale",
+        "radiation_moment_scale",
+        "radiation_flux_norm",
+        "radiation_energy_norm",
+        "shock_contact_positions"
+      ],
+      "fixtures": {
+        "accept": [
+          "identity",
+          "arithmetic-variation-signed-zero",
+          "side-files"
+        ],
+        "reject": [
+          "near-miss",
+          "nan",
+          "wrong-nstep",
+          "wrong-dt",
+          "omitted-variable",
+          "wrong-name",
+          "extra-file",
+          "missing-grid",
+          "malformed-grid",
+          "wrong-endian"
+        ]
+      },
+      "fixture_directories": {
+        "accept": [
+          "accept-identity",
+          "accept-arithmetic-variation",
+          "accept-with-side-files"
+        ],
+        "reject": [
+          "reject-near-miss",
+          "reject-nan",
+          "reject-wrong-nstep",
+          "reject-wrong-dt",
+          "reject-omitted-variable",
+          "reject-wrong-name",
+          "reject-extra-file",
+          "reject-missing-grid",
+          "reject-malformed-grid",
+          "reject-wrong-endian"
+        ]
+      }
+    },
+    {
+      "id": "rad-rhd-shock-02-fixedpoint",
+      "package": "tests/checks/rad-rhd-shock-02-fixedpoint",
+      "classification": "active",
+      "official": {
+        "family": "Test_Problems/Radiation/Relativistic/RHD_Shock_Tube",
+        "init": "code/pluto/Test_Problems/Radiation/Relativistic/RHD_Shock_Tube/init.c",
+        "definitions": "code/pluto/Test_Problems/Radiation/Relativistic/RHD_Shock_Tube/definitions_02.h",
+        "ini": "code/pluto/Test_Problems/Radiation/Relativistic/RHD_Shock_Tube/pluto_02.ini",
+        "configuration": "Test_Problems/Radiation/Relativistic/RHD_Shock_Tube/02",
+        "number": "02"
+      },
+      "physics": {
+        "physics": "RHD",
+        "eos": "ideal",
+        "gamma": 1.6666666666666667,
+        "dimensions": 1,
+        "fixture_dimensions": [
+          16,
+          1,
+          1
+        ],
+        "geometry": "cartesian",
+        "radiation": true,
+        "radiation_fields": [
+          "enr",
+          "fr1",
+          "fr2",
+          "fr3"
+        ],
+        "coupled_source_check": true
+      },
+      "schema": {
+        "binary": "data.%04d.dbl",
+        "metadata": "dbl.out",
+        "grid": "grid.out",
+        "dtype": "<f8",
+        "layout": "variable-major",
+        "variables": [
+          "rho",
+          "vx1",
+          "vx2",
+          "vx3",
+          "prs",
+          "enr",
+          "fr1",
+          "fr2",
+          "fr3"
+        ],
+        "required_files": [
+          "grid.out",
+          "dbl.out"
+        ],
+        "frame_pattern": "data.%04d.dbl"
+      },
+      "observables": [
+        "state_scale",
+        "radiation_moment_scale",
+        "radiation_flux_norm",
+        "radiation_energy_norm",
+        "shock_contact_positions"
+      ],
+      "fixtures": {
+        "accept": [
+          "identity",
+          "arithmetic-variation-signed-zero",
+          "side-files"
+        ],
+        "reject": [
+          "near-miss",
+          "nan",
+          "wrong-nstep",
+          "wrong-dt",
+          "omitted-variable",
+          "wrong-name",
+          "extra-file",
+          "missing-grid",
+          "malformed-grid",
+          "wrong-endian"
+        ]
+      },
+      "fixture_directories": {
+        "accept": [
+          "accept-identity",
+          "accept-arithmetic-variation",
+          "accept-with-side-files"
+        ],
+        "reject": [
+          "reject-near-miss",
+          "reject-nan",
+          "reject-wrong-nstep",
+          "reject-wrong-dt",
+          "reject-omitted-variable",
+          "reject-wrong-name",
+          "reject-extra-file",
+          "reject-missing-grid",
+          "reject-malformed-grid",
+          "reject-wrong-endian"
+        ]
+      }
+    },
+    {
+      "id": "rad-rhd-shock-03-newton",
+      "package": "tests/checks/rad-rhd-shock-03-newton",
+      "classification": "active",
+      "official": {
+        "family": "Test_Problems/Radiation/Relativistic/RHD_Shock_Tube",
+        "init": "code/pluto/Test_Problems/Radiation/Relativistic/RHD_Shock_Tube/init.c",
+        "definitions": "code/pluto/Test_Problems/Radiation/Relativistic/RHD_Shock_Tube/definitions_03.h",
+        "ini": "code/pluto/Test_Problems/Radiation/Relativistic/RHD_Shock_Tube/pluto_03.ini",
+        "configuration": "Test_Problems/Radiation/Relativistic/RHD_Shock_Tube/03",
+        "number": "03"
+      },
+      "physics": {
+        "physics": "RHD",
+        "eos": "ideal",
+        "gamma": 1.6666666666666667,
+        "dimensions": 1,
+        "fixture_dimensions": [
+          16,
+          1,
+          1
+        ],
+        "geometry": "cartesian",
+        "radiation": true,
+        "radiation_fields": [
+          "enr",
+          "fr1",
+          "fr2",
+          "fr3"
+        ],
+        "coupled_source_check": true
+      },
+      "schema": {
+        "binary": "data.%04d.dbl",
+        "metadata": "dbl.out",
+        "grid": "grid.out",
+        "dtype": "<f8",
+        "layout": "variable-major",
+        "variables": [
+          "rho",
+          "vx1",
+          "vx2",
+          "vx3",
+          "prs",
+          "enr",
+          "fr1",
+          "fr2",
+          "fr3"
+        ],
+        "required_files": [
+          "grid.out",
+          "dbl.out"
+        ],
+        "frame_pattern": "data.%04d.dbl"
+      },
+      "observables": [
+        "state_scale",
+        "radiation_moment_scale",
+        "radiation_flux_norm",
+        "radiation_energy_norm",
+        "shock_contact_positions"
+      ],
+      "fixtures": {
+        "accept": [
+          "identity",
+          "arithmetic-variation-signed-zero",
+          "side-files"
+        ],
+        "reject": [
+          "near-miss",
+          "nan",
+          "wrong-nstep",
+          "wrong-dt",
+          "omitted-variable",
+          "wrong-name",
+          "extra-file",
+          "missing-grid",
+          "malformed-grid",
+          "wrong-endian"
+        ]
+      },
+      "fixture_directories": {
+        "accept": [
+          "accept-identity",
+          "accept-arithmetic-variation",
+          "accept-with-side-files"
+        ],
+        "reject": [
+          "reject-near-miss",
+          "reject-nan",
+          "reject-wrong-nstep",
+          "reject-wrong-dt",
+          "reject-omitted-variable",
+          "reject-wrong-name",
+          "reject-extra-file",
+          "reject-missing-grid",
+          "reject-malformed-grid",
+          "reject-wrong-endian"
+        ]
+      }
+    },
+    {
+      "id": "rad-rhd-blast-04-3d",
+      "package": "tests/checks/rad-rhd-blast-04-3d",
+      "classification": "active",
+      "official": {
+        "family": "Test_Problems/Radiation/Relativistic/RHD_Blast",
+        "init": "code/pluto/Test_Problems/Radiation/Relativistic/RHD_Blast/init.c",
+        "definitions": "code/pluto/Test_Problems/Radiation/Relativistic/RHD_Blast/definitions_04.h",
+        "ini": "code/pluto/Test_Problems/Radiation/Relativistic/RHD_Blast/pluto_04.ini",
+        "configuration": "Test_Problems/Radiation/Relativistic/RHD_Blast/04",
+        "number": "04"
+      },
+      "physics": {
+        "physics": "RHD",
+        "eos": "ideal",
+        "gamma": 1.66666666667,
+        "dimensions": 3,
+        "fixture_dimensions": [
+          4,
+          4,
+          4
+        ],
+        "geometry": "cartesian",
+        "radiation": true,
+        "radiation_fields": [
+          "enr",
+          "fr1",
+          "fr2",
+          "fr3"
+        ],
+        "coupled_source_check": true
+      },
+      "schema": {
+        "binary": "data.%04d.dbl",
+        "metadata": "dbl.out",
+        "grid": "grid.out",
+        "dtype": "<f8",
+        "layout": "variable-major",
+        "variables": [
+          "rho",
+          "vx1",
+          "vx2",
+          "vx3",
+          "prs",
+          "enr",
+          "fr1",
+          "fr2",
+          "fr3"
+        ],
+        "required_files": [
+          "grid.out",
+          "dbl.out"
+        ],
+        "frame_pattern": "data.%04d.dbl"
+      },
+      "observables": [
+        "state_scale",
+        "radiation_moment_scale",
+        "radiation_flux_norm",
+        "radiation_energy_norm",
+        "radial_profile",
+        "angular_scatter"
+      ],
+      "fixtures": {
+        "accept": [
+          "identity",
+          "arithmetic-variation-signed-zero",
+          "side-files"
+        ],
+        "reject": [
+          "near-miss",
+          "nan",
+          "wrong-nstep",
+          "wrong-dt",
+          "omitted-variable",
+          "wrong-name",
+          "extra-file",
+          "missing-grid",
+          "malformed-grid",
+          "wrong-endian"
+        ]
+      },
+      "fixture_directories": {
+        "accept": [
+          "accept-identity",
+          "accept-arithmetic-variation",
+          "accept-with-side-files"
+        ],
+        "reject": [
+          "reject-near-miss",
+          "reject-nan",
+          "reject-wrong-nstep",
+          "reject-wrong-dt",
+          "reject-omitted-variable",
+          "reject-wrong-name",
+          "reject-extra-file",
+          "reject-missing-grid",
+          "reject-malformed-grid",
+          "reject-wrong-endian"
+        ]
+      }
+    },
+    {
+      "id": "rad-rhd-shadow-02-opacity",
+      "package": "tests/checks/rad-rhd-shadow-02-opacity",
+      "classification": "active",
+      "official": {
+        "family": "Test_Problems/Radiation/Relativistic/RHD_Shadow",
+        "init": "code/pluto/Test_Problems/Radiation/Relativistic/RHD_Shadow/init.c",
+        "definitions": "code/pluto/Test_Problems/Radiation/Relativistic/RHD_Shadow/definitions_02.h",
+        "ini": "code/pluto/Test_Problems/Radiation/Relativistic/RHD_Shadow/pluto_02.ini",
+        "configuration": "Test_Problems/Radiation/Relativistic/RHD_Shadow/02",
+        "number": "02"
+      },
+      "physics": {
+        "physics": "RHD",
+        "eos": "ideal",
+        "gamma": 1.6666666666666667,
+        "dimensions": 2,
+        "fixture_dimensions": [
+          8,
+          4,
+          1
+        ],
+        "geometry": "cartesian",
+        "radiation": true,
+        "radiation_fields": [
+          "enr",
+          "fr1",
+          "fr2",
+          "fr3"
+        ],
+        "coupled_source_check": true
+      },
+      "schema": {
+        "binary": "data.%04d.dbl",
+        "metadata": "dbl.out",
+        "grid": "grid.out",
+        "dtype": "<f8",
+        "layout": "variable-major",
+        "variables": [
+          "rho",
+          "vx1",
+          "vx2",
+          "vx3",
+          "prs",
+          "enr",
+          "fr1",
+          "fr2",
+          "fr3"
+        ],
+        "required_files": [
+          "grid.out",
+          "dbl.out"
+        ],
+        "frame_pattern": "data.%04d.dbl"
+      },
+      "observables": [
+        "state_scale",
+        "radiation_moment_scale",
+        "radiation_flux_norm",
+        "radiation_energy_norm",
+        "radial_profile",
+        "angular_scatter"
+      ],
+      "fixtures": {
+        "accept": [
+          "identity",
+          "arithmetic-variation-signed-zero",
+          "side-files"
+        ],
+        "reject": [
+          "near-miss",
+          "nan",
+          "wrong-nstep",
+          "wrong-dt",
+          "omitted-variable",
+          "wrong-name",
+          "extra-file",
+          "missing-grid",
+          "malformed-grid",
+          "wrong-endian"
+        ]
+      },
+      "fixture_directories": {
+        "accept": [
+          "accept-identity",
+          "accept-arithmetic-variation",
+          "accept-with-side-files"
+        ],
+        "reject": [
+          "reject-near-miss",
+          "reject-nan",
+          "reject-wrong-nstep",
+          "reject-wrong-dt",
+          "reject-omitted-variable",
+          "reject-wrong-name",
+          "reject-extra-file",
+          "reject-missing-grid",
+          "reject-malformed-grid",
+          "reject-wrong-endian"
+        ]
+      }
+    },
+    {
+      "id": "rad-hd-shocks-02-newton",
+      "package": "tests/checks/rad-hd-shocks-02-newton",
+      "classification": "active",
+      "official": {
+        "family": "Test_Problems/Radiation/Nonrelativistic/HD_Shocks",
+        "init": "code/pluto/Test_Problems/Radiation/Nonrelativistic/HD_Shocks/init.c",
+        "definitions": "code/pluto/Test_Problems/Radiation/Nonrelativistic/HD_Shocks/definitions_02.h",
+        "ini": "code/pluto/Test_Problems/Radiation/Nonrelativistic/HD_Shocks/pluto_02.ini",
+        "configuration": "Test_Problems/Radiation/Nonrelativistic/HD_Shocks/02",
+        "number": "02"
+      },
+      "physics": {
+        "physics": "HD",
+        "eos": "ideal",
+        "gamma": 1.4,
+        "dimensions": 1,
+        "fixture_dimensions": [
+          16,
+          1,
+          1
+        ],
+        "geometry": "cartesian",
+        "radiation": true,
+        "radiation_fields": [
+          "enr",
+          "fr1",
+          "fr2",
+          "fr3"
+        ],
+        "coupled_source_check": true
+      },
+      "schema": {
+        "binary": "data.%04d.dbl",
+        "metadata": "dbl.out",
+        "grid": "grid.out",
+        "dtype": "<f8",
+        "layout": "variable-major",
+        "variables": [
+          "rho",
+          "vx1",
+          "vx2",
+          "vx3",
+          "prs",
+          "enr",
+          "fr1",
+          "fr2",
+          "fr3"
+        ],
+        "required_files": [
+          "grid.out",
+          "dbl.out"
+        ],
+        "frame_pattern": "data.%04d.dbl"
+      },
+      "observables": [
+        "state_scale",
+        "radiation_moment_scale",
+        "radiation_flux_norm",
+        "radiation_energy_norm",
+        "shock_contact_positions"
+      ],
+      "fixtures": {
+        "accept": [
+          "identity",
+          "arithmetic-variation-signed-zero",
+          "side-files"
+        ],
+        "reject": [
+          "near-miss",
+          "nan",
+          "wrong-nstep",
+          "wrong-dt",
+          "omitted-variable",
+          "wrong-name",
+          "extra-file",
+          "missing-grid",
+          "malformed-grid",
+          "wrong-endian"
+        ]
+      },
+      "fixture_directories": {
+        "accept": [
+          "accept-identity",
+          "accept-arithmetic-variation",
+          "accept-with-side-files"
+        ],
+        "reject": [
+          "reject-near-miss",
+          "reject-nan",
+          "reject-wrong-nstep",
+          "reject-wrong-dt",
+          "reject-omitted-variable",
+          "reject-wrong-name",
+          "reject-extra-file",
+          "reject-missing-grid",
+          "reject-malformed-grid",
+          "reject-wrong-endian"
+        ]
+      }
+    },
+    {
+      "id": "rad-mhd-blast-06-polar",
+      "package": "tests/checks/rad-mhd-blast-06-polar",
+      "classification": "active",
+      "official": {
+        "family": "Test_Problems/Radiation/Nonrelativistic/MHD_Blast",
+        "init": "code/pluto/Test_Problems/Radiation/Nonrelativistic/MHD_Blast/init.c",
+        "definitions": "code/pluto/Test_Problems/Radiation/Nonrelativistic/MHD_Blast/definitions_06.h",
+        "ini": "code/pluto/Test_Problems/Radiation/Nonrelativistic/MHD_Blast/pluto_06.ini",
+        "configuration": "Test_Problems/Radiation/Nonrelativistic/MHD_Blast/06",
+        "number": "06"
+      },
+      "physics": {
+        "physics": "MHD",
+        "eos": "ideal",
+        "gamma": 1.333333333,
+        "dimensions": 3,
+        "fixture_dimensions": [
+          4,
+          3,
+          4
+        ],
+        "geometry": "polar",
+        "radiation": true,
+        "radiation_fields": [
+          "enr",
+          "fr1",
+          "fr2",
+          "fr3"
+        ],
+        "magnetic_fields": [
+          "Bx1",
+          "Bx2",
+          "Bx3"
+        ],
+        "coupled_source_check": true
+      },
+      "schema": {
+        "binary": "data.%04d.dbl",
+        "metadata": "dbl.out",
+        "grid": "grid.out",
+        "dtype": "<f8",
+        "layout": "variable-major",
+        "variables": [
+          "rho",
+          "vx1",
+          "vx2",
+          "vx3",
+          "Bx1",
+          "Bx2",
+          "Bx3",
+          "prs",
+          "enr",
+          "fr1",
+          "fr2",
+          "fr3",
+          "Bx1s",
+          "Bx3s"
+        ],
+        "required_files": [
+          "grid.out",
+          "dbl.out"
+        ],
+        "frame_pattern": "data.%04d.dbl"
+      },
+      "observables": [
+        "state_scale",
+        "radiation_moment_scale",
+        "radiation_flux_norm",
+        "radiation_energy_norm",
+        "magnetic_field_scale",
+        "magnetic_divergence",
+        "radial_profile",
+        "angular_scatter"
+      ],
+      "fixtures": {
+        "accept": [
+          "identity",
+          "arithmetic-variation-signed-zero",
+          "side-files"
+        ],
+        "reject": [
+          "near-miss",
+          "nan",
+          "wrong-nstep",
+          "wrong-dt",
+          "omitted-variable",
+          "wrong-name",
+          "extra-file",
+          "missing-grid",
+          "malformed-grid",
+          "wrong-endian"
+        ]
+      },
+      "fixture_directories": {
+        "accept": [
+          "accept-identity",
+          "accept-arithmetic-variation",
+          "accept-with-side-files"
+        ],
+        "reject": [
+          "reject-near-miss",
+          "reject-nan",
+          "reject-wrong-nstep",
+          "reject-wrong-dt",
+          "reject-omitted-variable",
+          "reject-wrong-name",
+          "reject-extra-file",
+          "reject-missing-grid",
+          "reject-malformed-grid",
+          "reject-wrong-endian"
+        ]
+      }
+    },
+    {
+      "id": "rad-hd-disk-planet-02",
+      "package": "tests/checks/rad-hd-disk-planet-02",
+      "classification": "active",
+      "official": {
+        "family": "Test_Problems/Radiation/Nonrelativistic/HD_Disk_Planet",
+        "init": "code/pluto/Test_Problems/Radiation/Nonrelativistic/HD_Disk_Planet/init.c",
+        "definitions": "code/pluto/Test_Problems/Radiation/Nonrelativistic/HD_Disk_Planet/definitions_02.h",
+        "ini": "code/pluto/Test_Problems/Radiation/Nonrelativistic/HD_Disk_Planet/pluto_02.ini",
+        "configuration": "Test_Problems/Radiation/Nonrelativistic/HD_Disk_Planet/02",
+        "number": "02"
+      },
+      "physics": {
+        "physics": "HD",
+        "eos": "ideal",
+        "gamma": 1.4,
+        "dimensions": 3,
+        "fixture_dimensions": [
+          4,
+          3,
+          4
+        ],
+        "geometry": "spherical",
+        "radiation": true,
+        "radiation_fields": [
+          "enr",
+          "fr1",
+          "fr2",
+          "fr3"
+        ],
+        "coupled_source_check": true
+      },
+      "schema": {
+        "binary": "data.%04d.dbl",
+        "metadata": "dbl.out",
+        "grid": "grid.out",
+        "dtype": "<f8",
+        "layout": "variable-major",
+        "variables": [
+          "rho",
+          "vx1",
+          "vx2",
+          "vx3",
+          "prs",
+          "enr",
+          "fr1",
+          "fr2",
+          "fr3"
+        ],
+        "required_files": [
+          "grid.out",
+          "dbl.out"
+        ],
+        "frame_pattern": "data.%04d.dbl"
+      },
+      "observables": [
+        "state_scale",
+        "radiation_moment_scale",
+        "radiation_flux_norm",
+        "radiation_energy_norm",
+        "geometry_weighted_fields",
+        "radial_profile",
+        "angular_scatter"
+      ],
+      "fixtures": {
+        "accept": [
+          "identity",
+          "arithmetic-variation-signed-zero",
+          "side-files"
+        ],
+        "reject": [
+          "near-miss",
+          "nan",
+          "wrong-nstep",
+          "wrong-dt",
+          "omitted-variable",
+          "wrong-name",
+          "extra-file",
+          "missing-grid",
+          "malformed-grid",
+          "wrong-endian"
+        ]
+      },
+      "fixture_directories": {
+        "accept": [
+          "accept-identity",
+          "accept-arithmetic-variation",
+          "accept-with-side-files"
+        ],
+        "reject": [
+          "reject-near-miss",
+          "reject-nan",
+          "reject-wrong-nstep",
+          "reject-wrong-dt",
+          "reject-omitted-variable",
+          "reject-wrong-name",
+          "reject-extra-file",
+          "reject-missing-grid",
+          "reject-malformed-grid",
+          "reject-wrong-endian"
+        ]
+      }
+    },
+    {
+      "id": "rad-hd-shadow-01-limo3",
+      "package": "tests/checks/rad-hd-shadow-01-limo3",
+      "classification": "active",
+      "official": {
+        "family": "Test_Problems/Radiation/Nonrelativistic/HD_Shadow",
+        "init": "code/pluto/Test_Problems/Radiation/Nonrelativistic/HD_Shadow/init.c",
+        "definitions": "code/pluto/Test_Problems/Radiation/Nonrelativistic/HD_Shadow/definitions_01.h",
+        "ini": "code/pluto/Test_Problems/Radiation/Nonrelativistic/HD_Shadow/pluto_01.ini",
+        "configuration": "Test_Problems/Radiation/Nonrelativistic/HD_Shadow/01",
+        "number": "01"
+      },
+      "physics": {
+        "physics": "HD",
+        "eos": "ideal",
+        "gamma": 1.66667,
+        "dimensions": 2,
+        "fixture_dimensions": [
+          8,
+          4,
+          1
+        ],
+        "geometry": "cartesian",
+        "radiation": true,
+        "radiation_fields": [
+          "enr",
+          "fr1",
+          "fr2",
+          "fr3"
+        ],
+        "coupled_source_check": true
+      },
+      "schema": {
+        "binary": "data.%04d.dbl",
+        "metadata": "dbl.out",
+        "grid": "grid.out",
+        "dtype": "<f8",
+        "layout": "variable-major",
+        "variables": [
+          "rho",
+          "vx1",
+          "vx2",
+          "vx3",
+          "prs",
+          "enr",
+          "fr1",
+          "fr2",
+          "fr3"
+        ],
+        "required_files": [
+          "grid.out",
+          "dbl.out"
+        ],
+        "frame_pattern": "data.%04d.dbl"
+      },
+      "observables": [
+        "state_scale",
+        "radiation_moment_scale",
+        "radiation_flux_norm",
+        "radiation_energy_norm",
+        "radial_profile",
+        "angular_scatter"
+      ],
+      "fixtures": {
+        "accept": [
+          "identity",
+          "arithmetic-variation-signed-zero",
+          "side-files"
+        ],
+        "reject": [
+          "near-miss",
+          "nan",
+          "wrong-nstep",
+          "wrong-dt",
+          "omitted-variable",
+          "wrong-name",
+          "extra-file",
+          "missing-grid",
+          "malformed-grid",
+          "wrong-endian"
+        ]
+      },
+      "fixture_directories": {
+        "accept": [
+          "accept-identity",
+          "accept-arithmetic-variation",
+          "accept-with-side-files"
+        ],
+        "reject": [
+          "reject-near-miss",
+          "reject-nan",
+          "reject-wrong-nstep",
+          "reject-wrong-dt",
+          "reject-omitted-variable",
+          "reject-wrong-name",
+          "reject-extra-file",
+          "reject-missing-grid",
+          "reject-malformed-grid",
+          "reject-wrong-endian"
+        ]
+      }
+    },
+    {
+      "id": "rad-rmhd-blast-01-witness",
+      "package": "tests/checks/rad-rmhd-blast-01-witness",
+      "classification": "active-witness",
+      "official": {
+        "family": "Test_Problems/Radiation/Relativistic/RMHD_Blast",
+        "init": "code/pluto/Test_Problems/Radiation/Relativistic/RMHD_Blast/init.c",
+        "definitions": "code/pluto/Test_Problems/Radiation/Relativistic/RMHD_Blast/definitions_01.h",
+        "ini": "code/pluto/Test_Problems/Radiation/Relativistic/RMHD_Blast/pluto_01.ini",
+        "configuration": "Test_Problems/Radiation/Relativistic/RMHD_Blast/01",
+        "number": "01"
+      },
+      "physics": {
+        "physics": "RMHD",
+        "eos": "ideal",
+        "gamma": 1.3333333333333,
+        "dimensions": 2,
+        "fixture_dimensions": [
+          4,
+          4,
+          1
+        ],
+        "geometry": "cartesian",
+        "radiation": true,
+        "radiation_fields": [
+          "enr",
+          "fr1",
+          "fr2",
+          "fr3"
+        ],
+        "magnetic_fields": [
+          "Bx1",
+          "Bx2",
+          "Bx3"
+        ],
+        "tracer_fields": [
+          "tr1"
+        ],
+        "coupled_source_check": true
+      },
+      "schema": {
+        "binary": "data.%04d.dbl",
+        "metadata": "dbl.out",
+        "grid": "grid.out",
+        "dtype": "<f8",
+        "layout": "variable-major",
+        "variables": [
+          "rho",
+          "vx1",
+          "vx2",
+          "vx3",
+          "Bx1",
+          "Bx2",
+          "Bx3",
+          "prs",
+          "enr",
+          "fr1",
+          "fr2",
+          "fr3",
+          "tr1",
+          "Bx1s",
+          "Bx2s"
+        ],
+        "required_files": [
+          "grid.out",
+          "dbl.out"
+        ],
+        "frame_pattern": "data.%04d.dbl"
+      },
+      "observables": [
+        "state_scale",
+        "radiation_moment_scale",
+        "radiation_flux_norm",
+        "radiation_energy_norm",
+        "magnetic_field_scale",
+        "magnetic_divergence",
+        "tracer_scale",
+        "radial_profile",
+        "angular_scatter"
+      ],
+      "fixtures": {
+        "accept": [
+          "identity",
+          "arithmetic-variation-signed-zero",
+          "side-files"
+        ],
+        "reject": [
+          "near-miss",
+          "nan",
+          "wrong-nstep",
+          "wrong-dt",
+          "omitted-variable",
+          "wrong-name",
+          "extra-file",
+          "missing-grid",
+          "malformed-grid",
+          "wrong-endian"
+        ]
+      },
+      "fixture_directories": {
+        "accept": [
+          "accept-identity",
+          "accept-arithmetic-variation",
+          "accept-with-side-files"
+        ],
+        "reject": [
+          "reject-near-miss",
+          "reject-nan",
+          "reject-wrong-nstep",
+          "reject-wrong-dt",
+          "reject-omitted-variable",
+          "reject-wrong-name",
+          "reject-extra-file",
+          "reject-missing-grid",
+          "reject-malformed-grid",
+          "reject-wrong-endian"
+        ]
+      }
+    }
+  ]
+}

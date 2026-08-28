@@ -1,9 +1,9 @@
-"""Strict shared predicate for the eight staged RHD checks.
+"""Strict shared predicate for the complete 18-row RHD+radiation checks.
 
 Scientific numeric bounds are deliberately absent until trusted CPU repeats and
-an independent arithmetic realization are measured.  Staging accepts finite
-numeric equality (including signed-zero normalization), warns on identity, and
-fails closed on any nonzero numerical difference.
+an independent arithmetic realization are measured. Finite raw-field equality
+(including signed-zero normalization) is strict; MHD/RMHD rows do not receive an
+unverified independent conserved-state reconstruction.
 
 The required output file set is PLUTO's real contract (see pluto_io.py) plus
 the genuine side files a results directory may legitimately carry
@@ -101,25 +101,23 @@ def _expected_entropy(eos: str, gamma: float, rho: list[float], prs: list[float]
     return expected
 
 
-def _physics(output: dict, rubric: dict) -> tuple[list[dict], list[dict]]:
+def _physics(output: dict, rubric: dict) -> tuple[list[dict | None], list[dict]]:
     physics = rubric["physics"]
     dims = output["grid"]["dims"]
-    ndim = sum(value > 1 for value in dims)
-    if ndim != int(physics["dimensions"]):
-        raise OutputError(f"expected {physics['dimensions']}-D output, got {dims}")
+    # DIMENSIONS is PLUTO's configured dimensionality. A coordinate with one
+    # active cell may be omitted from grid.out's X-axis header, but its body
+    # block and configured DIMENSIONS remain mandatory.
+    declared_dimensions = output["grid"]["declared_dimensions"]
+    if declared_dimensions != int(physics["dimensions"]):
+        raise OutputError(f"expected {physics['dimensions']}-D output, got {declared_dimensions}-D {dims}")
     if output["grid"]["geometry"] != physics["geometry"]:
         raise OutputError("geometry does not match the check contract")
     eos = physics["eos"]
+    physics_kind = physics.get("physics", "RHD")
     gamma_raw = physics.get("gamma")
-    if eos == "ideal":
-        if gamma_raw is None:
-            raise OutputError("ideal EOS requires a non-null physics.gamma")
-        gamma = float(gamma_raw)
-    else:
-        # TAUB carries no compiled g_gamma (Src/globals.h:117); taub.py's
-        # reconstruct() never reads gamma on this branch, so an absent value
-        # is passed through as NaN rather than guessed.
-        gamma = float(gamma_raw) if gamma_raw is not None else float("nan")
+    if eos == "ideal" and gamma_raw is None and physics_kind in {"HD", "RHD"}:
+        raise OutputError("ideal HD/RHD EOS requires a non-null physics.gamma")
+    gamma = float(gamma_raw) if gamma_raw is not None else None
     names = output["variables"]
     reconstructions = []
     metrics = []
@@ -130,9 +128,15 @@ def _physics(output: dict, rubric: dict) -> tuple[list[dict], list[dict]]:
         if any(value <= 0.0 for value in data["prs"]):
             raise OutputError(f"frame {index}: prs is not strictly positive")
         state_scale(frame)
-        reconstructed = reconstruct(data, eos, gamma)
-        if any(not math.isfinite(value) for values in reconstructed.values() for value in values):
-            raise OutputError(f"frame {index}: reconstructed conserved state is nonfinite")
+        if physics_kind in {"HD", "RHD"}:
+            reconstructed = reconstruct(data, eos, gamma, physics_kind)
+            if any(not math.isfinite(value) for values in reconstructed.values() for value in values):
+                raise OutputError(f"frame {index}: reconstructed conserved state is nonfinite")
+        else:
+            # Complete MHD/RMHD material-plus-magnetic maps are not claimed
+            # until independently verified against production; strict raw
+            # fields/schema and selected finite diagnostics remain in force.
+            reconstructed = None
         if "entropy" in names:
             if any(value <= 0.0 for value in data["entropy"]):
                 raise OutputError(f"frame {index}: entropy is not positive")
@@ -181,18 +185,24 @@ def validate(reference: list[str], candidate: list[str], check_dir: str) -> dict
         verdict["frames_scored"] = max(0, len(ref["frames"]) - 1)
         for index, (left, right) in enumerate(zip(ref["frames"], cand["frames"])):
             equal = all(_same_vector(a, b) for a, b in zip(left, right))
-            recon_equal = all(_same_vector(ref_cons[index][name], cand_cons[index][name])
-                              for name in ref_cons[index])
+            if ref_cons[index] is None or cand_cons[index] is None:
+                recon_equal = None
+                conserved_status = "not_claimed_for_unverified_mhd_rmhd"
+            else:
+                recon_equal = all(_same_vector(ref_cons[index][name], cand_cons[index][name])
+                                  for name in ref_cons[index])
+                conserved_status = "verified_hd_rhd_map"
             metric_equal = ref_metrics[index] == cand_metrics[index]
-            ok = equal and recon_equal and metric_equal
+            ok = equal and (recon_equal is None or recon_equal) and metric_equal
             verdict["frames_ok"] += int(ok)
             verdict["detail"].append({"frame": index, "fields_equal": equal,
                                        "conserved_equal": recon_equal,
+                                       "conserved_status": conserved_status,
                                        "observables_equal": metric_equal, "ok": ok})
             if not ok:
                 verdict["outcome"] = "pending_calibration" if equal else "diverged"
-                verdict["error"] = ("numeric values or independently reconstructed conserved/"
-                                     "observable state differs; no scientific tolerance is measured yet")
+                verdict["error"] = ("raw numeric values or independently verified observable state differs; "
+                                     "no scientific tolerance is measured yet")
                 return verdict
         verdict["bytewise"] = _bytewise(ref, cand)
         if verdict["bytewise"]:

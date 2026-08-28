@@ -1,4 +1,4 @@
-"""Deterministic geometry-aware observables for staged RHD validators."""
+"""Deterministic geometry-aware observables for the active 18-row validators."""
 from __future__ import annotations
 
 import math
@@ -53,21 +53,62 @@ def signature(frame: list[list[float]], names: list[str], dims: tuple[int, int, 
             result[metric] = sum(w * r for w, r in zip(weights, rho))
         elif metric == "jet_head_and_cocoon":
             result[metric] = max(rho) - min(rho)
-        elif metric == "body_force_budget":
-            # Fixed Newtonian-approximation constant, deliberately NOT
-            # rubric.physics.gamma: this metric's only current user
-            # (rhd-blast3d-03-taub) is EOS==TAUB, which has no compiled
-            # g_gamma (Src/globals.h:117-121) -- there is no row-derived
-            # gamma to thread through here, only a scientifically-pending
-            # placeholder observable (see rubric.json's "body_force" note).
-            # Threading physics.gamma through would pass None/NaN instead of
-            # fixing anything; if a future ideal-EOS row adopts this
-            # observable, its real gamma must be threaded in explicitly then.
-            newtonian_gamma = 5.0 / 3.0
-            energy = [p / (newtonian_gamma - 1.0) + 0.5 * r * (x * x + y * y + z * z)
-                      for r, x, y, z, p in zip(data["rho"], data["vx1"], data["vx2"],
-                                                data["vx3"], data["prs"])]
-            result[metric] = sum(w * e for w, e in zip(weights, energy))
+        elif metric == "material_pressure_norm":
+            # Honest dimensionful diagnostic: Euclidean norm of the emitted gas
+            # pressure field. It carries no invented EOS/body-force constant.
+            result[metric] = math.sqrt(sum(value * value for value in data["prs"]))
+        elif metric == "radiation_moment_scale":
+            required = ("enr", "fr1", "fr2", "fr3")
+            if any(name not in data for name in required):
+                raise ValueError("radiation_moment_scale requires enr and fr1-fr3")
+            if any(not math.isfinite(value) for name in required for value in data[name]):
+                raise ValueError("radiation moments must be finite")
+            # Dimensionful Euclidean norm of the emitted radiation moments;
+            # unlike a flux factor it introduces no unavailable c or reduced-c.
+            result[metric] = math.sqrt(sum(value * value for name in required for value in data[name]))
+            if result[metric] <= 0.0:
+                raise ValueError("radiation moment scale is zero")
+        elif metric == "radiation_energy_norm":
+            if "enr" not in data or any(value < 0.0 or not math.isfinite(value) for value in data["enr"]):
+                raise ValueError("radiation energy must be finite and nonnegative")
+            result[metric] = math.sqrt(sum(value * value for value in data["enr"]))
+        elif metric == "radiation_flux_norm":
+            required = ("fr1", "fr2", "fr3")
+            if any(name not in data for name in required):
+                raise ValueError("radiation_flux_norm requires fr1-fr3")
+            if any(not math.isfinite(value) for name in required for value in data[name]):
+                raise ValueError("radiation flux must be finite")
+            # A dimensionful Euclidean flux norm; this is not the dimensionless
+            # |F|/(c E) flux factor and intentionally introduces no c constant.
+            result[metric] = math.sqrt(sum(value * value for name in required for value in data[name]))
+        elif metric == "magnetic_field_scale":
+            required = ("Bx1", "Bx2", "Bx3")
+            if any(name not in data for name in required):
+                raise ValueError("magnetic_field_scale requires Bx1-Bx3")
+            result[metric] = math.sqrt(sum(value * value
+                                          for name in required for value in data[name]))
+            if result[metric] <= 0.0:
+                raise ValueError("magnetic field scale is zero")
+        elif metric == "magnetic_divergence":
+            required = ("Bx1", "Bx2", "Bx3")
+            if any(name not in data for name in required):
+                raise ValueError("magnetic_divergence requires Bx1-Bx3")
+            # Cell-index finite-difference witness for a CT consumer. The exact
+            # MHD flux/CT implementation is still tested by the coupled output
+            # fields; this independent scalar catches field omission or
+            # dimensional collapse in a candidate result.
+            result[metric] = sum(abs(data["Bx1"][i] - data["Bx1"][i - 1])
+                                 + abs(data["Bx2"][i] - data["Bx2"][i - 1])
+                                 + abs(data["Bx3"][i] - data["Bx3"][i - 1])
+                                 for i in range(1, len(rho)))
+        elif metric == "tracer_scale":
+            if "tr1" not in data:
+                raise ValueError("tracer_scale requires tr1")
+            # A configured tracer may be physically zero in an official deck
+            # (RMHD_Blast/01 sets NTRACER=1 but does not seed tr1). Presence,
+            # finiteness, and frame-to-frame comparison remain strict; zero is
+            # not a missing-interface signal.
+            result[metric] = math.sqrt(sum(value * value for value in data["tr1"]))
         elif metric == "quadrant_wave_cuts":
             mid = len(rho) // 2
             result[metric] = sum(rho[:mid]) - sum(rho[mid:])

@@ -113,8 +113,12 @@ def read_grid(root: str) -> dict:
     _need(dimensions is not None, "grid.out header has no '# DIMENSIONS:' record")
     _need(geometry is not None, "grid.out header has no '# GEOMETRY:' record")
     expected_axes = set(range(1, dimensions + 1))
-    _need(set(axis_points) == expected_axes,
-          f"grid.out header must declare X1..X{dimensions} point(s) records; got {sorted(axis_points)}")
+    # PLUTO omits header records for degenerate coordinates (set_grid.c still
+    # writes their one-point body blocks).  Accept that real output shape while
+    # rejecting axes outside the declared dimensionality; an omitted active
+    # axis is still rejected below when its body count is not the inferred 1.
+    _need(set(axis_points) <= expected_axes,
+          f"grid.out header has axis outside DIMENSIONS={dimensions}: got {sorted(axis_points)}")
     dims = tuple(axis_points.get(axis, 1) for axis in (1, 2, 3))
     _need(all(item > 0 for item in dims), "grid.out header dimensions must be positive")
 
@@ -147,7 +151,7 @@ def read_grid(root: str) -> dict:
             except ValueError as exc:
                 raise OutputError(f"grid.out: non-numeric X{axis} data line {raw_line!r}") from exc
     _need(pos == len(body), "grid.out has unexpected trailing content after the X3 block")
-    return {"dims": dims, "geometry": geometry}
+    return {"dims": dims, "declared_dimensions": dimensions, "geometry": geometry}
 
 
 def read_index(root: str, expected_variables: list[str]) -> list[dict]:
@@ -194,20 +198,45 @@ def read_index(root: str, expected_variables: list[str]) -> list[dict]:
     return rows
 
 
-def read_frame(root: str, frame: int, nvar: int, ncell: int, endian: str = "little") -> list[list[float]]:
+def _field_sizes(names: list[str], dims: tuple[int, int, int]) -> list[int]:
+    """Return PLUTO's variable-major array lengths, including CT staggering.
+
+    Cell-centred material/radiation fields have ``nx * ny * nz`` values.
+    Constrained-transport face fields are written on the corresponding
+    face-expanded mesh (Src/write_data.c), so their raw records are longer:
+    Bx1s is ``(nx+1)*ny*nz``, Bx2s is ``nx*(ny+1)*nz``, and Bx3s is
+    ``nx*ny*(nz+1)``.  Treating every variable as cell-centred silently
+    misaligns all subsequent fields and rejects genuine MHD/RMHD output.
+    """
+    nx, ny, nz = dims
+    base = nx * ny * nz
+    sizes = {
+        "Bx1s": (nx + 1) * ny * nz,
+        "Bx2s": nx * (ny + 1) * nz,
+        "Bx3s": nx * ny * (nz + 1),
+    }
+    return [sizes.get(name, base) for name in names]
+
+
+def read_frame(root: str, frame: int, names: list[str], dims: tuple[int, int, int],
+               endian: str = "little") -> list[list[float]]:
     path = os.path.join(root, f"data.{frame:04d}.dbl")
     _need(os.path.isfile(path), f"missing frame {path}")
     _need(endian in {"little", "big"}, f"{path}: unsupported endian {endian!r}")
     with open(path, "rb") as stream:
         payload = stream.read()
-    expected = nvar * ncell * 8
+    sizes = _field_sizes(names, dims)
+    total = sum(sizes)
+    expected = total * 8
     _need(len(payload) == expected,
           f"{path}: expected {expected} bytes, found {len(payload)}")
     prefix = "<" if endian == "little" else ">"
-    values = struct.unpack(f"{prefix}{nvar * ncell}d", payload)
+    values = struct.unpack(f"{prefix}{total}d", payload)
     result = []
-    for index in range(nvar):
-        field = list(values[index * ncell:(index + 1) * ncell])
+    offset = 0
+    for index, size in enumerate(sizes):
+        field = list(values[offset:offset + size])
+        offset += size
         _need(all(math.isfinite(value) for value in field),
               f"{path}: variable {index} has non-finite values")
         result.append(field)
@@ -239,6 +268,6 @@ def read_output(root: str, rubric: dict) -> dict:
     grid = read_grid(root)
     rows = read_index(root, variables)
     ncell = grid["dims"][0] * grid["dims"][1] * grid["dims"][2]
-    frames = [read_frame(root, row["frame"], len(variables), ncell, row["endian"]) for row in rows]
+    frames = [read_frame(root, row["frame"], variables, grid["dims"], row["endian"]) for row in rows]
     return {"root": root, "variables": variables, "grid": grid,
             "index": rows, "frames": frames, "ncell": ncell}

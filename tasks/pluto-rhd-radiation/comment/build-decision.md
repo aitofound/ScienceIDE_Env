@@ -1,6 +1,24 @@
-# CPU build decision (implementation staging)
+# CPU build decision (historical implementation-staging record)
 
-**Status: STAGED; no PLUTO build or solver run was performed.**
+> **Historical record.** The opening staging decision below predates the terminal
+> repair and is retained for audit. It is not the current row status and must not
+> be read as a claim about the current runtime.
+
+**Historical status: STAGED; no PLUTO build or solver run was performed at the time.**
+
+## Current terminal scope
+
+The preceding staging paragraphs and row-audit notes in this document are historical evidence only; they do not describe active rows or the current acceptance denominator.
+
+The current contract is the tracked `solution/row-contract.json` with exactly 18
+active rows. `solution/solve.sh` now performs a fresh immutable run for all 18
+rows, using the pinned archive extracted directly in the retained build image;
+`tests/test.sh` verifies that run's complete manifest and grades every row. A
+failed or in-progress run is never accepted through an older manifest. Current
+runtime receipts belong in the retained run state/manifest and are not inferred
+from this historical document.
+
+### Historical staging assumptions (superseded)
 
 The pinned archive contains the complete C source, official RHD inputs, the
 Taub EOS, root radiation, and the shared build machinery. The implementation
@@ -10,14 +28,17 @@ pre-existing `ARCH` line and `--auto-update`; this path still needs a permitted
 CPU build measurement. Any Chombo/AMR section, custom C++ tagger, and auxiliary
 `irradiation.c` path must be audited before it can be called runnable.
 
-Rows staged in this tree are only the eight RHD rows listed in
-`comment/staging.md`. The solution script verifies the archive, official input
-presence, and copied-workspace manifest, but this staging change does not claim
-that a compiler, generated makefile, executable, or solver output exists.
+Rows described as staged in this historical record are only the eight RHD rows listed in
+`comment/staging.md`; the terminal `row-contract.json` supersedes that cut and
+contains all 18 executable rows.
 
-Required follow-up before a runtime claim:
+The predecessor record stated that the solution script verified the archive, official
+input presence, and copied-workspace manifest, but that staging change did not
+claim that a compiler, generated makefile, executable, or solver output existed.
 
-1. establish the pinned Debian CPU image/toolchain and serial/AMR decision;
+### Historical follow-up worklist (not active omissions)
+
+1. establish the pinned Debian 13 (trixie) CPU image/toolchain and serial/AMR decision;
 2. build each selected official configuration from a copied deck and record the
    exact command, compiler, source hash, and auxiliary files;
 3. run two trusted CPU repeats per row and retain raw `data.%04d.dbl`,
@@ -29,7 +50,7 @@ Required follow-up before a runtime claim:
 No historical PLUTO timing, tolerance, target, or legacy branch result is
 copied into this package.
 
-## Row-level config audit (continuation session)
+## Historical row-level config audit (continuation session)
 
 Cross-checking each staged `rubric.json` against the real vendored deck found
 one class of defect: `physics.gamma` must reflect what the official deck
@@ -55,7 +76,7 @@ variants = 72 assertions) was run directly in Python against a scratch temp
 directory outside the task tree, with no Docker and no PLUTO compilation, and
 passed before and after this correction.
 
-## Gamma and output-contract correction (continuation session, PR #303 repair)
+## Gamma and output-contract correction (historical audit, superseded by current contract)
 
 The row-level config audit above is **superseded** for 6 of the 8 rows. It
 correctly found the two Shock_Tubes rows' `GAMMA_EOS` deck parameter, but

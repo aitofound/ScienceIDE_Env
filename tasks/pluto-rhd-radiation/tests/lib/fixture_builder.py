@@ -13,11 +13,10 @@ the point is to exercise the same parser a genuine CPU oracle output will go
 through.
 
 Entropy synthesis is EOS-aware and intentionally duplicates (rather than
-imports) generic_validator.py's formula, matching this codebase's existing
-"independent verifier-side calculation" pattern (see taub.py's docstring):
-fixture generation and validation are two separately-written, cross-checked
-implementations of the same PLUTO source formula
-(Src/RHD/rhd_energy_solve.c:193-201), not one shared code path.
+imports) generic_validator.py's formula. Fixture material states are passed
+through the physics-selected map in taub.py for HD/RHD rows; MHD/RMHD fixtures
+exercise only strict raw fields and finite diagnostics because no complete
+independent magnetic conserved map is claimed.
 """
 from __future__ import annotations
 
@@ -110,8 +109,24 @@ def _write_tree(path: str, rubric: dict, states: list[list[list[float]]],
             stream.write(f"{frame} {frame * 0.01:.17g} {dt:.17g} {step} "
                          f"single_file {endian} {' '.join(variables)}\n")
             with open(os.path.join(path, f"data.{frame:04d}.dbl"), "wb") as binary:
-                for field in state:
-                    binary.write(struct.pack(f"<{len(field)}d", *field))
+                nx, ny, nz = dims
+                cell_count = nx * ny * nz
+                for name, field in zip(variables, state):
+                    # CT face fields have one extra index along their face
+                    # normal in PLUTO's variable-major binary stream. Fixture
+                    # states are cell-sized for convenient metric mutation;
+                    # extend only these synthetic face records deterministically.
+                    target = {
+                        "Bx1s": (nx + 1) * ny * nz,
+                        "Bx2s": nx * (ny + 1) * nz,
+                        "Bx3s": nx * ny * (nz + 1),
+                    }.get(name, cell_count)
+                    values = list(field)
+                    if len(values) != cell_count:
+                        raise ValueError(f"fixture field {name} has {len(values)} values, expected {cell_count}")
+                    if target > cell_count:
+                        values.extend([values[-1]] * (target - cell_count))
+                    binary.write(struct.pack(f"<{len(values)}d", *values))
     if extra_file:
         with open(os.path.join(path, "unexpected.txt"), "w", encoding="utf-8") as stream:
             stream.write("not part of the PLUTO output contract\n")
@@ -147,6 +162,28 @@ def _states(rubric: dict) -> tuple[list[list[list[float]]], tuple[int, int, int]
             primitive["vx2"].append(vx2)
             primitive["vx3"].append(vx3)
             primitive["prs"].append(prs)
+            # Radiation and cross-consumer rows carry the complete output
+            # surface, not only the five hydrodynamic primitives.  Populate
+            # every additional declared variable so the fixture exercises the
+            # same variable-major binary shape as a real PLUTO result.  The
+            # values are deterministic, finite, and deliberately independent
+            # of the verifier's reconstructed material state.
+            for name in variables:
+                if name in {"rho", "vx1", "vx2", "vx3", "prs", "entropy"}:
+                    continue
+                if name == "enr":
+                    value = 0.4 + 0.02 * math.sin(phase) + 0.01 * frame
+                elif name.startswith("fr"):
+                    component = int(name[2:]) if name[2:].isdigit() else 1
+                    value = 0.01 * component * math.cos(phase + component) * (1.0 + 0.05 * frame)
+                elif name.startswith("Bx") or name.startswith("bx"):
+                    component = int(name[-1]) if name[-1:].isdigit() else 1
+                    value = 0.03 * component * math.sin(phase + 0.5 * component)
+                elif name.startswith("tr"):
+                    value = 0.2 + 0.01 * math.cos(phase) + 0.005 * frame
+                else:
+                    value = 0.1 + 0.01 * math.sin(phase + len(name))
+                primitive[name].append(value)
             if "entropy" in primitive:
                 # Matches generic_validator.py's _expected_entropy exactly:
                 # the two branches PLUTO compiles (Src/RHD/rhd_energy_solve.c
@@ -166,12 +203,15 @@ def _states(rubric: dict) -> tuple[list[list[list[float]]], tuple[int, int, int]
                     raise ValueError(f"no entropy formula for eos {eos!r}")
                 primitive["entropy"].append(entropy)
         state = [primitive[name] for name in variables]
-        # Reconstruct once here as an explicit fixture assertion.  The output
-        # contract remains primitive-only; validators independently rebuild the
-        # conserved state from those fields.
-        reconstructed = reconstruct(primitive, eos, gamma)
-        if any(not math.isfinite(value) for values in reconstructed.values() for value in values):
-            raise ValueError("fixture reconstruction unexpectedly nonfinite")
+        # Reconstruct only where the verifier has a complete production-
+        # justified map. The output contract remains raw-field based; MHD/RMHD
+        # fixtures deliberately exercise strict raw fields and diagnostics
+        # without invoking an unavailable magnetic reconstruction.
+        physics_kind = physics.get("physics", "RHD")
+        if physics_kind in {"HD", "RHD"}:
+            reconstructed = reconstruct(primitive, eos, gamma, physics_kind)
+            if any(not math.isfinite(value) for values in reconstructed.values() for value in values):
+                raise ValueError("fixture reconstruction unexpectedly nonfinite")
         states.append(state)
     return states, dims, geometry
 
