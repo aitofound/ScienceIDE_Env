@@ -20,6 +20,19 @@ Observed SHA-256:
 The archive was extracted locally and the PLUTO/ tree was copied into this
 leaf's code/pluto directory. No network fetch, external checkout, symlink, or
 runtime source acquisition is part of the leaf. The archive listing contains
-no Src/ResRMHD, Test_Problems/ResRMHD, rk_step_imex.c, or imex_source.c;
-ResRMHD/IMEX is consequently blocked and is not represented as a runnable
-check. Radiation rows remain staged pending ownership/reachability evidence.
+no separate Src/ResRMHD tree, rk_step_imex.c, or imex_source.c. The historical
+18-row source-audit note is superseded: the official in-tree Xpoint 03/04/05
+configurations exercise the ResRMHD branches implemented across the pinned
+Src/RMHD, Src/MHD/CT, and particle code. The three radiation rows are
+source-closed through root Src/Radiation and are part of the complete Docker
+lane.
+
+Continuation correction (2026-08-28): the official archive's ResRMHD physics
+branches are now covered by the explicit in-tree
+`Test_Problems/Particles/CR/Xpoint` configurations 03/04/05. Their definitions
+headers select `PHYSICS ResRMHD`; package configs are byte-identical to the
+source files. The 21-row orchestration is source-closed and statically gated,
+but the required native Docker execution could not be rerun in this daemon:
+Docker builder and containerd both returned `no space left on device` before
+creating a new container. This is recorded as an execution blocker, not as
+native-output evidence.

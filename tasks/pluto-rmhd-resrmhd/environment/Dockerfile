@@ -8,8 +8,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         gcc libc6-dev make python3 python3-minimal ca-certificates \
         openmpi-bin libopenmpi-dev
 
-COPY code/pluto /opt/pluto
-COPY solution/solve-in-container.sh /opt/solve-in-container.sh
+# This Dockerfile is built with the narrow code/ directory as context; keeping
+# comment/ and retained runtime outputs out of the build context is essential
+# for reproducible Docker storage use.
+COPY pluto /opt/pluto
 ENV PLUTO_DIR=/opt/pluto \
     LC_ALL=C
 WORKDIR /workspace
