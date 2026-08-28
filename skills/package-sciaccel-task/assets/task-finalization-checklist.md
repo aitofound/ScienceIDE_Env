@@ -54,6 +54,11 @@ the final gate.
 - [ ] If scale/resource/performance is claimed, the real mainline ran at that
   scale and records process/device use, output count, wall/CPU evidence, and
   infrastructure-vs-solver failure classification.
+- [ ] If a current solve succeeded, `comment/runtime-metadata.json` records only
+  that exact bare Docker `./solution/solve.sh` wall interval with monotonic
+  elapsed time, observed conditions, and task-relative evidence; if none
+  succeeded, no timing estimate or runtime-metadata claim was added. It is not
+  candidate speed or a replacement for the Docker self-test/scientific policy.
 - [ ] No unrun oracle, GPU, verifier, calibration, or performance step is
   described as passed; gaps and blind spots are explicit.
 
