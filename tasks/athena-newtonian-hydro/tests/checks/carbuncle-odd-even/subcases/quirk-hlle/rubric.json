@@ -1,0 +1,82 @@
+{
+  "rubric_version": "athena-hydro-rubric-v2",
+  "check_id": "NH-07-carbuncle-odd-even",
+  "folder": "carbuncle-odd-even",
+  "case": "quirk-hlle",
+  "description": "Quirk aligned strong-shock odd/even behavior across all five Newtonian solvers.",
+  "upstream_deck": "hydro/hydro_carbuncle.py:15-45,49-68",
+  "check_deck": "subcases/quirk-hlle/athinput",
+  "dimensions": [
+    32,
+    4,
+    1
+  ],
+  "frame_count": 3,
+  "expected_times": [
+    0,
+    0.2,
+    0.4
+  ],
+  "schedule_abs_tolerance": 1e-12,
+  "artifact": {
+    "file": "primitive_tab.json",
+    "format": "strict UTF-8 JSON",
+    "required_fields": [
+      "x1",
+      "x2",
+      "x3",
+      "rho",
+      "press",
+      "vel1",
+      "vel2",
+      "vel3"
+    ],
+    "row_order": "native Athena++ TAB k-j-i order within each frame",
+    "dtype": "float64",
+    "finite_values": true
+  },
+  "artifact_schema": "athena-hydro-primitive-tab/v1",
+  "variables": [
+    "x1",
+    "x2",
+    "x3",
+    "rho",
+    "press",
+    "vel1",
+    "vel2",
+    "vel3"
+  ],
+  "source_format": {
+    "encoding": "UTF-8 JSON converted from Athena++ formatted TAB",
+    "dtype": "float64",
+    "ordering": "frame then native k-j-i TAB row order",
+    "native_file_pattern": "<problem>.block<gid>.out<id>.<frame>.tab"
+  },
+  "comparison_policy": "provisional_parameterized",
+  "policy_status": "provisional_parameterized; human final pass policy required; identity comparison is self-test-only",
+  "coordinate_policy": "exact",
+  "cycle_policy": "nonnegative_integer_diagnostic_not_compared",
+  "primitive_abs_tolerance": null,
+  "primitive_rel_tolerance": null,
+  "comparison_parameters": {
+    "status": "human_decision_required",
+    "abs_env": "HARBOR_PRIMITIVE_ABS_TOLERANCE",
+    "rel_env": "HARBOR_PRIMITIVE_REL_TOLERANCE",
+    "default": "exact_identity_for_required_self_test_only"
+  },
+  "configuration": {
+    "kind": "quirk",
+    "solver": "hlle",
+    "integrator": "vl2",
+    "xorder": "2",
+    "flag": 0,
+    "flow": 0,
+    "axis": null,
+    "static": false,
+    "dimensions": [
+      32,
+      4,
+      1
+    ]
+  }
+}
