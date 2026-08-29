@@ -87,8 +87,8 @@ tasks/<group>/<module-slug>/       # <group>/ may be omitted
 │   ├── checks/
 │   │   ├── <check>/               # ordinary stable direct check name
 │   │   │   ├── check.json         # optional labels metadata
-│   │   │   └── ...                # rubric, fixtures, validators, scripts, data; no Dockerfile
-│   │   └── <other-check>/          # optional breadth/correctness checks; no image
+│   │   │   └── ...                # thin, test-specific information
+│   │   └── <other-check>/          # optional breadth/correctness check
 │   └── ...                        # free-form verifier inputs and dependencies
 ├── solution/
 │   ├── solve.sh                   # trusted CPU/oracle preparation entry point
@@ -117,26 +117,16 @@ exactly `comment/README.md`. Required entry files are:
 - `environment/Dockerfile`: the coding-agent image/build context. It is
   separate from the verifier image and is usually CPU/no-GPU in benchmark mode;
   an RL environment may differ.
-- `tests/Dockerfile` and `tests/test.sh`: the task's single shared test-image
-  bundle. One task has exactly one test Docker image, built from
-  `tests/Dockerfile`; that same image contains the dependencies and entry paths
-  needed for both trusted oracle construction and verification across the whole
-  declared check set. `test.sh` is the only verifier entrance, validates and
-  scores against the trusted oracle outputs, and writes Harbor's **non-binary
-  reward** (not merely pass/fail). Invoke it with no arguments in the Docker gate.
-- `solution/solve.sh`: the trusted original CPU path. It uses the same one shared
-  test image to construct or cache oracle outputs for the whole declared check
-  set; invoke it with no arguments, then use `tests/test.sh` in that image to
-  self-test and score those outputs before the task is submitted.
-- `tests/checks/<check>/`: a check is a thin test-spec unit inside the shared
-  test image, not an execution environment or image boundary. It contains only
-  that check's metadata, inputs/configuration, rubric or tolerances,
-  expected-output contract, check-specific fixtures, and validator logic. Shared
-  toolchains, source snapshots, build logic, generic runners, and Docker
-  lifecycle belong at task level. A check must not contain a Dockerfile or
-  construct, tag, request, or run its own Docker image or container. Per-check
-  images duplicate the task environment, waste build time, and violate the
-  one-test-image-per-task contract.
+- `tests/Dockerfile`: the single Dockerfile for the whole test suite. Build it
+  once to create the shared test image.
+- `solution/solve.sh`: the trusted original CPU path. It runs in that image and
+  constructs or caches the oracle outputs for the whole check set.
+- `tests/test.sh`: the only verifier entrance. It runs in the same image,
+  validates and scores against the trusted oracles, and writes Harbor's
+  **non-binary reward** (not merely pass/fail).
+- `tests/checks/<check>/`: a thin test-spec unit containing only that test's
+  metadata, inputs/configuration, rubric or tolerances, expected-output contract,
+  fixtures, and validator logic. Shared execution machinery stays at task level.
 - `target/*.json`: flat strict JSON descriptors containing the device, module,
   code, and environment facts needed by the runner. Every active target is an
   instruction to port and grade the module; `_`-prefixed files are disabled and
@@ -199,7 +189,7 @@ and merge do not require Claude, Codex, another coding agent, a candidate port,
 or a raw transcript. Record such evidence when it exists, but never fabricate or
 run it merely to satisfy CI.
 
-**Self-test means exactly this:** build the task's one shared test image from `tests/Dockerfile` once; use that image to run the oracle's no-argument `./solution/solve.sh` and prove that it produces trusted outputs; then use the same image to run the no-argument `./tests/test.sh` against those outputs and prove that the oracle receives a full reward. It does not mean running a coding agent or one-shot, and it does not require a selected target or candidate port. A sequence that builds or runs one image per check is not this gate.
+**Self-test means exactly this:** build the whole test suite's one image from `tests/Dockerfile`; run the oracle's no-argument `./solution/solve.sh` in that image to produce trusted outputs; then run the no-argument `./tests/test.sh` in the same image and require full reward. It does not mean running a coding agent or one-shot, and it does not require a selected target or candidate port.
 
 Before asking an agent to solve a leaf, run the same Dockerized Harbor gate that
 will be used for acceptance. A leaf is not prepared until all of these are true:
@@ -208,7 +198,7 @@ will be used for acceptance. A leaf is not prepared until all of these are true:
    `tests/Dockerfile` once for the leaf, then run the trusted original CPU path,
    including its no-argument `./solution/solve.sh`, inside that image to construct
    the trusted oracle outputs for the whole check set. Do not use a host-native
-   reference run or a per-check image as evidence.
+   reference run as evidence.
 2. **Execute the candidate in Docker.** Run the candidate through its Harbor
    contract in its Dockerized candidate environment. Reference and candidate
    execution must both be real runs, not copied, fabricated, cached-as-proof, or
@@ -223,8 +213,7 @@ will be used for acceptance. A leaf is not prepared until all of these are true:
    `tests/Dockerfile` against both roots. `tests/test.sh` is the only
    acceptance/verifier entrance; it must actually compare the reference and
    candidate and emit Harbor's non-binary reward. There is no host-native
-   acceptance, per-check verifier image, separate proof/static substitute, or
-   second verifier.
+   acceptance, separate proof/static substitute, or second verifier.
 
 The mandatory self-pass sequence is therefore an actual Dockerized run of the
 leaf's own `./solution/solve.sh` (with no arguments), followed by its own
