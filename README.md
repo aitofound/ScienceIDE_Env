@@ -33,10 +33,10 @@ tolerance-based, statistical, or another scientifically justified policy.
 
 ## New Harbor leaf tasks
 
-A leaf can be direct under `tasks/` or one level below a logistics grouping,
-such as `tasks/pluto/pluto-hd/`. The grouping name is not task identity; the
-leaf slug is stable and unique. Every leaf is self-sufficient and contains the
-whole pinned codebase, not a link to a parent or sibling:
+A leaf can be direct under `tasks/` or one level below a logistics grouping.
+The grouping name is not task identity; the leaf slug is stable and unique.
+Every leaf is self-sufficient and contains the whole pinned codebase, not a
+link to a parent or sibling:
 
 ```text
 tasks/<group>/<module-slug>/          # <group>/ may be omitted
@@ -122,12 +122,12 @@ validator also checks Harbor manifest shape and generated registry projections.
 
 ## Legacy packages
 
-Current `tasks/pluto/` and `archive/templates/grid-v1/` are grandfathered
-pre-grid/grid packages. Their plural `checks/` × `targets/` contracts, image
-verification, and existing projections remain valid and are intentionally not
-migrated by this revision. Do not mix that legacy shape with a new leaf's
-singular `target/`, `tests/checks/`, and `code/` roots. `archive/` retains
-historical packages and is not a template for new tasks.
+`archive/templates/grid-v1/` retains its grandfathered pre-grid/grid contract.
+Its plural `checks/` × `targets/` roots, image verification, and existing
+projections remain valid and are intentionally not migrated by this revision.
+Do not mix that legacy shape with a new leaf's singular `target/`,
+`tests/checks/`, and `code/` roots. `archive/` retains historical packages and
+is not a template for new tasks.
 
 ## Contributing
 
