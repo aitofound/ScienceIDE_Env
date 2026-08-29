@@ -38,16 +38,14 @@ jobs:
       # citable URL. Retirement is a status, not a deletion.
       - if: github.event_name == 'pull_request'
         run: git fetch --depth=1 origin main
-      # BASE_REF is ALWAYS set now. Besides slug permanence it answers "which
-      # packages does this change touch", which is what the difficulty-floor
-      # merge gate is scoped by — and the validator degrades that gate to
-      # warnings when it cannot tell, so an unset BASE_REF is a quietly open
-      # gate rather than a loud failure. On a pull request the baseline is main;
-      # on a push it is the commit before, which is what that push introduced.
+      # BASE_REF is always set for slug permanence and change-aware repository
+      # checks. On a pull request the baseline is main; on a push it is the
+      # commit before, which is what that push introduced. It does not impose a
+      # coding-agent implementation-attempt requirement.
       #
-      # CHECK_LINKS fetches every transcript URL to prove a reviewer can open
-      # it. Pull requests only: it is the proposed change that needs proving,
-      # and re-fetching the same URLs on the merge commit buys nothing.
+      # CHECK_LINKS checks any optional http(s) transcript URL a submitter chose
+      # to provide. Blank/UNRUN attempt fields are accepted; pull requests alone
+      # need liveness checking for evidence introduced by the proposed change.
       - run: npm run check
         env:
           BASE_REF: ${{ github.event_name == 'pull_request' && 'origin/main' || 'HEAD^' }}
