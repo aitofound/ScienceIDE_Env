@@ -39,8 +39,9 @@ non-official package is part of active authority or reward.
 ## Current status
 
 This leaf carries the complete vendored PLUTO source snapshot, environment,
-verifier, solution and one active CPU/Docker target. It defines 15 active
-official MHD rows. Two source-incompatible historical MHD rows remain
-preserved and excluded from the active list. New runtime evidence and numeric
-bound calibration are intentionally deferred; the static correction does not
-claim Docker execution or fabricated tolerances.
+verifier, solution and one active CPU/Docker target. It defines exactly 15
+active official MHD rows and no inactive check package. A bounded build and
+inspection verifies only the one-image packaging boundary; the full current
+15-case solve, a physically distinct candidate run, Harbor E2E and numeric
+bound calibration remain unrun. No runtime, equivalence, timing or tolerance
+claim is fabricated.
