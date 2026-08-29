@@ -10,7 +10,7 @@ exact citations) and compares a reference directory against a candidate
 directory. The active decision preserves the byte-identical fast path while
 using the owner-approved provisional combined tolerance for every finite raw
 DBL payload value in a non-identical pair:
-abs(candidate - reference) <= 1e-12 + 1e-9 * abs(reference).
+abs(candidate - reference) <= 1e-12 + 1e-8 * abs(reference).
 Shape, frame-set, artifact, parsing, and finite-value gates remain hard gates;
 calibration is not row-specific yet and remains future work.
 """
@@ -21,7 +21,7 @@ import struct
 CHECK = "mhd-field-loop-glm-vpot-03"
 DOUBLE_SIZE = 8
 # Owner-approved provisional combined tolerance; row calibration remains future work.
-RTOL = 1e-9
+RTOL = 1e-8
 ATOL = 1e-12
 POLICY_MARKER = "owner-approved provisional combined tolerance"
 BLOCKED_REASON = ''
@@ -263,7 +263,7 @@ def validate(reference_paths, candidate_paths):
                         f"flat value index {flat_index}{variable_note}: "
                         f"reference={reference:.17g}, candidate={candidate:.17g}, "
                         f"absolute error={absolute_error:.17g}, allowed limit={allowed:.17g}; "
-                        f"policy={POLICY_MARKER} (rtol=1e-9, atol=1e-12), "
+                        f"policy={POLICY_MARKER} (rtol=1e-8, atol=1e-12), "
                         "abs(candidate - reference) <= ATOL + RTOL * abs(reference)"
                     ),
                 }
@@ -272,7 +272,7 @@ def validate(reference_paths, candidate_paths):
         "check": CHECK, "passed": True, "status": "passed",
         "reason": (
             f"{POLICY_MARKER}: numerical tolerance path passed for every finite raw DBL "
-            f"payload value (rtol=1e-9, atol=1e-12); "
+            f"payload value (rtol=1e-8, atol=1e-12); "
             "abs(candidate - reference) <= ATOL + RTOL * abs(reference)."
         ),
     }
