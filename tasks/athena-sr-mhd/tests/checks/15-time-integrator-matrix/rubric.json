@@ -1,0 +1,73 @@
+{
+  "anti_hardcoding": [
+    "six exact integrator names",
+    "stage count metadata",
+    "rejection/acceptance distinction",
+    "wrapper cannot ignore requested integrator"
+  ],
+  "artifact_contract": {
+    "case_order": "contract.json order",
+    "dtype": "JSON finite numbers where present",
+    "file": "observables.json",
+    "format": "strict UTF-8 JSON",
+    "native_state": "required for C10/C11 when owner policy is accepted; source-only gaps are explicit",
+    "required_sections": [
+      "execution",
+      "coverage",
+      "policy",
+      "artifacts"
+    ],
+    "schema": "athena-sr-mhd-coverage/v2"
+  },
+  "case_count": 6,
+  "case_ids": [
+    "integrator-rk1",
+    "integrator-vl2",
+    "integrator-rk2",
+    "integrator-rk3",
+    "integrator-rk4",
+    "integrator-ssprk5_4"
+  ],
+  "check": "15-time-integrator-matrix",
+  "check_id": "SRMHD-C15",
+  "codebase": "athena-sr-mhd",
+  "comparison_policy": "provisional_exact_identity_self_test_only",
+  "configuration": {
+    "cfl": 0.3,
+    "dimensions": "(res,res/2,res/2)",
+    "periodic": true,
+    "resolutions": [
+      16,
+      32
+    ],
+    "state": {
+      "amplitude": 1e-06,
+      "gamma": 1.3333333333333333,
+      "magnetic_field": [
+        1.0,
+        0.6666666666666666,
+        0.3333333333333333
+      ],
+      "pgas": 0.5,
+      "rho": 1.0,
+      "velocity": [
+        0.1,
+        0.15,
+        0.05
+      ]
+    }
+  },
+  "description": "SR-MHD stage/update paths and compatibility for all shipped integrators.",
+  "evidence_class": "source-plus-neighbor-gap",
+  "official_evidence": [
+    "time_integrator.cpp branches; official SR scripts directly establish VL2/xorder2; hydro4/symmetry integrators are Newtonian neighbor evidence"
+  ],
+  "policy_boundary": "Official wave limits apply only to the official VL2 branch. Integrator-specific tolerance/order and source-guard rejection policy are owner-pending.",
+  "policy_status": "owner_pending_final_science_policy",
+  "source_commit": "823614c90b594472747a0ac2a699e4a454f300d2",
+  "source_paths": [
+    "src/task_list/time_integrator.cpp"
+  ],
+  "speed_policy": "none; no target, timing, port, or speedup claim",
+  "title": "time integrator branch matrix"
+}
