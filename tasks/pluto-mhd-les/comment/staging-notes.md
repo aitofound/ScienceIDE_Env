@@ -167,10 +167,6 @@ the one authorized move below):
     numeric policy exists), but its `reference_shape_ok`/`candidate_shape_ok`
     sub-fields are real, exercisable logic (presence of `grid.out`,
     `dbl.out`, and at least one `data.*` file).
-  - `fixtures/synthetic_accept/`, `fixtures/synthetic_reject/` -- fabricated
-    placeholder files (clearly labeled as synthetic in their content and in
-    `fixtures/README.md`), used only to self-test `validate.py`'s shape logic
-    in this stage; not real PLUTO oracle output.
 - `target/_pending.json` -- flat, `_`-prefixed (disabled) target descriptor
   explaining exactly what evidence must exist before any target is activated.
   Deliberately not an active target.
