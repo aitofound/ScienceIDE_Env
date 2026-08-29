@@ -12,13 +12,9 @@
 # tests/test.sh's self-test reads -- a fresh run never overwrites a file
 # already present in either location.
 #
-# All 17 active rows (15 official MHD + 2 LES) are expected to build and run
-# to a real, complete exit 0 with this script; see
-# comment/module-coverage-ledger.md for the full row-by-row rationale,
-# including why the two source-incompatible rows from the original 17-row
-# inventory (mhd-hall-current-sheet-ct-02, mhd-shearing-box-15) were replaced
-# rather than fixed in place, and how LES runtime/build/call coverage was
-# closed using the bundled case-study sources.
+# All 15 active rows are official pinned PLUTO MHD configurations.  The two
+# source-incompatible historical rows remain excluded; see
+# comment/module-coverage-ledger.md for the complete row mapping.
 set -euo pipefail
 
 LEAF="$(cd "$(dirname "$0")/.." && pwd)"
@@ -195,7 +191,7 @@ run_row() {
     fi
 }
 
-# All 17 active rows.  Each row's Dockerfile owns its source/config/build
+# All 15 active rows.  Each row's Dockerfile owns its source/config/build
 # path.  See comment/module-coverage-ledger.md for the full mapping from
 # owned production paths/algorithms/modes/config families to these rows.
 run_row "mhd-orszag-tang-ct-21"
@@ -213,8 +209,6 @@ run_row "mhd-shearing-box-ct-12"
 run_row "mhd-fargo-cart-vortex-04"
 run_row "mhd-fargo-spherical-disk-01"
 run_row "mhd-torus-background-ct-05"
-run_row "les-cometa-standard"
-run_row "les-cometa-selective"
 
 attempted=${#ROWS_ATTEMPTED[@]}
 ok=${#ROWS_OK[@]}
