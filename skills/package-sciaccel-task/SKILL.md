@@ -1,8 +1,8 @@
 ---
 name: package-sciaccel-task
 description: Use when authoring one independent scientific or numerical module as a self-sufficient Harbor ScienceAccelBench task. Covers module decomposition, human-curated checks, CPU-oracle evidence, the leaf filesystem, and structural validation; it does not invent scientific pass tolerances or implement a GPU port.
-version: 2.4.0
-last_changed_at: "2026-08-28T20:10:53Z"
+version: 2.5.0
+last_changed_at: "2026-08-29T01:12:00Z"
 ---
 
 # Package one ScienceAccelBench module
@@ -82,13 +82,13 @@ tasks/<group>/<module-slug>/       # <group>/ may be omitted
 │   ├── Dockerfile                 # coding-agent environment
 │   └── ...                        # its self-contained build context
 ├── tests/
-│   ├── Dockerfile                 # separate CPU verifier environment
+│   ├── Dockerfile                 # the task's one shared test image
 │   ├── test.sh                    # the only verifier entrance; emits reward
 │   ├── checks/
 │   │   ├── <check>/               # ordinary stable direct check name
 │   │   │   ├── check.json         # optional labels metadata
-│   │   │   └── ...                # check-owned rubric, fixtures, scripts, data
-│   │   └── <other-check>/          # optional breadth/correctness checks
+│   │   │   └── ...                # rubric, fixtures, validators, scripts, data; no Dockerfile
+│   │   └── <other-check>/          # optional breadth/correctness checks; no image
 │   └── ...                        # free-form verifier inputs and dependencies
 ├── solution/
 │   ├── solve.sh                   # trusted CPU/oracle preparation entry point
@@ -117,14 +117,26 @@ exactly `comment/README.md`. Required entry files are:
 - `environment/Dockerfile`: the coding-agent image/build context. It is
   separate from the verifier image and is usually CPU/no-GPU in benchmark mode;
   an RL environment may differ.
-- `tests/Dockerfile` and `tests/test.sh`: the CPU verifier bundle. `test.sh` is
-  the only verifier entrance, runs the CPU/oracle comparison and candidate
-  checks, and writes Harbor's **non-binary reward** (not merely pass/fail).
-  Keep the verifier's implementation and check details inside `tests/`; invoke
-  `test.sh` with no arguments in the Docker gate.
-- `solution/solve.sh`: the trusted original CPU path. It prepares or caches
-  oracle outputs; invoke it with no arguments, then use the same `tests/test.sh`
-  to self-test those outputs before the task is submitted.
+- `tests/Dockerfile` and `tests/test.sh`: the task's single shared test-image
+  bundle. One task has exactly one test Docker image, built from
+  `tests/Dockerfile`; that same image contains the dependencies and entry paths
+  needed for both trusted oracle construction and verification across the whole
+  declared check set. `test.sh` is the only verifier entrance, validates and
+  scores against the trusted oracle outputs, and writes Harbor's **non-binary
+  reward** (not merely pass/fail). Invoke it with no arguments in the Docker gate.
+- `solution/solve.sh`: the trusted original CPU path. It uses the same one shared
+  test image to construct or cache oracle outputs for the whole declared check
+  set; invoke it with no arguments, then use `tests/test.sh` in that image to
+  self-test and score those outputs before the task is submitted.
+- `tests/checks/<check>/`: a check is a thin test-spec unit inside the shared
+  test image, not an execution environment or image boundary. It contains only
+  that check's metadata, inputs/configuration, rubric or tolerances,
+  expected-output contract, check-specific fixtures, and validator logic. Shared
+  toolchains, source snapshots, build logic, generic runners, and Docker
+  lifecycle belong at task level. A check must not contain a Dockerfile or
+  construct, tag, request, or run its own Docker image or container. Per-check
+  images duplicate the task environment, waste build time, and violate the
+  one-test-image-per-task contract.
 - `target/*.json`: flat strict JSON descriptors containing the device, module,
   code, and environment facts needed by the runner. Every active target is an
   instruction to port and grade the module; `_`-prefixed files are disabled and
@@ -135,7 +147,8 @@ runtime and scoring, and never a substitute for `instruction.md`, a test, or an
 oracle. It stays runtime-hidden and non-normative, including
 `comment/README.md` and the optional `comment/runtime-metadata.json`. The target
 descriptors are runtime inputs, while `environment/` is the coding-agent
-environment and `tests/` is the separate CPU verifier environment.
+environment and `tests/` is the task's one shared test environment for trusted
+oracle construction and scoring.
 
 ### Check labels
 
@@ -186,15 +199,16 @@ and merge do not require Claude, Codex, another coding agent, a candidate port,
 or a raw transcript. Record such evidence when it exists, but never fabricate or
 run it merely to satisfy CI.
 
-**Self-test means exactly this:** run the oracle's no-argument `./solution/solve.sh` inside the Dockerized oracle/reference environment to prove that it produces outputs, then run the no-argument `./tests/test.sh` inside the verifier Docker environment against those oracle outputs to prove that the oracle passes its own tests; it does not mean running a coding agent or one-shot, and it does not require a selected target or candidate port.
+**Self-test means exactly this:** build the task's one shared test image from `tests/Dockerfile` once; use that image to run the oracle's no-argument `./solution/solve.sh` and prove that it produces trusted outputs; then use the same image to run the no-argument `./tests/test.sh` against those outputs and prove that the oracle receives a full reward. It does not mean running a coding agent or one-shot, and it does not require a selected target or candidate port. A sequence that builds or runs one image per check is not this gate.
 
 Before asking an agent to solve a leaf, run the same Dockerized Harbor gate that
 will be used for acceptance. A leaf is not prepared until all of these are true:
 
-1. **Execute the reference in Docker.** Run the trusted original CPU path from
-   that leaf, including its own no-argument `./solution/solve.sh`, in the
-   Dockerized reference/original-run context. Do not use a host-native reference
-   run as evidence.
+1. **Execute the reference in the shared test image.** Build
+   `tests/Dockerfile` once for the leaf, then run the trusted original CPU path,
+   including its no-argument `./solution/solve.sh`, inside that image to construct
+   the trusted oracle outputs for the whole check set. Do not use a host-native
+   reference run or a per-check image as evidence.
 2. **Execute the candidate in Docker.** Run the candidate through its Harbor
    contract in its Dockerized candidate environment. Reference and candidate
    execution must both be real runs, not copied, fabricated, cached-as-proof, or
@@ -204,12 +218,13 @@ will be used for acceptance. A leaf is not prepared until all of these are true:
    `$RUN_ROOT/reference` and `$RUN_ROOT/candidate`). Neither run may overwrite,
    read as, or be substituted for the other root. The roots may be mounted into
    the verifier, but they must remain physically distinct.
-4. **Run the same verifier in Docker.** Execute the leaf's no-argument
-   `./tests/test.sh` inside the Dockerized verifier environment (`tests/Dockerfile`)
-   against both roots. `tests/test.sh` is the only acceptance/verifier entrance;
-   it must actually compare the reference and candidate and emit Harbor's
-   non-binary reward. There is no host-native acceptance. No separate proof/static substitute
-   or second verifier is allowed.
+4. **Run the verifier in the same shared test image.** Execute the leaf's
+   no-argument `./tests/test.sh` in the already-built image from
+   `tests/Dockerfile` against both roots. `tests/test.sh` is the only
+   acceptance/verifier entrance; it must actually compare the reference and
+   candidate and emit Harbor's non-binary reward. There is no host-native
+   acceptance, per-check verifier image, separate proof/static substitute, or
+   second verifier.
 
 The mandatory self-pass sequence is therefore an actual Dockerized run of the
 leaf's own `./solution/solve.sh` (with no arguments), followed by its own
