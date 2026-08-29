@@ -79,18 +79,16 @@ const OPERATOR_KEYS = ['record', 'solve_rate'];
 
 /* --------------------------------------------------------- the shared core */
 
-/* Transcript liveness. Shape is the core's (linkKeys); whether the URL actually
-   serves anything is CI's, because a validator that needs the network is a
-   validator that fails on a train — so this runs only when CHECK_LINKS is set,
-   which the workflow does on pull requests.
+/* Optional transcript liveness. Implementation attempts and raw transcripts are
+   not a merge requirement. When a submitter voluntarily supplies an http(s)
+   raw-session URL, CI checks that a reviewer can open it. Blank values and
+   honest non-URL sentinels such as `UNRUN` are ignored.
 
-   A dead link is a failure, not a warning: the whole point of requiring the raw
-   session is that a reviewer can open it, and "https://drive.google.com/..." that
-   404s is worth exactly as much as no transcript at all. A link that cannot be
-   reached at all — DNS, timeout, the host refusing HEAD — is a warning, because
-   that is as likely to be the runner's network as the submitter's mistake, and
-   failing a pull request over GitHub's egress is how a gate loses its authority.
-   Hosts that reject HEAD are retried with a ranged GET before either verdict. */
+   A supplied URL that resolves to an HTTP error is a failure: optional evidence
+   must still be usable evidence. A URL that cannot be reached at all — DNS,
+   timeout, or the host refusing HEAD — is a warning, because that is as likely
+   to be the runner's network as the submitter's mistake. Hosts that reject HEAD
+   are retried with a ranged GET before either verdict. */
 async function checkLinks(packages, keys) {
   const errs = [];
   const warns = [];
@@ -145,34 +143,18 @@ const result = run({
      without an owner has nobody who may author them. The v2 list also named
      `instruction`; that requirement is now structural — instruction.md must
      exist at every tier — so it lives with the core's file checks. */
-  /* The difficulty floor: a task a frontier agent ports on its first attempt is
-     saturated on arrival, and nothing else in the package would reveal that.
-
-     The fields RECORD AN OUTCOME; they do not demand a failure. #19 named them
-     `oneshot_*_failure`, which could only hold the result that mostly does not
-     happen - and in the whole life of that rule not one package ever filled a
-     field. PLUTO settled it: its first graded submission passed 5/5 with four
-     cells bitwise identical, the strongest saturation signal measured here, and
-     there was nowhere to write it down. A floor that can only express
-     failure hides exactly the finding it exists to surface. It
-     joins the list at the same point as the criteria — a status beyond draft
-     claims the package is worth a reviewer's time, and that claim is not
-     checkable without it. Two harnesses since #19, a key pair each, because one
-     agent failing is one agent's bad day and the floor is a claim about the
-     frontier. */
   requiredBeyondDraft: [
     'title', 'domain', 'repo_url', 'equivalence_explanation', 'owner',
   ],
-  /* The merge gate, and the reason the four keys left the list above: that list
-     only fires beyond draft, every package here declares draft, so it fired
-     never. These are required in any package a change touches, at every tier.
-     Changing a package's status means editing its manifest, so a package on its
-     way out of draft is a touched package and is caught here first. */
-  requiredOnChange: [
-    'oneshot_claude_outcome', 'oneshot_claude_transcript',
-    'oneshot_codex_outcome', 'oneshot_codex_transcript',
-  ],
-  linkKeys: ['oneshot_claude_transcript', 'oneshot_codex_transcript'],
+  /* Implementation attempts are optional evidence, not a merge gate. A task
+     may record Claude/Codex outcomes and raw-session links when someone has run
+     them, but CI must not require a candidate implementation attempt in order
+     to merge a scientifically reviewed task package. Keeping the keys in the
+     namespace preserves existing evidence; leaving both policy lists empty
+     means absence and honest `UNRUN` sentinels are accepted. Supplied http(s)
+     transcript URLs are still checked for liveness below. */
+  requiredOnChange: [],
+  linkKeys: [],
   /* No per-status file lists beyond the L1 floor: what review and published
      actually require of a package - checks that can be graded, targets to
      grade them on - is checked below as a rule, not a file list. */
@@ -612,8 +594,9 @@ try {
   errors.push('registry files are stale — run: node scripts/gen-index.mjs');
 }
 
-/* Liveness, when CI asks for it. Last, because it is the only check that leaves
-   the machine, and everything cheap should have had its say first. */
+/* Optional transcript-URL liveness, when CI asks for it. Last, because it is
+   the only check that leaves the machine, and everything cheap should have had
+   its say first. Non-URL values are intentionally ignored. */
 if (process.env.CHECK_LINKS) {
   const { errs, warns } = await checkLinks(
     packages, ['oneshot_claude_transcript', 'oneshot_codex_transcript'],
