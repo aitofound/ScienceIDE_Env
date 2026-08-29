@@ -66,10 +66,9 @@ carrying the complete pinned codebase and its own Harbor files.
 
 ## Self-sufficient leaf tree
 
-A leaf may sit directly under `tasks/` or under one logistics grouping layer,
-for example `tasks/pluto/pluto-hd/`. The grouping layer is not part of task
-identity. The leaf directory name is the stable slug and must be unique across
-all leaves.
+A leaf may sit directly under `tasks/` or under one logistics grouping layer.
+The grouping layer is not part of task identity. The leaf directory name is the
+stable slug and must be unique across all leaves.
 
 ```text
 tasks/<group>/<module-slug>/       # <group>/ may be omitted
