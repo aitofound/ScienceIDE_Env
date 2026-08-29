@@ -19,8 +19,8 @@ arithmetic and no output.
 Two other things modern gfortran tightens are handled at the command line
 rather than here, because they are diagnostics rather than invalid code:
 -fallow-argument-mismatch (one generic MPI interface called with REAL(8) in
-one place and INTEGER(4) in another) and -std=legacy. Both are in the check
-Dockerfiles with the same reasoning. That mismatch is NOT confined to the
+one place and INTEGER(4) in another) and -std=legacy. Both are in the suite
+oracle image, tests/Dockerfile, with the same reasoning. That mismatch is NOT confined to the
 solver this docstring used to name: src_compressible/2D/mhd.f90:568 and :598
 hand mpi_allreduce a REAL(8) and an INTEGER(4) through the same generic
 interface, and those are the warnings that build prints.

@@ -10,8 +10,8 @@ writes times.dat - one line per step, (step, time, dt) at e23.16 - so a port's
 time base can be verified to f64 noise. The write does not touch state, and
 the field evolution is bitwise unchanged.
 
-Applied by each check Dockerfile after checkout of the pinned commit, to the
-one source directory that check builds. The port must produce the same file at
+Applied once by the suite oracle image (tests/Dockerfile) to each of the two
+compressible programs it builds. The port must produce the same file at
 the same cadence (preserved interface).
 
 A python patcher rather than a diff so it fails loudly if upstream moves, and
