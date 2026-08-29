@@ -13,6 +13,15 @@ if [ "$#" -ne 0 ]; then
 fi
 
 LEAF="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+REPO_ROOT="$LEAF"
+while [ "$REPO_ROOT" != "/" ]; do
+  if [ -d "$REPO_ROOT/code/pluto" ] && [ -f "$REPO_ROOT/scripts/stage-task-source.py" ]; then break; fi
+  REPO_ROOT="$(dirname "$REPO_ROOT")"
+done
+if [ ! -d "$REPO_ROOT/code/pluto" ] || [ ! -f "$REPO_ROOT/scripts/stage-task-source.py" ]; then
+  echo "solution/solve.sh: cannot locate repository code/pluto" >&2
+  exit 2
+fi
 cd "$LEAF"
 
 # Harbor's mounted reference root is authoritative. The explicit local names
@@ -85,10 +94,12 @@ if [[ ! "$SOURCE_PIN" =~ ^sha256:[[:xdigit:]]{64}$ ]]; then
   exit 2
 fi
 
-BUILD_CMD="docker build --rm=false --pull=false --file $LEAF/tests/Dockerfile --tag $IMAGE $LEAF"
+BUILD_CMD="python3 $REPO_ROOT/scripts/stage-task-source.py --task $LEAF --source pluto --dockerfile tests/Dockerfile --tag $IMAGE -- --rm=false --pull=false"
 echo "BUILD oracle image: $BUILD_CMD"
 set +e
-docker build --rm=false --pull=false --file "$LEAF/tests/Dockerfile" --tag "$IMAGE" "$LEAF" 2>&1 | tee "$BUILD_LOG"
+python3 "$REPO_ROOT/scripts/stage-task-source.py" \
+  --task "$LEAF" --source pluto --dockerfile tests/Dockerfile --tag "$IMAGE" \
+  -- --rm=false --pull=false 2>&1 | tee "$BUILD_LOG"
 build_pipe_status=("${PIPESTATUS[@]}")
 build_status=${build_pipe_status[0]}
 tee_status=${build_pipe_status[1]}
