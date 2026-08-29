@@ -2,7 +2,8 @@
 
 > 本文件是操作规程;`pipeline/pipe.py` 是执行本规程的代码。
 > **两者冲突时,以代码为准,并把冲突当 bug 修。**
-> SKILL.md 与 references/ 是知识库(为什么这样设计),不是操作入口。
+> SKILL.md 是 AI 操作员入口(扔给 Claude Code 即可代为操作本管线);
+> references/(含原 SKILL.md 散文 authoring-doctrine.md)是知识库,不是操作入口。
 > 形制照抄 `~/ale/design_pipe_skill`:确定性状态机驱动窄工序 AI,
 > 完成判定由代码做,改动靠内容指纹自动作废下游。
 
