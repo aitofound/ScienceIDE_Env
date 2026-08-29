@@ -1,0 +1,60 @@
+{
+  "artifact_kinds": {
+    "entropy_flag1_high.block0.out1.00000.tab": "tab",
+    "entropy_flag1_high.block0.out1.00001.tab": "tab",
+    "entropy_flag1_low.block0.out1.00000.tab": "tab",
+    "entropy_flag1_low.block0.out1.00001.tab": "tab",
+    "entropy_flag2_high.block0.out1.00000.tab": "tab",
+    "entropy_flag2_high.block0.out1.00001.tab": "tab",
+    "entropy_flag2_low.block0.out1.00000.tab": "tab",
+    "entropy_flag2_low.block0.out1.00001.tab": "tab",
+    "entropy_flag3_high.block0.out1.00000.tab": "tab",
+    "entropy_flag3_high.block0.out1.00001.tab": "tab",
+    "entropy_flag3_low.block0.out1.00000.tab": "tab",
+    "entropy_flag3_low.block0.out1.00001.tab": "tab"
+  },
+  "check": "C04",
+  "declared_run_count": 6,
+  "expected_artifacts": [
+    "entropy_flag1_low.block0.out1.00000.tab",
+    "entropy_flag1_low.block0.out1.00001.tab",
+    "entropy_flag1_high.block0.out1.00000.tab",
+    "entropy_flag1_high.block0.out1.00001.tab",
+    "entropy_flag2_low.block0.out1.00000.tab",
+    "entropy_flag2_low.block0.out1.00001.tab",
+    "entropy_flag2_high.block0.out1.00000.tab",
+    "entropy_flag2_high.block0.out1.00001.tab",
+    "entropy_flag3_low.block0.out1.00000.tab",
+    "entropy_flag3_low.block0.out1.00001.tab",
+    "entropy_flag3_high.block0.out1.00000.tab",
+    "entropy_flag3_high.block0.out1.00001.tab"
+  ],
+  "folder": "sr-hllc-entropy-waves",
+  "id": "C04",
+  "official_evidence": "Upstream hydro_convergence.py direct criterion is epsilon_high/epsilon_low <= (64/512)^1.8 per entropy flag, with NaN rejection; no new tolerance is asserted.",
+  "pass_policy": {
+    "human_decision_required": "Jason owns candidate arithmetic/equivalence and independent weighting of density, transverse-v_y, and transverse-v_z modes.",
+    "scientific_verdict": "provisional_until_Jason_approves_case_specific_policy",
+    "upstream_threshold_if_evidenced": "Upstream hydro_convergence.py direct criterion is epsilon_high/epsilon_low <= (64/512)^1.8 per entropy flag, with NaN rejection; no new tolerance is asserted."
+  },
+  "runner_kind": "wave",
+  "scope": "-s --prob=gr_linear_wave --coord=cartesian --flux=hllc; Cartesian; no -b/-g; gamma=4/3 rho=4 pgas=1 v=(0.1,0.3,-0.05) amp=1e-6; periodic; VL2/xorder=2",
+  "solver": "hllc",
+  "source_paths": [
+    "src/eos/adiabatic_hydro_sr.cpp::{PrimitiveToConserved,ConservedToPrimitive,ConservedToPrimitiveNormal,SoundSpeedsSR}",
+    "src/hydro/rsolvers/hydro/hllc_rel.cpp",
+    "src/pgen/gr_linear_wave.cpp",
+    "src/reconstruct/reconstruction.cpp",
+    "src/hydro/calculate_fluxes.cpp"
+  ],
+  "subcases": [
+    "wave_flag=1, nx1=64",
+    "wave_flag=1, nx1=512",
+    "wave_flag=2, nx1=64",
+    "wave_flag=2, nx1=512",
+    "wave_flag=3, nx1=64",
+    "wave_flag=3, nx1=512"
+  ],
+  "title": "HLLC entropy-wave families",
+  "version": 1
+}

@@ -1,0 +1,62 @@
+{
+  "artifact_kinds": {
+    "entropy_flag1_high.block0.out1.00000.tab": "tab",
+    "entropy_flag1_high.block0.out1.00001.tab": "tab",
+    "entropy_flag1_low.block0.out1.00000.tab": "tab",
+    "entropy_flag1_low.block0.out1.00001.tab": "tab",
+    "entropy_flag2_high.block0.out1.00000.tab": "tab",
+    "entropy_flag2_high.block0.out1.00001.tab": "tab",
+    "entropy_flag2_low.block0.out1.00000.tab": "tab",
+    "entropy_flag2_low.block0.out1.00001.tab": "tab",
+    "entropy_flag3_high.block0.out1.00000.tab": "tab",
+    "entropy_flag3_high.block0.out1.00001.tab": "tab",
+    "entropy_flag3_low.block0.out1.00000.tab": "tab",
+    "entropy_flag3_low.block0.out1.00001.tab": "tab"
+  },
+  "check_id": "C04",
+  "configuration": "-s --prob=gr_linear_wave --coord=cartesian --flux=hllc; Cartesian; no -b/-g; gamma=4/3 rho=4 pgas=1 v=(0.1,0.3,-0.05) amp=1e-6; periodic; VL2/xorder=2",
+  "configure": "python3 configure.py -s --prob=gr_linear_wave --coord=cartesian --flux=hllc",
+  "deck": "inputs/hydro_sr/athinput.linear_wave",
+  "declared_run_count": 6,
+  "expected_files": [
+    "entropy_flag1_low.block0.out1.00000.tab",
+    "entropy_flag1_low.block0.out1.00001.tab",
+    "entropy_flag1_high.block0.out1.00000.tab",
+    "entropy_flag1_high.block0.out1.00001.tab",
+    "entropy_flag2_low.block0.out1.00000.tab",
+    "entropy_flag2_low.block0.out1.00001.tab",
+    "entropy_flag2_high.block0.out1.00000.tab",
+    "entropy_flag2_high.block0.out1.00001.tab",
+    "entropy_flag3_low.block0.out1.00000.tab",
+    "entropy_flag3_low.block0.out1.00001.tab",
+    "entropy_flag3_high.block0.out1.00000.tab",
+    "entropy_flag3_high.block0.out1.00001.tab"
+  ],
+  "folder": "sr-hllc-entropy-waves",
+  "pipeline": [
+    "SR adiabatic EOS",
+    "conservative-to-primitive recovery",
+    "reconstruction",
+    "relativistic flux",
+    "flux divergence",
+    "time integration",
+    "output/recovery finite-state scan"
+  ],
+  "runner_kind": "wave",
+  "solver": "hllc",
+  "source_paths": [
+    "src/eos/adiabatic_hydro_sr.cpp::{PrimitiveToConserved,ConservedToPrimitive,ConservedToPrimitiveNormal,SoundSpeedsSR}",
+    "src/hydro/rsolvers/hydro/hllc_rel.cpp",
+    "src/pgen/gr_linear_wave.cpp",
+    "src/reconstruct/reconstruction.cpp",
+    "src/hydro/calculate_fluxes.cpp"
+  ],
+  "subcases": [
+    "wave_flag=1, nx1=64",
+    "wave_flag=1, nx1=512",
+    "wave_flag=2, nx1=64",
+    "wave_flag=2, nx1=512",
+    "wave_flag=3, nx1=64",
+    "wave_flag=3, nx1=512"
+  ]
+}

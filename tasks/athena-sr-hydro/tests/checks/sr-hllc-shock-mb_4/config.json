@@ -1,0 +1,38 @@
+{
+  "artifact_kinds": {
+    "shock_mb_4.block0.out1.00000.vtk": "vtk",
+    "shock_mb_4.block0.out1.00001.vtk": "vtk"
+  },
+  "check_id": "C08",
+  "configuration": "-s --prob=gr_shock_tube --coord=cartesian --flux=hllc; no -b/-g; Cartesian; mb_1..mb_4 Mignone-Bodo states; nx1=400; shock_dir=1; CFL=.4; tlim=dt=.4; conservative VTK",
+  "configure": "python3 configure.py -s --prob=gr_linear_wave --coord=cartesian --flux=hllc",
+  "deck": "inputs/hydro_sr/athinput.mb_4",
+  "declared_run_count": 1,
+  "expected_files": [
+    "shock_mb_4.block0.out1.00000.vtk",
+    "shock_mb_4.block0.out1.00001.vtk"
+  ],
+  "folder": "sr-hllc-shock-mb_4",
+  "pipeline": [
+    "SR adiabatic EOS",
+    "conservative-to-primitive recovery",
+    "reconstruction",
+    "relativistic flux",
+    "flux divergence",
+    "time integration",
+    "output/recovery finite-state scan"
+  ],
+  "runner_kind": "shock",
+  "solver": "hllc",
+  "source_paths": [
+    "src/eos/adiabatic_hydro_sr.cpp",
+    "src/hydro/rsolvers/hydro/hllc_rel.cpp",
+    "src/hydro/rsolvers/hydro/hlle_rel.cpp",
+    "src/hydro/rsolvers/hydro/llf_rel.cpp",
+    "src/pgen/gr_shock_tube.cpp",
+    "src/hydro/calculate_fluxes.cpp"
+  ],
+  "subcases": [
+    "mb_4; dens/Etot/mom[0]"
+  ]
+}

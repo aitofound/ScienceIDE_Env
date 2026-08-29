@@ -1,0 +1,62 @@
+{
+  "artifact_kinds": {
+    "guard_baseline.block0.out1.00000.tab": "tab",
+    "guard_baseline.block0.out1.00001.tab": "tab",
+    "guard_density_below_floor.block0.out1.00000.tab": "tab",
+    "guard_density_below_floor.block0.out1.00001.tab": "tab",
+    "guard_energy_below_floor.block0.out1.00000.tab": "tab",
+    "guard_energy_below_floor.block0.out1.00001.tab": "tab",
+    "guard_gamma_max_ceiling.block0.out1.00000.tab": "tab",
+    "guard_gamma_max_ceiling.block0.out1.00001.tab": "tab",
+    "guard_momentum_ratio_cap.block0.out1.00000.tab": "tab",
+    "guard_momentum_ratio_cap.block0.out1.00001.tab": "tab",
+    "guard_nonconvergent_recovery.block0.out1.00000.tab": "tab",
+    "guard_nonconvergent_recovery.block0.out1.00001.tab": "tab",
+    "guard_reconstructed_floor.block0.out1.00000.tab": "tab",
+    "guard_reconstructed_floor.block0.out1.00001.tab": "tab"
+  },
+  "check_id": "C02",
+  "configuration": "-s --prob=gr_linear_wave --coord=cartesian --flux=hllc; Cartesian; no -b/-g; gamma=4/3 rho=4 pgas=1 v=(0.1,0.3,-0.05) amp=1e-6; periodic; VL2/xorder=2; source constants recorded as evidence, not output tolerances",
+  "configure": "python3 configure.py -s --prob=gr_linear_wave --coord=cartesian --flux=hllc",
+  "deck": "inputs/hydro_sr/athinput.linear_wave; inputs/hydro_sr/athinput.mb_3; inputs/hydro_sr/athinput.mb_4",
+  "declared_run_count": 7,
+  "expected_files": [
+    "guard_baseline.block0.out1.00000.tab",
+    "guard_baseline.block0.out1.00001.tab",
+    "guard_density_below_floor.block0.out1.00000.tab",
+    "guard_density_below_floor.block0.out1.00001.tab",
+    "guard_energy_below_floor.block0.out1.00000.tab",
+    "guard_energy_below_floor.block0.out1.00001.tab",
+    "guard_momentum_ratio_cap.block0.out1.00000.tab",
+    "guard_momentum_ratio_cap.block0.out1.00001.tab",
+    "guard_nonconvergent_recovery.block0.out1.00000.tab",
+    "guard_nonconvergent_recovery.block0.out1.00001.tab",
+    "guard_reconstructed_floor.block0.out1.00000.tab",
+    "guard_reconstructed_floor.block0.out1.00001.tab",
+    "guard_gamma_max_ceiling.block0.out1.00000.tab",
+    "guard_gamma_max_ceiling.block0.out1.00001.tab"
+  ],
+  "folder": "sr-admissibility-guards",
+  "pipeline": [
+    "SR adiabatic EOS",
+    "conservative-to-primitive recovery",
+    "reconstruction",
+    "relativistic flux",
+    "flux divergence",
+    "time integration",
+    "output/recovery finite-state scan"
+  ],
+  "runner_kind": "guard",
+  "solver": "hllc",
+  "source_paths": [
+    "src/eos/adiabatic_hydro_sr.cpp::{ConservedToPrimitive,ConservedToPrimitiveNormal,ApplyPrimitiveFloors}"
+  ],
+  "subcases": [
+    "normal recovery baseline plus density_below_floor",
+    "normal recovery baseline plus energy_below_floor",
+    "normal recovery baseline plus momentum_ratio_cap",
+    "normal recovery baseline plus nonconvergent_recovery",
+    "normal recovery baseline plus reconstructed_floor",
+    "normal recovery baseline plus gamma_max_ceiling"
+  ]
+}
