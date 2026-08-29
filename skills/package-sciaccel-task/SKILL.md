@@ -1,8 +1,8 @@
 ---
 name: package-sciaccel-task
 description: Use when authoring one independent scientific or numerical module as a self-sufficient Harbor ScienceAccelBench task. Covers module decomposition, human-curated checks, CPU-oracle evidence, the leaf filesystem, and structural validation; it does not invent scientific pass tolerances or implement a GPU port.
-version: 2.5.0
-last_changed_at: "2026-08-29T01:12:00Z"
+version: 2.6.0
+last_changed_at: "2026-08-29T19:42:00Z"
 ---
 
 # Package one ScienceAccelBench module
@@ -39,9 +39,11 @@ carrying the complete pinned codebase and its own Harbor files.
    validator; the check itself and its verifier own the policy.
 6. **Run the Phase-1 Docker gate for every leaf.** Each leaf must be fully
    Harbor-shaped before it is called prepared. Actually run its own no-argument
-   `solution/solve.sh`, then no-argument `tests/test.sh`, and require a self-pass;
-   the Docker and output-root rules are defined below. Never describe a command
-   as passed when it was not run.
+   `solution/solve.sh` twice into two fresh, physically distinct output roots,
+   then run the no-argument `tests/test.sh` against those two real executions and
+   require full reward plus `self_test_ok=true`; the Docker and output-root rules
+   are defined below. Never describe a copied-output comparison, hash-only check,
+   or unrun command as self-validation.
 7. **Iterate with the human one task at a time.** After parallel preparation and
    its Phase-1 gates, take one task at a time with the human. Improve cases,
    coverage, invariants, tolerance/stochastic policy, and acceleration labeling
@@ -189,46 +191,59 @@ and merge do not require Claude, Codex, another coding agent, a candidate port,
 or a raw transcript. Record such evidence when it exists, but never fabricate or
 run it merely to satisfy CI.
 
-**Self-test means exactly this:** run the no-argument `./solution/solve.sh`, which builds and runs the hidden oracle image from `tests/Dockerfile` and produces trusted outputs; after that container exits, run the no-argument `./tests/test.sh` separately and require full reward. It does not mean running a coding agent or one-shot, and it does not require a selected target or candidate port.
+**Self-validation (the required self-pass gate) means exactly this:** run the
+leaf's no-argument `./solution/solve.sh` **twice**. Each invocation must perform a
+real Dockerized execution of the same pinned hidden oracle configuration and
+write a fresh output set. After both containers exit, run the no-argument
+`./tests/test.sh` separately against those two real output roots. Only a full
+verifier pass may be called `self-validation passed`. This gate does not require
+a selected accelerator target or candidate port: the second root is a second
+oracle execution used to validate the package, determinism assumptions, and
+verifier. A later accelerator attempt is optional additional evidence.
 
-Before asking an agent to solve a leaf, run the same Dockerized Harbor gate that
-will be used for acceptance. A leaf is not prepared until all of these are true:
+Before asking an agent to solve a leaf, and again before calling a task PR
+merge-ready, run the same Dockerized Harbor gate that will be used for
+acceptance. A leaf is not prepared or merge-ready until all of these are true:
 
-1. **Execute the reference through the oracle image.** Run the leaf's
-   no-argument `./solution/solve.sh`; it builds and runs `tests/Dockerfile` once
-   to construct the trusted oracle outputs for the whole check set. The oracle
-   container only produces those outputs. Do not use a host-native reference run
-   as evidence.
-2. **Execute the candidate in Docker.** Run the candidate through its Harbor
-   contract in its Dockerized candidate environment. Reference and candidate
-   execution must both be real runs, not copied, fabricated, cached-as-proof, or
-   otherwise fake output.
-3. **Use physically distinct output roots.** Write reference/oracle outputs and
-   candidate outputs to distinct, non-aliasing roots (for example
-   `$RUN_ROOT/reference` and `$RUN_ROOT/candidate`). Neither run may overwrite,
-   read as, or be substituted for the other root. The roots may be mounted into
-   the verifier, but they must remain physically distinct.
-4. **Run the verifier separately.** After the oracle container exits, execute
+1. **Execute the first oracle run.** Run the leaf's no-argument
+   `./solution/solve.sh`; it builds and runs `tests/Dockerfile` to construct the
+   trusted outputs for the whole check set. Do not use a host-native run as
+   evidence.
+2. **Execute the second oracle run.** Run the same no-argument
+   `./solution/solve.sh` again in a fresh container/execution context and write a
+   newly computed output set. Reusing Docker image/build layers is allowed;
+   reusing the first run's outputs, copying them, hard-linking them, mounting
+   them as the second result, or treating cached outputs as proof is forbidden.
+3. **Use physically distinct output roots.** Write the first and second oracle
+   outputs to distinct, non-aliasing roots (for example `$RUN_ROOT/reference`
+   and `$RUN_ROOT/candidate`). Neither run may overwrite, read as, or be
+   substituted for the other root. Reject equal paths, path containment,
+   symlinks, or shared output inodes. The role name `candidate` here means only
+   "the second independent oracle run"; it does not claim an accelerated port.
+4. **Run the verifier separately.** After both oracle containers exit, execute
    the leaf's no-argument `./tests/test.sh` in Harbor's verifier context against
-   both roots. It must actually compare the reference and candidate and emit
-   Harbor's non-binary reward; it does not run inside the oracle container. No
-   separate proof/static substitute or second verifier is allowed.
+   exactly those two roots. It must actually compare them and emit Harbor's
+   reward; it does not run inside either oracle container. No hash-only check,
+   static proof, or alternate verifier substitutes for this command.
+5. **Require the explicit verdict.** `./tests/test.sh` must exit zero, emit full
+   reward, report every declared check passed, and record
+   `self_test_mode=true` and `self_test_ok=true`. Record both solve commands,
+   image/source identity, output-root non-alias evidence, container identities,
+   exits, and the final verifier/reward receipt.
 
-The mandatory self-pass sequence is therefore an actual Dockerized run of the
-leaf's own `./solution/solve.sh` (with no arguments), followed by its own
-`./tests/test.sh` (with no arguments), and it must pass. Use the actual Harbor
-runner's mounts and environment when it supplies paths; the command names above
-are the contract, not permission to add a host-side shortcut. Fake outputs,
-an all-pass placeholder, a bypassed verifier, or an unrun command invalidate the
-self-pass even if a static validator is green. Do not invent tolerances or
-stochastic policy to make this gate pass: those remain human-owned scientific
-choices and must be encoded in the check-owned rubric/verifier.
+Only that two-solve-plus-verifier sequence may be described as
+`self-validation passed`. One `solve.sh` run followed by a copied-output test,
+a verifier pass against cloned oracle artifacts, two-run byte/hash equality
+without `tests/test.sh`, an all-pass placeholder, or a static validator is not
+self-validation and cannot satisfy the merge gate. Fake outputs, a bypassed
+verifier, invented tolerances, or an unrun command invalidate the result even if
+other repository checks are green.
 
-During authoring, an early self-pass may prove only packaging/execution/verifier
-integrity: containerized execution, distinct reference/candidate wiring, and the
-verifier path. That provisional milestone is not task readiness and must not be
-used to ask a coding agent to solve the leaf, declare the package complete, or
-make it merge-ready.
+During authoring, one solve plus a copied-root or fixture comparison may be
+reported narrowly as a verifier-wiring smoke check. It must never be reported as
+self-validation, task readiness, or merge readiness. Implementation attempts by
+Claude, Codex, another coding agent, or an accelerator port remain optional
+evidence and do not replace the two required oracle executions.
 
 Before any of those boundaries, the human-approved module cut, coverage ledger,
 and executable checks must agree one-to-one: every declared owned production
