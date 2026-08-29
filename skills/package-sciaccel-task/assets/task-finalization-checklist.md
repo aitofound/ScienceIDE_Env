@@ -14,8 +14,9 @@ the final gate.
 
 - [ ] This leaf is one independent module with a unique slug, named owner, and
   explicit scope.
-- [ ] The vendored source bytes match the recorded pin/digest; `code/` has one
-  real direct codebase child and no symlink or external checkout dependency.
+- [ ] `metadata.sciaccel.source` names the real top-level `code/<source>/` tree;
+  the leaf has no duplicate `code/`, and `solve.sh` stages that source only into
+  a fresh temporary Docker build context.
 - [ ] The leaf root is closed and contains no tracked oracle output, build
   product, cache, log, temporary file, secret, or unrelated artifact.
 - [ ] Each fact has one canonical owner: concise discovery metadata in
