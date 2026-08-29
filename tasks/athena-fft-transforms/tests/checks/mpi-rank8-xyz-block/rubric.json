@@ -1,0 +1,84 @@
+{
+  "anti_hardcoding_role": "Rank-count or rank-local contiguous assumptions fail exact xyz process grid and global union coverage.",
+  "check": "mpi-rank8-xyz-block",
+  "criteria": {
+    "authenticated_raw_observables": true,
+    "independent_recomputation": true,
+    "numerical_bounds": "human-owned; intentionally absent until Jason approves final scientific policy",
+    "performance_policy": "no speedup, throughput, timing target, or invented runtime claim"
+  },
+  "id": "FFT-13",
+  "official_pinned_evidence": [
+    "tst/regression/scripts/tests/fft/fft.py:42-50 \u2014 official ranks stop at 1/2/4; no rank8 direct evidence.",
+    "src/fft/fft_driver.cpp:132-145 \u2014 process-dimensionality calculation."
+  ],
+  "policy": "authenticated_raw_recomputation_wiring_v2.2",
+  "purpose": "MPI 3-D FFTDriver xyz_decomp -> pdim=3 no 2-D-pencil swap path -> fft_3d factorized remaps",
+  "required_artifacts": [
+    "report.json",
+    "raw/<variant>/field.json",
+    "raw/<variant>/spectrum.json",
+    "raw/<variant>/reconstructed.json",
+    "raw/<variant>/rank-local.json",
+    "raw/<variant>/execution.json",
+    "raw/<variant>/stdout.log",
+    "raw/<variant>/stderr.log",
+    "raw/<variant>/fft-errors.dat",
+    "raw/build/<mode>.json",
+    "raw/build/<mode>.log"
+  ],
+  "runtime_redundancy": {
+    "purpose": "Covers the source branch explicitly documented as 3-D block decomposition, absent from current rank1/2/4 portfolio.",
+    "redundancy": "Not redundant with rank4 pencils because swap/permutation state differs.",
+    "runtime_claim": "No resource or performance claim; workload feasibility must be established separately."
+  },
+  "schema": "athena-fft-check/v1",
+  "source_branch_forcing": [
+    "src/fft/athena_fft.cpp:496-501 \u2014 pdim/decomp branch with swap/permutation zero for 3-D block decomposition.",
+    "src/fft/plimpton/fft_3d.cpp:193-241 \u2014 bifactor and pre-remap; :250-346 \u2014 mid/post remaps.",
+    "src/fft/plimpton/factor.cpp:18-70 \u2014 factor/bifactor paths."
+  ],
+  "subcases": {
+    "decomposition": "MPI rank 8; exact np=[2,2,2], decomp=xyz_decomp, pdim=3, permute0/1/2=0 and swap1/2=false",
+    "dimensionality": "3-D MPI block decomposition",
+    "execution_variants": [
+      "mpi8"
+    ],
+    "forward_inverse": "Forward all three axes and backward all three axes with pre/mid/post remaps; ApplyKernel(0); global rank-union reconstruction and serial comparison.",
+    "global_shape": [
+      64,
+      64,
+      64
+    ],
+    "meshblock_shape": [
+      32,
+      32,
+      32
+    ],
+    "normalization": "N=262144 inverse normalization; owner must set raw/reconstruction bounds.",
+    "raw_artifacts": {
+      "binding": "Raw eight-rank field/spectrum/reconstruction/rank-local exact union, execution/launcher/log/fft-errors and MPI build evidence; include factorized process-grid metadata.",
+      "build_evidence": [
+        "raw/build/serial.json",
+        "raw/build/serial.log",
+        "raw/build/mpi.json",
+        "raw/build/mpi.log"
+      ],
+      "per_variant": [
+        "field.json",
+        "spectrum.json",
+        "reconstructed.json",
+        "rank-local.json",
+        "execution.json",
+        "stdout.log",
+        "stderr.log",
+        "fft-errors.dat"
+      ]
+    }
+  },
+  "title": "MPI 8-rank 3-D block decomposition",
+  "verdict_boundary": {
+    "decision": "No official rank8 or xyz evidence; resource feasibility and pass policy require human approval. Not run.",
+    "status": "proposed_not_run"
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "anti_hardcoding_role": "A 3-D-only or serial-only candidate cannot pass 2-D FFTW/Plimpton plan, pack/remap, rank-union and normalized reconstruction artifacts.",
+  "check": "mpi-2d-pencil",
+  "criteria": {
+    "authenticated_raw_observables": true,
+    "independent_recomputation": true,
+    "numerical_bounds": "human-owned; intentionally absent until Jason approves final scientific policy",
+    "performance_policy": "no speedup, throughput, timing target, or invented runtime claim"
+  },
+  "id": "FFT-14",
+  "official_pinned_evidence": [
+    "tst/regression/scripts/tests/fft/fft.py:20-50 \u2014 official category never selects a 2-D mesh.",
+    "src/fft/athena_fft.cpp:266-310 \u2014 MPI 2-D plan creation.",
+    "src/fft/plimpton/fft_2d.cpp:61-125 \u2014 fast/slow FFT, remap and scaling stages."
+  ],
+  "policy": "authenticated_raw_recomputation_wiring_v2.2",
+  "purpose": "dim==2 MPI FFTBlock -> Plimpton fft_2d -> pack_2d/remap_2d with permutation and scaling",
+  "required_artifacts": [
+    "report.json",
+    "raw/<variant>/field.json",
+    "raw/<variant>/spectrum.json",
+    "raw/<variant>/reconstructed.json",
+    "raw/<variant>/rank-local.json",
+    "raw/<variant>/execution.json",
+    "raw/<variant>/stdout.log",
+    "raw/<variant>/stderr.log",
+    "raw/<variant>/fft-errors.dat",
+    "raw/build/<mode>.json",
+    "raw/build/<mode>.log"
+  ],
+  "runtime_redundancy": {
+    "purpose": "Covers an entire source family otherwise missed by all current 3-D checks.",
+    "redundancy": "Serial companion isolates MPI communication from 2-D plan semantics.",
+    "runtime_claim": "No performance claim."
+  },
+  "schema": "athena-fft-check/v1",
+  "source_branch_forcing": [
+    "src/fft/athena_fft.cpp:231-233,274-310 \u2014 dim2 MPI dispatch and FFTW/Plimpton plan choice.",
+    "src/fft/plimpton/fft_2d.cpp:145-259 \u2014 pre/mid/post remap decisions and permutation.",
+    "src/fft/plimpton/pack_2d.cpp/remap_2d.cpp \u2014 2-D packing and communication."
+  ],
+  "subcases": {
+    "decomposition": "MPI rank 2; exact np=[2,1,1], x_decomp in 2-D, pdim=1; also serial rank1 companion",
+    "dimensionality": "2-D MPI pencil",
+    "execution_variants": [
+      "serial",
+      "mpi2"
+    ],
+    "forward_inverse": "2-D forward fast/slow FFT stages -> ApplyKernel(0) -> inverse stages and remaps -> normalized global reconstruction; compare serial and MPI2.",
+    "global_shape": [
+      64,
+      64,
+      1
+    ],
+    "meshblock_shape": [
+      32,
+      32,
+      1
+    ],
+    "normalization": "N=4096 inverse normalization; no tolerance invented.",
+    "raw_artifacts": {
+      "binding": "Raw serial and mpi2 2-D field/spectrum/reconstruction/rank-local plus execution/log/fft-errors, serial/MPI build evidence, and exact permutation/remap markers.",
+      "build_evidence": [
+        "raw/build/serial.json",
+        "raw/build/serial.log",
+        "raw/build/mpi.json",
+        "raw/build/mpi.log"
+      ],
+      "per_variant": [
+        "field.json",
+        "spectrum.json",
+        "reconstructed.json",
+        "rank-local.json",
+        "execution.json",
+        "stdout.log",
+        "stderr.log",
+        "fft-errors.dat"
+      ]
+    }
+  },
+  "title": "MPI 2-D transform and pack/remap contract",
+  "verdict_boundary": {
+    "decision": "No direct official 2-D MPI evidence; owner must approve API/deck fixture, grid, and policy. Not run.",
+    "status": "proposed_not_run"
+  }
+}

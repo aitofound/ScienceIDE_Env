@@ -1,0 +1,83 @@
+{
+  "anti_hardcoding_role": "Magnitude-only or precomputed radial outputs cannot pass signed positive/conjugate frequency checks.",
+  "check": "serial-3d-forward-sign",
+  "criteria": {
+    "authenticated_raw_observables": true,
+    "independent_recomputation": true,
+    "numerical_bounds": "human-owned; intentionally absent until Jason approves final scientific policy",
+    "performance_policy": "no speedup, throughput, timing target, or invented runtime claim"
+  },
+  "id": "FFT-05",
+  "official_pinned_evidence": [
+    "tst/regression/scripts/tests/fft/fft.py:39-40 \u2014 official serial run, but it records only scalar error.",
+    "src/pgen/fft.cpp:118-121 \u2014 production invokes forward then backward."
+  ],
+  "policy": "authenticated_raw_recomputation_wiring_v2.2",
+  "purpose": "QuickCreatePlan forward direction -> FFTW_FORWARD through serial Execute -> raw global spectrum",
+  "required_artifacts": [
+    "report.json",
+    "raw/<variant>/field.json",
+    "raw/<variant>/spectrum.json",
+    "raw/<variant>/reconstructed.json",
+    "raw/<variant>/rank-local.json",
+    "raw/<variant>/execution.json",
+    "raw/<variant>/stdout.log",
+    "raw/<variant>/stderr.log",
+    "raw/<variant>/fft-errors.dat",
+    "raw/build/<mode>.json",
+    "raw/build/<mode>.log"
+  ],
+  "runtime_redundancy": {
+    "purpose": "Directly isolates sign errors that a round-trip-only test can miss.",
+    "redundancy": "Conjugate control is a scientific cross-check, not redundant timing.",
+    "runtime_claim": "No runtime claim."
+  },
+  "schema": "athena-fft-check/v1",
+  "source_branch_forcing": [
+    "src/fft/athena_fft.cpp:223-233,365-375 \u2014 direction-specific 3-D plans.",
+    "src/fft/athena_fft.hpp:123-135 \u2014 enum forward=-1/backward=1 and execution API."
+  ],
+  "subcases": {
+    "decomposition": "serial rank 1; np=[1,1,1]",
+    "dimensionality": "3-D serial sign/order probe",
+    "execution_variants": [
+      "serial"
+    ],
+    "forward_inverse": "Complex positive mode [1,2,3] and its conjugate control -> forward only for spectrum verdict; then backward round trip as a separate required subcase.",
+    "global_shape": [
+      64,
+      64,
+      64
+    ],
+    "meshblock_shape": [
+      32,
+      32,
+      32
+    ],
+    "normalization": "No scaling during forward; inverse uses N=262144 when round-trip subcase runs; sign and coefficient tolerance human-owned.",
+    "raw_artifacts": {
+      "binding": "Raw input, spectrum, reconstructed control, rank-local, execution and logs; spectrum must contain signed complex coefficients, not magnitudes only.",
+      "build_evidence": [
+        "raw/build/serial.json",
+        "raw/build/serial.log",
+        "raw/build/mpi.json",
+        "raw/build/mpi.log"
+      ],
+      "per_variant": [
+        "field.json",
+        "spectrum.json",
+        "reconstructed.json",
+        "rank-local.json",
+        "execution.json",
+        "stdout.log",
+        "stderr.log",
+        "fft-errors.dat"
+      ]
+    }
+  },
+  "title": "Serial forward sign, conjugate direction, and sampled spectrum",
+  "verdict_boundary": {
+    "decision": "Not run; owner must choose sign convention and tolerance.",
+    "status": "proposed_not_run"
+  }
+}
