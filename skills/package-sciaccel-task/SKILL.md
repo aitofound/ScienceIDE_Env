@@ -76,9 +76,6 @@ stable slug and must be unique across all leaves.
 tasks/<group>/<module-slug>/       # <group>/ may be omitted
 ├── task.toml                      # Harbor manifest and module metadata
 ├── instruction.md                 # complete solver-facing statement
-├── code/
-│   └── <codebasename>/            # exactly one direct real codebase directory
-│       └── ...                    # the whole pinned codebase, not a symlink
 ├── environment/
 │   ├── Dockerfile                 # solver-agent environment; no oracle/scoring secrets
 │   └── ...                        # its self-contained build context
@@ -103,16 +100,16 @@ tasks/<group>/<module-slug>/       # <group>/ may be omitted
     └── ...
 ```
 
-The leaf is **absolutely self-sufficient**: it includes the whole pinned
-codebase under `code/<codebasename>/` plus its own environment, tests, solution,
-targets, and instruction. It must not depend on a parent task, sibling task,
-external checkout, or out-of-task symlink. `code/` must have exactly one direct
-real directory. The validator checks that boundary but does not recursively
-inspect the source snapshot or prescribe its internal layout.
+The whole pinned source is stored once under repository-level
+`code/<source>/`. Each complete task sets `metadata.sciaccel.source = "<source>"`
+and must not contain a duplicate task-local `code/`. Its `solution/solve.sh`
+uses `scripts/stage-task-source.py` to copy the leaf plus that source into a
+fresh temporary Docker build context; the helper removes the context afterward
+and never mutates the tracked task or source. `repo_url` and `repo_commit` remain
+the scientific source pin.
 
 The closed leaf root contains only `task.toml`, `instruction.md`,
-`code/`, `environment/`, `tests/`, `solution/`, `target/`, and optional
-`comment/`. A leaf-root `README.md` is forbidden: the only README allowed is
+`environment/`, `tests/`, `solution/`, `target/`, and optional `comment/`. A leaf-root `README.md` is forbidden: the only README allowed is
 exactly `comment/README.md`. Required entry files are:
 
 - `environment/Dockerfile`: the solver-agent image/build context. Because the

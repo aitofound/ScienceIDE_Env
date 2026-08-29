@@ -10,6 +10,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         openmpi-bin libopenmpi-dev libpng-dev
 
 COPY code/pluto/ /opt/PLUTO/
+# This task's existing Linux compatibility hook remains task-local after source deduplication.
+RUN sed -i 's/-std=c17 /-std=c17 -D_DEFAULT_SOURCE /' /opt/PLUTO/Config/Linux.gcc.defs
 ENV PLUTO_DIR=/opt/PLUTO
 
 RUN mkdir -p /app/runners /app/problems
