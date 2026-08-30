@@ -1,0 +1,28 @@
+diff --git a/build_visit2_9_2 b/build_visit2_9_2
+index ccc27ab..72bd7f8 100644
+--- a/build_visit2_9_2
++++ b/build_visit2_9_2
+@@ -4003,6 +4003,7 @@ function build_visit
+     fi
+     
+     cd $VISIT_DIR
++    bv_patch_2_9_2
+     #cp $START_DIR/$(hostname).cmake config-site
+ 
+     #
+@@ -4119,6 +4120,15 @@ function bv_visit_is_installed
+     return 0
+ }
+ 
++function bv_patch_2_9_2
++{
++  info "Patching VisIt . . ."
++  grep -v objC avt/VisWindow/CMakeLists.txt > Make.tmp
++  mv -f avt/VisWindow/CMakeLists.txt avt/VisWindow/CMakeLists.txt.orig
++  mv -f Make.tmp avt/VisWindow/CMakeLists.txt
++  patch -p2 < ../../visit2_9_2-Legend.patch
++}
++
+ function bv_patch_2_5_0
+ {
+ 
