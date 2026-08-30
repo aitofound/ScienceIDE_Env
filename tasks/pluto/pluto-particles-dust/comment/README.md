@@ -143,7 +143,7 @@ optimised port.
 
 ## Repository gates
 
-- `python3 skills/package-sciaccel-task/scripts/validate-harbor-task.py tasks/pluto-particles-dust` — PASS (1 active target).
+- `python3 skills/package-sciaccel-task/scripts/validate-harbor-task.py tasks/pluto/pluto-particles-dust` — PASS (1 active target).
 - `node scripts/gen-index.mjs` regenerated `registry/index.yaml` (16 checks, 1 target, 16 cells, status draft) and `registry.json`; `--check` up to date.
 - `BASE_REF=origin/main npm run check` — this leaf reports no violation; the eight remaining violations name the four sibling PLUTO tasks that are still source-only on `main` (no `task.toml`/`instruction.md`), which this PR must not touch; the `origin/main` baseline diff additionally hit a local `spawnSync git ENOBUFS` because the vendored sources exceed the buffer.
 - `npm run check:validators` — ok (it scans only legacy `checks/` packages, not Harbor `tests/checks/`).

@@ -135,7 +135,7 @@ measured correct-build band before any bound is called scientific.
 ## Docker gate: exact commands, roots and results
 
 All commands were run from the leaf root
-`tasks/pluto-rhd-radiation` on the host described in
+`tasks/pluto/pluto-rhd-radiation` on the host described in
 `runtime-metadata.json`, with Docker Desktop (linux/arm64 VM).
 
 Run root (external to the leaf): `~/work/tmp-rhd-scratch/harbor-run-20260829T095914Z` with two physically distinct roots `reference/` and `candidate/` (different directories, no symlinks, no shared inodes).
