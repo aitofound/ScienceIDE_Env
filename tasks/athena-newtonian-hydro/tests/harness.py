@@ -26,6 +26,12 @@ POLICY = "provisional_parameterized_except_current_anchors"
 SOURCE_COMMIT = "823614c90b594472747a0ac2a699e4a454f300d2"
 SOURCE_TREE = "4f1c82c988c522fc21dff10fd3178040fd399750"
 SOURCE_ARCHIVE = "3a7af5a83dedef6c01a0af23298028b4d52458acbede5572c64ead96f595d206"
+# Explicit strict self-validation wiring. self_test_mode is true only when the
+# caller sets ATHENA_HYDRO_SELF_TEST=1 and both roots exist; self_test_ok is
+# true only when that mode holds, both real-run receipts verify, the roots are
+# physically distinct, and every declared check passes. Neither flag alters
+# any check, tolerance, or the reward.
+SELF_TEST_ENV = "ATHENA_HYDRO_SELF_TEST"
 
 
 def env(primary: str, legacy: str) -> str | None:
@@ -109,6 +115,8 @@ def _unrun(reason: str, **extra: object) -> dict[str, Any]:
         "final_policy_status": "provisional; human final pass decision required",
         "reason": reason,
         "checks": [],
+        "self_test_mode": False,
+        "self_test_ok": False,
         **extra,
     }
 
@@ -255,6 +263,29 @@ def _verify_execution_receipt(root: Path, manifest: dict[str, Any], label: str) 
         return None, f"{label}: {_bounded(exc)}"
 
 
+def _root_alias_reason(reference: Path, candidate: Path) -> str | None:
+    """Reject equal, nested, symlinked, or inode-sharing reference/candidate roots."""
+    if reference.is_symlink() or candidate.is_symlink():
+        return "reference/candidate root is a symlink"
+    ref_real, cand_real = reference.resolve(), candidate.resolve()
+    if ref_real == cand_real:
+        return "reference and candidate roots resolve to the same directory"
+    if ref_real in cand_real.parents or cand_real in ref_real.parents:
+        return "reference and candidate roots contain each other"
+    seen: dict[tuple[int, int], str] = {}
+    for base in (ref_real, cand_real):
+        for path in base.rglob("*"):
+            if path.is_symlink() or not path.is_file():
+                continue
+            info = path.stat()
+            key = (info.st_dev, info.st_ino)
+            if base is cand_real and key in seen:
+                return f"candidate {path.relative_to(base)} shares an inode with reference {seen[key]}"
+            if base is ref_real:
+                seen[key] = path.relative_to(base).as_posix()
+    return None
+
+
 def main() -> int:
     root = Path(__file__).resolve().parent
     reference_text = env("HARBOR_REFERENCE_DIR", "REFERENCE_DIR")
@@ -272,12 +303,19 @@ def main() -> int:
         emit(_unrun("missing_artifact_paths", missing=[str(path) for path in (reference, candidate) if not path.is_dir()]), reward_path)
         return 2
 
+    self_test_mode = os.environ.get(SELF_TEST_ENV) == "1"
+    alias_reason = _root_alias_reason(reference, candidate)
+    if alias_reason:
+        emit({**_unrun(f"artifact root alias rejected: {alias_reason}"), "self_test_mode": self_test_mode, "check_count": 17, "declared_subcase_count": 69}, reward_path)
+        return 1
+
     reference_receipt, reference_error = _verify_execution_receipt(reference, manifest, "reference")
     candidate_receipt, candidate_error = _verify_execution_receipt(candidate, manifest, "candidate")
     if reference_error or candidate_error:
         emit(
             {
                 **_unrun("real compiled-run receipt validation failed", real_run_evidence={"reference": reference_error, "candidate": candidate_error}),
+                "self_test_mode": self_test_mode,
                 "check_count": 17,
                 "declared_subcase_count": 69,
             },
@@ -324,6 +362,9 @@ def main() -> int:
         "comparison_policy": POLICY,
         "final_policy_status": "provisional; exact oracle identity is permitted only for this Docker self-test; human final candidate pass policy required",
         "self_test_identity": reference_hashes == candidate_hashes,
+        "self_test_mode": self_test_mode,
+        "self_test_ok": self_test_mode and all_passed and alias_reason is None,
+        "root_alias_check": "passed",
         "real_run_evidence": {"reference": "verified", "candidate": "verified", "compiled_athena_executions": 69, "positive_execution_exits": 69, "positive_extraction_exits": 69, "native_behavior_artifacts": 69},
         "check_count": len(check_results),
         "declared_subcase_count": 69,
