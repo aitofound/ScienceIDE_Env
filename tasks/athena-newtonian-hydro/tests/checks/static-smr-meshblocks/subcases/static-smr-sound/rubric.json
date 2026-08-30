@@ -1,23 +1,22 @@
 {
-  "rubric_version": "athena-hydro-rubric-v2",
+  "rubric_version": "athena-hydro-rubric-v4",
   "check_id": "NH-14-static-smr-meshblocks",
   "folder": "static-smr-meshblocks",
   "case": "static-smr-sound",
-  "description": "Selected static refinement and same-level MeshBlock storage/exchange integration.",
-  "upstream_deck": "hydro/hydro_linwave.py:42-83",
+  "description": "Upstream hydro_linwave.py static-SMR family at i=16: 16x8x8 root mesh, 4^3 MeshBlocks, refinement=static with the five upstream regions (8 root + 64 refined = 72 real leaf MeshBlocks), exercising prolongation/restriction and same-level exchange.",
+  "upstream_deck": "hydro/hydro_linwave.py:42-83 (mesh/refinement=static, mesh i x i/2 x i/2, meshblock (i/4)^3; here i=16)",
   "check_deck": "subcases/static-smr-sound/athinput",
   "dimensions": [
-    8,
+    16,
     8,
     8
   ],
   "frame_count": 3,
   "expected_times": [
     0.0,
-    0.05,
+    0.05624994,
     0.1
   ],
-  "schedule_abs_tolerance": 1e-12,
   "artifact": {
     "file": "primitive_tab.json",
     "format": "strict UTF-8 JSON",
@@ -31,7 +30,7 @@
       "vel2",
       "vel3"
     ],
-    "row_order": "native Athena++ TAB k-j-i order within each frame",
+    "row_order": "global k-j-i order: cells sorted by (x3v, x2v, x1v) across all MeshBlocks",
     "dtype": "float64",
     "finite_values": true
   },
@@ -49,20 +48,21 @@
   "source_format": {
     "encoding": "UTF-8 JSON converted from Athena++ formatted TAB",
     "dtype": "float64",
-    "ordering": "frame then native k-j-i TAB row order",
+    "ordering": "frame then global k-j-i order: cells sorted by (x3v, x2v, x1v) across all MeshBlocks",
     "native_file_pattern": "<problem>.block<gid>.out<id>.<frame>.tab"
   },
-  "comparison_policy": "provisional_parameterized",
-  "policy_status": "provisional_parameterized; human final pass policy required; identity comparison is self-test-only",
+  "comparison_policy": "inactive_owner_decision_pending",
+  "policy_status": "inactive; no approved acceptance rule exists for this deck. The subcase is executed and provenance-bound as path-witness evidence, is never scored, and cannot earn reward in any mode (including the Docker self-test).",
   "coordinate_policy": "exact",
   "cycle_policy": "nonnegative_integer_diagnostic_not_compared",
   "primitive_abs_tolerance": null,
   "primitive_rel_tolerance": null,
   "comparison_parameters": {
     "status": "human_decision_required",
-    "abs_env": "HARBOR_PRIMITIVE_ABS_TOLERANCE",
-    "rel_env": "HARBOR_PRIMITIVE_REL_TOLERANCE",
-    "default": "exact_identity_for_required_self_test_only"
+    "scored": false,
+    "runtime_override": "forbidden",
+    "self_test_identity_diagnostic_only": true,
+    "decision_needed": "exact deck (including the appended last-wins overrides), resolution, output schedule and print precision, diagnostics, and analytic-versus-pointwise acceptance policy"
   },
   "configuration": {
     "kind": "wave",
@@ -74,9 +74,470 @@
     "axis": null,
     "static": true,
     "dimensions": [
-      8,
+      16,
       8,
       8
     ]
-  }
+  },
+  "mesh": {
+    "root": [
+      16,
+      8,
+      8
+    ],
+    "meshblock": [
+      4,
+      4,
+      4
+    ],
+    "refinement": "static",
+    "leaf_block_count": 72,
+    "leaf_blocks": [
+      [
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        1,
+        1,
+        1
+      ],
+      [
+        0,
+        3,
+        0,
+        0
+      ],
+      [
+        0,
+        3,
+        1,
+        0
+      ],
+      [
+        0,
+        3,
+        0,
+        1
+      ],
+      [
+        0,
+        3,
+        1,
+        1
+      ],
+      [
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        1,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        1,
+        1,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        1
+      ],
+      [
+        1,
+        1,
+        0,
+        1
+      ],
+      [
+        1,
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        1,
+        1,
+        1
+      ],
+      [
+        1,
+        2,
+        2,
+        0
+      ],
+      [
+        1,
+        3,
+        2,
+        0
+      ],
+      [
+        1,
+        2,
+        3,
+        0
+      ],
+      [
+        1,
+        3,
+        3,
+        0
+      ],
+      [
+        1,
+        2,
+        2,
+        1
+      ],
+      [
+        1,
+        3,
+        2,
+        1
+      ],
+      [
+        1,
+        2,
+        3,
+        1
+      ],
+      [
+        1,
+        3,
+        3,
+        1
+      ],
+      [
+        1,
+        2,
+        0,
+        2
+      ],
+      [
+        1,
+        3,
+        0,
+        2
+      ],
+      [
+        1,
+        2,
+        1,
+        2
+      ],
+      [
+        1,
+        3,
+        1,
+        2
+      ],
+      [
+        1,
+        2,
+        0,
+        3
+      ],
+      [
+        1,
+        3,
+        0,
+        3
+      ],
+      [
+        1,
+        2,
+        1,
+        3
+      ],
+      [
+        1,
+        3,
+        1,
+        3
+      ],
+      [
+        1,
+        0,
+        2,
+        2
+      ],
+      [
+        1,
+        1,
+        2,
+        2
+      ],
+      [
+        1,
+        0,
+        3,
+        2
+      ],
+      [
+        1,
+        1,
+        3,
+        2
+      ],
+      [
+        1,
+        0,
+        2,
+        3
+      ],
+      [
+        1,
+        1,
+        2,
+        3
+      ],
+      [
+        1,
+        0,
+        3,
+        3
+      ],
+      [
+        1,
+        1,
+        3,
+        3
+      ],
+      [
+        1,
+        4,
+        0,
+        0
+      ],
+      [
+        1,
+        5,
+        0,
+        0
+      ],
+      [
+        1,
+        4,
+        1,
+        0
+      ],
+      [
+        1,
+        5,
+        1,
+        0
+      ],
+      [
+        1,
+        4,
+        0,
+        1
+      ],
+      [
+        1,
+        5,
+        0,
+        1
+      ],
+      [
+        1,
+        4,
+        1,
+        1
+      ],
+      [
+        1,
+        5,
+        1,
+        1
+      ],
+      [
+        1,
+        4,
+        2,
+        0
+      ],
+      [
+        1,
+        5,
+        2,
+        0
+      ],
+      [
+        1,
+        4,
+        3,
+        0
+      ],
+      [
+        1,
+        5,
+        3,
+        0
+      ],
+      [
+        1,
+        4,
+        2,
+        1
+      ],
+      [
+        1,
+        5,
+        2,
+        1
+      ],
+      [
+        1,
+        4,
+        3,
+        1
+      ],
+      [
+        1,
+        5,
+        3,
+        1
+      ],
+      [
+        1,
+        4,
+        0,
+        2
+      ],
+      [
+        1,
+        5,
+        0,
+        2
+      ],
+      [
+        1,
+        4,
+        1,
+        2
+      ],
+      [
+        1,
+        5,
+        1,
+        2
+      ],
+      [
+        1,
+        4,
+        0,
+        3
+      ],
+      [
+        1,
+        5,
+        0,
+        3
+      ],
+      [
+        1,
+        4,
+        1,
+        3
+      ],
+      [
+        1,
+        5,
+        1,
+        3
+      ],
+      [
+        1,
+        4,
+        2,
+        2
+      ],
+      [
+        1,
+        5,
+        2,
+        2
+      ],
+      [
+        1,
+        4,
+        3,
+        2
+      ],
+      [
+        1,
+        5,
+        3,
+        2
+      ],
+      [
+        1,
+        4,
+        2,
+        3
+      ],
+      [
+        1,
+        5,
+        2,
+        3
+      ],
+      [
+        1,
+        4,
+        3,
+        3
+      ],
+      [
+        1,
+        5,
+        3,
+        3
+      ]
+    ],
+    "leaf_blocks_basis": "real Athena++ -m 1 mesh_structure.dat of this deck: [physical level, lx1, lx2, lx3]; root grid 4x2x2, root level 2"
+  },
+  "expected_rows": 4608,
+  "status": "inactive",
+  "scored": false,
+  "schedule_policy": "exact_printed_time_token",
+  "expected_time_tokens": [
+    "0.000000e+00",
+    "5.624994e-02",
+    "1.000000e-01"
+  ],
+  "schedule_policy_evidence": "code/athena/src/outputs/formatted_table.cpp:85 prints the frame time with a fixed \"%e\"; the printed token is the whole representation this check owns, so the frame schedule is bound by exact token equality and no schedule tolerance exists",
+  "geometry_policy": "derived_from_deck_print_precision_and_cell_spacing",
+  "geometry_policy_evidence": "verifier-derived: cell centres are printed with this deck's output data_format (formatted_table.cpp:112-131), so a comparison carries at most 2*10^-precision*scale of rounding; tests/lib/provenance.py:geometry_tolerance uses a quarter of the finest cell width and rejects any deck whose print precision cannot support that"
 }
