@@ -1,6 +1,10 @@
 begin:control
   nx = 100
-  t_end = 30 * femto
+  # 35fs (was 30fs): one full 5fs dt_snapshot beyond the laser's own t_end
+  # (25fs) is needed for the post-deactivation criterion this check now
+  # adds (validate.py's post-t_end monotonic-non-increase test needs at
+  # least two dumps strictly after t_end, not just one).
+  t_end = 35 * femto
   x_min = -2 * micron
   x_max = -x_min
 end:control

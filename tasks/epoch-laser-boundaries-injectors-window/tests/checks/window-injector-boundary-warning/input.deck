@@ -1,0 +1,64 @@
+begin:control
+  nx = 100
+  t_end = 20 * femto
+  x_min = 0
+  x_max = 2 * micron
+end:control
+
+
+begin:boundaries
+  bc_x_min = simple_outflow
+  bc_x_max = simple_outflow
+end:boundaries
+
+
+begin:species
+  name = Beam
+  charge = -1
+  mass = 1.0
+  number_density = 0
+end:species
+
+
+begin:injector
+  boundary = x_min
+  species = Beam
+  number_density = 1.0e18
+  temperature = 0
+  drift_px = 1.0e-23
+  nparticles_per_cell = 20
+  # Explicit t_end (10fs), exceeding window_start_time (5fs) below:
+  # deck_window_block.f90's check_injector_boundaries() sets
+  # warn_window=.TRUE. whenever a got_t_end injector's t_end >
+  # window_start_time, printing "You have specified injectors in
+  # conjunction with the moving window." + "The t_end time of one or more
+  # injectors exceeds the window_start_time." at deck-parse time (rank 0
+  # stdout) -- a deck-time (not numeric-SDF) observable never exercised by
+  # any other check in this leaf (comment/coverage-ledger.md).
+  t_end = 10 * femto
+end:injector
+
+
+begin:window
+  move_window = T
+  window_start_time = 5 * femto
+  window_v_x = c / 2
+  bc_x_min_after_move = simple_outflow
+  bc_x_max_after_move = simple_outflow
+end:window
+
+
+begin:output
+  # dt_snapshot=2fs (not the original 20fs=t_end, which gave only a t=0
+  # dump before the injector's first particle exists and a final t=20fs
+  # dump AFTER window_start_time=5fs has already swept every Beam
+  # particle out of the domain -- neither dump ever contains a Weight/
+  # Beam block at all). 2fs lands dumps at t=2fs/4fs, both after
+  # injection starts (t=0) and before window_start_time=5fs, so the
+  # injected Beam population is genuinely present and dumped.
+  dt_snapshot = 2 * femto
+  dump_last = T
+
+  particles = always
+  particle_weight = always
+end:output

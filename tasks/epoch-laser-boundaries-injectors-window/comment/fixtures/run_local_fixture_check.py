@@ -77,7 +77,7 @@ ALL_CHECKS_COUNT = 21
 
 DECK_PATH = os.path.join(CHECKS_ROOT, CHECK, "input.deck")
 EXTRA_DECK_PATH = os.path.join(CHECKS_ROOT, EXTRA_CHECK, "input.deck")
-EXTRA_FILE_NAMES = ["t_data.txt", "w_data.txt", "px_data.txt"]
+EXTRA_FILE_NAMES = ["t_data.txt", "w_data.txt", "px_data.txt", "py_data.txt", "pz_data.txt"]
 EXTRA_FILE_PATHS = [os.path.join(CHECKS_ROOT, EXTRA_CHECK, n) for n in EXTRA_FILE_NAMES]
 
 
@@ -94,9 +94,19 @@ def _t_start_gating_sdf(row_dir: str, *, perturb: bool = False,
     # all -- the "missing sdf" fixture state is reached by never writing
     # the file into the row in the first place, not by writing then
     # deleting it.
-    sdf_files = ["0000.sdf", "0001.sdf"]
-    for i, (name, t) in enumerate(zip(sdf_files, (0.0, 5e-15))):
+    #
+    # Mirrors the real deck's dump cadence (dt_snapshot=5fs, t_end=35fs) so
+    # this fixture exercises all three of validate.py's pre-activation
+    # (t<12fs)/active (12fs<=t<=25fs)/post-deactivation (t>25fs) intervals,
+    # not only the first: nonzero-but-clearly-above-floor Ey during the
+    # active window, and non-increasing sum(Ey^2) after t_end.
+    times = (0.0, 5e-15, 10e-15, 15e-15, 20e-15, 25e-15, 30e-15, 35e-15)
+    active_amplitude = (0.0, 0.0, 0.0, 5.0, 5.0, 5.0, 3.0, 2.0)  # >= ACTIVE_AMPLITUDE_FLOOR=1.0
+    sdf_files = [f"{i:04d}.sdf" for i in range(len(times))]
+    for i, (name, t, amp) in enumerate(zip(sdf_files, times, active_amplitude)):
         ey = [0.0] * 40
+        if amp:
+            ey[20] = amp
         if perturb and i == 1:
             ey[20] = 1.0  # nonzero field before t_start=12fs -> must fail
         target_dir = hash_dir if name in omit else row_dir
@@ -106,23 +116,23 @@ def _t_start_gating_sdf(row_dir: str, *, perturb: bool = False,
 
 
 def _injector_provenance_sdf(row_dir: str, *, omit=frozenset(), hash_dir: str | None = None):
-    # Reproduces exactly the w_data.txt/px_data.txt content this check's own
-    # validate.py re-reads, so the fabricated "good" reference/candidate
-    # rows genuinely satisfy that check's exact-replay physics assertion
-    # instead of merely reaching (and then failing) it. The two variable
-    # names deliberately end in different last-'/'-segments ("Beam"/
-    # "Beam_w") so sdf_writer.py's block_id (derived from that last
-    # segment) does not collide between them -- sdf_reader.py's block store
-    # is keyed by block_id, and validate.py's find_containing() only needs
-    # each display 'name' to contain the substrings it greps for.
+    # Reproduces exactly the w_data.txt/px_data.txt/py_data.txt/pz_data.txt
+    # content this check's own validate.py re-reads, so the fabricated
+    # "good" reference/candidate rows genuinely satisfy that check's
+    # exact-replay physics assertion instead of merely reaching (and then
+    # failing) it.
     weight = _read_column(EXTRA_FILE_PATHS[1])
     px = _read_column(EXTRA_FILE_PATHS[2])
+    py = _read_column(EXTRA_FILE_PATHS[3])
+    pz = _read_column(EXTRA_FILE_PATHS[4])
     sdf_files = ["0000.sdf"]
     name = sdf_files[0]
     target_dir = hash_dir if name in omit else row_dir
     write_sdf(os.path.join(target_dir, name), step=0, time=0.0,
-              x_min=-1e-6, x_max=1e-6, nx=len(weight),
-              variables={"Particles/Px/Beam": px, "Particles/Weight/Beam_w": weight})
+              x_min=-1e-6, x_max=1e-6, nx=1,
+              variables={},
+              particles={"Beam": {"positions": [0.0] * len(weight), "px": px, "py": py,
+                                   "pz": pz, "weight": weight}})
     return sdf_files
 
 

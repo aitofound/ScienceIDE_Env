@@ -29,11 +29,24 @@ begin:injector
   # list-directed READ(unit,*) one value per line
   # (code/epoch/epoch1d/src/physics_packages/file_injectors.F90
   # read_injector_real). t_data ascending, 0 to 44.1fs (< t_end=60fs so
-  # every row is injected); w_data/px_data both constant so the expected
-  # total injected weight/momentum are exact closed-form sums.
+  # every row is injected); w_data/px_data/py_data/pz_data all constant so
+  # the expected total injected weight/momentum-components are exact
+  # closed-form sums. py_data/pz_data exercise file_injectors.F90's
+  # optional-column path (injector%py_data_given/pz_data_given,
+  # run_file_injection()'s 'IF (injector%py_data_given) CALL
+  # read_injector_real(unit_py, py_in, injector) ELSE py_in = 0.0_num'),
+  # distinct from injector-file-provenance's previous 'ELSE ... = 0.0'
+  # branch this same deck used to exercise instead. id_data is not
+  # supplied: it requires the PARTICLE_ID/PARTICLE_ID4 preprocessor
+  # DEFINES, both left commented out (Makefile default) by this leaf's
+  # fixed build_policy, so the id-column file-read path is not compiled
+  # into the pinned binary at all and cannot be independently driven
+  # without changing that policy (see comment/coverage-ledger.md).
   t_data = "t_data.txt"
   w_data = "w_data.txt"
   px_data = "px_data.txt"
+  py_data = "py_data.txt"
+  pz_data = "pz_data.txt"
 end:injector
 
 
@@ -43,5 +56,7 @@ begin:output
 
   particles = always
   px = always
+  py = always
+  pz = always
   particle_weight = always
 end:output

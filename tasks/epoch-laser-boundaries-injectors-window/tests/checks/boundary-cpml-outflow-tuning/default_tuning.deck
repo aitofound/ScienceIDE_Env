@@ -1,0 +1,52 @@
+begin:constant
+  x0 = -2.0 * micron
+  w0 = 0.5 * micron
+  lambda0 = 0.4 * micron
+  amp0 = 1.0e10
+end:constant
+
+
+begin:control
+  nx = 250
+  t_end = 30 * femto
+  x_min = -5 * micron
+  x_max = 5 * micron
+end:control
+
+
+begin:boundaries
+  # cpml_outflow: a NON-laser CPML absorbing layer (boundary.F90's
+  # cpml_advance_e_currents()/cpml_advance_b_currents() machinery), the
+  # same PML implementation cpml_laser uses for its far-field propagation
+  # but never independently driven by any check without a co-located laser
+  # boundary (see comment/coverage-ledger.md). bc_x_min=open is the
+  # untested far side (transparent to anything that leaks back, though
+  # nothing should reach it -- the packet moves away from it).
+  bc_x_min = open
+  bc_x_max = cpml_outflow
+  # Default tuning (code/epoch/epoch1d/src/housekeeping/setup.F90:77-80):
+  # left unset here so EPOCH's own compiled-in defaults apply
+  # (cpml_thickness=6, cpml_kappa_max=20.0, cpml_a_max=0.15,
+  # cpml_sigma_max=0.7).
+end:boundaries
+
+
+begin:fields
+  # A right-moving (+x), Gaussian-enveloped wave packet: Ey=f(x-c*t),
+  # Bz=+Ey/c, Poynting S=(Ey*Bz,0,0) points +x, toward the
+  # bc_x_max=cpml_outflow wall under test. x_max-x0 = 7 micron = 14*w0,
+  # negligible initial overlap with the far boundary at t=0 (same margin
+  # boundary-open-outflow-absorption relies on for its own packet).
+  ey = amp0 * gauss(x, x0, w0) * sin(2.0 * pi * (x - x0) / lambda0)
+  bz = (amp0 / c) * gauss(x, x0, w0) * sin(2.0 * pi * (x - x0) / lambda0)
+end:fields
+
+
+begin:output
+  dt_snapshot = 30 * femto
+  dump_last = T
+
+  grid = always
+  ey = always
+  bz = always
+end:output

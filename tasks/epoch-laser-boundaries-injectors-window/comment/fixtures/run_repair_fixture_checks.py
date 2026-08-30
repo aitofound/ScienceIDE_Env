@@ -42,6 +42,7 @@ import importlib.util
 import json
 import math
 import os
+import random
 import sys
 import tempfile
 
@@ -78,7 +79,7 @@ def _load_validate(check: str):
 
 
 def _build_row(row_dir: str, *, check: str, invocation: str, dim: int, ranks: int,
-                deck_name: str, sdf_writer) -> None:
+                deck_name: str, sdf_writer, stdout_text: str = "fixture stdout\n") -> None:
     """Construct one invocation's complete on-disk row: preserved deck,
     stdout/stderr logs, sdf files (via `sdf_writer(row_dir) -> [names]`),
     and a schema-v2 execution.json manifest whose deck_sha256/sdf digests
@@ -95,7 +96,7 @@ def _build_row(row_dir: str, *, check: str, invocation: str, dim: int, ranks: in
     sdf_files = sdf_writer(row_dir)
 
     with open(os.path.join(row_dir, "stdout.log"), "w", encoding="utf-8") as fh:
-        fh.write("fixture stdout\n")
+        fh.write(stdout_text)
     with open(os.path.join(row_dir, "stderr.log"), "w", encoding="utf-8") as fh:
         fh.write("")
 
@@ -320,11 +321,16 @@ def _fixture_laser_unit_equivalence_freq(root: str):
             return names
         return _write
 
-    def _build_variant_set(base_dir: str, freq_bug: bool):
-        for variant in ("lambda", "omega", "freq"):
+    def _build_variant_set(base_dir: str, freq_bug: bool, freq_warning: bool = True):
+        for variant in ("lambda", "omega", "freq", "frequency"):
             row_dir = os.path.join(base_dir, check, variant)
+            stdout_text = (
+                "*** WARNING ***\nElement \"freq\" in the block \"laser\" is deprecated.\n"
+                if variant == "freq" and freq_warning else "fixture stdout\n"
+            )
             _build_row(row_dir, check=check, invocation=variant, dim=1, ranks=1,
-                       deck_name=f"{variant}.deck", sdf_writer=_writer(variant, freq_bug))
+                       deck_name=f"{variant}.deck", sdf_writer=_writer(variant, freq_bug),
+                       stdout_text=stdout_text)
 
     accept_root = os.path.join(root, "accept")
     _build_variant_set(os.path.join(accept_root, "reference"), freq_bug=False)
@@ -339,10 +345,17 @@ def _fixture_laser_unit_equivalence_freq(root: str):
     reject_verdict = mod.validate(os.path.join(reject_root, "reference", check),
                                    os.path.join(reject_root, "candidate", check))
 
+    no_warn_root = os.path.join(root, "reject_no_warning")
+    _build_variant_set(os.path.join(no_warn_root, "reference"), freq_bug=False, freq_warning=True)
+    _build_variant_set(os.path.join(no_warn_root, "candidate"), freq_bug=False, freq_warning=False)
+    no_warn_verdict = mod.validate(os.path.join(no_warn_root, "reference", check),
+                                    os.path.join(no_warn_root, "candidate", check))
+
     return {
         "accept": accept_verdict["passed"] is True,
         "reject_missing_2pi_freq_bug": reject_verdict["passed"] is False,
-    }, {"accept": accept_verdict, "reject": reject_verdict}
+        "reject_candidate_missing_deprecation_warning": no_warn_verdict["passed"] is False,
+    }, {"accept": accept_verdict, "reject": reject_verdict, "reject_no_warning": no_warn_verdict}
 
 
 # --------------------------------------------------------------------------
@@ -362,13 +375,25 @@ def _fixture_boundary_periodic_domain_crossing(root: str):
     def _bz(x, t):
         return (amp0 / mod.C) * math.sin(2.0 * math.pi * (x - mod.C * t) / mod.LAMBDA0)
 
-    def _writer(reflecting_defect: bool):
+    n_beam = 200
+    # Jittered (not perfectly evenly spaced) initial positions: an exact
+    # uniform comb is periodic with a period far shorter than LX (here
+    # LX/n_beam), which would make the histogram cross-correlation this
+    # fixture drives ambiguous between the true shift and every multiple of
+    # that short period. A real EPOCH-loaded species has this same
+    # aperiodic "texture" from its own per-particle `random()*dx` placement
+    # within each cell.
+    _rng = random.Random(20260830)
+    beam_pos0 = sorted(_rng.uniform(0.0, mod.LX) for _ in range(n_beam))
+
+    def _writer(reflecting_defect: bool = False, beam_defect: str | None = None):
         def _write(row_dir: str):
             ey0 = [_ey(x, 0.0) for x in x_centers]
             bz0 = [_bz(x, 0.0) for x in x_centers]
             write_sdf(os.path.join(row_dir, "0000.sdf"), step=0, time=0.0,
                       x_min=0.0, x_max=mod.LX, nx=mod.NX,
-                      variables={"Electric Field/Ey": ey0, "Magnetic Field/Bz": bz0})
+                      variables={"Electric Field/Ey": ey0, "Magnetic Field/Bz": bz0},
+                      particles={"Beam": {"positions": beam_pos0}})
             eyN = [_ey(x, dt_elapsed) for x in x_centers]
             bzN = [_bz(x, dt_elapsed) for x in x_centers]
             if reflecting_defect:
@@ -377,30 +402,59 @@ def _fixture_boundary_periodic_domain_crossing(root: str):
                 # qualitatively different (reflected) field pattern.
                 eyN = [-v for v in eyN]
                 bzN = [-v for v in bzN]
+            if beam_defect == "no_wrap":
+                # A broken periodic particle boundary: particles simply
+                # never move/wrap (as if particle_periodic_bcs() were a
+                # no-op), instead of drifting the predicted v*dt_elapsed.
+                beam_posN = list(beam_pos0)
+            elif beam_defect == "lost_particle":
+                beam_posN = [(p + mod.BEAM_V * dt_elapsed) % mod.LX for p in beam_pos0][:-1]
+            else:
+                beam_posN = [(p + mod.BEAM_V * dt_elapsed) % mod.LX for p in beam_pos0]
             write_sdf(os.path.join(row_dir, "0001.sdf"), step=1, time=dt_elapsed,
                       x_min=0.0, x_max=mod.LX, nx=mod.NX,
-                      variables={"Electric Field/Ey": eyN, "Magnetic Field/Bz": bzN})
+                      variables={"Electric Field/Ey": eyN, "Magnetic Field/Bz": bzN},
+                      particles={"Beam": {"positions": beam_posN}})
             return ["0000.sdf", "0001.sdf"]
         return _write
 
     accept_ref, accept_cand = _row_pair(os.path.join(root, "accept"), check)
     _build_row(accept_ref, check=check, invocation="default", dim=1, ranks=1,
-               deck_name="input.deck", sdf_writer=_writer(reflecting_defect=False))
+               deck_name="input.deck", sdf_writer=_writer())
     _build_row(accept_cand, check=check, invocation="default", dim=1, ranks=1,
-               deck_name="input.deck", sdf_writer=_writer(reflecting_defect=False))
+               deck_name="input.deck", sdf_writer=_writer())
     accept_verdict = mod.validate(accept_ref, accept_cand)
 
     reject_ref, reject_cand = _row_pair(os.path.join(root, "reject"), check)
     _build_row(reject_ref, check=check, invocation="default", dim=1, ranks=1,
-               deck_name="input.deck", sdf_writer=_writer(reflecting_defect=False))
+               deck_name="input.deck", sdf_writer=_writer())
     _build_row(reject_cand, check=check, invocation="default", dim=1, ranks=1,
                deck_name="input.deck", sdf_writer=_writer(reflecting_defect=True))
     reject_verdict = mod.validate(reject_ref, reject_cand)
 
+    no_wrap_ref, no_wrap_cand = _row_pair(os.path.join(root, "reject_no_wrap"), check)
+    _build_row(no_wrap_ref, check=check, invocation="default", dim=1, ranks=1,
+               deck_name="input.deck", sdf_writer=_writer())
+    _build_row(no_wrap_cand, check=check, invocation="default", dim=1, ranks=1,
+               deck_name="input.deck", sdf_writer=_writer(beam_defect="no_wrap"))
+    no_wrap_verdict = mod.validate(no_wrap_ref, no_wrap_cand)
+
+    lost_ref, lost_cand = _row_pair(os.path.join(root, "reject_lost_particle"), check)
+    _build_row(lost_ref, check=check, invocation="default", dim=1, ranks=1,
+               deck_name="input.deck", sdf_writer=_writer())
+    _build_row(lost_cand, check=check, invocation="default", dim=1, ranks=1,
+               deck_name="input.deck", sdf_writer=_writer(beam_defect="lost_particle"))
+    lost_verdict = mod.validate(lost_ref, lost_cand)
+
     return {
         "accept": accept_verdict["passed"] is True,
         "reject_reflecting_boundary": reject_verdict["passed"] is False,
-    }, {"accept": accept_verdict, "reject": reject_verdict}
+        "reject_particle_no_wrap": no_wrap_verdict["passed"] is False,
+        "reject_lost_particle": lost_verdict["passed"] is False,
+    }, {
+        "accept": accept_verdict, "reject": reject_verdict,
+        "reject_no_wrap": no_wrap_verdict, "reject_lost_particle": lost_verdict,
+    }
 
 
 # --------------------------------------------------------------------------

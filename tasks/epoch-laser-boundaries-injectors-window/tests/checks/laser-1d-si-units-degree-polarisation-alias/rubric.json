@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "check": "laser-1d-si-units-degree-polarisation-alias",
+  "codebase": "epoch",
+  "dimension_tier": 1,
+  "ranks": 1,
+  "provenance": {
+    "source_lines": "code/epoch/epoch1d/src/deck/deck_laser_block.f90:126-130 ('irradiance'/'intensity' SI amp branch), :241-247 ('pol'/'polarisation' degrees branch); laser.f90:293-297 (source1/source2 pol_angle coupling, the same identity laser-1d-polarisation-energy-invariant uses)",
+    "identity": "amp = SQRT(intensity/(c*eps0/2)) (exact deck formula); pol_angle = pi*degrees/180 (exact deck formula); cos(phi)^2+sin(phi)^2=1 (algebraic)"
+  },
+  "policy": {
+    "shape": "peak sqrt(Ey^2+Ez^2) at the boundary-adjacent cell recovers 'intensity'-derived amp independent of pol_angle; least-squares Ez/Ey slope recovers tan('polarisation'-derived pol_angle) independent of amp.",
+    "tolerance_origin": "Polarisation slope: 1e-6 relative, an exact algebraic identity of the source formula (both components share one 'base' and phase; the bound covers IEEE double rounding through the FDTD advance and this validator's own least-squares arithmetic, not a physics-accuracy claim). Amplitude (post-repair, 2026-08-30 real-physics repair pass, PROVISIONAL): NOT a pure algebraic identity -- this leaf's own preserved oracle evidence showed the actual FDTD-advanced, Silver-Muller-boundary-injected field reproduces the idealised amp=sqrt(intensity/(c*eps0/2)) formula to only ~O(1%) at this deck's resolution (dx/lambda=0.05), not exactly. The amplitude is now recovered via an ordinary-least-squares fit to the deck's own known omega (far less sensitive to this deck's dt_snapshot-vs-period aliasing than the prior raw-sample-max, reducing residual from ~1.11% to ~0.88% against this leaf's own preserved oracle evidence); RTOL_AMP=2% keeps a ~2x safety margin above that measured/fitted residual while remaining far below the O(1) or exact-100x error a genuinely wrong unit/degree conversion would produce.",
+    "determinism": "No particles/injectors; single rank; fully deterministic.",
+    "bound_calibration_status": "amplitude criterion is provisional -- RTOL_AMP only, see 'Provisional bounds' in comment/pass-policy-evidence.md; polarisation-slope criterion remains an exact invariant"
+  },
+  "criteria": [
+    {"name": "si_intensity_amplitude", "rule": "max relative |fitted_amp - analytic_amp| <= 2e-2 on both sides", "status": "active, provisional"},
+    {"name": "degree_polarisation_angle", "rule": "max relative |fitted_slope - tan(analytic_pol_angle)| <= 1e-6 on both sides", "status": "active"}
+  ]
+}

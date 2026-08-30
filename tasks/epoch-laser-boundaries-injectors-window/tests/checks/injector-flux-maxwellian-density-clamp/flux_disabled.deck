@@ -1,0 +1,54 @@
+begin:control
+  nx = 100
+  t_end = 100 * femto
+  x_min = 0
+  x_max = 30 * micron
+end:control
+
+
+begin:boundaries
+  bc_x_min = open
+  bc_x_max = open
+end:boundaries
+
+
+begin:species
+  name = Beam
+  charge = -1
+  mass = 1.0
+  number_density = 0
+end:species
+
+
+begin:injector
+  boundary = x_min
+  species = Beam
+  # use_flux_maxwellian=F -> deck_injector_block.F90 sets
+  # working_injector%use_flux_injector=.FALSE. -> injectors.F90
+  # run_single_injector() sets flux_dir=-1 unconditionally, skipping the
+  # entire large-drift/thermal-dominated/general-erf branch selection
+  # (flux_dir_cell stays -1 regardless of drift magnitude): gamma_mass=
+  # SQRT(p_inject_drift**2+typical_mc2)/c, v_inject_s=p_inject_drift/
+  # gamma_mass, density_correction=1.0 -- the EXPLICIT-override code path,
+  # distinct from injector-flux-density-drift's default (use_flux_injector
+  # left at its .TRUE. default), which only reaches this same formula
+  # incidentally because its drift happens to be large. Here the drift is
+  # a MODERATE value (comparable to the thermal momentum at 5eV -- see
+  # injector-thermal-erf-flux) that would otherwise select the
+  # thermal-dominated/general-erf branch if flux weighting were left on.
+  number_density = 1.0e20
+  temperature_ev = 5.0
+  drift_px = 8.542493293635336e-25
+  use_flux_maxwellian = F
+  nparticles_per_cell = 50
+end:injector
+
+
+begin:output
+  dt_snapshot = 100 * femto
+  dump_last = T
+
+  particles = always
+  px = always
+  particle_weight = always
+end:output

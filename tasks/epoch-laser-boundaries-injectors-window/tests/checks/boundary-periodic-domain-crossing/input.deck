@@ -32,6 +32,29 @@ begin:fields
 end:fields
 
 
+begin:species
+  # Independent, source-grounded coverage of periodic PARTICLE crossing
+  # (the field IC above only exercises boundary.F90's periodic FIELD
+  # exchange). A cold (temperature=0), monoenergetic beam with
+  # drift_px chosen for v=c/2 exactly (relativistic p=gamma*m*v,
+  # gamma=1/sqrt(1-0.25)) crosses exactly half the domain (lx/2) in this
+  # deck's own t_end=lx/c, giving a clean, nonzero, exactly-predictable
+  # fractional-domain shift that must wrap through bc_x_min/bc_x_max's
+  # periodic particle exchange (particle_periodic_bcs()) to land back
+  # inside [x_min, x_max) rather than escaping the box. Density is kept
+  # low enough (1e10/m^3, versus e.g. injector-flux-density-drift's
+  # 1e20/m^3) that this species' own self-field is a negligible
+  # perturbation on the field test above.
+  name = Beam
+  charge = -1
+  mass = 1.0
+  temperature = 0
+  drift_px = 1.5766998759610546e-22
+  number_density = 1.0e10
+  nparticles_per_cell = 20
+end:species
+
+
 begin:output
   dt_snapshot = 8.0089422319 * femto
   dump_last = T
@@ -39,4 +62,6 @@ begin:output
   grid = always
   ey = always
   bz = always
+
+  particles = always
 end:output
