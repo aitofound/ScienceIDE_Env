@@ -1,0 +1,121 @@
+begin:control
+  nx = 128
+  ny = 32
+  nz = 32
+  # Final time of simulation
+  t_end = 3.0e-1
+
+  # Size of domain
+  x_min = 0
+  x_max =  2.5e5
+  y_min = -2.5e5
+  y_max =  2.5e5
+  z_min = -2.5e5
+  z_max =  2.5e5
+  stdout_frequency = 1000
+end:control
+
+
+begin:boundaries
+  bc_x_min = periodic
+  bc_x_max = periodic
+  bc_y_min = periodic
+  bc_y_max = periodic
+  bc_z_min = periodic
+  bc_z_max = periodic
+end:boundaries
+
+
+begin:constant
+  drift_p = 2.5e-24
+  temperature = 273
+  dens = 1
+  ppc = 8
+end:constant
+
+
+begin:injector
+  boundary = x_min
+  species = Beam
+  number_density = dens
+  temperature = temperature
+  drift_px = drift_p
+  nparticles_per_cell = ppc
+end:injector
+
+
+begin:species
+  # Background electrons (immobile ions)
+  name = Background
+  charge = -1
+  mass = 1.0
+  temperature = temperature
+  drift_px = -drift_p / 1000
+  number_density = dens * 1000
+  nparticles = ppc * nx * ny * nz
+end:species
+
+
+begin:species
+  # Beam
+  name = Beam
+  charge = -1
+  mass = 1.0
+  #temperature_x = temperature
+  #drift_px = drift_p
+  #number_density = dens
+  bc_x_min = simple_outflow
+  bc_x_max = simple_outflow
+end:species
+
+
+begin:output
+  name = normal
+
+  # Simulated time between output dumps
+  dt_snapshot = 0.5e-2
+  dump_last = T
+
+  # Properties at particle positions
+  #particles = always
+  #px = always
+
+  # Properties on grid
+  grid = always
+  ex = always
+  ey = always
+  ez = always
+  bx = always
+  by = always
+  bz = always
+  jx = always
+  ppc = always + species
+  #average_particle_energy = always
+  #mass_density = never + species
+  charge_density = always
+  number_density = always + species
+  #temperature = always + species
+
+  # Extended io
+  distribution_functions = always
+end:output
+
+
+begin:dist_fn
+  name = x_px
+  ndims = 2
+
+  direction1 = dir_x
+  direction2 = dir_px
+
+  # Range is ignored for spatial coordinates
+  range1 = (1, 1)
+  range2 = (-5e-24, 5e-24)
+
+  # Resolution is ignored for spatial coordinates
+  resolution1 = 1
+  resolution2 = 200
+
+  include_species:Beam
+  include_species:Background
+end:dist_fn
