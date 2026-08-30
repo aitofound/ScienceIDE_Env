@@ -1,0 +1,83 @@
+begin:control
+
+  nx = 400
+  # nsteps = 0 (upstream epoch1d/example_decks/ionisation.deck's own literal
+  # value, copied by the original preparation session) caps epoch1d.F90's
+  # main DO loop exit test "(step >= nsteps .AND. nsteps >= 0)" at step 1
+  # (checked immediately after "step = step + 1"), halting the run after a
+  # single half-step regardless of t_end -- the upstream deck's own comment
+  # ("Set to -1 to run until finished") confirms 0 is a template placeholder,
+  # not a working value. -1 is shared_data.F90/setup.F90's own documented
+  # "unlimited" sentinel (nsteps = -1 at housekeeping/setup.F90:97), so this
+  # leaves t_end as the sole, physically-motivated stop condition, matching
+  # the upstream comment's own stated intent. See table-assets.json,
+  # comment/coverage-ledger.md and comment/self-validation.md's "Runtime
+  # calibration (compat-C repair, 2026-08-30)" section for the full
+  # source-grounded diagnosis (this bug was masked by the pre-existing
+  # missing-physics-table abort, so it was never reached in compat-A/B).
+  nsteps = -1
+  t_end = 50.0e-15
+
+  x_min = -10e-6
+  x_max = -x_min
+
+  field_ionisation = T
+
+end:control
+
+begin:constant
+
+  lambda = 1.0 * micron
+  omega = 2.0 * pi * c / lambda
+  den_max = 10.0 * critical(omega)
+  ion_charge_state = 22
+
+end:constant
+
+begin:boundaries
+  bc_x_min = simple_laser
+  bc_x_max = simple_outflow
+end:boundaries
+
+begin:species
+  name = Electron
+  charge = -1.0
+  mass = 1.0
+  number_density = den_max * ion_charge_state
+  nparticles = nx * 5
+  identify:electron
+end:species
+
+begin:species
+  name = Palladium
+  charge = ion_charge_state
+  atomic_no = 46
+  mass = 1836.2 * 105.0
+
+  number_density = den_max
+  temperature = 1e6
+
+  ionise = T
+  ionisation_electron_species = Electron
+
+  nparticles = nx * 5
+end:species
+
+begin:output
+
+  nstep_snapshot = 30
+
+  grid = always
+  ex = always
+  number_density = always + species
+  temperature = always + species
+  ekbar = always + species
+  charge_density = always
+
+end:output
+
+begin:laser
+  boundary = x_min
+  amp = 1e13
+  lambda = lambda
+end:laser

@@ -1,0 +1,79 @@
+begin:control
+
+  nx = 100
+  ny = 4
+  # nsteps = 0 halts epoch2d.F90's main loop after a single half-step (see
+  # field-ionisation-adk-sequential-1d/problem/input.deck's identical fix
+  # for the full source-grounded rationale); -1 is the documented
+  # "unlimited" sentinel, leaving t_end as the sole stop condition.
+  nsteps = -1
+  t_end = 10.0e-15
+
+  x_min = -5e-6
+  x_max = -x_min
+  y_min = -1e-6
+  y_max = -y_min
+
+  field_ionisation = T
+
+end:control
+
+begin:constant
+
+  lambda = 1.0 * micron
+  omega = 2.0 * pi * c / lambda
+  den_max = 10.0 * critical(omega)
+  ion_charge_state = 1
+
+end:constant
+
+begin:boundaries
+  bc_x_min = simple_laser
+  bc_x_max = simple_outflow
+  bc_y_min = periodic
+  bc_y_max = periodic
+end:boundaries
+
+begin:species
+  name = Electron
+  charge = -1.0
+  mass = 1.0
+  number_density = den_max * ion_charge_state
+  nparticles = nx * ny * 5
+  identify:electron
+end:species
+
+begin:species
+  name = Aluminium
+  charge = ion_charge_state
+  atomic_no = 13
+  mass = 1836.2 * 27.0
+
+  number_density = den_max
+  temperature = 1e5
+
+  ionise = T
+  ionisation_electron_species = Electron
+  ionise_limit = 6
+
+  nparticles = nx * ny * 5
+end:species
+
+begin:output
+
+  nstep_snapshot = 10
+
+  grid = always
+  ex = always
+  number_density = always + species
+  temperature = always + species
+  ekbar = always + species
+  charge_density = always
+
+end:output
+
+begin:laser
+  boundary = x_min
+  amp = 1e17
+  lambda = lambda
+end:laser
