@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Iterable
@@ -194,6 +195,7 @@ def validate_entries(
     invalid_json: Iterable[str] = (),
     check_labels: dict[str, set[str]] | None = None,
     check_metadata_problems: Iterable[Problem] = (),
+    source_ref: str | None = None,
 ) -> list[Problem]:
     """Validate a normalized task-relative inventory.
 
@@ -216,7 +218,8 @@ def validate_entries(
         elif path not in file_set:
             problems.append(Problem("missing", path, "required regular file is absent"))
 
-    for path in sorted(REQUIRED_DIRS):
+    required_dirs = REQUIRED_DIRS if source_ref is None else REQUIRED_DIRS - {"code"}
+    for path in sorted(required_dirs):
         if path in file_set or path in special_set:
             problems.append(Problem("wrong-type", path, "required real directory"))
         elif path not in dir_set:
@@ -225,18 +228,21 @@ def validate_entries(
     if "comment" in file_set or "comment" in special_set:
         problems.append(Problem("wrong-type", "comment", "optional comment path must be a real directory"))
 
-    # code/ is a source boundary, not a source tree to inspect. Exactly one
-    # direct real child is required; files and symlinks do not count.
+    # A task either owns exactly one legacy code child or declares one shared
+    # top-level source. Shared-source tasks must not duplicate that source here.
     code_dirs = sorted(path for path in dir_set if _is_code_child(path))
     code_children = code_dirs + sorted(path for path in file_set | special_set if _is_code_child(path))
-    if len(code_dirs) != 1 or len(code_children) != 1:
-        problems.append(
-            Problem(
-                "code-not-single",
-                "code",
-                "must contain exactly one direct real codebase directory (source contents are opaque)",
+    if source_ref is None:
+        if len(code_dirs) != 1 or len(code_children) != 1:
+            problems.append(
+                Problem(
+                    "code-not-single",
+                    "code",
+                    "must contain exactly one direct real codebase directory (source contents are opaque)",
+                )
             )
-        )
+    elif "code" in dir_set or "code" in file_set or "code" in special_set or code_children:
+        problems.append(Problem("duplicate-shared-source", "code", "shared-source task must not contain task-local code"))
 
     # tests/checks is structural, but check internals remain opaque.  Direct
     # check metadata is the one intentional exception to that opacity.
@@ -286,7 +292,7 @@ def validate_entries(
         problems.append(Problem("no-active-target", "target", "at least one target must not start with '_'"))
 
     allowed_root_files = {"task.toml", "instruction.md"}
-    allowed_root_dirs = set(REQUIRED_DIRS) | {"comment"}
+    allowed_root_dirs = set(required_dirs) | {"comment"}
 
     for path in sorted(file_set):
         if _inside_opaque(path) or _is_target_file(path) or _is_code_child(path) or _is_check_child(path):
@@ -403,6 +409,22 @@ def validate_task(root: Path) -> list[Problem]:
     if not root.is_dir() or root.is_symlink():
         return [Problem("wrong-root-type", ".", "task path must be a real directory")]
 
+    source_ref: str | None = None
+    source_problems: list[Problem] = []
+    try:
+        metadata = tomllib.loads((root / "task.toml").read_text(encoding="utf-8"))
+        value = metadata.get("metadata", {}).get("sciaccel", {}).get("source")
+    except (OSError, UnicodeError, tomllib.TOMLDecodeError):
+        value = None
+    if value is not None:
+        if not isinstance(value, str) or LABEL_PATTERN.fullmatch(value) is None:
+            source_problems.append(Problem("invalid-source", "task.toml", "metadata.sciaccel.source must be lower-kebab-case"))
+        else:
+            source_ref = value
+            source_dir = next((parent / "code" / value for parent in root.parents if (parent / "scripts" / "stage-task-source.py").is_file()), None)
+            if source_dir is None or not source_dir.is_dir() or source_dir.is_symlink():
+                source_problems.append(Problem("missing-shared-source", f"code/{value}", "declared top-level source must be a real directory"))
+
     files, dirs, specials = inventory(root)
     invalid_json: set[str] = set()
     for rel in files:
@@ -422,7 +444,8 @@ def validate_task(root: Path) -> list[Problem]:
         specials,
         invalid_json,
         labels_by_check,
-        metadata_problems,
+        [*metadata_problems, *source_problems],
+        source_ref,
     )
 
 
