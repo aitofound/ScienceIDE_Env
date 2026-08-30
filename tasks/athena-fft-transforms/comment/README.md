@@ -113,18 +113,18 @@ produced `1.768294e-16 / 1.187965e-17`.
 `tests/harness.py`, never reward-bearing, and contain no Athena evidence; their
 `rubric.json` keeps the legacy text under `legacy_rubric` for history. Because
 the registry projection counts directories, `registry/index.yaml` reports 26
-check directories (15 active + 11 preserved) and `targets: 0`; the contract's
-`active_check_count` is 15 and `target_count` is 0.
+check directories (15 active + 11 preserved) and `targets: 1`; the contract's
+`active_check_count` is 15 and `target_count` is 1.
 
 ### Targets
 
-`target/` describes translation/optimization objects. This source-only task
-currently has zero targets (owner decision, 2026-08-30): the historical
-`cpu-colima-aarch64-selfcheck.json` descriptor was removed with explicit owner
-authorization and remains recoverable from Git history; no replacement was
-added. No personal identifiers (user names, IPs, home paths) are recorded in
-tracked task files; the validation host is described only by non-identifying
-hardware facts.
+`target/placeholder.json` is an explicit structural placeholder added on owner
+instruction (Telegram 7856, 2026-08-30) for the current packaging validator. It
+is not a candidate translation/optimization artifact and carries no performance
+claim. The historical `cpu-colima-aarch64-selfcheck.json` descriptor remains
+removed and recoverable from Git history. No personal identifiers (user names,
+IPs, home paths) are recorded in tracked task files; the validation host is
+described only by non-identifying hardware facts.
 
 ## Oracle procedure
 

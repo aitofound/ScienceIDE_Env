@@ -1454,9 +1454,9 @@
       "kind": "fail",
       "statement": "For every active variant, the actual fft-errors.dat row must satisfy Real-Error <= 1e-10 and Imag-Error <= 1e-10.",
       "upstream": [
-        "tst/regression/scripts/tests/fft/fft.py:69-72 \u2014 serial Real-Error and Imag-Error > 1e-10 fail the official regression.",
-        "tst/regression/scripts/tests/fft/fft.py:73-76 \u2014 MPI-2 and MPI-4 Real-Error > 1e-10 fail the official regression.",
-        "src/pgen/fft.cpp:161-188 \u2014 Real/Imag-Error are the norm_factor-weighted L1 residuals of the forward -> ApplyKernel(0) -> backward round trip, reduced over ranks."
+        "tst/regression/scripts/tests/fft/fft.py:69-72 — serial Real-Error and Imag-Error > 1e-10 fail the official regression.",
+        "tst/regression/scripts/tests/fft/fft.py:73-76 — MPI-2 and MPI-4 Real-Error > 1e-10 fail the official regression.",
+        "src/pgen/fft.cpp:161-188 — Real/Imag-Error are the norm_factor-weighted L1 residuals of the forward -> ApplyKernel(0) -> backward round trip, reduced over ranks."
       ]
     },
     "cross-channel-exact": {
@@ -1464,8 +1464,8 @@
       "kind": "fail",
       "statement": "The %e tokens of ZCS/Real/Imag in fft-errors.dat must be a %e rendering of the 16-significant-digit values printed on stdout by the same process; Ncycle must equal the stdout 'Execute FFT <n>' value.",
       "upstream": [
-        "src/pgen/fft.cpp:136-137,191-194 \u2014 stdout values (16 significant digits).",
-        "src/pgen/fft.cpp:218-225 \u2014 fft-errors.dat header and %d/%e row."
+        "src/pgen/fft.cpp:136-137,191-194 — stdout values (16 significant digits).",
+        "src/pgen/fft.cpp:218-225 — fft-errors.dat header and %d/%e row."
       ]
     },
     "mesh-probe-process-grid": {
@@ -1473,10 +1473,10 @@
       "kind": "fail",
       "statement": "A hash-bound `athena -i <deck> -m <ranks> <same mesh/meshblock tokens>` probe must report the contract root grid and rank count, and its mesh_structure.dat block->rank ownership must give every rank one contiguous cuboid whose derived FFT process grid equals the contract process grid.",
       "upstream": [
-        "src/main.cpp:165-166,323-328 \u2014 -m <nproc> builds the mesh, outputs structure and quits.",
-        "src/mesh/mesh.cpp:139,536,1129-1162 \u2014 nranks override, OutputMeshStructure block/rank listing.",
-        "src/mesh/amr_loadbalance.cpp:85-111 \u2014 contiguous Z-order rank assignment.",
-        "src/fft/fft_driver.cpp:62-85,118-145 \u2014 per-rank block bounding box, npx = nrbx/nbx, decomposition flags."
+        "src/main.cpp:165-166,323-328 — -m <nproc> builds the mesh, outputs structure and quits.",
+        "src/mesh/mesh.cpp:139,536,1129-1162 — nranks override, OutputMeshStructure block/rank listing.",
+        "src/mesh/amr_loadbalance.cpp:85-111 — contiguous Z-order rank assignment.",
+        "src/fft/fft_driver.cpp:62-85,118-145 — per-rank block bounding box, npx = nrbx/nbx, decomposition flags."
       ]
     },
     "official-serial-mpi1-equality": {
@@ -1484,7 +1484,7 @@
       "kind": "fail",
       "statement": "In the official 64^3 regression bundle the serial and MPI-1 Real-Error values parsed from fft-errors.dat must be exactly equal.",
       "upstream": [
-        "tst/regression/scripts/tests/fft/fft.py:64-67 \u2014 data[0][5] != data[1][5] fails the official regression."
+        "tst/regression/scripts/tests/fft/fft.py:64-67 — data[0][5] != data[1][5] fails the official regression."
       ]
     },
     "zcs-warning-1e6": {
@@ -1492,12 +1492,12 @@
       "kind": "warning",
       "statement": "ZCS-min < 1e6 is recorded as a warning in the verdict and never fails a check.",
       "upstream": [
-        "tst/regression/scripts/tests/fft/fft.py:77-82 \u2014 logger.warning only; analyze_status is not changed."
+        "tst/regression/scripts/tests/fft/fft.py:77-82 — logger.warning only; analyze_status is not changed."
       ]
     }
   },
   "schema": "athena-fft-contract/v3",
   "source_pin": "823614c90b594472747a0ac2a699e4a454f300d2",
-  "target_count": 0,
-  "targets": "None. `target/` describes translation/optimization objects; this source-only task currently has zero targets (owner decision 2026-08-30). The historical cpu-colima-aarch64-selfcheck descriptor was removed with explicit owner authorization and remains recoverable from Git history."
+  "target_count": 1,
+  "targets": "One active structural placeholder at target/placeholder.json, added on explicit owner instruction (Telegram 7856, 2026-08-30) for the current Harbor packaging validator. It is not a candidate translation or optimization artifact and carries no performance claim. The historical cpu-colima-aarch64-selfcheck descriptor remains removed and recoverable from Git history."
 }
