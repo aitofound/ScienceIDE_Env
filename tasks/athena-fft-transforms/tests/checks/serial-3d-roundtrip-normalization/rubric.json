@@ -1,83 +1,92 @@
 {
-  "anti_hardcoding_role": "A candidate returning the input or a precomputed error row without executing both directions cannot satisfy authenticated spectrum, reconstruction, and normalization evidence.",
   "check": "serial-3d-roundtrip-normalization",
-  "criteria": {
-    "authenticated_raw_observables": true,
-    "independent_recomputation": true,
-    "numerical_bounds": "human-owned; intentionally absent until Jason approves final scientific policy",
-    "performance_policy": "no speedup, throughput, timing target, or invented runtime claim"
-  },
-  "id": "FFT-06",
-  "official_pinned_evidence": [
-    "tst/regression/scripts/tests/fft/fft.py:39-40,64-75 \u2014 official serial vs MPI1 scalar reconstruction/error comparison.",
-    "src/pgen/fft.cpp:156-183 \u2014 exact forward/kernel/backward/retrieve sequence and error accumulation."
-  ],
-  "policy": "authenticated_raw_recomputation_wiring_v2.2",
-  "purpose": "src/pgen/fft.cpp -> QuickCreatePlan -> repeated ExecuteForward/Backward -> ApplyKernel(0) -> RetrieveResult with FFTDriver::SetNormFactor",
-  "required_artifacts": [
-    "report.json",
-    "raw/<variant>/field.json",
-    "raw/<variant>/spectrum.json",
-    "raw/<variant>/reconstructed.json",
-    "raw/<variant>/rank-local.json",
-    "raw/<variant>/execution.json",
-    "raw/<variant>/stdout.log",
-    "raw/<variant>/stderr.log",
-    "raw/<variant>/fft-errors.dat",
-    "raw/build/<mode>.json",
-    "raw/build/<mode>.log"
-  ],
-  "runtime_redundancy": {
-    "purpose": "Catches omitted/doubled norm_factor and dropped imaginary component.",
-    "redundancy": "Official serial-vs-MPI1 comparison is retained as a separate decomposition witness.",
-    "runtime_claim": "No performance claim."
-  },
-  "schema": "athena-fft-check/v1",
-  "source_branch_forcing": [
-    "src/fft/fft_driver.cpp:159-169 \u2014 norm_factor_=1/gcnt_ and forward/backward plan creation.",
-    "src/fft/athena_fft.cpp:147-160 \u2014 RetrieveResult multiplies real/imag by norm_factor_."
-  ],
-  "subcases": {
-    "decomposition": "serial rank 1; np=[1,1,1]",
-    "dimensionality": "3-D serial normalized round trip",
-    "execution_variants": [
-      "serial"
+  "legacy_rubric": {
+    "anti_hardcoding_role": "A candidate returning the input or a precomputed error row without executing both directions cannot satisfy authenticated spectrum, reconstruction, and normalization evidence.",
+    "check": "serial-3d-roundtrip-normalization",
+    "criteria": {
+      "authenticated_raw_observables": true,
+      "independent_recomputation": true,
+      "numerical_bounds": "human-owned; intentionally absent until Jason approves final scientific policy",
+      "performance_policy": "no speedup, throughput, timing target, or invented runtime claim"
+    },
+    "id": "FFT-06",
+    "official_pinned_evidence": [
+      "tst/regression/scripts/tests/fft/fft.py:39-40,64-75 \u2014 official serial vs MPI1 scalar reconstruction/error comparison.",
+      "src/pgen/fft.cpp:156-183 \u2014 exact forward/kernel/backward/retrieve sequence and error accumulation."
     ],
-    "forward_inverse": "LoadSource two-component field -> forward -> ApplyKernel(0) -> backward -> RetrieveResult; require both reconstructed components and finite residual.",
-    "global_shape": [
-      64,
-      64,
-      64
+    "policy": "authenticated_raw_recomputation_wiring_v2.2",
+    "purpose": "src/pgen/fft.cpp -> QuickCreatePlan -> repeated ExecuteForward/Backward -> ApplyKernel(0) -> RetrieveResult with FFTDriver::SetNormFactor",
+    "required_artifacts": [
+      "report.json",
+      "raw/<variant>/field.json",
+      "raw/<variant>/spectrum.json",
+      "raw/<variant>/reconstructed.json",
+      "raw/<variant>/rank-local.json",
+      "raw/<variant>/execution.json",
+      "raw/<variant>/stdout.log",
+      "raw/<variant>/stderr.log",
+      "raw/<variant>/fft-errors.dat",
+      "raw/build/<mode>.json",
+      "raw/build/<mode>.log"
     ],
-    "meshblock_shape": [
-      32,
-      32,
-      32
+    "runtime_redundancy": {
+      "purpose": "Catches omitted/doubled norm_factor and dropped imaginary component.",
+      "redundancy": "Official serial-vs-MPI1 comparison is retained as a separate decomposition witness.",
+      "runtime_claim": "No performance claim."
+    },
+    "schema": "athena-fft-check/v1",
+    "source_branch_forcing": [
+      "src/fft/fft_driver.cpp:159-169 \u2014 norm_factor_=1/gcnt_ and forward/backward plan creation.",
+      "src/fft/athena_fft.cpp:147-160 \u2014 RetrieveResult multiplies real/imag by norm_factor_."
     ],
-    "normalization": "Global N=262144 normalization must be visible in raw reconstruction; do not substitute an unnormalized FFTW inverse.",
-    "raw_artifacts": {
-      "binding": "Raw two-component field/spectrum/reconstruction/rank-local plus execution/log/fft-errors/build; include normalization metadata and raw digest links.",
-      "build_evidence": [
-        "raw/build/serial.json",
-        "raw/build/serial.log",
-        "raw/build/mpi.json",
-        "raw/build/mpi.log"
+    "subcases": {
+      "decomposition": "serial rank 1; np=[1,1,1]",
+      "dimensionality": "3-D serial normalized round trip",
+      "execution_variants": [
+        "serial"
       ],
-      "per_variant": [
-        "field.json",
-        "spectrum.json",
-        "reconstructed.json",
-        "rank-local.json",
-        "execution.json",
-        "stdout.log",
-        "stderr.log",
-        "fft-errors.dat"
-      ]
+      "forward_inverse": "LoadSource two-component field -> forward -> ApplyKernel(0) -> backward -> RetrieveResult; require both reconstructed components and finite residual.",
+      "global_shape": [
+        64,
+        64,
+        64
+      ],
+      "meshblock_shape": [
+        32,
+        32,
+        32
+      ],
+      "normalization": "Global N=262144 normalization must be visible in raw reconstruction; do not substitute an unnormalized FFTW inverse.",
+      "raw_artifacts": {
+        "binding": "Raw two-component field/spectrum/reconstruction/rank-local plus execution/log/fft-errors/build; include normalization metadata and raw digest links.",
+        "build_evidence": [
+          "raw/build/serial.json",
+          "raw/build/serial.log",
+          "raw/build/mpi.json",
+          "raw/build/mpi.log"
+        ],
+        "per_variant": [
+          "field.json",
+          "spectrum.json",
+          "reconstructed.json",
+          "rank-local.json",
+          "execution.json",
+          "stdout.log",
+          "stderr.log",
+          "fft-errors.dat"
+        ]
+      }
+    },
+    "title": "Serial forward/backward identity and norm_factor path",
+    "verdict_boundary": {
+      "decision": "Not run. Human owner chooses residual and imaginary-component policy.",
+      "status": "proposed_not_run"
     }
   },
-  "title": "Serial forward/backward identity and norm_factor path",
-  "verdict_boundary": {
-    "decision": "Not run. Human owner chooses residual and imaginary-component policy.",
-    "status": "proposed_not_run"
-  }
+  "not_athena_evidence": "Any field/spectrum/reconstruction/witness this directory once described was generated by Python (tests/emit_raw.py, tests/fft_observables.py), not by Athena++, and is not scientific evidence.",
+  "policy": "Preserved under the repository no-delete boundary (parent D1, 2026-08-30). Never listed in `checks`, never loaded by tests/harness.py, never reward-bearing; its files are not Athena evidence.",
+  "reason": "The real Real-Error row is the normalized round-trip residual; it is now enforced on the official deck run.",
+  "replaced_by": "checks/official-serial-mpi1-equality",
+  "schema": "athena-fft-check/v3",
+  "status": "deprecated_non_reward"
 }

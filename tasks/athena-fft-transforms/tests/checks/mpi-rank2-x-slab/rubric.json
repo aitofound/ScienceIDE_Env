@@ -1,85 +1,122 @@
 {
-  "anti_hardcoding_role": "Rank-count hardcoding or local-only spectra fail exact global rank union, x-slab indices, and Plimpton execution evidence.",
-  "check": "mpi-rank2-x-slab",
-  "criteria": {
-    "authenticated_raw_observables": true,
-    "independent_recomputation": true,
-    "numerical_bounds": "human-owned; intentionally absent until Jason approves final scientific policy",
-    "performance_policy": "no speedup, throughput, timing target, or invented runtime claim"
+  "calibration_evidence": {
+    "mpi2": "64 64 64 2 2.099504e+07 1.432960e-16 0.000000e+00",
+    "root": "athena-fft-scigate-calib-20260830T053647Z-cd2eed"
   },
-  "id": "FFT-09",
-  "official_pinned_evidence": [
-    "tst/regression/scripts/tests/fft/fft.py:46-47 \u2014 official MPI rank-2 invocation, but no decomposition geometry is asserted.",
-    "src/fft/plimpton/fft_3d.cpp:204-241 \u2014 pre-remap when fast axis is split and communication warning branch."
+  "check": "mpi-rank2-x-slab",
+  "evidence_source": "Actual Athena++ prob=fft outputs only: fft-errors.dat row, stdout FFT block, and the -m mesh-structure probe of the same binary, each hash-bound to the controlled execution record. No synthetic field/spectrum/witness is produced or consulted.",
+  "id": "FFT-08",
+  "performance_policy": "Timing is coverage evidence only; no speedup, throughput, or wall-time threshold is a pass criterion.",
+  "purpose": "64^3 with (32,64,64) MeshBlocks: two ranks split the fast axis (x_decomp, pdim=1), forcing Plimpton's pre-remap branch. The [2,1,1] grid is proven by the mesh probe. Approved bound.",
+  "reference_vs_candidate": [
+    "identical variant set per check",
+    "identical integer row prefix [Nx1, Nx2, Nx3, Ncycle] per variant, equal to the contract",
+    "identical key=value argv token set and rank count per variant",
+    "identical mesh-probe-derived process grid per variant, equal to the contract",
+    "both bundles pass every rule of the check"
   ],
-  "policy": "authenticated_raw_recomputation_wiring_v2.2",
-  "purpose": "MPI 3-D FFTDriver with decomp=x_decomp -> fft_3d pre/mid/post remaps, pack_3d and rank-union reconstruction",
   "required_artifacts": [
     "report.json",
-    "raw/<variant>/field.json",
-    "raw/<variant>/spectrum.json",
-    "raw/<variant>/reconstructed.json",
-    "raw/<variant>/rank-local.json",
     "raw/<variant>/execution.json",
     "raw/<variant>/stdout.log",
     "raw/<variant>/stderr.log",
     "raw/<variant>/fft-errors.dat",
+    "raw/<variant>/mesh-probe/stdout.log",
+    "raw/<variant>/mesh-probe/stderr.log",
+    "raw/<variant>/mesh-probe/mesh_structure.dat",
     "raw/build/<mode>.json",
     "raw/build/<mode>.log"
   ],
-  "runtime_redundancy": {
-    "purpose": "Forces one-dimensional split communication, pack/unpack, and reconstruction rather than rank-count-only logic.",
-    "redundancy": "Rank2 x-slab is complementary to rank4 pencils; retain serial oracle comparison.",
-    "runtime_claim": "No MPI performance claim."
+  "rules": {
+    "bound-real-imag-1e-10": {
+      "extension": "Parent-approved 2026-08-30 (E1/E2/E3): the emitted Real/Imag metrics are per-cell mean normalized round-trip errors from the same pgen/FFT code path for every geometry and rank count; 1e-10 is the pinned upstream scientific threshold; calibration across all active sizes, geometries and rank counts (1-D, 2-D, 64^3, 96^3, 128x64x32, 128^3, 512^3; ranks 1/2/4/8/16) observed Real <= 1.77e-16 and Imag <= 1.19e-17, six orders inside the bound. The Imag bound is therefore applied to MPI variants as well (upstream checks Imag only for serial).",
+      "kind": "fail",
+      "statement": "For every active variant, the actual fft-errors.dat row must satisfy Real-Error <= 1e-10 and Imag-Error <= 1e-10.",
+      "upstream": [
+        "tst/regression/scripts/tests/fft/fft.py:69-72 \u2014 serial Real-Error and Imag-Error > 1e-10 fail the official regression.",
+        "tst/regression/scripts/tests/fft/fft.py:73-76 \u2014 MPI-2 and MPI-4 Real-Error > 1e-10 fail the official regression.",
+        "src/pgen/fft.cpp:161-188 \u2014 Real/Imag-Error are the norm_factor-weighted L1 residuals of the forward -> ApplyKernel(0) -> backward round trip, reduced over ranks."
+      ]
+    },
+    "cross-channel-exact": {
+      "extension": "Exact representation invariant; no tolerance. Two adjacent %e renderings are admitted because a 16-digit print does not always round-trip a double.",
+      "kind": "fail",
+      "statement": "The %e tokens of ZCS/Real/Imag in fft-errors.dat must be a %e rendering of the 16-significant-digit values printed on stdout by the same process; Ncycle must equal the stdout 'Execute FFT <n>' value.",
+      "upstream": [
+        "src/pgen/fft.cpp:136-137,191-194 \u2014 stdout values (16 significant digits).",
+        "src/pgen/fft.cpp:218-225 \u2014 fft-errors.dat header and %d/%e row."
+      ]
+    },
+    "mesh-probe-process-grid": {
+      "extension": "Parent-approved 2026-08-30 (D5). The probe is a separate invocation of the same binary with the same mesh arguments; the load balance is deterministic for uniform cost. Exception: checks whose runtime declares mesh_probe=false (only the serial 1-D check) carry no probe because pinned Athena++ segfaults writing mesh_structure.dat for 1-D meshes (mesh.cpp:1092-1098,1159); such checks are serial-only, so no MPI decomposition exists and the execution record must state the skip verbatim.",
+      "kind": "fail",
+      "statement": "A hash-bound `athena -i <deck> -m <ranks> <same mesh/meshblock tokens>` probe must report the contract root grid and rank count, and its mesh_structure.dat block->rank ownership must give every rank one contiguous cuboid whose derived FFT process grid equals the contract process grid.",
+      "upstream": [
+        "src/main.cpp:165-166,323-328 \u2014 -m <nproc> builds the mesh, outputs structure and quits.",
+        "src/mesh/mesh.cpp:139,536,1129-1162 \u2014 nranks override, OutputMeshStructure block/rank listing.",
+        "src/mesh/amr_loadbalance.cpp:85-111 \u2014 contiguous Z-order rank assignment.",
+        "src/fft/fft_driver.cpp:62-85,118-145 \u2014 per-rank block bounding box, npx = nrbx/nbx, decomposition flags."
+      ]
+    },
+    "zcs-warning-1e6": {
+      "extension": "Recorded for every active variant (upstream warns only for the serial and MPI-4 official rows). Never a speed gate.",
+      "kind": "warning",
+      "statement": "ZCS-min < 1e6 is recorded as a warning in the verdict and never fails a check.",
+      "upstream": [
+        "tst/regression/scripts/tests/fft/fft.py:77-82 \u2014 logger.warning only; analyze_status is not changed."
+      ]
+    }
   },
-  "schema": "athena-fft-check/v1",
-  "source_branch_forcing": [
-    "src/fft/fft_driver.cpp:132-145 \u2014 x_decomp selection.",
-    "src/fft/athena_fft.cpp:474-488,503-534 \u2014 permutation/swap and forward/backward index setup.",
-    "src/fft/plimpton/fft_3d.cpp:245-346 \u2014 mid remaps, post remap and global communication branches.",
-    "src/fft/plimpton/pack_3d.cpp and remap_3d.cpp \u2014 packing/remapping implementation."
-  ],
-  "subcases": {
-    "decomposition": "MPI rank 2; exact np=[2,1,1], decomp=x_decomp, pdim=1; reject another geometry as this check",
-    "dimensionality": "3-D MPI x-slab",
-    "execution_variants": [
-      "mpi2"
+  "runtime": {
+    "build_modes": [
+      "serial",
+      "mpi"
     ],
-    "forward_inverse": "Load -> forward through pre/mid/post Plimpton stages -> ApplyKernel(0) -> backward through reverse remaps -> global reconstruction; compare with serial oracle.",
+    "cycles": 2,
     "global_shape": [
       64,
       64,
       64
     ],
-    "meshblock_shape": [
-      32,
-      32,
-      32
-    ],
-    "normalization": "N=262144 inverse normalization after distributed result; no tolerance invented.",
-    "raw_artifacts": {
-      "binding": "Raw mpi2 field/spectrum/reconstructed/rank-local with rank indices covering global set exactly once; execution/log/fft-errors plus mpi build evidence and remap markers.",
-      "build_evidence": [
-        "raw/build/serial.json",
-        "raw/build/serial.log",
-        "raw/build/mpi.json",
-        "raw/build/mpi.log"
-      ],
-      "per_variant": [
-        "field.json",
-        "spectrum.json",
-        "reconstructed.json",
-        "rank-local.json",
-        "execution.json",
-        "stdout.log",
-        "stderr.log",
-        "fft-errors.dat"
+    "mesh_probe": true,
+    "official_deck_only": false,
+    "variant_argv_tokens": {
+      "mpi2": [
+        "mesh/nx1=64",
+        "mesh/nx2=64",
+        "mesh/nx3=64",
+        "meshblock/nx1=32",
+        "meshblock/nx2=64",
+        "meshblock/nx3=64",
+        "problem/ncycle=2"
       ]
-    }
+    },
+    "variant_meshblock": {
+      "mpi2": [
+        32,
+        64,
+        64
+      ]
+    },
+    "variant_problem_id": {
+      "mpi2": "fft_mpi_rank2_x_slab"
+    },
+    "variant_process_grid": {
+      "mpi2": [
+        2,
+        1,
+        1
+      ]
+    },
+    "variants": [
+      "mpi2"
+    ]
   },
-  "title": "MPI 2-rank x-slab Plimpton remap",
-  "verdict_boundary": {
-    "decision": "Official rank2 invocation is evidence of a rank path only; exact x-slab geometry and all pass bounds require human approval. Not run.",
-    "status": "proposed_not_run"
-  }
+  "schema": "athena-fft-check/v3",
+  "source_paths": [
+    "src/fft/fft_driver.cpp:132-135 (x_decomp)",
+    "src/fft/plimpton/fft_3d.cpp:204-241 (pre-remap)"
+  ],
+  "status": "active_reward_bearing",
+  "title": "MPI-2 x-slab decomposition (MeshBlock 32x64x64 -> np [2,1,1])"
 }

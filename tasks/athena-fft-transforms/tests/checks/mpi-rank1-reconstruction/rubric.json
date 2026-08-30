@@ -1,86 +1,95 @@
 {
-  "anti_hardcoding_role": "A candidate that only implements serial can fail the MPI build, launcher, MPI execution markers, and independently bound mpi1 raw bundle.",
   "check": "mpi-rank1-reconstruction",
-  "criteria": {
-    "authenticated_raw_observables": true,
-    "independent_recomputation": true,
-    "numerical_bounds": "human-owned; intentionally absent until Jason approves final scientific policy",
-    "performance_policy": "no speedup, throughput, timing target, or invented runtime claim"
-  },
-  "id": "FFT-08",
-  "official_pinned_evidence": [
-    "tst/regression/scripts/tests/fft/fft.py:42-45 \u2014 official MPI rank-1 run.",
-    "tst/regression/scripts/tests/fft/fft.py:64-67 \u2014 official serial/mpi1 Real-Error equality check.",
-    "src/fft/athena_fft.cpp:386-398 \u2014 MPI dispatch to fft_3d versus serial fftw_execute_dft."
-  ],
-  "policy": "authenticated_raw_recomputation_wiring_v2.2",
-  "purpose": "MPI_PARALLEL FFTBlock -> fft_3d plan with one rank, compared to serial production path",
-  "required_artifacts": [
-    "report.json",
-    "raw/<variant>/field.json",
-    "raw/<variant>/spectrum.json",
-    "raw/<variant>/reconstructed.json",
-    "raw/<variant>/rank-local.json",
-    "raw/<variant>/execution.json",
-    "raw/<variant>/stdout.log",
-    "raw/<variant>/stderr.log",
-    "raw/<variant>/fft-errors.dat",
-    "raw/build/<mode>.json",
-    "raw/build/<mode>.log"
-  ],
-  "runtime_redundancy": {
-    "purpose": "Confirms MPI build/runtime enters the distributed API even when communication is degenerate.",
-    "redundancy": "Serial and MPI1 are intentional compile/runtime redundancy; rank-local union checks variant independence.",
-    "runtime_claim": "No speed claim."
-  },
-  "schema": "athena-fft-check/v1",
-  "source_branch_forcing": [
-    "src/fft/fft_driver.cpp:132-145 \u2014 decomposition flags from npx.",
-    "src/fft/athena_fft.cpp:471-535 \u2014 MPI index initialization, including no-decomposition branch.",
-    "src/fft/plimpton/fft_3d.cpp:64-146 \u2014 distributed 3-D forward/backward stages."
-  ],
-  "subcases": {
-    "decomposition": "MPI rank 1; np=[1,1,1], decomp=0, pdim=0",
-    "dimensionality": "3-D MPI rank-one equivalence",
-    "execution_variants": [
-      "serial",
-      "mpi1"
+  "legacy_rubric": {
+    "anti_hardcoding_role": "A candidate that only implements serial can fail the MPI build, launcher, MPI execution markers, and independently bound mpi1 raw bundle.",
+    "check": "mpi-rank1-reconstruction",
+    "criteria": {
+      "authenticated_raw_observables": true,
+      "independent_recomputation": true,
+      "numerical_bounds": "human-owned; intentionally absent until Jason approves final scientific policy",
+      "performance_policy": "no speedup, throughput, timing target, or invented runtime claim"
+    },
+    "id": "FFT-08",
+    "official_pinned_evidence": [
+      "tst/regression/scripts/tests/fft/fft.py:42-45 \u2014 official MPI rank-1 run.",
+      "tst/regression/scripts/tests/fft/fft.py:64-67 \u2014 official serial/mpi1 Real-Error equality check.",
+      "src/fft/athena_fft.cpp:386-398 \u2014 MPI dispatch to fft_3d versus serial fftw_execute_dft."
     ],
-    "forward_inverse": "Both variants LoadSource -> forward -> ApplyKernel(0) -> backward -> RetrieveResult; compare global raw field/spectrum/reconstruction and scalar row.",
-    "global_shape": [
-      64,
-      64,
-      64
+    "policy": "authenticated_raw_recomputation_wiring_v2.2",
+    "purpose": "MPI_PARALLEL FFTBlock -> fft_3d plan with one rank, compared to serial production path",
+    "required_artifacts": [
+      "report.json",
+      "raw/<variant>/field.json",
+      "raw/<variant>/spectrum.json",
+      "raw/<variant>/reconstructed.json",
+      "raw/<variant>/rank-local.json",
+      "raw/<variant>/execution.json",
+      "raw/<variant>/stdout.log",
+      "raw/<variant>/stderr.log",
+      "raw/<variant>/fft-errors.dat",
+      "raw/build/<mode>.json",
+      "raw/build/<mode>.log"
     ],
-    "meshblock_shape": [
-      32,
-      32,
-      32
+    "runtime_redundancy": {
+      "purpose": "Confirms MPI build/runtime enters the distributed API even when communication is degenerate.",
+      "redundancy": "Serial and MPI1 are intentional compile/runtime redundancy; rank-local union checks variant independence.",
+      "runtime_claim": "No speed claim."
+    },
+    "schema": "athena-fft-check/v1",
+    "source_branch_forcing": [
+      "src/fft/fft_driver.cpp:132-145 \u2014 decomposition flags from npx.",
+      "src/fft/athena_fft.cpp:471-535 \u2014 MPI index initialization, including no-decomposition branch.",
+      "src/fft/plimpton/fft_3d.cpp:64-146 \u2014 distributed 3-D forward/backward stages."
     ],
-    "normalization": "Both use N=262144 inverse normalization; comparison bound for raw values is human-owned.",
-    "raw_artifacts": {
-      "binding": "Per-variant raw artifacts and build evidence (serial plus mpi), rank-local exactly one block each, controlled argv/logs and seven-column rows.",
-      "build_evidence": [
-        "raw/build/serial.json",
-        "raw/build/serial.log",
-        "raw/build/mpi.json",
-        "raw/build/mpi.log"
+    "subcases": {
+      "decomposition": "MPI rank 1; np=[1,1,1], decomp=0, pdim=0",
+      "dimensionality": "3-D MPI rank-one equivalence",
+      "execution_variants": [
+        "serial",
+        "mpi1"
       ],
-      "per_variant": [
-        "field.json",
-        "spectrum.json",
-        "reconstructed.json",
-        "rank-local.json",
-        "execution.json",
-        "stdout.log",
-        "stderr.log",
-        "fft-errors.dat"
-      ]
+      "forward_inverse": "Both variants LoadSource -> forward -> ApplyKernel(0) -> backward -> RetrieveResult; compare global raw field/spectrum/reconstruction and scalar row.",
+      "global_shape": [
+        64,
+        64,
+        64
+      ],
+      "meshblock_shape": [
+        32,
+        32,
+        32
+      ],
+      "normalization": "Both use N=262144 inverse normalization; comparison bound for raw values is human-owned.",
+      "raw_artifacts": {
+        "binding": "Per-variant raw artifacts and build evidence (serial plus mpi), rank-local exactly one block each, controlled argv/logs and seven-column rows.",
+        "build_evidence": [
+          "raw/build/serial.json",
+          "raw/build/serial.log",
+          "raw/build/mpi.json",
+          "raw/build/mpi.log"
+        ],
+        "per_variant": [
+          "field.json",
+          "spectrum.json",
+          "reconstructed.json",
+          "rank-local.json",
+          "execution.json",
+          "stdout.log",
+          "stderr.log",
+          "fft-errors.dat"
+        ]
+      }
+    },
+    "title": "MPI rank-one serial equivalence",
+    "verdict_boundary": {
+      "decision": "Official direct rank-one run exists in source evidence, but this expanded raw-artifact check is not run.",
+      "status": "proposed_not_run"
     }
   },
-  "title": "MPI rank-one serial equivalence",
-  "verdict_boundary": {
-    "decision": "Official direct rank-one run exists in source evidence, but this expanded raw-artifact check is not run.",
-    "status": "proposed_not_run"
-  }
+  "not_athena_evidence": "Any field/spectrum/reconstruction/witness this directory once described was generated by Python (tests/emit_raw.py, tests/fft_observables.py), not by Athena++, and is not scientific evidence.",
+  "policy": "Preserved under the repository no-delete boundary (parent D1, 2026-08-30). Never listed in `checks`, never loaded by tests/harness.py, never reward-bearing; its files are not Athena evidence.",
+  "reason": "Serial vs MPI-1 equivalence is now the exact upstream fft.py:64-67 equality rule on the official deck rows.",
+  "replaced_by": "checks/official-serial-mpi1-equality",
+  "schema": "athena-fft-check/v3",
+  "status": "deprecated_non_reward"
 }
