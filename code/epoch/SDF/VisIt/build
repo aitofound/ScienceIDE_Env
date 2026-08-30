@@ -1,0 +1,407 @@
+#! /bin/sh
+
+fmt="SDF"
+
+fullversion=`visit -version 2>&1 | sed 's,.* \([0-9\.]*\),\1,'`
+version=${fullversion%%\.*}
+[ "$version" -gt 2 ] && version=2
+tmpdir=.builddir
+
+clean=0
+build_type=0
+build_visit_reader=1
+build_utilities=0
+force=0
+DBG=""
+DEBUG=""
+PRIVATE="-private"
+VERBOSE=""
+OPTS=""
+PLUGINDIR=""
+LDFLAGS=""
+err=0
+stop=0
+
+while getopts crdpnuvfh123i: name
+do
+   case $name in
+      c) clean=2 ; OPTS="$OPTS -c";;
+      r) clean=1 ; OPTS="$OPTS -r";;
+      d) DBG="-g -O0"; OPTS="$OPTS -d";
+         DEBUG="-DCMAKE_BUILD_TYPE=Debug" ;;
+      p) PRIVATE="-public"; OPTS="$OPTS -p" ;;
+      n) build_visit_reader=0 ;;
+      u) build_utilities=1 ;;
+      v) VERBOSE="VERBOSE=1" ;;
+      f) force=1 ;;
+      h) cat <<EOF
+The VisIt build script attempts to automate the process of building the SDF
+VisIt reader plugin on a variety of platforms. By default it will try three
+approaches to building the plugin. First it tries the build environment
+supplied by the VisIt installation. If this fails, it will attempt to build a
+parallel version of the plugin using the mpi compiler in the current search
+path. Finally, it will try just building the serial version of the plugin.
+
+VisIt build script options:
+  -c: Clean up files. Do not build anything.
+  -r: Rebuild. Clean up files and then build.
+  -d: Build with debugging flags enabled.
+  -p: Do a "public" build. This passes the "-public" flag on to the VisIt build
+      system which copies the binaries into a publically accessible location.
+  -n: Don't build the VisIt reader plugin.
+  -u: Do build the additional SDF utilities.
+  -i VISITPLUGINDIR:
+      Install the reader plugin in the path VISITPLUGINDIR
+  -v: Build verbosely.
+  -f: Force build. This prevents the build script from checking
+      g++ compatibility
+  -1: Perform only the default VisIt build.
+  -2: Perform only a parallel VisIt build.
+  -3: Perform only a serial VisIt build.
+EOF
+         exit ;;
+      1) build_type=1 ; stop=1 ;;
+      2) build_type=2 ; stop=1 ;;
+      3) build_type=3 ; stop=1 ;;
+   i) PLUGINDIR="$OPTARG"
+   esac
+done
+
+# Find directory containing the actual visit binary
+cwd=`pwd`
+cmd=`which visit`
+if [ "$cmd"x = x ]; then
+  echo ERROR: The command 'visit' was not found in your search PATH
+  exit 1
+fi
+
+i=0
+while [ $i -lt 100 ]; do
+  visitpath=`dirname $cmd`
+  cd "$visitpath"
+  [ "$visitpath"x = "."x ] && visitpath=`pwd`
+  cmd=`basename $cmd`
+  cmd=`readlink $cmd`
+  [ "$cmd"x = x ] && break
+  i=$((i+1))
+done
+cd "$cwd"
+
+
+export PATH="$visitpath:$PATH"
+export CXXFLAGS="-Wno-deprecated $DBG"
+export CFLAGS="$DBG"
+
+stdlib="$CXXFLAGS"
+
+# Auto-detect C++ compiler
+cpp=$CXX
+[ "$cpp"x = x ] && cpp=$(which c++)
+[ "$cpp"x = x ] && cpp=$(which cpp)
+[ "$cpp"x = x ] && cpp=$(which g++)
+$cpp --version | grep -i clang > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+  stdlib="-stdlib=libstdc++ $CXXFLAGS"
+fi
+
+# Sanity check for version 1 or 2 of visit
+if [ $clean -ne 2 -a "$version"x != 1x -a "$version"x != 2x ]; then
+  echo "ERROR: unable to locate either version 1 or 2 of VisIt"
+  echo "The output from 'visit -version' was the following:"
+  visit -version
+  visit -version 2>&1 | grep 'will be launched' > /dev/null
+  if [ $? -eq 0 ]; then
+    cat<<EOF
+It looks as if the visit command in your PATH has been built from source and
+not installed. 3rd party plugins are not supported for this configuration.
+You need to install visit properly by cd'ing to the visitX.X.X/src directory
+and typing either "make install" or "make package". The latter command will
+create a zipped archive which you can then unpack to the desired location.
+EOF
+  fi
+  exit 1
+fi
+
+copy_cmake_files () {
+  [ -d $tmpdir ] || mkdir -p $tmpdir
+  cp MISC/v2.13.3_ub18/* $tmpdir
+  sed 's,${VISIT_INCLUDE_DIR}/VisItMacros.cmake,'$tmpdir'/VisItMacros.cmake,' \
+      MISC/v2.13.3_ub18/PluginVsInstall.cmake > $tmpdir/PluginVsInstall.cmake
+  sed 's,INCLUDE(".*\(/[^/]*\),INCLUDE("'$tmpdir'\1,' \
+      CMakeLists.txt > $tmpdir/tmp
+  mv $tmpdir/tmp CMakeLists.txt
+  setup=$tmpdir/PluginVsInstall.cmake
+}
+
+buildit () {
+  err=0
+
+  purge=0
+  buildver="$build_type -- $fullversion"
+  oldbuildver=""
+  [ -r $tmpdir/buildver ] && oldbuildver=`cat $tmpdir/buildver`
+  if [ "$oldbuildver"x != "$buildver"x ]; then
+    purge=1
+    rm -rf $tmpdir
+    mkdir -p $tmpdir
+    echo "$buildver" > $tmpdir/buildver
+    rm -rf CMake* cmake* Makefile
+  else
+    echo "No need to purge"
+  fi
+
+  if [ "$version"x = x ]; then
+    echo "Unable to build. Please add visit to your \$PATH"
+    exit 1
+  fi
+
+  (cd ../C/src
+   sh gen_commit_string.sh .)
+
+  if [ $purge -ne 0 ]; then
+    xml2info -clobber $PRIVATE ${fmt}${version}.xml
+
+    if [ $version -eq 1 ]; then
+      xml2makefile -clobber $PRIVATE ${fmt}${version}.xml
+      if [ "`uname -m`"x = "x86_64x" ]; then
+        sed "s,\(^CXXFLAGS.*\),\1 -m32 $DBG\\
+CFLAGS=\$(CFLAGSORIG) -m32 $DBG\\
+PY_CXXFLAGS=-I\$(TOPDIR)/include/python,;s,\(^LDFLAGS.*\),\1 -m32 $DBG," \
+    Makefile > .Makefile.tmp
+        \mv -f .Makefile.tmp Makefile
+      fi
+      if [ $build_type -eq 2 ]; then
+        sed "s,\(^CXXFLAGS.*\),\1\\
+CXX=mpic++\\
+CC=mpicc," Makefile > .Makefile.tmp
+        \mv -f .Makefile.tmp Makefile
+      elif [ $build_type -eq 3 ]; then
+        grep -v "^EPARDSO" Makefile > .Makefile.tmp
+        \mv -f .Makefile.tmp Makefile
+      fi
+    else
+      xml2cmake -clobber $PRIVATE ${fmt}${version}.xml
+      if [ -n "$PLUGINDIR" ] ; then
+         # Change the VisIt plugin directory
+         sed '/VISIT_PLUGIN_DIR/ s;".*";"'$PLUGINDIR'";' \
+             CMakeLists.txt > $tmpdir/tmp
+         \mv -f $tmpdir/tmp CMakeLists.txt
+
+         # Add directories to the runtime path.
+         # This avoids having to set LD_LIBRARY_PATH in the bash environment
+         # to find sdf_extension.so.
+         # Assume that it is one level up from the VisIt plugin directory.
+         # FIXME: This should be configurable.
+         RPATH=$(dirname $PLUGINDIR)
+         sed '/PROJECT/ a\
+LIST(APPEND CMAKE_INSTALL_RPATH "'"$RPATH"'")\
+SET(CMAKE_BUILD_WITH_INSTALL_RPATH ON)\
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH ON)' CMakeLists.txt > $tmpdir/tmp
+         \mv -f $tmpdir/tmp CMakeLists.txt
+      fi
+      setup=$(grep -w PluginVsInstall.cmake CMakeLists.txt | cut -f2 -d\")
+      rm -f include lib
+      inc=$(dirname $setup)
+      ln -s $inc .
+      ln -s $(dirname $inc)/lib .
+      ln -s $(dirname $inc)/archives .
+      if [ ! -f $setup ]; then
+        copy_cmake_files
+      fi
+      if [ $build_type -ne 2 ]; then
+        build_cxx=$(grep CMAKE_CXX_COMPILER $setup \
+            | head -1 | cut -f2- -d\/ | cut -f1 -d\))
+        if [ -x $build_cxx ]; then
+          export CXX=$build_cxx
+        fi
+        build_cc=$(grep CMAKE_C_COMPILER $setup \
+            | head -1 | cut -f2- -d\/ | cut -f1 -d\))
+        if [ -x $build_cc ]; then
+          export CC=$build_cc
+        fi
+      fi
+      grep -w clang $setup > /dev/null
+      if [ $? -ne 0 ]; then
+        # If using clang when original was compiled with gcc, then we need
+        # to add a flag for stdlib
+        export CXXFLAGS="$stdlib"
+      fi
+      for f in `grep -w INCLUDE CMakeLists.txt | cut -f2 -d\( | \
+          cut -f1 -d\) | tr -d \"`; do
+        base=`basename $f`
+        com1=vtkCommonDataModel
+        com2=vtkCommonExecutionModel
+        sed 's/\([;"]'$com1'-\)\([^;]*\)/\1\2;'$com2'-\2/;
+             s,${VISIT_LIBRARY_DIR}/${VISIT_LIBRARY_DIR}${VISIT_LIBRARY_DIR},,g;
+             s,[^; "]*/Users[^;]*/,,g' \
+            $f > $tmpdir/tmp
+        grep -Fv -e cognomen_LIB_DEPENDS -e mpicom_LIB_DEPENDS \
+            $tmpdir/tmp > $tmpdir/$base
+        rm $tmpdir/tmp
+        if [ $build_type -eq 2 ]; then
+          sed 's/\([;"]\)[^;]*libmpi[^;]*;/\1/g;
+               s/\([;"]\)[^;]*libopen-[^;]*;/\1/g;
+               s,[^; "]*/Users[^;]*/,,g;
+               s,${VISIT_LIBRARY_DIR}/${VISIT_LIBRARY_DIR}${VISIT_LIBRARY_DIR},,g;
+               s/\([;"]\)[^;]*general[^;]*;/\1/g' $f > $tmpdir/tmp
+          grep -Fv -e cognomen_LIB_DEPENDS -e mpicom_LIB_DEPENDS \
+              -e 'CMAKE_CXX_COMPILER ' -e 'CMAKE_C_COMPILER ' \
+              -e 'VISIT_PARALLEL_LIBS ' $tmpdir/tmp > $tmpdir/$base
+          rm $tmpdir/tmp
+        elif [ $build_type -eq 3 ]; then
+          sed 's/\([;"]\)[^;]*libmpi[^;]*;/\1/g;
+               s/\([;"]\)[^;]*libopen-[^;]*;/\1/g;
+               s,${VISIT_LIBRARY_DIR}/${VISIT_LIBRARY_DIR}${VISIT_LIBRARY_DIR},,g;
+               s,\(${VISIT_LIBRARY_DIR}/\).*/\([^/;]*;\),\1\2,g;
+               s,[^; "]*/Users[^;]*/,,g' $f > $tmpdir/tmp
+          grep -Fv -e cognomen_LIB_DEPENDS -e mpicom_LIB_DEPENDS \
+              -e 'VISIT_PARALLEL ' $tmpdir/tmp > $tmpdir/$base
+          rm $tmpdir/tmp
+        fi
+        sed 's,\(INCLUDE(["]*\)'$f'\(["]*\),\1'$tmpdir/$base'\2,' \
+            CMakeLists.txt > $tmpdir/tmp
+        mv $tmpdir/tmp CMakeLists.txt
+      done
+      setup=$(grep -w PluginVsInstall.cmake CMakeLists.txt | cut -f2 -d\")
+      # Fixup the cmake file for broken versions of VisIt
+      if [ $fullversion = "2.7.2." -o $fullversion = "2.7.3." ]; then
+        sed 's/\(.*GET currentDefs\)/if (currentDefs)\
+\1/;
+           s/\(ENDIF(${firstItem}.*\)/\1\
+endif()/' $setup > $tmpdir/tmp
+        mv $tmpdir/tmp $setup
+      else
+        fpath=/Applications/VisIt.app/Contents/Resources/${fullversion%%.}/
+        sed 's,EAVL_INCLUDE_DIR /Users.*/eavl/[^/]*/\(.*\)),EAVL_INCLUDE_DIR \
+ '$fpath'\1/eavl/include),;
+           s,BOOST_INCLUDE_DIR /Users.*/boost/[^/]*/\(.*\)),BOOST_INCLUDE_DIR \
+ '$fpath'\1/boost/include),;
+           s,EAVL_LIBRARY_DIR /Users.*/eavl/[^/]*/\(.*\)/lib),EAVL_LIBRARY_DIR \
+ '$fpath'\1/archives),' \
+           $setup > $tmpdir/tmp
+        mv $tmpdir/tmp $setup
+      fi
+    fi
+    cmake $DEBUG .
+    # FIXME: This is to workaround incorrect cmake output
+    ofile=CMakeFiles/ESDFDatabase_par.dir/build.make
+    if [ -e $ofile ]; then
+      sed '/lib64\/librt\.so/ d;
+           /lib64\/libpthread\.so/ d;
+           /linux-x86_64\/lib\/librt\.so/ d;
+           /linux-x86_64\/lib\/libpthread\.so/ d' $ofile > $tmpdir/tmp
+      mv $tmpdir/tmp $ofile
+    fi
+  fi
+
+  gnu=$(grep CXX_COMPILER_ID CMakeFiles/*/CMakeCXXCompiler.cmake | grep GNU)
+  if [ $force -eq 0 -a "$gnu"x != x ]; then
+    # Test for compatible version
+
+    setup=$(grep -w PluginVsInstall.cmake CMakeLists.txt | cut -f2 -d\")
+    gxxver=$(grep -A10 'compiler version information' $setup | grep g++ \
+             | head -1 | cut -f2 -d\) | cut -f2 -d' ' | cut -f1 -d\.)
+    cxxver=$(grep CXX_COMPILER_VERSION CMakeFiles/*/CMakeCXXCompiler.cmake \
+             | cut -f2 -d\" | cut -f1 -d\.)
+    if [ "$gxxver"x != x ]; then
+      if [ $cxxver -ne $gxxver ]; then
+        echo "ERROR: g++ version is incompatible with VisIt"
+        echo "The reader must be compiled using g++ $gxxver.x"
+        return 1
+      fi
+    fi
+  fi
+
+  if [ $clean -ge 1 ] ; then make clean ; fi
+  make $VERBOSE
+  err=$?
+
+  if [ $err -eq 0 ]; then
+    echo
+    echo "VisIt ${fmt} reader successfully built.${srl}"
+  fi
+
+  if [ $stop -ne 0 ] ; then exit $err; fi
+  return $err
+}
+
+build_default () {
+  srl=""
+  build_type=1
+  buildit
+  err=$?
+}
+
+build_parallel () {
+  srl=""
+  build_type=2
+  # Execute in a subshell to stop CC being altered in the current shell.
+  (export CC=mpicc
+  export CXX=mpicxx
+  buildit)
+  err=$?
+}
+
+build_serial () {
+  srl=" (Serial version only)."
+  build_type=3
+  buildit
+  err=$?
+}
+
+get_old_build_type () {
+  type=1
+  [ -r $tmpdir/buildver ] && type=`cut -c1 $tmpdir/buildver`
+  return $type
+}
+
+if [ $clean -ge 1 ]; then
+  make clean > /dev/null 2>&1
+  rm -rf CMake* cmake* Makefile ${fmt}*Info.C ${fmt}*Info.h $tmpdir
+  if [ $clean -ge 2 ] ; then
+     exit
+  fi
+fi
+if [ $build_visit_reader -eq 1 ]; then
+  sh gen_commit_string.sh .
+  echo "#define SDF_READER_BUILD_DATE \"`date`\"" > build_date.h
+
+  if [ $build_type -eq 1 ]; then
+    build_default
+  elif [ $build_type -eq 2 ]; then
+    build_parallel
+  elif [ $build_type -eq 3 ]; then
+    build_serial
+  else
+    get_old_build_type
+    tried=$?
+    if [ $tried -eq 1 ]; then
+      build_default
+    elif [ $tried -eq 2 ]; then
+      build_parallel
+    elif [ $tried -eq 3 ]; then
+      build_serial
+    fi
+
+    if [ $err -ne 0 -a $tried -ne 1 ]; then
+      echo
+      echo "Trying again with default"
+      build_default
+    fi
+    if [ $err -ne 0 -a $tried -ne 2 ]; then
+      echo
+      echo "Trying again with mpicc"
+      build_parallel
+    fi
+    if [ $err -ne 0 -a $tried -ne 3 ]; then
+      echo
+      echo "Trying again without parallel reader."
+      build_serial
+    fi
+  fi
+
+  if [ $err -ne 0 ]; then
+    echo "ERROR: Failed to build VisIt reader."
+    exit 1
+  fi
+fi

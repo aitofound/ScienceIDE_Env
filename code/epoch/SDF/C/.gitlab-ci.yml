@@ -1,0 +1,30 @@
+variables:
+  GIT_STRATEGY: clone
+
+
+.common: &common
+  only:
+    - branches@SDF/SDF_C
+    - web
+    - hook
+  except:
+    - main
+    - wip/*
+    - tag
+
+
+test_ubuntu_gfortran:
+  <<: *common
+  script:
+    - make mode=dbg
+  tags:
+    - ubuntu
+    - gfortran
+
+
+test_osx:
+  <<: *common
+  script:
+    - make mode=dbg
+  tags:
+    - osx

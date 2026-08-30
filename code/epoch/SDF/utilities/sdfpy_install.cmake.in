@@ -1,0 +1,11 @@
+file(RELATIVE_PATH INSTALL_DIR @PROJECT_BINARY_DIR@ $ENV{DESTDIR}@CMAKE_INSTALL_PREFIX@)
+execute_process(
+    COMMAND
+        "@Python3_EXECUTABLE@" setup.py install
+            --prefix=${INSTALL_DIR}
+            --install-lib=${INSTALL_DIR}/lib/python
+    WORKING_DIRECTORY @PROJECT_BINARY_DIR@
+    RESULT_VARIABLE RET)
+if(RET)
+   message(FATAL_ERROR "Could not install sdfpy")
+endif()
