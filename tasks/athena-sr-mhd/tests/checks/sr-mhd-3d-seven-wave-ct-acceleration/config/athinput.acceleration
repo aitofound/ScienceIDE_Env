@@ -1,5 +1,7 @@
 <comment>
-check = SR-MHD 3-D seven-wave CT direct workload; acceleration label is workload metadata only
+check = SR-MHD 3-D CT direct workload, one fast mode (contract override problem/wave_flag=0);
+note  = the check directory name is historical: this deck is not a seven-wave workload
+label = the acceleration label is workload metadata only; no speedup is claimed
 configure = --prob=gr_linear_wave -s -b --coord=cartesian --flux=hlld
 
 <job>
@@ -8,6 +10,12 @@ problem_id = sr_mhd_acceleration
 <output1>
 file_type   = tab
 variable    = prim
+data_format = %24.16e
+dt          = 0.1
+
+<output2>
+file_type   = tab       # native face-centered magnetic field (outputs.cpp variable=b -> B1,B2,B3)
+variable    = b
 data_format = %24.16e
 dt          = 0.1
 
