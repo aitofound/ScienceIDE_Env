@@ -1,0 +1,21 @@
+set(ENV{GIT_WORK_TREE} "@GIT_WORK_TREE@")
+set(ENV{GIT_DIR} "@GIT_DIR@")
+
+# The string arguments, "@FC_INFO@ " and "@FFLAGS@ ", are given
+# a trailing whitespace to work around a problem in Python's
+# argparse module. The command line
+#           python pack.py "-O3"
+# is interpreted as passing the option '-O3', not the string
+# argument "-O3", wherease
+#           python pack.py "-O3 "
+#           python pack.py "-O0 -g"
+# are interpreted correctly.
+# The trailing whitespace to "-O3 ", is stripped within pack.py.
+execute_process(
+   COMMAND "@Python3_EXECUTABLE@" "@PACK_PY@" --git "@GIT_EXECUTABLE@" @PACK_OPTS@
+      "@CMAKE_CURRENT_BINARY_DIR@/@INFO_FILE@" "@FC_INFO@ "
+      "@FFLAGS@ " @SOURCE_ALL@
+      RESULT_VARIABLE RET)
+if(RET)
+   message(FATAL_ERROR "Source code pack failed")
+endif()
