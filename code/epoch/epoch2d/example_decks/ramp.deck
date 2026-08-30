@@ -1,0 +1,191 @@
+begin:constant
+  # Particles per cell
+  part = 32
+
+  las_lambda = 1 * micron
+  las_omega = 2.0 * pi * c / las_lambda
+  las_time = 2.0 * pi / las_omega
+
+  n_crit = critical(las_omega)
+
+  max_dens = 0.8 * n_crit
+
+  scale_x = 20 * micron
+
+  las_scale_y = 8 * micron
+
+  xmin = -4 * micron
+
+  # Gaussian Beam stuff
+  w0 = las_scale_y
+  rayleigh_range = pi * w0^2 / las_lambda
+  wz = w0 * sqrt(1 + (x_start / rayleigh_range)^2)
+  radius_of_curvature = x_start * (1.0 + (rayleigh_range / x_start)^2)
+end:constant
+
+
+begin:control
+  nx = 1024
+  ny = 512
+
+  # Final time of simulation
+  t_end = 0.4 * pico
+
+  # Size of domain
+  x_min = xmin
+  x_end = scale_x + 20 * micron
+
+  y_min = -20 * micron
+  y_max = -y_min
+
+  stdout_frequency = 10
+end:control
+
+
+begin:laser
+  boundary = x_min
+  intensity_w_cm2 = 1.0e16
+  omega = las_omega
+  t_profile = if (time lt 2*las_time, gauss(time, 2*las_time, 2*las_time), 1)
+  profile = (1.0 + 0.05 * sin(32.0*pi*y/lengthy)) * gauss(y, 0, las_scale_y)
+end:laser
+
+
+begin:boundaries
+  bc_x_min = simple_laser
+  bc_x_max = simple_outflow
+  bc_y_min = periodic
+  bc_y_max = periodic
+end:boundaries
+
+
+begin:species
+  # Electron
+  name = electron
+  charge = -1.0
+  mass = 1.0
+  nparticles = nx * ny * part
+
+  number_density = max_dens * (exp(x/scale_x) - 1) / (exp(1) - 1)
+  number_density = if(x lt 0, 0.0, number_density(electron))
+  number_density = if(number_density(electron) gt max_dens, max_dens, \
+                      number_density(electron))
+  number_density = if(x gt 75*micron, 0.0, number_density(electron))
+  #number_density = number_density(electron) \
+  #                 * (0.8 + 0.2 * gauss(y, 0, 0.5*las_scale_y))
+  number_density_min = 0.0001 * n_crit
+  number_density_max = n_crit
+
+  temperature_ev = 10^3
+end:species
+
+
+begin:species
+  # Protons
+  name = proton
+  charge = 1.0
+  mass = 1836.2
+  nparticles = nx * ny * part
+
+  number_density = number_density(electron)
+  number_density_min = 0.0001 * n_crit
+  number_density_max = 1.2 * n_crit
+
+  temperature_ev = 40
+end:species
+
+
+begin:output
+  name = normal
+
+  # Simulated time between output dumps
+  dt_snapshot = 5 * femto
+
+  # Properties at particle positions
+  particles = always
+  px = always
+  particle_weight = always
+
+  # Properties on grid
+  grid = always
+  ex = always
+  ey = always
+  ez = always
+  bx = always
+  by = always
+  bz = always
+  jx = always
+  jy = always
+  jz = always
+  average_particle_energy = always + species
+  mass_density = never + species
+  charge_density = always # + average + snapshot
+  number_density = always + species
+  temperature = never + species
+
+  # Extended io
+  distribution_functions = always
+end:output
+
+
+begin:dist_fn
+  name = en
+  ndims = 1
+
+  direction1 = dir_energy
+
+  range1 = (0, 15*kev)
+
+  resolution1 = 5000
+
+  include_species:electron
+end:dist_fn
+
+
+begin:dist_fn
+  name = x_energy
+  ndims = 2
+
+  direction1 = dir_x
+  direction2 = dir_energy
+
+  # Range is ignored for spatial coordinates
+  #range1 = (1, 1)
+  range2 = (0, 15*kev)
+
+  # Resolution is ignored for spatial coordinates
+  #resolution1 = 1
+  resolution2 = 1500
+
+  include_species:electron
+end:dist_fn
+
+
+begin:dist_fn
+  name = x_px
+  ndims = 2
+
+  direction1 = dir_x
+  direction2 = dir_px
+
+  # Range is ignored for spatial coordinates
+  #range1 = (1, 1)
+  range2 = (-5e-23, 5e-23)
+
+  # Resolution is ignored for spatial coordinates
+  #resolution1 = 1
+  resolution2 = 1500
+
+  include_species:electron
+end:dist_fn
+
+
+begin:probe
+  name = electron_probe
+
+  point = (0.5 * (x_max + x_min), y_min)
+  normal = (1, 0)
+
+  include_species:electron
+  include_species:proton
+end:probe
