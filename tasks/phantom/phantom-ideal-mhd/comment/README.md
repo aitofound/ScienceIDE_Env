@@ -61,8 +61,9 @@ progress without weakening the complete pass policy.
 
 ## Open preparation gaps
 
-- No active target descriptor has been supplied. `target/` is intentionally
-  empty; no hardware, device runtime, or compiler facts are invented.
+- No active target descriptor has been supplied. `target/` carries only a
+  disabled pending marker so Git preserves the Harbor draft shape; no
+  hardware, device runtime, or compiler facts are invented.
 - The current Docker oracle has not been run for this migrated leaf. The
   required two physically distinct `./solution/solve.sh` executions and the
   separate self-test verifier remain unrun, so no `runtime-metadata.json`

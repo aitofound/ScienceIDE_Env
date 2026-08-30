@@ -110,10 +110,11 @@ absent.
 
 ## Open gaps
 
-- No active accelerator target descriptor has been supplied. `target/` is
-  intentionally empty; the structural validator reports that single gap. A
-  device, runner, compiler/runtime, module boundary, delivery interface, and
-  environment must come from the collaborator rather than be invented here.
+- No active accelerator target descriptor has been supplied. `target/` carries
+  only a disabled pending marker so Git preserves the Harbor draft shape; the
+  structural validator reports `no-active-target`. A device, runner,
+  compiler/runtime, module boundary, delivery interface, and environment must
+  come from the collaborator rather than be invented here.
 - A practising Phantom scientist has not signed the module coverage and
   equivalence policy for review status. Zihan Zhou is recorded as submitting
   author, not silently promoted to scientific owner.

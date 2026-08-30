@@ -81,9 +81,9 @@ speedup measurement.
 
 - Docker was deliberately not run during this migration. No current
   two-solve-plus-verifier self-validation is claimed.
-- target/ is intentionally empty because no collaborator-supplied hardware
-  descriptor exists. The Harbor structural validator is expected to report
-  only this target gap for this leaf.
+- target/ carries only a disabled pending marker because no
+  collaborator-supplied hardware descriptor exists. The Harbor structural
+  validator is expected to report only `no-active-target` for this leaf.
 - No accelerated candidate or optional one-shot coding-agent attempt has run.
 - Collaborator/scientific-owner review of the migrated pass policy is still
   pending; authorship alone is not recorded as that sign-off.
