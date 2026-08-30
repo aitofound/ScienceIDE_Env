@@ -1,0 +1,41 @@
+{
+  "binary": "bin/epoch3d",
+  "dimension": "3d",
+  "invariant": {
+    "kind": "field-parallel-equivalence",
+    "params": {
+      "fields": [
+        "ex",
+        "ey",
+        "ez"
+      ],
+      "runs": {
+        "parallel": "parallel",
+        "serial": "serial"
+      },
+      "tolerance": {
+        "atol": 1e-12,
+        "rtol": 1e-09
+      }
+    }
+  },
+  "runs": {
+    "parallel": {
+      "deck": "deck/parallel.deck",
+      "decomposition": {
+        "nprocx": 2,
+        "nprocy": 2,
+        "nprocz": 2
+      },
+      "ranks": 8,
+      "timeout_seconds": 900
+    },
+    "serial": {
+      "deck": "deck/serial.deck",
+      "decomposition": "auto",
+      "ranks": 1,
+      "timeout_seconds": 900
+    }
+  },
+  "schema": "epoch-mdpc-run/v1"
+}
