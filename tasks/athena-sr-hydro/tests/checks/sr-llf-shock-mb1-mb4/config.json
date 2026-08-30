@@ -1,53 +1,117 @@
 {
-  "artifact_kinds": {
-    "shock_mb_1.block0.out1.00000.vtk": "vtk",
-    "shock_mb_1.block0.out1.00001.vtk": "vtk",
-    "shock_mb_2.block0.out1.00000.vtk": "vtk",
-    "shock_mb_2.block0.out1.00001.vtk": "vtk",
-    "shock_mb_3.block0.out1.00000.vtk": "vtk",
-    "shock_mb_3.block0.out1.00001.vtk": "vtk",
-    "shock_mb_4.block0.out1.00000.vtk": "vtk",
-    "shock_mb_4.block0.out1.00001.vtk": "vtk"
-  },
-  "check_id": "C10",
-  "configuration": "-s --prob=gr_shock_tube --coord=cartesian --flux=llf; no -b/-g; Cartesian; mb_1..mb_4 Mignone-Bodo states; nx1=400; shock_dir=1; CFL=.4; tlim=dt=.4; conservative VTK",
-  "configure": "python3 configure.py -s --prob=gr_shock_tube --coord=cartesian --flux=llf",
-  "deck": "inputs/hydro_sr/athinput.mb_1..mb_4",
-  "declared_run_count": 4,
-  "expected_files": [
-    "shock_mb_1.block0.out1.00000.vtk",
-    "shock_mb_1.block0.out1.00001.vtk",
-    "shock_mb_2.block0.out1.00000.vtk",
-    "shock_mb_2.block0.out1.00001.vtk",
-    "shock_mb_3.block0.out1.00000.vtk",
-    "shock_mb_3.block0.out1.00001.vtk",
-    "shock_mb_4.block0.out1.00000.vtk",
-    "shock_mb_4.block0.out1.00001.vtk"
+  "authority": "tests/full_coverage_contract.json is authoritative; this file is generated from it and any disagreement is a packaging failure.",
+  "builds": [
+    "llf-shock"
   ],
-  "folder": "sr-llf-shock-mb1-mb4",
-  "pipeline": [
-    "SR adiabatic EOS",
-    "conservative-to-primitive recovery",
-    "reconstruction",
-    "relativistic flux",
-    "flux divergence",
-    "time integration",
-    "output/recovery finite-state scan"
-  ],
-  "runner_kind": "shock",
-  "solver": "llf",
-  "source_paths": [
-    "src/eos/adiabatic_hydro_sr.cpp",
-    "src/hydro/rsolvers/hydro/hllc_rel.cpp",
-    "src/hydro/rsolvers/hydro/hlle_rel.cpp",
-    "src/hydro/rsolvers/hydro/llf_rel.cpp",
-    "src/pgen/gr_shock_tube.cpp",
-    "src/hydro/calculate_fluxes.cpp"
-  ],
-  "subcases": [
+  "configure_probes": [],
+  "deck_transforms": [],
+  "decks": [
     "mb_1",
     "mb_2",
     "mb_3",
     "mb_4"
-  ]
+  ],
+  "diagnostic_only": false,
+  "family": "shock-tubes-llf",
+  "folder": "sr-llf-shock-mb1-mb4",
+  "labels": [
+    "breadth",
+    "correctness"
+  ],
+  "legacy_id": "C10",
+  "ordinal": 10,
+  "owner_decisions": [],
+  "reward_bearing": true,
+  "runs": [
+    {
+      "argv_tokens": [
+        "output1/file_type=vtk",
+        "output1/variable=cons",
+        "output1/dt=0.4",
+        "time/cfl_number=0.4",
+        "time/tlim=0.4",
+        "mesh/nx1=400",
+        "time/ncycle_out=100"
+      ],
+      "build": "llf-shock",
+      "deck": "mb_1",
+      "expect": "success",
+      "key": "mb_1",
+      "kind": "athena",
+      "problem_id": "sr_hydro_shock1",
+      "science_outputs": [
+        "sr_hydro_shock1.block0.out1.00000.vtk",
+        "sr_hydro_shock1.block0.out1.00001.vtk"
+      ]
+    },
+    {
+      "argv_tokens": [
+        "output1/file_type=vtk",
+        "output1/variable=cons",
+        "output1/dt=0.4",
+        "time/cfl_number=0.4",
+        "time/tlim=0.4",
+        "mesh/nx1=400",
+        "time/ncycle_out=100"
+      ],
+      "build": "llf-shock",
+      "deck": "mb_2",
+      "expect": "success",
+      "key": "mb_2",
+      "kind": "athena",
+      "problem_id": "sr_hydro_shock2",
+      "science_outputs": [
+        "sr_hydro_shock2.block0.out1.00000.vtk",
+        "sr_hydro_shock2.block0.out1.00001.vtk"
+      ]
+    },
+    {
+      "argv_tokens": [
+        "output1/file_type=vtk",
+        "output1/variable=cons",
+        "output1/dt=0.4",
+        "time/cfl_number=0.4",
+        "time/tlim=0.4",
+        "mesh/nx1=400",
+        "time/ncycle_out=100"
+      ],
+      "build": "llf-shock",
+      "deck": "mb_3",
+      "expect": "success",
+      "key": "mb_3",
+      "kind": "athena",
+      "problem_id": "sr_hydro_shock3",
+      "science_outputs": [
+        "sr_hydro_shock3.block0.out1.00000.vtk",
+        "sr_hydro_shock3.block0.out1.00001.vtk"
+      ]
+    },
+    {
+      "argv_tokens": [
+        "output1/file_type=vtk",
+        "output1/variable=cons",
+        "output1/dt=0.4",
+        "time/cfl_number=0.4",
+        "time/tlim=0.4",
+        "mesh/nx1=400",
+        "time/ncycle_out=100"
+      ],
+      "build": "llf-shock",
+      "deck": "mb_4",
+      "expect": "success",
+      "key": "mb_4",
+      "kind": "athena",
+      "problem_id": "sr_hydro_shock4",
+      "science_outputs": [
+        "sr_hydro_shock4.block0.out1.00000.vtk",
+        "sr_hydro_shock4.block0.out1.00001.vtk"
+      ]
+    }
+  ],
+  "source_anchors": [
+    "tst/regression/scripts/tests/sr/hydro_shocks_llf.py:26-38",
+    "tst/regression/scripts/tests/sr/hydro_shocks_llf.py:41-63 (same hllc-named pinned baselines and the same tolerance table as HLLC, exactly as upstream intends)"
+  ],
+  "status": "active",
+  "title": "LLF SR shock tubes mb_1..mb_4"
 }

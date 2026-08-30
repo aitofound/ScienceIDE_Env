@@ -1,62 +1,204 @@
 {
-  "artifact_kinds": {
-    "guard_baseline.block0.out1.00000.tab": "tab",
-    "guard_baseline.block0.out1.00001.tab": "tab",
-    "guard_density_below_floor.block0.out1.00000.tab": "tab",
-    "guard_density_below_floor.block0.out1.00001.tab": "tab",
-    "guard_energy_below_floor.block0.out1.00000.tab": "tab",
-    "guard_energy_below_floor.block0.out1.00001.tab": "tab",
-    "guard_gamma_max_ceiling.block0.out1.00000.tab": "tab",
-    "guard_gamma_max_ceiling.block0.out1.00001.tab": "tab",
-    "guard_momentum_ratio_cap.block0.out1.00000.tab": "tab",
-    "guard_momentum_ratio_cap.block0.out1.00001.tab": "tab",
-    "guard_nonconvergent_recovery.block0.out1.00000.tab": "tab",
-    "guard_nonconvergent_recovery.block0.out1.00001.tab": "tab",
-    "guard_reconstructed_floor.block0.out1.00000.tab": "tab",
-    "guard_reconstructed_floor.block0.out1.00001.tab": "tab"
-  },
-  "check_id": "C02",
-  "configuration": "-s --prob=gr_linear_wave --coord=cartesian --flux=hllc; Cartesian; no -b/-g; gamma=4/3 rho=4 pgas=1 v=(0.1,0.3,-0.05) amp=1e-6; periodic; VL2/xorder=2; source constants recorded as evidence, not output tolerances",
-  "configure": "python3 configure.py -s --prob=gr_linear_wave --coord=cartesian --flux=hllc",
-  "deck": "inputs/hydro_sr/athinput.linear_wave; inputs/hydro_sr/athinput.mb_3; inputs/hydro_sr/athinput.mb_4",
-  "declared_run_count": 7,
-  "expected_files": [
-    "guard_baseline.block0.out1.00000.tab",
-    "guard_baseline.block0.out1.00001.tab",
-    "guard_density_below_floor.block0.out1.00000.tab",
-    "guard_density_below_floor.block0.out1.00001.tab",
-    "guard_energy_below_floor.block0.out1.00000.tab",
-    "guard_energy_below_floor.block0.out1.00001.tab",
-    "guard_momentum_ratio_cap.block0.out1.00000.tab",
-    "guard_momentum_ratio_cap.block0.out1.00001.tab",
-    "guard_nonconvergent_recovery.block0.out1.00000.tab",
-    "guard_nonconvergent_recovery.block0.out1.00001.tab",
-    "guard_reconstructed_floor.block0.out1.00000.tab",
-    "guard_reconstructed_floor.block0.out1.00001.tab",
-    "guard_gamma_max_ceiling.block0.out1.00000.tab",
-    "guard_gamma_max_ceiling.block0.out1.00001.tab"
+  "authority": "tests/full_coverage_contract.json is authoritative; this file is generated from it and any disagreement is a packaging failure.",
+  "builds": [
+    "hllc-wave"
   ],
+  "configure_probes": [],
+  "deck_transforms": [
+    "guard-density-floor",
+    "guard-lorentz-ceiling",
+    "guard-pressure-floor",
+    "guard-pressure-floor-high"
+  ],
+  "decks": [
+    "linear_wave"
+  ],
+  "diagnostic_only": false,
+  "family": "admissibility-guards",
   "folder": "sr-admissibility-guards",
-  "pipeline": [
-    "SR adiabatic EOS",
-    "conservative-to-primitive recovery",
-    "reconstruction",
-    "relativistic flux",
-    "flux divergence",
-    "time integration",
-    "output/recovery finite-state scan"
+  "labels": [
+    "correctness"
   ],
-  "runner_kind": "guard",
-  "solver": "hllc",
-  "source_paths": [
-    "src/eos/adiabatic_hydro_sr.cpp::{ConservedToPrimitive,ConservedToPrimitiveNormal,ApplyPrimitiveFloors}"
+  "legacy_id": "C02",
+  "ordinal": 2,
+  "owner_decisions": [
+    "OD-02-momentum-ratio-cap",
+    "OD-02-branch-counters"
   ],
-  "subcases": [
-    "normal recovery baseline plus density_below_floor",
-    "normal recovery baseline plus energy_below_floor",
-    "normal recovery baseline plus momentum_ratio_cap",
-    "normal recovery baseline plus nonconvergent_recovery",
-    "normal recovery baseline plus reconstructed_floor",
-    "normal recovery baseline plus gamma_max_ceiling"
-  ]
+  "reward_bearing": true,
+  "runs": [
+    {
+      "argv_tokens": [
+        "mesh/nx1=64",
+        "mesh/nx2=1",
+        "mesh/nx3=1",
+        "meshblock/nx1=64",
+        "meshblock/nx2=1",
+        "meshblock/nx3=1",
+        "output1/file_type=tab",
+        "output1/variable=prim",
+        "time/ncycle_out=100",
+        "time/tlim=3.2930737657819593",
+        "output1/dt=3.2930737657819593",
+        "hydro/gamma=1.3333333333333333",
+        "problem/rho=4.0",
+        "problem/pgas=1.0",
+        "problem/vx=0.1",
+        "problem/vy=0.3",
+        "problem/vz=-0.05",
+        "problem/wave_flag=0",
+        "problem/amp=1e-06"
+      ],
+      "build": "hllc-wave",
+      "deck": "linear_wave",
+      "expect": "success",
+      "key": "guard_baseline",
+      "kind": "athena",
+      "problem_id": "sr_guard_baseline",
+      "science_outputs": [
+        "sr_guard_baseline.block0.out1.00000.tab",
+        "sr_guard_baseline.block0.out1.00001.tab"
+      ]
+    },
+    {
+      "argv_tokens": [
+        "mesh/nx1=64",
+        "mesh/nx2=1",
+        "mesh/nx3=1",
+        "meshblock/nx1=64",
+        "meshblock/nx2=1",
+        "meshblock/nx3=1",
+        "output1/file_type=tab",
+        "output1/variable=prim",
+        "time/ncycle_out=100",
+        "time/tlim=3.2930737657819593",
+        "output1/dt=3.2930737657819593",
+        "hydro/gamma=1.3333333333333333",
+        "problem/rho=4.0",
+        "problem/pgas=1.0",
+        "problem/vx=0.1",
+        "problem/vy=0.3",
+        "problem/vz=-0.05",
+        "problem/wave_flag=0",
+        "problem/amp=1e-06"
+      ],
+      "build": "hllc-wave",
+      "deck": "linear_wave",
+      "expect": "success",
+      "key": "guard_density_floor",
+      "kind": "athena",
+      "problem_id": "sr_guard_density_floor",
+      "science_outputs": [
+        "sr_guard_density_floor.block0.out1.00000.tab",
+        "sr_guard_density_floor.block0.out1.00001.tab"
+      ]
+    },
+    {
+      "argv_tokens": [
+        "mesh/nx1=64",
+        "mesh/nx2=1",
+        "mesh/nx3=1",
+        "meshblock/nx1=64",
+        "meshblock/nx2=1",
+        "meshblock/nx3=1",
+        "output1/file_type=tab",
+        "output1/variable=prim",
+        "time/ncycle_out=100",
+        "time/tlim=3.2930737657819593",
+        "output1/dt=3.2930737657819593",
+        "hydro/gamma=1.3333333333333333",
+        "problem/rho=4.0",
+        "problem/pgas=1.0",
+        "problem/vx=0.1",
+        "problem/vy=0.3",
+        "problem/vz=-0.05",
+        "problem/wave_flag=0",
+        "problem/amp=1e-06"
+      ],
+      "build": "hllc-wave",
+      "deck": "linear_wave",
+      "expect": "success",
+      "key": "guard_pressure_floor",
+      "kind": "athena",
+      "problem_id": "sr_guard_pressure_floor",
+      "science_outputs": [
+        "sr_guard_pressure_floor.block0.out1.00000.tab",
+        "sr_guard_pressure_floor.block0.out1.00001.tab"
+      ]
+    },
+    {
+      "argv_tokens": [
+        "mesh/nx1=64",
+        "mesh/nx2=1",
+        "mesh/nx3=1",
+        "meshblock/nx1=64",
+        "meshblock/nx2=1",
+        "meshblock/nx3=1",
+        "output1/file_type=tab",
+        "output1/variable=prim",
+        "time/ncycle_out=100",
+        "time/tlim=3.2930737657819593",
+        "output1/dt=3.2930737657819593",
+        "hydro/gamma=1.3333333333333333",
+        "problem/rho=4.0",
+        "problem/pgas=1.0",
+        "problem/vx=0.1",
+        "problem/vy=0.3",
+        "problem/vz=-0.05",
+        "problem/wave_flag=0",
+        "problem/amp=1e-06"
+      ],
+      "build": "hllc-wave",
+      "deck": "linear_wave",
+      "expect": "success",
+      "key": "guard_pressure_floor_high",
+      "kind": "athena",
+      "problem_id": "sr_guard_pressure_floor_high",
+      "science_outputs": [
+        "sr_guard_pressure_floor_high.block0.out1.00000.tab",
+        "sr_guard_pressure_floor_high.block0.out1.00001.tab"
+      ]
+    },
+    {
+      "argv_tokens": [
+        "mesh/nx1=64",
+        "mesh/nx2=1",
+        "mesh/nx3=1",
+        "meshblock/nx1=64",
+        "meshblock/nx2=1",
+        "meshblock/nx3=1",
+        "output1/file_type=tab",
+        "output1/variable=prim",
+        "time/ncycle_out=100",
+        "time/tlim=3.2930737657819593",
+        "output1/dt=3.2930737657819593",
+        "hydro/gamma=1.3333333333333333",
+        "problem/rho=4.0",
+        "problem/pgas=1.0",
+        "problem/vx=0.1",
+        "problem/vy=0.3",
+        "problem/vz=-0.05",
+        "problem/wave_flag=0",
+        "problem/amp=1e-06"
+      ],
+      "build": "hllc-wave",
+      "deck": "linear_wave",
+      "expect": "success",
+      "key": "guard_lorentz_ceiling",
+      "kind": "athena",
+      "problem_id": "sr_guard_lorentz_ceiling",
+      "science_outputs": [
+        "sr_guard_lorentz_ceiling.block0.out1.00000.tab",
+        "sr_guard_lorentz_ceiling.block0.out1.00001.tab"
+      ]
+    }
+  ],
+  "scope_note": "This check proves only what the unpatched pinned executable exposes: exact clamp assignments in the written primitive state. The conserved-momentum-ratio rescale branch, the inversion retry path and per-branch integer counters are explicitly NOT covered and are not rewarded; instrumenting them would require patching the shared pinned source, which this leaf does not do.",
+  "source_anchors": [
+    "src/eos/adiabatic_hydro_sr.cpp:39-45 (dfloor/pfloor/gamma_max are GetOrAddReal runtime keys; default floors are sqrt(1024*float_min))",
+    "src/eos/adiabatic_hydro_sr.cpp:96-210 (floor, fallback and velocity-ceiling assignments)",
+    "src/eos/eos.hpp:161 (float_min is std::numeric_limits<float>::min() even in the double build)"
+  ],
+  "status": "active",
+  "title": "SR density/pressure floor and Lorentz-ceiling guard activation (narrowed)"
 }
