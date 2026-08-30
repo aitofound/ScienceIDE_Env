@@ -126,17 +126,23 @@ def main():
     independence_ok = all(x.get("strict_record") is True for x in independence)
     base_reward = float(passed) / float(len(CHECKS))
     reward = base_reward if independence_ok else 0.0
+    ok = passed == len(CHECKS) and independence_ok
     verdict = {
         "reward": reward,
-        "status": "passed" if passed == len(CHECKS) and independence_ok else "failed",
+        "status": "passed" if ok else "failed",
         "policy": "wiring_self_test_exact_identity" if wiring else "scientific_policy_pending_jason",
+        # Explicit strict self-test receipt fields: mode is true only under the
+        # explicit wiring self-test; ok is true only when every declared check and
+        # every independence probe passed with reward 1.0. Never true on failure.
+        "self_test_mode": bool(wiring),
+        "self_test_ok": bool(wiring and ok and reward == 1.0),
         "checks": results,
         "checks_passed": passed,
         "checks_total": len(CHECKS),
         "independence_tests": independence,
     }
     emit(verdict, reward_file)
-    return 0 if passed == len(CHECKS) and independence_ok else 1
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":
