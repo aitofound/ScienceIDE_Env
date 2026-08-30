@@ -281,8 +281,11 @@ def execute(check: str, exe: Path, out: Path, extra: list[str]) -> list[float]:
                         args = wave_args(exe, deck, out, prefix, flag, resolution, n, period)
                     # High-order 3-D one-period cases are intentionally long on
                     # the serial oracle; allow completion instead of turning a
-                    # real compiled run into a timeout/incomplete artifact.
-                    times.append(run_one(args, log, 600.0 if check == "C13" else 180.0))
+                    # real compiled run into a timeout/incomplete artifact. The
+                    # xorder=4 64^3 one-period runs need ~11 min of single-core
+                    # wall time on ~0.5 Mzone-cycle/s CPUs, so the C13 bound is
+                    # a generous wall-clock safety limit, not a scientific gate.
+                    times.append(run_one(args, log, 1800.0 if check == "C13" else 180.0))
     elif kind == "shock":
         solver = profile["solver"]
         if check in {"C05", "C06", "C07", "C08"}:
