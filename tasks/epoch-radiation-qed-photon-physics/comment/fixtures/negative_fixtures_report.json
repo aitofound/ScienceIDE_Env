@@ -28,7 +28,7 @@
     },
     {
       "case": "manifest_gate/untracked_extra_sdf_rejected",
-      "detail": "issues=[\"dump file set on disk ['0000.sdf', '0002.sdf', '0099.sdf'] != manifest sdf_sha256 keys ['0000.sdf', '0002.sdf']\"]; extra file retained (never removed) at /var/folders/g1/jbj1s_4x7wn1f67ffjt2_thm0000gn/T/epoch_radqed_negfix_manifest_6io5_h1t/epoch1d-qed-zero-field-no-emission-control/candidate_extra_sdf/0099.sdf",
+      "detail": "issues=[\"dump file set on disk ['0000.sdf', '0002.sdf', '0099.sdf'] != manifest sdf_sha256 keys ['0000.sdf', '0002.sdf']\"]; extra file retained (never removed) at /var/folders/g1/jbj1s_4x7wn1f67ffjt2_thm0000gn/T/epoch_radqed_negfix_manifest_8caztxyt/epoch1d-qed-zero-field-no-emission-control/candidate_extra_sdf/0099.sdf",
       "ok": true
     },
     {
@@ -53,7 +53,32 @@
     },
     {
       "case": "optical_depth_bookkeeping/wrong_rate_rejected",
-      "detail": "candidate: frame 0->1 optical_depth decrement does not match the independently table-recomputed rate 0.13805185720829458 (max rel err 0.4999999999999991); table-derived per-step rate=0.13805185720829458",
+      "detail": "candidate: frame index 1 (step 1) never-recoiled optical_depth 4.792922214187558 does not match the independently table-recomputed closed-form prediction 4.8619481427917055 (max rel err 0.014197174995888153); table-derived t==0 per-step rate=0.13805185720829458",
+      "ok": true
+    },
+    {
+      "case": "table_path/bundled_table_resolves_and_matches_authored_value",
+      "detail": "path=/Users/huangzesen/work/projects/lingtai-space-research/.lingtai/zhipu-1/workspace/sciaccel-epoch-radiation-20260830/tasks/epoch-radiation-qed-photon-physics/tests/qed_tables/hsokolov.table rate=3243720679487796.0",
+      "ok": true
+    },
+    {
+      "case": "table_path/resolves_under_packaged_tests_only_tree_no_code_sibling",
+      "detail": "returncode=0 stdout='ACCEPTED:/var/folders/g1/jbj1s_4x7wn1f67ffjt2_thm0000gn/T/epoch_radqed_negfix_tablepath_fr3ltlx0/packaged_app/tests/qed_tables/hsokolov.table\\n' stderr=''",
+      "ok": true
+    },
+    {
+      "case": "table_path/corrupted_table_bytes_rejected_by_sha256_anchor",
+      "detail": "returncode=0 stdout='REJECTED:bundled QED table at /var/folders/g1/jbj1s_4x7wn1f67ffjt2_thm0000gn/T/epoch_radqed_negfix_tablepath_fr3ltlx0/corrupted_app/tests/qed_tables/hsokolov.table has sha256 4952209702ea27c234487150e765dd4f04aff27bcaa06f07a82c59869c88c3ed, expected 44f119481e832c144699b2a21d46040b596b0a1c98e7431ea8a09e49311a9196 (pinned EPOCH commit f294c484f76dff0777d5cc0d50b38506a2b049ff); refusing to validate against a table that does not match the pinned source\\n' stderr=''",
+      "ok": true
+    },
+    {
+      "case": "compton_continuous_classical/closed_form_drop_matches_passes",
+      "detail": "ok",
+      "ok": true
+    },
+    {
+      "case": "compton_continuous_classical/wrong_drop_rejected",
+      "detail": "candidate: mean electron |p| drop 1.1819747202678208e-20 over first interval does not match closed-form classical sync_force prediction 3.939915734226069e-21 (rel_err=2.0000000000000004)",
       "ok": true
     },
     {
@@ -65,13 +90,113 @@
       "case": "nonlinear_bw_pair/broken_momentum_split_rejected",
       "detail": "candidate: total momentum axis 0 not conserved: initial photon total 5.48e-19, final (photons+e-+e+) total 4.247e-19",
       "ok": true
+    },
+    {
+      "case": "linear_bw_collision/matched_pairs_and_momentum_passes",
+      "detail": "ok",
+      "ok": true
+    },
+    {
+      "case": "linear_bw_collision/zero_pairs_rejected",
+      "detail": "candidate: zero linear-Breit-Wheeler pairs created (n_e=0, n_p=0); this row must be event-producing",
+      "ok": true
+    },
+    {
+      "case": "linear_bw_collision/nonfinite_momentum_rejected",
+      "detail": "candidate: non-finite electron px=nan; a real run producing this is either corrupted output or would itself have segfaulted on the next particle push (see this check's 2026-08-30 LBW segfault repair)",
+      "ok": true
+    },
+    {
+      "case": "linear_bw_collision/mismatched_pair_count_rejected",
+      "detail": "candidate: created lbw_electron count 5 != lbw_positron count 4; every collision event creates exactly one of each",
+      "ok": true
+    },
+    {
+      "case": "linear_bw_collision/mismatched_species_weight_rejected",
+      "detail": "candidate: total LBW electron weight 5000.0 != total positron weight 4000.0; every intra/inter collision event assigns identical Y_ij to both",
+      "ok": true
+    },
+    {
+      "case": "linear_bw_collision/momentum_bookkeeping_violation_rejected",
+      "detail": "candidate: created-pair total px 6.827250000584876e-26 does not match the source-derived prediction 1.365450000116975e-26 for 5 pairs (per-event constant 2.7309000002339503e-27); this is exactly the invariant that was NaN/undefined before the 2026-08-30 LBW segfault repair's photon-momentum-asymmetry fix",
+      "ok": true
+    },
+    {
+      "case": "compton_continuous/per_step_drift_matches_even_when_creation_order_shuffled",
+      "detail": "ok",
+      "ok": true
+    },
+    {
+      "case": "compton_continuous/frozen_t0_rate_rejected",
+      "detail": "candidate: photon weight max relative error 0.0011775371061387028 exceeds policy weight_rtol=1e-06 vs table-recomputed expected weight 2.4169761369268786e-10 (observed 2.4141300578409954e-10) out of 3 reconstructed per-step rates from independently reloaded hsokolov.table",
+      "ok": true
+    },
+    {
+      "case": "compton_continuous/wrong_rate_rejected",
+      "detail": "candidate: photon weight max relative error 1.0 exceeds policy weight_rtol=1e-06 vs table-recomputed expected weight 2.4141300578409954e-10 (observed 4.828260115681991e-10) out of 3 reconstructed per-step rates from independently reloaded hsokolov.table",
+      "ok": true
+    },
+    {
+      "case": "optical_depth_bookkeeping/reset_with_coincidentally_clean_looking_diff_not_wrongly_rejected",
+      "detail": "ok",
+      "ok": true
+    },
+    {
+      "case": "optical_depth_bookkeeping/wrong_decrement_without_recoil_still_rejected",
+      "detail": "candidate: frame index 1 (step 1) never-recoiled optical_depth 1.05 does not match the independently table-recomputed closed-form prediction 1.0619481427917055 (max rel err 0.01125115465647457); table-derived t==0 per-step rate=0.13805185720829458",
+      "ok": true
+    },
+    {
+      "case": "nonlinear_bw_pair/zero_reference_axis_small_residual_within_budget_passes",
+      "detail": "ok",
+      "ok": true
+    },
+    {
+      "case": "nonlinear_bw_pair/zero_reference_axis_residual_exceeding_budget_rejected",
+      "detail": "candidate: total momentum axis 1 not conserved: initial photon total 0.0, final (photons+e-+e+) total 1.1999999999999628e-20",
+      "ok": true
+    },
+    {
+      "case": "nonlinear_bw_pair/momentum_leaked_to_wrong_species_rejected",
+      "detail": "candidate: total momentum axis 1 not conserved: initial photon total 0.0, final (photons+e-+e+) total 1.2000000000000013e-20",
+      "ok": true
+    },
+    {
+      "case": "nonlinear_bw_pair/nonfinite_momentum_component_rejected",
+      "detail": "candidate: non-finite momentum component in photon/electron/positron totals",
+      "ok": true
+    },
+    {
+      "case": "nonlinear_bw_pair/transverse_field_work_energy_within_bound_passes",
+      "detail": "ok",
+      "ok": true
+    },
+    {
+      "case": "nonlinear_bw_pair/energy_excess_beyond_field_work_bound_rejected",
+      "detail": "candidate: energy budget mismatch beyond the documented asymptotic + transverse-field-work bound: initial photon energy 1.64286266984e-10, final (photons+leptons+rest mass) 1.4394200001657866e-07, rel_err=875.1657481120885, field_work_bound_J=1.4390037984000002e-08",
+      "ok": true
+    },
+    {
+      "case": "nonlinear_bw_pair/zero_pairs_created_rejected",
+      "detail": "candidate: zero pairs created (n_e=0, n_p=0); this row must be event-producing",
+      "ok": true
     }
   ],
-  "n_cases": 13,
+  "n_cases": 36,
   "scratch_roots_retained": [
-    "/var/folders/g1/jbj1s_4x7wn1f67ffjt2_thm0000gn/T/epoch_radqed_negfix_manifest_6io5_h1t",
-    "/var/folders/g1/jbj1s_4x7wn1f67ffjt2_thm0000gn/T/epoch_radqed_negfix_noemit_ubq7n693",
-    "/var/folders/g1/jbj1s_4x7wn1f67ffjt2_thm0000gn/T/epoch_radqed_negfix_odbook_zbk12hdk",
-    "/var/folders/g1/jbj1s_4x7wn1f67ffjt2_thm0000gn/T/epoch_radqed_negfix_bwpair_u1ckx8qk"
+    "/var/folders/g1/jbj1s_4x7wn1f67ffjt2_thm0000gn/T/epoch_radqed_negfix_manifest_8caztxyt",
+    "/var/folders/g1/jbj1s_4x7wn1f67ffjt2_thm0000gn/T/epoch_radqed_negfix_noemit_6g_26t1o",
+    "/var/folders/g1/jbj1s_4x7wn1f67ffjt2_thm0000gn/T/epoch_radqed_negfix_odbook_xiceqy7s",
+    "/var/folders/g1/jbj1s_4x7wn1f67ffjt2_thm0000gn/T/epoch_radqed_negfix_tablepath_fr3ltlx0",
+    "/var/folders/g1/jbj1s_4x7wn1f67ffjt2_thm0000gn/T/epoch_radqed_negfix_contclassical_62u4bept",
+    "/var/folders/g1/jbj1s_4x7wn1f67ffjt2_thm0000gn/T/epoch_radqed_negfix_bwpair_b0ssdb91",
+    "/var/folders/g1/jbj1s_4x7wn1f67ffjt2_thm0000gn/T/epoch_radqed_negfix_lbwcollision_mawcpc3u",
+    "/var/folders/g1/jbj1s_4x7wn1f67ffjt2_thm0000gn/T/epoch_radqed_negfix_cczcont_mro72wxz",
+    "/var/folders/g1/jbj1s_4x7wn1f67ffjt2_thm0000gn/T/epoch_radqed_negfix_odbook_repair4_k2xtgv_5",
+    "/var/folders/g1/jbj1s_4x7wn1f67ffjt2_thm0000gn/T/epoch_radqed_negfix_bwpair_r5_axis1_k91mrmi_",
+    "/var/folders/g1/jbj1s_4x7wn1f67ffjt2_thm0000gn/T/epoch_radqed_negfix_bwpair_r5_wrongspecies_sb2yt2o6",
+    "/var/folders/g1/jbj1s_4x7wn1f67ffjt2_thm0000gn/T/epoch_radqed_negfix_bwpair_r5_nonfinite_wq1lzqxz",
+    "/var/folders/g1/jbj1s_4x7wn1f67ffjt2_thm0000gn/T/epoch_radqed_negfix_bwpair_r5_energy_1x83x4lm",
+    "/var/folders/g1/jbj1s_4x7wn1f67ffjt2_thm0000gn/T/epoch_radqed_negfix_bwpair_r5_zeropair_i1xfl33f"
   ]
 }

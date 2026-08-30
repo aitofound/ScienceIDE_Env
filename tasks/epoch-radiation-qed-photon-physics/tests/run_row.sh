@@ -90,7 +90,7 @@ import hashlib, json, os, sys
 
 sdf_sha256 = {}
 for name in sorted(os.listdir(row_results)):
-    if len(name) == 9 and name.endswith(".sdf") and name[:4].isdigit():
+    if len(name) == 8 and name.endswith(".sdf") and name[:4].isdigit():
         h = hashlib.sha256()
         with open(os.path.join(row_results, name), "rb") as fh:
             for chunk in iter(lambda: fh.read(1 << 20), b""):
