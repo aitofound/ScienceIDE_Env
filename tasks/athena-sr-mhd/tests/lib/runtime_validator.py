@@ -5,6 +5,13 @@ The self-test comparison is intentionally exact identity, while runtime
 requirements are independent: every case must carry a started Athena++ process,
 positive real_solver_runs, and traceable command/deck/config/output/binary
 identities.  Scientific tolerances remain owner-pending by contract.
+
+Exact identity covers every physical frame, scientific array, output-file hash,
+binary/deck/config identity, exit status, and coverage/execution/policy record.
+Only the run-mechanics leaves that two genuinely independent oracle executions
+cannot reproduce (per-run temporary build/run paths, wall-clock seconds, and the
+stdout digest whose text embeds CPU/wall timing) are excluded from the equality
+comparison; each of those leaves is still required to exist and be well-formed.
 """
 from __future__ import annotations
 
@@ -20,6 +27,13 @@ POLICY = "provisional_exact_identity_self_test_only"
 TOP = {"schema", "check", "check_id", "source_commit", "module", "cases", "coverage", "execution", "policy", "artifacts"}
 CASE = {"id", "label", "solver", "deck", "requested_command", "source_paths", "evidence_class", "configuration"}
 SHA_LEN = 64
+# Run-mechanics leaves of each runtime record that differ between two real,
+# independent oracle executions of byte-identical source: random temporary
+# build/run directories, wall-clock timing, and the stdout digest (Athena++'s
+# stdout reports CPU/wall time). The exact solver binary is still bound through
+# binary_sha256, the deck through runtime_deck_sha256, and the arguments through
+# command[1:]; only the temporary-path prefix of the executable is normalized.
+RUN_MECHANICS_LEAVES = ("binary_path", "cwd", "elapsed_seconds", "stdout_sha256")
 
 
 def _pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -186,6 +200,35 @@ def _check(document: Any, contract: dict[str, Any], label: str) -> str | None:
     return None
 
 
+def _comparable_runtime(runtime: dict[str, Any]) -> dict[str, Any]:
+    stripped = {key: value for key, value in runtime.items() if key not in RUN_MECHANICS_LEAVES}
+    command = list(runtime["command"])
+    command[0] = command[0].rsplit("/", 1)[-1]
+    stripped["command"] = command
+    return stripped
+
+
+def _comparable(document: dict[str, Any]) -> dict[str, Any]:
+    """Return the validated artifact with only run-mechanics leaves removed.
+
+    Callers must have passed the document through _check first, so every runtime
+    record is known to be well-formed; everything else is compared exactly.
+    """
+    out = dict(document)
+    cases = []
+    for item in document["cases"]:
+        case = dict(item)
+        configuration = dict(case["configuration"])
+        configuration["runtime"] = _comparable_runtime(configuration["runtime"])
+        case["configuration"] = configuration
+        cases.append(case)
+    out["cases"] = cases
+    execution = dict(document["execution"])
+    execution["runs"] = [_comparable_runtime(run) for run in document["execution"]["runs"]]
+    out["execution"] = execution
+    return out
+
+
 def validate(reference_dirs, candidate_dirs):
     try:
         check_dir = Path(__file__).resolve().parents[1] / "checks"
@@ -212,12 +255,13 @@ def validate(reference_dirs, candidate_dirs):
             issue = _check(document, contract, label)
             if issue:
                 return {"passed": False, "policy": POLICY, "reason": issue}
-        same = reference == candidate
+        same = _comparable(reference) == _comparable(candidate)
         return {
             "passed": same,
             "policy": POLICY,
             "case_count": len(reference["cases"]),
             "real_solver_runs": reference["execution"]["real_solver_runs"],
+            "excluded_run_mechanics": list(RUN_MECHANICS_LEAVES) + ["command[0] temporary-path prefix"],
             "reason": "provisional exact-identity self-test comparison passed" if same else "candidate differs from exact runtime artifact",
             "warnings": ["exact identity is accepted only for the explicit oracle self-test; final science tolerances remain owner-pending"] if same else [],
         }
