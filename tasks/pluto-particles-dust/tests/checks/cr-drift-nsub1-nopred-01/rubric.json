@@ -1,0 +1,208 @@
+{
+  "version": 1,
+  "status": "provisional",
+  "codebase": "pluto",
+  "check": "cr-drift-nsub1-nopred-01",
+  "family": "drift",
+  "title": "Fluid-CR relative drift, Nsub = 1, no predictor",
+  "provenance": {
+    "row": 9,
+    "kind": "official",
+    "problem_dir": "code/pluto/Test_Problems/Particles/CR/Relative_Drift",
+    "config": "01",
+    "definitions_file": "code/pluto/Test_Problems/Particles/CR/Relative_Drift/definitions_01.h",
+    "ini_file": "code/pluto/Test_Problems/Particles/CR/Relative_Drift/pluto_01.ini",
+    "mpi_ranks": 1,
+    "verified_macros": {
+      "PHYSICS": "MHD",
+      "DIMENSIONS": "2",
+      "GEOMETRY": "CARTESIAN",
+      "BODY_FORCE": "NO",
+      "COOLING": "NO",
+      "RECONSTRUCTION": "LINEAR",
+      "TIME_STEPPING": "HANCOCK",
+      "NTRACER": "0",
+      "PARTICLES": "PARTICLES_CR",
+      "USER_DEF_PARAMETERS": "3",
+      "EOS": "IDEAL",
+      "ENTROPY_SWITCH": "NO",
+      "DIVB_CONTROL": "CONSTRAINED_TRANSPORT",
+      "BACKGROUND_FIELD": "NO",
+      "AMBIPOLAR_DIFFUSION": "NO",
+      "RESISTIVITY": "NO",
+      "HALL_MHD": "NO",
+      "THERMAL_CONDUCTION": "NO",
+      "VISCOSITY": "NO",
+      "ROTATING_FRAME": "NO",
+      "RHO_GAS": "0",
+      "VPX1": "1",
+      "VPX2": "2",
+      "WARNING_MESSAGES": "NO",
+      "CT_EMF_AVERAGE": "CT_CONTACT",
+      "PARTICLES_CR_C": "1.e40",
+      "PARTICLES_CR_FEEDBACK": "YES",
+      "PARTICLES_CR_PREDICTOR": "NO",
+      "PARTICLES_CR_E_MC": "1.0",
+      "PARTICLES_CR_NSUB": "-1",
+      "PARTICLES_SHAPE": "3",
+      "SHOW_TIME_STEPS": "FALSE",
+      "PRIMITIVE_HANCOCK": "TRUE"
+    },
+    "deck": {
+      "Grid": {
+        "X1-grid": "1 -10.0 8 u 10.0",
+        "X2-grid": "1 -10.0 8 u 10.0",
+        "X3-grid": "1 0.0 1 u 1.0"
+      },
+      "Time": {
+        "CFL": "0.5",
+        "CFL_max_var": "1.0",
+        "tstop": "1.0",
+        "first_dt": ".00625"
+      },
+      "Solver": {
+        "Solver": "roe"
+      },
+      "Boundary": {
+        "X1-beg": "periodic",
+        "X1-end": "periodic",
+        "X2-beg": "periodic",
+        "X2-end": "periodic",
+        "X3-beg": "periodic",
+        "X3-end": "periodic"
+      },
+      "Static Grid Output": {
+        "uservar": "0",
+        "dbl": "10. -1 single_file",
+        "flt": "-1.0 -1 single_file",
+        "vtk": "-0.2 -1 single_file",
+        "dbl.h5": "-1.0 -1",
+        "flt.h5": "-1.0 -1",
+        "tab": "-1.0 -1",
+        "ppm": "-1.0 -1",
+        "png": "-1.0 -1",
+        "log": "10",
+        "analysis": "1.e-2 -1"
+      },
+      "Particles": {
+        "Nparticles": "-1 1",
+        "particles_dbl": "10. -1",
+        "particles_flt": "-1.0 -1",
+        "particles_vtk": "-0.2 -1",
+        "particles_tab": "-1.0 -1"
+      },
+      "Parameters": {
+        "RHO_GAS": "1.0",
+        "VPX1": "5.0",
+        "VPX2": "0.0"
+      }
+    },
+    "archive_url": "https://plutocode.ph.unito.it/Downloads/pluto-4.4-patch4.tar.gz",
+    "source_pin_sha256": "1ba5527b76d49fdd78ae24dbfbdad085ec83393748f1e618516a9d63bd945787",
+    "verification_method": "gen_checks.py parsed real '#define NAME value' lines and [section] key/value lines directly from the vendored, checksum-pinned source at generation time; observed counts come from a real Docker scratch run of this exact row.",
+    "build_note": "Config/Linux.gcc.defs is untouched; make receives CFLAGS='-c -O3 -std=c17 -D_DEFAULT_SOURCE -Wundef' on its command line because glibc hides srand48/drand48 under -std=c17."
+  },
+  "science": {
+    "mechanism": "Gas and a 1% CR population start with opposite momenta in a uniform Bz = 2 pi field; momentum exchange makes both gyrate around the centre-of-momentum frame with the analytic frequency Omega = Omega_g + Omega_p. One particle sub-step per MHD step and no predictor (first-order coupling).",
+    "forces": "the feedback force on the gas, momentum-conserving deposit, the fixed-Nsub branch (PARTICLES_CR_NSUB = -1) without the predictor, the analytic-error diagnostic, the trajectory writer and the binary64 particle dump."
+  },
+  "contract": {
+    "fluid": {
+      "interior_shape": [
+        8,
+        8,
+        1
+      ],
+      "dumps": [
+        0,
+        1
+      ],
+      "variables": [
+        "rho",
+        "vx1",
+        "vx2",
+        "vx3",
+        "Bx1",
+        "Bx2",
+        "Bx3",
+        "prs",
+        "Bx1s",
+        "Bx2s"
+      ],
+      "dump_times_observed": {
+        "0": 0.0,
+        "1": 1.0
+      }
+    },
+    "particles_dbl": {
+      "frames": [
+        0,
+        1
+      ],
+      "expected_particles": 64,
+      "fields": [
+        "id",
+        "x1",
+        "x2",
+        "x3",
+        "vx1",
+        "vx2",
+        "vx3",
+        "mass",
+        "tinj",
+        "color"
+      ]
+    },
+    "ascii": {
+      "error.dat": {
+        "rows": 102
+      },
+      "particle.0001.dat": {
+        "rows": 102
+      }
+    }
+  },
+  "policy": {
+    "status": "provisional owner policy; row-specific calibration pending",
+    "binary64": {
+      "rtol": 1e-08,
+      "atol": 1e-12,
+      "applies_to": "every value of every fluid data.NNNN.dbl block (including staggered Bx?s planes), every particles.NNNN.dbl field except id, dump/frame times",
+      "rule": "abs(candidate - reference) <= atol + rtol * abs(reference)"
+    },
+    "float32": {
+      "rtol": 1e-06,
+      "atol": 1e-06,
+      "applies_to": "particles.NNNN.vtk coordinates, four-velocity, tinj and color, which PLUTO stores as big-endian float32",
+      "rule": "abs(candidate - reference) <= atol + rtol * abs(reference); ~8 float32 ulps relative allowance for benign rounding-boundary flips when binary64 state is cast to float32"
+    },
+    "ascii_printed": {
+      "rtol": 2e-06,
+      "atol": 1e-12,
+      "applies_to": "columns of the official Analysis() tables printed with %12.6e (7 significant digits)",
+      "rule": "abs(candidate - reference) <= atol + rtol * abs(reference); one unit in the last printed digit is at most 1e-6 relative, doubled for rounding in both directions; the absolute floor absorbs printed roundoff noise around exact zeros"
+    },
+    "derived_not_worse": {
+      "rel_slack": 0.001,
+      "abs_slack": 1e-09,
+      "applies_to": "derived accuracy diagnostics that subtract nearly equal state quantities (error.dat column 2; the gyration co-moving energy drift)",
+      "rule": "candidate <= reference * (1 + rel_slack) + abs_slack; a difference of nearly equal numbers amplifies a 1e-8 state difference into ~1e-4 relative, so the diagnostic is gated one-sided against the reference instead of compared symmetrically"
+    },
+    "id_matching": "particles are matched by the integer id that PLUTO's Particles_SetID assigns in insertion order; ordering inside a dump is not part of the contract"
+  },
+  "invariant": "gas + particle momentum balances within the binary64 policy at every dump",
+  "calibration": {
+    "status": "not started for this row",
+    "prerequisites": [
+      "two reproducible incumbent runs of this exact row (self-validation supplies the first pair)",
+      "genuinely different correct binaries/architectures with distinct binary hashes",
+      "a row-specific resolution/substep/replication study of the compared observables",
+      "at least one plausible porting defect (wrong pusher order, skipped feedback deposit, wrong shape function, wrong sub-cycling) shown to be rejected",
+      "a recorded correct band, defect separation, source citations and owner decision in this rubric"
+    ],
+    "note": "The uniform provisional bounds in 'policy' are the owner's interim decision, mirrored from the sibling pluto-mhd-les task; they are not a measured physical error bar."
+  },
+  "hazards": [
+    "error.dat column 2 is a derived difference and is gated one-sided against the reference."
+  ]
+}
