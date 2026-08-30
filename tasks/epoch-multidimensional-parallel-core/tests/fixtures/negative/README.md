@@ -119,6 +119,29 @@ covered by `build_and_check.py`'s `missing-stdin-field`,
 writes its (retained, never-cleaned-up) synthetic runners, TSVs, and result
 trees under a fresh `tempfile.mkdtemp` scratch root printed to stdout.
 
+## Schema v4 relocation-neutral `cwd` provenance
+
+Since schema v4, `execution.json`'s `"cwd"` field records a task-root-relative
+`"<check_folder>/<run_label>"` POSIX path rather than the producer's own
+absolute filesystem location (e.g. the oracle container's
+`/app/results/<folder>/<label>` mount point), so the same evidence tree
+authenticates identically whichever absolute root a verifier later mounts it
+under (`/reference/...`, `/candidate/...`, or anything else). `build_and_check.py`'s
+`cwd-old-v3-absolute-shape-rejected`, `cwd-absolute-candidate-root-rejected`,
+`cwd-absolute-reference-root-rejected`, `cwd-absolute-tmp-root-rejected`,
+`cwd-leading-traversal-rejected`, `cwd-embedded-traversal-rejected`,
+`cwd-wrong-folder-rejected`, `cwd-wrong-label-rejected`,
+`cwd-extra-path-component-rejected`, `cwd-backslash-path-rejected`,
+`cwd-non-string-rejected`, and `cwd-missing-field-rejected` scenarios prove
+`lib/manifest.py::authenticate_execution` rejects every non-conforming shape,
+while `cwd-valid-relative-accepted` (in `POSITIVE_SCENARIOS`) proves the one
+valid relative form still authenticates cleanly. `copied-content-in-distinct-tree`
+was updated to match: since an identical `check_folder/run_label` subtree may
+now legitimately live under any root, it instead proves genuine bytes copied
+into a directory whose own name disagrees with its declared `run_label` are
+still caught by the independent structural check against the actual run
+directory's own path components.
+
 ## Packaging-contract regression (separate script)
 
 `dockerfile_manifest_packaging_check.py` is a separate, narrower static
@@ -130,3 +153,112 @@ destination is caught. Run `python3 dockerfile_manifest_packaging_check.py`
 from this directory; it also writes its (retained, never-cleaned-up)
 synthetic Dockerfiles under a fresh `tempfile.mkdtemp` scratch root printed
 to stdout.
+
+## Self-contained SDF reader regression (two separate scripts)
+
+`tests/lib/sdf_read.py` no longer imports the external `sdf`/`sdf_helper`
+C-extension (built from `code/epoch/SDF/utilities`, not installed in the
+declared verifier environment); it decodes EPOCH's `.sdf` binary format
+itself, in pure Python + numpy, straight from the file-format spec
+cross-checked against the pinned C reader and Fortran writer (see that
+module's own docstring for exact source citations, including the two
+different cpu-split encodings it supports: geometry 1, `cpu_rank`'s
+per-axis ladder with the on-disk array one entry short per axis, which
+`cpu_split_boundaries` reconstructs; and geometry 4, `cpu/<species>`'s full,
+un-elided, direct per-rank particle-count array, which `species_cpu_split`
+decodes as-is). `sdf_synth_fixture.py` is a shared, non-reward-path helper
+the scripts below import: it builds small, well-formed `.sdf` byte strings
+from first principles (independent of `sdf_read.py`'s own decoder)
+describing one coherent synthetic 2-D EPOCH dump (grid, an `ex` field, a
+geometry-1 `cpu_rank` ladder, a geometry-4 `cpu/tracer` species split, and
+that species' particle positions), and exports the values a correct read
+must reconstruct, plus `patch_geometry`/`patch_cpu_split_values` helpers for
+targeted cpu-split corruption.
+
+1. `sdf_reader_synthetic_check.py` proves the reader itself is correct: every
+   grid/field/particle/scalar block kind these checks consume round-trips
+   correctly (including field staggering metadata, the geometry-1 ladder
+   reconstruction, and the geometry-4 direct-count decode), the reader
+   fails closed (raises `sdf_read.SdfFormatError`, never silently wrong
+   data) on a truncated payload, a declared-size mismatch, a cross-block
+   overread, and -- specifically for geometry-4 `cpu/<species>` blocks --
+   a truncated payload, a per-rank-count sum that no longer matches the
+   species' recorded total, a negative per-rank count, either cpu-split
+   quantity claiming the other's geometry, and an entirely unsupported
+   geometry value; the shipped `tests/lib/sdf_read.py` source also contains
+   no `import sdf` statement anywhere.
+2. `sdf_reader_import_smoke.py` proves the fix actually closes the reported
+   defect end to end: with `sys.modules['sdf']` forced to `None` (so any
+   `import sdf` anywhere raises `ImportError`, exactly as if the package
+   were absent from the verifier image), it authenticates and evaluates one
+   hand-authored `partition-coverage` check -- not one of
+   `tests/contract.json`'s 19 real rows, and this script makes no claim
+   about those -- against a synthetic run tree (one synthetic `.sdf` file
+   plus a fully-authenticating `execution.json`, reusing the real
+   `decomp-2d-auto-rank6/deck/input.deck` fixture's bytes for the deck
+   digest), and confirms `tests/lib/checks.py -> tests/lib/manifest.py ->
+   tests/lib/sdf_read.py` imports and reaches task-owned SDF parsing (rather
+   than raising `ModuleNotFoundError: No module named 'sdf'`) all the way to
+   a passing verdict.
+3. `repair_regression_check.py` covers the 2026-08-30 real-SDF
+   self-validation repair's other four failure classes end to end, each
+   with a positive case plus an adversarial mutant that must still be
+   rejected: `decomposition.uneven_split`'s remainder placement and
+   `decomposition.auto_split_2d`/`auto_split_3d`'s particle-free
+   `get_optimal_layout` search (both unit-level, against real pinned-EPOCH
+   dump values, with the previous, now-wrong implementations reproduced
+   inline as named mutants); `tests/contract.json`'s PAR-12
+   `dlb-conservation` params (full `checks.evaluate()` round trip: the
+   previous `{"quantity": "particle_count"}` params reproduce the
+   `KeyError('species')` defect, the repaired `{"species": "electron"}`
+   params pass a genuine rebalance and still reject a non-conserving
+   mutant); and PAR-17's statistical-budget tolerance in
+   `checks.py::_global_scalar_equivalence` (full `checks.evaluate()` round
+   trip: the initial-condition snapshot keeps its original strict
+   tolerance, a post-integration difference within the documented
+   1/sqrt(N) PIC shot-noise budget passes, and one far beyond it still
+   fails).
+
+Run `python3 sdf_reader_synthetic_check.py`, `python3
+sdf_reader_import_smoke.py`, and `python3 repair_regression_check.py` from
+this directory; all three write their (retained, never-cleaned-up)
+synthetic `.sdf` files and run trees under a fresh `tempfile.mkdtemp`
+scratch root printed to stdout.
+
+## Repair2 (2026-08-30) regression: PAR-12/13/15/18
+
+`repair2_regression_check.py` covers the second, exact-G/H-reader3-sourced
+self-validation repair's four failure classes, each with a positive case
+plus at least one adversarial mutant that must still be rejected, using
+real, hand-built `.sdf` files (via `sdf_synth_fixture.py`) and the real
+`tests/lib/checks.py` invariant functions (only `_authenticate_all` is
+stubbed out, to isolate the invariant math from the separately-covered
+manifest-authentication layer):
+
+1. **PAR-12** (`_dlb_conservation`): a pre-loop rebalance whose ladder
+   already differs from `decomposition.uneven_split`'s naive baseline at
+   every snapshot (and never changes again) passes; a ladder that matches
+   the naive baseline at every snapshot and never changes -- the real,
+   unrepaired G/H defect -- is still rejected.
+2. **PAR-13** (`_dlb_field_integrity`): a pre-loop-only redistribution
+   (non-naive, unchanging ladder) with a finite, non-negative energy series
+   passes; no redistribution at all (naive, unchanging ladder) still
+   authfails; a genuine within-run (dump-bracketed) redistribution
+   transition within the margin over the run's own non-redistribution
+   deltas passes, the same transition blown up far beyond that margin still
+   fails, and a negative energy value is still rejected.
+3. **PAR-15** (`_flat_rank_to_axis_indices`): particles placed per the
+   correct (x-fastest, per `mpi_routines.F90`'s `setup_communicator`)
+   rank-to-domain mapping pass; the same particles placed per the previous
+   (z-fastest) mapping -- reproduced inline as a named mutant -- are now
+   rejected, as is an axis-order-independent genuine ownership violation
+   (two ranks' particle blocks swapped).
+4. **PAR-18** (`initial-condition-equivalence` params): the repaired
+   `["ex", "bz"]` field list passes on matching data and still rejects a
+   genuine `ex` mismatch; the previous `["ex", "ey", "bz"]` params reproduce
+   the real `KeyError`-driven authfail against data that (like the real
+   deck) never has an `ey` block.
+
+Run `python3 repair2_regression_check.py` from this directory; it also
+writes its (retained, never-cleaned-up) synthetic `.sdf` files under a fresh
+`tempfile.mkdtemp` scratch root printed to stdout.
