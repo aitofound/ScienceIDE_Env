@@ -2,11 +2,13 @@
 
 # Athena++ Newtonian finite-volume hydrodynamics
 
-> [!IMPORTANT]
-> This is the current Pluto-style, root-only scope draft for
-> `athena-newtonian-hydro`. It is not a complete v2.2 Harbor leaf, is not
-> runnable or gradeable, and makes no build, CPU/GPU, performance, tolerance, or
-> human-sign-off claim.
+> [!NOTE]
+> Historical planning note. This initial Pluto-style, root-only scope draft is
+> superseded by the implemented scoped closure documented in `instruction.md`,
+> `task.toml`, and `comment/owner-decision-matrix.md`. Its statements about an
+> unbuilt, unrunnable leaf are historical and must not be used as the current
+> task contract; the current package accepts only the three NH-16/NH-17 anchors
+> and retains 66 inactive diagnostic-only path witnesses.
 
 ## Scientific boundary
 
