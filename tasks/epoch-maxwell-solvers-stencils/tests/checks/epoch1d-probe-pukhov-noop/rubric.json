@@ -1,0 +1,59 @@
+{
+  "row": "epoch1d-probe-pukhov-noop",
+  "kind": "probe",
+  "contract": "bounded 1D Pukhov selector/no-op dispatch (not a physical propagation claim)",
+  "production_paths": [
+    "epoch1d/src/deck/deck_control_block.F90:395-403 (maxwell_solver accepted-value set includes pukhov in 1D, with no field_order/dimension downgrade the way cowan gets)",
+    "epoch1d/src/housekeeping/setup.F90 SUBROUTINE set_dt (no maxwell_solver==pukhov branch in 1D, unlike epoch2d/epoch3d's unconditional ELSE branch -- dt is left at its module-default 0.0 and stays 0.0 through the unconditional `dt = dt_multiplier * dt` line)",
+    "epoch1d/src/fields.f90 SUBROUTINE set_maxwell_solver (coefficient dispatch: no 1D pukhov branch -> alphax/deltax stay at their module defaults 1.0/0.0, i.e. the Yee identity; stdout banner still prints because maxwell_solver /= c_maxwell_solver_yee)",
+    "epoch1d/src/deck/deck_control_block.F90:254-255 (nsteps control-key parsing) and epoch1d.F90:271 (`IF ((step >= nsteps .AND. nsteps >= 0) .OR. (time >= t_end) .OR. halt) EXIT`) -- with dt==0.0, t_end is never reached, so nsteps is this row's only termination path"
+  ],
+  "solver": "pukhov",
+  "dimension": 1,
+  "field_order": 2,
+  "nsteps": 1,
+  "expects_solver_banner": true,
+  "criteria": [
+    {
+      "name": "nsteps-budget-bound",
+      "rule": "authoritative fixture deck's begin:control block must declare nsteps=1 (parsed independently by tests/common.py parse_deck_control, never trusted from execution.json); this is what bounds the otherwise-infinite dt=0 main loop to a deterministic, finite run",
+      "origin": "epoch1d.F90:271 is the only loop-exit path this row can reach; deck_control_block.F90:254-255 is where nsteps is parsed from the deck"
+    },
+    {
+      "name": "coefficient-dispatch",
+      "rule": "printed alpha/delta == independently recomputed Yee-identity value (alpha=1.0, delta=0.0), abs diff <= 5e-9",
+      "origin": "fields.f90 PRINT'(A9,...F14.9)' -- 9 printed decimal digits bound the achievable comparison resolution; not a calibrated statistical tolerance."
+    },
+    {
+      "name": "cdt-dx-zero",
+      "rule": "printed 'c*dt/dx' == 0.0, abs diff <= 5e-9",
+      "origin": "fields.f90 PRINT'(A9, 1F14.9)', 'c*dt/dx = ', dt * c / dx -- direct stdout evidence that dt itself is the degenerate 0.0 left by the missing epoch1d set_dt branch cited above."
+    },
+    {
+      "name": "zero-time-dumps",
+      "rule": "every raw .sdf dump's recorded physical time is finite and within 1e-20 of 0.0 (dt==0.0 means the half-step time bookkeeping in epoch1d.F90 never advances physical time)",
+      "origin": "epoch1d.F90's `time = time + dt / 2.0_num` bookkeeping around the main loop; with dt==0.0 every such update is an exact no-op."
+    },
+    {
+      "name": "finite-field-arrays",
+      "rule": "every ex/ey/ez/bx/by/bz value in every raw dump is a finite IEEE-754 double (no NaN/Inf); if more than one dump exists, the first and last dump's arrays must be equal within the leapfrog double-precision round-off bound (abs(a-b) <= 1e-12*max(|sibling reference array|) + 1e-9*|b|), proving the dt==0 update is a true no-op rather than merely unobserved",
+      "origin": "same double-precision round-off bound used by every other probe row (see comment/pass-policy.md); applied here to a before/after equality instead of a leapfrog-recompute prediction because the update itself is asserted to be the identity map at dt==0."
+    },
+    {
+      "name": "bounded-dump-count",
+      "rule": "len(raw dumps) is between 1 and nsteps+1 inclusive (never more), corroborating that termination came from the nsteps cap rather than an external kill after unbounded looping",
+      "origin": "epoch1d.F90's pre-loop output_routines(0) call plus at most one further in-loop call per completed iteration before the nsteps exit check fires"
+    },
+    {
+      "name": "no-vacuity-floor-required (explicit non-requirement)",
+      "rule": "this row does NOT require max(|B|) to exceed any signal floor, does NOT require a positive measured dt between dumps, and does NOT run the generic positive-dt leapfrog-step recompute every other probe row uses",
+      "origin": "this row's entire purpose is to bind the genuinely-degenerate dt==0.0 selector/no-op dispatch itself (see contract above), not to claim a physical field-advance step occurred; applying the generic non-vacuous-pass/positive-dt criteria to intentionally-zero-dt evidence would make this row unsatisfiable by any truthful candidate."
+    }
+  ],
+  "cross_row_reference": {
+    "compare_to": "epoch1d-probe-yee",
+    "kind": "noop_vs_evolving_sibling",
+    "rule": "the sibling epoch1d-probe-yee run must independently show a positive measured dt between its own last two dumps and max(|B|) clearing the anti-vacuous-pass floor 1e3, AND both rows' final dump grid mesh (dx, node count) must match exactly",
+    "why": "this row cannot assert final-B-field equality with epoch1d-probe-yee (that row genuinely propagates over 25 fs; this row is capped at nsteps=1 with dt==0.0 and never propagates), but a copy/substitution attack that fakes both rows as equally degenerate must still be caught: this check reconfirms the sibling really did evolve (proving the observed pukhov-noop degeneracy is a real, source-traced contrast and not an artifact of a broken/faked sibling) while requiring both rows to share the same declared probe geometry."
+  }
+}
