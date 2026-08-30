@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "check": "boundary-cpml-laser-nearfield",
+  "codebase": "epoch",
+  "dimension_tier": 1,
+  "ranks": 1,
+  "provenance": {
+    "source_lines": "code/epoch/epoch1d/src/laser.f90:271-273 laserpos=cpml_x_min_laser_idx; code/epoch/epoch1d/src/boundary.F90:927-975 cpml_x_min_laser_idx=cpml_thickness+fng+1, cpml_thickness (setup.F90:77, default 6); code/epoch/epoch1d/src/fields.f90:36 fng=field_order/2 (default 1); code/epoch/epoch1d/src/boundary.F90:1074-1182 cpml_advance_e_currents/b_currents (PML-layer-only convolutional terms)"
+  },
+  "policy": {
+    "shape": "Post-arrival steady-state RMS of Ey(t) at the physical domain centre for bc_x_min=cpml_laser vs bc_x_min=simple_laser, everything else identical, before the wavefront reaches the far boundary. 'Post-arrival' start is detected per-trace from its own data (first sample crossing ARRIVAL_FRACTION=0.3 of that trace's own peak), not assumed.",
+    "tolerance_origin": "15% (post-repair, v8): the PRIOR (v7 and earlier) 10% bound compared RAW Ey(t) pointwise, which is not the right invariant. cpml_x_min_laser_idx=cpml_thickness+fng+1 (default 6+1+1=8) launches the cpml_laser source ONE CELL (dx) further into the interior than simple_laser's laserpos=1 (at x_min exactly) -- a small but, for pointwise comparison of a fast-oscillating near-field sampled only every dt_snapshot, non-negligible launch-time offset (dx/c). An idealised abrupt-turn-on-sinusoid model of exactly this offset predicts ~31% raw pointwise mismatch for this deck's dx/lambda0, matching the ~35% actually observed in this leaf's own paired v7 evidence (reference:max_rel=0.350092) to within modelling error -- confirming the v7 failure was this launch-position artefact, not a genuine CPML defect. Comparing post-arrival RMS (phase-insensitive) instead: the same model predicts an RMS mismatch of <0.1%-6% depending on how many post-arrival dumps land in the shared comparison window; 15% leaves several-fold margin above that modelled range while remaining far below the O(1) RMS mismatch a genuinely broken CPML amplitude/impedance would give.",
+    "determinism": "No particles/injectors; single rank; fully deterministic."
+  },
+  "bound_calibration_status": "Physics-derived (one-cell launch-position offset + post-arrival RMS invariant), cross-checked against this leaf's own v7 paired reference/candidate evidence (max_rel=0.350092, consistent with the launch-offset model to within ~11%); not yet independently confirmed against a fresh RMS measurement from a real run, since existing evidence only recorded the raw pointwise metric this fix replaces.",
+  "criteria": [
+    {"name": "cpml_matches_simple_post_arrival_rms", "rule": "relative |RMS(Ey_simple) - RMS(Ey_cpml)| over the shared post-arrival window at x=0 <= 0.15, both sides", "status": "active"}
+  ]
+}

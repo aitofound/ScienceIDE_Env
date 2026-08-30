@@ -1,0 +1,43 @@
+begin:control
+  nx = 50
+  t_end = 50 * femto
+  x_min = -1 * micron
+  x_max = 1 * micron
+end:control
+
+
+begin:boundaries
+  bc_x_min = periodic
+  bc_x_max = periodic
+end:boundaries
+
+
+begin:species
+  # code/epoch/epoch1d/src/user_interaction/helper.F90:42-45 sets
+  # species%ext_temp_x_min(:) = species_temp(1,:), i.e. the boundary bath
+  # temperature is just this species' own 'temperature_ev' expression
+  # evaluated at the boundary cell -- there is no separate deck keyword for
+  # it. This expression is 0 (deterministic, no RNG) at the launch slab near
+  # x=0.9um and 5eV (the thermal bath temperature under test) at the
+  # x_min=thermal boundary itself.
+  name = electron
+  charge = -1
+  mass = 1.0
+  temperature_ev = if(x lt 0.5 * micron, 5.0, 0.0)
+  drift_px = -5.0e-23
+  number_density = if(abs(x - 0.9 * micron) lt 0.05 * micron, 1.0e18, 0.0)
+  nparticles_per_cell = 400
+  bc_x_min = thermal
+  bc_x_max = open
+end:species
+
+
+begin:output
+  dt_snapshot = 50 * femto
+  dump_last = T
+
+  particles = always
+  px = always
+  py = always
+  pz = always
+end:output

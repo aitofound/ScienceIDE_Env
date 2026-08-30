@@ -1,0 +1,47 @@
+begin:control
+  nx = 100
+  t_end = 60 * femto
+  x_min = 0
+  x_max = 20 * micron
+end:control
+
+
+begin:boundaries
+  bc_x_min = open
+  bc_x_max = open
+end:boundaries
+
+
+begin:species
+  name = Beam
+  charge = -1
+  mass = 1.0
+  # No particles present at t=0: the file injector below is the only source.
+  number_density = 0
+end:species
+
+
+begin:injector
+  boundary = x_min
+  species = Beam
+  inject_from_file = T
+  # Authored plain-text data files (task-local, not upstream): 50 rows each,
+  # list-directed READ(unit,*) one value per line
+  # (code/epoch/epoch1d/src/physics_packages/file_injectors.F90
+  # read_injector_real). t_data ascending, 0 to 44.1fs (< t_end=60fs so
+  # every row is injected); w_data/px_data both constant so the expected
+  # total injected weight/momentum are exact closed-form sums.
+  t_data = "t_data.txt"
+  w_data = "w_data.txt"
+  px_data = "px_data.txt"
+end:injector
+
+
+begin:output
+  dt_snapshot = 60 * femto
+  dump_last = T
+
+  particles = always
+  px = always
+  particle_weight = always
+end:output

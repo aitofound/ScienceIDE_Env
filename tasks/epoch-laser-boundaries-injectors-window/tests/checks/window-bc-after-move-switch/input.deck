@@ -1,0 +1,45 @@
+begin:control
+  nx = 150
+  t_end = 20 * femto
+  x_min = -3 * micron
+  x_max = 3 * micron
+end:control
+
+
+begin:boundaries
+  bc_x_min = simple_laser
+  bc_x_max = open
+end:boundaries
+
+
+begin:window
+  # window_v_x=0 (a plain constant, not a time-varying expression) means
+  # moving_window() switches bc_field(x_min) to bc_x_min_after_move at
+  # window_start_time (code/epoch/epoch1d/src/housekeeping/window.F90:298-
+  # 309, unconditional on window_v_x) but 'IF (window_v_x <= 0.0_num)
+  # RETURN' (line 315) means shift_window() is never invoked -- this deck
+  # isolates the bc-switch behaviour from the grid-shift cadence covered by
+  # window-shift-cadence-grid-advance.
+  move_window = T
+  window_start_time = 8 * femto
+  window_v_x = 0
+  bc_x_min_after_move = simple_outflow
+  bc_x_max_after_move = open
+end:window
+
+
+begin:laser
+  boundary = x_min
+  amp = 2.0e11
+  lambda = 0.8 * micron
+end:laser
+
+
+begin:output
+  dt_snapshot = 1 * femto
+  dump_last = T
+
+  grid = always
+  ey = always
+  bz = always
+end:output

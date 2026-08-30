@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "check": "laser-1d-unit-equivalence-lambda-omega-freq",
+  "codebase": "epoch",
+  "dimension_tier": 1,
+  "ranks": 1,
+  "provenance": {
+    "source_lines": "code/epoch/epoch1d/src/deck/deck_laser_block.f90:139-188 (omega/freq/lambda branches), code/epoch/epoch1d/src/laser.f90:199-214 (laser_update_omega c_of_freq/c_of_lambda multipliers)",
+    "exercises": "the three deck-parser paths that all set laser%omega, and confirms they are physically equivalent when the deck author supplies analytically equal expressions"
+  },
+  "policy": {
+    "shape": "Pairwise Ey(boundary, t) trace comparison: lambda-vs-omega (same evaluation order, near-bit-exact) and lambda-vs-freq (reassociated evaluation order, few-ULP-scale looser).",
+    "tolerance_origin": "Not measured empirically and not a physics-accuracy bound: derived from IEEE-754 double relative epsilon (~2.22e-16) for one reassociated multiply/divide, propagated through a ~10-step FDTD advance. 1e-9 is set two orders of magnitude above that analytic floor and nine orders below the smallest bug this check is meant to catch (a missing 2*pi factor is a >500% error).",
+    "determinism": "No particles/injectors in this deck; single rank; fully deterministic."
+  },
+  "criteria": [
+    {
+      "name": "lambda_omega_freq_equivalence",
+      "rule": "max relative |Ey_lambda(t) - Ey_other(t)| <= 1e-9 for both 'omega' and 'freq' variants, on both reference and candidate sides.",
+      "status": "active"
+    }
+  ]
+}

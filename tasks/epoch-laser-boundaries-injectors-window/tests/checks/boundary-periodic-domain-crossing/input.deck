@@ -1,0 +1,42 @@
+begin:constant
+  lambda0 = 0.8 * micron
+  amp0 = 1.0e10
+  # 3 full wavelengths exactly fill the periodic domain, so the initial
+  # condition below is itself periodic-BC-compatible (no seam discontinuity).
+  lx = 3 * lambda0
+end:constant
+
+
+begin:control
+  nx = 300
+
+  # One full domain length of propagation at c: t_end = lx / c.
+  t_end = lx / c
+
+  x_min = 0
+  x_max = lx
+end:control
+
+
+begin:boundaries
+  bc_x_min = periodic
+  bc_x_max = periodic
+end:boundaries
+
+
+begin:fields
+  # A source-free, +x-travelling plane-wave initial condition in vacuum:
+  # Ey = c*Bz (Poynting vector S = E x B / mu0 points +x for this sign).
+  ey = amp0 * sin(2.0 * pi * x / lambda0)
+  bz = (amp0 / c) * sin(2.0 * pi * x / lambda0)
+end:fields
+
+
+begin:output
+  dt_snapshot = 8.0089422319 * femto
+  dump_last = T
+
+  grid = always
+  ey = always
+  bz = always
+end:output
