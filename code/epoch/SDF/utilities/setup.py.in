@@ -1,0 +1,31 @@
+import os
+from setuptools import setup, Extension
+
+# Remove environment variables that can break the build, if set incorrectly.
+# FIXME: The variable 'EXTRA_COMPILE_ARGS' may still break the installation in some cases,
+# if it is set in CMakeLists.txt and CMAKE_C_COMPILER differs from the one used to build
+# the Python interpreter.
+for key in ['CC', 'CFLAGS']:
+    if key in os.environ:
+        del os.environ[key]
+
+setup(
+    name='sdfpy',
+    version='1.0',
+    url='http://github.com/Warwick-Plasma/SDF.git',
+    description='Python module for processing SDF files',
+    py_modules=['sdf_legacy'],
+    ext_modules=[
+        Extension(
+            'sdf',
+            [os.path.join("${CMAKE_CURRENT_SOURCE_DIR}", 'sdf_python.c')],
+            include_dirs=['${Python3_NumPy_INCLUDE_DIRS}', '.', '${SDFC_INCLUDE_DIR}'],
+            library_dirs=['$<IF:$<TARGET_EXISTS:sdfc>,$<TARGET_FILE_DIR:sdfc>,${SDFC_LIB_DIR}>'],
+            libraries=['sdfc'],
+            extra_compile_args=['-O${OPT_LEVEL}', '-D_XOPEN_SOURCE=600']
+            + '@EXTRA_COMPILE_ARGS@'.replace(';', '\n').split(),
+            extra_link_args=['@EXTRA_LINK_ARGS@']
+        )
+    ],
+    install_requires=['numpy']
+)
