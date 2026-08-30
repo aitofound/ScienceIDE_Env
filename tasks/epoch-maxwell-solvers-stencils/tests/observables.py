@@ -90,18 +90,18 @@ def e_step_1d(ex, ey, ez, bx, by, bz, hdtx):
     return list(ex), ey2, ez2
 
 
-def b_step_1d_yee_or_alpha_delta(ex, ey, ez, hdtx, alphax, deltax):
+def b_step_1d_yee_or_alpha_delta(ex, ey, ez, by, bz, hdtx, alphax, deltax, margin=2):
     ny = len(ey)
-    by2 = [0.0] * ny
-    bz2 = [0.0] * ny
-    for ix in range(2, ny - 3):
-        by2[ix] = hdtx * (
+    by2 = list(by)
+    bz2 = list(bz)
+    for ix in range(margin, ny - margin - 1):
+        by2[ix] = by[ix] + hdtx * (
             alphax * (ez[ix + 1] - ez[ix]) + deltax * (ez[ix + 2] - ez[ix - 1])
         )
-        bz2[ix] = -hdtx * (
+        bz2[ix] = bz[ix] - hdtx * (
             alphax * (ey[ix + 1] - ey[ix]) + deltax * (ey[ix + 2] - ey[ix - 1])
         )
-    return by2, bz2, list(range(2, ny - 3))
+    return by2, bz2, list(range(margin, ny - margin - 1))
 
 
 def e_step_2d(ex, ey, ez, bx, by, bz, hdtx, hdty, nx, ny):
@@ -117,29 +117,29 @@ def e_step_2d(ex, ey, ez, bx, by, bz, hdtx, hdty, nx, ny):
     return ex2, ey2, ez2
 
 
-def b_step_2d(ex, ey, ez, hdtx, hdty, coeffs, nx, ny, margin=3):
+def b_step_2d(ex, ey, ez, bx, by, bz, hdtx, hdty, coeffs, nx, ny, margin=3):
     """coeffs: {'alphax','alphay','betaxy','betayx','deltax','deltay'}."""
     ax, ay = coeffs["alphax"], coeffs["alphay"]
     bxy, byx = coeffs["betaxy"], coeffs["betayx"]
     dx_, dy_ = coeffs["deltax"], coeffs["deltay"]
-    bx2 = [[0.0] * ny for _ in range(nx)]
-    by2 = [[0.0] * ny for _ in range(nx)]
-    bz2 = [[0.0] * ny for _ in range(nx)]
+    bx2 = [list(col) for col in bx]
+    by2 = [list(col) for col in by]
+    bz2 = [list(col) for col in bz]
     idx = []
     for ix in range(margin, nx - margin):
         for iy in range(margin, ny - margin):
             idx.append((ix, iy))
-            bx2[ix][iy] = -hdty * (
+            bx2[ix][iy] = bx[ix][iy] - hdty * (
                 ay * (ez[ix][iy + 1] - ez[ix][iy])
                 + byx * (ez[ix + 1][iy + 1] - ez[ix + 1][iy] + ez[ix - 1][iy + 1] - ez[ix - 1][iy])
                 + dy_ * (ez[ix][iy + 2] - ez[ix][iy - 1])
             )
-            by2[ix][iy] = hdtx * (
+            by2[ix][iy] = by[ix][iy] + hdtx * (
                 ax * (ez[ix + 1][iy] - ez[ix][iy])
                 + bxy * (ez[ix + 1][iy + 1] - ez[ix][iy + 1] + ez[ix + 1][iy - 1] - ez[ix][iy - 1])
                 + dx_ * (ez[ix + 2][iy] - ez[ix - 1][iy])
             )
-            bz2[ix][iy] = -hdtx * (
+            bz2[ix][iy] = bz[ix][iy] - hdtx * (
                 ax * (ey[ix + 1][iy] - ey[ix][iy])
                 + bxy * (ey[ix + 1][iy + 1] - ey[ix][iy + 1] + ey[ix + 1][iy - 1] - ey[ix][iy - 1])
                 + dx_ * (ey[ix + 2][iy] - ey[ix - 1][iy])
@@ -170,7 +170,7 @@ def e_step_3d(ex, ey, ez, bx, by, bz, hdtx, hdty, hdtz, nx, ny, nz):
     return ex2, ey2, ez2
 
 
-def b_step_3d(ex, ey, ez, hdtx, hdty, hdtz, coeffs, nx, ny, nz, margin=3):
+def b_step_3d(ex, ey, ez, bx, by, bz, hdtx, hdty, hdtz, coeffs, nx, ny, nz, margin=3):
     """coeffs keys: alphax,alphay,alphaz, betaxy,betaxz,betayx,betayz,
     betazx,betazy, gammax,gammay,gammaz, deltax,deltay,deltaz. Transcribed
     from fields.f90 update_b_field, field_order==2, non-cpml ELSE branch."""
@@ -181,16 +181,16 @@ def b_step_3d(ex, ey, ez, hdtx, hdty, hdtz, coeffs, nx, ny, nz, margin=3):
     gx, gy, gz = coeffs["gammax"], coeffs["gammay"], coeffs["gammaz"]
     dx_, dy_, dz_ = coeffs["deltax"], coeffs["deltay"], coeffs["deltaz"]
 
-    bx2 = [[[0.0] * nz for _ in range(ny)] for _ in range(nx)]
-    by2 = [[[0.0] * nz for _ in range(ny)] for _ in range(nx)]
-    bz2 = [[[0.0] * nz for _ in range(ny)] for _ in range(nx)]
+    bx2 = [[list(col) for col in plane] for plane in bx]
+    by2 = [[list(col) for col in plane] for plane in by]
+    bz2 = [[list(col) for col in plane] for plane in bz]
     idx = []
     for ix in range(margin, nx - margin):
         for iy in range(margin, ny - margin):
             for iz in range(margin, nz - margin):
                 idx.append((ix, iy, iz))
 
-                bx2[ix][iy][iz] = -hdty * (
+                bx2[ix][iy][iz] = bx[ix][iy][iz] - hdty * (
                     ay * (ez[ix][iy + 1][iz] - ez[ix][iy][iz])
                     + byx * (ez[ix + 1][iy + 1][iz] - ez[ix + 1][iy][iz]
                              + ez[ix - 1][iy + 1][iz] - ez[ix - 1][iy][iz])
@@ -214,7 +214,7 @@ def b_step_3d(ex, ey, ez, hdtx, hdty, hdtz, coeffs, nx, ny, nz, margin=3):
                     + dz_ * (ey[ix][iy][iz + 2] - ey[ix][iy][iz - 1])
                 )
 
-                by2[ix][iy][iz] = -hdtz * (
+                by2[ix][iy][iz] = by[ix][iy][iz] - hdtz * (
                     az * (ex[ix][iy][iz + 1] - ex[ix][iy][iz])
                     + bzx * (ex[ix + 1][iy][iz + 1] - ex[ix + 1][iy][iz]
                              + ex[ix - 1][iy][iz + 1] - ex[ix - 1][iy][iz])
@@ -238,7 +238,7 @@ def b_step_3d(ex, ey, ez, hdtx, hdty, hdtz, coeffs, nx, ny, nz, margin=3):
                     + dx_ * (ez[ix + 2][iy][iz] - ez[ix - 1][iy][iz])
                 )
 
-                bz2[ix][iy][iz] = -hdtx * (
+                bz2[ix][iy][iz] = bz[ix][iy][iz] - hdtx * (
                     ax * (ey[ix + 1][iy][iz] - ey[ix][iy][iz])
                     + bxy * (ey[ix + 1][iy + 1][iz] - ey[ix][iy + 1][iz]
                              + ey[ix + 1][iy - 1][iz] - ey[ix][iy - 1][iz])
@@ -274,27 +274,39 @@ def _order_coeffs(order):
 
 def e_step_3d_high_order(ex, ey, ez, bx, by, bz, hdtx, hdty, hdtz, order, nx, ny, nz, margin=4):
     """fields.f90 update_e_field, field_order in {4,6}, non-cpml branch
-    (Yee-only above field_order 2 -- deck_control_block.F90 enforces this)."""
+    (Yee-only above field_order 2 -- deck_control_block.F90 enforces this).
+
+    Every field-order-4/6 row in this leaf declares `bc_y_min/max =
+    bc_z_min/max = periodic`, so y/z neighbour cells are real (non-stale)
+    data at every index and are read here via modular (wraparound) offsets
+    with no margin exclusion; only x has a real physical boundary
+    (bc_x_min=simple_laser, bc_x_max=open) that this recompute cannot
+    model, so `margin` trims x alone (see common._second_b_step_margin_bonus
+    for the exact required x margin)."""
     c1, c2, c3 = _order_coeffs(order)
     ex2 = [[[0.0] * nz for _ in range(ny)] for _ in range(nx)]
     ey2 = [[[0.0] * nz for _ in range(ny)] for _ in range(nx)]
     ez2 = [[[0.0] * nz for _ in range(ny)] for _ in range(nx)]
     idx = []
     for ix in range(margin, nx - margin):
-        for iy in range(margin, ny - margin):
-            for iz in range(margin, nz - margin):
+        for iy in range(ny):
+            iyp1, iyp2 = (iy + 1) % ny, (iy + 2) % ny
+            iym1, iym2, iym3 = (iy - 1) % ny, (iy - 2) % ny, (iy - 3) % ny
+            for iz in range(nz):
+                izp1, izp2 = (iz + 1) % nz, (iz + 2) % nz
+                izm1, izm2, izm3 = (iz - 1) % nz, (iz - 2) % nz, (iz - 3) % nz
                 idx.append((ix, iy, iz))
                 ex2[ix][iy][iz] = ex[ix][iy][iz] \
-                    + hdty * (c1 * (bz[ix][iy][iz] - bz[ix][iy - 1][iz])
-                              + c2 * (bz[ix][iy + 1][iz] - bz[ix][iy - 2][iz])
-                              + c3 * (bz[ix][iy + 2][iz] - bz[ix][iy - 3][iz])) \
-                    - hdtz * (c1 * (by[ix][iy][iz] - by[ix][iy][iz - 1])
-                              + c2 * (by[ix][iy][iz + 1] - by[ix][iy][iz - 2])
-                              + c3 * (by[ix][iy][iz + 2] - by[ix][iy][iz - 3]))
+                    + hdty * (c1 * (bz[ix][iy][iz] - bz[ix][iym1][iz])
+                              + c2 * (bz[ix][iyp1][iz] - bz[ix][iym2][iz])
+                              + c3 * (bz[ix][iyp2][iz] - bz[ix][iym3][iz])) \
+                    - hdtz * (c1 * (by[ix][iy][iz] - by[ix][iy][izm1])
+                              + c2 * (by[ix][iy][izp1] - by[ix][iy][izm2])
+                              + c3 * (by[ix][iy][izp2] - by[ix][iy][izm3]))
                 ey2[ix][iy][iz] = ey[ix][iy][iz] \
-                    + hdtz * (c1 * (bx[ix][iy][iz] - bx[ix][iy][iz - 1])
-                              + c2 * (bx[ix][iy][iz + 1] - bx[ix][iy][iz - 2])
-                              + c3 * (bx[ix][iy][iz + 2] - bx[ix][iy][iz - 3])) \
+                    + hdtz * (c1 * (bx[ix][iy][iz] - bx[ix][iy][izm1])
+                              + c2 * (bx[ix][iy][izp1] - bx[ix][iy][izm2])
+                              + c3 * (bx[ix][iy][izp2] - bx[ix][iy][izm3])) \
                     - hdtx * (c1 * (bz[ix][iy][iz] - bz[ix - 1][iy][iz])
                               + c2 * (bz[ix + 1][iy][iz] - bz[ix - 2][iy][iz])
                               + c3 * (bz[ix + 2][iy][iz] - bz[ix - 3][iy][iz]))
@@ -302,41 +314,48 @@ def e_step_3d_high_order(ex, ey, ez, bx, by, bz, hdtx, hdty, hdtz, order, nx, ny
                     + hdtx * (c1 * (by[ix][iy][iz] - by[ix - 1][iy][iz])
                               + c2 * (by[ix + 1][iy][iz] - by[ix - 2][iy][iz])
                               + c3 * (by[ix + 2][iy][iz] - by[ix - 3][iy][iz])) \
-                    - hdty * (c1 * (bx[ix][iy][iz] - bx[ix][iy - 1][iz])
-                              + c2 * (bx[ix][iy + 1][iz] - bx[ix][iy - 2][iz])
-                              + c3 * (bx[ix][iy + 2][iz] - bx[ix][iy - 3][iz]))
+                    - hdty * (c1 * (bx[ix][iy][iz] - bx[ix][iym1][iz])
+                              + c2 * (bx[ix][iyp1][iz] - bx[ix][iym2][iz])
+                              + c3 * (bx[ix][iyp2][iz] - bx[ix][iym3][iz]))
     return ex2, ey2, ez2, idx
 
 
-def b_step_3d_high_order(ex, ey, ez, hdtx, hdty, hdtz, order, nx, ny, nz, margin=4):
-    """fields.f90 update_b_field, field_order in {4,6}, non-cpml branch."""
+def b_step_3d_high_order(ex, ey, ez, bx, by, bz, hdtx, hdty, hdtz, order, nx, ny, nz, margin=4):
+    """fields.f90 update_b_field, field_order in {4,6}, non-cpml branch.
+
+    Same x-only-margin / periodic-y/z-wraparound convention as
+    `e_step_3d_high_order` above (see its docstring)."""
     c1, c2, c3 = _order_coeffs(order)
-    bx2 = [[[0.0] * nz for _ in range(ny)] for _ in range(nx)]
-    by2 = [[[0.0] * nz for _ in range(ny)] for _ in range(nx)]
-    bz2 = [[[0.0] * nz for _ in range(ny)] for _ in range(nx)]
+    bx2 = [[list(col) for col in plane] for plane in bx]
+    by2 = [[list(col) for col in plane] for plane in by]
+    bz2 = [[list(col) for col in plane] for plane in bz]
     idx = []
     for ix in range(margin, nx - margin):
-        for iy in range(margin, ny - margin):
-            for iz in range(margin, nz - margin):
+        for iy in range(ny):
+            iyp1, iyp2, iyp3 = (iy + 1) % ny, (iy + 2) % ny, (iy + 3) % ny
+            iym1, iym2 = (iy - 1) % ny, (iy - 2) % ny
+            for iz in range(nz):
+                izp1, izp2, izp3 = (iz + 1) % nz, (iz + 2) % nz, (iz + 3) % nz
+                izm1, izm2 = (iz - 1) % nz, (iz - 2) % nz
                 idx.append((ix, iy, iz))
-                bx2[ix][iy][iz] = -hdty * (c1 * (ez[ix][iy + 1][iz] - ez[ix][iy][iz])
-                                            + c2 * (ez[ix][iy + 2][iz] - ez[ix][iy - 1][iz])
-                                            + c3 * (ez[ix][iy + 3][iz] - ez[ix][iy - 2][iz])) \
-                    + hdtz * (c1 * (ey[ix][iy][iz + 1] - ey[ix][iy][iz])
-                              + c2 * (ey[ix][iy][iz + 2] - ey[ix][iy][iz - 1])
-                              + c3 * (ey[ix][iy][iz + 3] - ey[ix][iy][iz - 2]))
-                by2[ix][iy][iz] = -hdtz * (c1 * (ex[ix][iy][iz + 1] - ex[ix][iy][iz])
-                                            + c2 * (ex[ix][iy][iz + 2] - ex[ix][iy][iz - 1])
-                                            + c3 * (ex[ix][iy][iz + 3] - ex[ix][iy][iz - 2])) \
+                bx2[ix][iy][iz] = bx[ix][iy][iz] - hdty * (c1 * (ez[ix][iyp1][iz] - ez[ix][iy][iz])
+                                            + c2 * (ez[ix][iyp2][iz] - ez[ix][iym1][iz])
+                                            + c3 * (ez[ix][iyp3][iz] - ez[ix][iym2][iz])) \
+                    + hdtz * (c1 * (ey[ix][iy][izp1] - ey[ix][iy][iz])
+                              + c2 * (ey[ix][iy][izp2] - ey[ix][iy][izm1])
+                              + c3 * (ey[ix][iy][izp3] - ey[ix][iy][izm2]))
+                by2[ix][iy][iz] = by[ix][iy][iz] - hdtz * (c1 * (ex[ix][iy][izp1] - ex[ix][iy][iz])
+                                            + c2 * (ex[ix][iy][izp2] - ex[ix][iy][izm1])
+                                            + c3 * (ex[ix][iy][izp3] - ex[ix][iy][izm2])) \
                     + hdtx * (c1 * (ez[ix + 1][iy][iz] - ez[ix][iy][iz])
                               + c2 * (ez[ix + 2][iy][iz] - ez[ix - 1][iy][iz])
                               + c3 * (ez[ix + 3][iy][iz] - ez[ix - 2][iy][iz]))
-                bz2[ix][iy][iz] = -hdtx * (c1 * (ey[ix + 1][iy][iz] - ey[ix][iy][iz])
+                bz2[ix][iy][iz] = bz[ix][iy][iz] - hdtx * (c1 * (ey[ix + 1][iy][iz] - ey[ix][iy][iz])
                                             + c2 * (ey[ix + 2][iy][iz] - ey[ix - 1][iy][iz])
                                             + c3 * (ey[ix + 3][iy][iz] - ey[ix - 2][iy][iz])) \
-                    + hdty * (c1 * (ex[ix][iy + 1][iz] - ex[ix][iy][iz])
-                              + c2 * (ex[ix][iy + 2][iz] - ex[ix][iy - 1][iz])
-                              + c3 * (ex[ix][iy + 3][iz] - ex[ix][iy - 2][iz]))
+                    + hdty * (c1 * (ex[ix][iyp1][iz] - ex[ix][iy][iz])
+                              + c2 * (ex[ix][iyp2][iz] - ex[ix][iym1][iz])
+                              + c3 * (ex[ix][iyp3][iz] - ex[ix][iym2][iz]))
     return bx2, by2, bz2, idx
 
 
