@@ -1,0 +1,223 @@
+#----------------------------------------------------------------
+# Sensible compiler options for different compute systems
+#----------------------------------------------------------------
+
+ifeq ($(SYSTEM), cray)
+#   default settings for the Cray Fortran Compiler (ftn)
+    FC=ftn
+    FFLAGS=-Oaggress -Ovector3 -Oipa4
+    DBLFLAG= -s real64
+    CC=cc
+    CCFLAGS=-O3
+    KNOWN_SYSTEM=yes
+ifeq ($(MAP),yes)
+    LDFLAGS+=-dynamic -L/${ALLINEA_DIR}/allinea -lmap-sampler -Wl,--eh-frame-hdr
+    FFLAGS+= -G2
+endif
+endif
+
+ifeq ($(SYSTEM), daint)
+#   piz-daint supercomputer facility https://www.cscs.ch/computers/piz-daint
+    include Makefile_defaults_ifort
+    FC=ftn
+    FFLAGS+= -heap-arrays
+    QSYS = slurm
+ifeq ($(MPI),daint)
+    USEMPI=yes
+endif
+endif
+
+ifeq ($(SYSTEM), xc40)
+#   Cray XC40 machine, similar to the daint system
+    include Makefile_defaults_ifort
+    FC=ftn
+    FFLAGS+= -heap-arrays -dynamic
+    KNOWN_SYSTEM=yes
+    CC = cc
+    QSYS = slurm
+    OMPFLAGS = -openmp
+ifeq ($(MPI),xc40)
+    USEMPI=yes
+endif
+endif
+
+ifeq ($(SYSTEM), m2)
+#   MASSIVE facility: massive.org.au
+    include Makefile_defaults_ifort
+    QSYS = pbs
+    ifeq ($(OPENMP),yes)
+        NOMP='12'
+    else
+        NOMP='1'
+    endif
+    QNODES='nodes='$(NMPI)':ppn='$(NOMP)
+    WALLTIME='500:00:00'
+endif
+
+ifeq ($(SYSTEM), ozstar)
+#   ozstar facility using ifort https://supercomputing.swin.edu.au/ozstar/
+    include Makefile_defaults_ifort
+    OMPFLAGS=-qopenmp
+    NOMP=32
+    #QNAME='skylake'
+    QSYS = slurm
+    WALLTIME='168:00:00'
+endif
+
+ifeq ($(SYSTEM), nt)
+#   ozstar milan cluster using aocc (Ngarru Tindebeek)
+    include Makefile_defaults_aocc
+    OMPFLAGS=-fopenmp
+    NOMP='32'
+    QNAME='milan'
+    QSYS=slurm
+endif
+
+ifeq ($(SYSTEM), rusty)
+#   Flatiron CCA rusty cluster rome node, AMD EPYC 7742
+    include Makefile_defaults_ifort
+    OMPFLAGS=-qopenmp
+    NOMP=64
+    QSYS=slurm
+    QPARTITION='gen'
+    WALLTIME='168:00:00'
+endif
+
+ifeq ($(SYSTEM), ipopeyearch)
+#   Flatiron CCA popeye cluster icelake node
+    include Makefile_defaults_ifort
+    FFLAGS= -Ofast -mcmodel=medium -march=core-avx2
+    NOMP=64
+    QSYS = slurm
+    QNAME='icelake'
+    QPARTITION='gen'
+    WALLTIME='168:00:00'
+endif
+
+ifeq ($(SYSTEM), monarch)
+#   Monarch cluster at Monash University
+    include Makefile_defaults_ifort
+    OMPFLAGS=-qopenmp -qopt-report
+    QSYS = slurm
+    QPROJECT='p01'
+    WALLTIME='100:59:59'
+    QPARTITION='comp'
+endif
+
+ifeq ($(SYSTEM), nci)
+#   gadi (NCI machine)
+    include Makefile_defaults_ifort
+    #MPI=intel
+    FFLAGS= -O3 -shared-intel -ip -axSSE2,SSSE3,SSE4.1,SSE4.2,AVX -inline-factor=500 -warn uninitialized -warn unused -warn truncated_source
+    DEBUGFLAG+= -fpe0 -fp-stack-check
+    CCFLAGS= -O3 -ip
+    QSYS= pbs
+    #PBSRESUBMIT=yes
+    NOMP=48
+    ifeq ($(MPI),yes)
+        NPAR=32
+    endif
+    QPROJECT=$(PROJECT)
+    QNAME='normal'
+    WALLTIME='48:00:00'
+    MPIEXEC='mpiexec -npernode 1'
+    QNODES='ncpus='$(NPAR)
+    QEXTRA='-l other=hyperthread'
+    QSTORAGE="gdata/$(QPROJECT)"
+endif
+
+ifeq ($(SYSTEM), gfortran)
+#   default settings for the gfortran compiler
+    include Makefile_defaults_gfortran
+endif
+
+ifeq ($(SYSTEM), complexity)
+#   complexity.leicester.dirac.ac.uk
+    include Makefile_defaults_ifort
+    FFLAGS= -O3 -xhost -ipo -shared-intel -warn uninitialized \
+            -warn unused -warn truncated_source
+    DEBUGFLAG= -check all -WB -traceback -g -fpe0 -fp-stack-check
+    CCFLAGS = -O3 -ipo
+    QSYS=pbs
+    QNAME=q64
+    WALLTIME='48:00:00'
+endif
+
+ifeq ($(SYSTEM), isca)
+#   local cluster at the University of Exeter
+    include Makefile_defaults_ifort
+    FFLAGS= -O3 -axAVX \
+            -warn uninitialized -warn truncated_source\
+            -warn interfaces -nogen-interfaces
+    OMPFLAGS= -qopenmp
+    DEBUGFLAG= -check all -traceback -g -fpe0 -fp-stack-check -heap-arrays -O0
+    QNAME=pq
+    WALLTIME='168:00:00'
+endif
+
+ifeq ($(SYSTEM), skylake)
+#   HPCs Skylake cluster at Cambridge
+    include Makefile_defaults_ifort
+    FFLAGS= -O3 -shared-intel -warn uninitialized -warn unused -warn \
+            truncated_source -xCORE-AVX512 -ipo
+    OMPFLAGS = -qopenmp
+    CCFLAGS = -O3 -xCORE-AVX512 -ipo
+    QSYS = slurm
+    QPROJECT='DIRAC-DP005-CPU'
+    WALLTIME='36:00:00'
+endif
+
+ifeq ($(SYSTEM), kennedy)
+#   HPC cluster at University of St. Andrews
+    include Makefile_defaults_ifort
+    OMPFLAGS = -qopenmp
+    QSYS = slurm
+endif
+
+ifeq ($(SYSTEM), ifort)
+#   default settings for the Intel Fortran Compiler
+    include Makefile_defaults_ifort
+endif
+
+ifeq ($(SYSTEM), ifx)
+#   default settings for the new Intel Fortran Compiler
+    include Makefile_defaults_ifx
+endif
+
+ifeq ($(SYSTEM), ifortmac)
+#   default settings for the Intel Fortran Compiler on Mac OS
+    include Makefile_defaults_ifort
+    FFLAGS= -O3 -xhost -shared-intel -warn uninitialized \
+            -warn unused -warn truncated_source -Wl,-rpath,/opt/intel/lib
+    DEBUGFLAG= -check all -WB -traceback -g -fpe0 -fp-stack-check
+endif
+
+ifeq ($(SYSTEM), ifortgcc)
+#   Intel Fortran Compiler but gcc for C
+    include Makefile_defaults_ifort
+    CC = gcc
+    CCFLAGS = -O3
+endif
+
+ifeq ($(SYSTEM), hydra)
+#   hydra cluster in Garching http://www.mpcdf.mpg.de/services/computing/hydra
+    include Makefile_defaults_ifort
+    FFLAGS= -O3 -xavx -ip -shared-intel -warn uninitialized \
+            -warn unused -warn truncated_source
+    DEBUGFLAG= -check all -WB -traceback -g -fpe0 -fp-stack-check
+    CCFLAGS = -O3 -ipo
+endif
+
+ifeq ($(SYSTEM), lyoccf)
+#   LIO CCF cluster
+    include Makefile_defaults_ifort
+    FFLAGS= -O3 -ftz -xavx -cpp -sox -fno-alias -fno-fnalias \
+            -no-prec-div -no-prec-sqrt -align all -warn uninitialized \
+            -warn unused -warn truncated_source
+    LIBCXX = -cxxlib
+endif
+
+ifeq ($(SYSTEM), aocc)
+#  default settings for the AMD optimized fortran compiler (aocc)
+   include Makefile_defaults_aocc
+endif
