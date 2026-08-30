@@ -56,7 +56,7 @@ const CANARY_MD = `<!-- ${CANARY_LINE} -->`;
 const NAMESPACE_KEYS = new Set([
   'slug', 'title', 'short_title', 'status',
   'repo_url', 'repo_commit', 'license', 'language_from', 'language_to',
-  'loc_in_scope', 'domain',
+  'loc_in_scope', 'domain', 'source',
   'science_summary', 'owner',
   'public_inputs', 'hidden_inputs_note', 'equivalence_explanation', 'precision_policy',
   'incumbent_description', 'incumbent_runtime', 'incumbent_hardware', 'incumbent_source',
