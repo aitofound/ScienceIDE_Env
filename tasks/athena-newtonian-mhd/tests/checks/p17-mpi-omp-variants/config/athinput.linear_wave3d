@@ -7,13 +7,19 @@ configure = -b --prob=linear_wave
 problem_id = LinWave   # problem ID: basename of output filenames
 
 <output1>
-file_type  = hst       # History data dump
-dt         = 0.01      # time increment between outputs
+file_type   = hst       # history dump: volume-integrated conserved totals
+dt          = 0.01
+data_format = %25.17e  # full-precision (round-trip) formatted output
 
 <output2>
-file_type  = vtk       # VTK data dump
-variable   = prim      # variables to be output
-dt         = 0.01      # time increment between outputs
+file_type   = tab       # formatted table, one file per MeshBlock
+variable    = prim
+dt          = 0.01
+data_format = %25.17e
+
+<output3>
+file_type   = rst       # native restart checkpoint: conserved state + face-centred B
+dt          = 0.01
 
 <time>
 cfl_number = 0.3       # The Courant, Friedrichs, & Lewy (CFL) Number
@@ -113,3 +119,5 @@ ang_3_vert= false     # set to 'true' to make ang_3=pi/2
 nu_iso    = 0.0       # isotropic viscosity coefficient
 kappa_iso = 0.0       # isotropic thermal conduction coefficient
 eta_ohm   = 0.0       # Ohmic resistivity coefficient
+ang_2       = -999.9    # default sentinel: auto angle; runs may set 0.0 for an axis-aligned wave
+ang_3       = -999.9    # default sentinel: auto angle; runs may set 0.0 for an axis-aligned wave

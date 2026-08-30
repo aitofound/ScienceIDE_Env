@@ -1,63 +1,22 @@
 {
-  "rubric_version": "athena-mhd-rubric-v1",
+  "rubric_version": "athena-mhd-rubric-v4",
+  "id": "L4",
   "case": "rj2a-shock",
-  "description": "Exact-pin Athena++ Newtonian ideal-MHD rj2a-shock check; exact identity is provisional self-wiring evidence, not a final scientific tolerance.",
-  "upstream_deck": "code/athena/inputs/mhd/athinput.rj2a",
+  "status": "breadth",
+  "description": "One-dimensional RJ2a shock (64 cells, single block, HLLD); retained from the original portfolio and now scored.",
   "check_deck": "config/athinput.rj2a",
-  "deck_provenance": {
-    "relationship": "documented check-local derivative; not an exact upstream copy",
-    "parent_sha256": "4fec54e7fb70b44e44f461834be462e7cc365af4599ee54c5b94eb627e85f4ee",
-    "derived_sha256": "67d6fb1feae09a502d8d81939d05766d9bf5e7e58c892fb256aa04228db99b66",
-    "exact_changes": [
-      "added output2/variable=prim declaration so the check-owned TAB output override has an explicit variable",
-      "added meshblock section with nx1=256, nx2=1, nx3=1; run_case.py overrides these values for the check"
-    ],
-    "effective_cli_overrides": [
-      "output2/file_type=tab",
-      "output2/variable=prim",
-      "output2/dt=0.2",
-      "time/tlim=0.2",
-      "time/ncycle_out=0",
-      "mesh/nx1=64",
-      "mesh/nx2=1",
-      "mesh/nx3=1",
-      "meshblock/nx1=64",
-      "meshblock/nx2=1",
-      "meshblock/nx3=1",
-      "problem/compute_error=true"
-    ],
-    "effective_runner_selectors": [
-      "--problem shock_tube",
-      "--eos adiabatic",
-      "--flux hlld",
-      "--dimensions 64,1,1",
-      "--meshblock 64,1,1",
-      "--tlim 0.2",
-      "--output-dt 0.2",
-      "--boundary outflow"
-    ]
-  },
+  "upstream_deck": "code/athena/inputs/mhd/athinput.rj2a",
+  "upstream_deck_sha256": "4fec54e7fb70b44e44f461834be462e7cc365af4599ee54c5b94eb627e85f4ee",
+  "check_deck_sha256": "88d6a12aa5d4870d12614acd06936399d970af07b473a1218eb51282353ef89d",
+  "deck_delta": "--- code/athena/inputs/mhd/athinput.rj2a\n+++ config/athinput.rj2a\n@@ -7,17 +7,19 @@\n problem_id  = RJ2a      # problem ID: basename of output filenames\n \n <output1>\n-file_type   = tab       # Tabular data dump\n-variable    = prim      # variables to be output\n-data_format = %12.5e    # Optional data format string\n-dt          = 0.005     # time increment between outputs\n-x2_slice    = 0.0       # slice in x2\n-x3_slice    = 0.0       # slice in x3\n+file_type   = hst       # history dump: volume-integrated conserved totals\n+dt          = 0.005\n+data_format = %25.17e  # full-precision (round-trip) formatted output\n \n <output2>\n-file_type   = hst       # History data dump\n-dt          = 0.005     # time increment between outputs\n-data_format = %12.5e    # Optional data format string\n+file_type   = tab       # formatted table, one file per MeshBlock\n+variable    = prim\n+dt          = 0.005\n+data_format = %25.17e\n+\n+<output3>\n+file_type   = rst       # native restart checkpoint: conserved state + face-centred B\n+dt          = 0.005\n \n <time>\n cfl_number  = 0.8       # The Courant, Friedrichs, & Lewy (CFL) Number\n@@ -45,6 +47,14 @@\n x3max       = 0.5       # maximum value of X3\n ix3_bc      = periodic  # Inner-X3 boundary condition flag\n ox3_bc      = periodic  # Outer-X3 boundary condition flag\n+refinement  = none      # runs select none/static\n+num_threads = 1         # OpenMP threads; runs may raise it\n+\n+<meshblock>\n+# MeshBlock size; runs override every entry\n+nx1         = 256\n+nx2         = 1\n+nx3         = 1\n \n <hydro>\n gamma = 1.666666666667  # gamma = C_p/C_v\n",
+  "official_evidence": "inputs/mhd/athinput.rj2a",
   "problem": "shock_tube",
   "eos": "adiabatic",
   "flux": "hlld",
-  "dimensions": [
-    64,
-    1,
-    1
-  ],
-  "meshblock_dimensions": [
-    64,
-    1,
-    1
-  ],
-  "tlim": 0.2,
-  "output_dt": 0.2,
-  "frame_count": 2,
-  "expected_times": [
-    0.0,
-    0.2
-  ],
+  "nghost": 2,
   "boundary_policy": "outflow",
+  "gamma": 1.666666666667,
+  "iso_sound_speed": 1.0,
   "required_pipeline": [
     "src/hydro/calculate_fluxes.cpp",
     "src/hydro/add_flux_divergence.cpp",
@@ -65,7 +24,10 @@
     "src/field/ct.cpp",
     "src/task_list/time_integrator.cpp"
   ],
-  "artifact_schema": "athena-mhd-state/v1",
+  "artifact_schemas": {
+    "state": "athena-mhd-state/v3",
+    "observables": "athena-mhd-ct-observables/v3"
+  },
   "variables": [
     "x1",
     "x2",
@@ -80,23 +42,67 @@
     "Bcc3"
   ],
   "comparison_policy": "self_wiring_exact_identity_pending_jason_science_policy",
-  "scientific_status": "Face fields are represented by explicit shape/hash diagnostics derived from native Bcc output; exact identity is provisional and Jason owns final CT/div-B tolerances.",
-  "native_output": "Athena++ formatted TAB variable=prim with Bcc1/Bcc2/Bcc3; output2/dt=tlim creates exact initial/final endpoints.",
-  "required_observables": [
-    "full finite state rows",
-    "cell-centred Bcc1/Bcc2/Bcc3",
-    "face-field locations/shapes/hash",
-    "discrete div-B l1/linf/max",
-    "conserved mass/momentum/energy",
-    "CT source-path evidence"
+  "owner_policy": {
+    "status": "pending",
+    "state_tolerance": null,
+    "divb_limit": null,
+    "conservation_drift_limit": null,
+    "cross_run_determinism": null,
+    "smr_inclusion": null,
+    "coarse_fine_interface": null,
+    "legacy_witness_weights": null,
+    "check_local_deck_selection": null
+  },
+  "scientific_status": "Provisional exact-identity self-wiring policy: a candidate passes only by bit-identical state, native face-field, div-B, conservation, history and error-file evidence against the trusted CPU oracle, with every rewarded observable reparsed by the verifier from the run's own retained native bytes. Face fields are native restart-checkpoint values (b.x1f/x2f/x3f), not cell-centre averages. Final tolerances, div-B/conservation limits and parallel-determinism policy are Jason-owned and remain pending; nothing here is a scientific pass claim.",
+  "mechanisms": {
+    "executed": [
+      "1-D MHD shock with outflow boundaries"
+    ],
+    "not_executed": []
+  },
+  "declared_subcases_executed": [
+    "dir1 nx=64 single block"
   ],
-  "failure_modes_rejected": [
-    "hydro fallback",
-    "missing transverse dimensions",
-    "missing Bcc or CT sidecar",
-    "scalar error-row replay",
-    "non-finite or non-positive states",
-    "malformed/symlink/extra artifacts"
+  "declared_subcases_not_executed": [],
+  "runs": [
+    {
+      "run_id": "dir1-nx64",
+      "dimensions": [
+        64,
+        1,
+        1
+      ],
+      "meshblock": [
+        64,
+        1,
+        1
+      ],
+      "tlim": 0.2,
+      "output_dt": 0.2,
+      "checkpoint_dt": 0.2,
+      "refinement": "none",
+      "selectors": [
+        "time/cfl_number=0.3",
+        "problem/shock_dir=1",
+        "mesh/ix1_bc=outflow",
+        "mesh/ox1_bc=outflow",
+        "mesh/ix2_bc=periodic",
+        "mesh/ox2_bc=periodic",
+        "mesh/ix3_bc=periodic",
+        "mesh/ox3_bc=periodic"
+      ],
+      "expected_times": [
+        0.0,
+        0.2
+      ],
+      "expected_mesh": {
+        "blocks": 1,
+        "levels": [
+          0
+        ]
+      }
+    }
   ],
-  "operational_cap_seconds": 120
+  "operational_cap_seconds": 120,
+  "human_decisions": "Final tolerances, div-B and conservation limits, cross-run/cross-build determinism policy for the parallel variants, static-refinement inclusion and coarse/fine interface treatment, retention and weighting of the legacy witnesses, the selected upstream subcase bundle and the check-local deck derivatives remain Jason-owned decisions; every slot is an explicit null and the verifier fails closed (exact identity only) until they are set."
 }
