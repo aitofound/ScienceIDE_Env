@@ -244,6 +244,69 @@ def main():
     # --- nonzero return code ---
     run_case("nonzero_returncode", False, manifest_overrides={"returncode": 1})
 
+    # --- ic_module_override identity (epoch1d-species-per-particle-charge-mass
+    # only): the one row whose build replaces upstream's own empty
+    # manual_load template with a task-owned override file (Blocker1's
+    # PER_PARTICLE_CHARGE_MASS repair; see tests/build_variant.sh and that
+    # row's own ic_override/ic_module.f90). These cases prove the contract
+    # both requires the correct override identity for that row and rejects
+    # an override claimed on a row that is not supposed to carry one. ---
+    PPCM_CHECK = "epoch1d-species-per-particle-charge-mass"
+    ppcm_rubric = _load_rubric(PPCM_CHECK)
+    ppcm_override_path = os.path.join(_TESTS_DIR, "checks", PPCM_CHECK, "ic_override", "ic_module.f90")
+    ppcm_override_sha = _sha256_file(ppcm_override_path)
+
+    def run_ppcm_case(name, should_pass, ic_module_override=DELETE, ic_module_override_sha256=DELETE,
+                       **extra_overrides):
+        ppcm_deck_bytes = _ppcm_deck_bytes()
+        overrides = {
+            "ic_module_override": ic_module_override,
+            "ic_module_override_sha256": ic_module_override_sha256,
+            # build_row's manifest defaults are baked around module-global
+            # FIXTURE_DECK_BYTES (the zero-field-drift deck); every PPCM
+            # case must instead bind to the PPCM row's own real fixture
+            # deck bytes/digest.
+            "deck_fixture_sha256": _sha256_bytes(ppcm_deck_bytes),
+            "deck_copied_sha256": _sha256_bytes(ppcm_deck_bytes),
+        }
+        overrides.update(extra_overrides)
+        row_dir = build_row(scratch_root, name, check=PPCM_CHECK, dim=1, variant="ppcm",
+                             defines="-DPER_PARTICLE_CHARGE_MASS", deck_bytes=ppcm_deck_bytes,
+                             manifest_overrides=overrides)
+        reason = exec_contract.validate_execution_contract(PPCM_CHECK, ppcm_rubric, row_dir)
+        passed_contract = reason is None
+        outcome_ok = (passed_contract == should_pass)
+        results.append({
+            "case": name, "expected": "pass" if should_pass else "reject",
+            "actual": "pass" if passed_contract else "reject",
+            "reason": reason, "ok": outcome_ok, "row_dir": row_dir,
+        })
+        status = "OK" if outcome_ok else "MISMATCH"
+        print(f"[{status}] {name}: expected={'pass' if should_pass else 'reject'} "
+              f"actual={'pass' if passed_contract else 'reject'} reason={reason!r}")
+        return outcome_ok
+
+    def _ppcm_deck_bytes():
+        with open(exec_contract.fixture_deck_path(PPCM_CHECK), "rb") as fh:
+            return fh.read()
+
+    run_ppcm_case("ppcm_ic_override_correct_passes", True,
+                  ic_module_override="ic_override/ic_module.f90",
+                  ic_module_override_sha256=ppcm_override_sha)
+    run_ppcm_case("ppcm_ic_override_missing_field_rejected", False)
+    run_ppcm_case("ppcm_ic_override_wrong_path_rejected", False,
+                  ic_module_override="ic_override/some_other_file.f90",
+                  ic_module_override_sha256=ppcm_override_sha)
+    run_ppcm_case("ppcm_ic_override_wrong_digest_rejected", False,
+                  ic_module_override="ic_override/ic_module.f90",
+                  ic_module_override_sha256="0" * 64)
+
+    # --- a row with no override (baseline zero-field-drift) must not
+    # accept a manifest that fabricates one. ---
+    run_case("base_check_fabricated_ic_override_rejected", False,
+             manifest_overrides={"ic_module_override": "some/injected/override.f90",
+                                  "ic_module_override_sha256": "1" * 64})
+
     report_path = os.path.join(scratch_root, "fixture_report.json")
     with open(report_path, "w", encoding="utf-8") as fh:
         json.dump(results, fh, indent=2, sort_keys=True)
