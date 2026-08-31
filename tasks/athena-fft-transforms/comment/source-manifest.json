@@ -1,33 +1,12 @@
 {
-  "repository": "https://github.com/PrincetonUniversity/athena",
+  "canonical_bytes_edited": false,
+  "canonical_package_visible_manifest_sha256": "db86693b8975ebe08ca39c19ca90f565783df2ee0e16e9a65e25dad12af5faf5",
   "commit": "823614c90b594472747a0ac2a699e4a454f300d2",
-  "tree": "4f1c82c988c522fc21dff10fd3178040fd399750",
-  "license": "BSD-3-Clause",
-  "materialization": "byte-preserving copy of the frozen git archive payload into code/athena",
-  "git_archive_tar_sha256": "3a7af5a83dedef6c01a0af23298028b4d52458acbede5572c64ead96f595d206",
-  "tracked_file_count": 664,
-  "vendored_bytes": 11884445,
-  "tracked_symlink_count": 0,
-  "package_visible_manifest_sha256": "db86693b8975ebe08ca39c19ca90f565783df2ee0e16e9a65e25dad12af5faf5",
-  "canonical_hydro_package_visible_file_count": 664,
-  "canonical_hydro_package_visible_manifest_sha256": "db86693b8975ebe08ca39c19ca90f565783df2ee0e16e9a65e25dad12af5faf5",
-  "package_visible_manifest_definition": "Sorted relative paths under code/athena excluding only any path component named .git; each regular-file row includes type, POSIX mode, byte size, and SHA-256; symlink rows include target and mode.",
-  "byte_identity_check": "All 664 package-visible archive files match the canonical hydro leaf byte-for-byte with identical file types, POSIX modes, sizes, and SHA-256 values; no source file was edited.",
-  "canonical_hydro_comparison": "tasks/athena-newtonian-hydro/code/athena package-visible manifest compared exactly; no path, type, mode, size, symlink, or byte differences.",
-  "archive_file_selection": "git -C canonical ls-files (archive payload only; .git control metadata excluded)",
-  "workspace_metadata_note": "The carried control directory is code/athena/.git, mode 0755, with 27 regular metadata files, 15 descendant directories, and 42 descendant entries. Nested git status is clean at the pinned commit; outer repository staging lookup contains no .git paths. It remains untouched under the no-delete rule and is excluded from the archive file count, byte total, package-visible manifest, build inputs, and source checks.",
-  "generated_products_in_code_tree": false,
   "direct_fft_paths": [
     "src/fft/athena_fft.cpp",
     "src/fft/athena_fft.hpp",
     "src/fft/fft_driver.cpp",
-    "src/fft/plimpton/factor.cpp",
-    "src/fft/plimpton/fft_2d.cpp",
-    "src/fft/plimpton/fft_3d.cpp",
-    "src/fft/plimpton/pack_2d.cpp",
-    "src/fft/plimpton/pack_3d.cpp",
-    "src/fft/plimpton/remap_2d.cpp",
-    "src/fft/plimpton/remap_3d.cpp",
+    "src/fft/plimpton",
     "src/pgen/fft.cpp"
   ],
   "excluded_consumers": [
@@ -35,5 +14,41 @@
     "src/gravity/fft_gravity.hpp",
     "src/fft/turbulence.cpp",
     "src/fft/turbulence.hpp"
-  ]
+  ],
+  "git_archive_tar_sha256": "3a7af5a83dedef6c01a0af23298028b4d52458acbede5572c64ead96f595d206",
+  "instrumented_build_binding": {
+    "aggregate_behavior": "Aggregate FFT-01..FFT-15 runs use the upstream path and do not package native claim files; native claim binding applies only to FFT-16..FFT-26.",
+    "instrumented_binary_is_not_clean_upstream": true,
+    "patch_sha256": "e8e80621aadab228d80fed71aab1b4cff21475feb65d7828592fa05be3754d05",
+    "patched_tree_manifest_is_distinct_from_canonical": true,
+    "required": [
+      "canonical_source_manifest_sha256",
+      "patch_sha256",
+      "task_deck_sha256",
+      "patched_tree_manifest_sha256",
+      "binary_sha256"
+    ]
+  },
+  "license": "BSD-3-Clause",
+  "materialization": "canonical code/athena archive remains byte-preserving and immutable; native instrumentation is applied only to fresh task-local copied trees",
+  "repository": "https://github.com/PrincetonUniversity/athena",
+  "task_deck": {
+    "path": "solution/athinput.fft",
+    "scientific_settings": "byte-preserving copy of code/athena/inputs/hydro/athinput.fft; only six inert native-evidence override defaults are appended",
+    "sha256": "5a8773f0ed5d5156d9209fe6e2b50955f3dd50d181793e1f9e7e22552f79cc7d"
+  },
+  "task_patch": {
+    "apply_to": [
+      "fresh serial-source copy",
+      "fresh mpi-source copy"
+    ],
+    "canonical_source_is_never_patched": true,
+    "path": "solution/patches/fft-native-evidence.patch",
+    "scope": [
+      "src/pgen/fft.cpp"
+    ],
+    "sha256": "e8e80621aadab228d80fed71aab1b4cff21475feb65d7828592fa05be3754d05"
+  },
+  "tracked_file_count": 664,
+  "tree": "4f1c82c988c522fc21dff10fd3178040fd399750"
 }
