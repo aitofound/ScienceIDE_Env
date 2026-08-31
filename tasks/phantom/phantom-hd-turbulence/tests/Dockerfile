@@ -5,6 +5,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates make gcc gfortran python3 python3-numpy
 COPY code/phantom/ /opt/phantom-source/
 COPY tests/oracle/ /app/oracle/
+COPY tests/provenance.py /app/provenance.py
 COPY tests/checks/ /app/checks/
 COPY tests/checks.json /app/checks.json
 COPY tests/test.sh /app/test.sh
