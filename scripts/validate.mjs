@@ -138,9 +138,6 @@ const result = run({
   allowedKeys: NAMESPACE_KEYS,
   claimedKeys: OPERATOR_KEYS,
   slugInNamespace: true,
-  /* Codebases vendored under tasks/ ahead of decomposition (only code/, no
-     task.toml) are raw material, not packages; skip them in bulk discovery. */
-  ignoreCodeOnlyDrafts: true,
   /* A status beyond draft is a claim that the package is complete enough to
      review. A task without equivalence criteria has no verifier, and a task
      without an owner has nobody who may author them. The v2 list also named

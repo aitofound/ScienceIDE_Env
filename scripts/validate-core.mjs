@@ -228,15 +228,6 @@ export function run(config) {
   const locations = new Map();
   const harborMarkers = ['code', 'environment', 'tests', 'solution', 'target', 'comment'];
   const hasHarborMarker = (base) => harborMarkers.some((name) => fs.existsSync(path.join(base, name)));
-  /* Opt-in (config.ignoreCodeOnlyDrafts): a directory with no task.toml whose only
-     Harbor marker is `code/` is a codebase vendored ahead of decomposition, not a
-     leaf. Mirrors the Harbor validator's is_code_only_draft rule exactly; it only
-     affects bulk discovery here. Anything with task.toml or any other marker
-     still registers and is held to the full package contract. */
-  const isCodeOnlyDraft = (base) =>
-    Boolean(config.ignoreCodeOnlyDrafts) &&
-    !fs.existsSync(path.join(base, 'task.toml')) &&
-    harborMarkers.every((name) => (name === 'code') === fs.existsSync(path.join(base, name)));
   const register = (slug, base, home, relative) => {
     if (locations.has(slug)) {
       errors.push(`${slug}: duplicate task identity — found at ${locations.get(slug).relative} and ${relative}`);
@@ -263,7 +254,6 @@ export function run(config) {
         continue;
       }
       const direct = path.join(tasksDir, e.name);
-      if (isCodeOnlyDraft(direct)) continue;
       if (hasHarborMarker(direct) || fs.existsSync(path.join(direct, 'task.toml'))) {
         if (!dirRe.test(e.name)) {
           errors.push(`${e.name}: direct task directories must be named ${dirShape}`);
@@ -278,7 +268,6 @@ export function run(config) {
                             .sort((a, b) => a.name.localeCompare(b.name))) {
         if (!child.isDirectory()) continue;
         const leaf = path.join(direct, child.name);
-        if (isCodeOnlyDraft(leaf)) continue;
         if (!hasHarborMarker(leaf) && !fs.existsSync(path.join(leaf, 'task.toml'))) continue;
         if (!dirRe.test(child.name)) {
           errors.push(`${e.name}/${child.name}: grouped task directories must be named ${dirShape}`);

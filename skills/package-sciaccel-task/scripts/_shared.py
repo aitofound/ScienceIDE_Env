@@ -122,7 +122,7 @@ def manifest_validate(manifest: dict[str, Any]) -> list[str]:
 
     这里只检查 manifest 自身的结构与诚实性(分母是否对得上行数、custom 是否
     透明披露、path 是否等于唯一允许的形状),不检查它是否与磁盘上某个具体 leaf
-    的当前内容一致——那是 gate-active(scripts/gate_active.py)的职责。
+    的当前内容一致——那是 gate-active(task_cli.py 的 `_active_report`)的职责。
     """
     problems: list[str] = []
     missing_top = REQUIRED_TOP - set(manifest)
@@ -232,7 +232,7 @@ def scope_fingerprint(manifest: dict[str, Any]) -> str:
 
 
 def official_source_by_id(manifest: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    """id -> check 行,给 gate_active.py 之类只关心「这一行长什么样」的调用者用。"""
+    """id -> check 行,给 task_cli.py 的 `_active_report` 之类只关心「这一行长什么样」的调用者用。"""
     return {c["id"]: c for c in manifest.get("checks", []) if isinstance(c, dict) and c.get("id")}
 
 

@@ -68,7 +68,7 @@ runtime.
 ## Validation
 
 ```bash
-python3 skills/package-sciaccel-task/scripts/validate-harbor-task.py --all tasks
+python3 skills/package-sciaccel-task/scripts/task_cli.py validate-harbor --all tasks
 BASE_REF=origin/main npm run check
 ```
 

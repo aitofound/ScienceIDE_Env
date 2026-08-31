@@ -46,6 +46,58 @@ CLAUDE_MODEL = os.environ.get("SAB_CLAUDE_MODEL", "claude-sonnet-5")
 CODEX_MODEL = os.environ.get("SAB_CODEX_MODEL", "gpt-5.6-sol")
 CODEX_EFFORT = os.environ.get("SAB_CODEX_EFFORT", "high")
 
+# decompose 工序的任务书(原 prompts/decompose.txt,并入本 CLI —— 唯一调用点就在这里,
+# 不必再单独落一个 prompts/ 文件)。{REPO}/{CODE_DIR}/{PIN}/{NOTES}/{OUT_JSON} 由
+# cmd_decompose 逐一替换。
+DECOMPOSE_PROMPT = """\
+# 工序:decompose —— 把科学代码库拆成独立可打包的模块(只提案,不动手)
+
+你是 sciaccel 打包流水线的「拆解」工序。本次只做一件事:通读代码库,提出模块切分提案。
+**你没有建包权限;提案要经人类专家审批(approve cut)才会变成工单。**
+
+仓库:{REPO}
+代码位置(pinned,只读):{CODE_DIR}
+pin:{PIN}
+人类备注:{NOTES}
+
+## 判断标准(一个「独立模块」要同时满足)
+
+1. 逻辑上定位模拟功能的一个独立组件:能独立运行/独立构成科学结论的单元,
+   不是按目录机械切分;
+2. 有真实昂贵路径(值得做 acceleration 任务的计算热点);
+3. 上游自带能覆盖它的官方测试(unit test / regression test / 标准算例)——
+   **没有官方测试可复用的部分,在提案里如实标为 no_official_tests,不要硬凑**;
+4. 拆出来后与其它模块无共享可变状态(可以共享只读源码)。
+
+## 产出契约(唯一产物)
+
+把 JSON 写到:{OUT_JSON}
+
+{
+  "repo": "{REPO}",
+  "modules": [
+    {
+      "slug": "<lower-kebab-case,将来 tasks/ 下的目录名>",
+      "paths": ["<相对 {CODE_DIR} 的关键源码路径>", "…"],
+      "entrypoints": ["<生产配置/驱动入口>"],
+      "expensive_path": "<昂贵路径是什么、为什么贵>",
+      "official_tests": ["<相对 {CODE_DIR} 的官方测试文件/算例路径>", "…"],
+      "rationale": "<为什么这是一个独立模块,一两句>",
+      "excluded": ["<明确排除的相邻功能及原因>"],
+      "hazards": ["<已知坑:非确定性、外部依赖、许可证等,没有就空>"]
+    }
+  ],
+  "not_packaged": [{"what": "…", "why": "…"}]
+}
+
+## 禁区
+
+- 不修改 {CODE_DIR} 和仓库里的任何文件;唯一写动作是产出上面那个 JSON。
+- official_tests 只许列**真实存在**的上游测试路径(驱动器后续会按 sha256 逐文件核对,
+  编造的路径会在溯源门现形并作废你的工作)。
+- 不要为了凑数把一个模块拆成多个壳,也不要把互相依赖的两块硬说成独立。
+"""
+
 
 def _slugify(s: str) -> str:
     s = re.sub(r"\.(py|f90|f|c|cpp|cc|h|hpp)$", "", s, flags=re.IGNORECASE)
@@ -192,7 +244,7 @@ def cmd_decompose(a) -> None:
         raise SystemExit(f"intake 的 code_path 不存在:{code}")
     out = shared.INBOX / f"{a.codebase}.decomposition.json"
     shared.INBOX.mkdir(parents=True, exist_ok=True)
-    prompt = (shared.PROMPTS / "decompose.txt").read_text()
+    prompt = DECOMPOSE_PROMPT
     for k, v in (("REPO", a.codebase), ("CODE_DIR", str(code)), ("PIN", str(cfg.get("pin", ""))),
                  ("NOTES", str(cfg.get("notes", ""))), ("OUT_JSON", str(out))):
         prompt = prompt.replace("{" + k + "}", v)
@@ -225,7 +277,8 @@ def cmd_decompose(a) -> None:
         print(f"分解提案已产出:{out}\n"
               f"下一步是人的:审阅/删改后 approve-cut --codebase {a.codebase} [--leaves a,b] --human-ref …")
     else:
-        out.unlink(missing_ok=True)      # 坏提案不留在 inbox 里冒充「已提案」
+        if out.exists():
+            print(f"无效提案保留作审计证据:{out}")
         print(f"decompose 未产出合格提案({why})—— 状态不推进")
         sys.exit(1)
 

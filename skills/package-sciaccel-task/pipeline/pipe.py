@@ -23,9 +23,36 @@
 append-only journal、状态推导)在 scripts/_shared.py。journal 记录形状不变,旧
 journal 原样有效。`run` 调度器(自动扇出派活、资源熔断、单实例守卫)随第三层一并
 移除:两-CLI 契约是操作员按 next_action 一步步推进单个任务,不是无人值守批量驱动。
+要并行就开多个操作员会话,每个盯一个 manifest。
 
 本壳只做两件事:把老参数翻译成新命令(--leaf 借 _shared 解析成绑定的 manifest 路径),
 然后原样转发并透传退出码。没有状态机、不写 journal、不派 AI。
+
+pipeline/ 目录本身现在只剩三样东西:`intake/<repo>.toml`(派工单,人写,git 管;
+codebase_cli.py locate 写出的形状是 `code_path = "<pinned 快照路径>"`,可选
+`pin = "<commit-sha 或快照说明>"`、`notes = "…"`)、
+`manifests/<codebase>/<task>.manifest.json`(人批 task manifest,codebase_cli.py
+emit-manifest 写,git 管 —— 两个 CLI 之间唯一的正式接口)、本文件(兼容壳)。
+
+控制面不在 repo 里,在 `~/.sciaccel_pipeline/`(env `SAB_PIPE_DIR`;AI 工序不被指
+到这里):
+
+    journal.jsonl   append-only 事实记录:每次门/工序/审批/驳回/override/PR + 每条 CLI 命令
+    inbox/          AI 产物投递处(分解提案)—— 是数据不是控制状态,一律当不可信输入
+    logs/           每个 AI 会话的完整 transcript + prompt 快照
+    running/        在飞工序标记(PID 存活判据)
+    skill_baseline.sha
+
+纪律(不变):(1) 改判据后 —— 现在即改 scripts/task_cli.py 里的
+`_provenance_report`/`_active_report`、对应的内置 gate 函数及 `_self_calibrate` ——
+下一次 `advance` 会自动先跑 `_self_calibrate()`,任何门先跑校准,失败拒绝出数;
+写完新守卫第一件事是给它加正负
+用例证明它真的会报警。(2) 改 skill/pipeline 代码后:`task_cli.py baseline --update`
+(否则 advance 拒绝工作)。(3) 新流程先在 1–3 个 leaf 上串行走完全程,再扇出。
+(4) 闸门变红是正确结果:溯源红=测试来源没锚,容差红=证据缺口——是工单不是故障,
+绝不允许为了变绿去删检查、放松容差、或给 custom 测试伪造 upstream 声明。
+(5) 存量 tasks/*(athena-*、pluto-*)不进状态机(2026-08-29 拍板);要纳管时给它们
+补 provenance/rubric 再经正常门。
 """
 from __future__ import annotations
 
