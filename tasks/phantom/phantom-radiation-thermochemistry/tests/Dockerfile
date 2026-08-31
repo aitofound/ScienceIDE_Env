@@ -10,4 +10,4 @@ COPY tests/ /app/tests/
 ENV PHANTOM_DIR=/opt/phantom
 RUN bash /app/tests/build-suites.sh
 WORKDIR /app
-ENTRYPOINT ["bash", "/app/tests/test.sh", "oracle"]
+ENTRYPOINT ["python3", "/app/tests/oracle.py"]
