@@ -8,7 +8,7 @@
     ],
     "status": "not started; provisional owner policy pending a remote two-run measurement"
   },
-  "check": "epoch3d-large-particle-acceleration",
+  "check": "epoch2d-current-smoothing-filter",
   "codebase": "epoch",
   "contract": {
     "charge_density_block": "Derived/Charge_Density",
@@ -18,44 +18,39 @@
       "Current/Jz"
     ],
     "density_block": "Derived/Number_Density/Left",
-    "dims": 3,
-    "energy_blocks": [
-      "Electric Field/Ex"
-    ],
+    "dims": 2,
     "state_atol": 0.0,
     "state_rtol": 1e-06
   },
-  "family": "acceleration_budget",
+  "family": "current_continuity",
   "invariant": "see 'science' and 'policy' below",
   "policy": {
-    "charge_conservation_atol": 1.0,
-    "charge_conservation_rtol": 1e-06,
     "continuity_atol": 1.0,
     "continuity_rtol": 0.0025,
     "state_atol": 1.0,
     "state_rtol": 1e-06
   },
   "provenance": {
-    "authored_by": "derived from an upstream EPOCH official deck by resolution/particle-count scale-up only",
+    "authored_by": "upstream EPOCH official deck, copied byte-identically",
     "build_command": "make COMPILER=gfortran ENC=no DEFINE=\"\"",
     "build_variant": "v0",
-    "check": "epoch3d-large-particle-acceleration",
-    "deck_path": "tests/checks/epoch3d-large-particle-acceleration/deck/input.deck",
+    "check": "epoch2d-current-smoothing-filter",
+    "deck_path": "tests/checks/epoch2d-current-smoothing-filter/deck/input.deck",
     "defines": "",
-    "derived_from_upstream_path": "epoch3d/example_decks/filter.deck",
-    "derived_from_upstream_sha256": "47adb5ce0b4dbccadddd07661f1c105774ef229909ac7857a26aa212c5b3b951",
     "determinism": "use_random_seed is left at EPOCH's default (F); housekeeping/setup.F90 seeds every rank with the fixed constant 7842432+rank, so a single-rank run is bit-for-bit deterministic run to run for the identical binary and deck",
-    "dimension": 3,
-    "family": "acceleration_budget",
+    "dimension": 2,
+    "family": "current_continuity",
     "mpi_ranks": 1,
-    "run_contract": "echo . | mpirun -n 1 bin/epochNd, run from inside the row's own results directory so 'echo .' resolves to that directory as EPOCH's data_dir"
+    "run_contract": "echo . | mpirun -n 1 bin/epochNd, run from inside the row's own results directory so 'echo .' resolves to that directory as EPOCH's data_dir",
+    "upstream_path": "epoch2d/example_decks/filter.deck",
+    "upstream_sha256": "4e402a81326bbb2576830f688e5e4a4c3b1175c8124551acf10827f60f0ee2f4"
   },
   "science": {
     "continuity_rtol_note": "particles.F90's own header comment documents push_particles as computing J by 'doing a 1st order Estimate of rho(t+1.5*dt)', not by matching the independently-diagnosed Derived/Charge_Density exactly, so (rho1-rho0)/dt + div(J) is expected to leave a small, genuinely non-zero truncation residual rather than pure roundoff. continuity_rtol is scale-relative (epoch_policy._continuity_residual_and_scale normalises by the magnitude of the terms actually being differenced), so this bound carries no deck-specific measured constant and is provisional pending the remote two-run calibration recorded above.",
-    "energy_blocks_note": "energy_blocks lists only 'Electric Field/Ex' because the upstream filter.deck this row scales up dumps ex only -- its ey/ez output directives are commented out upstream, and the scale-up deliberately changes nothing but nx/ny/nz and nparticles. Naming Ey/Ez here would reference blocks the run never writes.",
-    "mechanism": "Resolution/particle-count scale-up of upstream epoch3d/example_decks/filter.deck. The physics is exactly the upstream filter example -- two exactly counter-streaming cold electron beams with smooth_currents = T, smooth_iterations = 4, smooth_strides = auto -- run at 128^3 with 4 particles per cell per species so the particle push, shape-function gather/scatter, charge-conserving deposition and current smoothing all execute at a scale where acceleration is meaningful."
+    "mechanism": "Upstream epoch2d/example_decks/filter.deck: the standard EPOCH current-filtering example. Its control block turns on smooth_currents = T with smooth_iterations = 4 and smooth_strides = auto, so every deposited current component passes through current_smooth.F90's strided binomial filter before the field solve. Two exactly counter-streaming cold electron beams (drift_px = +/-2.5e-24, identical charge/density/particle count) drive a spatially structured current, so this row exercises particles.F90's charge-conserving deposition and shape_functions.F90's scatter together with the smoothing filter that is the reason this deck exists upstream.",
+    "why_continuity_family": "Scored with the charge-continuity residual rather than the conserved-sum invariant: the sum invariant needs a deck-specific measured constant (expected_sum), which cannot be obtained without running the oracle. The continuity residual is normalised by the magnitude of the terms actually being differenced, so it is deck-independent and honest to state before calibration. Smoothing is still fully exercised: the filter runs on every deposited current these dumps contain, and any smoothing defect shows up in both the residual and the reference-vs-candidate state comparison."
   },
   "status": "provisional",
-  "title": "epoch3d production-scale kinetic core (scaled upstream filter.deck)",
+  "title": "epoch2d current smoothing + charge-conserving deposition (upstream filter.deck)",
   "version": 1
 }
