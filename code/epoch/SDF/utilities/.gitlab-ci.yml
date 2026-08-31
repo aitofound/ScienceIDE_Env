@@ -1,0 +1,33 @@
+variables:
+  GIT_STRATEGY: clone
+
+
+.common: &common
+  before_script:
+    - (cd .. && rm -rf C; git clone "$CI_REPOSITORY_URL/../SDF_C.git" C)
+    - (cd ../C && make)
+  only:
+    - branches@SDF/SDF_utilities
+    - web
+    - hook
+  except:
+    - main
+    - wip/*
+    - tag
+
+
+test_ubuntu_gfortran:
+  <<: *common
+  script:
+    - ./build
+  tags:
+    - ubuntu
+    - gfortran
+
+
+test_osx:
+  <<: *common
+  script:
+    - ./build
+  tags:
+    - osx

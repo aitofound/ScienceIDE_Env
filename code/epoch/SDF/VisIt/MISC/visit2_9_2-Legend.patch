@@ -1,0 +1,427 @@
+diff --git a/src/avt/Plotter/avtLegend.C b/src/avt/Plotter/avtLegend.C
+index 26f20ff..768c4f2 100644
+--- a/src/avt/Plotter/avtLegend.C
++++ b/src/avt/Plotter/avtLegend.C
+@@ -75,6 +75,7 @@ avtLegend::avtLegend()
+     legendOn = true;
+     globalVisibility = true;
+     currentlyDrawn = false;
++    typeVisibility = true;
+     position[0] = position[1] = 0.;
+     size[0] = size[1] = 0.;
+     renderer = NULL;
+@@ -83,6 +84,7 @@ avtLegend::avtLegend()
+     title = NULL;
+     databaseInfo = NULL;
+     varName = NULL;
++    oldVarName = NULL;
+     varUnits = NULL;
+     message = NULL;
+     orientation = VerticalTextOnRight;
+@@ -128,6 +130,10 @@ avtLegend::~avtLegend()
+     {
+         delete [] varName;
+     }
++    if ( oldVarName != NULL )
++    {
++        delete [] oldVarName;
++    }
+     if (varUnits != NULL)
+     {
+         delete [] varUnits;
+@@ -689,7 +695,8 @@ avtLegend::SetVarName(const char *str)
+     if (str != NULL)
+     {
+         varName = new char[strlen(str)+1];
+-        strcpy(varName, str);
++        strcpy(varName, "Var: ");
++        strcat(varName, str);
+     }
+     else
+     {
+@@ -791,9 +798,9 @@ avtLegend::Update()
+     // Set the title.
+     //
+     size_t len = 0;
+-    if (title != NULL)        len += strlen(title) + 1;
++    if (title != NULL && typeVisibility)        len += strlen(title) + 1;
+     if (databaseInfo != NULL) len += strlen(databaseInfo) + 1;
+-    if (varName != NULL)      len += strlen(varName) + 6;
++    if (varName != NULL)      len += strlen(varName) + 1;
+     if (varUnits != NULL)     len += strlen(varUnits) + 8;
+     if (message != NULL)      len += strlen(message) + 1;
+ 
+@@ -803,7 +810,7 @@ avtLegend::Update()
+         char *tmpstr = str;
+         str[0] = '\0';
+ 
+-        if (title != NULL)
++        if (title != NULL && typeVisibility)
+         {
+             strcpy(tmpstr, title);
+             tmpstr += strlen(tmpstr);
+@@ -816,7 +823,7 @@ avtLegend::Update()
+         }
+         if (varName != NULL)
+         {
+-            strcpy(tmpstr, "\nVar: ");
++            strcpy(tmpstr, "\n");
+             strcat(tmpstr, varName);
+             tmpstr += strlen(tmpstr);
+         }
+@@ -971,3 +978,40 @@ avtLegend::GetCalculatedLabels(stringVector &)
+ {
+     // Do nothing
+ }
++
++
++
++void
++avtLegend::SetNewVarName(const char *str)
++{
++   if (oldVarName == NULL)
++   {
++      if (str == NULL) return;
++      if (varName != NULL)
++      {
++         oldVarName = new char[strlen(varName)+1];
++         strcpy(oldVarName,varName);
++      }
++   }
++
++   if (varName != NULL) delete [] varName;
++
++   if (str != NULL && *str != '\0')
++   {
++      varName = new char[strlen(str)+1];
++      strcpy(varName,str);
++   }
++   else
++   {
++      varName = new char[strlen(oldVarName)+1];
++      strcpy(varName,oldVarName);
++   }
++}
++
++
++
++void
++avtLegend::SetTypeVisibility(bool v)
++{
++    typeVisibility = v;
++}
+diff --git a/src/avt/Plotter/avtLegend.h b/src/avt/Plotter/avtLegend.h
+index d1f2909..ea64847 100644
+--- a/src/avt/Plotter/avtLegend.h
++++ b/src/avt/Plotter/avtLegend.h
+@@ -134,6 +134,7 @@ class PLOTTER_API  avtLegend
+     virtual void                  SetMinMaxVisibility(bool);
+     virtual bool                  GetMinMaxVisibility() const;
+     virtual void                  SetNumberFormat(const char *);
++    virtual void                  SetTypeVisibility(bool);
+ 
+     virtual void                  SetLegendScale(double xScale, double yScale);
+     virtual void                  SetBoundingBoxVisibility(bool);
+@@ -148,6 +149,7 @@ class PLOTTER_API  avtLegend
+     void                          SetTitle(const char *);
+     void                          SetDatabaseInfo(const char *);
+     void                          SetVarName(const char *);
++    void                          SetNewVarName(const char *);
+     void                          SetVarUnits(const char *);
+     void                          SetMessage(const char *);
+     void                          SetGlobalVisibility(bool);
+@@ -170,6 +172,7 @@ class PLOTTER_API  avtLegend
+     bool                          legendOn;
+     bool                          globalVisibility;
+     bool                          currentlyDrawn;
++    bool                          typeVisibility;
+     vtkActor2D                   *legend;
+     vtkRenderer                  *renderer;
+ 
+@@ -177,6 +180,7 @@ class PLOTTER_API  avtLegend
+     char                         *title;
+     char                         *databaseInfo;
+     char                         *varName;
++    char                         *oldVarName;
+     char                         *varUnits;
+     char                         *message;
+     LegendOrientation             orientation;
+diff --git a/src/avt/VisWindow/Colleagues/avtLegendAttributesColleague.C b/src/avt/VisWindow/Colleagues/avtLegendAttributesColleague.C
+index 80c05a3..858a551 100644
+--- a/src/avt/VisWindow/Colleagues/avtLegendAttributesColleague.C
++++ b/src/avt/VisWindow/Colleagues/avtLegendAttributesColleague.C
+@@ -111,6 +111,7 @@ avtLegendAttributesColleague::avtLegendAttributesColleague(
+     SetBool(atts, LEGEND_CONTROL_TICKS,    true);
+     SetBool(atts, LEGEND_MINMAX_INCLUSIVE, true);
+     SetBool(atts, LEGEND_DRAW_VALUES,      true);
++    SetBool(atts, LEGEND_DRAW_TYPE,        true);
+ 
+     // Set the format string for the legend into the text.
+     stringVector text;
+@@ -434,6 +435,9 @@ avtLegendAttributesColleague::CustomizeLegend(avtLegend_p legend)
+     
+     legend->SetLabelVisibility(dl + dv);
+ 
++    // Set whether the plot type is drawn
++    legend->SetTypeVisibility(GetBool(atts, LEGEND_DRAW_TYPE));
++
+     // Set whether the labels are drawn.
+     legend->SetMinMaxVisibility(GetBool(atts, LEGEND_DRAW_MINMAX));
+ 
+@@ -441,6 +445,10 @@ avtLegendAttributesColleague::CustomizeLegend(avtLegend_p legend)
+     if(atts.GetText().size() > 0)
+         legend->SetNumberFormat(atts.GetText()[0].c_str());
+ 
++    // Set the variable string.
++    if(atts.GetText().size() > 1)
++        legend->SetNewVarName(atts.GetText()[1].c_str());
++
+     // Set bounding box properties.
+     legend->SetBoundingBoxVisibility(GetBool(atts,LEGEND_DRAW_BOX));
+     double bboxColor[4];
+diff --git a/src/common/misc/legend_defines.h b/src/common/misc/legend_defines.h
+index 9be227c..85b6511 100644
+--- a/src/common/misc/legend_defines.h
++++ b/src/common/misc/legend_defines.h
+@@ -9,6 +9,7 @@
+ #define LEGEND_CONTROL_TICKS    7
+ #define LEGEND_MINMAX_INCLUSIVE 8
+ #define LEGEND_DRAW_VALUES      9
++#define LEGEND_DRAW_TYPE        10
+ 
+ #define LEGEND_TYPE_VARIABLE    0
+ #define LEGEND_TYPE_LEVELS      1
+diff --git a/src/gui/QvisLegendAttributesInterface.C b/src/gui/QvisLegendAttributesInterface.C
+index 7e0027d..65ab2ac 100644
+--- a/src/gui/QvisLegendAttributesInterface.C
++++ b/src/gui/QvisLegendAttributesInterface.C
+@@ -288,7 +288,18 @@ QvisLegendAttributesInterface::QvisLegendAttributesInterface(QWidget *parent) :
+     drawMinmaxCheckBox = new QCheckBox(tr("Draw min/max"), this);
+     connect(drawMinmaxCheckBox, SIGNAL(toggled(bool)),
+             this, SLOT(drawMinmaxToggled(bool)));
+-    aLayout->addWidget(drawMinmaxCheckBox, row, 1, 1, 2);
++    aLayout->addWidget(drawMinmaxCheckBox, row, 1);
++    drawTypeCheckBox = new QCheckBox(tr("Draw type"), this);
++    connect(drawTypeCheckBox, SIGNAL(toggled(bool)),
++            this, SLOT(drawTypeToggled(bool)));
++    aLayout->addWidget(drawTypeCheckBox, row, 2, 1, 2);
++    ++row;
++
++    varString = new QNarrowLineEdit(this);
++    connect(varString,SIGNAL(returnPressed()),this,SLOT(textChanged()));
++    aLayout->addWidget(varString,row,1);
++    aLayout->addWidget(new QLabel(tr("Variable string"),this),row,0);
++    //aLayout->addMultiCellWidget(varString,row,row,1,3);
+     ++row;
+ 
+     QFrame *splitter3 = new QFrame(this);
+@@ -628,6 +639,12 @@ QvisLegendAttributesInterface::UpdateControls()
+     else
+         formatString->setText("");
+ 
++    // Set the var string
++    if(annotText.size() > 1)
++       varString->setText(annotText[1].c_str());
++    else
++       varString->setText("");
++
+     // Set the "draw labels" box.
+     drawTitleCheckBox->blockSignals(true);
+     drawTitleCheckBox->setChecked(GetBool(LEGEND_DRAW_TITLE));
+@@ -638,6 +655,11 @@ QvisLegendAttributesInterface::UpdateControls()
+     drawMinmaxCheckBox->setChecked(GetBool(LEGEND_DRAW_MINMAX));
+     drawMinmaxCheckBox->blockSignals(false);
+ 
++    // Set the "draw type" box.
++    drawTypeCheckBox->blockSignals(true);
++    drawTypeCheckBox->setChecked(GetBool(LEGEND_DRAW_TYPE));
++    drawTypeCheckBox->blockSignals(false);
++
+     // Set the font height
+     fontHeight->setText(QString().sprintf("%g", annot->GetDoubleAttribute1()));
+ 
+@@ -726,6 +748,7 @@ QvisLegendAttributesInterface::GetCurrentValues(int which_widget)
+         {
+             stringVector sv;
+             sv.push_back(formatString->text().toStdString());
++            sv.push_back(varString->text().toStdString());
+             annot->SetText(sv);
+         }
+     }
+@@ -1447,3 +1470,11 @@ QvisLegendAttributesInterface::ResizeSuppliedLabelsList(int newSize)
+         }
+     }
+ }
++
++void
++QvisLegendAttributesInterface::drawTypeToggled(bool val)
++{
++   SetBool(LEGEND_DRAW_TYPE, val);
++   SetUpdate(false);
++   Apply();
++}
+diff --git a/src/gui/QvisLegendAttributesInterface.h b/src/gui/QvisLegendAttributesInterface.h
+index 95f8180..fc1c70c 100644
+--- a/src/gui/QvisLegendAttributesInterface.h
++++ b/src/gui/QvisLegendAttributesInterface.h
+@@ -117,6 +117,7 @@ private slots:
+     void boundingBoxColorChanged(const QColor &);
+     void boundingBoxOpacityChanged(int);
+     void drawTitleToggled(bool);
++    void drawTypeToggled(bool);
+ 
+     void tickControlToggled(bool);
+     void numTicksChanged(int);
+@@ -137,6 +138,7 @@ private:
+     QSpinBox               *heightSpinBox;
+     QComboBox              *orientationComboBox;
+     QNarrowLineEdit        *formatString;
++    QNarrowLineEdit        *varString;
+     QNarrowLineEdit        *fontHeight;
+     QLabel                 *textColorLabel;
+     QvisColorButton        *textColorButton;
+@@ -149,6 +151,7 @@ private:
+ 
+     QCheckBox              *drawMinmaxCheckBox;
+     QCheckBox              *drawTitleCheckBox;
++    QCheckBox              *drawTypeCheckBox;
+ 
+     QCheckBox              *drawBoundingBoxCheckBox;
+     QvisColorButton        *boundingBoxColorButton;
+diff --git a/src/visitpy/common/PyLegendAttributesObject.C b/src/visitpy/common/PyLegendAttributesObject.C
+index 9dbb08a..f693409 100644
+--- a/src/visitpy/common/PyLegendAttributesObject.C
++++ b/src/visitpy/common/PyLegendAttributesObject.C
+@@ -453,7 +453,16 @@ LegendAttributesObject_SetNumberFormat(PyObject *self, PyObject *args)
+ 
+     // Set the number format in the object.
+ /*CUSTOM*/
+-    stringVector s; s.push_back(str);
++    stringVector s(obj->data->GetText());
++    if (s.size() > 0)
++    {
++       s[0] = str;
++    }
++    else
++    {
++       s.clear();
++       s.push_back(str);
++    }
+     obj->data->SetText(s);
+     UpdateAnnotationHelper(obj->data);
+ 
+@@ -619,6 +628,7 @@ SETGET_FLAG(DrawTitle,       LEGEND_DRAW_TITLE)
+ SETGET_FLAG(DrawMinMax,      LEGEND_DRAW_MINMAX)
+ SETGET_FLAG(ControlTicks,    LEGEND_CONTROL_TICKS)
+ SETGET_FLAG(MinMaxInclusive, LEGEND_MINMAX_INCLUSIVE)
++SETGET_FLAG(DrawType,        LEGEND_DRAW_TYPE)
+ 
+ 
+ static PyObject *
+@@ -936,6 +946,60 @@ LegendAttributesObject_Delete(PyObject *self, PyObject *args)
+ }
+ 
+ 
++
++static PyObject *
++LegendAttributesObject_SetVarName(PyObject *self, PyObject *args)
++{
++  LegendAttributesObjectObject *obj = (LegendAttributesObjectObject *)self;
++
++  char *str;
++  if(!PyArg_ParseTuple(args, "s", &str))
++      return NULL;
++
++  // Set the variable name in the object.
++/*CUSTOM*/
++  stringVector s(obj->data->GetText());
++  if(s.size() > 1)
++  {
++      s[1] = str;
++  }
++  else
++  {
++      if(s.size() > 0)
++      {
++         std::string ss = s[0];
++         s.clear();
++         s.push_back(ss);
++         s.push_back(str);
++      }
++      else
++      {
++         s.clear();
++         s.push_back("");
++         s.push_back(str);
++      }
++  }
++  obj->data->SetText(s);
++  UpdateAnnotationHelper(obj->data);
++
++  Py_INCREF(Py_None);
++  return Py_None;
++}
++
++
++
++static PyObject *
++LegendAttributesObject_GetVarName(PyObject *self, PyObject *args)
++{
++  LegendAttributesObjectObject *obj = (LegendAttributesObjectObject *)self;
++/*CUSTOM*/
++  const stringVector &s = obj->data->GetText();
++  PyObject *retval = PyString_FromString(s.size() > 0 ? s[1].c_str(): "");
++  return retval;
++}
++
++
++
+ static struct PyMethodDef LegendAttributesObject_methods[] = {
+     {"SetActive", LegendAttributesObject_SetActive, METH_VARARGS},
+     {"GetActive", LegendAttributesObject_GetActive, METH_VARARGS},
+@@ -985,6 +1049,10 @@ static struct PyMethodDef LegendAttributesObject_methods[] = {
+     {"GetSuppliedValues", LegendAttributesObject_GetSuppliedValues, METH_VARARGS},
+     {"SetSuppliedLabels", LegendAttributesObject_SetSuppliedLabels, METH_VARARGS},
+     {"GetSuppliedLabels", LegendAttributesObject_GetSuppliedLabels, METH_VARARGS},
++    {"SetVarName", LegendAttributesObject_SetVarName, METH_VARARGS},
++    {"GetVarName", LegendAttributesObject_GetVarName, METH_VARARGS},
++    {"SetDrawType", LegendAttributesObject_SetDrawType, METH_VARARGS},
++    {"GetDrawType", LegendAttributesObject_GetDrawType, METH_VARARGS},
+     {"Delete", LegendAttributesObject_Delete, METH_VARARGS},
+     {NULL, NULL}
+ };
+@@ -1065,6 +1133,10 @@ LegendAttributesObject_getattr(PyObject *self, char *name)
+         return LegendAttributesObject_GetDrawTitle(self, NULL);
+     if(strcmp(name, "drawMinMax") == 0)
+         return LegendAttributesObject_GetDrawMinMax(self, NULL);
++    if(strcmp(name, "varName") == 0)
++        return LegendAttributesObject_GetVarName(self, NULL);
++    if(strcmp(name, "drawType") == 0)
++        return LegendAttributesObject_GetDrawType(self, NULL);
+ 
+     if(strcmp(name, "orientation") == 0)
+         return LegendAttributesObject_GetOrientation(self, NULL);
+@@ -1149,6 +1221,10 @@ LegendAttributesObject_setattr(PyObject *self, char *name, PyObject *args)
+         retval = (LegendAttributesObject_SetSuppliedValues(self, tuple) != NULL);
+     else if(strcmp(name, "suppliedLabels") == 0)
+         retval = (LegendAttributesObject_SetSuppliedLabels(self, tuple) != NULL);
++    else if(strcmp(name, "varName") == 0)
++        retval = (LegendAttributesObject_SetVarName(self, tuple) != NULL);
++    else if(strcmp(name, "drawType") == 0)
++        retval = (LegendAttributesObject_SetDrawType(self, tuple) != NULL);
+ 
+     Py_DECREF(tuple);
+     return retval ? 0 : -1;
+@@ -1242,6 +1318,12 @@ LegendAttributesObject_print(PyObject *v, FILE *fp, int flags)
+         else
+             fprintf(fp, "orientation = HorizontalBottom  # %s\n", orientationNames); 
+ 
++    fprintf(fp, "drawType = %d\n",
++            GetBool(obj->data, LEGEND_DRAW_TYPE)?1:0);
++
++    const stringVector &s1 = obj->data->GetText();
++    fprintf(fp, "varName = \"%s\"\n", s1.size() > 0 ? s1[1].c_str() : "");
++
+     fprintf(fp, "controlTicks = %d\n", 
+             GetBool(obj->data, LEGEND_CONTROL_TICKS)?1:0);
+     fprintf(fp, "numTicks = %d\n", 
