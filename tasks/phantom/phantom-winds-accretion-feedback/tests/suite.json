@@ -1,0 +1,146 @@
+{
+  "schema": "phantom-winds-accretion-feedback-suite/v1",
+  "source_commit": "e53ea16758d2a261680506852a528f21270dca1c",
+  "buildbot_anchor": "scripts/buildbot.sh check_phantomsetup: --np=1000, default answers, three setup passes, nmax=0",
+  "checks": [
+    {
+      "name": "wind-buildbot-smoke",
+      "kind": "setup-smoke",
+      "setup": "wind",
+      "family": "stellar-wind",
+      "primary": "winds-injection",
+      "source": ["build/Makefile_setups", "src/setup/setup_wind.f90", "src/main/inject_wind.f90", "src/main/wind.F90", "src/main/wind_equations.f90"]
+    },
+    {
+      "name": "isowind-buildbot-smoke",
+      "kind": "setup-smoke",
+      "setup": "isowind",
+      "family": "isothermal-stellar-wind",
+      "primary": "winds-injection",
+      "source": ["build/Makefile_setups", "src/setup/setup_wind.f90", "src/main/inject_wind.f90"]
+    },
+    {
+      "name": "bhl-buildbot-smoke",
+      "kind": "setup-smoke",
+      "setup": "BHL",
+      "family": "bondi-hoyle-lyttleton",
+      "primary": "accretion-injection",
+      "source": ["build/Makefile_setups", "src/setup/setup_BHL.f90", "src/main/inject_BHL.f90"]
+    },
+    {
+      "name": "bondi-buildbot-smoke",
+      "kind": "setup-smoke",
+      "setup": "bondi",
+      "family": "bondi-accretion",
+      "primary": "accretion",
+      "source": ["build/Makefile_setups", "src/setup/setup_bondi.f90", "src/main/bondiexact.f90"]
+    },
+    {
+      "name": "windtunnel-buildbot-smoke",
+      "kind": "setup-smoke",
+      "setup": "windtunnel",
+      "family": "wind-tunnel",
+      "primary": "boundary-injection",
+      "source": ["build/Makefile_setups", "src/setup/setup_windtunnel.f90", "src/main/inject_windtunnel.f90"]
+    },
+    {
+      "name": "masstransfer-buildbot-smoke",
+      "kind": "setup-smoke",
+      "setup": "masstransfer",
+      "family": "binary-mass-transfer",
+      "primary": "mass-transfer-injection",
+      "source": ["build/Makefile_setups", "src/setup/setup_masstransfer.f90", "src/setup/readwrite_mesa.f90", "src/main/inject_masstransfer.f90"]
+    },
+    {
+      "name": "asteroidwind-buildbot-smoke",
+      "kind": "setup-smoke",
+      "setup": "asteroidwind",
+      "family": "asteroid-wind",
+      "primary": "planet-wind-injection",
+      "source": ["build/Makefile_setups", "src/setup/setup_asteroidwind.f90", "src/main/evolve_planet.f90", "src/main/inject_randomwind.f90"]
+    },
+    {
+      "name": "randomwind-buildbot-smoke",
+      "kind": "setup-smoke",
+      "setup": "randomwind",
+      "family": "random-planet-wind",
+      "primary": "planet-wind-injection",
+      "source": ["build/Makefile_setups", "src/setup/setup_disc.f90", "src/main/evolve_planet.f90", "src/main/inject_randomwind.f90"]
+    },
+    {
+      "name": "boilingplanets-buildbot-smoke",
+      "kind": "setup-smoke",
+      "setup": "boilingplanets",
+      "family": "boiling-planet-wind",
+      "primary": "planet-wind-injection",
+      "source": ["build/Makefile_setups", "src/setup/setup_disc.f90", "src/main/evolve_planet.f90", "src/main/inject_randomwind.f90"]
+    },
+    {
+      "name": "qpe-buildbot-smoke",
+      "kind": "setup-smoke",
+      "setup": "qpe",
+      "family": "qpe-disc-injection",
+      "primary": "disc-mass-injection",
+      "source": ["build/Makefile_setups", "src/setup/setup_empty.f90", "src/main/inject_disk.f90"]
+    },
+    {
+      "name": "galcen-buildbot-smoke",
+      "kind": "setup-smoke",
+      "setup": "galcen",
+      "family": "galactic-centre-winds",
+      "primary": "stellar-feedback-injection",
+      "source": ["build/Makefile_setups", "src/setup/setup_galcen_stars.f90", "src/main/inject_galcen_winds.f90", "data/galcen/stars.m.pos.-vel.txt"]
+    },
+    {
+      "name": "streamerdisc-buildbot-smoke",
+      "kind": "setup-smoke",
+      "setup": "streamerdisc",
+      "family": "pineda-streamer",
+      "primary": "streamer-injection",
+      "source": ["build/Makefile_setups", "src/setup/setup_disc.f90", "src/main/inject_streamer_pineda.f90"]
+    },
+    {
+      "name": "balsarakim-supernova-buildbot-smoke",
+      "kind": "setup-smoke",
+      "setup": "balsarakim",
+      "family": "supernova-feedback",
+      "primary": "feedback-injection-cross-family",
+      "source": ["build/Makefile_setups", "src/setup/setup_unifdis.f90", "src/main/inject_sne.f90"]
+    },
+    {
+      "name": "jet-buildbot-smoke",
+      "kind": "setup-smoke",
+      "setup": "jet",
+      "family": "protostellar-jet",
+      "primary": "jet-initial-condition-cross-family",
+      "source": ["build/Makefile_setups", "src/setup/setup_sphereinbox.f90"]
+    },
+    {
+      "name": "test2-wind-unit",
+      "kind": "wind-unit",
+      "setup": "test2",
+      "family": "wind-unit-baseline",
+      "primary": "wind-numerics",
+      "source": ["build/Makefile_setups", "src/tests/test_wind.f90", "src/main/inject_wind.f90", "src/main/wind.F90", "src/main/wind_equations.f90"],
+      "markers": ["TESTING WIND MODULE", "testing transonic wind", "WIND TEST COMPLETE"]
+    },
+    {
+      "name": "testcyl-wind-unit",
+      "kind": "wind-unit",
+      "setup": "testcyl",
+      "family": "wind-unit-individual-timesteps",
+      "primary": "wind-numerics",
+      "source": ["build/Makefile_setups", "src/tests/test_wind.f90", "src/main/inject_wind.f90", "src/main/wind.F90", "src/main/wind_equations.f90"],
+      "markers": ["TESTING WIND MODULE", "testing transonic wind", "WIND TEST COMPLETE"]
+    },
+    {
+      "name": "test-wind-unit",
+      "kind": "wind-unit",
+      "setup": "test",
+      "family": "wind-unit-transonic-and-bowen",
+      "primary": "wind-numerics-cross-family",
+      "source": ["build/Makefile_setups", "src/tests/test_wind.f90", "src/main/inject_wind.f90", "src/main/wind.F90", "src/main/wind_equations.f90"],
+      "markers": ["TESTING WIND MODULE", "testing transonic wind", "testing bowen dust + radiative acceleration", "WIND TEST COMPLETE"]
+    }
+  ]
+}
