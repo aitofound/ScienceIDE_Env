@@ -1,93 +1,72 @@
 {
-  "check": "serial-3d-known-mode",
-  "legacy_rubric": {
-    "anti_hardcoding_role": "A radial-field/scalar-row special case cannot fake signed mode location, phase, off-mode suppression, and global complex artifacts.",
-    "check": "serial-3d-known-mode",
-    "criteria": {
-      "authenticated_raw_observables": true,
-      "independent_recomputation": true,
-      "numerical_bounds": "human-owned; intentionally absent until Jason approves final scientific policy",
-      "performance_policy": "no speedup, throughput, timing target, or invented runtime claim"
+  "claim_fixture": "serial-3d-known-mode",
+  "claim_kind": "coefficient_mode",
+  "evidence_schema": "athena-fft-claim/v1",
+  "id": "FFT-18",
+  "name": "serial-3d-known-mode",
+  "policy": "Native Athena claim files only; the upstream fft-errors row is retained as provenance but is not a complex-input error co-gate. Independent verifier recomputes exact sparse lattice fixture and binary reward requires all 26 checks.",
+  "reward_bearing": true,
+  "run_matrix": {
+    "build_modes": [
+      "serial",
+      "mpi"
+    ],
+    "claim_fixture": "serial-3d-known-mode",
+    "cycles": 2,
+    "global_shape": [
+      64,
+      64,
+      64
+    ],
+    "invocation_ids": {
+      "serial": "fft-18-serial"
     },
-    "id": "FFT-03",
-    "official_pinned_evidence": [
-      "tst/regression/scripts/tests/fft/fft.py:39-40 \u2014 official serial run reaches prob=fft and writes fft-errors.dat.",
-      "src/pgen/fft.cpp:73-99 \u2014 production source loading through FFTBlock.",
-      "src/pgen/fft.cpp:156-183 \u2014 forward, kernel, backward, and result retrieval."
-    ],
-    "policy": "authenticated_raw_recomputation_wiring_v2.2",
-    "purpose": "src/pgen/fft.cpp production path with a non-vendored deterministic complex fixture -> FFTBlock::LoadSource -> 3-D serial FFTW plan -> RetrieveResult",
-    "required_artifacts": [
-      "report.json",
-      "raw/<variant>/field.json",
-      "raw/<variant>/spectrum.json",
-      "raw/<variant>/reconstructed.json",
-      "raw/<variant>/rank-local.json",
-      "raw/<variant>/execution.json",
-      "raw/<variant>/stdout.log",
-      "raw/<variant>/stderr.log",
-      "raw/<variant>/fft-errors.dat",
-      "raw/build/<mode>.json",
-      "raw/build/<mode>.log"
-    ],
-    "runtime_redundancy": {
-      "purpose": "Forces complex spectral content and global output, not just fft-errors.dat.",
-      "redundancy": "Repeat with a second mode/phase only if owner approves; raw independent recomputation is mandatory.",
-      "runtime_claim": "No speed claim."
+    "mesh_probe": true,
+    "native_claims": true,
+    "nonce_parameter": "problem/fft_evidence_nonce",
+    "official_deck_only": false,
+    "session_bound": true,
+    "variant_argv_tokens": {
+      "serial": [
+        "mesh/nx1=64",
+        "mesh/nx2=64",
+        "mesh/nx3=64",
+        "meshblock/nx1=32",
+        "meshblock/nx2=32",
+        "meshblock/nx3=32",
+        "problem/ncycle=2",
+        "problem/fft_case=known_mode_A"
+      ]
     },
-    "schema": "athena-fft-check/v1",
-    "source_branch_forcing": [
-      "src/fft/athena_fft.cpp:223-233,322-379 \u2014 3-D serial plan and explicit forward/backward direction.",
-      "src/fft/athena_fft.hpp:105-135 \u2014 LoadSource/RetrieveResult and plan API."
-    ],
-    "subcases": {
-      "decomposition": "serial rank 1; np=[1,1,1]",
-      "dimensionality": "3-D complex known-mode probe",
-      "execution_variants": [
-        "serial"
-      ],
-      "forward_inverse": "Load a mode with exact k=[1,2,3] in x1-fastest order -> forward -> assert its signed coefficient, amplitude/phase and off-mode absence -> ApplyKernel(0) -> backward -> retrieve.",
-      "global_shape": [
-        64,
-        64,
-        64
-      ],
-      "meshblock_shape": [
+    "variant_meshblock": {
+      "serial": [
         32,
         32,
         32
-      ],
-      "normalization": "Backward divided by N=262144 (owner must decide final numeric bound); retain real and imaginary reconstructed fields.",
-      "raw_artifacts": {
-        "binding": "Raw full-shape field, global complex spectrum, reconstructed field, rank-local (one block), execution/log/fft-errors and build evidence; report is index only.",
-        "build_evidence": [
-          "raw/build/serial.json",
-          "raw/build/serial.log",
-          "raw/build/mpi.json",
-          "raw/build/mpi.log"
-        ],
-        "per_variant": [
-          "field.json",
-          "spectrum.json",
-          "reconstructed.json",
-          "rank-local.json",
-          "execution.json",
-          "stdout.log",
-          "stderr.log",
-          "fft-errors.dat"
-        ]
-      }
+      ]
     },
-    "title": "Serial 3-D known mode and global coefficient location",
-    "verdict_boundary": {
-      "decision": "Not run. Fixture injection and all coefficient/reconstruction tolerances remain human-owned.",
-      "status": "proposed_not_run"
-    }
+    "variant_problem_id": {
+      "serial": "fft_legacy_3d_known_mode"
+    },
+    "variant_process_grid": {
+      "serial": [
+        1,
+        1,
+        1
+      ]
+    },
+    "variants": [
+      "serial"
+    ]
   },
-  "not_athena_evidence": "Any field/spectrum/reconstruction/witness this directory once described was generated by Python (tests/emit_raw.py, tests/fft_observables.py), not by Athena++, and is not scientific evidence.",
-  "policy": "Preserved under the repository no-delete boundary (parent D1, 2026-08-30). Never listed in `checks`, never loaded by tests/harness.py, never reward-bearing; its files are not Athena evidence.",
-  "reason": "Known-mode coefficient location is not observable from src/pgen/fft.cpp output; no honest replacement exists.",
-  "replaced_by": null,
-  "schema": "athena-fft-check/v3",
-  "status": "deprecated_non_reward"
+  "schema": "athena-fft-rubric/v4",
+  "title": "Native 3-D labelled mode coefficient and reconstruction",
+  "tolerance": {
+    "absolute": "8*4*262144*2^-52",
+    "epsilon_power": -52,
+    "global_cell_count": 262144,
+    "provenance": "IEEE-754 binary64 unit roundoff (2^-52), exact lattice fixture, declared transform stage count, and global cell count; no empirical oracle value",
+    "relative": "8*4*2^-52",
+    "stage_count": 4
+  }
 }
