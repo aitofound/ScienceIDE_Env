@@ -133,7 +133,7 @@ def verify_result(root:Path,spec:dict):
  if result.get('raw_sha256')!=digest or obs.get('raw_sha256')!=digest: return False,'native digest mismatch',result
  if not isinstance(result.get('raw_artifact'),str) or not (root/result['raw_artifact']).is_file() or hashlib.sha256((root/result['raw_artifact']).read_bytes()).hexdigest()!=digest: return False,'raw run artifact mismatch',result
  if any(not isinstance(result.get(k),str) or not (root/result[k]).is_file() for k in ('raw_stdout','raw_stderr')): return False,'raw runner logs missing',result
- rows=numeric_rows(raw)
+ rows=numeric_rows(raw_path)
  if rows!=obs.get('rows') or obs.get('check_id')!=spec['id'] or obs.get('source_artifact')!=spec['observable_file']: return False,'observable is not derived from native bytes',result
  try: receipt=json.loads((root/'execution_manifest.json').read_text())
  except Exception as exc: return False,f'execution receipt missing: {exc}',result
