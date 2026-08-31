@@ -92,7 +92,7 @@ def main() -> int:
             elif c.name not in a.allow_custom:
                 fails.append(f"{c.name}: custom 检查未经人类审批 —— "
                              f"要么换成官方测试,要么请人跑 "
-                             f"pipe.py approve --what custom-check --check {c.name}")
+                             f"task_cli.py approve --what custom-check --check {c.name}")
         else:
             fails.append(f"{c.name}: origin 必须是 upstream|custom(拿到 {origin!r})")
 

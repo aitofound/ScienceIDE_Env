@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """判据校准套件:用已知的正负样例证明守卫真的会报警(以及不误报)。
 
-pipe.py 的每一道机械门都先跑本套件;任何一条不过,门拒绝出数 —— 仪器坏了
+task_cli.py 的每一道机械门都先跑本套件;任何一条不过,门拒绝出数 —— 仪器坏了
 测出来的全是噪声(ALE 教训 #2)。改任何判据脚本之后必须重跑本文件到全绿。
 
 覆盖的守卫:check_test_provenance.py、check_tolerance_spec.py、gate_active.py(all-active),

@@ -2,11 +2,11 @@
 
 > This is the former SKILL.md prose procedure (v2.5.0), kept as the canonical
 > authoring doctrine: leaf filesystem, self-pass definition, oracle/verifier
-> boundaries, runtime-metadata rules. **Execution now goes through the
-> deterministic pipeline** (`pipeline/pipe.py`, operated per `SKILL.md`);
-> the pipeline's worker prompts and gates encode the enforceable parts of this
-> doctrine. When this text and the pipeline code disagree, the code wins —
-> treat the disagreement as a bug to fix.
+> boundaries, runtime-metadata rules. **Execution now goes through the two
+> advisory CLIs** (`scripts/codebase_cli.py` and `scripts/task_cli.py`,
+> operated per `SKILL.md`); their worker prompts and gates encode the
+> enforceable parts of this doctrine. When this text and the CLI code
+> disagree, the code wins — treat the disagreement as a bug to fix.
 
 # Package one ScienceAccelBench module
 

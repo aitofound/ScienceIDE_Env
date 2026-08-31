@@ -11,7 +11,7 @@ manifest 的 expected_denominator 与磁盘上 tests/checks/* 的实际行逐一
      必须 FAIL,不允许静默放过);
   2. provenance.json 存在,且 origin 与 manifest 声明的 source_type 一致
      (official → upstream,custom → custom);custom 行还必须在
-     --allow-custom 名单里(该名单由 pipe.py 从 journal 换算,是 gate_tests
+     --allow-custom 名单里(该名单由 task_cli 从 journal 换算,是 gate_tests
      用的同一份人类审批,不是本脚本自己认的);
   3. 没有任何「repository 对 activated=false 的等价物」:provenance.json /
      check.json / rubric.json 里出现 activated=false、skip=true、
@@ -35,8 +35,8 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "pipeline"))
-import manifest as task_manifest  # noqa: E402  (需要先改 sys.path)
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _shared as shared  # noqa: E402  (manifest 契约在 scripts/_shared.py)
 
 _DISABLED_STATUS = {"skipped", "disabled", "inactive", "placeholder", "fallback"}
 _PLACEHOLDER_LABELS = {"placeholder", "fallback", "stub", "wip", "draft", "latent", "todo"}
@@ -161,12 +161,12 @@ def main() -> int:
     allow_custom = set(a.allow_custom)
 
     try:
-        m = task_manifest.load(a.manifest)
-    except task_manifest.ManifestError as e:
+        m = shared.manifest_load(a.manifest)
+    except shared.ManifestError as e:
         print(f"RED: manifest 本身不合格,无法评估 all-active:\n{e}")
         return 1
 
-    expected = task_manifest.official_source_by_id(m)
+    expected = shared.official_source_by_id(m)
     denom = m.get("expected_denominator")
     if denom != len(expected):
         # manifest.load() 已经校验过这个,这里是防御性复查(有人绕过 load() 直接喂 JSON)。
@@ -199,7 +199,7 @@ def main() -> int:
             fails.append(f"{cid}: 未激活 —— " + "; ".join(reasons))
 
     report = {
-        "scope_fp": task_manifest.scope_fingerprint(m),
+        "scope_fp": shared.scope_fingerprint(m),
         "expected_denominator": denom,
         "actual_checks": len(actual_ids),
         "missing": missing,

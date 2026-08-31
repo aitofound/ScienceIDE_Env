@@ -12,7 +12,7 @@ last_changed_at: "2026-08-31T12:00:00Z"
 | CLI | 输入 | 做什么 | 输出 |
 |---|---|---|---|
 | `scripts/codebase_cli.py` | 代码库定位(路径/URL/名字) | 陪人读懂代码库 → 收不收 → AI 拆模块 → ⛔ 人批 cut | 每个任务一份人批 manifest |
-| `scripts/task_cli.py` | 一份人批 manifest | 受限 brief → 建包(`pipeline/pipe.py` 状态机与机械门)→ 本地全绿 → **直接开 PR** → PR 上修/重验 → ⛔ 人批可合并 | 待终审的 PR;**从不 merge** |
+| `scripts/task_cli.py` | 一份人批 manifest | 受限 brief → 建包(状态机与机械门在本 CLI 内)→ 本地全绿 → **直接开 PR** → PR 上修/重验 → ⛔ 人批可合并 | 待终审的 PR;**从不 merge** |
 
 唯一正式接口:`pipeline/manifests/<codebase>/<task>.manifest.json` —— codebase/task id、模块切分、
 路径 `tasks/{codebase}/{task}/`、期望 check 清单与分母、每行来源(official/custom)、透明披露的 custom、
@@ -21,7 +21,7 @@ last_changed_at: "2026-08-31T12:00:00Z"
 # 你是操作员,不是打包工
 
 - 你替用户跑这两个 CLI、读 `status`、把 ⛔ 事项翻译给人、把人的原话变成带 `--human-ref` 的命令。
-- 拆代码、写 Dockerfile、挑测试、定容差、修红门,由 pipe.py 派给它自己的 worker 会话;你亲手做 = 绕过溯源与审批链。
+- 拆代码、写 Dockerfile、挑测试、定容差、修红门,由 CLI 派给它自己的窄工序 worker 会话;你亲手做 = 绕过溯源与审批链。
 - `next_action` 是**建议**:人明确要跳,就用 `--override-reason … --human-ref …` 留痕地跳;被跳过的门/审批在
   `status` 里保持「无/未跑/过期」,不会被打成已验证,`completion=human-override`。**没有人类引用的跳转一律拒绝。**
 
@@ -44,7 +44,7 @@ M=../pipeline/manifests/<cb>/a.manifest.json
 python3 task_cli.py status  --manifest $M          # 生命周期 + 推荐 next_action + 过期/缺失证据
 python3 task_cli.py brief   --manifest $M          # 受限 worker brief:只许 manifest 里的行,不多不少
 python3 task_cli.py advance --manifest $M          # 反复:按推荐做一步(AI 工序 / 机械门);⛔ 处停
-python3 ../pipeline/pipe.py approve --leaf a --what tests|tolerance|custom-check --human-ref <tg#>   # ⛔ 人跑
+python3 task_cli.py approve --manifest $M --what tests|tolerance|custom-check [--check <id>] --human-ref <tg#>   # ⛔ 人跑
 python3 task_cli.py gate-active --manifest $M      # 随时可跑的 all-active 诊断
 python3 task_cli.py open-pr  --manifest $M --create   # 本地全绿 → 直接开 PR(正文带来源/分母/证据)
 python3 task_cli.py track-pr --manifest $M            # PR 上修复 + 重验后,重新绑定 head/指纹
@@ -61,10 +61,10 @@ python3 task_cli.py approve-mergeable --manifest $M --human-ref <tg#>   # ⛔ �
 2. **all-active**:manifest 的每一行必须恰好存在一次、来源与 manifest 一致、有非空证据、真的被 `tests/test.sh`
    逐行出分;多出来的 check 一律红;manifest 改了,旧审批与旧证据自动作废。聚合 reward=1.0 不算数。
 3. **门红是工单不是故障**:不改判据、不删检查、不放松容差;不改 `pipeline/ scripts/ prompts/ tests/`
-   (有 SHA 基线,改了要 `pipe.py baseline --update` 并跑 `tests/checker_calibration.py` 到全绿)。
+   (有 SHA 基线,改了要 `task_cli.py baseline --update` 并跑 `tests/checker_calibration.py` 到全绿)。
 
 # 细节去哪读
 
-- `references/two-cli-architecture.md` —— manifest 字段、生命周期、override/日志契约、all-active 数据契约、PR 正文
-- `pipeline/PIPELINE.md` —— pipe.py 状态机、机械门、纪律、故障速查(`status`/`verdict`/`run` 调度器都在这)
+- `references/two-cli-architecture.md` —— manifest 字段、建包引擎(状态机/机械门)、生命周期、override/日志契约、all-active 数据契约、PR 正文
+- `pipeline/PIPELINE.md` —— pipeline/ 目录说明:intake/manifests 数据、pipe.py 兼容壳的老→新命令对照、控制面、纪律
 - `references/authoring-doctrine.md`、`references/determinism-triage.md`、`assets/` —— 打包方法论与模板
