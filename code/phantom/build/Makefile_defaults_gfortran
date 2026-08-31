@@ -1,0 +1,36 @@
+# default (generic) settings for gfortran compiler
+#
+# DO NOT CHANGE THESE HERE
+#
+# Instead, override the variables you need to change
+# by creating a new SYSTEM block in the Makefile
+#
+# e.g.
+#  ifeq ($(SYSTEM),mysystem)
+#     import Makefile_defaults_gfortran
+#     FFLAGS+= -fmyflag
+#  endif
+#
+FC= gfortran
+FFLAGS+= -O3 -Wall -Wno-unused-dummy-argument -frecord-marker=4 -g \
+        -finline-functions-called-once -finline-limit=1500 -funroll-loops -ftree-vectorize \
+        -std=f2008 -fall-intrinsics
+DBLFLAG= -fdefault-real-8 -fdefault-double-8
+DEBUGFLAG= -g -fcheck=all -ffpe-trap=invalid,zero,overflow -finit-real=nan -finit-integer=nan -fbacktrace
+KNOWN_SYSTEM=yes
+ENDIANFLAGBIG= -fconvert=big-endian
+ENDIANFLAGLITTLE= -fconvert=little-endian
+OMPFLAGS = -fopenmp
+CC = gcc
+CCFLAGS = -O3
+LIBCXX = -lstdc++
+
+# for gfortran version 7+ need this flag to fix DEBUG=yes compile failures
+GFORTRAN_VERSION_MAJOR=${shell gfortran -dumpversion | cut -d'.' -f 1}
+ifeq ($(shell [ $(GFORTRAN_VERSION_MAJOR) -gt 6 ] && echo true),true)
+    DEBUGFLAG+= -finit-derived
+endif
+
+ifeq ($(NOWARN), yes)
+    FFLAGS+= -Werror
+endif
