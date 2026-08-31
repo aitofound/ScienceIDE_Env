@@ -2,6 +2,24 @@
 
 # Local (non-Docker) validation performed during authoring
 
+> **HISTORICAL (superseded 2026-08-31).** This document records validation
+> performed against the *previous* 29-row check set, most of which ran
+> task-authored probe/reject decks. That set was retired in the provenance
+> re-curation; see `retired-checks.md`. The sections below that concern the
+> probe/reject rows, their fixtures, and the
+> `maxwell_real_selfval_repair*_fixtures.py` scripts describe code paths
+> that no longer exist in `tests/common.py`. Those three scripts targeted
+> retired rows and removed validators and could no longer run at all, so
+> they were deleted in the re-curation commit rather than left as
+> broken evidence; this document remains their written record.
+> `comment/sdf_reader_endian_fixture.py` is NOT affected --
+> `tests/sdf_reader.py` was not modified, and that fixture still passes all
+> 12 of its cases. The upstream-formula cross-checks likewise remain valid.
+> The current set's own verifier-wiring evidence is
+> `comment/recuration_verifier_smoke.py` (see coverage-ledger.md §8). Retained as an evidence record; it is not a
+> description of the leaf as it now stands.
+
+
 This authoring session ran on a Mac with a hard boundary against
 load-bearing builds/Docker/MPI/EPOCH compilation. Everything below is
 lightweight, host-Python-only static/logic/fixture validation; it is
