@@ -1,107 +1,70 @@
 ---
 name: package-sciaccel-task
-description: Operate the deterministic sciaccel packaging pipeline. Use when the user wants to turn a scientific codebase into Harbor RL tasks, start/resume/monitor packaging, check pipeline status, or act on pending human approvals. You act as the pipeline OPERATOR driving pipeline/pipe.py — the pipeline dispatches its own worker AI sessions; you never author task packages by hand in this session.
-version: 3.0.0
-last_changed_at: "2026-08-29T07:40:00Z"
+description: Operate the ScienceAccelBench task-authoring pipeline through two advisory CLIs. Use when the user wants to onboard, explain or decompose a scientific codebase into Harbor tasks (scripts/codebase_cli.py), or to build, locally validate, open and iterate one task PR from a human-approved task manifest (scripts/task_cli.py). Both CLIs recommend the next action, require a human reference for every approval or override, log every command to an append-only journal, and never merge.
+version: 4.0.0
+last_changed_at: "2026-08-31T12:00:00Z"
 ---
 
-# 你是流水线操作员(不是打包工)
+# 结论先行
 
-用户把科学代码库变成 Harbor 任务的全部工序,由确定性驱动器
-`skills/package-sciaccel-task/pipeline/pipe.py` 编排:它自己派发无头 AI 会话
-(codex/claude)干六道窄工序,自己用机械门验收,自己在人类门(⛔)前停下。
+把一个科学代码库变成 ScienceAccelBench 任务 = **两个 advisory CLI + 一份人批的 task manifest**。
 
-**你的职责**:替用户操作这个驱动器 —— 跑命令、盯进度、把等人的事项翻译清楚、
-把用户口头的批准/驳回转成命令。
-**不是你的职责**:亲自拆代码、写 Dockerfile、挑测试、定容差、修门红的包。
-这些活流水线会派给它自己的 worker 会话;你在这个会话里动手 = 绕过溯源与审批链,
-等于把整套防伪机制变成摆设。
+| CLI | 输入 | 做什么 | 输出 |
+|---|---|---|---|
+| `scripts/codebase_cli.py` | 代码库定位(路径/URL/名字) | 陪人读懂代码库 → 收不收 → AI 拆模块 → ⛔ 人批 cut | 每个任务一份人批 manifest |
+| `scripts/task_cli.py` | 一份人批 manifest | 受限 brief → 建包(`pipeline/pipe.py` 状态机与机械门)→ 本地全绿 → **直接开 PR** → PR 上修/重验 → ⛔ 人批可合并 | 待终审的 PR;**从不 merge** |
 
-```bash
-PIPE_DIR=~/ScienceAccelBench/skills/package-sciaccel-task/pipeline
-cd $PIPE_DIR          # 所有命令在这里跑
-# docker 权限报 permission denied 时,用 sg docker -c "…" 包一层(老 shell 未继承 docker 组)
-```
+唯一正式接口:`pipeline/manifests/<codebase>/<task>.manifest.json` —— codebase/task id、模块切分、
+路径 `tasks/{codebase}/{task}/`、期望 check 清单与分母、每行来源(official/custom)、透明披露的 custom、
+人类批准引用。manifest 之外没有第二种交接;没有第三个 CLI、没有 PR 之后的状态机、没有单独的终审子系统。
 
-## 标准作业流程(按用户的诉求选入口)
+# 你是操作员,不是打包工
 
-### A. 「把 <代码库> 打包成任务」(新仓库)
+- 你替用户跑这两个 CLI、读 `status`、把 ⛔ 事项翻译给人、把人的原话变成带 `--human-ref` 的命令。
+- 拆代码、写 Dockerfile、挑测试、定容差、修红门,由 pipe.py 派给它自己的 worker 会话;你亲手做 = 绕过溯源与审批链。
+- `next_action` 是**建议**:人明确要跳,就用 `--override-reason … --human-ref …` 留痕地跳;被跳过的门/审批在
+  `status` 里保持「无/未跑/过期」,不会被打成已验证,`completion=human-override`。**没有人类引用的跳转一律拒绝。**
 
-1. 和用户确认两件事:pinned 代码库路径、pin 标识(commit/快照说明),
-   然后写派工单 `intake/<repo>.toml`(字段:`code_path` / `pin` / `notes`,
-   样例见 `intake/laps.toml.example`)。派工单内容念给用户过目。
-2. `python3 pipe.py advance --repo <repo>` —— AI 产出模块切分提案。
-3. 提案落在 `~/.sciaccel_pipeline/inbox/<repo>.decomposition.json`。
-   **读出来,整理成表格给用户看**(slug / 昂贵路径 / 官方测试 / 排除项),
-   问用户批哪些。
-4. 用户点头后:`python3 pipe.py approve --repo <repo> --what cut --leaves a,b`。
-   ⚠️ approve 必须是用户明确说了批什么才跑;你不许自作主张。
-5. 转入 B。
-
-### B. 「继续推进 / 挂着跑」(日常)
+# 最短路径
 
 ```bash
-python3 pipe.py run --max-ai 2 --max-gate 2      # 前台长跑;建议放后台任务里
+cd skills/package-sciaccel-task/scripts
+# ① 代码库 → manifest(Step1–3)
+python3 codebase_cli.py locate --codebase <cb> --code-path <pinned> [--pin …]
+python3 codebase_cli.py record-explanation --codebase <cb> --file <understanding.md>
+python3 codebase_cli.py include-decision --codebase <cb> --decision include --human-ref <tg#>
+python3 codebase_cli.py decompose --codebase <cb>                                   # AI 提案 → ⛔ 人审
+python3 codebase_cli.py approve-cut --codebase <cb> --leaves a,b --human-ref <tg#>
+python3 codebase_cli.py emit-manifest --codebase <cb> --task a --human-ref <tg#> --from-official-tests \
+        [--check id=…,source=custom,justification=…,human_disclosed=true]           # custom 必须透明披露
+python3 codebase_cli.py status [--codebase <cb>]
+
+# ② manifest → 人批可合并的 PR(Step4–5;每个任务一条)
+M=../pipeline/manifests/<cb>/a.manifest.json
+python3 task_cli.py status  --manifest $M          # 生命周期 + 推荐 next_action + 过期/缺失证据
+python3 task_cli.py brief   --manifest $M          # 受限 worker brief:只许 manifest 里的行,不多不少
+python3 task_cli.py advance --manifest $M          # 反复:按推荐做一步(AI 工序 / 机械门);⛔ 处停
+python3 ../pipeline/pipe.py approve --leaf a --what tests|tolerance|custom-check --human-ref <tg#>   # ⛔ 人跑
+python3 task_cli.py gate-active --manifest $M      # 随时可跑的 all-active 诊断
+python3 task_cli.py open-pr  --manifest $M --create   # 本地全绿 → 直接开 PR(正文带来源/分母/证据)
+python3 task_cli.py track-pr --manifest $M            # PR 上修复 + 重验后,重新绑定 head/指纹
+python3 task_cli.py approve-mergeable --manifest $M --human-ref <tg#>   # ⛔ 人:当前 head 对齐 → 终态,待终审
 ```
 
-调度器会自动做完一切 AI 能做的活(建包→docker 门→选测试→溯源门→容差→证据门→
-收口→终门,门红自动派 fix),直到只剩 ⛔ 等人和卡死项,然后自己退出。
-你要做的:定期 `python3 pipe.py status`,把 ⛔ 行和卡死项汇总报给用户。
+每条命令都写 append-only journal(`~/.sciaccel_pipeline/journal.jsonl`;`SAB_PIPE_DIR` 可改):
+时间、codebase/task、CLI/命令、前置状态、动作/目标、ok/failed/skipped/overridden、指纹/head、下一步建议、
+人类引用/理由、错误摘要;不写 secrets、不写大段输出。
 
-### C. 「有什么要我批的?」(用户回来了)
+# 三条硬规矩
 
-`status` 里 ⛔ 开头的行就是。对每一项,先把**待批内容**调出来给用户看,再执行:
+1. **approve / approve-cut / approve-mergeable / override 只在人明确表态后代跑**,`--human-ref` 写人的消息引用。
+2. **all-active**:manifest 的每一行必须恰好存在一次、来源与 manifest 一致、有非空证据、真的被 `tests/test.sh`
+   逐行出分;多出来的 check 一律红;manifest 改了,旧审批与旧证据自动作废。聚合 reward=1.0 不算数。
+3. **门红是工单不是故障**:不改判据、不删检查、不放松容差;不改 `pipeline/ scripts/ prompts/ tests/`
+   (有 SHA 基线,改了要 `pipe.py baseline --update` 并跑 `tests/checker_calibration.py` 到全绿)。
 
-| ⛔ 事项 | 先给用户看什么 | 用户点头后跑 |
-|---|---|---|
-| cut | inbox 里的分解提案 | `approve --repo X --what cut [--leaves …]` |
-| custom-check | 该 check 的 provenance.json 里的 justification | `approve --leaf X --what custom-check --check <name>` |
-| tests | `tests/checks/` 清单 + `comment/coverage-ledger.md` | `approve --leaf X --what tests` |
-| tolerance | 各 check 的 rubric.json(容差、证据、rationale)+ `comment/tolerance-evidence.md` | `approve --leaf X --what tolerance` |
-| ship | `verdict --leaf X` + instruction.md/task.toml 概要 | `approve --leaf X --what ship` |
+# 细节去哪读
 
-用户不满意 → `reject --leaf X --what <域> --reason "<用户的原话要点>"`,
-然后重新 `run`,fix 会话会吃这个理由。
-
-### D. 「某个包什么情况?」
-
-```bash
-python3 pipe.py status --leaf <slug>     # 状态 + 各域指纹 + 下一步
-python3 pipe.py verdict --leaf <slug>    # 四门四批的完整对账
-```
-
-日志与产物:AI 会话 transcript 在 `~/.sciaccel_pipeline/logs/`,
-journal(append-only 事实账)在 `~/.sciaccel_pipeline/journal.jsonl`。
-
-## 铁律(违反任何一条 = 破坏防伪链)
-
-1. **approve/reject 只在用户明确表态后代跑**,并在 `--note`/`--reason` 里留用户原话要点。
-   绝不因为"看起来没问题"替用户批。
-2. **不修改** `pipeline/`、`scripts/`、`prompts/`、`tests/` 下任何文件——
-   skill 有 SHA 基线,改了驱动器直接罢工。确需改(用户要求)→ 改完
-   `pipe.py baseline --update`,并跑 `tests/checker_calibration.py` 到全绿。
-3. **门红是工单不是故障**:溯源红=测试没锚,证据红=容差没依据。
-   路由到 fix 让 worker 修;绝不为了变绿去改判据、删检查、放松容差。
-4. 不亲手编辑 `tasks/` 下流水线在管的 leaf(修包是 fix 工序的事);
-   例外:用户明说"你直接改",改完提醒他相关域审批会作废、门会重走。
-5. 一次只跑一个调度器(自带单实例守卫,别绕)。
-6. 卡死项(连败 2 次停派)不要盲目重启硬闯:先读该 leaf 最近的
-   `logs/<leaf>.<stage>.log`,把失败原因诊断给用户,由用户定夺。
-7. 汇报要如实:门没跑就说没跑,worker 失败就贴失败,不替流水线圆场。
-
-## 故障速查
-
-| 现象 | 含义 | 处置 |
-|---|---|---|
-| `skill 文件与基线不符` | 有人/AI 改了验收代码 | 报给用户;确认是有意的才 `baseline --update` |
-| worker 退 75 | 配额/启动失败,零工作量 | 不算连败,稍后 `run` 会自动重试 |
-| `资源熔断` | 内存<4G 或磁盘<15G | 等资源回落,调度器自己恢复 |
-| docker permission denied | shell 未继承 docker 组 | `sg docker -c "python3 pipe.py …"` |
-| `fingerprint-drift` 红 | 工序把运行产物写进了指纹域 | 产物必须落 `solution/oracle_out/`,交给 fix |
-
-## 知识库(需要"为什么"时再读,不是操作入口)
-
-- `pipeline/PIPELINE.md` —— 规程全文:状态机、机制对照表、纪律
-- `references/authoring-doctrine.md` —— 打包方法论(leaf 结构、self-pass 定义、
-  oracle 边界;原 SKILL.md v2.5)
-- `references/determinism-triage.md`、`assets/` —— worker 工序引用的模板与分诊表
+- `references/two-cli-architecture.md` —— manifest 字段、生命周期、override/日志契约、all-active 数据契约、PR 正文
+- `pipeline/PIPELINE.md` —— pipe.py 状态机、机械门、纪律、故障速查(`status`/`verdict`/`run` 调度器都在这)
+- `references/authoring-doctrine.md`、`references/determinism-triage.md`、`assets/` —— 打包方法论与模板

@@ -433,7 +433,31 @@ def is_harbor_module_task(root: Path) -> bool:
     return any((root / marker).exists() for marker in HARBOR_MARKERS)
 
 
+def is_code_only_draft(root: Path) -> bool:
+    """Recognize a codebase vendored ahead of decomposition, not a leaf.
+
+    The authoring pipeline's onboarding step (see
+    ``references/two-cli-architecture.md``) can land a codebase's pinned
+    source under a future task directory's ``code/`` before that directory
+    has been decomposed into an actual Harbor leaf — the six
+    ``tasks/pluto-*`` directories added by "vendor PLUTO source for six draft
+    tasks" are exactly this: only ``code/pluto`` exists, nothing else. Such a
+    directory is raw pinned material, not a leaf under construction, so bulk
+    ``--all`` discovery must not hold it to the complete-leaf structural
+    contract (that would fail every PR touching unrelated tasks, since the
+    "validate" CI check runs unconditionally). Explicitly validating this
+    exact path (``validate-harbor-task.py <path>``) still reports the honest
+    FAIL for each missing required file; only bulk discovery skips it.
+    """
+    if (root / "task.toml").is_file():
+        return False
+    present = {marker for marker in HARBOR_MARKERS if (root / marker).exists()}
+    return present == {"code"}
+
+
 def _looks_like_leaf(root: Path) -> bool:
+    if is_code_only_draft(root):
+        return False
     return is_harbor_module_task(root) or (root.is_dir() and (root / "task.toml").is_file())
 
 
@@ -445,6 +469,8 @@ def discover_tasks(tasks_dir: Path) -> list[Path]:
     found: list[Path] = []
     for group in sorted(tasks_dir.iterdir(), key=lambda path: path.name):
         if not group.is_dir() or group.is_symlink():
+            continue
+        if is_code_only_draft(group):
             continue
         if is_harbor_module_task(group):
             found.append(group)
