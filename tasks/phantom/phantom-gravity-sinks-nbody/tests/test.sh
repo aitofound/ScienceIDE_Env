@@ -15,4 +15,4 @@ if [ "$#" -ne 0 ]; then
   echo "usage: tests/test.sh [oracle]" >&2
   exit 2
 fi
-exec python3 "$ROOT/tests/validate_results.py"
+exec python3 -B "$ROOT/tests/validate_results.py"
