@@ -214,6 +214,12 @@ executable = next(
 )
 if executable is None:
     raise SystemExit("solve.sh: active manifest omitted the solve executable")
+manifest_path = reference_path / "oracle-manifest.json"
+# Reserve the required manifest entry before taking the physical snapshot.  The
+# manifest itself remains excluded from the table, but its directory entry must
+# already exist so the root directory metadata is final when recorded.
+with manifest_path.open("x", encoding="utf-8"):
+    pass
 outputs = output_manifest(reference_path, {"oracle-manifest.json"})
 manifest = {
     "schema": MANIFEST_SCHEMA,
@@ -282,7 +288,7 @@ manifest = {
         "run_log": str(Path(evidence) / f"docker-run-{run_id}.log"),
     },
 }
-with (reference_path / "oracle-manifest.json").open("x", encoding="utf-8") as handle:
+with manifest_path.open("w", encoding="utf-8") as handle:
     json.dump(manifest, handle, indent=2, sort_keys=True, allow_nan=False)
     handle.write("\n")
 print("oracle manifest recorded with final head/tree and active/output byte bindings")
