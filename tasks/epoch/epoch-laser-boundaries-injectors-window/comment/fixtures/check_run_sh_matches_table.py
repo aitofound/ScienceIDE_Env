@@ -14,7 +14,7 @@ agreement statically, without executing EPOCH or Docker: it parses every
 tests/checks/<check>/run.sh for its --check/--invocation/--dim/--ranks/
 --deck/--extra arguments (literally, including the one loop-based run.sh
 which uses "$variant" instead of a literal label) and asserts they match
-INVOCATIONS[<check>] exactly, in order, for all 30 checks.
+INVOCATIONS[<check>] exactly, in order, for all 10 checks.
 
 This is preparation/evidence tooling (comment/ is runtime-hidden and
 non-normative): no check or run.sh imports this module, and it never runs

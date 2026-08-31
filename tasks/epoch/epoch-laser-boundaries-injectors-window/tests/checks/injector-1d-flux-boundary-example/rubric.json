@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "check": "injector-1d-flux-boundary-example",
+  "codebase": "epoch",
+  "dimension_tier": 1,
+  "ranks": 1,
+  "provenance": {
+    "deck_source": "code/epoch/epoch1d/example_decks/injectors.deck (byte-identical copy, diff-verified)",
+    "assertion_source": "none upstream -- example_decks/ carries no asserted values; this row's judgement is A/B equivalence against the pinned CPU oracle run.",
+    "exercises": [
+      "deck_injector_block: boundary=x_min, species, number_density, temperature, drift_px, nparticles_per_cell",
+      "injectors.F90 flux-Maxwellian particle injection at the x_min face each step",
+      "boundary.F90 per-species bc_x_min/bc_x_max=simple_outflow for the injected Beam species alongside periodic field boundaries"
+    ]
+  },
+  "policy": {
+    "shape": "Reference-vs-candidate equivalence on the pinned upstream example deck.",
+    "tolerance_origin": "Provisional relative tolerance 1e-6, pending the tolerance-evidence gate's measured oracle noise (repeats>=2). Set well above the O(eps*sqrt(N)) rounding floor and far below the deviation any real port defect produces.",
+    "determinism": "The injector draws thermal momenta from EPOCH's RNG. The pinned oracle build and the candidate use the same pinned source, same single rank, and the same deterministic seeding, so the sampled particle stream is reproducible run-to-run; the compared grid-aggregated moments are additionally insensitive to per-particle rounding. Provisional tolerance pending the measured-noise tolerance gate."
+  },
+  "criteria": [
+    {
+      "name": "candidate_matches_oracle",
+      "rule": "The candidate must produce the same dump schedule as the reference and match it on every compared field to within 1e-6 relative deviation, normalised by the reference field's peak magnitude.",
+      "status": "active"
+    }
+  ]
+}

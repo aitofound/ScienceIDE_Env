@@ -84,8 +84,8 @@ def require_finite_array(arr: np.ndarray, name: str, *, min_size: int = 1) -> np
 def require_nontrivial_amplitude(value: float, floor: float, name: str) -> float:
     """Require a finite, non-negative amplitude/energy-like scalar to
     exceed ``floor``. Closes the 'all-zero synthetic witness passes a
-    ratio-only check' loophole the Sol review found in
-    boundary-periodic-domain-crossing and similar field-amplitude checks:
+    ratio-only check' loophole the Sol review found in a field-amplitude
+    check of the (now retired) task-authored row set:
     a ratio of two zero arrays can be exactly 0/0 (caught by
     ``require_finite`` already) or, worse, two *proportionally* zero
     arrays can produce a well-defined but physically meaningless ratio

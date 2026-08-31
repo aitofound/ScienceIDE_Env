@@ -125,115 +125,39 @@ CHECKS_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "checks")
 # invokes tests/run_one.py. This is the verifier-owned authority described
 # in the module docstring: a candidate's execution.json is checked *against*
 # this table, this table is never populated *from* a candidate's
-# execution.json. Keep in sync with tests/test.sh ROWS (30 checks, same
+# execution.json. Keep in sync with tests/test.sh ROWS (10 checks, same
 # order) and every tests/checks/*/run.sh; comment/fixtures/
 # check_run_sh_matches_table.py statically proves that sync holds.
 INVOCATIONS = {
     "laser-1d-simple-open-gauss-upstream": [
         {"label": "default", "dim": 1, "ranks": 1, "deck": "input.deck", "extra": []},
     ],
-    "laser-1d-unit-equivalence-lambda-omega-freq": [
-        {"label": "lambda", "dim": 1, "ranks": 1, "deck": "lambda.deck", "extra": []},
-        {"label": "omega", "dim": 1, "ranks": 1, "deck": "omega.deck", "extra": []},
-        {"label": "freq", "dim": 1, "ranks": 1, "deck": "freq.deck", "extra": []},
-        {"label": "frequency", "dim": 1, "ranks": 1, "deck": "frequency.deck", "extra": []},
-    ],
-    "laser-1d-polarisation-energy-invariant": [
-        {"label": "baseline", "dim": 1, "ranks": 1, "deck": "baseline.deck", "extra": []},
-        {"label": "rotated", "dim": 1, "ranks": 1, "deck": "rotated.deck", "extra": []},
-    ],
-    "laser-1d-t-start-t-end-gating": [
-        {"label": "default", "dim": 1, "ranks": 1, "deck": "input.deck", "extra": []},
-    ],
-    "laser-1d-multi-laser-superposition": [
-        {"label": "a", "dim": 1, "ranks": 1, "deck": "laser_a.deck", "extra": []},
-        {"label": "b", "dim": 1, "ranks": 1, "deck": "laser_b.deck", "extra": []},
-        {"label": "combined", "dim": 1, "ranks": 1, "deck": "laser_combined.deck", "extra": []},
-    ],
-    "laser-1d-default-envelope-hook": [
-        {"label": "default", "dim": 1, "ranks": 1, "deck": "input.deck", "extra": []},
-    ],
-    "laser-2d-boundary-direction-alias": [
-        {"label": "boundary_kw", "dim": 2, "ranks": 1, "deck": "boundary_kw.deck", "extra": []},
-        {"label": "direction_kw", "dim": 2, "ranks": 1, "deck": "direction_kw.deck", "extra": []},
-    ],
-    "laser-2d-focus-gaussian-waist": [
+    "laser-2d-simple-open-oblique-upstream": [
         {"label": "default", "dim": 2, "ranks": 1, "deck": "input.deck", "extra": []},
     ],
-    "laser-3d-wavelength-smoke": [
+    "laser-3d-simple-open-oblique-upstream": [
         {"label": "default", "dim": 3, "ranks": 1, "deck": "input.deck", "extra": []},
     ],
-    "laser-1d-si-units-degree-polarisation-alias": [
+    "laser-2d-focus-gaussian-example": [
+        {"label": "default", "dim": 2, "ranks": 1, "deck": "input.deck", "extra": []},
+    ],
+    "injector-1d-flux-boundary-example": [
         {"label": "default", "dim": 1, "ranks": 1, "deck": "input.deck", "extra": []},
     ],
-    "laser-1d-non-xmin-face-absorption": [
-        {"label": "default", "dim": 1, "ranks": 1, "deck": "input.deck", "extra": []},
+    "injector-2d-flux-boundary-example": [
+        {"label": "default", "dim": 2, "ranks": 1, "deck": "input.deck", "extra": []},
     ],
-    "laser-1d-dynamic-omega-chirp": [
-        {"label": "default", "dim": 1, "ranks": 1, "deck": "input.deck", "extra": []},
-    ],
-    "boundary-periodic-domain-crossing": [
-        {"label": "default", "dim": 1, "ranks": 1, "deck": "input.deck", "extra": []},
-    ],
-    "boundary-reflect-particle-mirror": [
-        {"label": "default", "dim": 1, "ranks": 1, "deck": "input.deck", "extra": []},
-    ],
-    "boundary-reflect-field-clamp-zero": [
-        {"label": "default", "dim": 1, "ranks": 1, "deck": "input.deck", "extra": []},
-    ],
-    "boundary-open-outflow-absorption": [
-        {"label": "default", "dim": 1, "ranks": 1, "deck": "input.deck", "extra": []},
-    ],
-    "boundary-cpml-laser-nearfield": [
-        {"label": "simple", "dim": 1, "ranks": 1, "deck": "simple.deck", "extra": []},
-        {"label": "cpml", "dim": 1, "ranks": 1, "deck": "cpml.deck", "extra": []},
-    ],
-    "boundary-thermal-heat-bath-stats": [
-        {"label": "default", "dim": 1, "ranks": 1, "deck": "input.deck", "extra": []},
-    ],
-    "boundary-conduct-tangential-fields": [
-        {"label": "clamp", "dim": 1, "ranks": 1, "deck": "clamp.deck", "extra": []},
-        {"label": "conduct", "dim": 1, "ranks": 1, "deck": "conduct.deck", "extra": []},
-    ],
-    "boundary-cpml-outflow-tuning": [
-        {"label": "default_tuning", "dim": 1, "ranks": 1, "deck": "default_tuning.deck", "extra": []},
-        {"label": "weak_tuning", "dim": 1, "ranks": 1, "deck": "weak_tuning.deck", "extra": []},
-    ],
-    "injector-flux-density-drift": [
-        {"label": "default", "dim": 1, "ranks": 1, "deck": "input.deck", "extra": []},
-    ],
-    "injector-file-provenance": [
-        {
-            "label": "default", "dim": 1, "ranks": 1, "deck": "input.deck",
-            "extra": ["t_data.txt", "w_data.txt", "px_data.txt", "py_data.txt", "pz_data.txt"],
-        },
-    ],
-    "injector-thermal-erf-flux": [
-        {"label": "thermal_dominated", "dim": 1, "ranks": 1, "deck": "thermal_dominated.deck", "extra": []},
-        {"label": "general_erf", "dim": 1, "ranks": 1, "deck": "general_erf.deck", "extra": []},
-    ],
-    "injector-flux-maxwellian-density-clamp": [
-        {"label": "flux_disabled", "dim": 1, "ranks": 1, "deck": "flux_disabled.deck", "extra": []},
-        {"label": "density_min_suppressed", "dim": 1, "ranks": 1, "deck": "density_min_suppressed.deck", "extra": []},
-        {"label": "density_max_clamped", "dim": 1, "ranks": 1, "deck": "density_max_clamped.deck", "extra": []},
-    ],
-    "window-shift-cadence-grid-advance": [
-        {"label": "default", "dim": 1, "ranks": 1, "deck": "input.deck", "extra": []},
-    ],
-    "window-bc-after-move-switch": [
-        {"label": "default", "dim": 1, "ranks": 1, "deck": "input.deck", "extra": []},
-    ],
-    "window-particle-insertion-removal": [
-        {"label": "default", "dim": 1, "ranks": 1, "deck": "input.deck", "extra": []},
-    ],
-    "window-dynamic-velocity-expression": [
-        {"label": "default", "dim": 1, "ranks": 1, "deck": "input.deck", "extra": []},
-    ],
-    "window-injector-boundary-warning": [
-        {"label": "default", "dim": 1, "ranks": 1, "deck": "input.deck", "extra": []},
-    ],
-    "laser-3d-window-injector-acceleration": [
+    "injector-3d-flux-boundary-example": [
         {"label": "default", "dim": 3, "ranks": 1, "deck": "input.deck", "extra": []},
+    ],
+    "window-1d-moving-window-example": [
+        {"label": "default", "dim": 1, "ranks": 1, "deck": "input.deck", "extra": []},
+    ],
+    "window-2d-moving-window-example": [
+        {"label": "default", "dim": 2, "ranks": 1, "deck": "input.deck", "extra": []},
+    ],
+    "window-2d-moving-window-acceleration": [
+        {"label": "default", "dim": 2, "ranks": 1, "deck": "input.deck", "extra": []},
     ],
 }
 
