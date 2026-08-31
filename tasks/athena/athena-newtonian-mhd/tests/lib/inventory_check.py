@@ -9,7 +9,6 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 TESTS = HERE.parent
 LEAF = TESTS.parent
-REPO = LEAF.parents[2]
 PIN = "823614c90b594472747a0ac2a699e4a454f300d2"
 
 
@@ -19,8 +18,9 @@ def fail(message: str) -> None:
 
 def main() -> int:
     sys.path.insert(0, str(HERE))
-    from case_spec import deck_sha256, load_check, load_inventory
+    from case_spec import deck_sha256, load_check, load_inventory, locate_source_root
 
+    pinned_source = locate_source_root(LEAF)
     try:
         inventory = load_inventory(TESTS)
     except Exception as exc:
@@ -43,7 +43,7 @@ def main() -> int:
         if official["source_commit"] != PIN:
             fail(f"{name}: wrong official source pin")
         script = official["script"]
-        source = REPO / "code" / "athena" / script
+        source = pinned_source / script
         if not source.is_file() or source.is_symlink():
             fail(f"{name}: official script is missing: {script}")
         if script in scripts:

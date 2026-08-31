@@ -94,6 +94,29 @@ class SpecError(ValueError):
     pass
 
 
+def locate_source_root(task_root: Path) -> Path:
+    """Locate the exact shared Athena++ tree from a host or staged task root.
+
+    A Harbor image has the task root at ``/app`` and copies the shared source to
+    ``/app/code/athena``; a host task root lives below the repository root and
+    reaches the same relative path through its repository ancestors.  The host
+    form additionally requires the repository staging script, so an unrelated
+    ancestor with a similarly named directory cannot silently become a source
+    substitute.
+    """
+    task_root = task_root.resolve()
+    for root in (task_root, *task_root.parents):
+        source = root / "code" / "athena"
+        if source.is_symlink() or not source.is_dir():
+            continue
+        if root == task_root:
+            return source
+        staging = root / "scripts" / "stage-task-source.py"
+        if staging.is_file() and not staging.is_symlink():
+            return source
+    raise SpecError(f"cannot locate the exact shared source tree from task root {task_root}")
+
+
 class OfficialScheduleBlocked(SpecError):
     """The exact pinned script loop is recorded but has no executable driver yet."""
 

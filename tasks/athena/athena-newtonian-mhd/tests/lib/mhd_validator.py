@@ -52,7 +52,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from case_spec import (  # noqa: E402
     MAGNETIC, MANIFEST_FILE, MANIFEST_SCHEMA, OBS_SCHEMA, OBSERVABLES_FILE, PIPELINE, POLICY, PRIMITIVES, RAW_BUILDS, RAW_DIR, RAW_RUNS, ROLES,
-    SOURCE_COMMIT, STATE_FILE, STATE_SCHEMA, VARIABLES, CheckSpec, RunPlan, SpecError, deck_sha256, load_check, load_strict_json, task_fingerprint,
+    SOURCE_COMMIT, STATE_FILE, STATE_SCHEMA, VARIABLES, CheckSpec, RunPlan, SpecError, deck_sha256, load_check, load_strict_json, locate_source_root, task_fingerprint,
 )
 from extract_mhd import (  # noqa: E402
     ERROR_FILES, FACE_NAMES, ExtractError, check_level_evidence, decode, derived_observables, extract_run, face_scale, face_shapes, finite_array,
@@ -867,8 +867,7 @@ def _official_root(directory: Path, spec: CheckSpec, role: str, label: str) -> t
     if not isinstance(source, dict) or set(source) != {"root", "tree", "staged_tree", "script_sha256", "runner_sha256", "official_deck_sha256", "check_deck_sha256", "task_fingerprint"} or not isinstance(source.get("tree"), dict) or not isinstance(source["tree"].get("digest"), str) or len(source["tree"]["digest"]) != 64 or not isinstance(source.get("staged_tree"), dict) or not isinstance(source["staged_tree"].get("digest"), str) or len(source["staged_tree"]["digest"]) != 64:
         raise Reject(f"{label}: source closure provenance is malformed")
     leaf = spec.check_dir.resolve().parents[2]
-    repo = leaf.parents[2]
-    pinned = repo / "code" / "athena"
+    pinned = locate_source_root(leaf)
     expected_script = pinned / official["script"]
     expected_runner = pinned / "tst/regression/run_tests.py"
     expected_deck = pinned / official["deck"]
