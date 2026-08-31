@@ -1,92 +1,72 @@
 {
-  "check": "serial-3d-forward-sign",
-  "legacy_rubric": {
-    "anti_hardcoding_role": "Magnitude-only or precomputed radial outputs cannot pass signed positive/conjugate frequency checks.",
-    "check": "serial-3d-forward-sign",
-    "criteria": {
-      "authenticated_raw_observables": true,
-      "independent_recomputation": true,
-      "numerical_bounds": "human-owned; intentionally absent until Jason approves final scientific policy",
-      "performance_policy": "no speedup, throughput, timing target, or invented runtime claim"
+  "claim_fixture": "serial-3d-forward-sign",
+  "claim_kind": "forward_sign",
+  "evidence_schema": "athena-fft-claim/v1",
+  "id": "FFT-20",
+  "name": "serial-3d-forward-sign",
+  "policy": "Native Athena claim files only; the upstream fft-errors row is retained as provenance but is not a complex-input error co-gate. Independent verifier recomputes exact sparse lattice fixture and binary reward requires all 26 checks.",
+  "reward_bearing": true,
+  "run_matrix": {
+    "build_modes": [
+      "serial",
+      "mpi"
+    ],
+    "claim_fixture": "serial-3d-forward-sign",
+    "cycles": 2,
+    "global_shape": [
+      64,
+      64,
+      64
+    ],
+    "invocation_ids": {
+      "serial": "fft-20-serial"
     },
-    "id": "FFT-05",
-    "official_pinned_evidence": [
-      "tst/regression/scripts/tests/fft/fft.py:39-40 \u2014 official serial run, but it records only scalar error.",
-      "src/pgen/fft.cpp:118-121 \u2014 production invokes forward then backward."
-    ],
-    "policy": "authenticated_raw_recomputation_wiring_v2.2",
-    "purpose": "QuickCreatePlan forward direction -> FFTW_FORWARD through serial Execute -> raw global spectrum",
-    "required_artifacts": [
-      "report.json",
-      "raw/<variant>/field.json",
-      "raw/<variant>/spectrum.json",
-      "raw/<variant>/reconstructed.json",
-      "raw/<variant>/rank-local.json",
-      "raw/<variant>/execution.json",
-      "raw/<variant>/stdout.log",
-      "raw/<variant>/stderr.log",
-      "raw/<variant>/fft-errors.dat",
-      "raw/build/<mode>.json",
-      "raw/build/<mode>.log"
-    ],
-    "runtime_redundancy": {
-      "purpose": "Directly isolates sign errors that a round-trip-only test can miss.",
-      "redundancy": "Conjugate control is a scientific cross-check, not redundant timing.",
-      "runtime_claim": "No runtime claim."
+    "mesh_probe": true,
+    "native_claims": true,
+    "nonce_parameter": "problem/fft_evidence_nonce",
+    "official_deck_only": false,
+    "session_bound": true,
+    "variant_argv_tokens": {
+      "serial": [
+        "mesh/nx1=64",
+        "mesh/nx2=64",
+        "mesh/nx3=64",
+        "meshblock/nx1=32",
+        "meshblock/nx2=32",
+        "meshblock/nx3=32",
+        "problem/ncycle=2",
+        "problem/fft_case=forward_sign"
+      ]
     },
-    "schema": "athena-fft-check/v1",
-    "source_branch_forcing": [
-      "src/fft/athena_fft.cpp:223-233,365-375 \u2014 direction-specific 3-D plans.",
-      "src/fft/athena_fft.hpp:123-135 \u2014 enum forward=-1/backward=1 and execution API."
-    ],
-    "subcases": {
-      "decomposition": "serial rank 1; np=[1,1,1]",
-      "dimensionality": "3-D serial sign/order probe",
-      "execution_variants": [
-        "serial"
-      ],
-      "forward_inverse": "Complex positive mode [1,2,3] and its conjugate control -> forward only for spectrum verdict; then backward round trip as a separate required subcase.",
-      "global_shape": [
-        64,
-        64,
-        64
-      ],
-      "meshblock_shape": [
+    "variant_meshblock": {
+      "serial": [
         32,
         32,
         32
-      ],
-      "normalization": "No scaling during forward; inverse uses N=262144 when round-trip subcase runs; sign and coefficient tolerance human-owned.",
-      "raw_artifacts": {
-        "binding": "Raw input, spectrum, reconstructed control, rank-local, execution and logs; spectrum must contain signed complex coefficients, not magnitudes only.",
-        "build_evidence": [
-          "raw/build/serial.json",
-          "raw/build/serial.log",
-          "raw/build/mpi.json",
-          "raw/build/mpi.log"
-        ],
-        "per_variant": [
-          "field.json",
-          "spectrum.json",
-          "reconstructed.json",
-          "rank-local.json",
-          "execution.json",
-          "stdout.log",
-          "stderr.log",
-          "fft-errors.dat"
-        ]
-      }
+      ]
     },
-    "title": "Serial forward sign, conjugate direction, and sampled spectrum",
-    "verdict_boundary": {
-      "decision": "Not run; owner must choose sign convention and tolerance.",
-      "status": "proposed_not_run"
-    }
+    "variant_problem_id": {
+      "serial": "fft_legacy_3d_forward_sign"
+    },
+    "variant_process_grid": {
+      "serial": [
+        1,
+        1,
+        1
+      ]
+    },
+    "variants": [
+      "serial"
+    ]
   },
-  "not_athena_evidence": "Any field/spectrum/reconstruction/witness this directory once described was generated by Python (tests/emit_raw.py, tests/fft_observables.py), not by Athena++, and is not scientific evidence.",
-  "policy": "Preserved under the repository no-delete boundary (parent D1, 2026-08-30). Never listed in `checks`, never loaded by tests/harness.py, never reward-bearing; its files are not Athena evidence.",
-  "reason": "Forward sign is not observable from fft.cpp output (its exp(-r) field is reflection-symmetric); no honest replacement exists.",
-  "replaced_by": null,
-  "schema": "athena-fft-check/v3",
-  "status": "deprecated_non_reward"
+  "schema": "athena-fft-rubric/v4",
+  "title": "Native asymmetric signed-forward convention",
+  "tolerance": {
+    "absolute": "8*4*262144*2^-52",
+    "epsilon_power": -52,
+    "global_cell_count": 262144,
+    "provenance": "IEEE-754 binary64 unit roundoff (2^-52), exact lattice fixture, declared transform stage count, and global cell count; no empirical oracle value",
+    "relative": "8*4*2^-52",
+    "stage_count": 4
+  }
 }
