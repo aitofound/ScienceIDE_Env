@@ -268,7 +268,7 @@ def run_official(check_dir: Path, results: Path, source: Path, role: str, scratc
     # run_tests.py ignores main()'s successful return, so a successful script is
     # represented by its Summary/test result in the authoritative logfile.
     lines = _log_lines(raw_root / "run_tests.log")
-    outcome = _official_outcome(lines, official["case"], int(schedule["invocation_count"]))
+    outcome = _official_outcome(lines, test_name.replace("/", "."), int(schedule["invocation_count"]))
     if exit_code == 0 and not outcome["passed"]:
         exit_code = 1
     finished = utc_now()
