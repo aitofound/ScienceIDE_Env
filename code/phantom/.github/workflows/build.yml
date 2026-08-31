@@ -1,0 +1,109 @@
+name: build
+
+on:
+  workflow_call:
+
+env:
+  OMP_STACKSIZE: 512M
+  SPLASH_DIR: ${{ github.workspace }}/splash
+  MCFOST_DIR: ${{ github.workspace }}/mcfost
+  PHANTOM_DIR: ${{ github.workspace }}
+  WEB_USER: github
+  WEB_SERVER: data.phantom.cloud.edu.au
+  WEB_HTML_DIR: /var/www/html
+  BUILD_LOG_DIR: /ci/build/logs
+  NPARALLEL: 32
+
+jobs:
+  matrix_prep:
+    runs-on: ubuntu-latest
+    outputs:
+      batch: ${{ steps.set-sequence.outputs.batch }}
+      nbatch: ${{ steps.set-sequence.outputs.nbatch }}
+    steps:
+    - name: Check out repo
+      uses: actions/checkout@v4
+    - name: Generate sequence of batch numbers for normal tests, or run sequentially for scheduled tests
+      id: set-sequence
+      run: |
+        if [[ ${{ github.event_name == 'schedule' }} ]]; then
+          range=$(jq -ncR "[range(1;${NPARALLEL}+1)]")
+          echo "::set-output name=batch::${range}"
+          echo "::set-output name=nbatch::${NPARALLEL}"
+        else
+          echo "::set-output name=batch::[1]"
+          echo "::set-output name=nbatch::1"
+        fi
+
+  build:
+    needs: matrix_prep
+    strategy:
+      fail-fast: false
+      matrix:
+        system:
+          - aocc
+          - gfortran
+          - ifort
+          - ifx
+        batch: ${{ fromJson(needs.matrix_prep.outputs.batch) }}
+
+    name: build (batch ${{ matrix.batch }}/${{ needs.matrix_prep.outputs.nbatch }}, SYSTEM=${{ matrix.system }})
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: "Nuke the github workspace before doing anything"
+      run: rm -r ${{ github.workspace }} && mkdir ${{ github.workspace }}
+
+    - name: Update package list
+      run: sudo apt-get update
+
+    - name: Setup Fortran compiler
+      if: matrix.system == 'aocc' || matrix.system == 'ifort' || matrix.system == 'ifx'
+      uses: fortran-lang/setup-fortran@main
+      with:
+        compiler: ${{ matrix.system == 'ifort' && 'intel-classic' || (matrix.system == 'ifx' && 'intel' || 'aocc') }}
+
+    - name: Install numpy and matplotlib for analysis unit tests
+      run: |
+        sudo apt-get install -y python3-numpy
+        sudo apt-get install -y python3-matplotlib
+
+    - name: "Clone phantom"
+      uses: actions/checkout@v4
+
+    - name: "Grab a copy of splash source code for analysis utils"
+      uses: actions/checkout@v4
+      with:
+        repository: danieljprice/splash
+        path: splash
+
+    - name: "Grab a copy of mcfost source code for analysis utils"
+      uses: actions/checkout@v4
+      with:
+        repository: danieljprice/mcfost
+        path: mcfost
+
+    - name: "Create logs directory"
+      if: github.event_name == 'schedule'
+      run: mkdir logs
+
+    - name: "Run buildbot.sh"
+      run: ./buildbot.sh --url http://${WEB_SERVER}/${BUILD_LOG_DIR} --parallel ${{ matrix.batch }} ${{ env.NPARALLEL }}
+      working-directory: scripts
+      env:
+        SYSTEM: ${{ matrix.system }}
+        RETURN_ERR: yes
+
+    - name: Summary of build failures with SYSTEM=${{ matrix.system }}
+      if: success() || failure()
+      run: cat logs/build-failures-${{ matrix.system }}.txt || true
+
+    - name: Summary of setup failures with SYSTEM=${{ matrix.system }}
+      if: success() || failure()
+      run: cat logs/setup-failures-${{ matrix.system }}.txt || true
+
+    - name: Summary of analysis failures with SYSTEM=${{ matrix.system }}
+      if: success() || failure()
+      run: cat logs/analysis-failures-${{ matrix.system }}.txt || true
