@@ -1,0 +1,23 @@
+{
+  "id": "cpu-docker",
+  "status": "active",
+  "runner": "linux-docker",
+  "accelerator": "none -- CPU preparation target only; it exercises the pinned incumbent and does not claim a GPU/accelerator port, speedup, or device result.",
+  "base_image": "debian:bookworm-slim@sha256:1caf1c703c8f7e15dcf2e7769b35000c764e6f50e4d7401c355fb0248f3ddfdb",
+  "base_image_source": "pinned identically in environment/Dockerfile and tests/Dockerfile",
+  "module": "Phantom source-owned radiation-hydrodynamics assertion paths; pinned-source EOS and H2/ISM thermochemistry excluded",
+  "toolchain": {
+    "environment_dockerfile": ["make", "gcc", "gfortran", "python3"],
+    "tests_dockerfile": ["make", "gcc", "gfortran", "python3"],
+    "build_note": "Setup-specific phantomtest binaries for raddisc, radstar, radiativebox, testkd, and test are compiled serially with SYSTEM=gfortran, OPENMP=yes, and an environment-prepended -ffp-contract=off while retaining Phantom's makefile defaults; no EOS-only galdisc, KROME, or MCFOST dependency is installed.",
+    "source": "read directly from this leaf Dockerfiles; Docker solve was not executed by this authoring worker"
+  },
+  "source_pin": {
+    "repository": "https://github.com/danieljprice/phantom",
+    "commit": "e53ea16758d2a261680506852a528f21270dca1c",
+    "shared_tree": "code/phantom",
+    "license": "GPL-3.0-or-later with LICENSE Section 7(c) naming condition"
+  },
+  "activated_at": "2026-08-30",
+  "activated_by": "phantom radiation/EOS draft packaging"
+}
