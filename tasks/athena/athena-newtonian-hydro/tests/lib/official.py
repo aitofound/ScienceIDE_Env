@@ -101,7 +101,9 @@ def _linwave4_3d(rows):
   for wave,errs,tols in (('sound',sound,err_tol[0]),('entropy',entropy,err_tol[1])):
    for i in range(1,len(resolutions)):
     if errs[i][4]>tols[i-1]: return False,f'{torder}+{xorder} 3D {wave} error acceptance failed at nx1={resolutions[i]}'
-    if resolutions[i]==64:
+    # Mirror the pinned upstream script literally: it asks for nx1==128,
+    # while its official 3D resolution_range is only 16,32,64.
+    if resolutions[i]==128:
      try: rate=_rate(errs[i-1][4],errs[i][4],resolutions[i-1],resolutions[i])
      except ValueError: return False,f'{torder}+{xorder} 3D {wave} convergence denominator invalid'
      if rate<rate_tol[0 if wave=='sound' else 1]: return False,f'{torder}+{xorder} 3D {wave} convergence-rate acceptance failed'
