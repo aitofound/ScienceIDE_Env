@@ -10,6 +10,7 @@ no-argument verifier with all checks passing.
 """
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import math
@@ -194,9 +195,11 @@ def _root_audit(reference: Path, candidate: Path, checks: list[dict], independen
     if independence.get("independent") is not True:
         receipt["problems"].append(f"the two roots are not physically independent: {_bounded(independence, 200)}")
     for role, root in (("reference", reference), ("candidate", candidate)):
-        problem = _root_manifest_problem(root, role, manifests[role])
+        problem, root_container = _root_manifest_problem(root, role, manifests[role])
         if problem:
             receipt["problems"].append(problem)
+        elif root_container:
+            containers[role].add(root_container)
         receipt.setdefault("root_manifests", {})[role] = (root / ROOT_MANIFEST_FILE).is_file()
     known = {role: {value for value in containers[role] if value} for role in containers}
     receipt["distinct_containers"] = bool(known["reference"] and known["candidate"] and not (known["reference"] & known["candidate"]))
@@ -206,30 +209,46 @@ def _root_audit(reference: Path, candidate: Path, checks: list[dict], independen
     return receipt
 
 
-def _root_manifest_problem(root: Path, role: str, manifests: dict[str, dict]) -> str | None:
-    """A root-level manifest is optional, but when present it must agree with the roots it covers."""
+def _root_manifest_problem(root: Path, role: str, manifests: dict[str, dict]) -> tuple[str | None, str | None]:
+    """Validate an optional post-run root manifest and return its Docker id."""
     path = root / ROOT_MANIFEST_FILE
     if path.is_symlink():
-        return f"{role} root manifest is a symlink"
+        return f"{role} root manifest is a symlink", None
     if not path.is_file():
-        return None
+        return None, None
     try:
         document = load_strict_json(path)
     except Exception as exc:  # noqa: BLE001
-        return f"{role} root manifest is unreadable: {_bounded(exc, 120)}"
-    if not isinstance(document, dict) or document.get("schema") != ROOT_MANIFEST_SCHEMA:
-        return f"{role} root manifest is not the declared schema"
+        return f"{role} root manifest is unreadable: {_bounded(exc, 120)}", None
+    expected_keys = {
+        "schema", "role", "execution_id", "run_token", "run_id", "image", "image_id",
+        "container", "container_id", "source_commit", "checks", "results", "limits",
+    }
+    if not isinstance(document, dict) or set(document) != expected_keys or document.get("schema") != ROOT_MANIFEST_SCHEMA:
+        return f"{role} root manifest is not the declared schema", None
     if document.get("role") != role:
-        return f"{role} root manifest declares role {document.get('role')!r}"
+        return f"{role} root manifest declares role {document.get('role')!r}", None
     if sorted(document.get("checks") or []) != sorted(manifests):
-        return f"{role} root manifest does not cover exactly the graded checks"
+        return f"{role} root manifest does not cover exactly the graded checks", None
     ids = {value.get("execution", {}).get("execution_id") for value in manifests.values()}
-    if document.get("execution_id") not in ids:
-        return f"{role} root manifest execution id is not the execution that produced its results"
+    if ids != {document.get("execution_id")}:
+        return f"{role} root manifest execution id is not the sole execution that produced its results", None
     tokens = {value.get("execution", {}).get("run_token") for value in manifests.values()}
-    if document.get("run_token") is not None and tokens != {document.get("run_token")}:
-        return f"{role} root manifest run token differs from its result directories"
-    return None
+    if tokens != {document.get("run_token")}:
+        return f"{role} root manifest run token differs from its result directories", None
+    expected_results = {
+        name: {
+            product: hashlib.sha256((root / name / product).read_bytes()).hexdigest()
+            for product in (OFFICIAL_RESULT, MANIFEST_FILE)
+        }
+        for name in sorted(manifests)
+    }
+    if document.get("results") != expected_results:
+        return f"{role} root manifest does not hash-bind exactly its graded products", None
+    container_id = document.get("container_id")
+    if not isinstance(container_id, str) or len(container_id) != 64 or any(char not in "0123456789abcdef" for char in container_id.lower()):
+        return f"{role} root manifest Docker container id is malformed", None
+    return None, container_id
 
 
 def _load_validator(path: Path, name: str):
