@@ -131,9 +131,9 @@ artifacts and recorded evidence.
 From the repository root:
 
 ```bash
-python3 skills/package-sciaccel-task/scripts/validate-harbor-task.py \
+python3 skills/package-sciaccel-task/scripts/task_cli.py validate-harbor \
   tasks/<group>/<module-slug>
-python3 skills/package-sciaccel-task/scripts/validate-harbor-task.py --all tasks
+python3 skills/package-sciaccel-task/scripts/task_cli.py validate-harbor --all tasks
 BASE_REF=origin/main npm run check
 npm run check:validators
 ```
