@@ -10,7 +10,7 @@ mkdir -p "$OUT"
 WORK="$(mktemp -d "/tmp/phantom-buildbot-${SETUP}.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
 cp -a "$SOURCE/." "$WORK/source/"
-mapfile -t SETUPS < <(grep 'ifeq ($(SETUP)' "$WORK/source/build/Makefile_setups" | grep -v skip | cut -d, -f 2 | cut -d')' -f 1)
+mapfile -t SETUPS < <(grep 'ifeq ($(SETUP)' "$WORK/source/build/Makefile_setups" | grep -v skip | cut -d, -f 2 | cut -d')' -f 1 | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')
 INDEX=0
 for n in "${!SETUPS[@]}"; do
   if [ "${SETUPS[$n]}" = "$SETUP" ]; then INDEX=$((n + 1)); break; fi
