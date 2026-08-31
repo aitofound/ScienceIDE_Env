@@ -149,11 +149,11 @@ CPU-oracle, self-test, or verifier step passed unless it actually ran.
 
 ## Grandfathered packages
 
-`tasks/pluto/` and `archive/templates/grid-v1/` retain their existing
-pre-grid/grid contracts and are intentionally untouched. Their plural
-`checks/` × `targets/` roots, per-check image flow, and legacy projection rules
-are valid for those packages only. They are not examples for a new Harbor leaf;
-do not mix them with singular `target/`, `tests/checks/`, or `code/`.
+`archive/templates/grid-v1/` retains its existing pre-grid/grid contract and is
+intentionally untouched. Its plural `checks/` × `targets/` roots, per-check
+image flow, and legacy projection rules are valid for that package only. It is
+not an example for a new Harbor leaf; do not mix it with singular `target/`,
+`tests/checks/`, or `code/`.
 
 ## Review checklist
 

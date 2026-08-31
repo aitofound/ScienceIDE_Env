@@ -1,0 +1,182 @@
+!--------------------------------------------------------------------------!
+! The Phantom Smoothed Particle Hydrodynamics code, by Daniel Price et al. !
+! Copyright (c) 2007-2026 The Authors (see AUTHORS)                        !
+! See LICENCE file for usage and distribution conditions                   !
+! http://phantomsph.github.io/                                             !
+!--------------------------------------------------------------------------!
+module inject
+!
+! Handles uniform distribution injection
+!
+! :References: None
+!
+! :Owner: Daniel Price
+!
+! :Runtime parameters:
+!   - wind_resolution  : *resolution of the wind -- DO NOT CHANGE AFTER RUNNING SETUP --*
+!   - wind_temperature : *temperature of the wind (Kelvin)*
+!
+! :Dependencies: boundary, eos, infile_utils, part, partinject, physcon,
+!   units
+!
+ implicit none
+ character(len=*), parameter, public :: inject_type = 'unifwind'
+
+ public :: init_inject,inject_particles,write_options_inject,read_options_inject,&
+      set_default_options_inject,update_injected_par
+
+ real, public :: wind_density = 7.2d-16
+ real, public :: wind_velocity = 29.
+ integer, public :: wind_resolution = 64
+ real, public :: wind_temperature = 1700.
+ private
+
+contains
+!-----------------------------------------------------------------------
+!+
+!  Initialize global variables or arrays needed for injection routine
+!+
+!-----------------------------------------------------------------------
+subroutine init_inject(ierr)
+ integer, intent(out) :: ierr
+ !
+ ! return without error
+ !
+ ierr = 0
+
+end subroutine init_inject
+
+!-----------------------------------------------------------------------
+!+
+!  Main routine handling wind injection.
+!+
+!-----------------------------------------------------------------------
+subroutine inject_particles(time,dtlast,xyzh,vxyzu,xyzmh_ptmass,vxyz_ptmass,&
+                            npart,npart_old,npartoftype,dtinject)
+ use part,      only:hfact,igas
+ use partinject,only:add_or_update_particle
+ use units,     only:umass,udist,utime
+ use physcon,   only:Rg
+ use eos,       only:gamma
+ use boundary,  only:ymin,ymax,zmin
+ real,    intent(in)    :: time, dtlast
+ real,    intent(inout) :: xyzh(:,:), vxyzu(:,:), xyzmh_ptmass(:,:), vxyz_ptmass(:,:)
+ integer, intent(inout) :: npart, npart_old
+ integer, intent(inout) :: npartoftype(:)
+ real,    intent(out)   :: dtinject
+
+ integer, parameter :: handled_walls = 3
+ real, parameter :: mu = 1.26 ! Used in Bowen (1988)
+ real :: rho, v, energy_to_temperature_ratio, u, h, delta, time_between_walls
+ integer :: N, outer_wall, inner_wall, inner_handled_wall, particles_per_wall
+ integer :: i, iy, iz, i_part, part_type
+ real :: local_time, vxyz(3), pxyz(3)
+
+ rho = wind_density / (umass/udist**3)
+ v = wind_velocity * 1.d5 / (udist/utime)
+ N = wind_resolution
+ energy_to_temperature_ratio = Rg/(mu*(gamma-1.))/(udist/utime)**2
+ u = wind_temperature * energy_to_temperature_ratio
+ delta = (ymax-ymin)/N
+ time_between_walls = delta/v
+ h = hfact * delta / 2.
+
+ outer_wall = ceiling((time-dtlast)/time_between_walls)
+ inner_wall = ceiling(time/time_between_walls)-1
+ inner_handled_wall = inner_wall+handled_walls
+ particles_per_wall = N**2
+
+ !print *, "t = ", time
+ !print *, "dt last = ", dtlast
+ !print *, "delta t = ", time_between_walls
+ !print *, "Injecting wall ", inner_wall, " to ", outer_wall
+ !print *, "Handling wall ", inner_handled_wall, " to ", inner_wall-1
+ print *, ' v = ', v
+ print *, '*** ', time, dtlast, time_between_walls, inner_wall, outer_wall
+
+ vxyz = (/ v, 0., 0. /)
+ do i=inner_handled_wall,outer_wall,-1
+    local_time = time - i*time_between_walls
+    if (i  >  inner_wall) then
+       ! Handled wall
+       i_part = (inner_handled_wall-i)*particles_per_wall
+       part_type = igas
+    else
+       ! Outer wall
+       i_part = npart
+       part_type = igas
+    endif
+    pxyz(1) = local_time * v
+    print *, '==== ', i, pxyz(1)
+    do iy = 1,N
+       do iz = 1,N
+          pxyz(2) = ymin + (iy-.5)*delta
+          pxyz(3) = zmin + (iz-.5)*delta
+          i_part = i_part + 1
+          call add_or_update_particle(part_type, pxyz, vxyz, h, u, i_part, npart, npartoftype, xyzh, vxyzu) ! Another brick in the wall
+       enddo
+    enddo
+ enddo
+ !
+ !-- timestep constraint
+ !
+ dtinject = time_between_walls
+
+end subroutine inject_particles
+
+!-----------------------------------------------------------------------
+!+
+!  Updates the injected particles
+!+
+!-----------------------------------------------------------------------
+subroutine update_injected_par
+ ! -- placeholder function
+ ! -- does not do anything and will never be used
+end subroutine update_injected_par
+
+!-----------------------------------------------------------------------
+!+
+!  Writes input options to the input file
+!+
+!-----------------------------------------------------------------------
+subroutine write_options_inject(iunit)
+ use infile_utils, only:write_inopt
+ integer, intent(in) :: iunit
+
+ call write_inopt(wind_velocity,'wind_velocity', &
+      'velocity at which wind is injected (km/s) -- DO NOT CHANGE AFTER RUNNING SETUP --',iunit)
+ call write_inopt(wind_density,'wind_density', &
+      'wind density (g/cm³) -- DO NOT CHANGE AFTER RUNNING SETUP --',iunit)
+ call write_inopt(wind_temperature,'wind_temperature','temperature of the wind (Kelvin)',iunit)
+ call write_inopt(wind_resolution,'wind_resolution','resolution of the wind -- DO NOT CHANGE AFTER RUNNING SETUP --',iunit)
+
+end subroutine write_options_inject
+
+!-----------------------------------------------------------------------
+!+
+!  Reads input options from the input file
+!+
+!-----------------------------------------------------------------------
+subroutine read_options_inject(db,nerr)
+ use infile_utils, only:inopts,read_inopt
+ type(inopts), intent(inout) :: db(:)
+ integer,      intent(inout) :: nerr
+
+ call read_inopt(wind_velocity,'wind_velocity',db,errcount=nerr,min=0.,max=1.e10)
+ call read_inopt(wind_density,'wind_density',db,errcount=nerr,min=0.)
+ call read_inopt(wind_temperature,'wind_temperature',db,errcount=nerr,min=0.)
+ call read_inopt(wind_resolution,'wind_resolution',db,errcount=nerr,min=1)
+
+end subroutine read_options_inject
+
+!-----------------------------------------------------------------------
+!+
+!  Sets default options for the injection module
+!+
+!-----------------------------------------------------------------------
+subroutine set_default_options_inject(flag)
+ integer, intent(in), optional :: flag
+
+end subroutine set_default_options_inject
+
+end module inject
