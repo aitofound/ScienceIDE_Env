@@ -109,12 +109,15 @@ def main() -> int:
         regression = work / "tst" / "regression"
         stdout_path = run_dir / "stdout.log"
         stderr_path = run_dir / "stderr.log"
+        runner_options = spec.get("runner_options", {})
         command = [
             "python3", "-c", _OFFICIAL_RUNNER_BRIDGE, official_test,
             "--mpirun", "mpirun",
             "--mpirun_opts=--allow-run-as-root",
             "--mpirun_opts=--oversubscribe",
         ]
+        command.extend(f"--config={value}" for value in runner_options.get("config", []))
+        command.extend(f"--run={value}" for value in runner_options.get("run", []))
         env = os.environ.copy()
         env.update({"OMPI_ALLOW_RUN_AS_ROOT": "1", "OMPI_ALLOW_RUN_AS_ROOT_CONFIRM": "1"})
         started = time.monotonic()
