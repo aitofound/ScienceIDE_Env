@@ -72,6 +72,17 @@ columns of every `*_shocks_*.py` analyzer demand bit-identical numbers. They gat
 reference (oracle sanity) but are not applied to the candidate, whose science is the
 value-by-value comparison.
 
+## Platform notes recorded in the contract
+
+- `numeric_argument_tolerance` (1e-9 relative): `time/tlim` and `output1/dt` in SM-01,
+  SM-02 and SM-06 are `repr()`s of `np.roots()` wave speeds and differ in the last one or
+  two digits between LAPACK builds; the verifier matches float-valued arguments
+  numerically and everything else exactly. The contract's values were extracted inside
+  the x86-64 oracle image.
+- `numpy_scalar_repr`: numpy 2 prints `np.float64(x)`, which breaks SM-01's
+  `time/tlim` override (Athena++ parses it as 0). The bridge restores the numpy 1.x
+  repr; the verifier's `argv-termination-consistency` rule rejects zero-length runs.
+
 ## HDF5 rows
 
 SM-19, SM-20 and SM-21 receive the dispatcher's own

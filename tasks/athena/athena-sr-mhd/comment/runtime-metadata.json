@@ -1,0 +1,546 @@
+{
+  "caveats": [
+    "Both roles ran with ATHENA_SR_MHD_WORKERS=6 (six modules concurrently) and the two solves overlapped completely (09:21:02Z to 09:48:04Z) on the same host, so module wall times are not isolated timings; mhd-linwave (20 three-dimensional SMR runs) dominated at about 1515 s per role.",
+    "Both oracle images were built from cached apt layers; image build time is therefore not representative.",
+    "The two CPU solves agree exactly (maximum normalized deviation 0.0; the 92 non-byte-identical files are HDF5 files whose bytes differ only through metadata), so the precision-aware tolerance band is entirely headroom and has not been exercised by a real port.",
+    "solution/bridge.py sets numpy.set_printoptions(legacy='1.25') so that the pinned sr/sr_mhd_linwave.py passes a parseable time/tlim under numpy 2.2.4; without it all 14 SM-01 runs stop at cycle 0 (observed in the superseded first run) and the verifier now rejects such runs through the argv-termination-consistency rule.",
+    "Only 5 of the 24 checks (SM-01..SM-05) exercise special-relativistic MHD; the module set is the owner-approved selection carried over unchanged."
+  ],
+  "contract": "athena-sr-mhd-contract/v4",
+  "earlier_runs": [
+    {
+      "note": "superseded by the recorded run above, which used revision c0a8ec50 end to end (numpy legacy repr in the bridge)",
+      "result": "both solves 24/24 modules rc=0, but every SM-01 run stopped at cycle 0 because numpy 2 printed time/tlim=np.float64(...); the c0a8ec50 verifier rejected SM-01 on the argv-termination-consistency rule (23/24, reward 0.958, status failed) and passed the other 23 with deviation 0.0",
+      "revision": "1e069aab solves; verifier of c0a8ec50 (tests/ bind-mounted into the 1e069aab image)",
+      "when": "2026-09-01T08:43Z-09:10Z"
+    }
+  ],
+  "forgery_probe": {
+    "all_as_expected": true,
+    "executed_in": "reference oracle image, baked-in tests/",
+    "mutation_count": 11,
+    "results": {
+      "alien-binary": {
+        "as_expected": true,
+        "exit": 1,
+        "passed_check_count": 23,
+        "reason": "AuthenticationError: packaged raw/bin/athena is not a binary built in this ledger"
+      },
+      "block-tlim-mismatch": {
+        "as_expected": true,
+        "exit": 1,
+        "passed_check_count": 23,
+        "reason": "AuthenticationError: run raw/runs/0009.log: termination block tlim 0.0 does not match argv time/tlim=2.477187399552097"
+      },
+      "corrupted-native-output": {
+        "as_expected": true,
+        "exit": 1,
+        "passed_check_count": 23,
+        "reason": "linearwave-errors.dat:row000013 (text): |candidate-reference|=1.000e+03 exceeds bound 1.000e-12 at reference value 8.6213529999999999e-09"
+      },
+      "dropped-launch": {
+        "as_expected": true,
+        "exit": 1,
+        "passed_check_count": 23,
+        "reason": "AuthenticationError: run captures exist that no ledger launch references"
+      },
+      "positive-control": {
+        "as_expected": true,
+        "exit": 0,
+        "passed_check_count": 24,
+        "reason": null
+      },
+      "reference-as-candidate": {
+        "as_expected": true,
+        "exit": 1,
+        "passed_check_count": 0,
+        "reason": "AuthenticationError: reference/candidate session nonces must differ"
+      },
+      "replayed-with-other-nonce": {
+        "as_expected": true,
+        "exit": 1,
+        "passed_check_count": 0,
+        "reason": "AuthenticationError: report role/session nonce is not the verifier-issued challenge"
+      },
+      "report-only": {
+        "as_expected": true,
+        "exit": 1,
+        "passed_check_count": 23,
+        "reason": "AuthenticationError: missing or hash-mismatched raw evidence: raw/bin/athena"
+      },
+      "role-swapped": {
+        "as_expected": true,
+        "exit": 1,
+        "passed_check_count": 23,
+        "reason": "AuthenticationError: report role/session nonce is not the verifier-issued challenge"
+      },
+      "stale-bin-hash": {
+        "as_expected": true,
+        "exit": 1,
+        "passed_check_count": 23,
+        "reason": "AuthenticationError: missing or hash-mismatched raw evidence: raw/bin/linearwave-errors.dat"
+      },
+      "stripped-session-token": {
+        "as_expected": true,
+        "exit": 1,
+        "passed_check_count": 23,
+        "reason": "AuthenticationError: run argv does not carry exactly one session token"
+      },
+      "truncated-termination-block": {
+        "as_expected": true,
+        "exit": 1,
+        "passed_check_count": 23,
+        "reason": "AuthenticationError: run raw/runs/0009.log: termination block is incomplete or duplicated"
+      }
+    },
+    "wall_seconds": 315
+  },
+  "host": {
+    "cpu": "Intel(R) Xeon(R) Platinum 8481C CPU @ 2.70GHz, 88 vCPU",
+    "docker": "29.1.3 linux/amd64",
+    "kernel": "6.17.0-1022-gcp",
+    "kind": "remote x86-64 GCP worker",
+    "note": "No hostnames, addresses, user names or filesystem paths are recorded here."
+  },
+  "leaf_revision": "c0a8ec50 (PR #324 branch); each role built its own oracle image from this revision's tests/ and solution/, no bind-mounts",
+  "note": "No runtime evidence bytes are embedded in this task tree; roots are retained by the operator. No speed or port claim is made.",
+  "per_check": {
+    "amr-mhd-linwave": {
+      "byte_identical": 1,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 36.851939,
+      "files_compared": 1,
+      "id": "SM-11",
+      "launches": 1,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {},
+      "worst_file": null,
+      "zone_cycles": 12459008.0
+    },
+    "gr-mhd-shocks-hlld": {
+      "byte_identical": 6,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 3.524209,
+      "files_compared": 6,
+      "id": "SM-22",
+      "launches": 3,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {},
+      "worst_file": null,
+      "zone_cycles": 1840800.0
+    },
+    "gr-mhd-shocks-hlle": {
+      "byte_identical": 6,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 1.8239109999999998,
+      "files_compared": 6,
+      "id": "SM-23",
+      "launches": 3,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {},
+      "worst_file": null,
+      "zone_cycles": 1840800.0
+    },
+    "gr-mhd-shocks-llf": {
+      "byte_identical": 6,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 1.7615180000000001,
+      "files_compared": 6,
+      "id": "SM-24",
+      "launches": 3,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {},
+      "worst_file": null,
+      "zone_cycles": 1840800.0
+    },
+    "hybrid-mhd-linwave": {
+      "byte_identical": 2,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 60.954899999999995,
+      "files_compared": 2,
+      "id": "SM-18",
+      "launches": 3,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {},
+      "worst_file": null,
+      "zone_cycles": 31518720.0
+    },
+    "mhd-carbuncle": {
+      "byte_identical": 42,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 4.275489,
+      "files_compared": 42,
+      "id": "SM-13",
+      "launches": 5,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {},
+      "worst_file": null,
+      "zone_cycles": 7931904.0
+    },
+    "mhd-convergence": {
+      "byte_identical": 28,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 19.525688000000002,
+      "files_compared": 28,
+      "id": "SM-02",
+      "launches": 14,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {},
+      "worst_file": null,
+      "zone_cycles": 8011840.0
+    },
+    "mhd-cpaw": {
+      "byte_identical": 2,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 60.81107,
+      "files_compared": 2,
+      "id": "SM-12",
+      "launches": 3,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {},
+      "worst_file": null,
+      "zone_cycles": 103577600.0
+    },
+    "mhd-linwave": {
+      "byte_identical": 2,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 1468.083999,
+      "files_compared": 2,
+      "id": "SM-14",
+      "launches": 20,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {},
+      "worst_file": null,
+      "zone_cycles": 881934336.0
+    },
+    "mhd-rj2a-shock": {
+      "byte_identical": 43,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 55.191422,
+      "files_compared": 43,
+      "id": "SM-15",
+      "launches": 12,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {},
+      "worst_file": null,
+      "zone_cycles": 26535936.0
+    },
+    "mhd-shocks-hlld": {
+      "byte_identical": 6,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 3.920311,
+      "files_compared": 6,
+      "id": "SM-03",
+      "launches": 3,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {},
+      "worst_file": null,
+      "zone_cycles": 1840800.0
+    },
+    "mhd-shocks-hlle": {
+      "byte_identical": 6,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 2.014995,
+      "files_compared": 6,
+      "id": "SM-04",
+      "launches": 3,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {},
+      "worst_file": null,
+      "zone_cycles": 1840800.0
+    },
+    "mhd-shocks-llf": {
+      "byte_identical": 6,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 1.7184970000000002,
+      "files_compared": 6,
+      "id": "SM-05",
+      "launches": 3,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {},
+      "worst_file": null,
+      "zone_cycles": 1840800.0
+    },
+    "mpi-mhd-linwave": {
+      "byte_identical": 2,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 70.92623999999999,
+      "files_compared": 2,
+      "id": "SM-16",
+      "launches": 4,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {},
+      "worst_file": null,
+      "zone_cycles": 42024960.0
+    },
+    "omp-mhd-linwave": {
+      "byte_identical": 2,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 101.7147,
+      "files_compared": 2,
+      "id": "SM-17",
+      "launches": 4,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {},
+      "worst_file": null,
+      "zone_cycles": 42024960.0
+    },
+    "outputs-all": {
+      "byte_identical": 34,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 1.0939569999999998,
+      "files_compared": 122,
+      "id": "SM-19",
+      "launches": 3,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {
+        "float32": 77,
+        "float64": 11,
+        "integer": 88
+      },
+      "worst_file": "TestOutputs.out9.00010.athdf",
+      "zone_cycles": 1724416.0
+    },
+    "pgen-hdf5-reader-parallel": {
+      "byte_identical": 1,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 0.002025,
+      "files_compared": 3,
+      "id": "SM-21",
+      "launches": 1,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {
+        "float64": 2,
+        "integer": 2
+      },
+      "worst_file": "from_array.cons.00001.athdf",
+      "zone_cycles": 0.0
+    },
+    "pgen-hdf5-reader-serial": {
+      "byte_identical": 1,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 0.000747,
+      "files_compared": 3,
+      "id": "SM-20",
+      "launches": 1,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {
+        "float64": 2,
+        "integer": 2
+      },
+      "worst_file": "from_array.cons.00001.athdf",
+      "zone_cycles": 0.0
+    },
+    "sr-hydro-convergence": {
+      "byte_identical": 20,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 4.942718,
+      "files_compared": 20,
+      "id": "SM-06",
+      "launches": 10,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {},
+      "worst_file": null,
+      "zone_cycles": 11784000.0
+    },
+    "sr-hydro-scalars": {
+      "byte_identical": 8,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 0.44835,
+      "files_compared": 8,
+      "id": "SM-10",
+      "launches": 4,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {},
+      "worst_file": null,
+      "zone_cycles": 640000.0
+    },
+    "sr-hydro-shocks-hllc": {
+      "byte_identical": 8,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 0.4037,
+      "files_compared": 8,
+      "id": "SM-07",
+      "launches": 4,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {},
+      "worst_file": null,
+      "zone_cycles": 640000.0
+    },
+    "sr-hydro-shocks-hlle": {
+      "byte_identical": 8,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 0.345176,
+      "files_compared": 8,
+      "id": "SM-08",
+      "launches": 4,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {},
+      "worst_file": null,
+      "zone_cycles": 640000.0
+    },
+    "sr-hydro-shocks-llf": {
+      "byte_identical": 8,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 0.326403,
+      "files_compared": 8,
+      "id": "SM-09",
+      "launches": 4,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {},
+      "worst_file": null,
+      "zone_cycles": 640000.0
+    },
+    "sr-mhd-linwave": {
+      "byte_identical": 1,
+      "candidate_upstream_analyze": true,
+      "cpu_seconds": 156.71890100000002,
+      "files_compared": 1,
+      "id": "SM-01",
+      "launches": 14,
+      "max_normalized_deviation": 0.0,
+      "passed": true,
+      "reference_upstream_analyze": true,
+      "storage_kinds_compared": {},
+      "worst_file": null,
+      "zone_cycles": 22276096.0
+    }
+  },
+  "schema_version": "3.0",
+  "solves": {
+    "candidate": {
+      "check_count": 24,
+      "container": "sciaccel-athena-sr-mhd-candidate-v4-20260901t092054z-cand",
+      "container_finished_utc": "2026-09-01T09:47:55Z",
+      "container_id": "aca64aa83c7b9bc1d999d20f5e071c8b4a6d520f48f256e6cd14bde9b110b0f2",
+      "container_run_id": "20260901T092102Z-1-658ec1c09cb4",
+      "container_started_utc": "2026-09-01T09:21:02Z",
+      "evidence_class": "docker-oracle-run",
+      "exit_code": 0,
+      "image": "sciaccel-athena-sr-mhd-oracle-v4-20260901t092054z-cand",
+      "image_id": "sha256:4482a9ed6ec63e6d791ea970af5222f0f172757222896c864fb5030555905690",
+      "modules_rc_zero": 24,
+      "oom_killed": false,
+      "role": "candidate",
+      "session_nonce": "658ec1c09cb4cddf40441cb911eeb059ba8e8805a0feb7e36507f45c31a5ed64",
+      "status": "complete",
+      "sum_module_wall_seconds": 2926.3,
+      "workers": 6,
+      "wrapper_run_id": "v4-20260901t092054z-cand"
+    },
+    "reference": {
+      "check_count": 24,
+      "container": "sciaccel-athena-sr-mhd-reference-v4-20260901t092054z-ref",
+      "container_finished_utc": "2026-09-01T09:48:04Z",
+      "container_id": "0cf8569302450b57e5673eb01c58a6f320f3ddaf3275f05ced12fb6579c976d0",
+      "container_run_id": "20260901T092102Z-1-d49caf2aa621",
+      "container_started_utc": "2026-09-01T09:21:02Z",
+      "evidence_class": "docker-oracle-run",
+      "exit_code": 0,
+      "image": "sciaccel-athena-sr-mhd-oracle-v4-20260901t092054z-ref",
+      "image_id": "sha256:d9c094afafbce406f860cbf3ad0416ab084259a0db78588c1cecbd9dd08cd1f1",
+      "modules_rc_zero": 24,
+      "oom_killed": false,
+      "role": "reference",
+      "session_nonce": "d49caf2aa6215d33222d6dee713a5754037596e9fa59c96fc68d8075c5f0903f",
+      "status": "complete",
+      "sum_module_wall_seconds": 2939.5,
+      "workers": 6,
+      "wrapper_run_id": "v4-20260901t092054z-ref"
+    }
+  },
+  "source": {
+    "canonical_commit": "823614c90b594472747a0ac2a699e4a454f300d2",
+    "staging": "scripts/stage-task-source.py copied shared code/athena into a temporary Docker context; the tracked tree was never edited",
+    "tree_file_count": 664,
+    "tree_manifest_sha256": "857c56fdca02ea53cf3839736791e0267a9e0a31460fa4d589023031888dafad"
+  },
+  "status": "validated",
+  "task": "athena-sr-mhd",
+  "validated_at_utc": "2026-09-01T09:54:12Z",
+  "validation_protocol": "Two fresh no-argument solution/solve.sh executions (ATHENA_SR_MHD_ROLE=reference and =candidate, distinct 64-hex session nonces, distinct output roots, --network none), each building its own oracle image from the shared code/athena via scripts/stage-task-source.py, followed by the no-argument tests/test.sh with ATHENA_SR_MHD_SELF_TEST=1 executed inside the reference oracle image (its own baked-in tests/) against both roots, then tests/forgery_probe.py inside the same image against the same roots.",
+  "verifier": {
+    "acceleration_observables": {
+      "candidate_cpu_seconds": 2057.380865,
+      "candidate_zone_cycles": 1205408576.0,
+      "note": "Per-check sums of zone-cycles and cpu seconds are reported as acceleration observables; no speed threshold is applied because the pinned scripts define none."
+    },
+    "active_check_count": 24,
+    "comparison_policy": "reference-tolerance-v4",
+    "comparison_summary": {
+      "byte_identical": 249,
+      "files_compared": 341,
+      "max_normalized_deviation_over_all_checks": 0.0,
+      "storage_kinds_of_non_identical_files": {
+        "float32": 77,
+        "float64": 15,
+        "integer": 92
+      }
+    },
+    "executed_in": "reference oracle image (Harbor verifier context), --entrypoint bash /app/tests/test.sh, baked-in tests/",
+    "passed_check_count": 24,
+    "receipt_audit": {
+      "ok": true,
+      "problems": []
+    },
+    "regular_files_per_root": {
+      "candidate": 713,
+      "reference": 713
+    },
+    "reward": 1.0,
+    "scientific_gate": "passed",
+    "self_test_mode": true,
+    "self_test_ok": true,
+    "status": "passed",
+    "symlinks": 0,
+    "tolerance_rule": "per value abs(candidate - reference) <= max(1e-12 + 1e-8*|reference|, floor): floor 1e-6*|reference|+1e-12 for float32 (VTK, float32 HDF5), one printed digit for text tables, none for float64; per-check overrides null",
+    "wall_seconds": 34,
+    "warnings": []
+  }
+}
