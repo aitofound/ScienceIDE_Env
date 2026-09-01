@@ -55,13 +55,16 @@ and never production evidence.
 
 FFT-01..FFT-15 use the merged HEAD v3 upstream aggregate-residual policy:
 the verifier independently authenticates `fft-errors.dat` against stdout and
-exact geometry, applies the approved Real/Imag `<=1e-10` bound and declared
-equality/warnings, and makes no full-field claim. FFT-16..FFT-26 independently
+exact geometry, applies the approved Real/Imag `<=1e-10` bound and the
+Pluto-style combined serial/MPI-1 tolerance where declared, and makes no
+full-field claim. FFT-16..FFT-26 independently
 recompute exact sparse lattice fixtures using `0`, `+/-1`, `+/-i` and integer
 combinations. They check canonical indices, signed complex coefficients,
 axis/sign behavior, raw backward=`N*input`, scaled reconstruction=`input`,
 Parseval energy and exact rank-local/global coverage. Their contract entries
-record `absolute=8*stage_count*N*2^-52` and `relative=8*stage_count*2^-52`.
+use the owner-directed dominant non-particle Pluto policy:
+`abs(candidate-oracle) <= 1e-12 + 1e-8*abs(oracle)`. Hard structure,
+provenance, stage, rank, normalization and invariant gates remain exact.
 
 `roundtrip-invariant` is distinct from normalization and Parseval: it compares a
 full-field serial/MPI-1 assembly and reconstruction on its own exact field.

@@ -371,11 +371,19 @@ def _expected_spectrum(spec: dict, index: int) -> complex:
 
 def _tolerance(spec: dict) -> tuple[float,float]:
     t=spec["claim_tolerances"]
-    numbers=re.findall(r"[0-9]+",str(t["absolute"]))
-    n=t["global_cell_count"]; stages=t["stage_count"]
-    absolute=8*stages*n*(2.0**-52); relative=8*stages*(2.0**-52)
-    if absolute <= 0 or relative <= 0: raise AuthenticationError("invalid mechanical tolerance")
+    if t.get("policy") != "pluto-style-combined-tolerance/v1":
+        raise AuthenticationError("specialized claim lacks the fixed Pluto-style policy")
+    absolute=float(t.get("absolute",-1)); relative=float(t.get("relative",-1))
+    if absolute != 1e-12 or relative != 1e-8:
+        raise AuthenticationError("specialized claim tolerance differs from the owner-approved policy")
     return absolute,relative
+
+
+def _within_combined_tolerance(got: complex | float, oracle: complex | float, absolute: float, relative: float) -> bool:
+    values=(complex(got),complex(oracle))
+    if not all(math.isfinite(v.real) and math.isfinite(v.imag) for v in values):
+        return False
+    return abs(got-oracle) <= absolute + relative*abs(oracle)
 
 
 def _check_claims(report_dir: Path, report: dict, spec: dict, variant: str, paths: dict[str,Path], claim_paths: list[Path]) -> dict:
@@ -417,21 +425,20 @@ def _check_claims(report_dir: Path, report: dict, spec: dict, variant: str, path
         assembled_by_stage[stage]=assembled
         for index in range(n):
             got=complex(assembled[index][3],assembled[index][4]); global_value=complex(stage_global[stage][index][3],stage_global[stage][index][4])
-            if abs(got-global_value)>absolute: raise AuthenticationError(f"{variant}: global stage {stage} differs from independent rank assembly")
+            if not _within_combined_tolerance(got,global_value,absolute,relative): raise AuthenticationError(f"{variant}: global stage {stage} differs from independent rank assembly")
             want=expected.get(index,0j)
-            scale=max(1.0,abs(want))
-            if abs(got-want)>absolute+relative*scale: raise ScienceError(f"{variant}: stage {stage} index {index} differs from independent fixture recomputation")
+            if not _within_combined_tolerance(got,want,absolute,relative): raise ScienceError(f"{variant}: stage {stage} index {index} differs from independent fixture recomputation")
     if spec["claim_kind"] == "normalization":
         for index in range(n):
             raw = complex(assembled_by_stage[3][index][3], assembled_by_stage[3][index][4])
             source = complex(assembled_by_stage[1][index][3], assembled_by_stage[1][index][4])
             scaled = complex(assembled_by_stage[4][index][3], assembled_by_stage[4][index][4])
-            if abs(raw - n * source) > absolute + relative * max(1.0, abs(n * source)) or abs(scaled - source) > absolute + relative * max(1.0, abs(source)):
+            if not _within_combined_tolerance(raw,n*source,absolute,relative) or not _within_combined_tolerance(scaled,source,absolute,relative):
                 raise ScienceError(f"{variant}: normalization does not prove raw backward=N*input and scaled reconstruction=input")
     if spec["claim_kind"] == "parseval":
         input_energy = sum(abs(value) ** 2 for value in terms.values())
         spectrum_energy = sum(abs(complex(assembled_by_stage[2][index][3], assembled_by_stage[2][index][4])) ** 2 for index in range(n)) / n
-        if abs(spectrum_energy - input_energy) > absolute + relative * max(1.0, input_energy):
+        if not _within_combined_tolerance(spectrum_energy,input_energy,absolute,relative):
             raise ScienceError(f"{variant}: independent Parseval energy equality failed")
     return {"claim_kind":spec["claim_kind"],"fixture":spec["claim_fixture"],"stages":{str(k):n for k in expected_by_stage},"absolute_tolerance":absolute,"relative_tolerance":relative}
 
@@ -477,8 +484,8 @@ def _apply_rules(spec: dict, observed: dict[str,dict]) -> list[str]:
         if rule=="bound-real-imag-1e-10":
             for variant,item in observed.items():
                 if item["row"][5]>ERROR_BOUND or item["row"][6]>ERROR_BOUND: raise ScienceError(f"{variant}: aggregate Real/Imag error exceeds pinned upstream 1e-10")
-        elif rule=="official-serial-mpi1-equality":
-            if observed["serial"]["row"][5]!=observed["mpi1"]["row"][5]: raise ScienceError("official serial/MPI-1 Real-Error equality failed")
+        elif rule=="official-serial-mpi1-combined-tolerance":
+            if not _within_combined_tolerance(observed["serial"]["row"][5],observed["mpi1"]["row"][5],1e-12,1e-8): raise ScienceError("official serial/MPI-1 Real-Error exceeds Pluto-style combined tolerance")
         elif rule in ("native-claim-integrity","coefficient-index","coefficient-plan","coefficient-mode","axis-order","forward-sign","normalization","parseval","rank-reconstruction","roundtrip-invariant","distributed-reconstruction-acceleration"): continue
         else: raise AuthenticationError(f"unknown rule {rule}")
     for warning in spec.get("warnings",[]):
@@ -510,7 +517,7 @@ def validate_named_report(reference: list[str], candidate: list[str], name: str)
         if ref_report.get("session_nonce")==cand_report.get("session_nonce"): raise AuthenticationError("reference/candidate session nonces must differ")
         ref=_validate_bundle(reference,spec,"reference",ref_report["session_nonce"]); cand=_validate_bundle(candidate,spec,"candidate",cand_report["session_nonce"])
         if _invariants(ref)!=_invariants(cand): raise AuthenticationError("candidate structural invariants differ from independent reference")
-        return {"passed":True,"authenticated":True,"score":1.0,"policy":"upstream-aggregate-residual-v3-with-v4-provenance" if spec["claim_kind"]=="aggregate_residual" else "actual-athena-native-claims-v4","claim_kind":spec["claim_kind"],"rules":list(spec["rules"]),"observables":cand["observed"],"reference_observables":ref["observed"],"warnings":cand["warnings"]+[f"reference {w}" for w in ref["warnings"]]}
+        return {"passed":True,"authenticated":True,"score":1.0,"policy":"upstream-aggregate-residual-v3-with-pluto-combined-v1" if spec["claim_kind"]=="aggregate_residual" else "athena-native-claims-pluto-combined-v1","claim_kind":spec["claim_kind"],"rules":list(spec["rules"]),"observables":cand["observed"],"reference_observables":ref["observed"],"warnings":cand["warnings"]+[f"reference {w}" for w in ref["warnings"]]}
     except ScienceError as exc: return {"passed":False,"authenticated":True,"score":0.0,"reason":str(exc)}
     except Exception as exc: return {"passed":False,"authenticated":False,"score":0.0,"reason":str(exc)}
 

@@ -18,7 +18,7 @@ IDS=tuple(item["id"] for item in CATALOG["checks"])
 assert len(CHECKS)==CATALOG["active_check_count"]==26 and len(set(CHECKS))==26 and len(set(IDS))==26
 assert CATALOG["reward_bearing_checks"]==list(CHECKS)
 SCHEMA="athena-fft-verdict/v4"
-POLICY="binary-all26-mixed-aggregate-native-v4"
+POLICY="binary-all26-pluto-combined-v5"
 
 def env(*names):
     for name in names:

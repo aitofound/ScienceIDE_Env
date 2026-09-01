@@ -7,7 +7,7 @@
     "full_field_policy": "not asserted; no claim-manifest.json or rank-local/global claim bytes are emitted, packaged, required, or parsed",
     "native_claim_files": false,
     "required_output": "native fft-errors.dat plus stdout/stderr and exact mesh probe where declared",
-    "scientific_rules": "merged HEAD v3 fft.py authenticated upstream Real/Imag 1e-10 bound and exact equality/warnings where declared"
+    "scientific_rules": "merged HEAD v3 fft.py authenticated upstream Real/Imag 1e-10 bound and Pluto-style combined serial/MPI-1 tolerance/warnings where declared"
   },
   "checks": [
     {
@@ -23,7 +23,7 @@
       "labels": [
         "fft-01"
       ],
-      "purpose": "Exact upstream fft.py:39-45 runs: task-local byte-preserving copy of the public deck scientific settings (64^3, 32^3 MeshBlocks, ncycle=100), plus inert native-evidence override keys and job/problem_id; serial build -fft --prob=fft and MPI build -mpi -fft --prob=fft. Enforces fft.py:64-67 (serial == MPI-1 Real-Error) and fft.py:69-72 (serial Real/Imag <= 1e-10); the bound is also applied to the MPI-1 row.",
+      "purpose": "Exact upstream fft.py:39-45 runs: task-local byte-preserving copy of the public deck scientific settings (64^3, 32^3 MeshBlocks, ncycle=100), plus inert native-evidence override keys and job/problem_id; serial build -fft --prob=fft and MPI build -mpi -fft --prob=fft. Replaces fft.py:64-67 point equality with the owner-approved Pluto-style combined serial/MPI-1 Real-Error tolerance and fft.py:69-72 (serial Real/Imag <= 1e-10); the bound is also applied to the MPI-1 row.",
       "required_artifacts": [
         "report.json",
         "raw/<variant>/execution.json",
@@ -39,7 +39,7 @@
       ],
       "rules": [
         "bound-real-imag-1e-10",
-        "official-serial-mpi1-equality"
+        "official-serial-mpi1-combined-tolerance"
       ],
       "runtime": {
         "build_modes": [
@@ -1508,12 +1508,10 @@
       "claim_fixture": "serial-1d-index",
       "claim_kind": "coefficient_index",
       "claim_tolerances": {
-        "absolute": "8*4*64*2^-52",
-        "epsilon_power": -52,
-        "global_cell_count": 64,
-        "provenance": "IEEE-754 binary64 unit roundoff (2^-52), exact lattice fixture, declared transform stage count, and global cell count; no empirical oracle value",
-        "relative": "8*4*2^-52",
-        "stage_count": 4
+        "absolute": 1e-12,
+        "policy": "pluto-style-combined-tolerance/v1",
+        "provenance": "Owner-directed adoption of the dominant non-particle Pluto task policy: abs(candidate - oracle) <= ATOL + RTOL*abs(oracle); hard structural and native-evidence gates remain mandatory.",
+        "relative": 1e-08
       },
       "evidence_files": [
         "claim-manifest.json",
@@ -1628,12 +1626,10 @@
       "claim_fixture": "serial-2d-plan",
       "claim_kind": "coefficient_plan",
       "claim_tolerances": {
-        "absolute": "8*4*4096*2^-52",
-        "epsilon_power": -52,
-        "global_cell_count": 4096,
-        "provenance": "IEEE-754 binary64 unit roundoff (2^-52), exact lattice fixture, declared transform stage count, and global cell count; no empirical oracle value",
-        "relative": "8*4*2^-52",
-        "stage_count": 4
+        "absolute": 1e-12,
+        "policy": "pluto-style-combined-tolerance/v1",
+        "provenance": "Owner-directed adoption of the dominant non-particle Pluto task policy: abs(candidate - oracle) <= ATOL + RTOL*abs(oracle); hard structural and native-evidence gates remain mandatory.",
+        "relative": 1e-08
       },
       "evidence_files": [
         "claim-manifest.json",
@@ -1747,12 +1743,10 @@
       "claim_fixture": "serial-3d-known-mode",
       "claim_kind": "coefficient_mode",
       "claim_tolerances": {
-        "absolute": "8*4*262144*2^-52",
-        "epsilon_power": -52,
-        "global_cell_count": 262144,
-        "provenance": "IEEE-754 binary64 unit roundoff (2^-52), exact lattice fixture, declared transform stage count, and global cell count; no empirical oracle value",
-        "relative": "8*4*2^-52",
-        "stage_count": 4
+        "absolute": 1e-12,
+        "policy": "pluto-style-combined-tolerance/v1",
+        "provenance": "Owner-directed adoption of the dominant non-particle Pluto task policy: abs(candidate - oracle) <= ATOL + RTOL*abs(oracle); hard structural and native-evidence gates remain mandatory.",
+        "relative": 1e-08
       },
       "evidence_files": [
         "claim-manifest.json",
@@ -1866,12 +1860,10 @@
       "claim_fixture": "serial-3d-axis-order",
       "claim_kind": "axis_order",
       "claim_tolerances": {
-        "absolute": "8*4*196608*2^-52",
-        "epsilon_power": -52,
-        "global_cell_count": 196608,
-        "provenance": "IEEE-754 binary64 unit roundoff (2^-52), exact lattice fixture, declared transform stage count, and global cell count; no empirical oracle value",
-        "relative": "8*4*2^-52",
-        "stage_count": 4
+        "absolute": 1e-12,
+        "policy": "pluto-style-combined-tolerance/v1",
+        "provenance": "Owner-directed adoption of the dominant non-particle Pluto task policy: abs(candidate - oracle) <= ATOL + RTOL*abs(oracle); hard structural and native-evidence gates remain mandatory.",
+        "relative": 1e-08
       },
       "evidence_files": [
         "claim-manifest.json",
@@ -1999,12 +1991,10 @@
       "claim_fixture": "serial-3d-forward-sign",
       "claim_kind": "forward_sign",
       "claim_tolerances": {
-        "absolute": "8*4*262144*2^-52",
-        "epsilon_power": -52,
-        "global_cell_count": 262144,
-        "provenance": "IEEE-754 binary64 unit roundoff (2^-52), exact lattice fixture, declared transform stage count, and global cell count; no empirical oracle value",
-        "relative": "8*4*2^-52",
-        "stage_count": 4
+        "absolute": 1e-12,
+        "policy": "pluto-style-combined-tolerance/v1",
+        "provenance": "Owner-directed adoption of the dominant non-particle Pluto task policy: abs(candidate - oracle) <= ATOL + RTOL*abs(oracle); hard structural and native-evidence gates remain mandatory.",
+        "relative": 1e-08
       },
       "evidence_files": [
         "claim-manifest.json",
@@ -2125,12 +2115,10 @@
       "claim_fixture": "serial-3d-roundtrip-normalization",
       "claim_kind": "normalization",
       "claim_tolerances": {
-        "absolute": "8*8*262144*2^-52",
-        "epsilon_power": -52,
-        "global_cell_count": 262144,
-        "provenance": "IEEE-754 binary64 unit roundoff (2^-52), exact lattice fixture, declared transform stage count, and global cell count; no empirical oracle value",
-        "relative": "8*8*2^-52",
-        "stage_count": 8
+        "absolute": 1e-12,
+        "policy": "pluto-style-combined-tolerance/v1",
+        "provenance": "Owner-directed adoption of the dominant non-particle Pluto task policy: abs(candidate - oracle) <= ATOL + RTOL*abs(oracle); hard structural and native-evidence gates remain mandatory.",
+        "relative": 1e-08
       },
       "evidence_files": [
         "claim-manifest.json",
@@ -2251,12 +2239,10 @@
       "claim_fixture": "serial-3d-parseval",
       "claim_kind": "parseval",
       "claim_tolerances": {
-        "absolute": "8*8*262144*2^-52",
-        "epsilon_power": -52,
-        "global_cell_count": 262144,
-        "provenance": "IEEE-754 binary64 unit roundoff (2^-52), exact lattice fixture, declared transform stage count, and global cell count; no empirical oracle value",
-        "relative": "8*8*2^-52",
-        "stage_count": 8
+        "absolute": 1e-12,
+        "policy": "pluto-style-combined-tolerance/v1",
+        "provenance": "Owner-directed adoption of the dominant non-particle Pluto task policy: abs(candidate - oracle) <= ATOL + RTOL*abs(oracle); hard structural and native-evidence gates remain mandatory.",
+        "relative": 1e-08
       },
       "evidence_files": [
         "claim-manifest.json",
@@ -2384,12 +2370,10 @@
       "claim_fixture": "mpi-rank1-reconstruction",
       "claim_kind": "rank_reconstruction",
       "claim_tolerances": {
-        "absolute": "8*8*262144*2^-52",
-        "epsilon_power": -52,
-        "global_cell_count": 262144,
-        "provenance": "IEEE-754 binary64 unit roundoff (2^-52), exact lattice fixture, declared transform stage count, and global cell count; no empirical oracle value",
-        "relative": "8*8*2^-52",
-        "stage_count": 8
+        "absolute": 1e-12,
+        "policy": "pluto-style-combined-tolerance/v1",
+        "provenance": "Owner-directed adoption of the dominant non-particle Pluto task policy: abs(candidate - oracle) <= ATOL + RTOL*abs(oracle); hard structural and native-evidence gates remain mandatory.",
+        "relative": 1e-08
       },
       "evidence_files": [
         "claim-manifest.json",
@@ -2533,12 +2517,10 @@
       "claim_fixture": "known-fourier-mode",
       "claim_kind": "coefficient_mode",
       "claim_tolerances": {
-        "absolute": "8*4*32768*2^-52",
-        "epsilon_power": -52,
-        "global_cell_count": 32768,
-        "provenance": "IEEE-754 binary64 unit roundoff (2^-52), exact lattice fixture, declared transform stage count, and global cell count; no empirical oracle value",
-        "relative": "8*4*2^-52",
-        "stage_count": 4
+        "absolute": 1e-12,
+        "policy": "pluto-style-combined-tolerance/v1",
+        "provenance": "Owner-directed adoption of the dominant non-particle Pluto task policy: abs(candidate - oracle) <= ATOL + RTOL*abs(oracle); hard structural and native-evidence gates remain mandatory.",
+        "relative": 1e-08
       },
       "evidence_files": [
         "claim-manifest.json",
@@ -2652,12 +2634,10 @@
       "claim_fixture": "roundtrip-invariant",
       "claim_kind": "roundtrip_invariant",
       "claim_tolerances": {
-        "absolute": "8*8*110592*2^-52",
-        "epsilon_power": -52,
-        "global_cell_count": 110592,
-        "provenance": "IEEE-754 binary64 unit roundoff (2^-52), exact lattice fixture, declared transform stage count, and global cell count; no empirical oracle value",
-        "relative": "8*8*2^-52",
-        "stage_count": 8
+        "absolute": 1e-12,
+        "policy": "pluto-style-combined-tolerance/v1",
+        "provenance": "Owner-directed adoption of the dominant non-particle Pluto task policy: abs(candidate - oracle) <= ATOL + RTOL*abs(oracle); hard structural and native-evidence gates remain mandatory.",
+        "relative": 1e-08
       },
       "evidence_files": [
         "claim-manifest.json",
@@ -2808,12 +2788,10 @@
       "claim_fixture": "distributed-reconstruction-acceleration",
       "claim_kind": "distributed_reconstruction_acceleration",
       "claim_tolerances": {
-        "absolute": "8*8*2097152*2^-52",
-        "epsilon_power": -52,
-        "global_cell_count": 2097152,
-        "provenance": "IEEE-754 binary64 unit roundoff (2^-52), exact lattice fixture, declared transform stage count, and global cell count; no empirical oracle value",
-        "relative": "8*8*2^-52",
-        "stage_count": 8
+        "absolute": 1e-12,
+        "policy": "pluto-style-combined-tolerance/v1",
+        "provenance": "Owner-directed adoption of the dominant non-particle Pluto task policy: abs(candidate - oracle) <= ATOL + RTOL*abs(oracle); hard structural and native-evidence gates remain mandatory.",
+        "relative": 1e-08
       },
       "evidence_files": [
         "claim-manifest.json",
@@ -3253,10 +3231,10 @@
     "zcs_source": "code/athena/tst/regression/scripts/tests/fft/fft.py:77-82 and parent decision E"
   },
   "tolerance_policy": {
-    "aggregate": "approved upstream Real/Imag bound 1e-10 from fft.py; no full-field tolerance or claim formula",
+    "aggregate": "approved upstream Real/Imag bound 1e-10 from fft.py; official serial/MPI-1 Real-Error uses the combined policy instead of point equality; no full-field claim",
     "precision": "IEEE-754 binary64 for native specialized records; x1-fastest canonical index",
-    "provenance": "aggregate checks use authenticated upstream output; specialized checks use mechanical binary64 bounds",
-    "specialized": "absolute = 8*stage_count*N*2^-52; relative = 8*stage_count*2^-52; N=prod(global_shape); stage_count is declared per specialized claim kind",
+    "provenance": "aggregate checks use authenticated upstream output; specialized checks use the owner-directed dominant non-particle Pluto combined policy",
+    "specialized": "abs(candidate - analytic oracle) <= 1e-12 + 1e-8*abs(analytic oracle)",
     "specialized_policies_are_fixed": true
   }
 }
