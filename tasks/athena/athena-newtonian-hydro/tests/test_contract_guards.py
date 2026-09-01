@@ -61,9 +61,9 @@ for check in CHECKS:
 
 # Every science mode maps to a real analyzer or a documented native rule.
 modes = {c["science"]["mode"] for c in CHECKS}
-assert modes == {"upstream-analyze", "compile-ledger", "restart-native"}, modes
+assert modes == {"reference-tolerance", "compile-ledger", "reference-tolerance+restart-native"}, modes
 for check in CHECKS:
-    if check["science"]["mode"] == "upstream-analyze":
+    if check["science"]["mode"].startswith("reference-tolerance"):
         source = (TESTS / check["official_test"]).read_text(encoding="utf-8")
         assert "def analyze" in source, check["folder"]
 
@@ -71,3 +71,8 @@ for check in CHECKS:
 token = f"sciaccel:reference:{'a' * 32}"
 assert "/" not in token and "=" not in token and common.parse_session_token(token) == ("reference", "a" * 32)
 print("contract guards ok: 30 checks, 1 acceleration label, decks accept the session token, analyzers present")
+
+tol = CATALOG["tolerance_policy"]
+assert tol["absolute"] == 1e-12 and tol["relative"] == 1e-8
+assert all(c["tolerance"] is None or ({"absolute", "relative"} <= set(c["tolerance"])) for c in CHECKS)
+print("tolerance policy ok: suite rule 1e-12 + 1e-8*|reference|, per-check overrides validated")
