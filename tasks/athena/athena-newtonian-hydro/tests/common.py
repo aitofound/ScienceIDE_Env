@@ -458,6 +458,7 @@ def _check_ledger(ledger: dict, spec: dict, role: str, nonce: str, token: str, b
                 block = parse_termination(bound["runs"][capture].read_text(encoding="utf-8", errors="replace"))
             except OutputError as exc:
                 raise AuthenticationError(f"{kind} {capture}: {exc}") from exc
+            _check_argv_termination(kind, call.get("argv") or [], block)
             zone_cycles += block["zone_cycles"]
             cpu_seconds += block["cpu_seconds"]
             launches += 1
@@ -475,6 +476,32 @@ def _check_ledger(ledger: dict, spec: dict, role: str, nonce: str, token: str, b
     return {"launches": launches, "zone_cycles": zone_cycles, "cpu_seconds": cpu_seconds,
             "configure_calls": sum(v for k, v in observed.items() if k[0] == "configure"),
             "signature_digest": hashlib.sha256(json.dumps(sorted((repr(k), v) for k, v in observed.items())).encode()).hexdigest()}
+
+
+def _check_argv_termination(kind: str, argv: list[str], block: dict) -> None:
+    """The run's own termination block must agree with the time/tlim and time/nlim overrides on its argv.
+
+    Guards against a launch whose limit override was not parsed as intended (for example a
+    value rendered as ``np.float64(...)`` by numpy 2, which Athena++ reads as 0 so the run ends
+    at cycle 0 and some upstream analyzers accept the vacuous result).
+    """
+    for item in argv:
+        if item.startswith("time/tlim="):
+            text = item.split("=", 1)[1]
+            try:
+                want = float(text)
+            except ValueError as exc:
+                raise AuthenticationError(f"{kind}: time/tlim override {text!r} is not a plain number") from exc
+            if abs(block["tlim"] - want) > 1e-9 * max(1.0, abs(want)):
+                raise AuthenticationError(f"{kind}: termination block tlim={block['tlim']!r} differs from argv override {text!r}")
+        elif item.startswith("time/nlim="):
+            text = item.split("=", 1)[1]
+            try:
+                want = int(text)
+            except ValueError as exc:
+                raise AuthenticationError(f"{kind}: time/nlim override {text!r} is not a plain integer") from exc
+            if block["nlim"] != want:
+                raise AuthenticationError(f"{kind}: termination block nlim={block['nlim']} differs from argv override {text!r}")
 
 
 def _check_native_outputs(spec: dict, bin_dir: Path) -> None:
