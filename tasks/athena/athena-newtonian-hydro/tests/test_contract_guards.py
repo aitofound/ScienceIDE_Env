@@ -73,6 +73,22 @@ assert "/" not in token and "=" not in token and common.parse_session_token(toke
 print("contract guards ok: 30 checks, 1 acceleration label, decks accept the session token, analyzers present")
 
 tol = CATALOG["tolerance_policy"]
-assert tol["absolute"] == 1e-12 and tol["relative"] == 1e-8
+assert tol["absolute"] == 1e-12 and tol["relative"] == 1e-8 and tol["single_relative"] == 1e-6 and tol["text_print_ulps"] == 1.0
 assert all(c["tolerance"] is None or ({"absolute", "relative"} <= set(c["tolerance"])) for c in CHECKS)
 print("tolerance policy ok: suite rule 1e-12 + 1e-8*|reference|, per-check overrides validated")
+
+sys.path.insert(0, str(ROOT))
+from athena_compare import token_print_ulp  # noqa: E402
+assert token_print_ulp("1.23456e-02") == 1e-07 and token_print_ulp("0.000000e+00") == 1e-06 and token_print_ulp("128") == 0.0
+assert abs(token_print_ulp("-3.4500e+01") - 1e-03) < 1e-18
+print("precision floors ok: float32 1e-6 relative, text one printed digit, integers exact")
+
+assert "argv-termination-consistency" in CATALOG["rules"]
+from athena_output import parse_termination  # noqa: E402
+_block = parse_termination("Terminating on time limit\ntime=1 cycle=0\ntlim=1 nlim=-1\n\nzone-cycles = 0\ncpu time used  = 1e-3\nzone-cycles/cpu_second = 0\n")
+try:
+    common._check_argv_termination("run", ["time/tlim=np.float64(1.0)"], _block); raise SystemExit("np.float64 override must be rejected")
+except common.AuthenticationError:
+    pass
+common._check_argv_termination("run", ["time/tlim=1.0", "time/nlim=-1"], _block)
+print("argv/termination consistency ok")

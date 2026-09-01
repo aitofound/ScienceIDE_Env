@@ -14,9 +14,10 @@ For every direct check the verifier
 4. requires the CPU reference root to satisfy the pinned upstream ``analyze()``
    (re-executed by the verifier in its own trusted tree) as an oracle sanity gate;
 5. compares the candidate's native outputs to the reference's value by value under
-   the owner tolerance rule abs(candidate - reference) <= absolute + relative *
-   abs(reference) (suite default 1e-12 + 1e-8*|reference|, per-check override in
-   the contract); that comparison is the scientific verdict;
+   the precision-aware owner rule: bound = max(1e-12 + 1e-8*|reference|, precision
+   floor), where the floor is 1e-6*|reference| + 1e-12 for float32 payloads (VTK,
+   float32 HDF5) and one unit in the last printed digit for text tables; per-check
+   override in the contract; that comparison is the scientific verdict;
 6. compares the structural invariants of the reference and candidate bundles.
 
 Producer-written booleans (``passed``, ``exit_code``) are never consulted.  The
@@ -457,6 +458,7 @@ def _check_ledger(ledger: dict, spec: dict, role: str, nonce: str, token: str, b
                 block = parse_termination(bound["runs"][capture].read_text(encoding="utf-8", errors="replace"))
             except OutputError as exc:
                 raise AuthenticationError(f"{kind} {capture}: {exc}") from exc
+            _check_argv_termination(kind, call.get("argv") or [], block)
             zone_cycles += block["zone_cycles"]
             cpu_seconds += block["cpu_seconds"]
             launches += 1
@@ -474,6 +476,32 @@ def _check_ledger(ledger: dict, spec: dict, role: str, nonce: str, token: str, b
     return {"launches": launches, "zone_cycles": zone_cycles, "cpu_seconds": cpu_seconds,
             "configure_calls": sum(v for k, v in observed.items() if k[0] == "configure"),
             "signature_digest": hashlib.sha256(json.dumps(sorted((repr(k), v) for k, v in observed.items())).encode()).hexdigest()}
+
+
+def _check_argv_termination(kind: str, argv: list[str], block: dict) -> None:
+    """The run's own termination block must agree with the time/tlim and time/nlim overrides on its argv.
+
+    Guards against a launch whose limit override was not parsed as intended (for example a
+    value rendered as ``np.float64(...)`` by numpy 2, which Athena++ reads as 0 so the run ends
+    at cycle 0 and some upstream analyzers accept the vacuous result).
+    """
+    for item in argv:
+        if item.startswith("time/tlim="):
+            text = item.split("=", 1)[1]
+            try:
+                want = float(text)
+            except ValueError as exc:
+                raise AuthenticationError(f"{kind}: time/tlim override {text!r} is not a plain number") from exc
+            if abs(block["tlim"] - want) > 1e-9 * max(1.0, abs(want)):
+                raise AuthenticationError(f"{kind}: termination block tlim={block['tlim']!r} differs from argv override {text!r}")
+        elif item.startswith("time/nlim="):
+            text = item.split("=", 1)[1]
+            try:
+                want = int(text)
+            except ValueError as exc:
+                raise AuthenticationError(f"{kind}: time/nlim override {text!r} is not a plain integer") from exc
+            if block["nlim"] != want:
+                raise AuthenticationError(f"{kind}: termination block nlim={block['nlim']} differs from argv override {text!r}")
 
 
 def _check_native_outputs(spec: dict, bin_dir: Path) -> None:
@@ -504,12 +532,17 @@ def _restart_native(spec: dict, bundle: Path, token: str, ledger: dict) -> None:
         raise ScienceError("restart run did not follow the initial run")
 
 
-def _tolerance(spec: dict) -> tuple[float, float]:
-    policy = spec.get("tolerance") or CATALOG["tolerance_policy"]
-    absolute, relative = float(policy["absolute"]), float(policy["relative"])
-    if absolute < 0 or relative < 0 or not math.isfinite(absolute) or not math.isfinite(relative):
-        raise AuthenticationError("invalid tolerance policy")
-    return absolute, relative
+def _tolerance(spec: dict) -> dict:
+    """Effective tolerance dict: suite rule, overlaid by a per-check override when the owner set one."""
+    suite = CATALOG["tolerance_policy"]
+    policy = {k: suite[k] for k in ("absolute", "relative", "single_absolute", "single_relative", "text_print_ulps")}
+    override = spec.get("tolerance")
+    if override:
+        policy.update({k: override[k] for k in policy if k in override})
+    for key, value in policy.items():
+        if not isinstance(value, (int, float)) or value < 0 or not math.isfinite(float(value)):
+            raise AuthenticationError(f"invalid tolerance policy field {key}")
+    return policy
 
 
 def _validate_bundle(paths: list[str], spec: dict, role: str, nonce: str) -> dict:
@@ -561,13 +594,14 @@ def validate_named_report(reference: list[str], candidate: list[str], name: str)
                 raise ScienceError(f"reference root fails the pinned upstream analyze() ({oracle['raw_type']}={oracle['upstream_analyze']}); oracle is not trustworthy")
             science["reference_upstream_analyze"] = True
             # Equivalence: candidate versus reference, value by value, under the owner tolerance rule.
-            absolute, relative = _tolerance(spec)
+            tolerance = _tolerance(spec)
             try:
-                comparison = compare_bins(ref["bundle"] / "raw" / "bin", cand["bundle"] / "raw" / "bin", trusted_scratch(), absolute, relative)
+                comparison = compare_bins(ref["bundle"] / "raw" / "bin", cand["bundle"] / "raw" / "bin", trusted_scratch(), tolerance)
             except CompareError as exc:
                 raise ScienceError(str(exc)) from exc
-            science.update({"tolerance": {"absolute": absolute, "relative": relative}, "files": comparison["files"], "compared": comparison["compared"],
+            science.update({"tolerance": tolerance, "files": comparison["files"], "compared": comparison["compared"],
                             "byte_identical": comparison["byte_identical"], "uncompared": comparison["uncompared"],
+                            "storage_kinds_compared": comparison["kinds"],
                             "max_normalized_deviation": comparison["max_normalized"], "max_abs_diff": comparison["max_abs_diff"],
                             "worst_file": comparison["worst_file"]})
             # Informational only: the upstream analyzer applied to the candidate (may contain exact-equality rules
