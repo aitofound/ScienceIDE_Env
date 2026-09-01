@@ -33,7 +33,7 @@
   "schema": "athena-newtonian-hydro-rubric/v4",
   "science": {
     "mode": "reference-tolerance",
-    "policy": "Candidate native outputs are compared to the CPU reference value by value under abs(candidate - reference) <= 1e-12 + 1e-8*abs(reference) (or this check's tolerance override); the reference must satisfy the pinned upstream analyze(); the candidate's analyze() result is informational.",
+    "policy": "Candidate native outputs are compared to the CPU reference value by value under abs(candidate - reference) <= max(1e-12 + 1e-8*abs(reference), precision floor: 1e-6*|reference|+1e-12 for float32 VTK/HDF5, one printed digit for text tables) (or this check's tolerance override); the reference must satisfy the pinned upstream analyze(); the candidate's analyze() result is informational.",
     "summary": "Jeans errors <= 1e-7 and second-order convergence from bin/jeans-errors.dat",
     "upstream_analyzer": "tst/regression/scripts/tests/unstable_jeans_3d_fft.py:52-82"
   },
@@ -54,10 +54,18 @@
       ".h5"
     ],
     "oracle_sanity": "the CPU reference root must satisfy the pinned upstream analyze(); the candidate's analyze() result is informational only",
-    "provenance": "PLUTO leaves tasks/pluto/*/task.toml equivalence_explanation; owner decision 2026-09-01 to judge accelerator ports against the CPU reference by tolerance rather than by upstream exact-equality rules",
+    "precision_floor": {
+      "float32": "single_relative*abs(reference) + single_absolute \u2014 Athena++ legacy VTK is always float32 (src/outputs/vtk.cpp:132-205) and HDF5 output is float32 unless built with double HDF5 (src/outputs/outputs.hpp:28-35); the owner set 1e-6 for single-precision outputs",
+      "float64": "none (base rule) \u2014 HDF5 datasets stored as float64",
+      "text": "text_print_ulps units in the last printed significant digit of the reference token \u2014 .tab defaults to %12.5e (src/outputs/outputs.cpp:320), history and *-errors.dat use %e (six significant digits), so two correct implementations one double rounding step apart can straddle a printed digit; integer tokens are exact"
+    },
+    "provenance": "PLUTO leaves tasks/pluto/*/task.toml equivalence_explanation; owner decisions 2026-09-01 (tolerance instead of upstream exact-equality rules; 1e-6 for single-precision outputs)",
     "relative": 1e-08,
-    "rule": "abs(candidate - reference) <= absolute + relative * abs(reference), applied to every finite value of every comparable native output file; non-finite entries must coincide; byte-identical files pass by the fast path",
-    "status": "provisional owner-approved suite-wide rule, identical to the merged PLUTO leaves; per-check 'tolerance' overrides are null until an accelerator port is calibrated",
+    "rule": "per value: abs(candidate - reference) <= max(absolute + relative*abs(reference), precision_floor); non-finite entries must coincide; byte-identical files pass by the fast path",
+    "single_absolute": 1e-12,
+    "single_relative": 1e-06,
+    "status": "provisional owner-approved rule: PLUTO's suite-wide 1e-12 + 1e-8 for binary64, 1e-6 for single-precision outputs (owner decision 2026-09-01), print-grain floor for text; per-check 'tolerance' overrides are null until an accelerator port is calibrated",
+    "text_print_ulps": 1.0,
     "uncompared": [
       "bin/athena (built per role)",
       ".rst (embeds the per-role session token; used only by the restart-native rule)",

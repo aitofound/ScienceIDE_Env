@@ -14,9 +14,10 @@ For every direct check the verifier
 4. requires the CPU reference root to satisfy the pinned upstream ``analyze()``
    (re-executed by the verifier in its own trusted tree) as an oracle sanity gate;
 5. compares the candidate's native outputs to the reference's value by value under
-   the owner tolerance rule abs(candidate - reference) <= absolute + relative *
-   abs(reference) (suite default 1e-12 + 1e-8*|reference|, per-check override in
-   the contract); that comparison is the scientific verdict;
+   the precision-aware owner rule: bound = max(1e-12 + 1e-8*|reference|, precision
+   floor), where the floor is 1e-6*|reference| + 1e-12 for float32 payloads (VTK,
+   float32 HDF5) and one unit in the last printed digit for text tables; per-check
+   override in the contract; that comparison is the scientific verdict;
 6. compares the structural invariants of the reference and candidate bundles.
 
 Producer-written booleans (``passed``, ``exit_code``) are never consulted.  The
@@ -504,12 +505,17 @@ def _restart_native(spec: dict, bundle: Path, token: str, ledger: dict) -> None:
         raise ScienceError("restart run did not follow the initial run")
 
 
-def _tolerance(spec: dict) -> tuple[float, float]:
-    policy = spec.get("tolerance") or CATALOG["tolerance_policy"]
-    absolute, relative = float(policy["absolute"]), float(policy["relative"])
-    if absolute < 0 or relative < 0 or not math.isfinite(absolute) or not math.isfinite(relative):
-        raise AuthenticationError("invalid tolerance policy")
-    return absolute, relative
+def _tolerance(spec: dict) -> dict:
+    """Effective tolerance dict: suite rule, overlaid by a per-check override when the owner set one."""
+    suite = CATALOG["tolerance_policy"]
+    policy = {k: suite[k] for k in ("absolute", "relative", "single_absolute", "single_relative", "text_print_ulps")}
+    override = spec.get("tolerance")
+    if override:
+        policy.update({k: override[k] for k in policy if k in override})
+    for key, value in policy.items():
+        if not isinstance(value, (int, float)) or value < 0 or not math.isfinite(float(value)):
+            raise AuthenticationError(f"invalid tolerance policy field {key}")
+    return policy
 
 
 def _validate_bundle(paths: list[str], spec: dict, role: str, nonce: str) -> dict:
@@ -561,13 +567,14 @@ def validate_named_report(reference: list[str], candidate: list[str], name: str)
                 raise ScienceError(f"reference root fails the pinned upstream analyze() ({oracle['raw_type']}={oracle['upstream_analyze']}); oracle is not trustworthy")
             science["reference_upstream_analyze"] = True
             # Equivalence: candidate versus reference, value by value, under the owner tolerance rule.
-            absolute, relative = _tolerance(spec)
+            tolerance = _tolerance(spec)
             try:
-                comparison = compare_bins(ref["bundle"] / "raw" / "bin", cand["bundle"] / "raw" / "bin", trusted_scratch(), absolute, relative)
+                comparison = compare_bins(ref["bundle"] / "raw" / "bin", cand["bundle"] / "raw" / "bin", trusted_scratch(), tolerance)
             except CompareError as exc:
                 raise ScienceError(str(exc)) from exc
-            science.update({"tolerance": {"absolute": absolute, "relative": relative}, "files": comparison["files"], "compared": comparison["compared"],
+            science.update({"tolerance": tolerance, "files": comparison["files"], "compared": comparison["compared"],
                             "byte_identical": comparison["byte_identical"], "uncompared": comparison["uncompared"],
+                            "storage_kinds_compared": comparison["kinds"],
                             "max_normalized_deviation": comparison["max_normalized"], "max_abs_diff": comparison["max_abs_diff"],
                             "worst_file": comparison["worst_file"]})
             # Informational only: the upstream analyzer applied to the candidate (may contain exact-equality rules

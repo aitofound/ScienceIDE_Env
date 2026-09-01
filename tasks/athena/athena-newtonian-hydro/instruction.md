@@ -127,8 +127,12 @@ helpers only to record the ledger and capture stdout, and leaves `prepare()`,
    abs(candidate - reference) <= 1e-12 + 1e-8 * abs(reference)
    ```
 
-   applied to every finite number of every `*.dat`, `*.tab`, `*.hst`, `*.vtk`,
-   `*.athdf`, `*.hdf5` file in `bin/` (byte-identical files pass by the fast path;
+   raised, per value, to a **precision floor** set by how Athena++ wrote it:
+   `1e-6 × |reference| + 1e-12` for single-precision payloads (legacy VTK is
+   always float32; HDF5 output is float32 by default) and one unit in the last
+   printed significant digit for text tables (`.tab` default `%12.5e`, history
+   and `*-errors.dat` `%e`); applied to every finite number of every `*.dat`,
+   `*.tab`, `*.hst`, `*.vtk`, `*.athdf`, `*.hdf5` file in `bin/` (byte-identical files pass by the fast path;
    non-finite entries must coincide; file inventories and shapes must match;
    `bin/athena` and `*.rst` are required but not compared numerically). A
    per-check `tolerance` override in `tests/hydro_contract.json` replaces the
