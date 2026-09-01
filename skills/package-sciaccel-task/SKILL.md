@@ -1,8 +1,8 @@
 ---
 name: package-sciaccel-task
 description: Operate the ScienceAccelBench task-authoring pipeline through two advisory CLIs. Use when the user wants to onboard, explain or decompose a scientific codebase into Harbor tasks (scripts/codebase_cli.py), or to build, locally validate, open and iterate one task PR from a human-approved task manifest (scripts/task_cli.py). Both CLIs recommend the next action, require a human reference for every approval or override, log every command to an append-only journal, and never merge.
-version: 4.2.0
-last_changed_at: "2026-08-31T16:00:00Z"
+version: 4.2.1
+last_changed_at: "2026-09-01T06:52:38Z"
 ---
 
 # 结论先行
@@ -230,6 +230,47 @@ stochastic pass policy. Do not invent a fixed determinism taxonomy or
 registry-wide scientific tolerance. A check may be exact, tolerance-based,
 statistical, or otherwise appropriate to its science, provided the owner
 documents and validates it.
+
+### CPU-to-GPU objective and numerical acceptance
+
+The benchmark objective is to port the declared scientific module from its
+trusted original CPU implementation to the active GPU target while preserving
+the module's public contract and scientifically relevant behavior. A host-only
+CPU optimization, a wrapper that still performs the owned work on the CPU, or a
+port of only a convenient kernel does not satisfy the task unless the
+human-approved module cut explicitly says so. The original CPU path remains the
+oracle; acceleration is graded only after its owner-approved correctness policy
+passes.
+
+Design that policy for numerical equivalence, not universal bitwise identity.
+In particular, if the CPU oracle evaluates in double precision while the GPU
+candidate uses single or mixed precision, expected FP64-to-FP32 rounding,
+reassociation, fused operations, reduction order, accumulation, and conditioning
+must be considered in the acceptance criteria. Precision loss is evidence to
+model and bound, not an automatic failure and not a blanket excuse for arbitrary
+drift.
+
+For every affected check, record:
+
+- the oracle and candidate input, compute, accumulation, and output precision;
+- the scientific observables, conserved quantities, convergence behavior, or
+  distributions that define equivalence;
+- whether the comparison is exact, absolute/relative tolerance-based,
+  invariant-based, statistical, or a justified combination;
+- how the threshold was derived from owner judgment plus measurement or error
+  analysis, including scale, conditioning, operation count, and repeated-run
+  variation where relevant; and
+- at least one negative or boundary case showing that the policy rejects a
+  materially wrong GPU implementation rather than merely accepting any
+  lower-precision output.
+
+Use bitwise or exact comparison only when the precision and determinism evidence
+support it. Where floating-point branches, adaptive iterations, reductions, or
+stochastic behavior can change the computational path, compare the appropriate
+physics-level observable or invariant instead of loosening an elementwise
+threshold until the test passes. If the team cannot yet justify a precision-aware
+threshold that separates expected numerical loss from a real implementation
+defect, record the gap and keep the task or tolerance gate unresolved.
 
 ## Docker gate, oracle, and validation loop
 
