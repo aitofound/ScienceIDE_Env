@@ -1,0 +1,8 @@
+{
+  "schema": "sciaccel-exact-source-replacement/v1",
+  "target": "src/outputs/outputs.hpp",
+  "before_sha256": "e2af713a5e4c3fd6701f6a0cba12bafaef1173a410b904749339133db5025e47",
+  "after_sha256": "37da92051764e3ccdbb2000462989c3e11f151c35443cf51b2c3f7acbdb3b5fc",
+  "old": "  // Set output type for mesh data\nusing mesh_t = typename std::conditional<\n#ifdef fp16_t\n  std::is_same<h5out_t, fp16_t>::value,\n  fp16_t,\n#else\n  std::is_unsigned<h5out_t>::value,\n  H5Real,\n#endif\n  h5out_t\n>::type;\n",
+  "new": "  // Set output type for mesh data\nusing mesh_t = typename std::conditional<\n  std::is_unsigned<h5out_t>::value,\n  H5Real,\n  h5out_t\n>::type;\n"
+}

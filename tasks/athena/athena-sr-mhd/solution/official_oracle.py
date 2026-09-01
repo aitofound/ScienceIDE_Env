@@ -94,9 +94,11 @@ def main() -> int:
         return 2
     manifest_validation = auth.validate_source_manifest(source)
     fingerprints = auth.metadata_fingerprints(TESTS)
+    patch_validation = auth.apply_source_patch(source, TESTS)
     if (fingerprints["selected_count"] != suite.EXPECTED_COUNT or
-            fingerprints["source_manifest_sha256"] != manifest_validation["source_manifest_sha256"]):
-        raise ValueError("selected-set or source-manifest fingerprint mismatch")
+            fingerprints["source_manifest_sha256"] != manifest_validation["source_manifest_sha256"] or
+            fingerprints["source_patch"] != patch_validation):
+        raise ValueError("selected-set, source-manifest, or source-patch fingerprint mismatch")
 
     root = output_root()
     producer = producer_identity()
