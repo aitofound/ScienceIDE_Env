@@ -72,8 +72,11 @@ def make_root(root: Path, checks: list[dict[str, Any]], fingerprints: dict[str, 
         result_producer = identity("stale_result", producer["role"]) if stale_result and ordinal == 1 else producer
         result = {
             **stable,
-            "runner_config_args": (["--config=--hdf5_path=/usr/lib/synthetic/hdf5/serial"]
-                                   if stable["runner_config_features"] == ["hdf5"] else []),
+            "runner_config_args": ([
+                "--config=--hdf5_path=/usr/lib/synthetic/hdf5/"
+                + ("openmpi" if "hdf5-openmpi" in stable["runner_config_features"] else "serial"),
+                "--config=--cflag=-D__fp16=_Float16",
+            ] if "hdf5" in stable["runner_config_features"] else []),
             "native_verdict": "passed",
             "passed": True,
             "exit_code": 0,

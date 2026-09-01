@@ -27,6 +27,7 @@ HDF5_MODULES = {
     "pgen/hdf5_reader_serial",
     "pgen/hdf5_reader_parallel",
 }
+HDF5_MPI_MODULES = {"pgen/hdf5_reader_parallel"}
 
 
 def token(name: str) -> str:
@@ -49,28 +50,19 @@ def output_root() -> Path:
     return root.resolve(strict=True)
 
 
-def hdf5_path() -> str:
-    explicit = os.environ.get("ATHENA_HDF5_PATH")
+def hdf5_path(environment_name: str, flavor: str) -> str:
+    explicit = os.environ.get(environment_name)
     if explicit:
         candidate = Path(explicit)
         if (not candidate.is_dir() or not (candidate / "include/hdf5.h").is_file() or
                 not (candidate / "lib/libhdf5.so").is_file()):
-            raise ValueError("ATHENA_HDF5_PATH must contain include/hdf5.h and lib/libhdf5.so")
+            raise ValueError(
+                f"{environment_name} must contain include/hdf5.h and lib/libhdf5.so"
+            )
         return str(candidate.resolve())
-    triples: list[str] = []
-    try:
-        probe = subprocess.run(["gcc", "-dumpmachine"], stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE, text=True, check=True)
-        triples.append(probe.stdout.strip())
-    except (OSError, subprocess.SubprocessError):
-        pass
-    triples.extend(["x86_64-linux-gnu", "aarch64-linux-gnu"])
-    for triple in dict.fromkeys(triples):
-        candidate = Path("/usr/lib") / triple / "hdf5/serial"
-        if ((candidate / "include/hdf5.h").is_file() and
-                ((candidate / "lib/libhdf5.so").is_file() or (candidate / "libhdf5.so").is_file())):
-            return str(candidate)
-    raise ValueError("the selected HDF5 scripts require a discoverable serial HDF5 development tree")
+    raise ValueError(
+        f"the selected HDF5 scripts require {environment_name} for the {flavor} HDF5 ABI"
+    )
 
 
 def producer_identity() -> dict[str, str]:
@@ -115,7 +107,8 @@ def main() -> int:
     inventory = suite.load_inventory(TESTS)
     runner = source / registry["runner"]
     regression = source / "tst/regression"
-    h5root = hdf5_path()
+    h5root = hdf5_path("ATHENA_HDF5_PATH", "serial")
+    h5mpi_root = hdf5_path("ATHENA_HDF5_MPI_PATH", "OpenMPI")
     passed_count = 0
 
     environment = os.environ.copy()
@@ -133,8 +126,15 @@ def main() -> int:
         config_args: list[str] = []
         config_features: list[str] = []
         if spec["official_module"] in HDF5_MODULES:
-            config_args.append(f"--config=--hdf5_path={h5root}")
-            config_features.append("hdf5")
+            parallel_hdf5 = spec["official_module"] in HDF5_MPI_MODULES
+            config_args.extend([
+                f"--config=--hdf5_path={h5mpi_root if parallel_hdf5 else h5root}",
+                "--config=--cflag=-D__fp16=_Float16",
+            ])
+            config_features.extend(
+                ["hdf5", "hdf5-openmpi", "gcc-fp16-compat"]
+                if parallel_hdf5 else ["hdf5", "gcc-fp16-compat"]
+            )
         command = [sys.executable, "-B", str(runner), *config_args, spec["official_module"]]
         started = time.monotonic()
         completed = subprocess.run(command, cwd=regression, env=environment,

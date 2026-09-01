@@ -122,9 +122,13 @@ def expected_stable(item: dict[str, Any], spec: dict[str, Any], ordinal: int,
         "direct_invocation_count": 1,
         "native_pipeline": ["prepare", "run", "analyze"],
         "native_prepare_run_analyze_authoritative": True,
-        "runner_config_features": ["hdf5"] if spec["official_module"] in {
-            "outputs/all_outputs", "pgen/hdf5_reader_serial", "pgen/hdf5_reader_parallel"
-        } else [],
+        "runner_config_features": (
+            ["hdf5", "hdf5-openmpi", "gcc-fp16-compat"]
+            if spec["official_module"] == "pgen/hdf5_reader_parallel"
+            else ["hdf5", "gcc-fp16-compat"] if spec["official_module"] in {
+                "outputs/all_outputs", "pgen/hdf5_reader_serial"
+            } else []
+        ),
         "fingerprints": fingerprints,
     }
 
@@ -159,10 +163,11 @@ def result_problem(result_path: Path, item: dict[str, Any], ordinal: int,
     if isinstance(duration, bool) or not isinstance(duration, (int, float)) or not math.isfinite(float(duration)) or duration < 0:
         return None, f"{slug}: duration is not a finite nonnegative observation"
     config_args = result.get("runner_config_args")
-    if expected["runner_config_features"] == ["hdf5"]:
-        if (not isinstance(config_args, list) or len(config_args) != 1 or not isinstance(config_args[0], str) or
-                not config_args[0].startswith("--config=--hdf5_path=/")):
-            return None, f"{slug}: HDF5 operational configure argument is missing"
+    if "hdf5" in expected["runner_config_features"]:
+        if (not isinstance(config_args, list) or len(config_args) != 2 or not isinstance(config_args[0], str) or
+                not config_args[0].startswith("--config=--hdf5_path=/") or
+                config_args[1] != "--config=--cflag=-D__fp16=_Float16"):
+            return None, f"{slug}: HDF5 operational configure arguments are missing"
     elif config_args != []:
         return None, f"{slug}: unexpected runner configure arguments"
     check_root = result_path.parent
