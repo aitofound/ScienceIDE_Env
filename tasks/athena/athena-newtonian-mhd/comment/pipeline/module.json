@@ -1,0 +1,73 @@
+{
+  "module": {
+    "slug": "athena-newtonian-mhd",
+    "title": "Newtonian MHD: constrained transport, MHD Riemann solvers, shearing box, AMR waves",
+    "paths": [
+      "src/field/",
+      "src/hydro/rsolvers/mhd/",
+      "src/orbital_advection/",
+      "src/mesh/mesh_refinement.cpp",
+      "src/pgen/cpaw.cpp",
+      "src/pgen/hb3.cpp",
+      "src/pgen/jgg.cpp",
+      "src/pgen/ssheet.cpp",
+      "src/pgen/orszag_tang.cpp"
+    ],
+    "entrypoints": [
+      "inputs/mhd/athinput.linear_wave{1,2,3}d",
+      "inputs/mhd/athinput.cpaw2d",
+      "inputs/mhd/athinput.bw",
+      "inputs/mhd/athinput.hb3",
+      "inputs/mhd/athinput.jgg",
+      "inputs/hydro/athinput.ssheet",
+      "inputs/mhd/athinput.linear_wave2d_amr"
+    ],
+    "expensive_path": "HLLD/Roe MHD Riemann solves plus the constrained-transport EMF averaging and face-field update each stage; the shearing-box remap and the AMR prolongation/restriction of face fields add communication-heavy work.",
+    "rationale": "Divergence-free magnetic field evolution is distinct physics and distinct code (field/, CT, EMF corners) from pure hydro, with its own solvers and its own regression set.",
+    "excluded": [
+      "resistive diffusion -> athena-diffusion-sts",
+      "relativistic MHD -> relativity modules",
+      "mpi/omp/hybrid linwave: parallel-runtime variants of mhd_linwave, not separate physics"
+    ],
+    "hazards": [
+      "mhd_shwave needs FFTW for the shearing-box remap",
+      "amr_linwave is sensitive to AMR prolongation order; expect a wider floor"
+    ]
+  },
+  "approval": {
+    "modules": [
+      "athena-newtonian-hydro",
+      "athena-newtonian-mhd",
+      "athena-diffusion-sts",
+      "athena-special-relativity",
+      "athena-general-relativity",
+      "athena-self-gravity-fft",
+      "athena-radiation-transport",
+      "athena-chemistry"
+    ],
+    "human_ref": "and i think you cutting looks perfect to me",
+    "at": "2026-09-02T04:30:12Z"
+  },
+  "shared_infrastructure": [
+    "src/main.cpp",
+    "src/athena.hpp",
+    "src/athena_arrays.hpp",
+    "src/defs.hpp.in",
+    "src/globals.*",
+    "src/mesh/",
+    "src/bvals/",
+    "src/task_list/",
+    "src/parameter_input.*",
+    "src/inputs/",
+    "src/outputs/",
+    "src/utils/",
+    "src/coordinates/coordinates.cpp",
+    "src/coordinates/cartesian.cpp",
+    "src/reconstruct/",
+    "configure.py",
+    "Makefile.in",
+    "tst/regression/run_tests.py",
+    "tst/regression/scripts/utils/",
+    "vis/python/athena_read.py"
+  ]
+}
