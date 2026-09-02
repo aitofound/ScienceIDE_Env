@@ -30,7 +30,9 @@ runs/. Nothing there is committed; scaffold and selfcheck copy what a reviewer
 needs into the leaf under comment/pipeline/.
 
 Exactly four refusals: `survey-tests` and `task scaffold` refuse until the
-source PR is merged and recorded (`codebase source-merged`); `task scaffold`
+source PR is merged and recorded (`codebase source-merged`), unless the human
+bypasses that gate with `--allow-unmerged-source --human-ref`, which warns
+and records the bypass; `task scaffold`
 refuses a module the human has not approved; `task build` and `task selfcheck`
 refuse without a consent record for the current run plan (`task plan`, then
 `task consent`); and `task selfcheck` refuses a leaf that fails lint.
@@ -150,15 +152,31 @@ def source_on_main(source: str) -> str | None:
         return None
 
 
-def require_source_merged(cb_id: str, cb: dict) -> None:
-    """The hard stop of Step 1.5: refuse until the source PR is merged and the human has said so."""
+def require_source_merged(cb_id: str, cb: dict, allow_unmerged: bool = False, human_ref: str = "") -> None:
+    """The hard stop of Step 1.5: refuse until the source PR is merged and the human has said so.
+
+    With --allow-unmerged-source and the human's words the refusal becomes a loud warning, recorded in the codebase
+    state (source_gate_bypass) so that status keeps reporting it until `codebase source-merged` is run."""
     rec = cb.get("source_pr")
-    if not rec or not rec.get("human_ref"):
+    merged = bool(rec and rec.get("human_ref")) and source_on_main(cb["source"]) is not None
+    if merged:
+        return
+    reason = (f"the source PR for code/{cb['source']}/ is not recorded as merged; after the human merges it run "
+              f"`sab.py codebase source-merged --codebase {cb_id} --human-ref ...`" if not (rec and rec.get("human_ref"))
+              else f"code/{cb['source']}/ is not on origin/main (recorded merge {rec.get('merge_commit')})")
+    if not allow_unmerged:
         print(STEP15_BRIEF.format(source=cb["source"], cb=cb_id))
-        die(f"refusing: the source PR for code/{cb['source']}/ is not recorded as merged; "
-            f"after the human merges it run `sab.py codebase source-merged --codebase {cb_id} --human-ref ...`")
-    if source_on_main(cb["source"]) is None:
-        die(f"refusing: code/{cb['source']}/ is not on origin/main (recorded merge {rec.get('merge_commit')}); merge the source PR first")
+        die(f"refusing: {reason}; the human can bypass this gate with --allow-unmerged-source --human-ref \"<their words>\"")
+    if not human_ref.strip():
+        die("--allow-unmerged-source needs --human-ref with the human's words")
+    print(f"WARNING: Step 1.5 gate bypassed at the human's request: {reason}.")
+    print("WARNING: everything downstream builds on a source tree that is not on main; the task PR must not merge before the source PR,")
+    print("WARNING: and every Dockerfile must still build from code/<source>/ as it will be vendored. Run `sab.py codebase source-merged` once it lands.")
+    d = state_dir(cb_id) / "codebase.json"
+    if d.is_file():
+        doc = read_json(d)
+        doc["source_gate_bypass"] = {"at": now(), "human_ref": human_ref, "reason": reason}
+        write_json(d, doc)
 
 
 def approved_modules(mdoc: dict | None) -> list[str]:
@@ -330,6 +348,12 @@ STEP 1.5  The source PR (outside this CLI). HARD STOP.
   written until code/{source}/ is on origin/main and the human has said so:
     sab.py codebase source-merged --codebase {cb} --human-ref "<the human's words>" [--pr <url>]
   `survey-tests` and `task scaffold` refuse until that step is recorded.
+
+  TELL THE HUMAN, in the same message as the PR link, that they can lift this
+  gate and have the whole pipeline run in one shot: on their words you continue
+  with `--allow-unmerged-source --human-ref "<their words>"` on survey-tests and
+  scaffold, everything downstream is built on the unmerged tree under a warning,
+  and the task PR then waits for the source PR to merge first.
 
 """
 
@@ -540,7 +564,7 @@ def cmd_codebase_approve(a) -> None:
     mark_step(a.codebase, "approve-modules")
     print(f"approved {len(keep)} module(s): {keep}\n")
     print(STEP15_BRIEF.format(source=cb["source"], cb=a.codebase))
-    next_line(f"STOP 2: open the source PR for code/{cb['source']}/ and wait for the human to merge it; then sab.py codebase source-merged --codebase {a.codebase} --human-ref \"<their words>\"")
+    next_line(f"STOP 2: open the source PR for code/{cb['source']}/, report the link, and tell the human they may either merge it (then sab.py codebase source-merged --codebase {a.codebase} --human-ref \"<their words>\") or lift the gate for a one-shot run (survey-tests and scaffold with --allow-unmerged-source --human-ref \"<their words>\")")
 
 
 def validate_tests(cb: str, doc: dict, source: Path, approved: list[str]) -> tuple[list[str], dict]:
@@ -649,7 +673,7 @@ def cmd_codebase_survey(a) -> None:
     approved = approved_modules(mdoc)
     if not approved:
         die("no approved modules yet; finish Step 1 first")
-    require_source_merged(a.codebase, cb)
+    require_source_merged(a.codebase, cb, getattr(a, "allow_unmerged_source", False), getattr(a, "human_ref", "") or "")
     source = ROOT / "code" / cb["source"]
     if not source.is_dir():
         die(f"code/{cb['source']}/ does not exist in this checkout; pull the merged main first")
@@ -693,13 +717,13 @@ def cmd_codebase_survey(a) -> None:
 
 # ----------------------------------------------------------------- task mode
 
-def pipeline_tokens(codebase: str, module: str) -> tuple[dict[str, str], dict, list[dict]]:
+def pipeline_tokens(codebase: str, module: str, allow_unmerged: bool = False, human_ref: str = "") -> tuple[dict[str, str], dict, list[dict]]:
     cb = load_codebase(codebase)
     d = state_dir(codebase)
     mdoc = read_json(d / "modules.json") if (d / "modules.json").is_file() else None
     if module not in approved_modules(mdoc):
         die(f"module {module!r} is not approved for {codebase!r}; finish `sab.py codebase approve-modules` first")
-    require_source_merged(codebase, cb)
+    require_source_merged(codebase, cb, allow_unmerged, human_ref)
     mod = next(m for m in mdoc["modules"] if m["slug"] == module)
     rows: list[dict] = []
     cpus, mem = 8, 16.0
@@ -726,7 +750,7 @@ def cmd_task_scaffold(a) -> None:
     for v in (a.codebase, a.module):
         if KEBAB.fullmatch(v) is None:
             die("--codebase and --module must be lower-kebab-case")
-    tokens, mod, rows = pipeline_tokens(a.codebase, a.module)
+    tokens, mod, rows = pipeline_tokens(a.codebase, a.module, getattr(a, "allow_unmerged_source", False), getattr(a, "human_ref", "") or "")
     if not (ROOT / "code" / tokens["SOURCE"]).is_dir():
         die(f"code/{tokens['SOURCE']}/ does not exist in the repository; open the source PR first")
     leaf = ROOT / "tasks" / a.codebase / a.module
@@ -1595,6 +1619,11 @@ def cmd_status(a) -> None:
             nxt = f"Step 1: sab.py codebase propose-modules --codebase {cb_id}"
         elif not approved:
             nxt = f"STOP: human approval of the module cut (sab.py codebase approve-modules --codebase {cb_id} --human-ref ...)"
+        elif not (cb.get("source_pr") or {}).get("human_ref") and cb.get("source_gate_bypass"):
+            byp = cb["source_gate_bypass"]
+            line["source_gate_bypassed"] = byp
+            nxt = (f"WARNING: Step 1.5 gate bypassed on {byp.get('at')} (\"{byp.get('human_ref')}\"); the task PR must not merge before the source PR; "
+                   f"once merged: sab.py codebase source-merged --codebase {cb_id} --human-ref ...; meanwhile Step 2/3 continue")
         elif not (cb.get("source_pr") or {}).get("human_ref"):
             nxt = (f"STOP (Step 1.5): open the source PR that adds code/{cb['source']}/, wait for the human to merge it, then "
                    f"sab.py codebase source-merged --codebase {cb_id} --human-ref ...")
@@ -1640,12 +1669,16 @@ def main() -> None:
     p = cbp.add_parser("survey-tests")
     p.add_argument("--codebase", required=True)
     p.add_argument("--module")
+    p.add_argument("--allow-unmerged-source", action="store_true", help="bypass the Step 1.5 merge gate with a warning (needs --human-ref)")
+    p.add_argument("--human-ref", help="the human's words authorising the bypass")
 
     tp = sub.add_parser("task", help="Step 3: scaffold, add checks, lint, plan, consent, build, selfcheck, review").add_subparsers(dest="cmd", required=True)
     p = tp.add_parser("scaffold")
     p.add_argument("--codebase", required=True)
     p.add_argument("--module", required=True)
     p.add_argument("--force", action="store_true")
+    p.add_argument("--allow-unmerged-source", action="store_true", help="bypass the Step 1.5 merge gate with a warning (needs --human-ref)")
+    p.add_argument("--human-ref", help="the human's words authorising the bypass")
     p = tp.add_parser("add-check")
     p.add_argument("--task", required=True)
     p.add_argument("--name", required=True)
