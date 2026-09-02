@@ -163,6 +163,8 @@ eight rubrics that did not change; `laser-cone-2d` and `laser-ramp-2d` carry
 and their native previews stand in the meantime. No check changed policy or
 tolerance at calibration; the curator finalizes these numbers at review.
 
+The final selfcheck on the x86 worker (8 cpus, 8 GB, 2026-09-02, under revision 5.4.1) passed with reward 1.0 and no identical check; the suite's run time and the per-check spreads repeated the previous run (about 60 s of run time; 2.7e-4 to 1.2e-3 V/m on the laser field checks against 1 V/m, 1.8e-15 and 2.7e-15 on the moving-window files against 1e-10, 5.2e-9 and 2.4e-7 on the injector checks against 1e-6, cone 1.0e13 and ramp 3.4e14 per cubic metre on the density against 1e17 and 1e18), with the builds reported separately. expected_runtime_s in every rubric is 1.5 times the measured run time of the earlier run. No check changed policy or tolerance; the curator consented in advance and finalizes these numbers at review.
+
 ## Blind spots
 
 The CPML boundary family is the largest one. `boundary.F90` implements a full
@@ -183,3 +185,7 @@ checks grade densities, counts and distributions, but nothing grades the
 computed through a real `MPI_SUM` reduction (`laser.f90:677`,
 `io/diagnostics.F90:932-934`), so it is decomposition-order dependent and would
 need its own, much looser, bound.
+
+Under revision 5.4.1 the two review-presentation fields `observable` and
+`default_vs_upstream` were filled in all ten rubrics; nothing else in the
+checks changed.
