@@ -105,17 +105,6 @@
   </dl>
 </header>
 
-<div class="note" style="border-left:4px solid #b45309">
-<strong>Decisions settled for revision 5.1</strong> (2026-09-02, agreed with the curator)
-<ol>
-  <li><strong>Consent once per run plan.</strong> Recorded once per task and valid while the plan (cores, memory, expected wall time, image count, location) is unchanged; calibration and final selfcheck do not each ask again. Every run prints the plan line it is running under.</li>
-  <li><strong>The CLI never runs anything remotely.</strong> Running Docker is not the CLI's business: it records the consented location and refuses to build or selfcheck without consent. Syncing the leaf, the source and the skill to a consented host and running the CLI there is the agent's job, by hand.</li>
-  <li><strong>No finalisation record.</strong> The calibration discussion stays prose, as in revision 5; the finalized numbers live in the rubrics and the catalogue.</li>
-  <li><strong>No new record files in the leaf.</strong> The aim is visibility to the human before and during the run, not more artefacts. The briefing, the run plan and the review brief are printed and kept in the local state directory; <code>comment/pipeline/</code> keeps its revision-5 files.</li>
-  <li><strong>The review phase is part of the mental model.</strong> After the main process ends with the task PR there is an extensive review phase, several rounds, in which the domain expert may redesign the task with the PR as a priori information; the briefing says so up front and the diagram shows it as the third phase.</li>
-  <li><strong>Investigate with short native runs before the module cut.</strong> Step 1 includes building the checkout and making dry or short runs of its official tests, natively, never in Docker, at most three minutes of wall time per test. The module proposal and the test survey rest on those measurements.</li>
-</ol>
-</div>
 
 <h2 id="s1"><span class="n">1</span>Purpose</h2>
 <p>A task is an RL environment. Its reward is a suite of checks derived from the codebase's official tests, which an agent must keep passing while carrying out a generic task statement: port the module to every active target. The skill turns a human-curated check suite into a Docker-portable, twice-self-validated leaf with as little per-task authoring as possible. Because the checks are the reward, they should cover the module as exhaustively as the official tests allow.</p>
