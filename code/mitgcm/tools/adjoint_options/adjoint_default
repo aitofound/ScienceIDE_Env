@@ -1,0 +1,91 @@
+#!/bin/bash
+#
+#  This AD option-file contains the default settings for the adjoint
+#  and tangent-linear compilers.  If you need to change these settings,
+#  please make a separate (local) copy of this file.
+
+TAF=staf
+
+if test "x$USE_DIVA" = "x1" ; then
+    DIVA='true'
+    DIVA_FLAG="-pure"
+    if test "x$MPI" != x ; then
+	SHOW_MPI_TO_TAF=1
+    fi
+else
+    DIVA_FLAG=
+fi
+
+AD_TAF_FLAGS="-reverse $DIVA_FLAG -l taf_ad.log $AD_TAF_FLAGS"
+FTL_TAF_FLAGS="-forward -l taf_ftl.log $FTL_TAF_FLAGS"
+SVD_TAF_FLAGS="-reverse -forward -pure -l taf_svd.log $SVD_TAF_FLAGS"
+
+# TAF_COMMON_FLAGS is a local variable used for abbreviation
+TAF_COMMON_FLAGS="-i4 -r4 -intrinsic system,flush"
+
+if test "x$TAMC_COMPATIBILITY_MODE" = "x1" ; then
+    TAF_COMMON_FLAGS="-v1 -nonew_arg $TAF_COMMON_FLAGS"
+fi
+
+if test "x$USE_EXTENDED_SRC" = "xt"; then
+    TAF_F77_FLAGS="$TAF_F77_FLAGS -e"
+fi
+
+#- select which Fortran version to specify to TAF
+if test "x$TAF_FORTRAN_VERS" = x ; then
+    if test "x$ALWAYS_USE_F90" = "x1" ; then
+	TAF_FORTRAN_VERS='F90' ;
+    else
+	TAF_FORTRAN_VERS='F77' ;
+    fi
+fi
+
+if test $TAF_FORTRAN_VERS = 'F77' ; then
+    TAF_COMMON_FLAGS="-f77 $TAF_COMMON_FLAGS"
+elif test $TAF_FORTRAN_VERS = 'F90' ; then
+    TAF_COMMON_FLAGS="-f90 $TAF_COMMON_FLAGS"
+elif test $TAF_FORTRAN_VERS = 'F08' ; then
+    TAF_COMMON_FLAGS="-f08 $TAF_COMMON_FLAGS"
+else
+    #- after Jan 14, 2016, TAF default is "-f95"
+    TAF_COMMON_FLAGS="-f95 $TAF_COMMON_FLAGS"
+    TAF_COMPILER=-f95
+fi
+
+#- Instead of using staf default server (SERVER1, currently fastopt.de),
+#  one can either specify which server to use by setting TAF_SERVER in
+#  genmake_local (e.g. TAF_SERVER=fastopt.net) or by changing the staf default
+#  server (e.g., in staf version 4.0, changing line 188
+#  from SERVER=${SERVER1} to SERVER=${SERVER2} )
+if test "x$TAF_SERVER" != x ; then
+    TAF_COMMON_FLAGS="-server $TAF_SERVER $TAF_COMMON_FLAGS"
+fi
+
+#- in case we need to show some MPI code to TAF:
+if test "x$SHOW_MPI_TO_TAF" = "x1" -a "x$MPI" != x ; then
+    MPI_TAF_OPTIONS='-mpi -include $(LOCAL_MPI_HEADERS) -I./mpi_headers'
+else
+    MPI_TAF_OPTIONS=
+fi
+
+if test "x$USE_SVD" = "x1" ; then
+    TAF_FC=objf_state_final
+    LIBS="${LIBS} -larpack"
+else
+    TAF_FC=fc
+fi
+DIFF_FLAGS="-toplevel 'the_main_loop' \
+            -input 'xx_obcsn_dummy    \
+                    xx_obcss_dummy    \
+                    xx_obcsw_dummy    \
+                    xx_obcse_dummy    \
+                    xx_genarr2d_dummy \
+                    xx_genarr3d_dummy \
+                    xx_gentim2d_dummy'\
+            -output '$TAF_FC'"
+
+AD_TAF_FLAGS="$TAF_COMMON_FLAGS $AD_TAF_FLAGS $MPI_TAF_OPTIONS $DIFF_FLAGS"
+
+FTL_TAF_FLAGS="$TAF_COMMON_FLAGS $FTL_TAF_FLAGS $MPI_TAF_OPTIONS $DIFF_FLAGS"
+
+SVD_TAF_FLAGS="$TAF_COMMON_FLAGS $SVD_TAF_FLAGS $MPI_TAF_OPTIONS $DIFF_FLAGS"
