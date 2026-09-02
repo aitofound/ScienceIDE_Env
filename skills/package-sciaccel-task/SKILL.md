@@ -45,7 +45,9 @@ committed; what a reviewer needs is copied into the leaf under
 python3 sab.py codebase init --codebase <id> --code-path <checkout> --repo-url … --pin … --license … --language … --domain … --owner …
 python3 sab.py codebase propose-modules --codebase <id>        # validates modules.json, prints the table, STOP
 python3 sab.py codebase approve-modules --codebase <id> --human-ref "<the human's words>"
-# Step 1.5: open the source PR that vendors the pinned tree under code/<id>/ (outside the CLI)
+# Step 1.5: HARD STOP. Open the source PR that vendors the pinned tree under code/<id>/ (outside the CLI),
+#           report the link, and wait for the human to merge it. Then record the merge:
+python3 sab.py codebase source-merged --codebase <id> --human-ref "<the human's words>" [--pr <url>]
 # Step 2: official-test survey
 python3 sab.py codebase survey-tests --codebase <id>           # validates tests.json, per-module verdicts, Step 3 commands
 # Step 3: one task per module
@@ -56,8 +58,10 @@ python3 sab.py task build     --task tasks/<id>/<slug>
 python3 sab.py task selfcheck --task tasks/<id>/<slug>          # solve on nominal and on variant, verify, reward must be 1.0
 ```
 
-Exactly two refusals: `task scaffold` refuses a module the human has not
-approved, and `task selfcheck` refuses a leaf that fails lint. Everything else
+Exactly three refusals: `survey-tests` and `task scaffold` refuse until the
+source PR is merged into main and the human's go-ahead is recorded with
+`codebase source-merged`; `task scaffold` refuses a module the human has not
+approved; and `task selfcheck` refuses a leaf that fails lint. Everything else
 runs when asked; `status` shows lint errors and stale self-validation.
 
 ## Rules that the CLI cannot enforce
@@ -72,6 +76,12 @@ runs when asked; `status` shows lint errors and stale self-validation.
   human finalizes them. The first `selfcheck` is a calibration run: read the
   spread it records into each rubric, revise with the human, run it again.
   Revising after the first run is the normal path, never a failure.
+- **Step 1.5 is a hard stop.** After the module cut is approved, open the
+  source PR and stop: report the link and wait for the human to review and
+  merge it. Do not write the test survey, scaffold a task or author checks on
+  the same branch while the source PR is open. The task PR is opened on a
+  fresh branch from the merged main and contains only the leaf and the
+  registry, so it builds on source that is already in the repository.
 - **Propose, then discuss.** The policy type of every check is proposed from
   the physics, agreed in one shot when obvious, and finalized check by check
   from the nominal-versus-variant runs. Bring the measurements; the human
