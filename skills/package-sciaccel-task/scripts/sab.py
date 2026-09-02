@@ -1399,8 +1399,8 @@ def cmd_task_review(a) -> None:
         f"**Flags.** {'; '.join(flags) if flags else 'none (not THIN, no custom checks)'}.",
         f"**Since the previous round.** {changed}.",
     ]
-    table = ["| check | policy | observable | tolerance | spread | margin | fault scale | floor | variant | default vs upstream | run s | build s | identical |",
-             "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+    table = ["| check | policy | observable | tolerance | spread | margin | floor | variant | default vs upstream | run s | build s | identical |",
+             "|---|---|---|---|---|---|---|---|---|---|---|---|"]
     def num(x, fmt=".3g"):
         return format(x, fmt) if isinstance(x, (int, float)) and not isinstance(x, bool) else "-"
     for i in infos:
@@ -1421,7 +1421,8 @@ def cmd_task_review(a) -> None:
         if bound is None and isinstance(comp.get("invariants"), list):
             bs = [q.get("rtol") for q in comp["invariants"] if isinstance(q.get("rtol"), (int, float))]
             bound = min(bs) if bs else None
-        margin = (bound / spread_v) if (isinstance(bound, (int, float)) and isinstance(spread_v, (int, float)) and spread_v > 0) else None
+        relbound = isinstance(comp.get('rtol'), (int, float)) and comp.get('rtol') > 0 and isinstance(bound, (int, float)) and isinstance(spread_v, (int, float)) and bound < spread_v
+        margin = (bound / spread_v) if (not relbound and isinstance(bound, (int, float)) and isinstance(spread_v, (int, float)) and spread_v > 0) else None
         floor = ev.get("floor") if ev.get("floor") is not None else ev.get("spread")
         try:
             floor = float(floor) if floor is not None and not isinstance(floor, dict) else floor
@@ -1433,11 +1434,11 @@ def cmd_task_review(a) -> None:
         variant = (rb.get("variant") or "").split(";")[0].split(". ")[0][:90]
         obs = (rb.get("observable") or "-")[:100]
         table.append(f"| {i['name']} ({(rb.get('upstream_test') or '').split('/')[-1]}) | {pol} | {obs} | {tol} | {num(spread_v)} | "
-                     f"{num(margin, '.0f') + 'x' if margin is not None else '-'} | {num(rb.get('fault_scale'))} | {num(floor)} | {variant} | {rb.get('default_vs_upstream') or '-'} | "
+                     f"{num(margin, '.0f') + 'x' if margin is not None else ('rel' if relbound else '-')} | {num(floor)} | {variant} | {rb.get('default_vs_upstream') or '-'} | "
                      f"{run_times.get(i['name'], times.get(i['name'], 0)):.0f} | {builds.get(i['name'], 0):.0f} | {'YES' if r.get('identical') else 'no'} |")
     present = [f"# Review presentation: {rel(leaf)}", "",
                f"Task `{meta.get('slug')}` of codebase `{meta.get('source')}` ({meta.get('repo_url')} @ {(meta.get('repo_commit') or '')[:12]}); {len(infos)} checks.", ""] + header + [""] + table + ["",
-               "Read first: the rows this table flags (margin under 50 or over 10,000, chaotic, custom, identical, no fault scale, run time far from its declared value); then the catalogue, the warrants, comment/README.md, the records.", ""]
+               "Read first: the rows this table flags (margin under 50 or over 10,000, chaotic, custom, identical, run time far from its declared value; rel marks a relative bound whose margin is read in the warrant); then the catalogue, the warrants, comment/README.md, the records.", ""]
     if getattr(a, "present", False):
         print("\n".join(present))
         return
