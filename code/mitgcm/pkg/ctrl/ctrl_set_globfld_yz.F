@@ -1,0 +1,99 @@
+#include "CTRL_OPTIONS.h"
+
+      SUBROUTINE CTRL_SET_GLOBFLD_YZ(
+     I                fname, nRecArg, filePrec, myThid )
+
+C     ==================================================================
+C     SUBROUTINE ctrl_set_globfld_yz
+C     ==================================================================
+C
+C     o initialise field
+C
+C     started: heimbach@mit.edu, 16-Aug-2001
+C
+C     changed: heimbach@mit.edu 17-Jun-2003
+C              merged changes from Armin to replace write of
+C              nr * globfld2d by 1 * globfld3d
+C              (ad hoc fix to speed up global I/O)
+C
+C     ==================================================================
+
+      IMPLICIT NONE
+
+C     == global variables ==
+#include "EEPARAMS.h"
+#include "SIZE.h"
+c#include "PARAMS.h"
+c#include "CTRL_SIZE.h"
+c#include "CTRL.h"
+#include "OPTIMCYCLE.h"
+
+C     == routine arguments ==
+      CHARACTER*(MAX_LEN_FNAM) fname
+      INTEGER nRecArg
+      INTEGER filePrec
+      INTEGER myThid
+
+C     == local variables ==
+      INTEGER bi, bj
+      INTEGER i, j, k
+      INTEGER irec, nrec_nl
+c     _RS dummyRS(1)
+      _RL globfld3d(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr,nSx,nSy)
+      _RL globfldyz(1-OLy:sNy+OLy,Nr,nSx,nSy)
+
+C     == end of interface ==
+
+      DO bj = myByLo(myThid), myByHi(myThid)
+        DO bi = myBxLo(myThid), myBxHi(myThid)
+C     Initialise temporary file
+          DO k = 1,Nr
+             DO j = 1-OLy,sNy+OLy
+                globfldyz(j,k,bi,bj) = 0. _d 0
+             ENDDO
+          ENDDO
+C     Initialise temporary file
+          DO k = 1,Nr
+            DO j = 1-OLy,sNy+OLy
+              DO i = 1-OLx,sNx+OLx
+                globfld3d(i,j,k,bi,bj) = 0. _d 0
+              ENDDO
+            ENDDO
+          ENDDO
+        ENDDO
+      ENDDO
+
+      IF ( useSingleCPUio ) THEN
+C     MDSWRITEFIELDYZ does not know about useSingleCPUio, so the faster
+C     method that works for .not.useSingleCPUio cannot be used
+        nrec_nl = 0
+      ELSE
+        nrec_nl = INT(nRecArg/Nx)
+      ENDIF
+
+      DO irec = 1, nrec_nl
+        CALL WRITE_REC_3D_RL( fname, filePrec, Nr,
+     &                        globfld3d,
+     &                        irec, optimcycle, myThid )
+      ENDDO
+
+      DO irec = nrec_nl*Nx+1, nRecArg
+C--   Call directly MDS_WRITE_SEC_YZ (instead of indirectly via MDSWRITEFIELDYZ)
+C     --> expect zero difference.
+C     In this call, value "False" is passed to 3rd arg "globalFile"
+C             and   value "False" is passed to 4th arg "useCurrentDir,"
+c       CALL MDS_WRITE_SEC_YZ( fname, filePrec, .FALSE., .FALSE.,
+c    I                         'RL', Nr, 1, Nr, globfldyz, dummyRS,
+c    I                         irec, optimcycle, myThid )
+
+C--   The only difference here (vs initial MDSWRITEFIELDYZ call) is that,
+C     in WRITE_REC_YZ_RL, argument "globalFile" is not set to FALSE but is
+C     instead taken from RD_WR_SEC common block (but currently set to FALSE
+C     in ini_model_io.F if using OBCS)
+        CALL WRITE_REC_YZ_RL( fname, filePrec,
+     I                        Nr, globfldyz,
+     I                        irec, optimcycle, myThid )
+      ENDDO
+
+      RETURN
+      END
