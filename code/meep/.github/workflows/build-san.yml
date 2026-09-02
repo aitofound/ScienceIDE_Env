@@ -1,0 +1,68 @@
+name: Sanitizers
+
+on:
+  schedule:
+    - cron:  "24 10 * * *"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: "Test C++ with ${{ matrix.name-suffix }}"
+    runs-on: ubuntu-24.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name-suffix: "ASAN"
+            sanitizer: "address"
+            configure-options: ""
+            debug-options: "-g1"
+          - name-suffix: "UBSAN"
+            sanitizer: "undefined"
+            configure-options: "CC=clang CXX=clang++ LD=clang++"
+            debug-options: "-gmlt"
+
+    steps:
+    - name: Cache apt packages
+      uses: actions/cache@v6
+      id: apt-cache
+      with:
+        path: ~/apt-cache
+        key: apt-san-${{ runner.os }}-${{ hashFiles('.github/workflows/build-san.yml') }}
+
+    - name: Restore cached apt packages
+      if: steps.apt-cache.outputs.cache-hit == 'true'
+      run: sudo cp ~/apt-cache/*.deb /var/cache/apt/archives/ 2>/dev/null || true
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y autoconf automake clang libaec-dev libctl-dev \
+          libfftw3-dev libgsl-dev libharminv-dev libhdf5-dev \
+          libtool mpb mpb-dev ccache
+        mkdir -p ~/apt-cache
+        cp /var/cache/apt/archives/*.deb ~/apt-cache/ 2>/dev/null || true
+
+    - name: Check out repository
+      uses: actions/checkout@v7
+    - name: Autoreconf
+      run: autoreconf -if
+    - name: configure
+      run: |
+        ./configure \
+          --with-hdf5 --without-mpi --without-python --without-scheme \
+          --enable-shared --enable-maintainer-mode --enable-ccache \
+          CXXFLAGS="-fsanitize=${{ matrix.sanitizer }} ${{ matrix.debug-options }}" \
+          LDFLAGS="-fsanitize=${{ matrix.sanitizer }}" \
+          ${{ matrix.configure-options }}
+    - name: make
+      run: make -j$(nproc)
+    - name: Run sanitizer
+      run: make -j$(nproc) check
+    - name: Archive test logs
+      uses: actions/upload-artifact@v7
+      if: failure()
+      with:
+        name: ${{ matrix.name-suffix }}-log
+        path: tests/test-suite.log
