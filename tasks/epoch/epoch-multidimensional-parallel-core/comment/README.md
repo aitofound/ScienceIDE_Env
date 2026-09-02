@@ -36,14 +36,26 @@ of `particles.F90`, the physical boundary conditions and CPML of `boundary.F90`,
 the moving window, the physics packages, and the intra-rank list bookkeeping of
 `partlist.F90` and `secondary_list.F90`.
 
-The survey proposed eight checks and this leaf has seven. `halo-fdtd-2d` and
-`halo-laser-seam-2d` were merged into one check that runs both 2-D field decks
-off one `epoch2d` build, because a clean EPOCH build costs about eighty seconds
-in the container and eight of them would have taken two thirds of the
-fifteen-minute suite budget on compilation alone. Nothing was dropped: the merged
-check grades both decks' fields at two dumps each, and the laser deck is still
-the one that makes a physical `simple_laser` and `open` boundary meet an interior
-seam. The survey rows for both remain in `comment/pipeline/test-survey.json`.
+The survey proposed eight checks and this leaf now has eight, one per official
+deck. An earlier revision of this leaf merged `halo-fdtd-2d` and
+`halo-laser-seam-2d` into a single check that ran both 2-D field decks off one
+`epoch2d` build, because a clean EPOCH build costs the better part of a minute in
+the container and eight of them would have eaten most of the fifteen-minute suite
+budget on compilation alone. That merge was a budget artefact, not a scientific
+judgement, and revision 5.3 of the SPEC removes its reason: the suite budget now
+counts run time only, each `run.sh` reports its build as `SAB_BUILD_SECONDS` and
+the driver subtracts it, and the budget is guidance that must never cause a
+suitable official test to be dropped or merged. The two checks were therefore
+split apart again under that rule, each with its own deck pair, `run.sh`,
+`extract.py`, rubric, validator and README, and with the science unchanged: the
+same 2 x 2 layout and 4 x 1 variant layout preview, the same graded arrays at the
+same dumps, the same per-file bounds, the same partition ladder graded exactly,
+the same knobs and the same citations. Nothing was dropped at any point; the
+survey rows for both remain in `comment/pipeline/test-survey.json`. The floors of
+both checks were re-measured natively after the split (the `-O3` against `-O2`
+build spread, the two-ulp variant preview and the 2x2 against 4x1 layout
+invariance, now measured on each deck separately) and reproduce the numbers the
+merged check recorded.
 
 ## Tolerances
 
@@ -54,12 +66,13 @@ gfortran 15, OpenMPI 5) by running each check's own `ic/nominal` and
 `extract.py` the check ships. Three legitimate comparisons were made per check:
 the pinned source built with its stock `-O3` gfortran flags against the same
 tree with `-O2` substituted in the dimension's Makefile; the `-O3` build on the
-two-ulp variant deck against the nominal deck; and, for the two field-only
+two-ulp variant deck against the nominal deck; and, for the three field-only
 checks, the same build at two different rank layouts. The third of those is the
 measurement this module is really about, and its answer is the cleanest result
 in the leaf: a field halo exchange moves data and does no arithmetic, so 2x2
-against 4x1 in two dimensions and 2x2x2 against 4x2x1 in three give graded
-arrays that agree bit for bit, edges and corners included. That is why the
+against 4x1 on each of the two 2-D decks and 2x2x2 against 4x2x1 in three
+dimensions give graded arrays that agree bit for bit, edges and corners
+included. That is why the
 layout is *not* used as the variant: it would leave the two self-validation runs
 identical and measure nothing. It is also why no particle check can use a layout
 variant either, but for the opposite reason — EPOCH seeds its generator with
@@ -91,7 +104,7 @@ the two-ulp variant and the `-O2` build in every check. They are the sharpest
 statement the suite makes and the first thing to revisit if the calibration run
 disagrees.
 
-The calibration selfcheck on the x86 worker (8 cpus, 8 GB, 2026-09-02) passed with reward 1.0 and no identical check: the in-container nominal-versus-variant spreads reproduced the native previews to within a factor of 1.3 on every check (7.5e-4 and 9.9e-5 V/m on the two halo checks against a 100 V/m bound, 2.6e-13 to 4.2e-11 on the particle checks against bounds of 1e-6 to 1e-3, every integer ladder and count exactly equal), and the suite took 465 s of the 900 s budget (57 to 86 s per check). No check changed policy or tolerance after calibration, so the calibration run is the final record; the curator consented in advance and finalizes these numbers at review.
+The final selfcheck on the x86 worker (8 cpus, 8 GB, 2026-09-02, under the revision-5.3 rule that counts run time only) passed with reward 1.0 and no identical check: the suite's run time is 85 s against the 900 s guidance (1 to 37 s per check), with 606 s of source builds reported separately; the two split halo checks came back with the spreads their native previews predicted (2.6e-4 and 7.5e-4 V/m against a 100 V/m bound) and the six others repeated the calibration run to the digit, every integer ladder and count exactly equal. expected_runtime_s in every rubric is 1.5 times the measured run time (halo-fdtd-3d measured 3 s against 2 s declared on this run, inside the factor of two the CLI tolerates). No check changed policy or tolerance; the curator consented in advance and finalizes these numbers at review.
 
 ## Blind spots
 

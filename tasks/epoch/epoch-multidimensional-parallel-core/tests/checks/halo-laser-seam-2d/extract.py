@@ -93,17 +93,17 @@ def _array(buf: bytes, offset: int, datatype: int, dims) -> np.ndarray:
     return np.array(np.frombuffer(raw, dtype=dtype, count=count), dtype=np.float64)
 
 
-# (dump index, SDF block name, graded file stem). The Yee deck writes four
+# (dump index, SDF block name, graded file stem). The laser deck writes three
 # dumps (0000 at t = 0 and one every 25 fs); the two graded ones are the last
 # two, and the rank partition ladder is taken from the final dump.
 GRADED = [
+    (1, "Electric Field/Ex", "ex"),
+    (1, "Electric Field/Ey", "ey"),
+    (1, "Magnetic Field/Bz", "bz"),
     (2, "Electric Field/Ex", "ex"),
     (2, "Electric Field/Ey", "ey"),
     (2, "Magnetic Field/Bz", "bz"),
-    (3, "Electric Field/Ex", "ex"),
-    (3, "Electric Field/Ey", "ey"),
-    (3, "Magnetic Field/Bz", "bz"),
-    (3, "CPUs/Original rank", "cpu_rank"),
+    (2, "CPUs/Original rank", "cpu_rank"),
 ]
 
 
