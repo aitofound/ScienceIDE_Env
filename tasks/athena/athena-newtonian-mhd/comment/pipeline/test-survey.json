@@ -1,0 +1,297 @@
+{
+  "module": "athena-newtonian-mhd",
+  "tests": [
+    {
+      "id": "amr-linwave",
+      "module": "athena-newtonian-mhd",
+      "path": "tst/regression/scripts/tests/amr/amr_linwave.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "2-D MHD linear wave under AMR with a velocity-tracking refinement criterion: prolongation, restriction and fine-coarse flux/EMF corrections",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 33,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic refinement pattern; L1 and Linf errors and the final state compare pointwise. Expect a wider floor than uniform-grid waves because refinement boundaries move.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 32.6,
+        "athena_cpu_s": 18.1,
+        "launches": 1
+      },
+      "proposed_check": "amr-linwave",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "hybrid-linwave",
+      "module": "athena-newtonian-mhd",
+      "path": "tst/regression/scripts/tests/hybrid/hybrid_linwave.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "MHD linear wave under MPI+OpenMP versus serial",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 4
+      },
+      "upstream_runtime_s": 92,
+      "runtime_measured": true,
+      "suitable": false,
+      "why": "Parallel-runtime variant of mhd_linwave; the physics is already covered and the check would measure the harness, not a port.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 91.6,
+        "athena_cpu_s": 62.3,
+        "launches": 3
+      }
+    },
+    {
+      "id": "mhd-cpaw",
+      "module": "athena-newtonian-mhd",
+      "path": "tst/regression/scripts/tests/mhd/cpaw.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Circularly polarised Alfven wave convergence in 2-D with SMR, isothermal HLLD",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 66,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic; pointwise on errors and state.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 65.5,
+        "athena_cpu_s": 51.4,
+        "launches": 3
+      },
+      "proposed_check": "mhd-cpaw",
+      "budget_note": "needs a shorter default (knob keeps the upstream setting)"
+    },
+    {
+      "id": "mhd-carbuncle",
+      "module": "athena-newtonian-mhd",
+      "path": "tst/regression/scripts/tests/mhd/mhd_carbuncle.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "MHD carbuncle test of the low-dissipation MHD fluxes",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 25,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic; pointwise.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 24.7,
+        "athena_cpu_s": 4.2,
+        "launches": 5
+      },
+      "proposed_check": "mhd-carbuncle",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "mhd-linwave",
+      "module": "athena-newtonian-mhd",
+      "path": "tst/regression/scripts/tests/mhd/mhd_linwave.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Newtonian MHD 3-D linear-wave convergence series; the executable writes L1 errors per resolution to linearwave-errors.dat; deterministic, so the errors file and the final state compare pointwise. HLLD and Roe.",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 1555,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic; pointwise.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 1554.6,
+        "athena_cpu_s": 1533.2,
+        "launches": 20
+      },
+      "proposed_check": "mhd-linwave",
+      "budget_note": "needs a shorter default (knob keeps the upstream setting)"
+    },
+    {
+      "id": "mhd-rj2a-shock",
+      "module": "athena-newtonian-mhd",
+      "path": "tst/regression/scripts/tests/mhd/rj2a_shock.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Ryu-Jones 2a MHD shock tube, HLLD and Roe. Shock tube run along x1, x2 and x3 with errors against the exact solution written to shock_errors.dat; deterministic Riemann-solver path, pointwise on the final profiles.",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 65,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic; pointwise.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 64.6,
+        "athena_cpu_s": 49.7,
+        "launches": 12
+      },
+      "proposed_check": "mhd-rj2a-shock",
+      "budget_note": "needs a shorter default (knob keeps the upstream setting)"
+    },
+    {
+      "id": "mpi-linwave",
+      "module": "athena-newtonian-mhd",
+      "path": "tst/regression/scripts/tests/mpi/mpi_linwave.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "MHD linear wave on 1, 2 and 4 MPI ranks versus serial",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 4
+      },
+      "upstream_runtime_s": 110,
+      "runtime_measured": true,
+      "suitable": false,
+      "why": "Parallel-runtime variant; physics covered by mhd_linwave.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 109.9,
+        "athena_cpu_s": 71.1,
+        "launches": 4
+      }
+    },
+    {
+      "id": "omp-linwave",
+      "module": "athena-newtonian-mhd",
+      "path": "tst/regression/scripts/tests/omp/omp_linwave.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "MHD linear wave under OpenMP versus serial",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 92,
+      "runtime_measured": true,
+      "suitable": false,
+      "why": "Parallel-runtime variant; physics covered by mhd_linwave.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 91.6,
+        "athena_cpu_s": 90.5,
+        "launches": 4
+      }
+    },
+    {
+      "id": "all-outputs",
+      "module": "athena-newtonian-mhd",
+      "path": "tst/regression/scripts/tests/outputs/all_outputs.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Orszag-Tang with restarts and every output format (hst, tab, vtk, hdf5)",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 16,
+      "runtime_measured": true,
+      "suitable": false,
+      "why": "Output-format and restart machinery; it checks I/O, not a solver.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 16.0,
+        "athena_cpu_s": 1.0,
+        "launches": 3
+      }
+    },
+    {
+      "id": "shwave",
+      "module": "athena-newtonian-mhd",
+      "path": "tst/regression/scripts/tests/shearingbox/mhd_shwave.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "MHD shearing wave in the shearing box with orbital advection and FFT remap (JGG)",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 34,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic linear shearing wave; pointwise on the amplitude history.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 34.0,
+        "athena_cpu_s": 19.9,
+        "launches": 2
+      },
+      "proposed_check": "mhd-shwave",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "mri2d",
+      "module": "athena-newtonian-mhd",
+      "path": "tst/regression/scripts/tests/shearingbox/mri2d.py",
+      "policy": "pointwise",
+      "chaotic": true,
+      "exercises": "2-D MRI in the shearing box (HB3), isothermal HLLD",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 74,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "The MRI grows from seeded perturbations and becomes nonlinear; the growth phase is deterministic, so pointwise over the linear window with the measured spread setting the window. Flagged chaotic.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 73.8,
+        "athena_cpu_s": 59.9,
+        "launches": 1
+      },
+      "proposed_check": "mri2d",
+      "budget_note": "needs a shorter default (knob keeps the upstream setting)"
+    },
+    {
+      "id": "ssheet",
+      "module": "athena-newtonian-mhd",
+      "path": "tst/regression/scripts/tests/shearingbox/ssheet.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Hydro shearing sheet: epicyclic motion and shearing-periodic boundaries",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 16,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic; pointwise.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 15.5,
+        "athena_cpu_s": 1.1,
+        "launches": 2
+      },
+      "proposed_check": "ssheet",
+      "budget_note": "fits as is"
+    }
+  ]
+}

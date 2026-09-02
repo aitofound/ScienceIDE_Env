@@ -1,8 +1,8 @@
 ---
 name: package-sciaccel-task
 description: Turn one scientific codebase into ScienceAccelBench task environments with the sab.py CLI. Use it to brief the human on the whole pipeline first, register a pinned codebase, investigate it with short native runs, decompose it into semi-independent modules with human approval, get the source PR merged, survey its official tests, and then, per module, scaffold a Harbor-style task, author self-contained checks (test + pass policy, nominal and variant initial conditions), lint, obtain the human's consent to the run plan, build the Docker images, run the two-solve self-validation, and hand the human a review brief for the task PR. The design is SPEC.html next to this file; the CLI validates what you write and never writes science, runs anything remotely, or merges.
-version: 5.3.0
-last_changed_at: "2026-09-02T12:30:00Z"
+version: 5.4.1
+last_changed_at: "2026-09-02T15:00:00Z"
 ---
 
 # Package a ScienceAccelBench task
@@ -173,6 +173,18 @@ current.
   check or its tolerance with fresh evidence; never delete, skip or weaken a
   check to go green. A candidate byte-identical to the reference passes with
   a warning because it most likely means no port happened.
+- **Present the review the same way every time.** When a passing, fresh
+  selfcheck exists, write `comment/README.md`, run `task review`, and show
+  the human the review presentation it prints first (`task review --present`
+  prints it alone): the six-line header and the one table with a row per
+  check (observable, tolerance, spread, margin, floor, variant, default
+  versus upstream, run and build seconds, identical). Post it in chat
+  at STOP 5 and at every revision with one line on what changed, and it is
+  the top of the PR body. Fill `observable` in every rubric and
+  `default_vs_upstream` where the defaults differ from the upstream test. How
+  far a wrong port lands is an argument the warrant makes in words, not a
+  number in the table. Reviewers start from the rows the table flags (margin
+  under 50 or over 10,000, chaotic, custom, identical).
 - **Hand over with the review brief, then expect review.** When a passing,
   fresh selfcheck exists, write `comment/README.md`, run `task review`, and
   show the brief to the human (STOP 5). On their go, open the task PR with
