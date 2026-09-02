@@ -1,0 +1,87 @@
+begin:control
+  nx = 64
+  ny = nx
+  nz = nx
+  nprocx = 2
+  nprocy = 2
+  nprocz = 2
+
+  # Final time of simulation
+  t_end = 5.25e-3
+
+  # Size of domain
+  x_min = 0
+  x_max = 5.0e5
+
+  y_min = 0
+  y_max = 5.0e5
+
+  z_min = 0
+  z_max = 5.0e5
+
+  smooth_currents = T
+  smooth_iterations = 4
+  smooth_strides = auto
+
+  use_random_seed = F
+  use_pre_balance = F
+  balance_first = F
+  stdout_frequency = 1000000
+end:control
+
+
+begin:boundaries
+  bc_x_min = periodic
+  bc_x_max = periodic
+  bc_y_min = periodic
+  bc_y_max = periodic
+  bc_z_min = periodic
+  bc_z_max = periodic
+end:boundaries
+
+
+begin:constant
+  drift_p = 2.5e-24
+  temperature = 273
+  dens = 10 * (1 + 1e-15)
+end:constant
+
+
+begin:species
+  # Rightwards travelling electrons
+  name = Right
+  charge = -1
+  mass = 1.0
+  temperature_x = temperature
+  drift_px = drift_p
+  number_density = dens
+  nparticles = nx * ny * nz * 2
+end:species
+
+
+begin:species
+  # Leftwards travelling electrons
+  name = Left
+  charge = -1
+  mass = 1.0
+  temperature_x = temperature
+  drift_px = -drift_p
+  number_density = dens
+  nparticles = nx * ny * nz * 2
+end:species
+
+
+begin:output
+  name = normal
+
+  # Simulated time between output dumps
+  dt_snapshot = 2.625e-3
+  dump_last = T
+
+  # Properties on grid
+  grid = always
+  ex = always
+  jx = always
+  number_density = always + species
+  ppc = always + species
+end:output

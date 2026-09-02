@@ -1,0 +1,63 @@
+begin:control
+  nx = 400
+  nprocx = 3
+
+  # Final time of simulation
+  t_end = 8.4e-2
+
+  # Size of domain
+  x_min = 0
+  x_max = 5.0e5
+
+  use_random_seed = F
+  use_pre_balance = F
+  balance_first = F
+  stdout_frequency = 1000000
+end:control
+
+
+begin:boundaries
+  bc_x_min = periodic
+  bc_x_max = periodic
+end:boundaries
+
+
+begin:constant
+  temperature = 27300
+  dens = 1 * (1 + 1e-15)
+end:constant
+
+
+begin:species
+  name = electrons
+  charge = -1
+  mass = 1.0
+  temperature_x = temperature
+  number_density = dens + 0.8*dens * sin(2*pi*x/lengthx)
+  number_density_min = 0.0
+  nparticles = nx * 4
+end:species
+
+
+begin:species
+  name = protons
+  charge = 1
+  mass = 1836.2
+  temperature_x = temperature_x(electrons)
+  number_density = number_density(electrons)
+  nparticles = nx * 4
+end:species
+
+
+begin:output
+  # Simulated time between output dumps
+  dt_snapshot = 2.1e-2
+  dump_last = T
+
+  # Properties on grid
+  grid = always
+  ex = always
+  charge_density = always
+  number_density = always + species
+  ppc = always + species
+end:output
