@@ -66,6 +66,7 @@ const NAMESPACE_KEYS = new Set([
   'oneshot_codex_outcome', 'oneshot_codex_transcript',
   'exploit_description', 'exploit_score',
   'references', 'notes',
+  'resources',
 ]);
 
 /* The operator's numbers — measured by us, on our hardware, when an official
