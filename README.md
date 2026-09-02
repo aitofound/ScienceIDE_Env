@@ -17,8 +17,7 @@ The packaging pipeline is specified in
 [`skills/package-sciaccel-task/SPEC.html`](skills/package-sciaccel-task/SPEC.html).
 That document is the canonical source: the skill and its CLI are written
 against it, and a change of design is a change to it first. The skill and
-CLI currently on `main` are the prototype the spec revises; their replacement
-follows in a separate pull request.
+its CLI (`sab.py`) implement it.
 
 ## Vocabulary
 
@@ -93,7 +92,7 @@ likely means no port happened.
 ## Validate locally
 
 ```bash
-python3 skills/package-sciaccel-task/scripts/task_cli.py validate-harbor --all tasks
+python3 skills/package-sciaccel-task/scripts/sab.py validate-harbor --all tasks
 BASE_REF=origin/main npm run check
 npm run check:validators
 ```
