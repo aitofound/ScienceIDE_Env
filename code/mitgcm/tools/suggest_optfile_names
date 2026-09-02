@@ -1,0 +1,112 @@
+#! /usr/bin/env bash
+
+#  Explain usage
+usage()
+{
+  echo "Usage: `basename $0` [OPTIONS]"
+  echo "    -> suggest OPTFILE name for MITgcm 'genmake2' script"
+  echo
+  echo "where possible OPTIONS are:"
+  echo "  (-help|-h)		just print this and return"
+  echo "  (-keep|-k)		keep log-file and temp-script file"
+  echo "  (-rootdir NAME | -rd NAME ) Specify the location of the"
+  echo "                        MITgcm root directory as 'NAME'."
+  echo "                 By default, will try to find the location by"
+  echo "                 looking in parent directories (up to the 5th parent)."
+  exit 1
+}
+
+#-- Settings:
+LOC_SH_FIND='find_optfile'
+LOGFILE="$LOC_SH_FIND.log"
+AWK=awk
+rm -f $LOC_SH_FIND $LOGFILE
+keep=0;
+
+#-- Set MITgcm root directory (ROOTDIR) from environment variable "MITGCM_ROOTDIR":
+if test "x$MITGCM_ROOTDIR" = x ; then
+  if test "x$ROOTDIR" != x ; then
+    echo "WARNING: Environment Variable 'ROOTDIR' no longer recognized"
+    echo "WARNING:  use instead 'MITGCM_ROOTDIR'" ; ROOTDIR=
+  fi
+else
+  ROOTDIR=$MITGCM_ROOTDIR
+fi
+
+#-- Parse_options
+yy=
+for xx in "$@" ; do
+
+  # If the previous option needs an argument, assign it.
+  if test -n "$yy"; then
+    eval "$yy=\$xx"
+    yy=
+    continue
+  fi
+
+  case $xx in
+      -help | -h )	usage ;;
+      -rootdir | -rd )	yy=ROOTDIR ;;
+      -keep | -k )	keep=1 ;;
+      *)		echo "Error: unrecognized argument: "$xx
+                        usage ;;
+   esac
+done
+
+#-- Find the MITgcm root directory (${ROOTDIR})
+if test "x${ROOTDIR}" = x ; then
+    tmp=`echo $PWD | sed -e 's/\// /g' | $AWK '{print $NR}'`
+    if test "x$tmp" = "xbin" -a -d ../model -a -d ../eesupp -a -d ../pkg ; then
+        ROOTDIR=".."
+    else
+        for d in . .. ../.. ../../.. ../../../.. ../../../../.. ; do
+            if [ -d "$d/model" -a -d "$d/eesupp" -a -d "$d/pkg" ]; then
+                ROOTDIR=$d
+                printf "Warning: MITgcm root directory was not specified ;"
+                echo " try using a local copy of MITgcm found at \"$ROOTDIR\""
+                break
+            fi
+        done
+    fi
+fi
+if test "x${ROOTDIR}" = x ; then
+    echo "Error: Cannot determine MITgcm root directory for MITgcm code."
+    echo "  Please specify a root directory using either the command line"
+    echo "   option '-rootdir' or the environment variable 'MITGCM_ROOTDIR'."
+    exit 1
+fi
+if test ! -d ${ROOTDIR} ; then
+    echo "Error: the specified MITgcm root directory (\"$ROOTDIR\") does not exist!"
+    exit 1
+fi
+
+#---------------------------------------
+#-- start to build script LOC_SH_FIND
+#   by taking function "find_possible_optfile" from script "genmake2":
+
+sed -n '1 p' $ROOTDIR/tools/genmake2 > $LOC_SH_FIND
+echo '' >> $LOC_SH_FIND
+sed -n \
+'/^find_possible_optfile()/,/^#---- keep this line unchanged after the end of find_possible_optfile/ p' \
+       $ROOTDIR/tools/genmake2 >> $LOC_SH_FIND
+echo '' >> $LOC_SH_FIND
+
+cat >> $LOC_SH_FIND <<EOF
+#-- Sequential part of script starts here ---------------
+ROOTDIR=\$1
+LOGFILE=\$2
+
+find_possible_optfile
+
+#echo "  The default optfile is:  "\$PLATFORM"_"\$FC
+
+EOF
+
+chmod 744 $LOC_SH_FIND
+echo "-- running: './$LOC_SH_FIND $ROOTDIR $LOGFILE' :"
+./$LOC_SH_FIND $ROOTDIR $LOGFILE
+
+if test $keep = 0 ; then
+  rm -r $LOC_SH_FIND $LOGFILE
+fi
+exit 0

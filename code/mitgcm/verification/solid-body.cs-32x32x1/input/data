@@ -1,0 +1,71 @@
+# ====================
+# | Model parameters |
+# ====================
+#
+# Continuous equation parameters
+ &PARM01
+ tRef=300.,
+ sRef=0.,
+ viscAr=0.,
+ viscAh=0.,
+ viscA4=0.,
+ no_slip_sides=.FALSE.,
+ no_slip_bottom=.FALSE.,
+ diffKrS=0.,
+ diffKhS=0.,
+ diffK4S=0.,
+ buoyancyRelation='ATMOSPHERIC',
+ eosType='IDEALG',
+ rotationPeriod=108000.,
+ gravity=9.81,
+ rhoConst=1.0,
+ rigidLid=.FALSE.,
+ implicitFreeSurface=.TRUE.,
+ vectorInvariantMomentum=.TRUE.,
+ tempStepping=.FALSE.,
+ saltStepping=.TRUE.,
+#- I/O params:
+ readBinaryPrec=64,
+ writeBinaryPrec=64,
+#globalFiles=.TRUE.,
+ &
+
+# Elliptic solver parameters
+ &PARM02
+ cg2dMaxIters=600,
+ cg2dTargetResidual=1.E-12,
+ &
+
+# Time stepping parameters
+ &PARM03
+ nIter0=0,
+#nTimeSteps=1920,
+ abEps=0.1,
+ deltaT=450.,
+ cAdjFreq=0.,
+ pChkptFreq=0.,
+ chkptFreq=0.,
+#dumpFreq= 43200.,
+#monitorFreq=10800.,
+ nTimeSteps=25,
+ dumpFreq= 10800.,
+ monitorFreq=1.,
+ &
+
+# Gridding parameters
+ &PARM04
+ usingCurvilinearGrid=.TRUE.,
+#horizGridFile='grid_cs32',
+#horizGridFile='dxC1_dXYa',
+ radius_fromHorizGrid=6370.E3,
+ rSphere=5500.4E3,
+ delR=1.E5,
+ &
+
+# Input datasets
+ &PARM05
+#uVelInitFile=  'U_init.bin',
+#vVelInitFile=  'V_init.bin',
+#pSurfInitFile='Eta_ini.bin',
+ hydrogSaltFile='S_init.bin',
+ &
