@@ -66,6 +66,44 @@ jobs:
         with:
           python-version: '3.12'
       - run: python3 -m pip install --quiet --disable-pip-version-check numpy
+      # The freshness gate, and the only thing the packaging CLI contributes to
+      # the review phase. The evidence under comment/pipeline/ must match the
+      # contract files in the PR - the checks, the drivers, the Dockerfiles and
+      # task.toml - because a self-validation record describes a leaf that no
+      # longer exists the moment one of them is edited. sab.py status
+      # --ci-freshness compares the record's fingerprint against the files as
+      # they stand and costs no Docker: it reads the leaf and nothing else.
+      # A stale record means someone changed a rubric or a check after the last
+      # self-validation, by the author or by a reviewer, and the selfcheck has
+      # to be rerun on the consented host before this PR can merge.
+      #
+      # Only revision-5 leaves (tasks/<codebase>/<module>/) carry the record;
+      # legacy tasks/sa-NNNN/ packages have none and are skipped until migrated.
+      - name: self-validation freshness
+        run: |
+          set -euo pipefail
+          leaves="$(git diff --name-only "$BASE_REF" HEAD -- tasks \
+            | awk -F/ 'NF >= 3 { print $1 "/" $2 "/" $3 }' \
+            | sort -u)"
+          stale=0
+          for leaf in $leaves; do
+            if [ ! -d "$leaf" ]; then
+              continue
+            fi
+            if [ ! -f "$leaf/comment/pipeline/self-validation.json" ]; then
+              echo "skipping $leaf - no comment/pipeline/self-validation.json (legacy leaf)"
+              continue
+            fi
+            echo "checking $leaf"
+            if ! python3 skills/package-sciaccel-task/scripts/sab.py status --task "$leaf" --ci-freshness; then
+              echo "::error::$leaf - the self-validation record is stale or missing; rerun sab.py task selfcheck and push the refreshed comment/pipeline/ records"
+              stale=1
+            fi
+          done
+          exit "$stale"
+        env:
+          BASE_REF: ${{ github.event_name == 'pull_request' && 'origin/main' || 'HEAD^' }}
+
       - name: pass policies
         run: npm run check:validators
 
