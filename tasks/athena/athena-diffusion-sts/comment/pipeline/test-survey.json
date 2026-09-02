@@ -1,0 +1,255 @@
+{
+  "module": "athena-diffusion-sts",
+  "tests": [
+    {
+      "id": "diff-linwave3d",
+      "module": "athena-diffusion-sts",
+      "path": "tst/regression/scripts/tests/diffusion/linear_wave3d.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Decaying 3-D MHD linear wave under viscosity, resistivity and conduction together, explicit diffusion",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 64,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic; the history file the decay rate is fitted from compares pointwise, and the fitted rate is the upstream criterion as a backstop.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 63.7,
+        "athena_cpu_s": 49.5,
+        "launches": 2
+      },
+      "proposed_check": "diffusion-linwave3d",
+      "budget_note": "needs a shorter default (knob keeps the upstream setting)"
+    },
+    {
+      "id": "diff-linwave3d-sts",
+      "module": "athena-diffusion-sts",
+      "path": "tst/regression/scripts/tests/diffusion/linear_wave3d_sts.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Same decaying wave with RKL super-time-stepping for all three diffusion operators",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 90,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic STS stage schedule; history compares pointwise.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 90.0,
+        "athena_cpu_s": 75.7,
+        "launches": 2
+      },
+      "proposed_check": "diffusion-linwave3d-sts",
+      "budget_note": "needs a shorter default (knob keeps the upstream setting)"
+    },
+    {
+      "id": "diff-resistive",
+      "module": "athena-diffusion-sts",
+      "path": "tst/regression/scripts/tests/diffusion/resistive_diffusion.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Ohmic diffusion of a Gaussian magnetic field, explicit, L1 convergence",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 14,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic; final B profile compares pointwise; convergence order as backstop.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 14.4,
+        "athena_cpu_s": 0.3,
+        "launches": 2
+      },
+      "proposed_check": "resistive-diffusion",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "diff-resistive-sts",
+      "module": "athena-diffusion-sts",
+      "path": "tst/regression/scripts/tests/diffusion/resistive_diffusion_sts.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Ohmic diffusion with STS",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 14,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic; pointwise on the final field.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 14.2,
+        "athena_cpu_s": 0.1,
+        "launches": 4
+      },
+      "proposed_check": "resistive-diffusion-sts",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "diff-scalar",
+      "module": "athena-diffusion-sts",
+      "path": "tst/regression/scripts/tests/diffusion/scalar_diffusion.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Passive-scalar diffusion of a Gaussian, explicit",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 14,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic; pointwise on the scalar profile.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 14.1,
+        "athena_cpu_s": 0.2,
+        "launches": 2
+      },
+      "proposed_check": "scalar-diffusion",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "diff-scalar-sts",
+      "module": "athena-diffusion-sts",
+      "path": "tst/regression/scripts/tests/diffusion/scalar_diffusion_sts.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Passive-scalar diffusion with STS",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 14,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic; pointwise.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 14.0,
+        "athena_cpu_s": 0.0,
+        "launches": 4
+      },
+      "proposed_check": "scalar-diffusion-sts",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "diff-thermal",
+      "module": "athena-diffusion-sts",
+      "path": "tst/regression/scripts/tests/diffusion/thermal_attenuation.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Thermally conducting linear wave, explicit conduction; decay rate versus analytic",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 42,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic; history compares pointwise.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 42.3,
+        "athena_cpu_s": 28.4,
+        "launches": 2
+      },
+      "proposed_check": "thermal-attenuation",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "diff-thermal-sts",
+      "module": "athena-diffusion-sts",
+      "path": "tst/regression/scripts/tests/diffusion/thermal_attenuation_sts.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Thermal attenuation with STS",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 28,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic; pointwise.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 28.5,
+        "athena_cpu_s": 14.4,
+        "launches": 2
+      },
+      "proposed_check": "thermal-attenuation-sts",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "diff-viscous",
+      "module": "athena-diffusion-sts",
+      "path": "tst/regression/scripts/tests/diffusion/viscous_diffusion.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Viscous diffusion of a Gaussian velocity profile, explicit, L1 convergence",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 15,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic; pointwise on the velocity profile.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 14.8,
+        "athena_cpu_s": 0.2,
+        "launches": 2
+      },
+      "proposed_check": "viscous-diffusion",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "diff-viscous-sts",
+      "module": "athena-diffusion-sts",
+      "path": "tst/regression/scripts/tests/diffusion/viscous_diffusion_sts.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Viscous diffusion with STS",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 15,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic; pointwise.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 14.7,
+        "athena_cpu_s": 0.1,
+        "launches": 4
+      },
+      "proposed_check": "viscous-diffusion-sts",
+      "budget_note": "fits as is"
+    }
+  ]
+}
