@@ -19,7 +19,7 @@ author its equivalence criteria:
 
 **Reviewer checklist**, the review brief's reading order:
 
-- [ ] The summary table: one row per check with policy, tolerance, measured spread, floor, runtime, identity flag, THIN or custom flag.
+- [ ] The review presentation at the top: the six-line header and the table with one row per check (observable, tolerance, spread, margin, fault scale, floor, variant, default versus upstream, run and build seconds, identical). Start from the rows it flags: margin under 50 or over 10,000, chaotic, custom, identical, no fault scale.
 - [ ] The catalogue in `task.toml` against the rubrics: lint has checked the numbers match, the reviewer checks the sentences are true.
 - [ ] Each check's warrant: physical (which fault crosses the bound) and achievable (which measurement shows the floor), and the variant description.
 - [ ] `comment/README.md`: module boundary, tolerance story, blind spots.
