@@ -63,6 +63,14 @@ difference over every graded cell, `dt` and `time`:
 five orders below the 1e-10 bound and six to seven orders below the
 single-precision ceiling, so the calibration confirmed the bound rather than
 revising it; no policy, tolerance, window or variant changed after the run.
+A tighter 1e-12 bound was considered after the calibration run, since it
+would sit more evenly between the spread and the single-precision ceiling,
+and rejected by the owner on 2026-09-02: 1e-10 already rejects every real
+fault measured, and the extra headroom is deliberate, to leave room for the
+arithmetic of a genuinely different implementation on the target (another
+FFT summation order, double-single emulation on Metal, fused operations).
+PLUTO's rule of 1e-12 + 1e-8|ref| was not adopted because on these O(1)
+fields its relative term would admit a single-precision port.
 The nominal suite took 107 s on the x86_64 host (612 s in colima, where the
 1 GB frames of aw-256 cross a virtiofs mount), inside the 900 s budget; the
 per-check seconds include the in-container build of the program. The images
