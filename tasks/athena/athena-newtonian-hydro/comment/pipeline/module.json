@@ -1,0 +1,73 @@
+{
+  "module": {
+    "slug": "athena-newtonian-hydro",
+    "title": "Newtonian hydrodynamics: Riemann solvers, reconstruction, EOS, curvilinear coordinates, passive scalars",
+    "paths": [
+      "src/hydro/",
+      "src/hydro/rsolvers/hydro/",
+      "src/eos/",
+      "src/scalars/",
+      "src/coordinates/cylindrical.cpp",
+      "src/coordinates/spherical_polar.cpp",
+      "src/pgen/linear_wave.cpp",
+      "src/pgen/shock_tube.cpp",
+      "src/pgen/blast.cpp",
+      "src/pgen/quirk.cpp",
+      "src/pgen/mignone_advection.cpp"
+    ],
+    "entrypoints": [
+      "inputs/hydro/athinput.linear_wave{1,2,3}d",
+      "inputs/hydro/athinput.sod",
+      "inputs/hydro/athinput.blast_{cyl,sph}",
+      "inputs/hydro/athinput.quirk",
+      "inputs/hydro/athinput.mignone_{radial,meridional}"
+    ],
+    "expensive_path": "Per-cell reconstruction (PLM/PPM/fourth order) and Riemann solves (HLLE/HLLC/Roe/LLF) over every stage of the RK integrator; the 3-D linear-wave convergence series and general-EOS shock tubes spend essentially all time there.",
+    "rationale": "The fluid core every other module builds on; one task because reconstruction, Riemann solver, EOS closure and coordinate geometry are exercised together by the same wave and shock tests.",
+    "excluded": [
+      "MHD (field update and MHD Riemann solvers) -> athena-newtonian-mhd",
+      "SR/GR Riemann solvers and EOS -> relativity modules",
+      "diffusion source terms -> athena-diffusion-sts"
+    ],
+    "hazards": [
+      "eos_hdf5_table needs HDF5 (public package)",
+      "eos_mhd needs MHD; survey may assign it to the MHD module"
+    ]
+  },
+  "approval": {
+    "modules": [
+      "athena-newtonian-hydro",
+      "athena-newtonian-mhd",
+      "athena-diffusion-sts",
+      "athena-special-relativity",
+      "athena-general-relativity",
+      "athena-self-gravity-fft",
+      "athena-radiation-transport",
+      "athena-chemistry"
+    ],
+    "human_ref": "and i think you cutting looks perfect to me",
+    "at": "2026-09-02T04:30:12Z"
+  },
+  "shared_infrastructure": [
+    "src/main.cpp",
+    "src/athena.hpp",
+    "src/athena_arrays.hpp",
+    "src/defs.hpp.in",
+    "src/globals.*",
+    "src/mesh/",
+    "src/bvals/",
+    "src/task_list/",
+    "src/parameter_input.*",
+    "src/inputs/",
+    "src/outputs/",
+    "src/utils/",
+    "src/coordinates/coordinates.cpp",
+    "src/coordinates/cartesian.cpp",
+    "src/reconstruct/",
+    "configure.py",
+    "Makefile.in",
+    "tst/regression/run_tests.py",
+    "tst/regression/scripts/utils/",
+    "vis/python/athena_read.py"
+  ]
+}

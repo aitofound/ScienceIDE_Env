@@ -1,0 +1,65 @@
+{
+  "module": {
+    "slug": "athena-diffusion-sts",
+    "title": "Diffusion physics: viscosity, resistivity, thermal conduction, scalar diffusion, explicit and super-time-stepping",
+    "paths": [
+      "src/hydro/hydro_diffusion/",
+      "src/field/field_diffusion/",
+      "src/scalars/scalar_diffusion.cpp",
+      "src/task_list/sts_task_list.cpp",
+      "src/pgen/visc.cpp",
+      "src/pgen/resist.cpp",
+      "src/pgen/scalar_diff.cpp"
+    ],
+    "entrypoints": [
+      "inputs/hydro/athinput.visc",
+      "inputs/mhd/athinput.resist",
+      "inputs/hydro/athinput.scalar_diff",
+      "inputs/hydro/athinput.linear_wave3d (with nu, kappa, eta)"
+    ],
+    "expensive_path": "Parabolic flux evaluation for every diffusion operator each stage, and the RKL super-time-stepping loop that multiplies the number of parabolic sub-stages per hydro step.",
+    "rationale": "Parabolic terms are a separate numerical problem (stencil, stability limit, STS scheduling) from the hyperbolic core, and upstream keeps a dedicated 10-test category for them.",
+    "excluded": [
+      "Gravity, radiation and chemistry source terms live in their own modules"
+    ],
+    "hazards": [
+      "Decay-rate tests fit a rate from a time series; pass policy will likely be a rate window rather than pointwise"
+    ]
+  },
+  "approval": {
+    "modules": [
+      "athena-newtonian-hydro",
+      "athena-newtonian-mhd",
+      "athena-diffusion-sts",
+      "athena-special-relativity",
+      "athena-general-relativity",
+      "athena-self-gravity-fft",
+      "athena-radiation-transport",
+      "athena-chemistry"
+    ],
+    "human_ref": "and i think you cutting looks perfect to me",
+    "at": "2026-09-02T04:30:12Z"
+  },
+  "shared_infrastructure": [
+    "src/main.cpp",
+    "src/athena.hpp",
+    "src/athena_arrays.hpp",
+    "src/defs.hpp.in",
+    "src/globals.*",
+    "src/mesh/",
+    "src/bvals/",
+    "src/task_list/",
+    "src/parameter_input.*",
+    "src/inputs/",
+    "src/outputs/",
+    "src/utils/",
+    "src/coordinates/coordinates.cpp",
+    "src/coordinates/cartesian.cpp",
+    "src/reconstruct/",
+    "configure.py",
+    "Makefile.in",
+    "tst/regression/run_tests.py",
+    "tst/regression/scripts/utils/",
+    "vis/python/athena_read.py"
+  ]
+}
