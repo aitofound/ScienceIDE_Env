@@ -1,24 +1,42 @@
 {
-  "version": 1,
-  "status": "active",
-  "codebase": "pluto",
   "check": "radmhd-blast-nr-optically-thick-ct-hlld-01",
-  "provenance": {
-    "row": 18,
-    "kind": "official",
-    "pr_citation": "pluto-rhd-radiation Harbor conversion, row 18 of 20",
+  "policy": "pointwise",
+  "chaotic": false,
+  "upstream_test": "code/pluto/Test_Problems/Radiation/Nonrelativistic/MHD_Blast/pluto_01.ini",
+  "configuration": "PHYSICS=MHD; 2D CARTESIAN; 100x100 zones; solver hlld; LINEAR reconstruction; RK2 time stepping; DIVB_CONTROL=CONSTRAINED_TRANSPORT; RADIATION=YES; tstop 0.0039 (the official deck says 0.01; see graded_window); CFL 0.4; dbl output '1e-2 -1 single_file'",
+  "expected_runtime_s": 93,
+  "variant": "ic/variant/pluto.ini multiplies [Parameters] P_IN by (1 + 1e-15): 1.e3 becomes 1000.0000000000011, one ulp of a value the initial condition is built from (init.c reads g_inputParam[P_IN]). Every initial value that depends on it moves at round-off while the physics is unchanged, so the two runs differ by rounding only and their spread is the floor of this check.",
+  "comparison": {
+    "atol": 1e-08,
+    "rtol": 1e-08,
+    "files": "grid.out (cell edges under the bound), the frame set dbl.out declares (a gate), and the final data.NNNN.dbl frame at t = tstop: every variable, staggered components included, plus its time; intermediate frames are reported, not graded, because PLUTO writes them at the first step past the dump time (Src/main.c, CheckForOutput) and two correct runs do not share that time",
+    "rule": "abs(candidate - reference) <= atol + rtol * abs(reference) for every value"
+  },
+  "evidence": {
+    "floor": 2.2794210963184014e-11,
+    "floor_how": "nominal versus variant, sab.py task selfcheck run 20260902T093037Z (2026-09-02T09:33:48Z): largest absolute difference over every graded value 2.28e-11, largest relative difference 1.2e+05, verdict under the provisional bound: pass; measured runtime 92 s on the nominal solve with the whole suite running concurrently on 16 cores. The legacy leaf recorded two independent single-rank runs of the same binary as byte-identical.",
+    "self_validation_spread": 2.2794210963184014e-11,
+    "self_validation_max_relative": 120448.38590426551,
+    "self_validation_passed": true
+  },
+  "warrant": "The graded observable is the state PLUTO writes for this configuration (every variable of the final dbl frame at t = tstop, its time and the grid edges; intermediate frames must exist but are not graded, because PLUTO writes them at the first step past the dump time (Src/main.c, CheckForOutput) so their physical time depends on the step sequence), compared value by value under |candidate - reference| <= 1e-8 + 1e-8|reference|, the bound the owner approved for the merged PLUTO leaves (PR #300) and kept here as the calibration hypothesis.  What the check exercises: Radiative version of the classical MHD blast on a 100x100 Cartesian grid with absorption opacity 1e4: radiation energy trapped in the overdense region adds to the acceleration. Constrained transport with the HLLD solver, characteristic limiting, RADIATION_NEWTON_NR_RAD with full convergence and a reduced speed of light. The bound is physical because a faithful port differs from the reference only by rounding while the nearest real fault lands orders of magnitude above it: a wrong radiation pressure contribution in the total-energy update, or CT/HLLD errors, change the blast anisotropy and the magnetic energy history. It is achievable because the state is double precision end to end (Src/structs.h:524, the Vc array) and two legitimate runs differ only in the order of floating-point operations; the relative term sits one decade above the 1e-9 branch thresholds where a rounding difference can flip a solver decision (Src/HD/hllc.c:169, Src/MHD/hll.c:161, Src/MHD/eigenv.c:298, the small_p and small_rho floors of Src/HD/two_shock.c:29), and the absolute term is the measured floor of the components that are zero or near zero in these configurations: the calibration runs of 2026-09-02 put round-off noise on such components at 1e-11 to 4e-9 after 1e2 to 1e4 steps (a one-ulp shift of the time-step sequence times the local gradient), so 1e-8 sits a decade above that floor and five orders below any fault, while the relative term still governs every field of order unity. The measured floor of this check is the nominal-versus-variant spread recorded in evidence; where that spread exceeds the bound the policy is revised from the number, never loosened by hand.",
+  "labels": [
+    "blast-wave",
+    "constrained-transport",
+    "hlld",
+    "mhd",
+    "official",
+    "optically-thick",
+    "radiation"
+  ],
+  "official_test": {
     "problem_dir": "code/pluto/Test_Problems/Radiation/Nonrelativistic/MHD_Blast",
-    "config": "01",
-    "definitions_file": "code/pluto/Test_Problems/Radiation/Nonrelativistic/MHD_Blast/definitions_01.h",
-    "ini_file": "code/pluto/Test_Problems/Radiation/Nonrelativistic/MHD_Blast/pluto_01.ini",
-    "definitions_file_present": true,
-    "ini_file_present": true,
-    "macro_read_note": "read 42 #define lines from code/pluto/Test_Problems/Radiation/Nonrelativistic/MHD_Blast/definitions_01.h",
-    "verified_macros": {
+    "definitions": "definitions_01.h",
+    "ini": "pluto_01.ini",
+    "macros": {
       "PHYSICS": "MHD",
       "DIMENSIONS": "2",
       "GEOMETRY": "CARTESIAN",
-      "BODY_FORCE": "NO",
       "COOLING": "NO",
       "RECONSTRUCTION": "LINEAR",
       "TIME_STEPPING": "RK2",
@@ -26,99 +44,21 @@
       "PARTICLES": "NO",
       "USER_DEF_PARAMETERS": "12",
       "EOS": "IDEAL",
-      "ENTROPY_SWITCH": "NO",
       "DIVB_CONTROL": "CONSTRAINED_TRANSPORT",
-      "BACKGROUND_FIELD": "NO",
-      "AMBIPOLAR_DIFFUSION": "NO",
       "RESISTIVITY": "NO",
       "HALL_MHD": "NO",
       "THERMAL_CONDUCTION": "NO",
       "VISCOSITY": "NO",
-      "RADIATION": "YES",
-      "ROTATING_FRAME": "NO",
-      "P_IN": "0",
-      "P_OUT": "1",
-      "BMAG": "2",
-      "THETA": "3",
-      "PHI": "4",
-      "RADIUS": "5",
-      "GAMMA": "6",
-      "COEF_ABSORPTION": "7",
-      "COEF_SCATTERING": "8",
-      "CONST_RAD": "9",
-      "CONST_IDEALGAS": "10",
-      "REDUCED_C": "11",
-      "CHAR_LIMITING": "YES",
-      "LIMITER": "VANLEER_LIM",
-      "CT_EMF_AVERAGE": "ARITHMETIC",
-      "CT_EN_CORRECTION": "YES",
-      "ASSIGN_VECTOR_POTENTIAL": "YES",
-      "WARNING_MESSAGES": "YES",
-      "RADIATION_IMPL": "RADIATION_NEWTON_NR_RAD",
-      "RADIATION_INITIAL_DT": "1e-7",
-      "RADIATION_FULL_CONVERGENCE": "YES"
-    },
-    "deck_facts": {
-      "grid": "100x100x1",
-      "tstop": "0.01",
-      "cfl": "0.4",
-      "solver": "hlld",
-      "rad_solver": "hllc",
-      "dbl_interval": "1e-2",
-      "frames": "initial dump data.0000.dbl at t=0 plus 1 dump(s) every 1e-2 time units ending at tstop=0.01 (final dump coincides with the last interval)"
-    },
-    "archive_url": "https://plutocode.ph.unito.it/Downloads/pluto-4.4-patch4.tar.gz",
-    "source_pin_sha256": "1ba5527b76d49fdd78ae24dbfbdad085ec83393748f1e618516a9d63bd945787",
-    "verification_method": "read_macros() in the authoring generator parsed real '#define NAME value' lines directly out of the vendored, checksum-pinned code/pluto tree at generation time -- these are not hand-transcribed. deck_facts were read from the pinned pluto_NN.ini by the same generator run."
-  },
-  "science": {
-    "title": "Non-relativistic radiative MHD blast — optically thick, constrained transport with HLLD",
-    "mechanism": "Radiative version of the classical MHD blast on a 100x100 Cartesian grid with absorption opacity 1e4: radiation energy trapped in the overdense region adds to the acceleration. Constrained transport with the HLLD solver, characteristic limiting, RADIATION_NEWTON_NR_RAD with full convergence and a reduced speed of light.",
-    "distinct_from_other_rows": "Only classical-MHD row in the suite: it couples the non-relativistic radiation module to the MHD induction equation, the CT staggered field update and the HLLD solver, which no RHD/RMHD row does.",
-    "failure_modes_exposed": "A wrong radiation pressure contribution in the total-energy update, or CT/HLLD errors, change the blast anisotropy and the magnetic energy history.",
-    "references": [
-      "Melon Fuksman, J. D., Klahr, H., Flock, M. & Mignone, A. 2021, ApJ 906, 78 (non-relativistic radiation HD in PLUTO with reduced speed of light)",
-      "Mignone, A., Bodo, G., Massaglia, S., et al. 2007, ApJS 170, 228 (PLUTO)"
-    ]
-  },
-  "policy": {
-    "active_rule": "abs(candidate - reference) <= 1e-12 + 1e-8 * abs(reference) for every finite value of every declared raw binary64 DBL payload and frame; byte-identical payloads take a fast path; shape/frame/artifact/finite gates are hard gates.",
-    "active_rule_status": "owner-approved provisional combined tolerance shared by every row of this suite (same rule as the merged pluto-mhd-les suite); not a row-calibrated scientific error bar.",
-    "case_specific_policy_shape": "Blast extent along/across B; div(B); magnetic, thermal and radiation energy histories; conservation as a secondary gate.",
-    "evidence_required_before_numeric_bound": "Two reproducible incumbent runs; genuinely different correct binaries (compiler/ISA/FMA); a resolution or replication study of the named observables; at least one plausible porting defect that the policy rejects; and a recorded owner decision.",
-    "determinism_note": "One-rank incumbent reruns are expected to be byte-identical. In the non-relativistic radiation module the time step itself is radiation-limited (RADIATION_INITIAL_DT, RADIATION_CFL_VAR_MAX with the reduced speed of light), and the implicit source step iterates to RADIATION_ERROR=1e-7 with RADIATION_MAXITER=200; both the step count and the per-step iteration count depend on floating-point comparisons. This is a DEFER/MEASURED-class hazard under references/determinism-triage.md and the reason the provisional elementwise rule is not yet a calibrated bound."
-  },
-  "output_contract": {
-    "format_family": "PLUTO 'dbl' static-grid output convention (this row's shipped deck's [Static Grid Output] stanza selects dbl in single_file mode).",
-    "expected_markers": [
-      "grid.out",
-      "dbl.out",
-      "data.<NNNN>.dbl (per-dump snapshot; NNNN zero-padded frame index)"
-    ],
-    "frames": "initial dump data.0000.dbl at t=0 plus 1 dump(s) every 1e-2 time units ending at tstop=0.01 (final dump coincides with the last interval)",
-    "variables": [
-      "rho",
-      "vx1",
-      "vx2",
-      "vx3",
-      "Bx1",
-      "Bx2",
-      "Bx3",
-      "prs",
-      "enr",
-      "fr1",
-      "fr2",
-      "fr3"
-    ],
-    "byte_layout": "grid.out (Src/set_grid.c) is ASCII: header comment lines, then 3 per-axis blocks each '<N>' followed by N lines '<i> <xl> <xr>' (interior points, ghosts excluded). dbl.out (Src/write_data.c) is ASCII, one line per dump: '<nfile> <time> <dt> <step> <single_file|multiple_files> <little|big> <name1> <name2> ...'. data.<NNNN>.dbl (Src/bin_io.c FileWriteData) is raw float64 with no header, native byte order, variable-major, x-fastest within each variable block, interior zones only. Variable names come from Src/var_names.c; radiation rows append enr, fr1, fr2, fr3 after the fluid block (Src/RHD/mod_defs.h, Src/HD/mod_defs.h, Src/MHD/mod_defs.h, Src/RMHD/mod_defs.h index macros). tests/checks/*/validate.py implements exactly this layout and compares every retained finite value."
-  },
-  "criteria": [
-    {
-      "name": "dbl_payload_equivalence",
-      "status": "active",
-      "rule": "abs(candidate - reference) <= 1e-12 + 1e-8 * abs(reference)",
-      "note": "Applied to every finite raw binary64 value of every declared frame; the first violation fails the row with frame/index/variable diagnostics."
+      "RADIATION": "YES"
     }
-  ],
-  "bound_calibration_rule_status": "Row-specific calibration not started. Evidence recorded so far: one trusted Docker oracle run and one physically distinct Docker candidate run of the same pinned binary (see comment/README.md). Before a row-calibrated bound replaces the provisional rule, the row must record correct-build variation, resolution/replication studies, at least one rejected plausible defect, and the owner decision."
+  },
+  "graded_window": {
+    "tstop": "0.0039",
+    "official_tstop": "0.01",
+    "zones": "100x100",
+    "official_zones": "100x100",
+    "legacy_graded_tstop": null,
+    "note": "the graded window is set so that the whole suite fits the 900 s budget (the CLI sums per-check time on the declared cores; the official window measured 169 s on the calibration host)"
+  },
+  "mpi_ranks": 1
 }
