@@ -1,0 +1,171 @@
+#include "ECCO_OPTIONS.h"
+#ifdef ALLOW_CTRL
+# include "CTRL_OPTIONS.h"
+#endif
+
+      SUBROUTINE ECCO_COST_FINAL( ifc, optimcycle, myThid )
+
+c     ==================================================================
+c     SUBROUTINE cost_final
+c     ==================================================================
+c
+c     o Sum of all cost function contributions.
+c
+c     ==================================================================
+c     SUBROUTINE cost_final
+c     ==================================================================
+
+      IMPLICIT NONE
+
+c     == global variables ==
+
+#include "EEPARAMS.h"
+#include "SIZE.h"
+#include "PARAMS.h"
+
+#ifdef ALLOW_COST
+# include "cost.h"
+#endif
+#ifdef ALLOW_ECCO
+# include "ECCO_SIZE.h"
+# include "ECCO.h"
+#endif
+
+c     == routine arguments ==
+
+C     ifc        :: file unit for costfunction_ecco.XXXX
+C     optimcycle :: cycle number of the off-line optimization (same as eccoiter)
+C     myThid     :: my Thread Id number
+      INTEGER ifc
+      INTEGER optimcycle
+      INTEGER myThid
+
+#ifdef ALLOW_COST
+C     === Functions ====
+      INTEGER  ILNBLNK
+      EXTERNAL ILNBLNK
+
+c     == local variables ==
+
+      INTEGER bi,bj
+      INTEGER num_var
+
+#ifdef ECCO_VERBOSE
+      _RL locfc
+#endif
+#ifdef ALLOW_GENCOST_CONTRIBUTION
+      _RL f_gencost(NGENCOST)
+      _RL no_gencost(NGENCOST)
+#endif
+      INTEGER IL
+      CHARACTER*23 cfname
+      CHARACTER*(MAX_LEN_MBUF) msgBuf
+
+c     == end of interface ==
+
+#ifdef ALLOW_GENCOST_CONTRIBUTION
+      DO num_var=1,NGENCOST
+       f_gencost(num_var) = 0. _d 0
+       no_gencost(num_var)= 0. _d 0
+      ENDDO
+
+c--   Sum up all contributions.
+      DO bj = myByLo(myThid), myByHi(myThid)
+       DO bi = myBxLo(myThid), myBxHi(myThid)
+
+        DO num_var=1,NGENCOST
+         tile_fc(bi,bj) = tile_fc(bi,bj)
+     &            + mult_gencost(num_var)
+     &            *objf_gencost(bi,bj,num_var)
+         f_gencost(num_var)=f_gencost(num_var)
+     &            +objf_gencost(bi,bj,num_var)
+         no_gencost(num_var)=no_gencost(num_var)
+     &            +num_gencost(bi,bj,num_var)
+        ENDDO
+
+C-   end bi,bj loops
+       ENDDO
+      ENDDO
+
+c--   Do global summation for each part of the cost function
+      DO num_var=1,NGENCOST
+       _GLOBAL_SUM_RL(f_gencost(num_var), myThid )
+       _GLOBAL_SUM_RL(no_gencost(num_var), myThid )
+      ENDDO
+
+C     start printing to STDOUT
+      DO num_var=1,NGENCOST
+       IF (no_gencost(num_var).GT.0) THEN
+        IL  = ILNBLNK( gencost_name(num_var) )
+        WRITE(msgBuf,'(A,1PE22.14,I3,1X,1PE9.2,3A)')
+     &     ' --> f_gencost  =', f_gencost(num_var), num_var,
+     &     mult_gencost(num_var),
+     &     ' (', gencost_name(num_var)(1:IL), ')'
+        CALL PRINT_MESSAGE( msgBuf, standardMessageUnit,
+     &                      SQUEEZE_RIGHT, myThid )
+       ENDIF
+      ENDDO
+#endif
+
+C     only master thread of master CPU open and write to file with file unit > 0
+      IF ( ifc .NE. -1 ) THEN
+
+C     For consistency we use variable optimcycle rather than eccoiter,
+C     but they have the same value.
+C       WRITE(cfname,'(A,i4.4)') 'costfunction_ecco.',eccoiter
+        WRITE(cfname,'(A,i4.4)') 'costfunction_ecco.',optimcycle
+        WRITE(msgBuf,'(A,A)')
+     &           'Writing ecco cost function info to ', cfname
+        CALL PRINT_MESSAGE( msgBuf, standardMessageUnit,
+     &                     SQUEEZE_RIGHT, myThid )
+        OPEN(unit=ifc,file=cfname)
+
+#ifdef ALLOW_GENCOST_CONTRIBUTION
+        DO num_var=1,NGENCOST
+         IF (no_gencost(num_var).GT.0) THEN
+          IL  = ILNBLNK( gencost_name(num_var) )
+          IL  = max (IL,15)
+          WRITE(ifc,'(2A,I3.0,A,1PE22.14,1PE22.14,1X,1PE9.2)')
+     &    gencost_name(num_var)(1:IL),' (gencost ', num_var, ') = ',
+     &    f_gencost(num_var),
+     &    no_gencost(num_var), mult_gencost(num_var)
+         ENDIF
+        ENDDO
+#endif
+
+        CLOSE(ifc)
+
+      ELSE
+        WRITE(msgBuf,'(A)') ' skip writing to costfunction_ecco.XXXX'
+        CALL PRINT_MESSAGE( msgBuf, standardMessageUnit,
+     &                      SQUEEZE_RIGHT, myThid )
+
+C     ifc .ne. -1
+      ENDIF
+
+#ifdef ECCO_VERBOSE
+c local copy used in print statements, for
+c which we always want to do the global sum.
+      locfc = 0. _d 0
+      CALL GLOBAL_SUM_TILE_RL( tile_fc, locfc, myThid )
+
+      WRITE(msgBuf,'(a,1PE22.14)')
+     &  ' cost_Final: ecco cost function = ',locfc
+      CALL PRINT_MESSAGE( msgBuf, standardMessageUnit,
+     &                    SQUEEZE_RIGHT, myThid )
+      WRITE(msgBuf,'(a)') ' '
+      CALL PRINT_MESSAGE( msgBuf, standardMessageUnit,
+     &                    SQUEEZE_RIGHT, myThid )
+      WRITE(msgBuf,'(a)')
+     &  '             cost function evaluation finished.'
+      CALL PRINT_MESSAGE( msgBuf, standardMessageUnit,
+     &                    SQUEEZE_RIGHT, myThid )
+      WRITE(msgBuf,'(a)') ' '
+      CALL PRINT_MESSAGE( msgBuf, standardMessageUnit,
+     &                    SQUEEZE_RIGHT, myThid )
+#endif
+
+#endif /*  ALLOW_COST */
+
+      RETURN
+      END
