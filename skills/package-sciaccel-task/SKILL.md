@@ -178,6 +178,6 @@ leaf boundary, the declared shared source, direct check directories with
 their `check.json` labels, and flat strict-JSON targets. It does not read
 science. The freshness gate (`status --ci-freshness`, run by CI on every
 changed leaf that carries a self-validation record) fails when that record
-does not match the contract files in the tree. Existing leaves that predate
-this revision keep their own drivers; `lint --allow-custom-drivers`
+does not match the contract files in the tree. Leaves that predate
+this form keep their own drivers; `lint --allow-custom-drivers`
 downgrades interface differences to warnings.
