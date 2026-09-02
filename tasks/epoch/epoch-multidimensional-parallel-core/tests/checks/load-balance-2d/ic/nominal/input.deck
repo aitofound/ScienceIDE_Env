@@ -1,0 +1,88 @@
+begin:control
+  nx = 64
+  ny = nx
+  nprocx = 4
+  nprocy = 1
+
+  # Final time of simulation
+  t_end = 2.5e-2
+
+  # Size of domain
+  x_min = 0
+  x_max =  2.5e5
+  y_min = -2.5e5
+  y_max =  2.5e5
+
+  # Dynamic load balancing: balance_workload is attempted every step and
+  # redistributes whenever the balance fraction falls below the threshold.
+  dlb_threshold = 0.95
+  dlb_maximum_interval = 8
+
+  use_random_seed = F
+  stdout_frequency = 1000000
+end:control
+
+
+begin:boundaries
+  bc_x_min = periodic
+  bc_x_max = periodic
+  bc_y_min = periodic
+  bc_y_max = periodic
+end:boundaries
+
+
+begin:constant
+  drift_p = 2.5e-24
+  temperature = 273
+  dens = 1
+  nppc = 8
+end:constant
+
+
+begin:injector
+  boundary = x_min
+  species = Beam
+  number_density = dens
+  temperature = temperature
+  drift_px = drift_p
+  nparticles_per_cell = nppc
+end:injector
+
+
+begin:species
+  # Background electrons
+  name = Background
+  charge = -1
+  mass = 1.0
+  temperature = temperature
+  drift_px = -drift_p / 1000
+  number_density = dens * 1000
+  nparticles = nppc * nx * ny
+end:species
+
+
+begin:species
+  # Beam, created by the injector on the x_min boundary
+  name = Beam
+  charge = -1
+  mass = 1.0
+  bc_x_min = simple_outflow
+  bc_x_max = simple_outflow
+end:species
+
+
+begin:output
+  name = normal
+
+  # Simulated time between output dumps
+  dt_snapshot = 0.5e-2
+  dump_last = T
+
+  # Properties on grid
+  grid = always
+  ex = always
+  jx = always
+  charge_density = always
+  number_density = always + species
+  ppc = always + species
+end:output
