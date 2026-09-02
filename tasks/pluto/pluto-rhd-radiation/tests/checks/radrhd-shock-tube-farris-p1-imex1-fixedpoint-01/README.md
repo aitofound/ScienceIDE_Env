@@ -1,59 +1,19 @@
-# Radiative RHD shock tube (Farris et al. Problem 1) — IMEX1 with fixed-point radiation implicit step
+# radrhd-shock-tube-farris-p1-imex1-fixedpoint-01
 
-**Check ID:** `radrhd-shock-tube-farris-p1-imex1-fixedpoint-01`
+Upstream test: `code/pluto/Test_Problems/Radiation/Relativistic/RHD_Shock_Tube/pluto_01.ini`. Policy: `pointwise`.
 
-**Suite row:** 8 of 20
+## The test
 
-## Official case
+Radiative RHD shock tube (Farris et al. Problem 1) - IMEX1 with fixed-point radiation implicit step. Non-relativistic strong shock in a cold gas coupled to an M1-closure radiation field (Farris et al. 2008 Problem 1; Melon Fuksman & Mignone 2019), evolved with the default IMEX1 scheme and the default RADIATION_FIXEDPOINT_RAD implicit solver on a two-equation (RADIATION_NEQS=2) reduced system, HLL for both the gas and the radiation fluxes. `run.sh <ic>` builds the official problem directory `code/pluto/Test_Problems/Radiation/Relativistic/RHD_Shock_Tube` from the source tree (init.c and everything else the problem ships) with the configuration pair `definitions_01.h` / `pluto_01.ini` copied into `ic/`, runs it from a scratch directory and copies the graded files to `OUT_DIR`: grid.out, dbl.out and every data.NNNN.dbl frame the deck writes (the initial frame, the periodic dumps and the final frame at tstop); the final frame is the graded one. Configuration: PHYSICS=RHD; 1D CARTESIAN; 800 zones; solver hll; LINEAR reconstruction; RK2 time stepping; RADIATION=YES; tstop 15.0; CFL 0.25; dbl output '16. -1 single_file'. Runtime knobs: `SAB_TSTOP` (the deck's [Time] tstop; the default is the graded window), `SAB_GRID_SCALE` (multiplies every axis's zone count; 1 is the graded deck) and `SAB_MAXSTEPS` (a step cap for smoke runs; -1, the default, runs to tstop); `run.sh --help` lists them. Measured runtime about 10 s on one core.
 
-This row is an official PLUTO 4.4-patch4 case; nothing under `code/pluto` is modified.
+## The two initial conditions
 
-- **Official PLUTO problem directory:** `code/pluto/Test_Problems/Radiation/Relativistic/RHD_Shock_Tube`
-- **Configuration:** config **01**, using `definitions_01.h` and `pluto_01.ini` in that directory.
-- **Labels from `check.json`:** `fixed-point-rad`, `imex1`, `official`, `radiation`, `rhd`, `shock-tube`
-- **Deck facts (read from the pinned `pluto_01.ini`):** grid `800x1x1`, `tstop=15.0`, `CFL=0.25`, Riemann solver `hll`, radiation solver `hll`; frames written: initial dump data.0000.dbl at t=0, 0 interval dump(s) every 16. time units, and the final dump at tstop=15.0 (PLUTO always writes the last step).
-- **Verified key macros from `rubric.json`:** `PHYSICS=RHD`; `DIMENSIONS=1`; `EOS=IDEAL`; `RADIATION=YES`; `RADIATION_NEQS=2`; `SHOCK_FLATTENING=YES`; `RECONSTRUCTION=LINEAR`; `TIME_STEPPING=RK2`; `LIMITER=MC_LIM`
+`ic/nominal/` is the graded deck. ic/variant/pluto.ini multiplies [Parameters] RHOL by (1 + 1e-15): 1.0 becomes 1.000000000000001, one ulp of a value the initial condition is built from (init.c reads g_inputParam[RHOL]). Every initial value that depends on it moves at round-off while the physics is unchanged, so the two runs differ by rounding only and their spread is the floor of this check.
 
-The macro values above are the recorded source-closure facts for this row. The complete verified macro set and provenance are in [`rubric.json`](rubric.json); this README does not infer controls from the case name.
+## The pass policy
 
-## Physics and mechanism under test
+The graded observable is the state PLUTO writes for this configuration (every variable of the final dbl frame at t = tstop, its time and the grid edges; intermediate frames must exist but are not graded, because PLUTO writes them at the first step past the dump time (Src/main.c, CheckForOutput) so their physical time depends on the step sequence), compared value by value under |candidate - reference| <= 1e-8 + 1e-8|reference|, the bound the owner approved for the merged PLUTO leaves (PR #300) and kept here as the calibration hypothesis.  What the check exercises: Non-relativistic strong shock in a cold gas coupled to an M1-closure radiation field (Farris et al. 2008 Problem 1; Melon Fuksman & Mignone 2019), evolved with the default IMEX1 scheme and the default RADIATION_FIXEDPOINT_RAD implicit solver on a two-equation (RADIATION_NEQS=2) reduced system, HLL for both the gas and the radiation fluxes. The bound is physical because a faithful port differs from the reference only by rounding while the nearest real fault lands orders of magnitude above it: a missing radiation four-force coupling, a wrong M1 Eddington tensor (Src/Radiation/eddtensor.c) or a broken fixed-point iteration shifts the radiative precursor and the post-shock temperature at t = 15. It is achievable because the state is double precision end to end (Src/structs.h:524, the Vc array) and two legitimate runs differ only in the order of floating-point operations; the relative term sits one decade above the 1e-9 branch thresholds where a rounding difference can flip a solver decision (Src/HD/hllc.c:169, Src/MHD/hll.c:161, Src/MHD/eigenv.c:298, the small_p and small_rho floors of Src/HD/two_shock.c:29), and the absolute term is the measured floor of the components that are zero or near zero in these configurations: the calibration runs of 2026-09-02 put round-off noise on such components at 1e-11 to 4e-9 after 1e2 to 1e4 steps (a one-ulp shift of the time-step sequence times the local gradient), so 1e-8 sits a decade above that floor and five orders below any fault, while the relative term still governs every field of order unity. The measured floor of this check is the nominal-versus-variant spread recorded in evidence; where that spread exceeds the bound the policy is revised from the number, never loosened by hand.
 
-Non-relativistic strong shock in a cold gas coupled to an M1-closure radiation field (Farris et al. 2008 Problem 1; Melon Fuksman & Mignone 2019), evolved with the default IMEX1 scheme and the default RADIATION_FIXEDPOINT_RAD implicit solver on a two-equation (RADIATION_NEQS=2) reduced system, HLL for both the gas and the radiation fluxes.
+## Evidence
 
-**Why this row is distinct in the suite:** Baseline radiative-RHD row: default implicit method, default solver sizes, no diffusion limiting; the three other Farris rows change the physical regime and the implicit solver.
-
-**Failure modes a wrong port would expose here:** A missing radiation four-force coupling, a wrong M1 Eddington tensor (Src/Radiation/eddtensor.c) or a broken fixed-point iteration shifts the radiative precursor and the post-shock temperature at t = 15.
-
-## Current pass policy (active, provisional)
-
-The owner-approved **provisional combined tolerance** for this row is:
-
-> `abs(candidate - reference) <= ATOL + RTOL * abs(reference)`
->
-> with `RTOL = 1e-8` and `ATOL = 1e-12`.
-
-- Candidate/reference must pass all hard gates: valid, well-formed finite PLUTO `grid.out`, `dbl.out`, and every declared DBL dump; matching grid shape and dump/frame set; and the suite-level artifact/path protections in `tests/test.sh`.
-- Byte-identical parsed dump blobs take a fast path and return `passed=true`, `status=passed`.
-- For non-byte-identical output, every finite value retained in every parsed raw DBL payload is checked (rho, vx1, vx2, vx3, prs, enr, fr1, fr2, fr3 blocks, all frames). Payload lengths must match for every frame.
-- The first value outside tolerance fails the row with frame, flat index, variable identity, reference, candidate, absolute error and allowed limit.
-- This row contributes a binary 1 or 0 to suite reward; the full suite reward is `passed/20`.
-
-This is the same provisional rule the merged `pluto-mhd-les` suite uses. It is not a row-calibrated scientific error bar.
-
-## Determinism note
-
-One-rank incumbent reruns are expected to be byte-identical. The radiation implicit step (Src/Radiation/rad_step.c, newtonsolve.c) iterates to RADIATION_ERROR=1e-7 with RADIATION_MAXITER=200, so the number of operations depends on floating-point convergence tests: a correct port with different rounding can legitimately take a different iteration count. Together with the RHD primitive-recovery Newton loop this is a DEFER/MEASURED-class hazard under references/determinism-triage.md; the provisional elementwise rule is therefore provisional, and calibration must measure the correct-build band before any bound is called scientific.
-
-## Planned calibrated policy
-
-Observables this row should eventually be judged on: Shock position; gas temperature and radiation-energy profiles across the precursor; total (gas+radiation) energy conservation as a secondary gate.
-
-Evidence required before a numeric bound replaces the provisional rule: Two reproducible incumbent runs; genuinely different correct binaries (compiler/ISA/FMA); a resolution or replication study of the named observables; at least one plausible porting defect that the policy rejects; and a recorded owner decision.
-
-## Implementation pointers
-
-- [`validate.py`](validate.py) parses grid/index and declared dumps, validates shape/frame/finite data, and applies the byte-identity fast path and provisional tolerance.
-- [`rubric.json`](rubric.json) is the source for the official case, verified macros, deck facts and planned calibrated policy.
-- [`check.json`](check.json) records this row's labels.
-- [`run.sh`](run.sh) runs this check's configured case through [`../../run-row.sh`](../../run-row.sh).
-- [`../../test.sh`](../../test.sh) is the shared 20-row suite entrance.
+The legacy leaf's two independent single-rank Docker runs of the pinned binary reproduced this configuration byte for byte, so the same-binary floor is zero. Calibration run 20260902T093037Z (2026-09-02), nominal versus variant with `sab.py task selfcheck`: largest absolute difference over every graded value 1.53e-10, largest relative difference 7.85e-08; the pair passes the provisional bound. Measured runtime 10 s (nominal solve, suite running concurrently on 16 cores). The human finalizes the tolerance from these numbers; the per-check table is in `comment/README.md`.
