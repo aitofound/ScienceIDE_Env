@@ -258,6 +258,22 @@ def stamp(src: Path, dst: Path, tokens: dict[str, str], force: bool) -> bool:
     return True
 
 
+# Cataloguing keys of task.toml that say what a task is about, not what it
+# grades: they are dropped from the contract bytes so retagging a leaf does
+# not stale its self-validation record. A file without the key hashes to the
+# same bytes as before, so every record written before the key existed stays
+# fresh.
+CATALOGUE_KEYS = ("arxiv",)
+_CATALOGUE_LINE = re.compile(rb"^(?:" + b"|".join(k.encode() for k in CATALOGUE_KEYS) + rb")\s*=.*\n?", re.M)
+
+
+def contract_bytes(p: Path, leaf: Path) -> bytes:
+    body = p.read_bytes()
+    if p == leaf / "task.toml":
+        body = _CATALOGUE_LINE.sub(b"", body)
+    return body
+
+
 def contract_fingerprint(leaf: Path) -> str:
     h = hashlib.sha256()
     files: list[Path] = [leaf / "task.toml", leaf / "instruction.md"]
@@ -266,7 +282,7 @@ def contract_fingerprint(leaf: Path) -> str:
     for p in sorted(files):
         if p.is_file():
             h.update(str(p.relative_to(leaf)).encode())
-            h.update(p.read_bytes())
+            h.update(contract_bytes(p, leaf))
     return h.hexdigest()
 
 
