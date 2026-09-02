@@ -82,7 +82,7 @@ jobs:
       - name: self-validation freshness
         run: |
           set -euo pipefail
-          leaves="$(git diff --name-only "$BASE_REF"...HEAD -- tasks \
+          leaves="$(git diff --name-only "$BASE_REF" HEAD -- tasks \
             | awk -F/ 'NF >= 3 { print $1 "/" $2 "/" $3 }' \
             | sort -u)"
           stale=0
