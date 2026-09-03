@@ -1,0 +1,77 @@
+{
+  "module": "vlasov-maxwell-dg",
+  "tests": [
+    {
+      "id": "vlasov-landau-damping",
+      "module": "vlasov-maxwell-dg",
+      "path": "vlasov/creg/rt_vlasov_landau_damping_1x1v_p2.c",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "P2 discontinuous-Galerkin Vlasov-Poisson evolution, field solve, moments and LBO collisions for one-dimensional Landau damping.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 2.684,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "This upstream Vlasov MOAT case probes phase mixing, the electrostatic field solve and collision operator with a standard small perturbation. Its serial short-time evolution is deterministic and suitable for pointwise comparison of fields, moments and distribution data.",
+      "proposed_check": "vlasov-landau-damping"
+    },
+    {
+      "id": "vlasov-two-stream",
+      "module": "vlasov-maxwell-dg",
+      "path": "vlasov/creg/rt_vlasov_twostream_p2.c",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "P2 Vlasov-Poisson two-stream instability with counter-drifting electron populations and self-consistent electrostatic fields.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 13.759,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "This upstream MOAT problem forces nonlinear kinetic instability growth through the collisionless DG and field paths. The perturbation is fixed and the serial first evolution is deterministic, so a calibrated short-window pointwise policy is appropriate.",
+      "proposed_check": "vlasov-two-stream"
+    },
+    {
+      "id": "vlasov-electrostatic-shock",
+      "module": "vlasov-maxwell-dg",
+      "path": "vlasov/creg/rt_vlasov_es_shock.c",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Electron-ion Vlasov-Poisson electrostatic shock with separate species velocity scales and self-consistent potential.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 7.439,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "This upstream MOAT test broadens coverage to two kinetic species, disparate masses and shock formation. It has fixed initial distributions and deterministic serial evolution, supporting pointwise comparison.",
+      "proposed_check": "vlasov-electrostatic-shock"
+    },
+    {
+      "id": "vlasov-bgk-relaxation",
+      "module": "vlasov-maxwell-dg",
+      "path": "vlasov/creg/rt_vlasov_bgk_relax_1x1v_p2.c",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "P2 Vlasov BGK relaxation of a non-Maxwellian top-hat-plus-bump distribution, including collision moments and Maxwellian reconstruction.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 5.237,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "This upstream MOAT case isolates a production collision path not covered by collisionless instability tests. Its deterministic relaxation and diagnostic histories are suitable for pointwise comparison.",
+      "proposed_check": "vlasov-bgk-relaxation"
+    }
+  ]
+}
