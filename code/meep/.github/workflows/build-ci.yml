@@ -1,0 +1,221 @@
+name: run tests
+
+on:
+  pull_request:
+  push:
+  schedule:
+    - cron: 0 2 * * * # run at 2 AM UTC
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: "${{ matrix.name }}"
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "serial double-precision"
+            python-version: '3.11'
+            enable-mpi: false
+            enable-single: false
+            use-distcheck: true
+          - name: "MPI double-precision"
+            python-version: '3.11'
+            enable-mpi: true
+            enable-single: false
+            use-distcheck: false
+          - name: "MPI single-precision"
+            python-version: '3.11'
+            enable-mpi: true
+            enable-single: true
+            use-distcheck: false
+
+    steps:
+    - name: Define common environment variables
+      run: |
+        echo "CPPFLAGS=-I${HOME}/local/include" >> $GITHUB_ENV
+        echo "LDFLAGS=-L${HOME}/local/lib" >> $GITHUB_ENV
+        echo "HDF5_BASE_CPPFLAGS=-I/usr/include/hdf5" >> $GITHUB_ENV
+        echo "HDF5_BASE_LDFLAGS=-L/usr/lib/x86_64-linux-gnu/hdf5" >> $GITHUB_ENV
+        echo "GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io" >> $GITHUB_ENV
+    - run: |
+        echo "HDF5_SERIAL_CPPFLAGS=${HDF5_BASE_CPPFLAGS}/serial" >> $GITHUB_ENV
+        echo "HDF5_PARALLEL_CPPFLAGS=${HDF5_BASE_CPPFLAGS}/openmpi" >> $GITHUB_ENV
+        echo "HDF5_SERIAL_LDFLAGS=${HDF5_BASE_LDFLAGS}/serial" >> $GITHUB_ENV
+        echo "HDF5_PARALLEL_LDFLAGS=${HDF5_BASE_LDFLAGS}/openmpi" >> $GITHUB_ENV
+
+    - name: Install pre-compiled dependencies
+      run: |
+        sudo apt-get -y update
+        sudo apt-get -y install autoconf automake libfftw3-dev libgsl-dev liblapack-dev guile-3.0-dev libpng-dev libtool swig ccache
+
+    - name: Checkout libctl repository
+      uses: actions/checkout@v7
+      with:
+        repository: NanoComp/libctl
+        path: libctl-src
+
+    - name: Record libctl revision for the cache key
+      id: libctl
+      # Track libctl's checked-out commit so a new libctl revision invalidates
+      # the cached ~/local instead of restoring a stale (pre-mesh) build.
+      run: echo "sha=$(git -C libctl-src rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+    - name: Checkout harminv repository
+      uses: actions/checkout@v7
+      with:
+        repository: NanoComp/harminv
+        path: harminv-src
+
+    - name: Checkout MPB repository
+      uses: actions/checkout@v7
+      with:
+        repository: NanoComp/mpb
+        path: mpb-src
+
+    - name: Cache dependency builds
+      uses: actions/cache@v6
+      id: deps-cache
+      with:
+        path: ~/local
+        # libctl's commit is part of the key so a new libctl revision rebuilds
+        # the cached deps instead of restoring a stale (pre-mesh) build.
+        key: deps-${{ runner.os }}-libctl-${{ steps.libctl.outputs.sha }}-${{ hashFiles('.github/workflows/build-ci.yml') }}
+
+    - name: Build and install libctl
+      if: steps.deps-cache.outputs.cache-hit != 'true'
+      run: cd libctl-src && sh autogen.sh --prefix=${HOME}/local --enable-shared && make -j $(nproc) && make install
+
+    - name: Build and install harminv
+      if: steps.deps-cache.outputs.cache-hit != 'true'
+      run: cd harminv-src && sh autogen.sh --prefix=${HOME}/local --enable-shared && make -j $(nproc) && make install
+
+    - name: Build and install MPB
+      if: steps.deps-cache.outputs.cache-hit != 'true'
+      run: cd mpb-src && sh autogen.sh --prefix=${HOME}/local --enable-shared LIBS=-ldl --with-libctl=${HOME}/local/share/libctl --with-hermitian-eps && make -j $(nproc) && make install
+
+    - name: Define environment variables for serial build
+      if: ${{ matrix.enable-mpi == false }}
+      run: |
+        echo "MKCHECKFLAGS=-j $(nproc)" >> $GITHUB_ENV
+        echo "CPPFLAGS=${HDF5_SERIAL_CPPFLAGS} ${CPPFLAGS}" >> $GITHUB_ENV
+        echo "LDFLAGS=${HDF5_SERIAL_LDFLAGS} ${LDFLAGS}" >> $GITHUB_ENV
+        echo "MPICONF=--without-mpi" >> $GITHUB_ENV
+
+    - name: Define environment variables for MPI build
+      if: matrix.enable-mpi
+      run: |
+        echo "MKCHECKFLAGS=" >> $GITHUB_ENV
+        echo "CPPFLAGS=${HDF5_PARALLEL_CPPFLAGS} ${CPPFLAGS}" >> $GITHUB_ENV
+        echo "LDFLAGS=${HDF5_PARALLEL_LDFLAGS} ${LDFLAGS}" >> $GITHUB_ENV
+        echo "CC=mpicc" >> $GITHUB_ENV
+        echo "CXX=mpic++" >> $GITHUB_ENV
+        echo "HDF5_MPI=ON" >> $GITHUB_ENV
+        echo "MPICONF=--with-mpi" >> $GITHUB_ENV
+
+    - name: Install serial dependencies
+      if: ${{ matrix.enable-mpi == false }}
+      run: sudo apt-get -y install libhdf5-serial-dev
+
+    - name: Install MPI dependencies
+      if: matrix.enable-mpi
+      run: sudo apt-get -y install libopenmpi-dev mpi-default-bin openmpi-bin libhdf5-openmpi-dev libaec-dev
+
+    - name: Checkout Meep repository
+      uses: actions/checkout@v7
+
+    - name: Set up Python (version ${{ matrix.python-version }})
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Get pip cache dir
+      id: pip-cache
+      run: |
+        python -m pip install --upgrade pip wheel
+        echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
+    - name: pip cache
+      uses: actions/cache@v6
+      id: cache
+      with:
+        path: ${{ steps.pip-cache.outputs.dir }}
+        key: ${{ runner.os }}-py${{ matrix.python-version }}-mpi-${{ matrix.enable-mpi }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: ${{ runner.os }}-py${{ matrix.python-version }}-mpi-${{ matrix.enable-mpi }}-pip-
+
+    - name: Install Python dependencies
+      run: pip install -r python/requirements.txt
+
+    - name: Install nlopt
+      run: pip install nlopt
+
+    - name: Install mpi4py
+      if: ${{ matrix.enable-mpi && steps.cache.outputs.cache-hit != true }}
+      run: pip install mpi4py
+
+    - name: Run autoreconf
+      run: |
+        autoreconf --verbose --install --symlink --force
+        MEEP_VERSION=$(./configure -V | grep meep | awk '{print $3}')
+        echo "MEEP_VERSION=${MEEP_VERSION}" >> $GITHUB_ENV
+
+    - name: Run configure with OpenMP (out-of-source for distcheck)
+      if: ${{ matrix.use-distcheck }}
+      run: |
+        mkdir -p build &&
+        pushd build &&
+        ../configure --enable-maintainer-mode --prefix=${HOME}/local --enable-ccache --with-libctl=${HOME}/local/share/libctl ${MPICONF} --with-openmp &&
+        popd
+
+    - name: Run configure (in-source for make check)
+      if: ${{ !matrix.use-distcheck && !matrix.enable-single }}
+      run: |
+        ./configure --enable-maintainer-mode --prefix=${HOME}/local --enable-ccache --with-libctl=${HOME}/local/share/libctl ${MPICONF}
+
+    - name: Run configure with single-precision floating point and swig threads
+      if: ${{ matrix.enable-single }}
+      run: |
+        ./configure --enable-maintainer-mode --prefix=${HOME}/local --enable-ccache --with-libctl=${HOME}/local/share/libctl ${MPICONF} --enable-single --enable-swig-python-threads
+
+    - name: Run make distcheck
+      if: ${{ matrix.use-distcheck }}
+      run: |
+        pushd build &&
+        make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}" &&
+        popd
+
+    - name: Run make and make check
+      if: ${{ !matrix.use-distcheck }}
+      run: |
+        make -j $(nproc) &&
+        make ${MKCHECKFLAGS} check
+
+    - name: Archive C++ test logs (distcheck)
+      if: ${{ failure() && matrix.use-distcheck }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: cpp-tests-${{ matrix.name }}-log
+        path: ${{ github.workspace }}/build/meep-${{ env.MEEP_VERSION }}/_build/sub/tests/test-suite.log
+
+    - name: Archive Python test logs (distcheck)
+      if: ${{ failure() && matrix.use-distcheck }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: python-tests-${{ matrix.name }}-log
+        path: ${{ github.workspace }}/build/meep-${{ env.MEEP_VERSION }}/_build/sub/python/test-suite.log
+
+    - name: Archive C++ test logs (make check)
+      if: ${{ failure() && !matrix.use-distcheck }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: cpp-tests-${{ matrix.name }}-log
+        path: ${{ github.workspace }}/tests/test-suite.log
+
+    - name: Archive Python test logs (make check)
+      if: ${{ failure() && !matrix.use-distcheck }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: python-tests-${{ matrix.name }}-log
+        path: ${{ github.workspace }}/python/test-suite.log
