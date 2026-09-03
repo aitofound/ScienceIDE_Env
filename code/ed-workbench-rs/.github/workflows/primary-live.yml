@@ -1,0 +1,75 @@
+name: Primary live acceptance
+
+on:
+  workflow_dispatch:
+    inputs:
+      rayon_threads:
+        description: Rayon worker count
+        required: true
+        default: "4"
+  schedule:
+    - cron: "17 3 * * 1"
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  cc-series:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: Swatinem/rust-cache@v2.9.1
+      - run: cargo build --release --locked
+      - name: Verify CC(1)-CC(8)
+        env:
+          RAYON_NUM_THREADS: ${{ inputs.rayon_threads || '4' }}
+        run: |
+          mkdir -p artifacts
+          set -o pipefail
+          target/release/ed_workbench_rs cc-series \
+            fixtures/h2o-631g-fc/FCIDUMP \
+            fixtures/h2o-631g-fc/reference.json \
+            --published-reference fixtures/h2o-631g-fc/hirata2000-table2.json \
+            --max-rank 8 --residual-tolerance 1e-6 --max-iterations 100 \
+            2>&1 | tee artifacts/cc-series.log
+      - name: Upload CC evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cc-series-${{ github.sha }}
+          path: artifacts/cc-series.log
+          if-no-files-found: error
+          retention-days: 30
+
+  level3-series:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: Swatinem/rust-cache@v2.9.1
+      - run: cargo build --release --locked
+      - name: Verify CI(1)-CI(8) and MBPT(1)-MBPT(20)
+        env:
+          RAYON_NUM_THREADS: ${{ inputs.rayon_threads || '4' }}
+        run: |
+          mkdir -p artifacts
+          set -o pipefail
+          target/release/ed_workbench_rs level3-series \
+            fixtures/h2o-631g-fc/FCIDUMP \
+            fixtures/h2o-631g-fc/reference.json \
+            --published-reference fixtures/h2o-631g-fc/hirata2000-table2.json \
+            --max-ci-rank 8 --max-mbpt-order 20 \
+            --ci-residual-tolerance 1e-7 \
+            --max-iterations 100 --max-subspace 24 \
+            2>&1 | tee artifacts/level3-series.log
+      - name: Upload CI and MBPT evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: level3-series-${{ github.sha }}
+          path: artifacts/level3-series.log
+          if-no-files-found: error
+          retention-days: 30

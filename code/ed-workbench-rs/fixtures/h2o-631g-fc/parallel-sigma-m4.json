@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "h2o-631g-fc-parallel-sigma",
+  "measured_commit": "3ad1f87cfec74b06998b8cc1e87e541faa473c79",
+  "measurement_date": "2026-07-28",
+  "hardware": {
+    "cpu": "Apple M4",
+    "architecture": "arm64",
+    "memory_gib": 16,
+    "operating_system": "macOS 15.6"
+  },
+  "toolchain": {
+    "rustc": "1.95.0",
+    "cargo": "1.95.0",
+    "profile": "release"
+  },
+  "problem": {
+    "system": "H2O/6-31G frozen core",
+    "spatial_orbitals": 12,
+    "active_electrons": 8,
+    "ms2": 0,
+    "determinants": 245025,
+    "energy_unit": "hartree"
+  },
+  "input": {
+    "kind": "deterministic dense vector",
+    "formula": "sin(index * 31 + 7)"
+  },
+  "parallel_policy": {
+    "source_blocks": 4,
+    "rayon_threads": 10,
+    "preflight_workspace_bytes": 7840800,
+    "strict_memory": true
+  },
+  "runs": [
+    {
+      "index": 1,
+      "serial_seconds": 15.844449750,
+      "parallel_seconds": 4.557638541,
+      "maximum_serial_parallel_error": 5.968558980384842e-13
+    },
+    {
+      "index": 2,
+      "serial_seconds": 14.011385375,
+      "parallel_seconds": 4.381184834,
+      "maximum_serial_parallel_error": 5.968558980384842e-13
+    },
+    {
+      "index": 3,
+      "serial_seconds": 15.857972792,
+      "parallel_seconds": 4.009908542,
+      "maximum_serial_parallel_error": 5.968558980384842e-13
+    },
+    {
+      "index": 4,
+      "serial_seconds": 14.047785334,
+      "parallel_seconds": 4.137299041,
+      "maximum_serial_parallel_error": 5.968558980384842e-13
+    },
+    {
+      "index": 5,
+      "serial_seconds": 14.181091542,
+      "parallel_seconds": 4.761762208,
+      "maximum_serial_parallel_error": 5.968558980384842e-13
+    }
+  ],
+  "aggregate": {
+    "median_serial_seconds": 14.181091542,
+    "median_parallel_seconds": 4.381184834,
+    "ratio_of_medians": 3.236817,
+    "maximum_serial_parallel_error": 5.968558980384842e-13
+  },
+  "separate_process_peak_rss_measurement": {
+    "maximum_resident_set_bytes": 48709632,
+    "process_wall_seconds": 21.62,
+    "contains_serial_then_parallel_sigma": true
+  },
+  "notes": [
+    "Each run is a fresh release-mode test process.",
+    "Serial executes before parallel inside each process.",
+    "The reported speedup is the ratio of medians, not a claim of linear scaling.",
+    "The parallel result is bitwise repeatable for a fixed block policy; serial and parallel differ only by floating-point grouping.",
+    "No full H2O/cc-pVDZ all-electron FCI calculation is claimed."
+  ]
+}

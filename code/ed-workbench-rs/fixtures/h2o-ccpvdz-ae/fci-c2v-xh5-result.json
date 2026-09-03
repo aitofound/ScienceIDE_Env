@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "converged-full-fci-result",
+  "system": "H2O/cc-pVDZ all-electron",
+  "scientific_scope": {
+    "geometry_angstrom": "O 0 0 0; H 0.967 0 0; H -0.2923916843556798 0.9217353757557798 0",
+    "geometry_parameters": {
+      "r_oh_angstrom": 0.967,
+      "angle_hoh_degree": 107.6
+    },
+    "basis": "cc-pvdz",
+    "basis_functions": "24 spherical spatial orbitals",
+    "all_electron": true,
+    "number_of_electrons": 10,
+    "nalpha": 5,
+    "nbeta": 5,
+    "point_group": "C2v",
+    "target_irrep": "A1",
+    "fcidump_isym": 1,
+    "determinants": 451681246
+  },
+  "input": {
+    "generator": "scripts/oracle/validate_ccpvdz_fci.py --fcidump-output",
+    "path": "fixtures/h2o-ccpvdz-ae/FCIDUMP.c2v",
+    "sha256": "b55d1bcb04f6889e5b5dff1336412c5f7118b5bdb8461d504764f2a704cd6255",
+    "bytes": 1048036,
+    "nuclear_repulsion_energy_hartree": 9.094848418932882,
+    "orbsym_molpro": [
+      1,
+      1,
+      3,
+      1,
+      2,
+      1,
+      3,
+      3,
+      1,
+      1,
+      2,
+      3,
+      4,
+      1,
+      2,
+      1,
+      3,
+      3,
+      1,
+      2,
+      4,
+      1,
+      1,
+      3
+    ]
+  },
+  "solver": {
+    "method": "matrix-free Davidson full configuration interaction",
+    "residual_tolerance": 1e-7,
+    "max_iterations": 60,
+    "max_subspace": 6,
+    "storage": "memory",
+    "requested_sigma_mode": "Parallel",
+    "effective_sigma_mode": "Parallel",
+    "sigma_source_blocks": 64,
+    "rayon_threads": 64,
+    "parallel_sigma_workspace_gib": 215.378402,
+    "conservative_davidson_vectors_gib": 60.575175
+  },
+  "result": {
+    "total_energy_hartree_text": "-76.243218589558566",
+    "total_energy_hartree": -76.24321858955857,
+    "correlation_energy_hartree_against_pyscf_rhf": -0.217425994653681,
+    "residual_norm": 6.602e-8,
+    "iterations": 21,
+    "converged": true
+  },
+  "independent_cross_checks": {
+    "pyscf_artifact": "fixtures/h2o-ccpvdz-ae/pyscf-crosscheck.json",
+    "pyscf_rhf_total_energy_hartree": -76.02579259490489,
+    "pyscf_ccsd_t_total_energy_hartree": -76.24257144581735,
+    "fci_below_ccsd_t_millihartree": 0.647143741219,
+    "literature_comparison": {
+      "scope_warning": "different equilibrium geometry; used only as a scale and hierarchy check",
+      "citation": "W. A. Al-Saidi, S. Zhang, and H. Krakauer, J. Chem. Phys. 124, 224101 (2006), DOI 10.1063/1.2200885, Table I; FCI source: J. Olsen et al., J. Chem. Phys. 104, 8007 (1996), DOI 10.1063/1.471518",
+      "literature_ccsd_t_total_energy_hartree": -76.241201,
+      "literature_fci_total_energy_hartree": -76.24186,
+      "literature_fci_below_ccsd_t_millihartree": 0.659,
+      "absolute_gap_difference_millihartree": 0.01185625878
+    }
+  },
+  "hpc": {
+    "provider": "SCNet North China Region 1 [Xiongheng]",
+    "cluster_host": "xh5.hpccube.com",
+    "partition": "xhacnormalb",
+    "job_id": 23008083,
+    "job_name": "ed-ccpvdz-a1",
+    "node": "a02r03n08",
+    "state": "COMPLETED",
+    "exit_code": "0:0",
+    "submitted_at": "2026-07-29T20:41:44+08:00",
+    "started_at": "2026-07-29T20:56:22+08:00",
+    "finished_at": "2026-07-30T00:52:05+08:00",
+    "elapsed": "03:55:43",
+    "slurm_allocated_cpus": 128,
+    "cpus_per_task": 64,
+    "memory_request_gib": 384,
+    "max_rss_kib": 233052988,
+    "max_rss_gib": 222.256649017334,
+    "swap_events_reported_by_wrapper": 0,
+    "stdout": "fixtures/h2o-ccpvdz-ae/xh5/production-23008083.out",
+    "stderr": "fixtures/h2o-ccpvdz-ae/xh5/production-23008083.err"
+  },
+  "reproducibility": {
+    "source_base_commit": "0879b0e",
+    "production_source_note": "uploaded tree based on 0879b0e plus the cache-friendly deterministic reduction in src/direct_fci.rs; the archived source differs only by cargo fmt whitespace",
+    "production_source_sha256": {
+      "src/direct_fci.rs": "da196f94adc819c662804bcfc5dc9a390b17ebd88a871733365ced9c1649d063",
+      "src/davidson.rs": "5783f48e0cd893c6cb226ef3a742b37435639b23f6e96a92d1fe234fc8960016",
+      "src/main.rs": "414ace61125622785184a266930a51121283b673fa550eef58eb9cbafa351b58",
+      "Cargo.toml": "dc95373f33f5cc00db5f74784e96199b90d115f65030619aec0cb2fe41c114fd",
+      "Cargo.lock": "3e47c3256ebc4bb6503c447f124c2050d8a8c718f567ff1e53efe727d196533b"
+    },
+    "archived_src_direct_fci_sha256_after_rustfmt": "47c5572c1c1a66c71820b51c3dd8df0f40e5f1795c6992791177ae5234735de7",
+    "production_binary_sha256": "2379d47646eda8dc7bc44a9f6a20b862b854193e1983ba6729b5f0c0d13788e3",
+    "production_slurm_sha256": "bae37f02ca683a537318c0d23a2c01ca26ec525ba2b57aaee8d3eafc256f4222",
+    "stdout_sha256": "79875ea0c286cdee225f2e28fc9aebb1d8cce3100782ad8fd6b12cb00a727212",
+    "stderr_sha256": "be8d5bf541c6109a844fb4c1479563d4cfa3733a3cd3156135635aef872c7644"
+  },
+  "acceptance": {
+    "job_completed_with_zero_exit": true,
+    "residual_within_tolerance": true,
+    "expected_energy_hierarchy": true,
+    "same_input_rhf_cross_check": true,
+    "literature_scale_cross_check": true,
+    "accepted": true
+  }
+}
