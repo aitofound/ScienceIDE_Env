@@ -7,8 +7,10 @@ the manifest, the layout and the canaries. An archived package that has quietly
 rotted is not archived, it is lost. Restoring one is a `git mv` back plus a
 status edit.
 
-`tasks/` holds **laps (LAPS)**, the worked grid package, and **pluto
-(PLUTO)**, reset on 2026-08-23 and being rebuilt from scratch.
+`tasks/` holds the live packages in the revision-5 form, one leaf per module
+under `tasks/<codebase>/<module>/`; see `docs/root-layout.md`. The grid-v1
+template that the retired packages were written against, with its scripts,
+is under `archive/templates/grid-v1/`.
 
 Two records of the v1-era GPU verification campaign are preserved separately
 from the retired packages under `docs/history/gpu/`:

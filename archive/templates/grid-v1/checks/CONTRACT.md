@@ -95,7 +95,7 @@ it, because it was never an artifact in the first place.
 
 So the two sides must not be able to see each other. Neither run gets a mount,
 both get `--network=none`, and each artifact leaves its container by
-`docker cp` after that container has exited. `scripts/grade-cell.sh` is the
+`docker cp` after that container has exited. `archive/templates/grid-v1/scripts/grade-cell.sh` is the
 reference implementation of this loop.
 
 ## Grading is run by an agent
@@ -109,7 +109,7 @@ versions, a target where no container can hold the accelerator at all: a script
 covers the cases its author imagined and then grades the rest wrongly, or not
 at all. The submission's own skill says how its product runs, and running it is
 allowed to be complicated — that is the whole reason the reader is an agent.
-`scripts/grade-cell.sh` is the worked example for the simplest case, not the
+`archive/templates/grid-v1/scripts/grade-cell.sh` is the worked example for the simplest case, not the
 grader.
 
 Two things the agent has no latitude over.
@@ -140,7 +140,7 @@ own `validate.py`:
     validate(reference, candidate)    MUST return passed = true
 ```
 
-`scripts/verify-images.sh <package-dir>` does exactly that, for every check
+`archive/templates/grid-v1/scripts/verify-images.sh <package-dir>` does exactly that, for every check
 in a package.
 
 This is the weakest claim a check can make, and **everything stronger depends
@@ -323,7 +323,7 @@ This is where a check is actually held to account.
 
 ### What CI does *not* run: the self-validation gate
 
-`scripts/verify-images.sh` is **not** run by CI, and you should not read a
+`archive/templates/grid-v1/scripts/verify-images.sh` is **not** run by CI, and you should not read a
 green build as evidence that a check image works. CI never builds a check
 image. It cannot afford to: a real check builds a scientific code from source
 and then runs it twice, which is minutes and gigabytes for a large grid — a

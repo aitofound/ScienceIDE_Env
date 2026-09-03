@@ -3,7 +3,7 @@
 #
 # THE MINIMAL BAR. Put each check image on both sides of its own loop.
 #
-#     bash scripts/verify-images.sh <package-dir> [check ...]   # default: all checks
+#     bash archive/templates/grid-v1/scripts/verify-images.sh <package-dir> [check ...]   # default: all checks
 #
 # For each check: build the image, run it TWICE with no arguments and no
 # mounts, and hand the two output directories to that check's own validate.py.
