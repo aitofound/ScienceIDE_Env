@@ -1,0 +1,38 @@
+{
+  "check": "gk-cyclone-base-case",
+  "policy": "pointwise",
+  "chaotic": true,
+  "upstream_test": "code/gkeyll/gyrokinetic/creg/rt_gk_cbc_2x2v_p1.c",
+  "configuration": "Official P1 nonlinear 2x2v Cyclone Base Case (4x4x4x2 cells), bounded at 100000 updates before the pinned upstream driver aborts near step 200100, with mapped tokamak geometry, kinetic electrons/ions, field solve, Krook buffers and anomalous diffusion.",
+  "observable": "electron/ion integrated-moment histories plus electrostatic field energy through 100000 updates",
+  "expected_runtime_s": 125.0,
+  "default_vs_upstream": "reduced update window: 100000 steps",
+  "variant": "ic/variant/value.txt changes n0 from 4.5e19 to 4.500000000000002e19, exactly two upward binary64 ULP, to probe nonlinear trajectory sensitivity.",
+  "comparison": {
+    "atol": 1e-08,
+    "rtol": 1e-11,
+    "files": [
+      {
+        "path": "elc-integrated-moms.gkyl",
+        "format": "gkyl-dynvec",
+        "timestamps": "ignored"
+      },
+      {
+        "path": "ion-integrated-moms.gkyl",
+        "format": "gkyl-dynvec",
+        "timestamps": "ignored"
+      },
+      {
+        "path": "field-energy.gkyl",
+        "format": "gkyl-dynvec",
+        "timestamps": "ignored"
+      }
+    ]
+  },
+  "evidence": {
+    "floor": 65536.0,
+    "floor_how": "The 2026-09-03 consented local selfcheck compared upstream n0=4.5e19 with its two-binary64-ULP variant through 100000 updates. The raw maximum 65536 occurred in an order-1e20 ion moment; the largest materially scaled relative spread was 7.032e-16 in field energy.",
+    "self_validation_spread": 65536.0
+  },
+  "warrant": "The human-approved atol 1e-8 and rtol 1e-11 cover the measured two-ULP nonlinear spread: materially scaled errors were at most 7.032e-16 relative, while absolute errors in near-zero components were below 1e-8. The 100000-step window is before the pinned official driver hits its small-time-step abort near step 200100, while retaining mapped geometry, high-dimensional gyrokinetic fluxes, field solves, profile gradients and diagnostic reductions."
+}
