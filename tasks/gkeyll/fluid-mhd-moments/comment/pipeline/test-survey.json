@@ -1,0 +1,111 @@
+{
+  "module": "fluid-mhd-moments",
+  "tests": [
+    {
+      "id": "euler-sodshock",
+      "module": "fluid-mhd-moments",
+      "path": "moments/creg/rt_euler_sodshock.c",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Finite-volume five-moment Euler update with Roe fluxes on a one-dimensional Sod-type shock tube.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.105,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "This is in the upstream moments MOAT core acceptance set and directly exercises the fluid five-moment path. The serial initial-value problem is deterministic, so final cell states and conserved diagnostics should be compared pointwise.",
+      "proposed_check": "euler-sodshock"
+    },
+    {
+      "id": "mhd-brio-wu",
+      "module": "fluid-mhd-moments",
+      "path": "moments/creg/rt_mhd_brio_wu.c",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Ideal-MHD finite-volume update, divergence control and MHD Riemann solver on the Brio-Wu shock tube.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.305,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "This is the upstream moments MOAT MHD case and directly establishes that the approved module includes MHD. Its serial Riemann evolution is deterministic, making pointwise field and fluid-state comparison appropriate.",
+      "proposed_check": "mhd-brio-wu"
+    },
+    {
+      "id": "ten-moment-riem",
+      "module": "fluid-mhd-moments",
+      "path": "moments/creg/rt_10m_riem.c",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Two-species ten-moment plasma Riemann problem coupled to Maxwell fields and the pressure-tensor update.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 9.923,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "This upstream MOAT case covers the ten-moment part of the approved scope, including anisotropic pressure tensors and electron-ion field coupling. The fixed serial problem is deterministic, so pointwise comparison is the natural policy.",
+      "proposed_check": "ten-moment-riem"
+    },
+    {
+      "id": "five-moment-gem",
+      "module": "fluid-mhd-moments",
+      "path": "moments/creg/rt_5m_gem.c",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Two-dimensional five-moment electron-ion GEM magnetic reconnection with Maxwell coupling and source updates.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 10.688,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "This upstream MOAT problem is a substantive five-moment plasma workload and complements the fluid, MHD and ten-moment checks. The imposed GEM perturbation and serial arithmetic are deterministic; a short-window pointwise comparison preserves sensitivity to reconnection dynamics.",
+      "proposed_check": "five-moment-gem"
+    },
+    {
+      "id": "maxwell-plane-wave",
+      "module": "fluid-mhd-moments",
+      "path": "moments/creg/rt_maxwell_plane_wave_1d.c",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Standalone one-dimensional Maxwell plane-wave propagation in the moments application.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 1.0,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "It is in the upstream moments MOAT, but it exercises the standalone Maxwell subsystem rather than fluid, MHD or five-/ten-moment plasma evolution. Maxwell coupling is already forced by the five- and ten-moment plasma checks, so this would add out-of-scope duplicate coverage."
+    },
+    {
+      "id": "gr-einstein-plane-shock",
+      "module": "fluid-mhd-moments",
+      "path": "moments/creg/rt_gr_einstein_plane_shock.c",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Coupled ultra-relativistic fluid and Einstein evolution on a plane-symmetric Gowdy spacetime.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 60.0,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "It is in the upstream moments MOAT, but general-relativistic spacetime evolution is outside the human-approved fluid, MHD and five-/ten-moment plasma scope. It should be considered only if a later GR module is approved."
+    }
+  ]
+}
