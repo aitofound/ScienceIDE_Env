@@ -1,0 +1,113 @@
+{
+  "module": "correlation-methods",
+  "tests": [
+    {
+      "id": "cluster-expansion-unit",
+      "module": "correlation-methods",
+      "path": "src/cluster.rs",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "In-crate cluster-operator tests cover reference-amplitude mapping, ranked exponential expansion, compact symmetry sectors, and fermionic spin-partition phases.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 1,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "The tests exercise deterministic amplitude and excitation algebra directly; pointwise comparison is appropriate because the compact finite vectors are deterministic and the expected coefficients are explicit.",
+      "proposed_check": "cluster-expansion"
+    },
+    {
+      "id": "diis-unit",
+      "module": "correlation-methods",
+      "path": "src/diis.rs",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "In-crate DIIS extrapolation and residual-cancellation test.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 1,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "The linear residual-cancellation invariant is deterministic and small; pointwise numerical comparison can detect an incorrect extrapolation without relying on a stochastic oracle.",
+      "proposed_check": "diis-extrapolation"
+    },
+    {
+      "id": "cc-series-integration",
+      "module": "correlation-methods",
+      "path": "tests/cc_series.rs",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The CLI rank-series contract, committed primary CC(1)-CC(8) evidence, and stable JSON output for correlation-method calculations.",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 60,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "The integration target drives the public cc-series entrypoint and compares energies, convergence metadata, and serialized fields; the calculations are deterministic for the fixed fixtures, so pointwise policy is the natural proposal.",
+      "proposed_check": "cc-series-cli"
+    },
+    {
+      "id": "cc-level2-integration",
+      "module": "correlation-methods",
+      "path": "tests/level2.rs",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "CC2, full-rank CC, warm-started CC series, invalid-rank/configuration rejection, and explicit termination across H2, H4, and H2O STO-3G fixtures.",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 90,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "These official tests compare correlation energies and convergence behavior to FCI/PySCF or explicit failure contracts. The fixed small systems are deterministic; pointwise tolerances can be calibrated from nominal-versus-variant runs.",
+      "proposed_check": "cc-level2"
+    },
+    {
+      "id": "higher-methods-integration",
+      "module": "correlation-methods",
+      "path": "tests/level3.rs",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "CI variationality, MBPT(2) agreement with PySCF, UCC variational convergence, and warm-started CI-series behavior.",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 90,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "The tests expose deterministic energies, variational inequalities, and convergence outcomes on finite H2/H4 systems. Pointwise policy is appropriate for the numerical observables; no random stream is involved.",
+      "proposed_check": "ci-mbpt-ucc"
+    },
+    {
+      "id": "published-series-integration",
+      "module": "correlation-methods",
+      "path": "tests/level3_primary.rs",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Published-reference CI/MBPT series and CLI reporting for the primary H2O/6-31G correlation benchmark.",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 120,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "The official test compares order-by-order energies and residuals to committed literature/PySCF anchors. The fixture is deterministic; the initial check should use a shortened or lower-rank window if the full live series exceeds the three-minute investigation limit.",
+      "proposed_check": "published-correlation-series"
+    }
+  ]
+}
