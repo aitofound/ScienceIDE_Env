@@ -47,9 +47,9 @@ paths and filters, not numerical details.
 - **Tensor elements** move for the converse case.
 - **`trace_generator_norm`** is a physical invariant: a Lindblad-form
   generator annihilates the identity, so this contraction vanishes in exact
-  arithmetic. Its measured size (`4.6e-15`) is pure round-off. A port that
-  broke the tensor's *structure* rather than its values moves it by orders of
-  magnitude while individual elements might still look plausible.
+  arithmetic and whatever remains is round-off. A port that broke the tensor's
+  *structure* rather than its values moves it by orders of magnitude while
+  individual elements might still look plausible.
 
 Floor is `8.88e-15` over 2.1 million values — machine level, since the path is
 one eigendecomposition and one assembly. Bound: `1e-11 + 1e-10|reference|`,

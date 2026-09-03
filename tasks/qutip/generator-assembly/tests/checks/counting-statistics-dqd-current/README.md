@@ -26,15 +26,16 @@ which also resolves the resonance structure.
 No time integration anywhere. Each bias point is a sparse steady-state solve
 of a singular Liouvillian plus a counting-statistics linear solve, which is
 why the floor is machine-level (`6.66e-16` over 900 values) and the bound is
-`1e-12 + 1e-10|reference|`.
+`1e-13 + 1e-11|reference|`.
 
 **Populations are graded alongside the currents deliberately.** Every current
 is a functional of the steady state, so a port that broke the steady-state
 solve and one that broke the counting-statistics reduction would *both* move
 the current. Only the populations tell them apart.
 
-`steadystate_trace.npy` is a gate, not an observable: it is exactly 1 by
-construction, so a port that breaks normalisation fails here immediately.
+`steadystate_trace.npy` is a gate, not an observable: a density matrix is
+normalised by construction, so a port that breaks normalisation fails here
+immediately.
 
 Noise and skewness are graded at both frequencies rather than just the
 zero-frequency noise that upstream checks — free width, and the higher
