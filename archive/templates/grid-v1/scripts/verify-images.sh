@@ -3,7 +3,7 @@
 #
 # THE MINIMAL BAR. Put each check image on both sides of its own loop.
 #
-#     bash scripts/verify-images.sh <package-dir> [check ...]   # default: all checks
+#     bash archive/templates/grid-v1/scripts/verify-images.sh <package-dir> [check ...]   # default: all checks
 #
 # For each check: build the image, run it TWICE with no arguments and no
 # mounts, and hand the two output directories to that check's own validate.py.
@@ -92,7 +92,7 @@ for c in "${CHECKS[@]}"; do
   t0=$(date +%s)
   # The build context is the check directory itself - a check is
   # self-contained, and building it any other way proves nothing about how
-  # the grader builds it (scripts/grade-cell.sh does exactly this).
+  # the grader builds it (grade-cell.sh beside this script does exactly this).
   if ! docker build -q -t "$img" "$PKG/checks/$c" \
        > "$out/build.log" 2>&1; then
     printf '%-22s %8s %8s %10s  BUILD FAILED\n' "$c" - - -

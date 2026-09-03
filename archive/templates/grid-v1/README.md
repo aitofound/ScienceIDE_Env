@@ -83,7 +83,7 @@ Two rules hold for every target:
 
 ## Before you ask anyone to review a check
 
-    bash scripts/verify-images.sh tasks/<codebase>
+    bash archive/templates/grid-v1/scripts/verify-images.sh tasks/<codebase>
 
 Build each check image, run it **twice**, and validate its output against
 itself. It must pass. An image that cannot reproduce its own output is not
