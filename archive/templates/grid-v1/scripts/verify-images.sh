@@ -92,7 +92,7 @@ for c in "${CHECKS[@]}"; do
   t0=$(date +%s)
   # The build context is the check directory itself - a check is
   # self-contained, and building it any other way proves nothing about how
-  # the grader builds it (scripts/grade-cell.sh does exactly this).
+  # the grader builds it (grade-cell.sh beside this script does exactly this).
   if ! docker build -q -t "$img" "$PKG/checks/$c" \
        > "$out/build.log" 2>&1; then
     printf '%-22s %8s %8s %10s  BUILD FAILED\n' "$c" - - -
