@@ -84,7 +84,7 @@ exactly 1.0 with every check passed; its records land under
 
 ## Manifests and instructions
 
-`task.toml` files its science twice, at two grains. `arxiv` is a list of
+`task.toml` files its science at two grains. `arxiv`, optional, is a list of
 arXiv categories from `registry/arxiv-categories.json`, primary first: this is
 where the task says what it is (`physics.plasm-ph`, `astro-ph.HE`, `quant-ph`).
 `domain` is the site's thirteen-way field from `registry/fields.json`; it is
