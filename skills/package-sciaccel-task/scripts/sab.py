@@ -1620,10 +1620,13 @@ def task_status(leaf: Path, allow_custom: bool) -> dict:
         nxt = f"sab.py task add-check --task {rel(leaf)} ... (one per suitable test)"
     elif errs:
         nxt = f"sab.py task lint --task {rel(leaf)}  (fix the {len(errs)} error(s))"
-    elif state_known and not (state["consent"] and state["consent"]["valid"]):
-        nxt = f"STOP 3 (consent): sab.py task plan --task {rel(leaf)}; show the run plan to the human, then sab.py task consent ..."
     elif state["self_validation"] is None or not state["self_validation"]["fresh"]:
-        nxt = f"sab.py task build --task {rel(leaf)}; then sab.py task selfcheck --task {rel(leaf)}  (self-validation missing or stale)"
+        # A run is needed: consent comes first. A consent given here for another host reads as invalid on this
+        # machine by design (the run happens there), so the stop is reported only when no run has been made under it.
+        if state_known and not (state["consent"] and state["consent"]["valid"]):
+            nxt = f"STOP 3 (consent): sab.py task plan --task {rel(leaf)}; show the run plan to the human, then sab.py task consent ..."
+        else:
+            nxt = f"sab.py task build --task {rel(leaf)}; then sab.py task selfcheck --task {rel(leaf)}  (self-validation missing or stale)"
     elif state["self_validation"]["result"] != "passed":
         nxt = f"STOP 4 (finalisation): revise policy/tolerance/window/variant with the human, then sab.py task selfcheck --task {rel(leaf)}  (last run was calibration)"
     elif state_known and not (state["review_brief"] and state["review_brief"]["fresh"]):
