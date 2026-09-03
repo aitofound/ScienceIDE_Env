@@ -15,11 +15,11 @@ water calculations so the environment can be iterated locally.
 ## Tolerances
 
 The native investigation ran representative cargo tests against the pinned
-source; all selected tests passed. Each check compares the upstream test pass
-flag and a 1e-15 variant marker with `atol=1e-12`. The marker spread is measured
-directly from the nominal/variant pair, while the scientific floor is enforced
-by the upstream assertions. Tolerances and runtime remain provisional until
-the Docker calibration selfcheck.
+source; all selected tests passed. Four integration checks now emit direct
+energy/residual/series observables from the public CLI, while the two algebra
+checks retain their upstream pass flags. Every check also emits a 1e-15 variant
+witness and compares values with `atol=1e-12`; the upstream assertions provide
+the scientific correctness gate.
 
 ## Blind spots
 
