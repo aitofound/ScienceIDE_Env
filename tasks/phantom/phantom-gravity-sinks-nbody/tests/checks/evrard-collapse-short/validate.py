@@ -14,7 +14,12 @@ alpha, divv, divB, poten ...; see rubric.comparison.float32) under
 comparison.float32.atol/rtol, because two ulps of that precision is 2.4e-7 relative;
 integer arrays (iorig, itype) must be identical; tags listed in comparison.exclude
 are reported, not graded (the fileident timestamp and the OpenMP-reduction header
-scalars etot_in/mtot_in are never graded). The header gates: the dump must be a
+scalars etot_in/mtot_in are never graded). Particle order is not part of the contract:
+where a block carries iorig -- Phantom's per-particle identity, which survives any
+reordering of the arrays -- both sides are sorted by it and every array is compared in
+that order, the two iorig sets must be equal, and a duplicate identifier on either side
+fails the check closed; a block with no identity column (the sink block) is compared in
+its array order, which is then part of the contract. The header gates: the dump must be a
 full dump with the same array inventory, particle counts and sink count, and its
 time must agree under the binary64 bound. Standard library and numpy only; reads
 only this check directory. Writes a result with "passed", "reason" and "distance"
@@ -115,6 +120,36 @@ def read_dump(path: Path) -> dict:
     return {"fileident": fileident, "full": full, "header": header, "blocks": blocks}
 
 
+def identity_order(rb: dict, cb: dict) -> tuple[np.ndarray | None, np.ndarray | None, str]:
+    """Return (reference order, candidate order, how) that puts both sides of a block in one
+    particle order, or raise Invalid if the two sides do not describe the same particles.
+
+    Phantom stamps every particle with iorig (src/main/part.F90) precisely so that a code
+    which reorders its particle arrays -- as any parallel or accelerator port may -- can still
+    be matched particle by particle. Where the block carries it, both sides are sorted by it
+    and compared in that order, and iorig itself is required to agree as a SET rather than as
+    a sequence. Where it does not (the sink block carries no identity column), the array order
+    is the only order there is and the comparison is positional.
+    """
+    tag = "iorig"
+    if tag not in rb["arrays"] or tag not in cb["arrays"]:
+        return None, None, "array order (this block carries no identity column)"
+    r_id, c_id = rb["arrays"][tag][1], cb["arrays"][tag][1]
+    if r_id.size != c_id.size:
+        raise Invalid(f"iorig has {c_id.size} entries, reference {r_id.size}")
+    r_order = np.argsort(r_id, kind="stable")
+    c_order = np.argsort(c_id, kind="stable")
+    r_sorted, c_sorted = r_id[r_order], c_id[c_order]
+    for label, s in (("reference", r_sorted), ("candidate", c_sorted)):
+        if s.size and np.any(s[1:] == s[:-1]):
+            raise Invalid(f"{label} iorig carries duplicate particle identifiers")
+    if not np.array_equal(r_sorted, c_sorted):
+        missing = int(np.count_nonzero(~np.isin(r_sorted, c_sorted)))
+        extra = int(np.count_nonzero(~np.isin(c_sorted, r_sorted)))
+        raise Invalid(f"the iorig sets differ ({missing} reference particles missing, {extra} unknown ones present)")
+    return r_order, c_order, "iorig"
+
+
 def within(c: np.ndarray, r: np.ndarray, atol: float, rtol: float) -> tuple[int, float]:
     err = np.abs(c.astype(np.float64) - r.astype(np.float64))
     over = int(np.count_nonzero(err > atol + rtol * np.abs(r.astype(np.float64))))
@@ -173,6 +208,12 @@ def main() -> int:
                 extra = sorted(set(cb["arrays"]) - set(rb["arrays"]))
                 failures.append(f"{rel}: block {ib + 1} array inventory differs (missing {missing}, extra {extra})")
                 continue
+            try:
+                r_order, c_order, matched_by = identity_order(rb, cb)
+            except Invalid as exc:
+                failures.append(f"{rel}: block {ib + 1}: {exc}")
+                continue
+            details[f"{rel}:block{ib + 1}"] = {"matched_by": matched_by, "entries": int(rb["number"])}
             for tag, (slot, r) in rb["arrays"].items():
                 cslot, c = cb["arrays"][tag]
                 key = f"{rel}:block{ib + 1}:{tag}"
@@ -181,6 +222,9 @@ def main() -> int:
                     continue
                 if r.size == 0:
                     continue
+                if r_order is not None:
+                    # both sides in the common iorig order, so index i is the same particle
+                    r, c = r[r_order], c[c_order]
                 if slot in (1, 2, 3, 4, 5):
                     n = int(np.count_nonzero(c != r))
                     details[key] = {"kind": "integer", "values": int(r.size), "values_differing": n}
