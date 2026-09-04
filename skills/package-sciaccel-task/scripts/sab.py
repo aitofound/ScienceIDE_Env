@@ -334,8 +334,8 @@ STEP 1  Investigate the codebase, then propose the module cut.
   the survey.
 
   Read {code} as a scientist would: what it simulates, the build system, the
-  production entry points, where the official test suites live and how they
-  run, and the licence. Write that up as {state}/overview.md (one page).
+  production entry points, where the official test suites and the standard
+  example problems live and how they run, and the licence. Write that up as {state}/overview.md (one page).
 
   Then write {state}/modules.json: a proposal to decompose the codebase into
   modules. Modules are conceptually independent parts, cut for manageability
@@ -395,7 +395,11 @@ STEP2_BRIEF = """\
 STEP 2  Survey the official tests of every approved module.
 
   Checks come from the codebase's own test suites whenever they exist: unit
-  tests, regression tests, standard example problems. For every approved module
+  tests, regression tests, standard example problems. An official example IS
+  an official test, with or without a shipped reference output: the pinned
+  build generates the check's reference and the example's physics anchors
+  it. A codebase that ships only examples has that many official tests, not
+  zero. For every approved module
   record every official test that exercises it in {state}/tests.json. Runtimes
   come from the Step 1 native investigation runs; a test that could not be
   shortened below three minutes carries an estimate with runtime_measured: false.
