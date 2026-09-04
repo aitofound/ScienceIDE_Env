@@ -228,7 +228,6 @@ last digit. Those native runs reported the build separately (41 to 69 s of the
 wall time) and left 2 to 4 s of run for a 1-D or 2-D deck and 8 to 14 s for a
 3-D one on the authoring machine.
 
-
 ## Blind spots
 
 The graded decks only ever run `field_order = 2`, because
