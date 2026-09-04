@@ -189,7 +189,7 @@ def cmd_task_selfcheck(a) -> None:
     res = meta.get("resources") or {}
     budget = float(res.get("suite_budget_s", config.DEFAULT_BUDGET_S) or config.DEFAULT_BUDGET_S)
     declared_cpus = res.get("cpus")
-    run_root = Path(a.run_root) if a.run_root else config.PIPE / task_codebase(leaf) / "runs" / leaf.name / dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    run_root = Path(a.run_root).resolve() if a.run_root else config.PIPE / task_codebase(leaf) / "runs" / leaf.name / dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     run_root.mkdir(parents=True, exist_ok=False)
     print(f"run root: {run_root}")
     overrides = {k: v for k, v in os.environ.items() if k.startswith("SAB_") and k not in ("SAB_ROOT", "SAB_PIPE_DIR")}
