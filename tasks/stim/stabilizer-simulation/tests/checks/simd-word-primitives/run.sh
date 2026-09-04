@@ -20,17 +20,17 @@ BUILD_START=$(date +%s)
 # CMakeLists.txt:95-97 builds only when pybind11 is found. pybind11 must satisfy
 # code/stim/pyproject.toml's `pybind11~=2.11.1`; the image pins it via pip.
 cmake -S "$WORK/src" -B "$WORK/b" -G Ninja -DCMAKE_BUILD_TYPE=Release \
-      -Dpybind11_DIR="$(python3 -m pybind11 --cmakedir)" >"$OUT_DIR/cmake.log" 2>&1
-cmake --build "$WORK/b" --target stim_python_bindings >>"$OUT_DIR/cmake.log" 2>&1
+      -Dpybind11_DIR="$(python3 -m pybind11 --cmakedir)" >"$WORK/cmake.log" 2>&1
+cmake --build "$WORK/b" --target stim_python_bindings >>"$WORK/cmake.log" 2>&1
 echo "SAB_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))"
 MOD="$(find "$WORK/b" -name 'stim*.so' | head -1)"
-[ -n "$MOD" ] || { echo "run.sh: stim python module not built" >&2; exit 1; }
+[ -n "$MOD" ] || { cp "$WORK/cmake.log" "$OUT_DIR/cmake-failed.log" 2>/dev/null; echo "run.sh: stim python module not built; see cmake-failed.log" >&2; exit 1; }
 
 # Record the vector word backend this build compiled. Stim's machine flags are
 # guarded on CMAKE_SYSTEM_PROCESSOR (CMakeLists.txt:25) and its backends are
 # x86-only, so the same source yields bitword_256_avx on an AVX2 host and the
 # portable bitword_64 elsewhere. The incumbent is meaningless without it.
-{ grep -m1 -oE "march=native|mavx2|msse2" "$OUT_DIR/cmake.log" || echo "no-machine-flag"; } > "$OUT_DIR/word_backend.txt"
+{ grep -m1 -oE "march=native|mavx2|msse2" "$WORK/cmake.log" || echo "no-machine-flag"; } > "$OUT_DIR/word_backend.txt"
 uname -m >> "$OUT_DIR/word_backend.txt"
 
 PARAMS="$CHECK_DIR/ic/$IC/params.json" OUT="$OUT_DIR" MOD="$MOD" python3 - <<'PYEOF'
