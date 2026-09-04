@@ -113,17 +113,19 @@ two Dockerfiles, the fill fields above, and comment/README.md.
 # hashed into contract_fingerprint, so a citation written after a run would make
 # that record stale, and re-running to refresh it would produce a different run.
 #
-# Declared run time per check (nominal-solve figures, rounded):
+# Declared run time per check, taken from a measured solve of the shipped
+# record. These are estimates, not a claim about the run that ships: wall clock
+# here is not reproducible (see the caveat below), so the record is the
+# authority for what each solve took.
 #
-#   bloch-redfield-jaynes-cummings   185 s   1.36 GB peak  <- binding on memory
-#   heom-hierarchy-evolution          94 s   (50,388 auxiliary density operators)
+#   bloch-redfield-jaynes-cummings   172 s   1.36 GB peak  <- binding on memory
+#   heom-hierarchy-evolution          88 s   (50,388 auxiliary density operators)
 #   dysolve-driven-propagator         30 s
 #   counting-statistics-dqd-current    3 s
-#   bloch-redfield-eigenbasis-tools    1 s
+#   bloch-redfield-eigenbasis-tools    2 s
 #   heom-bath-decomposition            1 s
 #   heom-public-interface              1 s
-#                                    ----
-#   suite                            315 s   against the 900 s budget
+#   suite                            297 s   against the 900 s budget
 #
 # The variant solve of any run lands lower than the nominal one; the record
 # carries both. The source build is ~210-250 s per check per solve and is
