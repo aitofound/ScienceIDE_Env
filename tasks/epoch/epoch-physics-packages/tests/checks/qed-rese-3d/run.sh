@@ -19,6 +19,8 @@ knob SAB_NX "64" "cells along x (upstream deck: 128 over a 23 um box; this check
 knob SAB_NY "64" "cells along y (upstream deck: 128 over a 20 um box; same cell size, shorter box); runtime scales linearly"
 knob SAB_NZ "64" "cells along z (upstream deck: 128 over a 20 um box; same cell size, shorter box); runtime scales linearly"
 knob SAB_PPC "10" "pseudoparticles per cell summed over the two loaded species (upstream: 10); runtime scales linearly"
+knob SAB_X_MAX "8.5e-6" "upper x bound of the domain in metres (upstream deck: 20e-6); this check keeps the upstream cell size and shortens the box, so x_max and SAB_NX together set both the extent and the resolution; runtime scales linearly with the number of cells"
+knob SAB_Y_MIN "-5e-6" "lower y bound of the domain in metres (upstream deck: -10e-6); the deck derives y_max = -y_min, z_min = y_min and z_max = -y_min from it, so this one knob sets the whole transverse box; runtime scales with the number of cells"
 knob SAB_T_END "30e-15" "end time in seconds (upstream deck: 100e-15); runtime grows faster than linearly because emitted photons accumulate"
 knob SAB_DT_SNAPSHOT "3.0e-15" "seconds between dumps (upstream: 1.0e-15); sets how many rows the graded series has and how much is written"
 knob SAB_MAKE_JOBS "$(cpus_allowed)" "parallel jobs for the one build of the pinned source (default: the CPUs allowed to this container); each job needs about 0.3 GB"
@@ -45,6 +47,8 @@ sed -E -e "s|^[[:space:]]*nx = .*# SAB_NX\$|  nx = $SAB_NX # SAB_NX|" \
   -e "s|^[[:space:]]*nz = .*# SAB_NZ\$|  nz = $SAB_NZ # SAB_NZ|" \
   -e "s|^[[:space:]]*nparticles = .*# SAB_PPC\$|  nparticles = nx * ny * nz * $SAB_PPC # SAB_PPC|" \
   -e "s|^[[:space:]]*t_end = .*# SAB_T_END\$|  t_end = $SAB_T_END # SAB_T_END|" \
+  -e "s|^[[:space:]]*x_max = .*# SAB_X_MAX\$|  x_max = $SAB_X_MAX # SAB_X_MAX|" \
+  -e "s|^[[:space:]]*y_min = .*# SAB_Y_MIN\$|  y_min = $SAB_Y_MIN # SAB_Y_MIN|" \
   -e "s|^[[:space:]]*dt_snapshot = .*# SAB_DT_SNAPSHOT\$|  dt_snapshot = $SAB_DT_SNAPSHOT # SAB_DT_SNAPSHOT|" \
   "$CHECK_DIR/ic/$IC/input.deck" > "$RUN/input.deck"
 

@@ -171,7 +171,7 @@
       "upstream_runtime_s": 0.4,
       "runtime_measured": true,
       "suitable": false,
-      "why": "As shipped the deck runs zero steps, so there is no ionisation dynamics to grade; a check would have to change nsteps and t_end, which makes it custom-derived. Not proposed; the human may ask for it.",
+      "why": "Re-examined under skill revision 5.6.0, which counts an upstream example deck as an official test: still unsuitable as shipped, because the deck sets nsteps = 0 and t_end is never reached, so it writes its initial state and no ionisation dynamics exists to grade. A check would have to raise nsteps or run to t_end, which is a change to the deck's own configuration rather than a runtime knob and makes the check custom-derived; that needs the human's agreement. Not proposed.",
       "survey_run": [
         {
           "deck": "ex-ionisation",
@@ -202,7 +202,7 @@
       "upstream_runtime_s": 1.2,
       "runtime_measured": true,
       "suitable": false,
-      "why": "As ionisation-1d; also aborts natively at this pin (errcode 16, table lookup) when run outside the dimension directory.",
+      "why": "As ionisation-1d, re-examined under skill revision 5.6.0 and still unsuitable as shipped: nsteps = 0. It also aborts natively at this pin (errcode 16, table lookup) when run outside the dimension directory. Not proposed.",
       "survey_run": [
         {
           "deck": "ex-ionisation",
@@ -233,7 +233,7 @@
       "upstream_runtime_s": 3.8,
       "runtime_measured": true,
       "suitable": false,
-      "why": "Excluded from the module cut approved on 2026-08-31 (listed under not_packaged); runs in 3.8 s and could seed a later module.",
+      "why": "Out of scope, not unsuitable: bremsstrahlung and Bethe-Heitler pair production were excluded from the module cut the human approved on 2026-08-31 (listed under not_packaged), so this deck belongs to a later module. Re-examined under skill revision 5.6.0 and unchanged: it runs in 3.8 s and would be cheap, but the module boundary, not the budget, is what excludes it.",
       "survey_run": [
         {
           "deck": "ex-bremsstrahlung",
@@ -248,6 +248,46 @@
       ],
       "proposed_check": "bremsstrahlung-1d",
       "budget_note": "fits as is"
+    },
+    {
+      "id": "bremsstrahlung-2d",
+      "module": "epoch-physics-packages",
+      "path": "epoch2d/example_decks/bremsstrahlung.deck",
+      "policy": "invariants",
+      "chaotic": false,
+      "exercises": "2-D bremsstrahlung photon emission (-DPHOTONS -DBREMSSTRAHLUNG, bremsstrahlung.F90), 128 x 8 cells, 128 ppc, 20 ps",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 4.0,
+        "mpi_ranks": 4
+      },
+      "upstream_runtime_s": null,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "Out of scope, not unsuitable: the same module cut of 2026-08-31 that excludes the 1-D bremsstrahlung deck excludes this one. Listed here so that the survey enumerates every package-relevant example deck in the pinned tree; it was not run natively and no check is proposed.",
+      "survey_run": [],
+      "proposed_check": null,
+      "budget_note": "not measured; out of scope for this module cut"
+    },
+    {
+      "id": "bremsstrahlung-3d",
+      "module": "epoch-physics-packages",
+      "path": "epoch3d/example_decks/bremsstrahlung.deck",
+      "policy": "invariants",
+      "chaotic": false,
+      "exercises": "3-D bremsstrahlung photon emission (-DPHOTONS -DBREMSSTRAHLUNG, bremsstrahlung.F90)",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8.0,
+        "mpi_ranks": 4
+      },
+      "upstream_runtime_s": null,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "Out of scope, not unsuitable: excluded by the module cut of 2026-08-31, as the 1-D and 2-D bremsstrahlung decks are. Listed for completeness of the audit trail; it was not run natively and no check is proposed.",
+      "survey_run": [],
+      "proposed_check": null,
+      "budget_note": "not measured; out of scope for this module cut"
     }
   ]
 }
