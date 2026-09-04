@@ -75,3 +75,4 @@ for spec in "${files[@]}"; do
   [ -f "$WORK/run/$src" ] || { echo "missing $src" >&2; exit 1; }
   cp "$WORK/run/$src" "$OUT_DIR/$out"
 done
+
