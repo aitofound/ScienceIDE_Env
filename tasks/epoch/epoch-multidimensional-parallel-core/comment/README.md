@@ -227,10 +227,9 @@ makes the runs reproducible and also what disables the automatic layout
 (`deck_control_block.F90:169-171`). One-rank behaviour is graded, but only in two dimensions and only on one deck: `layout-invariance-2d` runs the single-rank case and grades it, and there is no 1-D or 3-D counterpart and no particle counterpart, because a particle deck reseeds its loader per rank and its one-rank and decomposed runs are different realisations rather than the same run cut differently.
 The `_r4` single-precision variant of the guard exchange is never reached
 because no deck asks for single-precision dumps. `redistribute_domain` is
-exercised only through the 2-D injector deck; there is no 3-D load-balance
-check, and no check watches a redistribution move CPML helper arrays or
-time-averaged diagnostics, which are the parts of `redistribute_fields` most
-likely to be forgotten in a port. The current seam summation
+exercised through the injector decks in all three dimensions; no check watches
+a redistribution move CPML helper arrays or time-averaged diagnostics, which
+are the parts of `redistribute_fields` most likely to be forgotten in a port. The current seam summation
 (`processor_summation_bcs`) is graded only through its effect on Jx and the
 densities, never in isolation, and the paired species/no-species call structure
 that guards it is only exercised in its non-`c_bc_mixed` branch. Finally, every
