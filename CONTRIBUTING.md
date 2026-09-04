@@ -29,6 +29,15 @@ The CLI (`skills/package-sciaccel-task/scripts/sab.py`) guides every step and
 validates what is written; the human owns every tolerance and the policy type
 of every check, finalized from the calibration run.
 
+The pipeline itself is **not maintained in this repository**. Everything under
+`skills/package-sciaccel-task/` (SKILL, SPEC, templates, CLI) is a generated
+export from the private canonical repository `aitofound/sciaccelbench-pipeline`,
+pinned by `vendor-manifest.json`; `npm run check` verifies it and fails on any
+hand edit. To change the pipeline, open a PR there and land it with its
+`tools/release.py`, which opens the sync PR here. `python3
+skills/package-sciaccel-task/scripts/vendor_sync.py status` says whether this
+copy is current.
+
 Merge does **not** require Claude, Codex, or any other implementation attempt,
 one-shot run, candidate port, or raw session transcript.
 
@@ -83,6 +92,12 @@ exactly 1.0 with every check passed; its records land under
 `comment/pipeline/`.
 
 ## Manifests and instructions
+
+`task.toml` files its science at two grains. `arxiv`, optional, is a list of
+arXiv categories from `registry/arxiv-categories.json`, primary first: this is
+where the task says what it is (`physics.plasm-ph`, `astro-ph.HE`, `quant-ph`).
+`domain` is the site's thirteen-way field from `registry/fields.json`; it is
+derived from the primary tag and the validator holds the two equal.
 
 `task.toml` is stamped by the CLI: identity and pin from the pipeline state, a
 `resources` block (cores, memory, suite budget), and fill fields for the
