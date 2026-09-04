@@ -29,7 +29,7 @@ The graded observable is the volume-average history of ten iterations on a spher
 
 ## Evidence
 
-- Two-build floor, the check's own Config.pl line at -O3 against the same line with -O2 substituted into share/build/Makefile.Linux.gfortran, both run through this run.sh on ic/nominal on the x86 worker (Ubuntu 24.04, GCC 13.3, Open MPI 4.1, 2 ranks, one thread): largest difference 1.16e-14, 1.16e-08 of the bound.
+- Two-build floor, the check's own Config.pl line at -O3 against the same line with -O2 substituted into share/build/Makefile.Linux.gfortran, both run through this run.sh on ic/nominal on the x86 Ubuntu 24.04 worker inside the Debian bookworm task image (GCC 12, Open MPI 4.1, 2 ranks, one thread): largest difference 1.16e-14, 1.16e-08 of the bound.
 - Nominal against variant, the two solves of the self-validation: largest difference 1e-08, 0.00983 of the bound.
 - Measured cost inside the task's declared resources: about 4 s of run time after about 73 s of source build; the self-validation record under `comment/pipeline/` carries the numbers of the run that produced this package.
 
