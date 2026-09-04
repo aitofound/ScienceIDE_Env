@@ -1,0 +1,158 @@
+# batsrus-nonideal-closures: authoring notes
+
+This directory is hidden at Harbor runtime and is not part of the contract.
+`comment/pipeline/` is written only by the CLI (module entry, test survey,
+self-validation and runtime records). This file is the human-readable story.
+
+## Module
+
+The module is everything BATSRUS does beyond ideal MHD, together with the implicit machinery that
+makes it affordable. It owns the Hall term and its region masking (`src/ModHallResist.f90`),
+resistivity (`src/ModResistivity.f90`), viscosity (`src/ModViscosity.f90`), field-aligned and
+collisionless electron heat conduction (`src/ModHeatConduction.f90`,
+`src/ModHeatFluxCollisionless.f90`), the current, cell-gradient and face-gradient stencils those
+fluxes are built on (`src/ModCurrent.f90`, `src/ModCellGradient.f90`, `src/ModFaceGradient.f90`,
+`src/ModElectricField.f90`), the anisotropic-pressure and separate-electron-pressure equation sets
+(`srcEquation/ModEquationMhdAnisoP.f90`, `ModEquationMhdPeAniso.f90`, `ModEquationMhdPe.f90`,
+`ModEquationMhdPeAnisoPi.f90`), and the semi-implicit, part-implicit, full-implicit and
+point-implicit Krylov solvers that remove the stiff parabolic and dispersive time-step limits
+(`src/ModSemiImplicit.f90`, `src/ModImplicit.f90`, `src/ModPartImplicit.f90`,
+`src/ModPointImplicit.f90`, `src/ModImplHypre_*.f90`, `src/ModRadDiffusion.f90`). The expensive path
+is the gradient and current stencils that feed the Hall and resistive fluxes together with the
+preconditioned, matrix-free Krylov solve of `ModSemiImplicit` over all blocks.
+
+Deliberately excluded, as recorded in the approved module cut: the hybrid kinetic-ion test
+(`test_hybrid`, user module `ModUserHybrid`), which lives in the access-restricted `srcUserExtra`
+repository and cannot be compiled from the pinned tree; gray radiation diffusion and the HYPRE
+preconditioner (`test_graydiffusion`, `test_laserpackage`, which need `srcUserExtra` and CRASH); and
+the electron-pressure AWSoM closures, which belong to the solar-corona module.
+
+## Check set and the THIN flag
+
+The module was flagged THIN at the survey: `tests.json` lists nine suitable official tests for it,
+below the human's target of ten to thirty. All nine are packaged: the four Makefile.test targets
+(`test_hallmhd`, `test_viscosity`, `test_heatcond_2d`, `test_anisotropic`) and the five upstream
+example decks with no target of their own (`Param/CURRENT/PARAM.in`,
+`Param/GEMRECONNECTION/PARAM.in.MhdHypPe` and the three `Param/ANISOPRESSURE` examples).
+
+Nothing was dropped and nothing was padded. All 126 `PARAM.in*` files under `code/batsrus/Param/`
+were searched for `#HALLRESISTIVITY`, `#HALLREGION`, `#RESISTIVITY`, `#VISCOSITY`,
+`#HEATCONDUCTION`, `#SEMIIMPLICIT`, `#SEMIKRYLOV`, `#IMPLICIT` and `#ANISOTROPICPRESSURE`. The 33
+decks that no test in `tests.json` claims break down as follows: 11 are restart halves of another
+module's test (`Param/{MARS,MARSFLUIDS,VENUS,TITAN,MOONIMPACT,COMET3FLUIDSPE,OUTERHELIO}/PARAM.in.restart*`);
+2 (`Param/REGION/PARAM.in.cyl`, `PARAM.in.cyl_lnr`, which do use `#HALLRESISTIVITY` and
+`#HALLREGION`) are the second and third runs of `test_region2d`, already claimed by
+`batsrus-ideal-mhd-solver`; and the remaining 20 need `srcUserExtra`, which is not vendored
+(`Param/GANYMEDE`, `Param/EUROPA`, `Param/FLUXEMERGENCE`, `Param/CRASH`,
+`Param/CORONA/PARAM.in.bvector` and `PARAM.in.awsom.bvector`, `Param/CORONA/PARAM.in.AwsomChargeState`,
+`Param/SHOCKTUBE/PARAM.in.HybridTest`). Of those, `Param/GANYMEDE/PARAM.in` (`#RESISTIVITY` plus
+`#SEMIIMPLICIT`) and the two `Param/EUROPA` decks (`#RESISTIVITY`) would have been genuine additions
+to this module; they cannot be compiled here. So nine is the true ceiling for the pinned tree, and no
+custom check was invented to reach ten.
+
+## Tolerances
+
+Every check is `pointwise` with `rtol = 1e-5` and a per-check `atol`. `rtol = 1e-5` is the relative
+tolerance upstream's own `share/Scripts/DiffNum.pl` uses for this module's tests; it carries the
+bound for the large-magnitude variables (Bx = 100 in the Hall test, By = 30 in the anisotropic
+ones). `atol` is the floor for the values that are numerically zero in each configuration and is set
+from measurement.
+
+The floors were measured natively, before any Docker run, on this pinned tree (gfortran 15.2, Open
+MPI 5.0.8): for every check, one build per `Config.pl` line, then `mpiexec -n 2 ./BATSRUS.exe` and
+`mpiexec -n 4 ./BATSRUS.exe` on the same `ic/nominal`, compared value by value over exactly the files
+the check grades. Six of the nine are bit-identical across the two rank counts. The two that are not
+are the two with a Krylov solve: `hallmhd` moves by 3.2e-8 and `heatcond-2d` by 1e-13, because
+`#KRYLOV` asks GMRES for `ErrorMaxKrylov = 1e-7` and the iteration count and the order of the
+block-wise dot products depend on the domain decomposition. That is the module's characteristic
+hazard, recorded at the module cut, and it is why `hallmhd` carries `atol = 3e-6` instead of the
+2e-7 upstream compares at. The same sweep measured `ic/nominal` against `ic/variant` on 2 ranks; each
+`atol` is about a hundred times the larger of the two measurements, rounded to one significant digit.
+`heatcond-2d` is the one place where the bound is deliberately looser than upstream's (3e-8 against
+upstream's 1e-9): 1e-9 is supported by the 1e-13 floor but leaves only a factor of three over the
+two-ulp variant spread, which would make the check fragile on another platform.
+
+The tolerances were finalised by the agent under the human's blanket go-ahead of 2026-09-04 ("go on,
+i consent to use either local or remote device for the docker runs, no need for further consent"),
+which delegated STOP 4 as well. They are open to revision by the reviewer; every number above is
+reproducible with the commands in the per-check `README.md` files.
+
+## Windows that differ from upstream
+
+Two checks do not run the upstream deck verbatim, and both say so in `default_vs_upstream`:
+
+- `ex-gemreconnection-mhdhyppe` stops at `t = 70` instead of `t = 700`. The upstream example takes
+  about 96000 steps and 35 minutes on 2 cores; `t = 70` is about 9600 steps and about 3.5 minutes,
+  covers the linear tearing growth and the onset of the Hall-mediated nonlinear phase, and keeps the
+  two-ulp amplification at 1e-10 in the graded frame (at t = 700 it would be far larger). `SAB_TMAX_SCALE=10` restores the upstream
+  window.
+- `ex-current` and `ex-anisopressure-soundwave` write their `#SAVEPLOT` files as `idl_ascii` instead
+  of the binary `idl` form, so the graded values keep the ten printed digits instead of float32. No
+  physics changes; without it the graded comparison would be floored at 6e-8 relative by the output
+  format alone.
+
+The build also differs from a stock upstream build in two documented ways, identically for the
+reference and the candidate: `INCL_EXTRA` in `Makefile.conf` is filled with `mpif90 -showme:compile`
+so that the template's plain-`gfortran` compile rule can find `mpif.h` on a distribution MPI, and
+every check configures with `-noopenmp -noacc`, so that thread counts cannot make a run
+non-deterministic and the `*_gpu` code paths stay off (the pinned toolchain has no OpenACC compiler
+anyway).
+
+Every `run.sh` also starts with `exec < /dev/null`. The stock `tests/test.sh` feeds its list of
+checks to a `while read` loop whose file descriptor the check inherits, and `mpiexec` forwards
+standard input to rank 0: without the redirect the first check drained the pipe and the driver ran
+one check instead of nine. The first self-validation attempt caught exactly that.
+
+## What the self-validation measured
+
+The suite was built and self-validated on the consented remote worker
+(`huangzesen@136.114.2.6`, 88-core x86_64, Docker 29, the leaf under `--cpus 4`), because Docker
+Desktop on the authoring Mac does not share the scratch directory the oracle writes into. The
+recorded run is `20260904T110050Z`: nine checks, reward 1.0, no byte-identical pair, suite run time
+520 s against the 900 s budget, with 646 s of source builds excluded from it. Every check rebuilds
+BATSRUS.exe from a fresh copy of the pinned tree (66 to 85 s each) and prints `SAB_BUILD_SECONDS`,
+so the driver keeps run time and build time apart. Both solves report `produce: all 9 checks ran`
+and the run root holds 18 `run.ok` markers, nine per initial condition.
+
+The Docker-side nominal-versus-variant spreads reproduced the native ones almost exactly, which is
+the main reason the tolerances were left where the native sweep put them: hallmhd 3.03e-8 (native
+3.19e-8), ex-anisopressure-alfven 5.86e-9, anisotropic 1.0e-9, ex-anisopressure-fastwave 1.0e-9,
+ex-anisopressure-soundwave 6.0e-10, heatcond-2d 3.0e-10, viscosity 2.0e-10, ex-current 2.0e-10,
+ex-gemreconnection-mhdhyppe 1.0e-10. Every margin (atol over spread) is between 99 and 167.
+
+The worker is shared with seven sibling packaging agents, so the measured run times are contended
+and vary between runs: `hallmhd` took 24 s in the calibration run and 91 s in the recorded one, and
+the record carries the resulting warning against its declared 25 s. The declared
+`expected_runtime_s` of every check is the Docker measurement, so a reviewer on an idle machine
+should see the same or less; only `hallmhd`'s number should be read as "tens of seconds, contended".
+
+An implementation note that cost a run: the stock `tests/test.sh produce` feeds its list of checks
+to a `while read` loop, and a check that reads standard input drains that pipe. `mpiexec` forwards
+standard input to rank 0, so the first attempt ran one check and reported `produce: all 1 checks
+ran`. Every `run.sh` now begins with `exec < /dev/null`, which closes it for the whole check and its
+children; the fix is verified above by the nine `OK [...]` lines and 18 `run.ok` markers of the
+recorded run, not by the reward alone.
+
+## Blind spots
+
+- **Resistivity is only reached through the semi-implicit operator.** No packaged check switches
+  `#RESISTIVITY` on with a finite `Eta0Si`: the two decks that do (`Param/GANYMEDE/PARAM.in`,
+  `Param/EUROPA/PARAM.in.*fluids`) need `srcUserExtra`. `ModResistivity.f90` is exercised as the
+  `#SEMIIMPLICIT resistivity` operator of `hallmhd`, and the Hall reconnection check runs with the
+  deck's `#RESISTIVITY` block commented out, as upstream ships it. A reviewer who wants explicit
+  resistive diffusion covered would have to add a custom deck.
+- **`ModPointImplicit.f90` and `ModRadDiffusion.f90` are owned but untested here.** The
+  point-implicit source treatment is exercised by the multi-fluid and planetary modules' tests, and
+  radiation diffusion only by the CRASH tests, which need `srcUserExtra`.
+- **`ModHeatFluxCollisionless.f90` is not reached.** `#HEATFLUXCOLLISIONLESS` appears only in AWSoM
+  decks, which belong to the solar-corona module.
+- **The GPU path is not covered.** All checks build with `-noacc`; the pinned toolchain is gfortran
+  with MPI only, so the `Config.pl -acc` sources are compiled by no check in this task. That is a
+  property of the pinned environment, not of the module cut.
+- **One check is chaotic.** `ex-gemreconnection-mhdhyppe` is a nonlinear instability and is flagged
+  as such; its window is bounded to keep a pointwise comparison meaningful, so it tests the onset of
+  Hall reconnection rather than the saturated island.
+- **The satellite and log outputs of `ex-current` print only six significant digits.** The satellite
+  file is graded (its 1000 samples are the module's only test of current interpolation off the
+  grid); the log files are not graded anywhere in this task, because the merged `.outs` movies give
+  the same time history at ten digits.
