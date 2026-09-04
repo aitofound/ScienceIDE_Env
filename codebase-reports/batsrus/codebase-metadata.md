@@ -51,13 +51,15 @@ Generated from the canonical JSON. Unknown values are visible; this report never
 
 | count | value | unit |
 |---|---:|---|
-| `test_files` | 61 | files |
+| `test_files` | 93 | files |
 | `test_definitions` | 61 | source-level test definitions |
-| `collected_items` | unknown | framework-collected items |
+| `collected_items` | 99 | framework-collected items |
 | `inner_cases` | unknown | inner cases |
 
 ### Gaps and warnings
-- 20 of 59 open leaf tests (plus restart halves) measured natively so far; the rest are listed as not yet measured and the report is refreshed when they finish
+- all 65 open Makefile.test leaf entries (59 tests plus restart halves) were run natively; 58 of the 99 survey entries carry measured runtimes; the 33 upstream examples without a test target are unmeasured official tests
+- not reproducible or not runnable in this pin: test_amr (needs an IMF file from the SWMF Param/TESTSUITE tree), test_amrsph (too many blocks per processor with 2 ranks), test_marsfluids (negative pressures at step 1 on macOS), test_cometfluids (unknown #MHDIONS command), test_awsom_large_gpu (exceeds the 3-minute cap), test_mercurysph (reference in SWMF_data), test_spectrum (SWMF_data)
+- reproduced beyond upstream tolerance only: test_bx0, test_partsteady, test_awsom_signb (4e-6 absolute on a small log column), test_fivemoment_shock, test_L1toBC, test_cometCGfluids
 - test_bx0 (isosurface plot) and test_partsteady differ from the stored upstream references on this platform beyond upstream's own tolerance (1e-3 relative and 1e-11 absolute respectively); recorded, not resolved
 - the module approval was given in chat as the single word 'approve' after the table; recorded by approve-modules --human-ref
 - runtimes were measured on a 20-core Apple Silicon machine with two runners in parallel, so compile times include contention
