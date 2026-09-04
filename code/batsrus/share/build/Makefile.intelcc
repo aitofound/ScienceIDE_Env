@@ -1,0 +1,27 @@
+# C language related part of Makefile.conf: Makefile.intelcc
+C_COMPILER_NAME=icc
+# This file is for the Bluewaters Cray where cc and CC is used
+# for all C compilers. The flags are still specific for Intel.
+# Requires loading the Intel programming environment.
+
+COMPILE.c     = cc
+COMPILE.mpicc = CC
+COMPILE.mpicxx= CC
+
+LINK.cpp = ${COMPILE.c} -lstdc++
+
+CPPLIB = -lstdc++
+
+#DEBUGC = -g -traceback -ftrapuv -debug all
+
+.SUFFIXES: .c .cpp
+
+FLAGC = ${SEARCH_C} ${FLAGC_EXTRA} -c ${OPT3} ${OPENMPFLAG} ${DEBUGC}
+
+FLAGCC = ${FLAGC} -std=c++17
+
+.c.o:
+	${COMPILE.c} ${FLAGC} $< -o $@
+
+.cpp.o:
+	${COMPILE.mpicxx} ${FLAGCC} $< -o $@

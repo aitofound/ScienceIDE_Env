@@ -1,0 +1,24 @@
+# C language related part of Makefile.conf: Makefile.intel_mpicc
+C_COMPILER_NAME=icc
+
+COMPILE.c     = icc
+COMPILE.mpicc = mpiicc
+COMPILE.mpicxx= mpiicpc
+
+LINK.cpp = ${COMPILE.c} -lstdc++
+
+CPPLIB = -lstdc++ -lmpi_cxx
+
+#DEBUGC =  -g 
+
+.SUFFIXES: .c .cpp
+
+FLAGC = ${SEARCH_C} ${FLAGC_EXTRA} -c ${OPT3} ${OPENMPFLAG} ${DEBUGC}
+
+FLAGCC = ${FLAGC} -std=c++17
+
+.c.o:
+	${COMPILE.c} ${FLAGC} $< -o $@
+
+.cpp.o:
+	${COMPILE.mpicxx} ${FLAGCC} $< -o $@
