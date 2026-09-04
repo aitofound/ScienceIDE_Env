@@ -14,6 +14,10 @@ per-block tagged arrays) and runs each check's own validate.py on the pair:
   wrong_set      permuted, one particle identifier replaced by a new one   -> must FAIL
   duplicate_id   permuted, two particles sharing one identifier            -> must FAIL
   short_block    permuted, one particle dropped                            -> must FAIL
+  sink_permuted  gas permuted AND the sink block reordered                 -> must FAIL
+
+The last case is the other half of the contract: the sink block carries no identity
+column, so its order is graded as written and reordering it is a real difference.
 
     python3 comment/tools/test_iorig_matching.py [check ...]
 
@@ -82,6 +86,14 @@ def gas_block(n: int, seed: int = 7) -> dict:
     return {"arrays": arrays}
 
 
+def sink_block(n: int, seed: int = 23) -> dict:
+    """A sink block: binary64 columns only, and no identity column -- which is the point."""
+    rng = np.random.default_rng(seed)
+    tags = ("x", "y", "z", "m", "h", "hsoft", "maccreted", "spinx", "spiny", "spinz",
+            "tlast", "vx", "vy", "vz")
+    return {"arrays": {t: (6, rng.normal(size=n).astype("<f8")) for t in tags}}
+
+
 def permute(block: dict, order: np.ndarray) -> dict:
     return {"arrays": {t: (s, np.ascontiguousarray(a[order])) for t, (s, a) in block["arrays"].items()}}
 
@@ -119,15 +131,16 @@ def build_case(work: Path, name: str, header: dict, blocks: list[dict]) -> Path:
 def test_check(name: str) -> list[str]:
     check = CHECKS / name
     rubric = json.loads((check / "rubric.json").read_text())
-    n = 512
-    header = {"time": (6, 1.25), "nparttot": (4, n), "nptmass": (4, 0), "ntypes": (4, 1)}
+    n, nsink = 512, 3
+    header = {"time": (6, 1.25), "nparttot": (4, n), "nptmass": (4, nsink), "ntypes": (4, 1)}
     ref_block = gas_block(n)
+    ref_sink = sink_block(nsink)
     rng = np.random.default_rng(11)
     order = rng.permutation(n)
     failures = []
     with tempfile.TemporaryDirectory(prefix="iorig-selftest-") as tmp:
         work = Path(tmp)
-        ref = build_case(work, "reference", header, [ref_block])
+        ref = build_case(work, "reference", header, [ref_block, ref_sink])
         atol = float(rubric["comparison"]["atol"])
         cases = [
             ("permuted", True, permute(ref_block, order)),
@@ -137,12 +150,14 @@ def test_check(name: str) -> list[str]:
             ("duplicate_id", False, edit(permute(ref_block, order), "iorig", 5,
                                          permute(ref_block, order)["arrays"]["iorig"][1][6])),
             ("short_block", False, drop(permute(ref_block, order), 9)),
+            ("sink_permuted", False, permute(ref_block, order)),
         ]
         for case, expect_pass, block in cases:
             hdr = dict(header)
             if case == "short_block":
                 hdr["nparttot"] = (4, n - 1)
-            cand = build_case(work, case, hdr, [block])
+            sink = permute(ref_sink, np.array([1, 2, 0])) if case == "sink_permuted" else ref_sink
+            cand = build_case(work, case, hdr, [block, sink])
             ok, reason = run_validator(check, ref, cand, work / f"{case}.json")
             verdict = "PASS" if ok else "FAIL"
             print(f"  {name}/{case}: {verdict} ({reason[:110]})")
