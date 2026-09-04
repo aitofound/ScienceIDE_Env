@@ -1,8 +1,8 @@
 ---
 name: package-sciaccel-task
 description: Turn one scientific codebase into ScienceAccelBench task environments with the sab.py CLI. Use it to brief the human on the whole pipeline first, register a pinned codebase, investigate it with short native runs, decompose it into semi-independent modules with human approval, get the source PR merged, survey its official tests, and then, per module, scaffold a Harbor-style task, author self-contained checks (test + pass policy, nominal and variant initial conditions), lint, obtain the human's consent to the run plan, build the Docker images, run the two-solve self-validation, and hand the human a review brief for the task PR. The design is SPEC.html next to this file; the CLI validates what you write and never writes science, runs anything remotely, or merges.
-version: 5.5.3
-last_changed_at: "2026-09-04T18:20:00Z"
+version: 5.6.0
+last_changed_at: "2026-09-04T19:30:00Z"
 ---
 
 # Package a ScienceAccelBench task
@@ -43,11 +43,21 @@ neither is `custom`.
 A **check** is one **test** (`run.sh`: fixed inputs in, graded files out)
 plus one **pass policy** (`rubric.json` + `validate.py`: the scientific
 **tolerance** under which two runs are equivalent). There are exactly two
-policies: `pointwise`, every graded value compared under a tolerance, used
-whenever the first steps are even semi-deterministic; and `invariants`, used
-only when the result diverges at the first step by construction. Every check
-carries two initial conditions, `nominal` (graded) and `variant`
-(self-validation compares the two). The human curator owns every tolerance.
+policies. `pointwise`, every graded value compared under a tolerance, is
+preferred: use it whenever a bound can contain the check's measured
+sensitivity over the graded window and still reject a real fault by a wide
+margin. `invariants` (moments, distributions, conserved quantities, integral
+norms, each with its own tolerance) is for the cases where pointwise is not
+appropriate: a random stream, a flow that amplifies rounding to the size of
+the observable inside the window the check must keep, a statistic with its own
+sampling error, a discrete output. The definite case: if a few-ULP
+perturbation grows by orders of magnitude within the first few smallest steps,
+consider invariants from the start. Shorten the window first if the physics
+survives it; read the calibration numbers with taste; a heavy tail in a
+diagnostic array while the state arrays are clean gets its own bound or is
+excluded, not a policy change. Every check carries two initial conditions,
+`nominal` (graded) and `variant` (self-validation compares the two). The
+human curator owns every tolerance.
 
 ## How to work
 
