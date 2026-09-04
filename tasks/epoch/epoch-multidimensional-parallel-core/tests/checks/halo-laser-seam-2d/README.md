@@ -154,5 +154,13 @@ spread is measured later by the self-validation run and recorded in the rubric.
   bit for bit on every graded field value; only the partition ladder changes,
   as it must.
 
-Policy, bounds, window and variant are proposals until the curator finalizes
-them after the calibration self-validation run.
+The complete graded-default x86 calibration selfcheck finished
+2026-09-04T13:49:13Z: its own nominal-versus-variant distance was 0.000747681.
+All 7 graded arrays (1500002 values) contained the measured sensitivity under
+their own bounds, with 0 values over bound; the worst array was ey_0002.f64 at
+7.47681e-06 of its bound. This comparison measures nominal-variant
+sensitivity, not a same-input run/build floor.
+
+The nominal run took 1.8 s excluding its 58.0 s build, and expected_runtime_s
+is 3 s. The earlier independent same-input build-floor evidence above remains
+distinct.
