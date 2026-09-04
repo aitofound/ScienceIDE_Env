@@ -37,6 +37,10 @@ round-off level from the first step. The
 spread between them is the check's measured sensitivity under the pass policy
 and must stay inside the bound.
 
+`run.sh altbuild` runs `ic/nominal` on an alternative build of the same source, `genmake2 -ieee` (gfortran -O0
+-ffloat-store, strict IEEE arithmetic) instead of the optimised optfile; grading never uses it, self-validation measures the
+check's floor between two legitimate builds from it.
+
 ## The pass policy
 
 Every cell of every prognostic field in the final state dump must satisfy
