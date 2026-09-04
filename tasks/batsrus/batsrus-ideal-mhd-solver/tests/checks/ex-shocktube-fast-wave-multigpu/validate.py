@@ -58,6 +58,11 @@ def _rows(lines: list[str]) -> np.ndarray:
     width = len(data[0].split())
     if width == 0:
         return np.zeros(0)
+    for row_number, line in enumerate(data, start=1):
+        row_width = len(line.split())
+        if row_width != width:
+            raise ValueError("ragged data block: row %d has %d columns, expected %d"
+                             % (row_number, row_width, width))
     tokens = " ".join(data).split()
     if len(tokens) != width * len(data):
         raise ValueError("ragged data block: %d rows of %d columns is %d values, found %d"
