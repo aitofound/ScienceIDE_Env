@@ -15,7 +15,7 @@ IC="${1:?usage: run.sh <nominal|variant> | run.sh --help}"
 : "${SOURCE_DIR:?}" "${OUT_DIR:?}" "${CHECK_DIR:?}"
 case "$(basename "$CHECK_DIR")" in
   gk-ion-sound)
-    stem=rt_gk_ion_sound_1x2v_p1; param=alpha
+    stem=rt_gk_ion_sound_1x2v_p1; param=n0
     files=('elc-integrated-moms.gkyl:rt_gk_ion_sound_1x2v_p1-elc_integrated_moms.gkyl' 'ion-integrated-moms.gkyl:rt_gk_ion_sound_1x2v_p1-ion_integrated_moms.gkyl' 'field-energy.gkyl:rt_gk_ion_sound_1x2v_p1-field_energy.gkyl') ;;
   gk-lbo-relaxation)
     stem=rt_gk_lbo_relax_1x2v_p1; param=nu

@@ -21,7 +21,7 @@ case "$(basename "$CHECK_DIR")" in
     stem=rt_gk_lbo_relax_1x2v_p1; param=nu
     files=('square-integrated-moms.gkyl:rt_gk_lbo_relax_1x2v_p1-square_integrated_moms.gkyl' 'bump-integrated-moms.gkyl:rt_gk_lbo_relax_1x2v_p1-bump_integrated_moms.gkyl') ;;
   gk-sheath-bgk)
-    stem=rt_gk_sheath_bgk_1x2v_p1; param=nu_frac
+    stem=rt_gk_sheath_bgk_1x2v_p1; param=n_src
     files=('elc-integrated-moms.gkyl:rt_gk_sheath_bgk_1x2v_p1-elc_integrated_moms.gkyl' 'ion-integrated-moms.gkyl:rt_gk_sheath_bgk_1x2v_p1-ion_integrated_moms.gkyl' 'field-energy.gkyl:rt_gk_sheath_bgk_1x2v_p1-field_energy.gkyl') ;;
   gk-cyclone-base-case)
     stem=rt_gk_cbc_2x2v_p1; param=n0
