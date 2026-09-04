@@ -1,0 +1,471 @@
+{
+  "module": "mitgcm-seaice",
+  "tests": [
+    {
+      "id": "lab-sea",
+      "module": "mitgcm-seaice",
+      "path": "verification/lab_sea/input",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Coupled Labrador Sea ocean (20x16x23, 2 deg) with dynamic-thermodynamic sea ice: LSR viscous-plastic solver (LSR_ERROR=1e-4), 7-category thermodynamics (SEAICE_multDim=7), advection scheme 7, exf forcing, 10 steps of 3600 s",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.65,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. Reproduces upstream to 11 digits on cg2d and 13-22 on the ice fields.",
+      "proposed_check": "lab-sea-lsr"
+    },
+    {
+      "id": "lab-sea-fd",
+      "module": "mitgcm-seaice",
+      "path": "verification/lab_sea/input.fd",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Same domain with free-drift ice dynamics (SEAICEuseFREEDRIFT) and the 3rd-order DST advection of thickness (SEAICEadvSchHeff=33)",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.62,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. Free drift removes the iterative solver, so the floor is set by the thermodynamics alone; 13 digits upstream.",
+      "proposed_check": "lab-sea-freedrift"
+    },
+    {
+      "id": "lab-sea-hb87",
+      "module": "mitgcm-seaice",
+      "path": "verification/lab_sea/input.hb87",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Hibler-Bryan 1987 style single-category ice (SEAICE_multDim=1, adv scheme 2, ice step equal to the ocean step)",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 2.35,
+      "runtime_measured": true,
+      "suitable": false,
+      "why": "Not suitable: reproduces the upstream reference to only 5 digits on cg2d and 4-9 on the ice fields with gfortran, which means this deck amplifies round-off (the centred adv scheme 2 with the old single-category thermodynamics is dispersive); a pointwise floor cannot be established from it."
+    },
+    {
+      "id": "lab-sea-salt-plume",
+      "module": "mitgcm-seaice",
+      "path": "verification/lab_sea/input.salt_plume",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Labrador Sea with tight LSR convergence (LSR_ERROR=1e-12) and pkg/salt_plume distributing brine rejection over depth",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.79,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. 16 digits upstream on every monitored field; the tight LSR tolerance makes the dynamics floor round-off level.",
+      "proposed_check": "lab-sea-salt-plume"
+    },
+    {
+      "id": "lab-sea-natl-box",
+      "module": "mitgcm-seaice",
+      "path": "verification/lab_sea/input.natl_box",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "North Atlantic box cut of the same setup with 20 steps and exf yearly fields",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 1.12,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. 13 digits upstream.",
+      "proposed_check": "lab-sea-natl-box"
+    },
+    {
+      "id": "lab-sea-longstep",
+      "module": "mitgcm-seaice",
+      "path": "verification/lab_sea/input.longstep",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Labrador Sea with pkg/longstep sub-stepping the passive tracers relative to the sea-ice and momentum steps",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 1.33,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. 16 digits upstream; exercises ptracer coupling rather than the ice solver, lower priority for this module.",
+      "proposed_check": "lab-sea-longstep"
+    },
+    {
+      "id": "seaice-itd",
+      "module": "mitgcm-seaice",
+      "path": "verification/seaice_itd/input",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Idealised 40x21 channel, ocean frozen, 7-category ice thickness distribution (ITD) with linear remapping, LSR solver at LSR_ERROR=1e-12, multidimensional advection 77, 12 steps of 1800 s",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 10.08,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. The ITD category remapping and ridging are the expensive per-cell thermodynamics; 12 digits upstream.",
+      "proposed_check": "seaice-itd-remap"
+    },
+    {
+      "id": "seaice-itd-lipscomb07",
+      "module": "mitgcm-seaice",
+      "path": "verification/seaice_itd/input.lipscomb07",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Same ITD channel with the Lipscomb et al. 2007 ridging participation and redistribution functions",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 9.99,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. 12 digits upstream.",
+      "proposed_check": "seaice-itd-ridging"
+    },
+    {
+      "id": "seaice-itd-thermo",
+      "module": "mitgcm-seaice",
+      "path": "verification/seaice_itd/input.thermo",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "ITD channel without linear remapping (SEAICEuseLinRemapITD=.FALSE.) and DST advection 33",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 10.45,
+      "runtime_measured": true,
+      "suitable": false,
+      "why": "Not suitable: 7 digits against upstream (6-9 on the ice fields): category thresholds in the non-remapped ITD switch on round-off, so a pointwise floor is not measurable; would need invariants and is dropped in favour of the two remapped decks."
+    },
+    {
+      "id": "seaice-obcs",
+      "module": "mitgcm-seaice",
+      "path": "verification/seaice_obcs/input",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "5x8x23 Labrador Sea cut-out with open boundaries prescribing ocean and sea-ice fields (pkg/obcs), LSR at 1e-12, 5 steps",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.17,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. 16 digits upstream; exercises the ice boundary-condition code path.",
+      "proposed_check": "seaice-obcs"
+    },
+    {
+      "id": "seaice-obcs-sponge",
+      "module": "mitgcm-seaice",
+      "path": "verification/seaice_obcs/input.seaiceSponge",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Open-boundary case with sponge-layer relaxation of the sea-ice fields (useSeaiceSponge)",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.18,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. 14 digits upstream.",
+      "proposed_check": "seaice-obcs-sponge"
+    },
+    {
+      "id": "seaice-obcs-tides",
+      "module": "mitgcm-seaice",
+      "path": "verification/seaice_obcs/input.tides",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Open-boundary case with tidal boundary forcing of the barotropic velocities under ice",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.18,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. 16 digits upstream.",
+      "proposed_check": "seaice-obcs-tides"
+    },
+    {
+      "id": "seaice-obcs-regdenom",
+      "module": "mitgcm-seaice",
+      "path": "verification/seaice_obcs/input.regDenom",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Open-boundary case with the EVP solver and regularised area denominator (SEAICE_evpAreaReg)",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.48,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. 16 digits upstream; the only EVP deck in the lab_sea family.",
+      "proposed_check": "seaice-obcs-evp"
+    },
+    {
+      "id": "offline-exf-seaice",
+      "module": "mitgcm-seaice",
+      "path": "verification/offline_exf_seaice/input",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "40x21 ice-only channel (ocean momentum off, exf forcing) with the default LSR solver at 1e-12, SEAICE_deltaTdyn=1800 s, 24 steps of 900 s, 64-bit output",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 8.88,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. 12 digits upstream; the reference LSR configuration.",
+      "proposed_check": "offline-lsr"
+    },
+    {
+      "id": "offline-exf-seaice-dyn-lsr",
+      "module": "mitgcm-seaice",
+      "path": "verification/offline_exf_seaice/input.dyn_lsr",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Ice-only channel with the flexible LSR variant (SEAICEuseLSRflex) and advection 41",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 5.1,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. 13 digits upstream.",
+      "proposed_check": "offline-lsrflex"
+    },
+    {
+      "id": "offline-exf-seaice-dyn-jfnk",
+      "module": "mitgcm-seaice",
+      "path": "verification/offline_exf_seaice/input.dyn_jfnk",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Ice-only channel with the Jacobian-free Newton-Krylov solver (SEAICEuseJFNK) and thsice thermodynamics",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 28.65,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. 12 digits upstream; the most expensive deck (Newton iterations with GMRES inner solves), the natural acceleration check.",
+      "proposed_check": "offline-jfnk"
+    },
+    {
+      "id": "offline-exf-seaice-dyn-paralens",
+      "module": "mitgcm-seaice",
+      "path": "verification/offline_exf_seaice/input.dyn_paralens",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Ice-only channel with the Picard-Krylov solver (SEAICEuseKrylov) and the parabolic-lens yield curve",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 6.08,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. 14 digits upstream.",
+      "proposed_check": "offline-krylov-paralens"
+    },
+    {
+      "id": "offline-exf-seaice-dyn-mce",
+      "module": "mitgcm-seaice",
+      "path": "verification/offline_exf_seaice/input.dyn_mce",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Ice-only channel with the Mohr-Coulomb-ellipse yield curve and advection 41",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 9.15,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. 13 digits upstream.",
+      "proposed_check": "offline-mce"
+    },
+    {
+      "id": "offline-exf-seaice-dyn-teardrop",
+      "module": "mitgcm-seaice",
+      "path": "verification/offline_exf_seaice/input.dyn_teardrop",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Ice-only channel with the teardrop yield curve",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 8.75,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. 13 digits upstream.",
+      "proposed_check": "offline-teardrop"
+    },
+    {
+      "id": "offline-exf-seaice-dyn-ellnnfr",
+      "module": "mitgcm-seaice",
+      "path": "verification/offline_exf_seaice/input.dyn_ellnnfr",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Ice-only channel with the elliptical yield curve and a non-normal flow rule, advection 41",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 9.25,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. 13 digits upstream.",
+      "proposed_check": "offline-ellnnfr"
+    },
+    {
+      "id": "offline-exf-seaice-thermo",
+      "module": "mitgcm-seaice",
+      "path": "verification/offline_exf_seaice/input.thermo",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Ice-only channel with dynamics off (SEAICEuseDYNAMICS=.FALSE.): growth, melt and advection 77 only",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 1.11,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. 16 digits upstream; isolates seaice_growth.F.",
+      "proposed_check": "offline-thermo"
+    },
+    {
+      "id": "offline-exf-seaice-thsice",
+      "module": "mitgcm-seaice",
+      "path": "verification/offline_exf_seaice/input.thsice",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Ice-only channel with pkg/thsice thermodynamics driving pkg/seaice dynamics (useThSIce)",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.76,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. 16 digits upstream.",
+      "proposed_check": "offline-thsice"
+    },
+    {
+      "id": "ocean-ice-column",
+      "module": "mitgcm-seaice",
+      "path": "verification/1D_ocean_ice_column/input",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Single column (1x1x23) ocean with KPP and thermodynamic sea ice with flooding (SEAICEuseFlooding), no dynamics, 10 steps",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.05,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. 10-16 digits upstream; trivially cheap, useful only as a thermodynamics unit check.",
+      "proposed_check": "ocean-ice-column"
+    },
+    {
+      "id": "global-ocean-cs32x15-seaice",
+      "module": "mitgcm-seaice",
+      "path": "verification/global_ocean.cs32x15/input.seaice",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Global cubed-sphere ocean (6x32x32x15) with pkg/seaice, LSR at 1e-12, strength-implicit coupling (SEAICEuseStrImpCpl), 10 steps with a 1200 s momentum and 86400 s tracer step",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 9.08,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. 13 digits upstream; the only sea-ice deck on the cubed sphere (exch2 halo exchange across faces).",
+      "proposed_check": "cs32-seaice"
+    },
+    {
+      "id": "global-ocean-cs32x15-icedyn",
+      "module": "mitgcm-seaice",
+      "path": "verification/global_ocean.cs32x15/input.icedyn",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Global cubed-sphere ocean with sea-ice dynamics only (thermodynamics from thsice)",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 6.29,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. 11 digits upstream on cg2d.",
+      "proposed_check": "cs32-icedyn"
+    },
+    {
+      "id": "global-ocean-cs32x15-thsice",
+      "module": "mitgcm-seaice",
+      "path": "verification/global_ocean.cs32x15/input.thsice",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Global cubed-sphere ocean with pkg/thsice thermodynamic ice only, 20 steps",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 8.45,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic single-process tile loop; the graded window is a few steps of a diffusive, dissipative ice-ocean system, so round-off does not grow: pointwise. 11 digits upstream.",
+      "proposed_check": "cs32-thsice"
+    }
+  ]
+}
