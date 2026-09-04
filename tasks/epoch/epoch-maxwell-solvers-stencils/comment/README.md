@@ -84,8 +84,11 @@ copy with that one line changed to `-O2` — and running each deck on
 variant preview. Deck by deck, the two builds differ by at most 6.4e-4 V/m and
 6.5e-13 T (the 3-D `lehe_x` deck) and not at all on any of the nine
 custom-stencil decks; the variant, a 1e-15 relative perturbation of the deck's
-laser intensity that reaches the field amplitude as 5e-16 through a square
-root, grows over the 75 fs window to between 2.0e-4 and 7.2e-4 V/m and between
+laser intensity -- the literal 1.0e15 becomes 1.000000000000001e15, which at a
+double spacing of 0.125 at that magnitude is a move of exactly 1.0, so 8 units
+in the last place, and the square root that turns intensity into field amplitude
+passes 5.89e-16 of it, 5 units in the last place there and about 2.7 times the
+double-precision epsilon of 2.22e-16 -- grows over the 75 fs window to between 2.0e-4 and 7.2e-4 V/m and between
 4.0e-13 and 8.2e-13 T, touching about half to two thirds of the graded values
 of every deck. The named mechanism that lifts the floor above bitwise equality
 for a *port* rather than a rebuild is in the same place: the Lehe `delta`
