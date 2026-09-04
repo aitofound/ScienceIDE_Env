@@ -4,7 +4,10 @@
 
 This repository registers scientific acceleration tasks. For packaging work,
 read and follow [`skills/package-sciaccel-task/SKILL.md`](skills/package-sciaccel-task/SKILL.md);
-it is the canonical procedure and owns the exact Harbor leaf tree.
+it is the canonical procedure and owns the exact Harbor leaf tree. That whole
+directory is a generated export from `aitofound/sciaccelbench-pipeline`
+(see its `README.md`): never edit it here; change the pipeline there and land
+it with `tools/release.py`.
 
 ## Packaging a codebase
 
