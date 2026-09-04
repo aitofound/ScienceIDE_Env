@@ -26,7 +26,7 @@
 #
 # A check is self-contained: `docker build` from a copy of this directory
 # alone must work, which is exactly how the grader builds it
-# (scripts/grade-cell.sh). If a check needs a file from outside itself, the
+# (archive/templates/grid-v1/scripts/grade-cell.sh). If a check needs a file from outside itself, the
 # check is wrong -- two checks that need the same patch carry two copies.
 
 FROM debian:bookworm-slim@sha256:1caf1c703c8f7e15dcf2e7769b35000c764e6f50e4d7401c355fb0248f3ddfdb

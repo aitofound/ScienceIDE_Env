@@ -1,0 +1,408 @@
+#!/bin/sh
+
+OSTYPE=`uname -o`
+MACHINE=`uname -n`
+USER=`whoami`
+echo "# OS type is $OSTYPE on $MACHINE user $USER"
+
+# Defaults
+PREFIX=${HOME}/gkylsoft
+APP=pkpm
+ALLTARGETS=gkeyll
+INSTALLTARGET=gkeyll
+
+FIN_APP_LIB_DIR="-L../\${BUILD_DIR}/pkpm"
+FIN_APP_LIB_NAME=${FIN_APP_LIB_DIR}/libg0pkpm.so
+FIN_APP_LIB="-lg0pkpm"
+
+HAVE_APP_FLAGS=""
+
+# default build options
+CC=cc
+ARCH_FLAGS=-march=native
+CUDA_ARCH=70
+
+USE_CUDSS=
+USE_LUA=
+USE_MPI=
+USE_NCCL=
+
+CONF_LUA_LIB=luajit-5.1
+
+# Location of CUDA math libraries
+CUDAMATH_LIB_DIR=
+
+# ----------------------------------------------------------------------------
+# Function definitions
+# ----------------------------------------------------------------------------
+
+show_help() {
+cat <<EOF
+
+./configure [options=value]
+
+Configure GkeyllZero build system. This step is optional if you are
+okay with the default parameters.
+
+NOTE: At present, the configure script DOES NOT check if you have
+specified valid paths. YOU are responsible for setting them correctly!
+
+CC                         C compiler to use. Default is system cc
+ARCH_FLAGS                 Architecture flags to use. Default '-march=native'
+CUDA_ARCH                  CUDA architecture flag to specify compute capability. 
+                           Use CUDA_ARCH=70 for V100, CUDA_ARCH=80 for A100, etc. 
+                           Default is CUDA_ARCH=70.
+
+-h
+--help                     This help.
+--prefix=DIR               Prefix where GkeyllZero is installed
+                           Default is $HOME/gkylsoft/
+
+--use-mpi                  [no] Build MPI-dependent code
+--use-nccl                 [no] Build NCCL-dependent code
+--use-cudss                [no] Build CUDSS-dependent code
+--use-lua                  [no] Build Lua dependent code
+--app                      [all] What app to build? One of
+			   core, moments, vlasov, gyrokinetic, pkpm, all
+
+Library Includes and Locations
+
+--lapack-inc               Location of Lapack headers.
+--lapack-lib               Location of Lapack library.
+--lapack-lib-name          Name of Lapack library (default: openblas).
+
+--superlu-inc              Location of SuperLU headers.
+--superlu-lib              Location of SuperLU library.
+--superlu-lib-name         Name of SuperLU library (default: superlu).
+
+--mpi-inc                  Location of MPI headers.
+--mpi-lib                  Location to MPI library.
+
+--nccl-inc                 Location of NCCL headers.
+--nccl-lib                 Location to NCCL library.
+
+--cudss-inc                Location of cuDSS headers.
+--cudss-lib                Location to cuDSS library.
+
+--lua-inc                  Location of Lua headers.
+--lua-lib                  Location to Lua library.
+
+--cudamath-lib             Location of CUDA math libraries.
+
+EOF
+}
+
+# Helper functions
+
+find_program() {
+   prog=`command -v "$1" 2>/dev/null`
+   if [ -n "$prog" ]
+   then
+      dirname "$prog"
+   fi
+}
+
+die() {
+   echo "$*"
+   echo
+   echo "Configured failed."
+   echo
+   exit 1
+}
+
+# ----------------------------------------------------------------------------
+# MAIN PROGRAM
+# ----------------------------------------------------------------------------
+
+# Parse options
+
+while [ -n "$1" ]
+do
+   value="`echo $1 | sed 's/[^=]*.\(.*\)/\1/'`"
+   key="`echo $1 | sed 's/=.*//'`"
+   if `echo "$value" | grep "~" >/dev/null 2>/dev/null`
+   then
+      echo
+      echo '*WARNING*: the "~" sign is not expanded in flags.'
+      echo 'If you mean the home directory, use $HOME instead.'
+      echo
+   fi
+   case "$key" in
+   -h)
+      show_help
+      exit 0
+      ;;
+   --help)
+      show_help
+      exit 0
+      ;;
+   CC)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      CC="$value"
+      ;;
+   ARCH_FLAGS)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      ARCH_FLAGS="$value"
+      ;;   
+   CUDA_ARCH)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      CUDA_ARCH="$value"
+      ;;   
+   --prefix)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      PREFIX="$value"
+      ;;
+   --app)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      APP="$value"
+      ;;
+   --lapack-inc)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      LAPACK_INC_DIR="$value"
+      ;;
+   --lapack-lib)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      LAPACK_LIB_DIR="$value"
+      ;;
+   --lapack-lib-name)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      LAPACK_LIB_NAME="$value"
+      ;;
+   --superlu-inc)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      SUPERLU_INC_DIR="$value"
+      ;;
+   --superlu-lib)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      SUPERLU_LIB_DIR="$value"
+      ;;
+   --superlu-lib-name)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      SUPERLU_LIB_NAME="$value"
+      ;;
+   --use-mpi)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      USE_MPI="$value"
+      ;;       
+   --mpi-inc)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      CONF_MPI_INC_DIR="$value"
+      ;;
+   --mpi-lib)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      CONF_MPI_LIB_DIR="$value"
+      ;;
+   --use-nccl)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      USE_NCCL="$value"
+      ;;       
+   --nccl-inc)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      CONF_NCCL_INC_DIR="$value"
+      ;;
+   --nccl-lib)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      CONF_NCCL_LIB_DIR="$value"
+      ;;
+   --use-cudss)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      USE_CUDSS="$value"
+      ;;       
+   --cudss-inc)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      CONF_CUDSS_INC_DIR="$value"
+      ;;
+   --cudss-lib)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      CONF_CUDSS_LIB_DIR="$value"
+      ;;
+   --use-lua)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      USE_LUA="$value"
+      ;;       
+   --lua-inc)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      CONF_LUA_INC_DIR="$value"
+      ;;
+   --lua-lib)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      CONF_LUA_LIB_DIR="$value"
+      ;;   
+   --cudamath-lib)
+      [ -n "$value" ] || die "Missing value in flag $key."
+      CUDAMATH_LIB_DIR="$value"
+      ;;
+   *)
+      die "Error: Unknown flag: $1"
+      ;;
+   esac
+   shift
+done
+
+if [ "$USE_MPI" = "yes" ]
+then
+    USE_MPI=1
+else
+    USE_MPI=
+fi
+
+if [ "$USE_NCCL" = "yes" ]
+then
+    USE_NCCL=1
+else
+    USE_NCCL=
+fi
+
+if [ "$USE_CUDSS" = "yes" ]
+then
+    USE_CUDSS=1
+else
+    USE_CUDSS=
+fi
+
+if [ "$USE_LUA" = "yes" ]
+then
+    USE_LUA=1
+else
+    USE_LUA=
+fi
+
+echo "Building APP " $APP
+
+if [ "$APP" = "core" ]
+then
+    ALLTARGETS="core core-unit core-regression"
+    INSTALLTARGET="core-install"
+    FIN_APP_LIB_DIR="-L../\${BUILD_DIR}/core"
+    FIN_APP_LIB="-lg0core"
+elif [ "$APP" = "moments" ]
+then
+    ALLTARGETS="moments moments-unit moments-regression"
+    INSTALLTARGET="moments-install"
+    FIN_APP_LIB_DIR="-L../\${BUILD_DIR}/moments"
+    FIN_APP_LIB_NAME=${FIN_APP_LIB_DIR}/libg0moments.so
+    FIN_APP_LIB="-lg0moments"
+    HAVE_APP_FLAGS="-DGKYL_HAVE_MOMENTS"
+elif [ "$APP" = "vlasov" ]
+then
+    ALLTARGETS="vlasov vlasov-unit vlasov-regression"
+    INSTALLTARGET="vlasov-install"
+    FIN_APP_LIB_DIR="-L../\${BUILD_DIR}/vlasov"
+    FIN_APP_LIB_NAME=${FIN_APP_LIB_DIR}/libg0vlasov.so
+    FIN_APP_LIB="-lg0vlasov"
+    HAVE_APP_FLAGS="-DGKYL_HAVE_VLASOV -DGKYL_HAVE_MOMENTS"
+elif [ "$APP" = "gyrokinetic" ]
+then
+    ALLTARGETS="gyrokinetic gyrokinetic-unit gyrokinetic-regression"
+    INSTALLTARGET="gyrokinetic-install"
+    FIN_APP_LIB_DIR="-L../\${BUILD_DIR}/gyrokinetic"
+    FIN_APP_LIB_NAME=${FIN_APP_LIB_DIR}/libg0gyrokinetic.so
+    FIN_APP_LIB="-lg0gyrokinetic"
+    HAVE_APP_FLAGS="-DGKYL_HAVE_GYROKINETIC -DGKYL_HAVE_VLASOV -DGKYL_HAVE_MOMENTS"
+elif [ "$APP" = "pkpm" ]
+then
+    ALLTARGETS="pkpm pkpm-unit pkpm-regression"
+    INSTALLTARGET="pkpm-install"
+    HAVE_APP_FLAGS="-DGKYL_HAVE_PKPM -DGKYL_HAVE_GYROKINETIC -DGKYL_HAVE_VLASOV -DGKYL_HAVE_MOMENTS"
+else
+    APP=all
+    ALLTARGETS=gkeyll
+    INSTALLTARGET=gkeyll
+fi
+
+# Default lapack include and libraries: we prefer linking to static library
+: "${LAPACK_INC_DIR:=$PREFIX/OpenBLAS/include/}"
+: "${LAPACK_LIB_DIR=$PREFIX/OpenBLAS/lib/}"
+: "${LAPACK_LIB_NAME=openblas}"
+
+# MPI specific paths and flags
+: "${CONF_MPI_INC_DIR=$PREFIX/openmpi/include/}"
+: "${CONF_MPI_LIB_DIR=$PREFIX/openmpi/lib/}"
+
+# Lua specific paths and flags
+: "${CONF_LUA_INC_DIR=$PREFIX/luajit/include/luajit-2.1/}"
+: "${CONF_LUA_LIB_DIR=$PREFIX/luajit/lib/}"
+
+# cuDSS specific paths and flags
+: "${CONF_CUDSS_INC_DIR=$PREFIX/cuDSS/include/}"
+: "${CONF_CUDSS_LIB_DIR=$PREFIX/cuDSS/lib/}"
+
+# SuperLU includes and librararies
+: "${SUPERLU_INC_DIR=$PREFIX/superlu/include/}"
+if [ "$OSTYPE" = "linux-gnu"* ]
+then
+    : "${SUPERLU_LIB_DIR=$PREFIX/superlu/lib64/}"
+else
+    : "${SUPERLU_LIB_DIR=$PREFIX/superlu/lib/}"
+fi
+: "${SUPERLU_LIB_NAME=superlu}"
+
+# Write out config.mak
+cat <<EOF1 > config.mak
+# -*- makefile-gmake -*-
+# Generated automatically! Do not edit
+
+# Installation directory
+PREFIX=$PREFIX
+# Compilers
+CC=$CC
+ARCH_FLAGS=$ARCH_FLAGS
+CUDA_ARCH=$CUDA_ARCH
+
+# App to build
+BUILD_APP=$APP
+
+# Library paths
+LAPACK_INC_DIR=$LAPACK_INC_DIR
+LAPACK_LIB_DIR=$LAPACK_LIB_DIR
+LAPACK_LIB_NAME=$LAPACK_LIB_NAME
+
+SUPERLU_INC_DIR=$SUPERLU_INC_DIR
+SUPERLU_LIB_DIR=$SUPERLU_LIB_DIR
+SUPERLU_LIB_NAME=$SUPERLU_LIB_NAME
+
+USE_MPI=$USE_MPI
+CONF_MPI_INC_DIR=$CONF_MPI_INC_DIR
+CONF_MPI_LIB_DIR=$CONF_MPI_LIB_DIR
+
+USE_NCCL=$USE_NCCL
+CONF_NCCL_INC_DIR=$CONF_NCCL_INC_DIR
+CONF_NCCL_LIB_DIR=$CONF_NCCL_LIB_DIR
+
+USE_CUDSS=$USE_CUDSS
+CONF_CUDSS_INC_DIR=$CONF_CUDSS_INC_DIR
+CONF_CUDSS_LIB_DIR=$CONF_CUDSS_LIB_DIR
+
+USE_LUA=$USE_LUA
+CONF_LUA_INC_DIR=$CONF_LUA_INC_DIR
+CONF_LUA_LIB_DIR=$CONF_LUA_LIB_DIR
+CONF_LUA_LIB=$CONF_LUA_LIB
+
+CUDAMATH_LIB_DIR=$CUDAMATH_LIB_DIR
+
+FIN_APP_LIB_DIR=$FIN_APP_LIB_DIR
+FIN_APP_LIB=$FIN_APP_LIB
+
+HAVE_APP_FLAGS=$HAVE_APP_FLAGS
+
+EOF1
+
+# Write out config.mak
+cat <<EOF1 > alltargets.mak
+# -*- makefile-gmake -*-
+# Generated automatically! Do not edit
+
+.PHONY:
+all: $ALLTARGETS ## Build only specified Apps ($APP)
+
+.PHONY: install
+install: $INSTALLTARGET ## Install gkeyll executable
+	cd gkeyll && \${MAKE} -f Makefile-gkeyll install
+
+EOF1
+
+echo "# Wrote config.mak with contents:"
+cat config.mak
+
+echo "# Wrote alltargets.mak with contents:"
+cat alltargets.mak
