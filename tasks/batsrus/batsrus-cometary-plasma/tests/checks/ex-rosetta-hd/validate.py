@@ -43,14 +43,31 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
 import numpy as np
 
 
+_FORTRAN_NO_E_EXPONENT = re.compile(
+    r"(?P<mantissa>[+-]?(?:\d+(?:\.\d*)?|\.\d+))(?P<exponent>[+-]\d{3})\Z"
+)
+
+
+def _float_token(token: str) -> float:
+    """Parse a float, including Fortran's compact three-digit exponent form."""
+    try:
+        return float(token)
+    except ValueError:
+        match = _FORTRAN_NO_E_EXPONENT.fullmatch(token)
+        if match is None:
+            raise
+        return float(f"{match.group('mantissa')}e{match.group('exponent')}")
+
+
 def _rows(lines: list[str]) -> np.ndarray:
-    data = [[float(x) for x in ln.split()] for ln in lines if ln.strip()]
+    data = [[_float_token(x) for x in ln.split()] for ln in lines if ln.strip()]
     if not data:
         return np.zeros((0, 0))
     width = len(data[0])
