@@ -16,7 +16,7 @@ knob SAB_NPARTX "32" "gas particles across the box (npartx in the .setup; the of
 knob SAB_TMAX "0.05" "tmax of the .in in code units (the official default is 10); the number of steps and the runtime scale linearly with it"
 knob SAB_DTMAX "0.025" "time between dumps (dtmax in the .in; the official default is 1); the graded default writes two full dumps"
 knob SAB_NMAX "-1" "cap on the number of time steps (nmax in the .in); -1 runs to the window above (graded); a small cap exercises build, setup, run and output only"
-knob SAB_THREADS "2" "OMP_NUM_THREADS for phantomsetup and phantom; the graded default; the particle arrays of this configuration are bit-identical between 1, 2 and 4 threads, so this changes speed only"
+knob SAB_THREADS "2" "OMP_NUM_THREADS for phantomsetup and phantom; the graded default; changing it changes the order in which the OpenMP loops sum, so the graded arrays may move at round-off, within the check's bound"
 knob SAB_MAXP "40000" "particle-array bound passed to phantomsetup as --maxp; must exceed the gas plus dust particle count"
 if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; exit 0; fi
 
