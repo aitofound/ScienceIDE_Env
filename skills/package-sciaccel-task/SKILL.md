@@ -122,8 +122,9 @@ algorithm-stage, responsibility/difference, dependency, test-coverage, execution
 gap descriptions. The human owns module approval and later task tolerances.
 
 For each shared component provide `id`, `purpose`, `paths`, `used_by`, `relationship`
-and evidence. For each module provide its approved `slug` plus `purpose`,
-`primary_inputs`, `primary_outputs`, `algorithm_stages`,
+and evidence. For each proposed module provide its `slug`; the CLI derives an
+`approval_status` of `approved` or `proposed-only` from the separate human approval
+record. Also provide `purpose`, `primary_inputs`, `primary_outputs`, `algorithm_stages`,
 `unique_responsibilities`, `not_responsible_for`, `shared_component_ids`,
 `depends_on_modules`, `differences` and evidence. Official-test totals and each
 `by_module` card keep four distinct units: `test_files`, source-level
