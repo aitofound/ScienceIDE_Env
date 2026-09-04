@@ -51,9 +51,8 @@
       },
       "upstream_runtime_s": 0.03,
       "runtime_measured": true,
-      "suitable": true,
-      "why": "Fresnel reflection and transmission coefficients have a closed form, so this check is anchored by textbook analysis independently of the pinned build. Unpatterned, fmm-free.",
-      "proposed_check": "rcwa-fresnel-interface"
+      "suitable": false,
+      "why": "NOT GRADEABLE at this pin. Every graded value is exactly zero: 364 of 364 output numbers (all columns but the angle) are 0, at every incidence angle. Doubling the dielectric permittivity from 4 to 8 leaves the output byte-identical, and normal-incidence reflectance for eps=4 must be 1/9, not 0. The transmitted and reflected flux are not being computed for this two-zero-thickness-layer configuration. A check built on it would pass for any port, including one that returns zeros, so it is worthless as reward. Measured, not inferred: no relative perturbation of the permittivity up to 1e-10, nor a 100 percent change, moves any value."
     },
     {
       "id": "rcwa-total-internal-reflection",
@@ -69,9 +68,8 @@
       },
       "upstream_runtime_s": 0.02,
       "runtime_measured": true,
-      "suitable": true,
-      "why": "Exercises the sign and branch-cut handling of evanescent modes, which is exactly where a naive port of the eigensolve goes wrong, and where a T-matrix formulation would overflow. Analytically anchored.",
-      "proposed_check": "rcwa-total-internal-reflection"
+      "suitable": false,
+      "why": "NOT GRADEABLE at this pin, identically to fresnel.lua and for the same reason: 364 of 364 graded values are exactly zero at every angle, including past the critical angle where total internal reflection should give unit reflectance, and the output is insensitive to doubling the permittivity."
     },
     {
       "id": "rcwa-fabry-perot-spectrum",
@@ -141,9 +139,8 @@
       },
       "upstream_runtime_s": 0.07,
       "runtime_measured": true,
-      "suitable": true,
-      "why": "A published-figure reproduction (Antonoyiannakis & Pendry, PRB 60, 1999). Grades a quantity derived from the eigenvectors by integration, a different functional of the solve than flux.",
-      "proposed_check": "rcwa-stress-tensor-force"
+      "suitable": false,
+      "why": "NOT GRADEABLE at this pin. Of 363 graded values only 121 are nonzero, and those are a single constant column of 1.0; the reflectance and one stress-tensor column are identically zero. Doubling the Drude plasma frequency f_p from 15 to 30 leaves the output byte-identical, so the check would grade a constant and pass for any port. The companion fig6.lua from the same paper IS live (179 of 179 values nonzero, responds to perturbation) and covers the same stress-tensor machinery, so the physics is not lost."
     },
     {
       "id": "rcwa-stress-tensor-force-2",
