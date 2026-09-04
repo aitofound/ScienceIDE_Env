@@ -2,7 +2,7 @@
 
 ## What this check runs
 
-`tests/cylindrical.cpp` from the pinned Meep tree: twenty-nine configurations
+`tests/cylindrical.cpp` from the pinned Meep tree: thirty-four configurations
 on cylindrical (r, z) grids that include the singular r = 0 axis, in vacuum,
 at azimuthal indices m = 0, 1 and 2.
 
@@ -78,7 +78,7 @@ simulation.
 
 ## Runtime
 
-About five seconds for all twenty-nine configurations. There is no window or
+About five seconds for all thirty-four configurations. There is no window or
 resolution knob: the windows are pinned so that the graded values are
 comparable, and the configurations are the point of the test. `run.sh --help`
 lists `SAB_BUILD_JOBS`, which affects compilation only and never the graded

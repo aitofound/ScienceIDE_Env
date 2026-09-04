@@ -10,7 +10,7 @@ asymptotic reflection 1e-15 and coordinate stretch 2.
 | Sweep | Geometry | Varying | Extras |
 | --- | --- | --- | --- |
 | 1D resolution | 1D | resolutions 10 to 80 | magnetic conductivity 10 |
-| 2D TE resolution | 2D | resolutions 10 to 40 | conductivity, Lorentzian dispersion, off-diagonal permittivity 0.5 |
+| 2D TE resolution | 2D | resolutions 10, 16, 22, 28 | conductivity, Lorentzian dispersion, off-diagonal permittivity 0.5 |
 | 1D thickness | 1D at resolution 20 | layers of 1 to 64 units | |
 | cylindrical thickness | cylindrical at resolution 10 | layers of 1, 2, 4 units | at m = 0, 1 and 2 |
 
