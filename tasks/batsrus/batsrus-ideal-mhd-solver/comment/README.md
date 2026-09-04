@@ -142,18 +142,19 @@ reviewer can shorten the window.
 
 ## Runtime and budget
 
-The suite runs in 724 s of graded run time on the declared 8 cores and 6 GB, measured inside the
-container by the calibration self-validation (732 s reported for the nominal solve, per check in
-`comment/pipeline/self-validation.json`). `suite_budget_s` is left at the default 900 s: the suite
-fits inside it, so no check had to be shortened for the budget and none was.
+The corrected final self-validation measured 329.6 s of graded run time across the 24 nominal
+checks on the declared 8 cores and 6 GB (`suite_seconds_nominal` in
+`comment/pipeline/runtime-metadata.json`). The catalogue's conservative declared expected runtimes
+sum to 724 s, and `suite_budget_s` remains 900 s: the measured suite fits inside it, so no check had
+to be shortened for the budget and none was.
 
 What does not fit in fifteen minutes is the build. Every one of the 24 checks reconfigures and
 rebuilds BATSRUS inside its own `run.sh`, because every official BATSRUS test chooses its own
-compile-time equation set, user module, block size and ghost-cell count; the calibration run
-reported 1514 s of build time across the 24 checks of one solve, about 63 s each on 8 cores. The
-budget deliberately excludes it (`run.sh` prints `SAB_BUILD_SECONDS` and the driver records it
-separately), but a reviewer reproducing this task should expect a full self-validation to take
-about seventy minutes of wall time for two solves, not twenty-five.
+compile-time equation set, user module, block size and ghost-cell count. The corrected final record
+reports 1454 s of build time across the nominal checks, about 61 s each on 8 cores; the nominal and
+variant solve walls were 1787.501 s and 1918.532 s. The budget deliberately excludes builds
+(`run.sh` prints `SAB_BUILD_SECONDS` and the driver records them separately). Including both solves
+and verification, the exact selfcheck ran from 19:45:20Z to 20:47:12Z, about sixty-two minutes.
 
 Two checks were shortened from their upstream window, both for reasons that are not the budget and
 both exposed as `SAB_TIME_SCALE`: `ex-shocktube-rotation` runs half a rotation instead of three
