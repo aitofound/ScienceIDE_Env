@@ -13,8 +13,10 @@ Mirrors the upstream `simd_bit_table` suite (15 tests) and `simd_bit_table.perf.
 The shot-major versus qubit-major layout is the decision an accelerator port is
 most likely to change, and this check pins it. `double_inverse_identity.npy`
 must hold exactly — a transpose that loses or permutes bits fails even when a
-single inverse looks structurally valid — and `col_popcounts.npy` localises such
-a fault to the transpose rather than to the algebra.
+single inverse looks structurally valid. `col_popcounts.npy` is the per-column
+population of the inverted block; it is a reduction of arrays already compared
+element-wise, so it adds no discriminating power under an exact bound and is
+kept only because it is small enough to read by eye.
 
 ## The bound is exact equality, and why
 
