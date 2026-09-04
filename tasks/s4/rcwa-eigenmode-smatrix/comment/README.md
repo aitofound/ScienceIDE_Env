@@ -33,14 +33,33 @@ independently of any factorization.
 
 Two numbers were measured for every check before any bound was chosen.
 
-The **floor** is the difference between two legitimate builds of this same
-pinned source: the default configuration, which uses the in-tree reference
-eigensolver `S4/RNP/Eigensystems.cpp`, and the identical source rebuilt with
-`-DHAVE_BLAS -DHAVE_LAPACK`, which sends the same eigenproblem to LAPACK
-`zgeev`. Same machine, same flags otherwise, positional comparison of every
-float token. On five of the seven checks the two agree bit-for-bit; the
-exceptions are `rcwa-magneto-optic-table` (5.0e-12, accumulated over roughly
-ninety layers) and `rcwa-slab-resonances` (3.0e-8).
+The **floor** was measured on two independent axes and is the larger of them.
+
+*Two eigensolver backends, same machine.* The default configuration, which
+uses the in-tree reference eigensolver `S4/RNP/Eigensystems.cpp`, against the
+identical source rebuilt with `-DHAVE_BLAS -DHAVE_LAPACK`, which sends the
+same eigenproblem to LAPACK `zgeev`. On five of seven checks the two agree
+bit-for-bit; the exceptions are `rcwa-magneto-optic-table` (5.0e-12,
+accumulated over roughly ninety layers) and `rcwa-slab-resonances` (3.0e-8).
+
+*Two architectures, same Dockerfile.* Because five bit-identical results are
+evidence of determinism rather than of cross-implementation agreement, the
+oracle image was also built and run for `linux/amd64` under emulation and its
+nominal outputs compared against the native `linux/arm64` reference. A
+different instruction set brings a different BLAS kernel, different
+vectorisation and a different summation order, so this is the number that
+actually speaks to a reviewer reproducing on other hardware. Every check
+passes its own bound with room to spare: `rcwa-stress-tensor-force-2` 1.0e-15
+(10008x), `rcwa-evanescent-field-profile` 1.0e-14 (995x),
+`rcwa-magneto-optic-table` 7.0e-12 (1427x), `rcwa-slab-resonances` 1.0e-10
+(1e7x), and three checks - `rcwa-gyrotropic-halfspace`,
+`rcwa-fabry-perot-spectrum`, `rcwa-simple-smoke` - are byte-identical across
+the two architectures.
+
+Note what this says about `rcwa-slab-resonances`: its cross-platform
+difference is 1.0e-10, five orders below its variant spread of 9.9e-6. Its
+loose bound is driven by sensitivity to its own inputs, not by platform
+disagreement.
 
 The **spread** is the two-initial-condition calibration. Two binary64 ulps was
 tried first and is not usable here: S4 prints through Lua's `%.14g`, so a

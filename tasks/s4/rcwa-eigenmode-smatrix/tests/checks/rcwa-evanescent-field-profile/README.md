@@ -54,7 +54,12 @@ CRLF. Lua is indifferent, and it makes the one-line variant diff readable.
 positionally (standard library only, no numpy); a candidate emitting a different count fails rather than being
 truncated.
 
-Measured floor: `0.000e+00`. Two legitimate builds of the pinned source were compared on this check's nominal deck: the default Linux/Darwin configuration, which uses the in-tree reference eigensolver S4/RNP/Eigensystems.cpp, and the same source rebuilt with -DHAVE_BLAS -DHAVE_LAPACK, which dispatches the same eigenproblem to LAPACK zgeev. Command: `make build/S4 CFLAGS="-O2 -fPIC -Wall -Wno-error=int-conversion" CXXFLAGS="-O2 -fPIC -Wall -std=c++11" CPPFLAGS="-IS4 -IS4/RNP -IS4/kiss_fft"` with and without `-DHAVE_BLAS -DHAVE_LAPACK` appended to CPPFLAGS, then `build/S4 input.lua` on ic/nominal/input.lua and a positional comparison of every float token. Measured difference on this check: 0.000e+00 absolute over 50000 graded values (largest |value| 0.5). The two backends agree bit-for-bit here, so the floor is set by the variant spread rather than by the backend difference.
+Measured floor: `1.005e-14`.
+
+Two independent axes were measured, both on the pinned source, and the floor is the larger.
+(1) Two legitimate builds, same machine: the default configuration, which uses the in-tree reference eigensolver S4/RNP/Eigensystems.cpp, against the identical source rebuilt with -DHAVE_BLAS -DHAVE_LAPACK, which sends the same eigenproblem to LAPACK zgeev. Command: `make build/S4 CFLAGS="-O2 -fPIC -Wall -Wno-error=int-conversion" CXXFLAGS="-O2 -fPIC -Wall -std=c++11" CPPFLAGS="-IS4 -IS4/RNP -IS4/kiss_fft"` with and without `-DHAVE_BLAS -DHAVE_LAPACK` appended to CPPFLAGS. Measured here: 0.000e+00.
+(2) Two architectures, same Dockerfile: the oracle image built and run for linux/arm64 natively and for linux/amd64 under emulation, both from the same pinned tree with the same flags and the same reference Debian bookworm base, then a positional comparison of every float token of ic/nominal's output. This is the cross-implementation number, since a different instruction set brings a different BLAS kernel, different vectorisation and a different summation order. Measured here: 1.005e-14 over the graded values.
+The bound of 1e-11 sits 995x above the cross-platform difference.
 
 ## Warrant
 
