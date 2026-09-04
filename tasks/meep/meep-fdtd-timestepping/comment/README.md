@@ -206,10 +206,11 @@ tests too, so `python/examples/` and `scheme/examples/` were surveyed after the
 first round of this task and the rows are in `comment/pipeline/test-survey.json`
 alongside the original 50. That first survey covered the tests in `tests/` and
 `python/tests/` only. The example rows carry an estimated runtime unless
-`runtime_measured` is true: the four candidates below and eleven others were
-timed natively on the pinned build, and a run that hit the 45 s cap of that
-sweep is recorded at 45 s and marked unmeasured. No disposition here depends on
-a runtime.
+`runtime_measured` is true: the four candidates below and six others were timed
+natively on the pinned build and completed, and a run that failed or hit the
+45 s cap of that sweep is recorded at its elapsed time and marked unmeasured.
+Ten rows carry a measured runtime; the rest are estimates. No disposition here
+depends on a runtime.
 
 The 46 Scheme examples are disposed of together and for one reason: neither
 Dockerfile can run them. Both configure Meep `--without-scheme` and neither
