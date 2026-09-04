@@ -14,6 +14,12 @@ https://github.com/aitofound/sciaccelbench-pipeline.
         canonical repository (runs its tools/export_scienceaccelbench.py),
         then verify. Overwrites owned files only; deletes nothing - stale
         files are reported and left for a human to remove.
+
+    python3 scripts/vendor_sync.py status [--canonical <checkout>] [--ref <git ref>]
+        Is this copy current? Compares the commit pinned in vendor-manifest.json
+        with the canonical repository's main: from a local checkout (its
+        origin/main after a best-effort fetch, or --ref), else through
+        `gh api` when no checkout is given. Exit 0 in sync, 1 behind, 2 unknown.
 """
 from __future__ import annotations
 
@@ -113,6 +119,50 @@ def sync(canonical: Path, revision: str | None) -> int:
     return verify()
 
 
+def _git(cwd: Path, *args: str) -> str | None:
+    proc = subprocess.run(["git", *args], cwd=str(cwd), capture_output=True, text=True)
+    return proc.stdout.strip() if proc.returncode == 0 else None
+
+
+def canonical_head(manifest: dict, canonical: Path | None, ref: str | None) -> tuple[str | None, str]:
+    """(sha, how) of the canonical repository's main, or (None, why not)."""
+    if canonical is not None:
+        if not (canonical / ".git").exists():
+            return None, f"{canonical} is not a git checkout"
+        if ref is None:
+            subprocess.run(["git", "fetch", "-q", "origin", "main"], cwd=str(canonical),
+                           capture_output=True, text=True, timeout=60)
+            for candidate in ("origin/main", "HEAD"):
+                sha = _git(canonical, "rev-parse", candidate)
+                if sha:
+                    return sha, f"{candidate} of {canonical}"
+            return None, f"no origin/main or HEAD in {canonical}"
+        sha = _git(canonical, "rev-parse", ref)
+        return (sha, f"{ref} of {canonical}") if sha else (None, f"unknown ref {ref!r} in {canonical}")
+    repo = manifest.get("upstream_repo", "")
+    slug = repo.removeprefix("https://github.com/").removesuffix(".git")
+    proc = subprocess.run(["gh", "api", f"repos/{slug}/commits/main", "--jq", ".sha"],
+                          capture_output=True, text=True)
+    if proc.returncode != 0:
+        return None, f"gh api failed for {slug} ({proc.stderr.strip().splitlines()[-1] if proc.stderr.strip() else 'no detail'}); pass --canonical <checkout>"
+    return proc.stdout.strip(), f"main of {slug} via gh api"
+
+
+def status(canonical: Path | None, ref: str | None) -> int:
+    manifest = load_manifest()
+    pinned = manifest.get("upstream_revision", "")
+    head, how = canonical_head(manifest, canonical, ref)
+    if head is None:
+        print(f"vendor_sync: UNKNOWN — pinned {pinned[:12]}; cannot resolve the canonical main: {how}")
+        return 2
+    if pinned == head:
+        print(f"vendor_sync: IN SYNC — manifest pins {head[:12]} = {how} (package {manifest.get('package_version')})")
+        return 0
+    print(f"vendor_sync: BEHIND — manifest pins {pinned[:12] or '(none)'}, canonical is {head[:12]} ({how})")
+    print("Land it from the canonical checkout: python3 tools/release.py --dest <this checkout> --pr")
+    return 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = parser.add_subparsers(dest="cmd")
@@ -120,9 +170,14 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("sync", help="regenerate the export from a local canonical checkout, then verify")
     p.add_argument("--canonical", required=True, help="path to a local checkout of the canonical pipeline repository")
     p.add_argument("--revision", help="revision identifier to record in the manifest")
+    p = sub.add_parser("status", help="compare the pinned commit with the canonical repository's main")
+    p.add_argument("--canonical", help="local checkout of the canonical repository (else gh api)")
+    p.add_argument("--ref", help="git ref to compare against inside --canonical (default: origin/main, then HEAD)")
     args = parser.parse_args(argv)
     if args.cmd in (None, "verify"):
         return verify()
+    if args.cmd == "status":
+        return status(Path(args.canonical).expanduser().resolve() if args.canonical else None, args.ref)
     return sync(Path(args.canonical).expanduser().resolve(), args.revision)
 
 
