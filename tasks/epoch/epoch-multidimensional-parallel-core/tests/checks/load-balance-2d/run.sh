@@ -14,10 +14,12 @@ KNOB_HELP=""
 knob() { local name=$1 default=$2 desc=$3; [ -n "${!name:-}" ] || printf -v "$name" '%s' "$default"; export "$name"; KNOB_HELP+="$name=$default  $desc"$'\n'; }
 knob SAB_NX "64" "cells along x (ny = nx); the upstream deck uses 128; cost scales with nx^2 through the particle count and with nx^3 through the step count"
 knob SAB_PPC "8" "pseudoparticles per cell of the background species and per injected cell (the upstream value)"
-knob SAB_TEND_SCALE "1" "multiplies t_end and dt_snapshot together, so the graded dump indices do not move; the upstream window is 12 times longer"
-knob SAB_NPROCX "4" "ranks along x, the axis the injected beam loads unevenly; ranks = SAB_NPROCX * SAB_NPROCY"
-knob SAB_NPROCY "1" "ranks along y"
-knob SAB_DLB_THRESHOLD "0.95" "balance fraction below which balance.F90 redistributes the domain; the graded default makes about nine redistributions happen inside the window"
+knob SAB_TEND_SCALE "1" "multiplies the control block's t_end only, leaving the dump cadence alone; the upstream window is 12 times longer, at SAB_TEND_SCALE=12"
+knob SAB_DT_SNAPSHOT_SCALE "1" "multiplies the output block's dt_snapshot only; 1 is the upstream cadence, and changing it moves the graded dump indices"
+knob SAB_NPROCX "4" "ranks along x; ranks = SAB_NPROCX * SAB_NPROCY"
+knob SAB_NPROCY "1" "ranks along y; the balancer moves the seams along the loaded axis, so the layout is part of what this check grades"
+knob SAB_DLB_THRESHOLD "0.95" "balance fraction below which balance.F90 redistributes the domain; the upstream deck leaves dlb_threshold unset, which switches the balancer off entirely"
+knob SAB_DLB_INTERVAL "8" "dlb_maximum_interval, the cap on the back-off between balance attempts; the EPOCH default is 500 and the upstream deck does not set it"
 knob SAB_MAKE_JOBS "$(cpus_allowed)" "parallel jobs for the one EPOCH build (default: the CPUs allowed to this container)"
 if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; exit 0; fi
 
@@ -29,22 +31,56 @@ WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 cp -R "$SOURCE_DIR/." "$WORK/src"
 
 # Upstream deck this check runs: epoch2d/example_decks/injectors.deck
+# A pristine copy of that file is shipped next to this script at
+# upstream/input.deck, and the complete difference between it and
+# ic/nominal/input.deck at upstream/nominal.patch. Every line of that patch is
+# reachable from the knobs above except the output blocks the check has to turn
+# on in order to grade anything at all.
 # Build only the dimension this check needs, inside the private copy.
 cd "$WORK/src"
 BUILD_START=$(date +%s)
 make -C epoch2d COMPILER=gfortran -j"$SAB_MAKE_JOBS" > "$WORK/make.log" 2>&1
 echo "SAB_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))"   # reported to the driver; the budget counts run time only
 
-# Rewrite one "  key = value" line of a deck.
-setkey() { sed -i.bak "s|^  $2 = .*|  $2 = $3|" "$1" && rm -f "$1.bak"; }
-# Multiply the leading number of a "  key = <number><rest>" deck line, keeping <rest>
-# (so "t_end = 75 * femto" stays an expression in the deck's own units).
-rescale() {
-  local file=$1 key=$2 factor=$3 value num rest
-  value="$(sed -n "s|^  $key = \(.*\)$|\1|p" "$file" | head -1)"
-  num="$(printf '%s' "$value" | sed -n 's|^\([-+0-9.eE]*\).*|\1|p')"
-  rest="${value#"$num"}"
-  setkey "$file" "$key" "$(python3 -c "print(repr($num * $factor))")$rest"
+# Rewrite "key = value" inside one named block of the deck. "set" replaces the
+# value; "scale" multiplies the leading number and keeps the rest of the
+# expression, so "t_end = 75 * femto" stays in the deck's own units. Naming the
+# block is what lets the control block's t_end be scaled without touching the
+# laser block's own t_end. A key that is not where it is expected is an error,
+# never a silent no-op.
+deck() {
+  python3 - "$@" <<'PY'
+import re, sys
+path, block, key, mode, operand = sys.argv[1:6]
+lines = open(path, encoding="utf-8").read().split("\n")
+pat = re.compile(r"^(\s*)" + re.escape(key) + r"\s*=\s*(.*?)\s*$")
+current, hits = None, 0
+for i, line in enumerate(lines):
+    s = line.strip()
+    if s.startswith("begin:"):
+        current = s.split(":", 1)[1].strip()
+        continue
+    if s.startswith("end:"):
+        current = None
+        continue
+    if current != block:
+        continue
+    m = pat.match(line)
+    if not m:
+        continue
+    if mode == "set":
+        new = operand
+    else:
+        num = re.match(r"[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?", m.group(2))
+        if not num:
+            sys.exit("deck: %s = %s has no leading number to scale" % (key, m.group(2)))
+        new = repr(float(num.group(0)) * float(operand)) + m.group(2)[num.end():]
+    lines[i] = "%s%s = %s" % (m.group(1), key, new)
+    hits += 1
+if hits == 0:
+    sys.exit("deck: no '%s =' inside any begin:%s block of %s" % (key, block, path))
+open(path, "w", encoding="utf-8").write("\n".join(lines))
+PY
 }
 
 # The oracle image runs as root and may be given fewer cores than ranks.
@@ -52,24 +88,20 @@ export OMPI_ALLOW_RUN_AS_ROOT=1 OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
 export OMPI_MCA_btl_vader_single_copy_mechanism=none
 RANKS=$((SAB_NPROCX * SAB_NPROCY))
 
-run_deck() {
-  local deck=$1 id=$2
-  mkdir -p "$WORK/run/$id"
-  cp "$CHECK_DIR/ic/$IC/$deck" "$WORK/run/$id/input.deck"
-  local d="$WORK/run/$id/input.deck"
-  setkey "$d" nx "$SAB_NX"
-  setkey "$d" nprocx "$SAB_NPROCX"
-  setkey "$d" nprocy "$SAB_NPROCY"
-  setkey "$d" nppc "$SAB_PPC"
-  setkey "$d" dlb_threshold "$SAB_DLB_THRESHOLD"
-  rescale "$d" t_end "$SAB_TEND_SCALE"
-  rescale "$d" dt_snapshot "$SAB_TEND_SCALE"
-  ( cd "$WORK/src/epoch2d" \
-    && echo "$WORK/run/$id" | mpirun -n "$RANKS" --oversubscribe --bind-to none ./bin/epoch2d ) \
-    > "$WORK/run/$id/run.log" 2>&1
-  # Graded files: the assembled global arrays and reduced scalars of the dumps
-  # rubric.json lists, as raw little-endian float64.
-  python3 "$CHECK_DIR/extract.py" "$WORK/run/$id" "$OUT_DIR" "$id"
-}
-
-run_deck input.deck main
+mkdir -p "$WORK/run"
+cp "$CHECK_DIR/ic/$IC/input.deck" "$WORK/run/input.deck"
+D="$WORK/run/input.deck"
+deck "$D" control nx set "$SAB_NX"
+deck "$D" control nprocx set "$SAB_NPROCX"
+deck "$D" control nprocy set "$SAB_NPROCY"
+deck "$D" constant ppc set "$SAB_PPC"
+deck "$D" control dlb_threshold set "$SAB_DLB_THRESHOLD"
+deck "$D" control dlb_maximum_interval set "$SAB_DLB_INTERVAL"
+deck "$D" control t_end scale "$SAB_TEND_SCALE"
+deck "$D" output dt_snapshot scale "$SAB_DT_SNAPSHOT_SCALE"
+( cd "$WORK/src/epoch2d" \
+  && echo "$WORK/run" | mpirun -n "$RANKS" --oversubscribe --bind-to none ./bin/epoch2d ) \
+  > "$WORK/run/run.log" 2>&1
+# Graded files: the assembled global arrays, reduced scalars and integer rank
+# partition ladders of the dumps rubric.json lists, as raw little-endian float64.
+python3 "$CHECK_DIR/extract.py" "$WORK/run" "$OUT_DIR"

@@ -1,0 +1,34 @@
+--- code/epoch/epoch2d/tests/maxwell_solvers/yee/input.deck
++++ tests/checks/halo-fdtd-2d/ic/nominal/input.deck
+@@ -11,7 +11,17 @@
+   y_min = x_min
+   y_max = x_max
+ 
+-  stdout_frequency = 10
++  stdout_frequency = 1000000
++
++  # Explicit Cartesian rank layout: the decomposition this check grades must
++  # not depend on how many cores the machine happens to offer.
++  nprocx = 2
++  nprocy = 2
++  # Pin the partition to the remainder rule of mpi_routines.F90 rather than
++  # to whatever the pre-run load balancer would choose.
++  use_pre_balance = F
++  balance_first = F
++  use_random_seed = F   # EPOCH's own default, stated so the run is visibly reproducible
+ end:control
+ 
+ 
+@@ -46,10 +56,10 @@
+ 
+   # Properties on grid
+   grid = always
+-  #ex = always
++  ex = always
+   ey = always
+   #ez = always
+   #bx = always
+   #by = always
+-  #bz = always
++  bz = always
+ end:output
