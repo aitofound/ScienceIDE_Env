@@ -232,8 +232,8 @@
       },
       "upstream_runtime_s": 2.0,
       "runtime_measured": true,
-      "suitable": false,
-      "why": "Duplicate of the 1-D loader path in 2-D; the loader is dimension-independent code; not needed as a separate check.",
+      "suitable": true,
+      "why": "The two-dimensional loader is not the one-dimensional loader: EPOCH compiles each dimension as a separate program with its own rejection-sampled setup_particle_dist_fn (epoch2d/src/user_interaction/particle_temperature.F90:139-217, against epoch1d's :133-209), its own position draw and its own two-dimensional shape-function scatter, and the retained two-dimensional filter check loads thermal species only, so nothing else in this module reaches that branch. Shipped as power-law-loader-2d at the 2026-09-04 revision; the earlier note that the loader is dimension-independent code was wrong.",
       "survey_run": [
         {
           "deck": "ex-power_law",
@@ -247,7 +247,7 @@
         }
       ],
       "proposed_check": "power-law-loader-2d",
-      "budget_note": "fits as is"
+      "budget_note": "fits as is; the survey run measured 0.28 core seconds on four ranks"
     },
     {
       "id": "power-law-3d",
@@ -263,8 +263,8 @@
       },
       "upstream_runtime_s": 60,
       "runtime_measured": false,
-      "suitable": false,
-      "why": "As power-law-2d.",
+      "suitable": true,
+      "why": "As power-law-2d, in the three-dimensional binary (epoch3d/src/user_interaction/particle_temperature.F90:145-226). Shipped as power-law-loader-3d at the 2026-09-04 revision, with the grid cut from the upstream 100^3 to 64^3 through SAB_NCELLS so that the particle count and the dump fit the declared 8 GB; SAB_NCELLS=100 restores the upstream deck.",
       "survey_run": [
         {
           "deck": "ex-power_law",
@@ -272,7 +272,7 @@
         }
       ],
       "proposed_check": "power-law-loader-3d",
-      "budget_note": "shorten window or resolution through the knobs"
+      "budget_note": "shorten resolution through SAB_NCELLS; the run is the load only, t_end = 0"
     }
   ]
 }
