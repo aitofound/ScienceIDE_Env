@@ -482,8 +482,12 @@ the same switch (`src/tests/test_dust.f90` loops the same problem over `drag_imp
    self-validation record and takes the freshness gate with it. This revision therefore left five
    things alone and records them here instead. (a) `dust-unit-suite`'s `expected_runtime_s` still
    reads 181.9 against a measured 318.1, and `growth-unit-suite`'s 66.5 against 129.4; both are the
-   two-threaded figures from before the thread variant existed. The review table flags exactly this
-   as a run time far from its declared value, and a reviewer reading the two rows will see it. (b)
+   two-threaded figures from before the thread variant existed. `selfcheck` warns when a measured
+   run time exceeds twice its declared value, and both of these came in just under: 318.1 s against
+   a threshold of 363.8 s, and 129.4 s against 133.0 s. The second has 3.6 s of room, so a host a
+   few per cent slower than this one would turn a documented staleness into a recorded warning. The
+   review table flags it either way, as a run time far from its declared value, and a reviewer
+   reading the two rows will see it. (b)
    The other eight `expected_runtime_s` are within 2.1 s of the record and are not worth an edit
    even if one were free. (c) `growingdisc-short-orbit`'s
    `evidence.self_validation_spread_groups["vrel-diagnostics"].max_rel_error` reads
