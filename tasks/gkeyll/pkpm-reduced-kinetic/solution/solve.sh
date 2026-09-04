@@ -41,13 +41,9 @@ command -v docker >/dev/null 2>&1 || { echo "solve.sh: docker is required" >&2; 
 IC="${SAB_IC:-nominal}"
 case "$IC" in nominal|variant) ;; *) echo "solve.sh: SAB_IC must be nominal or variant" >&2; exit 2 ;; esac
 
-read -r SOURCE CPUS MEMORY_GB <<<"$(python3 - "$LEAF/task.toml" <<'PY'
-import sys, tomllib
-ns = tomllib.loads(open(sys.argv[1], encoding="utf-8").read())["metadata"]["sciaccel"]
-res = ns.get("resources", {})
-print(ns["source"], res.get("cpus", ""), res.get("memory_gb", ""))
-PY
-)"
+SOURCE="$(sed -n 's/^source = "\([^"]*\)"/\1/p' "$LEAF/task.toml" | head -1)"
+CPUS="$(sed -n 's/^cpus = \([^ ]*\).*/\1/p' "$LEAF/task.toml" | head -1)"
+MEMORY_GB="$(sed -n 's/^memory_gb = \([^ ]*\).*/\1/p' "$LEAF/task.toml" | head -1)"
 REPO_ROOT="$LEAF"
 while [ "$REPO_ROOT" != / ]; do
   if [ -d "$REPO_ROOT/code/$SOURCE" ] && [ -f "$REPO_ROOT/scripts/stage-task-source.py" ]; then break; fi
