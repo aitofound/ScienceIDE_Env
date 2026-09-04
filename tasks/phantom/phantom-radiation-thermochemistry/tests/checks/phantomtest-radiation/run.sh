@@ -104,4 +104,8 @@ grep -E '^[[:space:]]*(checking |FAILED \[|--> |<-- )|^(SUMMARY OF ALL TESTS:|PA
      phantomtest.log >"$OUT_DIR/results.txt" || true
 [ -s "$OUT_DIR/results.txt" ] || { echo "run.sh: no result lines extracted" >&2; tail -n 40 phantomtest.log >&2; exit 1; }
 grep -q '^PASSED: ' "$OUT_DIR/results.txt" || { echo "run.sh: the suite printed no PASSED line" >&2; exit 1; }
-cp phantomtest.log "$OUT_DIR/phantomtest.log"
+# results.txt is the only file written into OUT_DIR. phantomtest.log stays in the work directory
+# and is NOT copied there: it carries the wall and CPU timings and the us/call benchmark lines the
+# canonicalisation above deliberately drops, and the verifier compares every file it finds under
+# OUT_DIR, so a log there would make the byte-identical safeguard inert. Its tail goes to stderr
+# above when the run fails, which is when it is wanted.
