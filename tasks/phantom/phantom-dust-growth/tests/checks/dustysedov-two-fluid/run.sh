@@ -12,11 +12,11 @@
 # e.g. SAB_NMAX=5 sab.py task selfcheck ...
 KNOB_HELP=""
 knob() { local name=$1 default=$2 desc=$3; [ -n "${!name:-}" ] || printf -v "$name" '%s' "$default"; export "$name"; KNOB_HELP+="$name=$default  $desc"$'\n'; }
-knob SAB_NPARTX "24" "particles across the box, answered once for the gas and once for the dust (the setup prompts twice; the code default offered at the prompt is 64); runtime scales as npartx^4"
+knob SAB_NPARTX "ic" "particles across the box, answered once for the gas and once for the dust (the setup prompts twice; the code default offered at the prompt is 64). 'ic' is the graded default and uses the two answers this check vendors in ic/<ic>/answers.txt; a number rewrites both of them. Runtime scales as npartx^4"
 knob SAB_TMAX "0.1" "tmax of the .in in code units (the default the setup writes is 10); the number of steps and the runtime scale linearly with it"
 knob SAB_DTMAX "0.05" "time between dumps (dtmax in the .in; the default the setup writes is 1); the graded default writes two full dumps"
 knob SAB_NMAX "-1" "cap on the number of time steps (nmax in the .in); -1 runs to the window above (graded); a small cap exercises build, setup, run and output only"
-knob SAB_THREADS "2" "OMP_NUM_THREADS for phantomsetup and phantom; the graded default; the particle arrays of this configuration are bit-identical between 1, 2 and 4 threads, so this changes speed only"
+knob SAB_THREADS "2" "OMP_NUM_THREADS for phantomsetup and phantom; the graded default; changing it changes the order in which the OpenMP loops sum, so the graded arrays may move at round-off, within the check's bound"
 knob SAB_MAXP "60000" "particle-array bound passed to phantomsetup as --maxp; must exceed the gas plus dust particle count"
 if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; exit 0; fi
 
@@ -62,8 +62,10 @@ open(path, "w", encoding="ascii").write(pat.sub(lambda m: m.group(1) + value, te
 PY
 }
 
-# The resolution knob rewrites both prompt answers before they are piped to phantomsetup.
-printf '%s\n%s\n' "$SAB_NPARTX" "$SAB_NPARTX" >answers.txt
+# The prompt answers are an input of this check: ic/<ic>/answers.txt is copied in above and
+# used as it stands unless the resolution knob names a number, which rewrites both answers.
+if [ "$SAB_NPARTX" != "ic" ]; then printf '%s\n%s\n' "$SAB_NPARTX" "$SAB_NPARTX" >answers.txt; fi
+[ -s answers.txt ] || { echo "run.sh: ic/$IC/answers.txt is empty" >&2; exit 1; }
 
 # phantomsetup is a two-pass program: with an incomplete .setup it rewrites the file and
 # stops, so it is called until the t=0 dump appears (the upstream growth workflow calls it
