@@ -1,17 +1,21 @@
 begin:control
   nx = 400
-  nprocx = 3
 
   # Final time of simulation
   t_end = 8.4e-2
 
   # Size of domain
-  x_min = 0
-  x_max = 5.0e5
+  x_start = 0
+  x_end = 5.0e5
 
-  use_random_seed = F
+  # Explicit Cartesian rank layout: the decomposition this check grades must
+  # not depend on how many cores the machine happens to offer.
+  nprocx = 3
+  # Pin the partition to the remainder rule of mpi_routines.F90 rather than
+  # to whatever the pre-run load balancer would choose.
   use_pre_balance = F
   balance_first = F
+  use_random_seed = F   # EPOCH's own default, stated so the run is visibly reproducible
   stdout_frequency = 1000000
 end:control
 
@@ -51,13 +55,28 @@ end:species
 
 begin:output
   # Simulated time between output dumps
-  dt_snapshot = 2.1e-2
-  dump_last = T
+  dt_snapshot = 21e-3
+  dump_last = F
+
+  # Properties at particle positions
+  #particles = always
+  #px = always
+  #particle_weight = always
 
   # Properties on grid
   grid = always
   ex = always
+  #ey = always
+  #ez = always
+  #bx = always
+  #by = always
+  #bz = always
+  #jx = always
+  #average_particle_energy = always
+  #mass_density = never + species
   charge_density = always
   number_density = always + species
+  #temperature = always + species
+
   ppc = always + species
 end:output
