@@ -17,7 +17,7 @@ Measured in the graded containers on the calibration host (`ale-worker.us-centra
 | check | window / knobs | thr | build s | run s | spread | bound | margin | fault scale (native probe) | identical |
 |---|---|---|---|---|---|---|---|---|---|
 | `sgdisc-sink-short` | tmax=dtmax=1.0; np=200000 (the record below is np=30000); SAB_NP SAB_TMAX SAB_DTMAX SAB_NMAX SAB_THREADS; official np=1000000, 100 outer orbits | 1 | 78 | 4.5* | 2.27e-13* | atol 1e-6, rtol 1e-10; sink 1e-6 / 1e-10; float32 1e-6 / 2.4e-7 | 4,400,000* | not probed | no |
-| `evrard-collapse-short` | nmax=40 of tmax=dtmax=1.0; np1=50000 -> 50663 particles; SAB_NP1 SAB_NMAX SAB_TMAX SAB_DTMAX SAB_THREADS; official np1=100000, tmax=3.0 dtmax=0.1 | 1 | 78 | 45.1 | 7.77e-16 | atol 1e-6, rtol 1e-10; float32 1e-9 / 2.4e-7 | 1.3e9 | tree_accuracy 0.5->1.0: 7.3e-3, taken on the iprofile1 = 2 deck this revision replaced; not re-run on the collapse | no |
+| `evrard-collapse-short` | nmax=40 of tmax=dtmax=1.0; np1=50000 -> 50663 particles; SAB_NP1 SAB_NMAX SAB_TMAX SAB_DTMAX SAB_THREADS; official np1=100000, tmax=3.0 dtmax=0.1 | 1 | 78 | 45.1 | 7.77e-16 | atol 3e-4, rtol 1e-10; float32 3e-4 / 2.4e-7 | 3.9e11 | tree_accuracy 0.5->1.0: 7.3e-3, taken on the iprofile1 = 2 deck this revision replaced; not re-run on the collapse | no |
 | `polytrope-binary-short` | tmax=14.0496 = 1 dtmax = 0.1 orbit; np1=1000 -> 2000 particles; SAB_TMAX SAB_NP1 SAB_NMAX SAB_THREADS; official tmax=1404.96 | 1 | 75 | 49.8 | 3.87e-11 | atol 2e-07, rtol 1e-10; float32 1e-6 / 2.4e-7 | 5,170 | tree_accuracy 0.5->1.0: 1.6e-1 | no |
 | `hierarchical-nbody` | tmax=30000 dtmax=3000; 5 sinks, no gas; SAB_TMAX SAB_DTMAX SAB_NMAX SAB_THREADS; official tmax=10 dtmax=1 | 1 | 74 | 3.1 | 8.24e-09 | atol 1e-06, rtol 1e-10; float32 1e-6 / 2.4e-7 | 121 | C_force 0.25->0.20: 4.8e-4 | no |
 | `gravity-taylorseries` | phantomtest taylorseries, official window (literals in src/tests); SAB_THREADS | 1 | 83 | 0.0 | 0 (exact) | atol 1e-11, rtol 2e-3; verdicts exact | - | the suite's own printed tolerance; verdict flip | YES |
@@ -35,7 +35,7 @@ Measured in the graded containers on the calibration host (`ale-worker.us-centra
 
 Five checks came back byte-identical between nominal and variant, all five declared as such in their rubrics: `gnewton-relativistic-orbit`, `gravity-plummer-spheres`, `gravity-taylorseries`, `ptmass-accrete` and `ptmass-surface-potential`. The selfcheck's five warnings are the benign "identical, as the rubric declares" form; there are no problems and no budget warning.
 
-Two rows deserve reading twice, and both were acted on after the run rather than left as they were. `sgdisc-sink-short`, the timed workload, ran in 4.5 s at np = 30000, not the 60 s that was guessed for it before it had ever run; at 4 per cent of a 117.9 s suite with 782 s of the guidance budget unused it was too small a workload to time an accelerator against, with the source build and two `phantomsetup` passes a large part of that wall clock, so `SAB_NP` is now 200000 -- a fifth of the official 1000000 -- and the rows marked `*` above are the np = 30000 measurement that the rerun replaces. `evrard-collapse-short` measured a spread of 7.77e-16 on the Evrard profile, 600 times *smaller* than the 4.75e-13 the same two-ulp perturbation produced on the polytrope deck it replaced: over a forty-step window the collapse has not amplified the seed at all, the whole spread is one unit in the last place of a velocity component, every float32 array came back exactly equal and the header time differs by 1.67e-16. The seed did propagate -- 48955 of the 50663 values of `vy` differ, 47609 of `u` -- but the per-array distribution is empty at every threshold from 1e-15 upwards, so there is no tail and no amplification. That is the opposite of what the check's `chaotic: true` flag and its amplification argument predicted, so the flag is now false and the bound, which had been bracketed by two figures both taken on the replaced deck, is reset from this one: atol 3e-4 -> 1e-6, float32 3e-4/3e-4 -> 1e-9/2.4e-7. See "What was applied after the run" below.
+Two rows deserve reading twice, and both were acted on after the run rather than left as they were. `sgdisc-sink-short`, the timed workload, ran in 4.5 s at np = 30000, not the 60 s that was guessed for it before it had ever run; at 4 per cent of a 117.9 s suite with 782 s of the guidance budget unused it was too small a workload to time an accelerator against, with the source build and two `phantomsetup` passes a large part of that wall clock, so `SAB_NP` is now 200000 -- a fifth of the official 1000000 -- and the rows marked `*` above are the np = 30000 measurement that the rerun replaces. `evrard-collapse-short` measured a spread of 7.77e-16 on the Evrard profile, 600 times *smaller* than the 4.75e-13 the same two-ulp perturbation produced on the polytrope deck it replaced: over a forty-step window the collapse has not amplified the seed at all, the whole spread is one unit in the last place of a velocity component, every float32 array came back exactly equal and the header time differs by 1.67e-16. The seed did propagate -- 48955 of the 50663 values of `vy` differ, 47609 of `u` -- but the per-array distribution is empty at every threshold from 1e-15 upwards, so there is no tail and no amplification. That is the opposite of what the check's `chaotic: true` flag and its amplification argument predicted, so the flag is now false. The bound stays at atol 3e-4, and the reason it does not follow the spread down is the distinction that whole row turns on: `Mstar1` rescales the initial condition *coherently*, so the flow absorbs it, whereas a reordered gravity reduction perturbs each particle's own sum *independently* -- and hazard 7 below measures that case at 3.0e-5. Only the float32 relative term tightens, 3e-4 -> 2.4e-7, the real*4 storage precision. See "What was applied after the run" below.
 
 The run seconds above are the per-check nominal figures the record reports with the build excluded (`check_run_seconds_nominal`), which is what `expected_runtime_s` declares. The leaf's convention is that value rounded up to the next whole second, with a floor of one. Applying it to this record moved six of the sixteen declarations, and they have been applied: `sgdisc-sink-short` 60 -> 5, `evrard-collapse-short` 51 -> 46, `polytrope-binary-short` 49 -> 50, `ptmass-merger` 2 -> 3, `gnewton-relativistic-orbit` 1 -> 2, `gravity-fmm-momentum` 2 -> 1; `hierarchical-nbody` stays at 4 and the other ten were already correct. `sgdisc-sink-short` then went to 60 again when its resolution was raised, this time as a stated estimate from the cost scaling rather than a guess; the rerun measures it.
 
@@ -53,7 +53,7 @@ These are the revision-5 decisions, kept because they record how each bound got 
 
 Three probes were run natively on the authoring host (Apple M1 Ultra, gfortran 15.2) against the same nominal initial condition and the same graded window as the check, with one knob of the physics changed in the `.in` and the result compared through the check's own `validate.py`. None of the three was re-run for revision 6, and `sgdisc-sink-short` has no probe of its own; those two probes are the leaf's outstanding measurements and are named for the orchestrator under "What was applied after the run".
 
-- `evrard-collapse-short`: `tree_accuracy` 0.500 -> 1.000, i.e. the tree opening criterion loosened to the loosest value `read_infile` accepts -- a 2x change, the mildest this knob allows. The graded dump moves by **7.3e-3** over the binary64 arrays (positions 1.16e-3, internal energy 1.59e-3) and the header time by 2.4e-3, which is 7300 times the 1e-6 bound revision 6 now carries (it was 24 times the 3e-4 that bound replaced). It was taken on the `iprofile1 = 2` deck that revision 6 replaced, and it is the one number in this check's argument that the 2026-09-04 run did not re-measure.
+- `evrard-collapse-short`: `tree_accuracy` 0.500 -> 1.000, i.e. the tree opening criterion loosened to the loosest value `read_infile` accepts -- a 2x change, the mildest this knob allows. The graded dump moves by **7.3e-3** over the binary64 arrays (positions 1.16e-3, internal energy 1.59e-3) and the header time by 2.4e-3, a factor of 24 above the 3e-4 bound. It was taken on the `iprofile1 = 2` deck that revision 6 replaced, and it is the one number in this check's argument that the 2026-09-04 run did not re-measure.
 - `polytrope-binary-short`: the same knob to 1.000 gives **1.6e-1** and to 0.050 (10x tighter) **1.9e-1**, 800,000 times the 2e-7 bound. The flow saturates the perturbation inside the graded window, so these show that a tree fault is unmissable rather than pinning the smallest detectable one.
 - `hierarchical-nbody`: `C_force` 0.250 -> 0.200, a 20 per cent change of the sink substepping accuracy parameter (src/main/ptmass.F90:114-115 states it is the only knob on the sink-sink substep; src/main/substepping.F90:890,904 applies it). The sinks move by **4.8e-4** in position and 2.1e-5 in velocity; a tenfold change (C_force 0.025) gives 8.1e-4. Both are more than 400 times the 1e-6 bound.
 
@@ -61,7 +61,7 @@ For the twelve unit-suite checks no probe was run and none is needed: every asse
 
 ## Tolerances
 
-Two families, both measured rather than assumed. For the three dump checks that predate this revision the floor was taken twice natively: two independent runs of the pinned source at the graded configuration (bit-identical for all three, spread exactly 0.0 over every array), and the nominal-versus-variant pair; the container spread in the table above is the finalizing measurement. The float32 relative term of 2.4e-7 is not a choice but the storage precision: h, alpha, divv and poten are written as real*4 (src/main/readwrite_dumps.f90:257) and poten and alpha are real(kind=4) in memory as well (src/main/part.F90:50-51,252), so two ulps of the graded precision is 2.4e-7 relative and nothing tighter is meaningful. The absolute term that goes with it is 1e-6 in three of the four dump checks and 1e-9 in `evrard-collapse-short`, and the difference is the magnitude of `poten`: the dump stores the potential multiplied by the particle mass, so on the Evrard deck `poten` is of order 1.5e-5 and an absolute term of 1e-6 exceeded the array's own magnitude, leaving the self-gravity solver's own output ungraded. At 1e-9 the relative term carries h, alpha and divv, whose float32 ulp at their own magnitudes is larger than the absolute term, and the absolute term grades `poten` and the particles whose alpha is exactly zero. `sgdisc-sink-short` has the same defect on a `poten` of order 5e-10 and it is deferred rather than fixed, for the reason under "What was applied after the run". The measured float32 spreads stayed far inside it: in the 2026-09-04 run the largest is 1.86e-9 absolute and 9.68e-8 relative, on divv in the polytrope binary, and every float32 array of the Evrard and sgdisc checks came back exactly equal. For the twelve unit-suite checks the graded artefact is text printed to four significant digits, so the relative bound is the printed precision -- 2e-3 is two units in the last of the four digits of checkval's 1PE9.3 field, src/tests/testutils.f90 -- and the absolute term governs only the entries the suite prints near zero. Those absolute terms are now set from each check's own measured jitter rather than from one module-wide number.
+Two families, both measured rather than assumed. For the three dump checks that predate this revision the floor was taken twice natively: two independent runs of the pinned source at the graded configuration (bit-identical for all three, spread exactly 0.0 over every array), and the nominal-versus-variant pair; the container spread in the table above is the finalizing measurement. The float32 relative term of 2.4e-7 is not a choice but the storage precision: h, alpha, divv and poten are written as real*4 (src/main/readwrite_dumps.f90:257) and poten and alpha are real(kind=4) in memory as well (src/main/part.F90:50-51,252), so two ulps of the graded precision is 2.4e-7 relative and nothing tighter is meaningful. The absolute term that goes with it is 1e-6 in two of the four dump checks, 2e-7 in `polytrope-binary-short` and 3e-4 in `evrard-collapse-short`, and in every case it is set by the reordering headroom that check needs rather than by any array's own scale. One consequence is worth stating: the dump stores `poten` as the potential multiplied by the particle mass, so `poten` is of order 1.5e-5 on the Evrard deck and 5e-10 on the disc, and an absolute term of 3e-4 or 1e-6 exceeds the array's own magnitude and leaves the self-gravity solver's own output graded only by its presence and finiteness. That is a consequence of the headroom and not an oversight -- if a correct four-thread run moves the state by 3.0e-5 then `poten` moves with it, and no absolute term admitting such a run can grade `poten` tightly -- but grading `poten` at its own scale would need a bound group of its own, and that is left for the curator under "What was applied after the run". The measured float32 spreads stayed far inside it: in the 2026-09-04 run the largest is 1.86e-9 absolute and 9.68e-8 relative, on divv in the polytrope binary, and every float32 array of the Evrard and sgdisc checks came back exactly equal. For the twelve unit-suite checks the graded artefact is text printed to four significant digits, so the relative bound is the printed precision -- 2e-3 is two units in the last of the four digits of checkval's 1PE9.3 field, src/tests/testutils.f90 -- and the absolute term governs only the entries the suite prints near zero. Those absolute terms are now set from each check's own measured jitter rather than from one module-wide number.
 
 ## Hazards found while authoring
 
@@ -125,22 +125,29 @@ the profile-2 one. `task.toml` lines 60 and 61 follow.
    positions -- but the per-array distribution is empty at every threshold from 1e-15 upwards in all fifteen arrays,
    and h, alpha, divv and poten are bit-equal. Forty steps propagate a round-off seed without amplifying it, which
    is the opposite of the warrant's amplification argument, so the flag is cleared and the window is short for cost
-   rather than for stability. The bound of 3e-4 had been bracketed by two figures both taken on the replaced deck (a
-   3.0e-5 four-thread reordering and the 7.3e-3 tree fault), which left it a factor of 24 under the fault it has to
-   reject while sitting 3.9e11 over the spread this deck produces. It is now atol 1e-6 with rtol 1e-10 on the
-   binary64 state -- about three decades under the fault, and about three decades over the ~1e-9 that the
-   `tolh = 1e-4` density iteration leaves an implementation that stops its Newton iteration one step differently,
-   which is a larger freedom on this deck than any reordering of the tree sum. The float32 group goes to atol 1e-9
-   with rtol 2.4e-7, the real*4 storage precision, because `poten` is stored as the potential times the particle
-   mass and is of order 1.5e-5 here, so the 1e-6 absolute term exceeded the array's own magnitude and left the
-   self-gravity solver's own output ungraded.
+   rather than for stability. The bound stays at atol 3e-4 with rtol 1e-10, and the reason it does not
+   follow the spread down is the distinction the measurement forces: `Mstar1` rescales the whole initial
+   condition *coherently*, so every particle's force moves the same way and the flow largely absorbs it, whereas
+   a reordered gravity reduction perturbs each particle's own sum *independently*. The leaf has measured that
+   second case -- hazard 7 of `comment/pipeline/module.json`: two one-thread runs of this collapse agree through
+   83 steps, two threads still agree at `nmax = 40`, and four threads already differ there by 3.0e-5 in x, at
+   21982 particles. 3e-4 is ten times that reordering displacement and a factor of 24 under the 7.3e-3 tree
+   fault. Four threads is the smallest reordering the investigation could measure and an accelerator reorders
+   across far more lanes, so 3.0e-5 is a floor on what a port may need, not a ceiling; any bound at or below it
+   would fail a correct four-thread run of the pinned source itself. The `tolh = 1e-4` density iteration leaves
+   a further freedom at about 1e-9, four decades below the reordering scale and therefore not binding. The one
+   part of the comparison that tightens is the float32 relative term, 3e-4 -> 2.4e-7, the real*4 storage
+   precision.
 
-2. *The bound's fault side is still argued from the deck that was replaced, and that has not changed.* No probe was
-   run in this round. **The outstanding measurement, for the orchestrator: `tree_accuracy` 0.500 -> 1.000 in
-   `evr.in` on the `iprofile1 = 7` deck at `nmax = 40`** -- same binary, same nominal `evr.setup`, one thread,
-   compared through the check's own `validate.py`. It is named in `evidence.fault_probe` of that rubric. The second
-   outstanding probe is `sgdisc-sink-short`, which has never been probed at either resolution: `tree_accuracy`
-   0.500 -> 1.000 in `disc.in` for the gravity side and `h_acc` or `f_acc` for the sink side.
+2. *Both figures that bracket the Evrard bound were taken on the deck that was replaced, and that has not
+   changed.* No probe was run in this round. **Three outstanding measurements, for the orchestrator.** (a) The
+   fault side: `tree_accuracy` 0.500 -> 1.000 in `evr.in` on the `iprofile1 = 7` deck at `nmax = 40`, same binary,
+   same nominal `evr.setup`, one thread, through the check's own `validate.py` (`evidence.fault_probe`). (b) The
+   reordering side, which is now the side the bound leans on: the same nominal deck at one thread against four at
+   `nmax = 40`, compared the same way, to confirm on this profile and particle count the 3.0e-5 hazard 7 measured
+   at 21982 particles on the replaced one (`evidence.reordering_probe`). (c) `sgdisc-sink-short`, never probed at
+   either resolution: `tree_accuracy` 0.500 -> 1.000 in `disc.in` for the gravity side and `h_acc` or `f_acc` for
+   the sink side.
 
 3. *`sgdisc-sink-short` graded two arrays its warrant did not list.* `temperature` is graded as binary64 and `dt` as
    float32, on top of the x/y/z, vxyzu, h, alpha, divv, poten, iorig set the prose enumerated, because this setup
@@ -189,13 +196,16 @@ stale trailing "Run time X s, source build Y s" sentence is gone from the twelve
    `sgdisc-sink-short`. That is defensible for a fixed sink list, less so for a run in which sinks are created or
    merged; a ruling is worth having before a future check turns sink creation on.
 
-3. **`poten` is under-graded in `sgdisc-sink-short`, and the fix is deferred on purpose.** On that deck `poten` is
-   of order 5e-10 -- the potential times a particle mass of 1.67e-6 -- so the float32 group's 1e-6 absolute term is
-   three decades above the array's own magnitude and the self-gravity solver's own output is effectively ungraded
-   there. `evrard-collapse-short` had the same defect and it is fixed above by dropping that check's float32
-   absolute term to 1e-9. The same fix is not applied to `sgdisc-sink-short` in this pass because its resolution
-   changed in the same pass, and raising np lowers the particle mass and therefore `poten` again; the number to set
-   is the one the rerun measures. All five of its float32 arrays came back bit-equal, so nothing is failing.
+3. **`poten` is under-graded in both self-gravity dump checks, and it cannot be fixed by moving the absolute
+   term.** The dump stores `poten` as the potential multiplied by the particle mass, so it is of order 1.5e-5 on
+   the Evrard deck and 5e-10 on the disc, while the float32 groups carry absolute terms of 3e-4 and 1e-6 -- above
+   the array's own magnitude in both cases, so the self-gravity solver's own output is graded only by its presence
+   and finiteness. This is a consequence of the reordering headroom rather than an oversight: if a correct
+   four-thread run moves the state by 3.0e-5 then `poten` moves with it, and no absolute term that admits such a
+   run can grade `poten` tightly. Grading it at its own scale needs a bound group of its own in the two
+   validators -- the named-group remedy 5.6.0 blesses, as `dust-state` was done in #403 -- keyed on `poten`'s
+   relative error alone. That is a validator change and it is left for the curator to call rather than made here.
+   All float32 arrays of both checks came back bit-equal, so nothing is failing meanwhile.
 
 4. **Five of the twelve unit-suite checks are byte-identical between nominal and variant** and all five declare it.
    Four printed significant digits cannot show a two-ulp binary64 perturbation. The alternative is a coarser variant
