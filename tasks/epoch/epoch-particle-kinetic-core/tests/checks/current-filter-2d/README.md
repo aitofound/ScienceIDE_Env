@@ -23,7 +23,7 @@ check at 7.6 s of run time, with its 58.0 s build of the pinned source reported 
 explicit MPI rank layout written in and `dump_last = T`. `ic/variant/input.deck` differs from it in one
 value: the deck constant `temperature`, the initial temperature of both beams, multiplied by (1 + 1e-15). The perturbation is five ulps of binary64 at that value, far too small to change the
 physics and far too large to be lost to rounding, so the two runs must produce different graded
-files whose distance measures the floor of this policy.
+files whose distance measures this policy's nominal-versus-variant sensitivity.
 
 ## The pass policy
 

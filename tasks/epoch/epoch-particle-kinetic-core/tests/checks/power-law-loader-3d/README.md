@@ -20,8 +20,8 @@ through them. The loader is the whole runtime: with `t_end = 0` there are no ste
 `dump_last = T`, so that the one dump at t_end = 0 is written. `ic/variant/input.deck` differs from it in
 one value: the deck constant `dens`, the number density of both species, multiplied by (1 + 1e-15). The
 perturbation is six ulps of binary64 at that value, far too small to change the physics and far too large
-to be lost to rounding, so the two runs must produce different graded files whose distance measures the
-floor of this policy. Density is what is perturbed and momentum is not: the power-law species is drawn by
+to be lost to rounding, so the two runs must produce different graded files whose distance measures this policy's
+nominal-versus-variant sensitivity. Density is what is perturbed and momentum is not: the power-law species is drawn by
 rejection sampling, so nudging `v0`, `p0` or the momentum range could flip an accept-or-reject decision
 and desynchronise the whole KISS stream, whereas density reaches the output through the per-particle
 weight alone and leaves every drawn position and momentum bit-identical.
