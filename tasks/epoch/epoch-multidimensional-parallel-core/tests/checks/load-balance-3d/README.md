@@ -104,7 +104,7 @@ difference could tip across a bin edge: the ladder is the output of an exact
 integer remainder rule and of an integer load histogram, and the per-cell count
 is the number of particles whose position floors into that cell, with no halo
 sum and no arithmetic on the count itself. They are exact by construction, and
-the shipped self-validation record confirms it: every array of this kind in the
+the 2026-09-04 x86 calibration record confirms it: every array of this kind in the
 leaf came back with max_abs_error exactly 0.0 and values_over_bound 0 under the
 variant. Zero tolerance is therefore the bound that contains the measured
 sensitivity, and it is the sharpest statement the check makes about the
@@ -112,15 +112,15 @@ decomposition.
 
 ## Evidence
 
-This check was added in revision 6 of the leaf and its own in-container floor
-is measured by the calibration self-validation run; the bounds shipped here are
-the ones its sibling check load-balance-2d carries, which grades the same block
-names of the same code path on the same deck family at the same magnitudes, and
-whose shipped record reports a nominal-against-variant distance of 4.16094e-11
-against those bounds. The bounds are the same ones load-balance-2d carries
-because the deck is the same example in another dimension, with the same
-constants and therefore the same array scales; nothing about the dimension
-changes what a legitimate run can move.
+The complete graded-default x86 calibration selfcheck finished
+2026-09-04T13:49:13Z: its own nominal-versus-variant distance was 2.6148e-11.
+All 21 graded arrays (262164 values) contained the measured sensitivity under
+their own bounds, with 0 values over bound; the worst array was jx_0005.f64 at
+5.20381e-05 of its bound. This comparison measures nominal-variant
+sensitivity, not a same-input run/build floor.
 
-Policy, bounds, window and variant are proposals until the curator finalizes
-them after the calibration self-validation run.
+The measured nominal run took 21.0 s after excluding its 64.0 s source build;
+the declared expected runtime is 32 s (ceil of 1.5 times run-only, minimum 1
+s). The array-aware record is retained with the review evidence. The bounds
+are not derived from the variant spread: each remains tied to the array scale
+and fault described above.

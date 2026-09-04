@@ -129,5 +129,13 @@ Native measurements on the packaging host (gfortran 15, OpenMPI 5, eight ranks,
 - Decomposition invariance: 2 x 2 x 2 against 4 x 2 x 1 agrees bit for bit on
   every graded value, edges and corners included.
 
-Policy, bounds, window and variant are proposals until the curator finalizes
-them after the calibration self-validation run.
+The complete graded-default x86 calibration selfcheck finished
+2026-09-04T13:49:13Z: its own nominal-versus-variant distance was 0.000110626.
+All 7 graded arrays (2141571 values) contained the measured sensitivity under
+their own bounds, with 0 values over bound; the worst array was ey_0002.f64 at
+1.10626e-06 of its bound. This comparison measures nominal-variant
+sensitivity, not a same-input run/build floor.
+
+The nominal run took 1.8 s excluding its 65.0 s build, and expected_runtime_s
+is 3 s. The earlier independent same-input build-floor evidence above remains
+distinct.

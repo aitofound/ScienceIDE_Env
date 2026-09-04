@@ -110,15 +110,15 @@ statement this check makes about the decomposition.
 
 ## Evidence
 
-This check was added in revision 6 of the leaf and its own in-container floor
-is measured by the calibration self-validation run; the bounds shipped here are
-the ones its sibling check halo-fdtd-3d carries, which grades the same block
-names of the same code path on the same deck family at the same magnitudes, and
-whose shipped record reports a nominal-against-variant distance of 9.91821e-05
-against those bounds. The bound is not derived from that spread. It is set from
-the pulse amplitude the deck itself asks for, so that the nearest plausible
-halo fault lands orders of magnitude outside it while an accelerator's
-reassociated arithmetic stays comfortably inside.
+The complete graded-default x86 calibration selfcheck finished
+2026-09-04T13:49:13Z: its own nominal-versus-variant distance was 0.00190544.
+All 7 graded arrays (2141571 values) contained the measured sensitivity under
+their own bounds, with 0 values over bound; the worst array was ey_0002.f64 at
+1.90544e-05 of its bound. This comparison measures nominal-variant
+sensitivity, not a same-input run/build floor.
 
-Policy, bounds, window and variant are proposals until the curator finalizes
-them after the calibration self-validation run.
+The measured nominal run took 1.5 s after excluding its 64.0 s source build;
+the declared expected runtime is 3 s (ceil of 1.5 times run-only, minimum 1
+s). The array-aware record is retained with the review evidence. The bounds
+are not derived from the variant spread: each remains tied to the array scale
+and fault described above.

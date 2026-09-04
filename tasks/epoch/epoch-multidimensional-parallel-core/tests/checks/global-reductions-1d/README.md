@@ -107,7 +107,7 @@ reversible.
 ## Policy under revision 5.6.0
 
 Policy under SPEC revision 5.6.0: pointwise, with the check flagged chaotic
-where the deck is unstable. The shipped record's per-file rows are what settles
+where the deck is unstable. The 2026-09-04 x86 calibration record's per-array rows are what settles
 this: over the graded window the nominal-against-variant distance stays four to
 seven orders of magnitude inside every floating-point bound and exactly zero on
 every integer array, so a pointwise bound does contain the sensitivity and does
@@ -128,9 +128,9 @@ whose position floors into that cell, with no halo sum and no arithmetic on the
 count itself, and the per-rank count is an allgather of list lengths. The count
 is exact by construction rather than rounded to an integer, which is why zero
 tolerance is a legitimate pointwise bound here and not the discrete-output
-invariants case. The shipped self-validation record confirms it: every one of
+invariants case. The 2026-09-04 x86 calibration record confirms it: every one of
 these arrays came back with max_abs_error exactly 0.0 and values_over_bound 0
-under the variant, in all eight checks that ship one.
+under the variant, in all 19 checks.
 
 ## Evidence
 
@@ -147,5 +147,13 @@ Native measurements on the packaging host (gfortran 15, OpenMPI 5, four ranks):
   dump and 2.3e-12 at the sixth, a factor of six, which is why the window stops
   there.
 
-Policy, bounds, window and variant are proposals until the curator finalizes
-them after the calibration self-validation run.
+The complete graded-default x86 calibration selfcheck finished
+2026-09-04T13:49:13Z: its own nominal-versus-variant distance was 2.27729e-12.
+All 21 graded arrays (3227 values) contained the measured sensitivity under
+their own bounds, with 0 values over bound; the worst array was
+energy_field_0005.f64 at 3.73605e-06 of its bound. This comparison measures
+nominal-variant sensitivity, not a same-input run/build floor.
+
+The nominal run took 3.2 s excluding its 54.0 s build, and expected_runtime_s
+is 5 s. The earlier independent same-input build-floor evidence above remains
+distinct.
