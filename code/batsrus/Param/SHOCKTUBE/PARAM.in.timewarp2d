@@ -1,0 +1,129 @@
+#DESCRIPTION
+Param/SHOCKTUBE/PARAM.in.timewarp2d		StringDescription
+
+#PLANET
+NONE			NamePlanet
+
+#IOUNITS
+NONE			TypeIoUnit
+
+#NORMALIZATION
+NONE			TypeNormalization
+
+#TIMEWARP
+T			UseTimeWarp
+5.0			uWarpDim
+
+WARPCMAX
+F			UseWarpCmax
+
+#GRIDBLOCKALL
+100			MaxBlock
+
+#GRID
+4			nRootBlock1
+4			nRootBlock2
+1			nRootBlock3
+-100.			xMin
+ 100.			xMax
+-100.			yMin
+ 100.			yMax
+-0.5			zMin
+ 0.5			zMax
+
+#BODY
+T			UseBody
+10.0			rBody
+-1.0			rCurrents (to be removed)
+10.0			BodyNDim
+0.107722		BodyTDim (p/rho at r=10)
+
+#ROTATION
+F			UseRotation
+
+#OUTERBOUNDARY
+float			TypeBc1
+float			TypeBc2
+float			TypeBc3
+float			TypeBc4
+
+#INNERBOUNDARY
+radialstate		TypeBcBody
+
+#RADIALSTATE
+100.0			Amplitude Rho
+-1.0			ExponentR Rho
+3.0			Amplitude Ur
+0.0			ExponentR Ur
+0.0			Amplitude Ulon
+0.0			Amplitude Ulat
+1.0			Amplitude Br
+-1.0			ExponentR Br
+-0.01			Amplitude Blon
+0.0			ExponentR Blon
+0.0			Amplitude Blat
+50.0			Amplitude p
+-5/3			ExponentR p (-Gamma)
+
+#BUMP
+Rho			NameVar
+10.0			Amplitude
+5.0			WidthX
+40.0			WidthY
+-1.0			WidthZ
+-20.0			CenterX
+0.0			CenterY
+0.0			CenterZ
+2			nPower
+
+#BUMP
+p			NameVar
+8.0			Amplitude
+5.0			WidthX
+40.0			WidthY
+-1.0			WidthZ
+-20.0			CenterX
+0.0			CenterY
+0.0			CenterZ
+2			nPower
+
+#BUMP
+Bz			NameVar
+-0.5			Amplitude
+10.0			WidthX
+40.0			WidthY
+-1.0			WidthZ
+-20.0			CenterX
+0.0			CenterY
+0.0			CenterZ
+2			nPower
+
+#TIMESTEPPING
+2			nStage
+0.8			CflExpl
+
+#SCHEME
+2			nOrder
+Linde			TypeFlux
+mc3			TypeLimiter
+1.2			LimiterBeta
+
+#SAVELOGFILE
+T			DoSaveLogfile
+raw			StringLog
+1			DnSaveLogfile
+-1.			DtSaveLogfile
+
+#SAVERESTART
+F			DoSaveRestart
+
+#SAVEPLOT
+1			nPlotFile
+z=0 HD idl_ascii		StringPlot
+-1			DnSavePlot
+0.5			DtSavePlot
+0.0			DxSavePlot
+
+#STOP
+-1			MaxIteration
+6.0			tSimulationMax

@@ -1,0 +1,121 @@
+#!/bin/csh
+
+# Job script for Athena computer at NASA Ames. Make sure you have a conditional
+# in your .cshrc of equivalent startup file:
+#
+# if ( $HOSTNAME =~ ath* || $HOSTNAME =~ x10* ) then
+#    # On Athena front-end and compute nodes:
+#    source /opt/cray/pe/modules/3.2.11.7/init/tcsh
+#    # Load Intel compiler with Cray MPI (this is tested, cray compilers not yet)
+#    module load PrgEnv-intel
+#else
+#    source /usr/share/modules/init/tcsh
+#    # Load Intel/gfortran ... compilers with MPT on other machine(s)
+#    ...
+#endif
+
+#
+# This file must be customized and run from the run directory! For example
+#
+#   cd run
+#   qsub job.athfe
+#
+# To check the status of submitted jobs, use
+#
+# qstat -u YOUR_USER_NAME
+#
+# Note that the run directory should be moved to the /nobackup filesystem,
+# otherwise the quota on the home directory will fill up before the run ends.
+# Even on the /nobackup system there is a limit on the number of files.
+# To see the disk quota limits and usage use
+#
+# lfs quota -u USERNAME /nobackupp1
+#
+# To avoid having too many output files post-processes every minut using
+#
+#    ./PostProc.pl -m -v -g -r=60 &> PostProc.log &
+#
+# either on the head node or in this job script by 
+# commenting out the two PostProc related lines below.
+#
+# Also use (in the BATSRUS section of the PARAM.in file) the command
+#
+# #RESTARTOUTFILE
+# one                             TypeRestartOutFile
+#
+# to reduce the number of files in the restart directory.
+#
+# To see the CPU allocation and usage on your accounts use
+#
+# acct_ytd
+#
+# For detailed information for a period of time, project and user(s):
+#
+# acct_query -b 10/31/15 -p s1359 -u all
+#
+
+#PBS -S /bin/csh
+#PBS -N SWMF
+
+# To run on the 256-core Turin nodes
+#PBS -l select=10:ncpus=256:mpiprocs=256:model=tur_ath
+
+# There are normal, devel, long, wide queues
+#PBS -q normal
+
+#PBS -l walltime=8:00:00
+#PBS -j oe
+#PBS -m e
+
+# Specify group (account charged) if necessary
+### PBS -W group_list=...
+
+# show hostname (should start with x10)
+hostname
+
+# Load programming environment
+module purge
+module load PrgEnv-intel cray-pals idl
+module list
+
+# To reduce MPI startup time
+setenv FI_PROVIDER cxi
+
+# cd into the run directory
+cd $PBS_O_WORKDIR
+
+# Start PostProc.pl in the background
+#./PostProc.pl -n=16 -g -r=60 >& PostProc.log &
+
+# run SWMF (the number of processors has to be set here! Based on -l select=...)
+# the date/time stamp for runlog is only necessary for automated resubmission
+mpiexec -n 2560 ./SWMF.exe > runlog_`date +%y%m%d%H%M`
+
+# Request PostProc.pl to stop and wait for it to finish
+
+#sleep 60
+#touch PostProc.STOP; wait;
+
+exit
+
+# To use automated resubmission remove the 'exit' command above
+# and adapt the script below!
+#
+# Use the #CPUTIMEMAX and #CHECKSTOP commands in PARAM.in
+# so the code stops before the wall clock time is exceeded.
+
+# Do not continue unless the job finished successfully
+if(! -f SWMF.SUCCESS) exit
+
+# Do not continue if the whole run is done
+if(-f SWMF.DONE) exit
+
+# Link latest restart files
+./Restart.pl
+
+# Provide a PARAM.in.restart file if you wish and uncomment these lines:
+# if(! -f PARAM.in.start) cp PARAM.in PARAM.in.start
+# if(-f PARAM.in.restart) cp PARAM.in.restart PARAM.in
+
+# Resubmit job
+qsub job.athfe
