@@ -78,8 +78,13 @@ etalon resonances where a tiny shift in a pole position produces a large
 change in the sampled value, its graded values reach 3.8e5, and both its floor
 and its spread are correspondingly the largest in the set.
 
-Every tolerance here is provisional until the calibration selfcheck and the
-human's finalisation at STOP 4.
+**Finalisation (STOP 4, 2026-09-04).** The curator accepted all seven
+tolerances, policies, windows and variants unchanged from the calibration run:
+"accept and continue". Nothing was revised between the calibration selfcheck
+and the final one, because the cross-platform measurement above showed every
+provisional bound already had 995x to 10008x headroom over the largest
+measured difference between valid implementations. All seven checks are
+`pointwise`; none is chaotic, custom or THIN.
 
 ## What the survey rejected, and why it matters
 
