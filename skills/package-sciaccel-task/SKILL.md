@@ -1,8 +1,8 @@
 ---
 name: package-sciaccel-task
 description: Turn one scientific codebase into ScienceAccelBench task environments with the sab.py CLI. Use it to brief the human on the whole pipeline first, register a pinned codebase, investigate it with short native runs, decompose it into semi-independent modules with human approval, get the source PR merged, survey its official tests, and then, per module, scaffold a Harbor-style task, author self-contained checks (test + pass policy, nominal and variant initial conditions), lint, obtain the human's consent to the run plan, build the Docker images, run the two-solve self-validation, hand the human a review brief for the task PR, and, on the reviewer's side, brief the review of a source PR or a task PR in one fixed shape. The design is SPEC.html next to this file; the CLI validates what you write and never writes science, runs anything remotely, or merges.
-version: 5.8.0
-last_changed_at: "2026-09-05T00:00:00Z"
+version: 5.9.0
+last_changed_at: "2026-09-05T00:30:00Z"
 ---
 
 # Package a ScienceAccelBench task
@@ -35,6 +35,21 @@ priori information. A green selfcheck is not a finished task.
 A task is an RL environment. Its reward is a suite of **checks** derived from
 the codebase's official tests that a coding agent must keep passing while it
 carries out a generic statement: port the module to every active target.
+
+**Acceleration** is wider than a GPU port. It means two things at once:
+making the code run faster, and making scientific discovery faster by
+writing good, novel code efficiently, so that the scientist who owns the code
+reaches the answer sooner. Porting to an accelerator is one form of that,
+the form the current leaves fix in their generic statement, with a single
+GPU descriptor as the placeholder target set; it is a subset, not the
+definition. Judge a proposed module by whether accelerating its expensive
+path would speed up the science, on whatever device; an existing human GPU
+port of part of a module is the record to beat, not a disqualifier. The
+`acceleration` label marks the workload whose speed is measured, not the
+hardware it must run on. Other forms of the statement (an algorithmic
+rewrite, a new implementation on the same hardware) share this definition,
+and the check suite is what carries over to them.
+
 **Official tests** are the codebase's own test suites and its standard
 example problems alike: an upstream example is an official test even when
 upstream ships no reference output for it (the pinned build generates the
