@@ -1,0 +1,156 @@
+{
+  "module": "batsrus-cometary-plasma",
+  "tests": [
+    {
+      "id": "comet",
+      "module": "batsrus-cometary-plasma",
+      "path": "Param/COMET/PARAM.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "six-species comet with the Haser neutral coma (MhdComet, Comet6Sp), steady iterations",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 2.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 17,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "reference reproduced natively (compile 38 s, run 17 s on 2 MPI ranks); upstream compares with DiffNum.pl at rel ['1e-5'], abs ['1e-10'] on log_n000001.log; every step is deterministic (no random stream), so pointwise on the same graded files",
+      "proposed_check": "comet",
+      "build_seconds_native": 38,
+      "make_target": "test_comet",
+      "config": [
+        "./Config.pl -default -u=Comet6Sp -e=MhdComet -ng=2 -g=8,8,8"
+      ],
+      "references": [
+        "Param/COMET/TestOutput/log_n000001.log"
+      ]
+    },
+    {
+      "id": "cometfluids",
+      "module": "batsrus-cometary-plasma",
+      "path": "Param/COMET3FLUIDSPE/PARAM.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "three-ion-fluid comet with electron pressure (Comet3FluidsPe), 60 iterations",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 2.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 120,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "run failed natively (compile 52 s, run n/a s on 2 MPI ranks); upstream compares with DiffNum.pl at rel default, abs default on log_n000060.log; every step is deterministic (no random stream), so pointwise on the same graded files; the pinned source rejects Param/COMET3FLUIDSPE/PARAM.in: unknown #COMMAND #MHDIONS, GM_set_parameters stops with Correct PARAM.in; usable only as a custom check with the command removed",
+      "proposed_check": "",
+      "build_seconds_native": 52,
+      "make_target": "test_cometfluids",
+      "config": [
+        "./Config.pl -u=Comet3FluidsPe -e=Comet3FluidsPe -ng=2 -g=8,8,8",
+        "./Config.pl -default"
+      ],
+      "references": [
+        "Param/COMET3FLUIDSPE/TestOutput/log_n000060.log"
+      ]
+    },
+    {
+      "id": "cometfluids-restart",
+      "module": "batsrus-cometary-plasma",
+      "path": "Param/COMET3FLUIDSPE/PARAM.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "restart save and read of the three-fluid comet",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 2.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 120,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "run failed natively (compile 0 s, run n/a s on 2 MPI ranks); upstream compares with DiffNum.pl at rel default, abs default on log_n000060.log; every step is deterministic (no random stream), so pointwise on the same graded files; depends on test_cometfluids, whose PARAM.in the pinned source rejects (#MHDIONS)",
+      "proposed_check": "",
+      "build_seconds_native": 0,
+      "make_target": "test_cometfluids_restart",
+      "config": [
+        "./Config.pl -u=Comet3FluidsPe -e=Comet3FluidsPe -ng=2 -g=8,8,8",
+        "./Config.pl -default"
+      ],
+      "references": [
+        "Param/COMET3FLUIDSPE/TestOutput/log_n000060.log"
+      ]
+    },
+    {
+      "id": "cometcghd",
+      "module": "batsrus-cometary-plasma",
+      "path": "Param/ROSETTA/PARAM.in.hd.test",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Rosetta 67P hydrodynamic coma with the triangulated shape-model body (CG_MOC.bdf)",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 2.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 25,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "reference reproduced natively (compile 66 s, run 25 s on 2 MPI ranks); upstream compares with DiffNum.pl at rel default, abs default on hd_log_n000000.log; every step is deterministic (no random stream), so pointwise on the same graded files",
+      "proposed_check": "cometcghd",
+      "build_seconds_native": 66,
+      "make_target": "test_cometCGhd",
+      "config": [
+        "./Config.pl -default ${OPENMP} -u=CometCG -e=Hd -ng=2 -g=8,8,8"
+      ],
+      "references": [
+        "Param/ROSETTA/TestOutput/hd_log_n000000.log"
+      ]
+    },
+    {
+      "id": "cometcgfluids",
+      "module": "batsrus-cometary-plasma",
+      "path": "Param/ROSETTA/PARAM.in.fluids.all",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Rosetta 67P three-fluid plasma with electron pressure and the shape-model body on 4^3 blocks",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 2.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 26,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "differs from the stored reference beyond upstream tolerance natively (compile 69 s, run 26 s on 2 MPI ranks); upstream compares with DiffNum.pl at rel ['1e-3'], abs ['1e-12'] on CGfluids_log_n000000.log; every step is deterministic (no random stream), so pointwise on the same graded files",
+      "proposed_check": "cometcgfluids",
+      "build_seconds_native": 69,
+      "make_target": "test_cometCGfluids",
+      "config": [
+        "./Config.pl -u=CometCGfluids -e=CometCG3FluidsPe -ng=2 -g=4,4,4",
+        "./Config.pl -default"
+      ],
+      "references": [
+        "Param/ROSETTA/TestOutput/CGfluids_log_n000000.log"
+      ]
+    },
+    {
+      "id": "ex-rosetta-hd",
+      "module": "batsrus-cometary-plasma",
+      "path": "Param/ROSETTA/PARAM.in.hd",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Rosetta 67P hydrodynamic coma, 100 iterations (the untested sibling of PARAM.in.hd.test)",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 2.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 120,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "upstream example with no Makefile.test target and no reference output: an official test by the pipeline rule; not run in the Step 1 investigation (configuration must be established from the PARAM file: #CHECKGRIDSIZE gives the block size, #USERMODULE the user module, the variables the equation set); the pinned build generates the reference and the module author measures the runtime and shortens the window through a knob if needed; deterministic, so pointwise",
+      "proposed_check": "ex-rosetta-hd"
+    }
+  ]
+}
