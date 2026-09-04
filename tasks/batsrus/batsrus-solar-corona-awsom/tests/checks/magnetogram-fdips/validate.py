@@ -68,6 +68,8 @@ def _numbers(tokens, want, where):
         arr = np.array([EXP3.sub(r"\1E\2", t) for t in tokens], dtype=np.float64)
     if arr.size != want:
         raise Invalid(f"{where}: {arr.size} numbers, expected {want}")
+    if not np.all(np.isfinite(arr)):
+        raise Invalid(f"{where}: holds a non-finite value")
     return arr
 
 
@@ -97,10 +99,13 @@ def read_idl_ascii(path: Path):
         if i >= n:
             raise Invalid(f"{path.name}: snapshot {len(frames)} truncated after the headline")
         f = lines[i].split()
-        if len(f) < 5:
-            raise Invalid(f"{path.name}: snapshot {len(frames)} header {lines[i]!r} has {len(f)} fields, expected 5")
-        step, time = int(float(f[0])), float(f[1])
-        ndim, nparam, nvar = int(f[2]), int(f[3]), int(f[4])
+        if len(f) != 5:
+            raise Invalid(f"{path.name}: snapshot {len(frames)} header {lines[i]!r} has {len(f)} fields, expected exactly 5")
+        header = _numbers(f, 5, f"{path.name} snapshot {len(frames)} header")
+        step_value, time, ndim_value, nparam_value, nvar_value = header
+        if not all(float(value).is_integer() for value in (step_value, ndim_value, nparam_value, nvar_value)):
+            raise Invalid(f"{path.name}: snapshot {len(frames)} header integer fields are not integers")
+        step, ndim, nparam, nvar = (int(step_value), int(ndim_value), int(nparam_value), int(nvar_value))
         i += 1
         adim = abs(ndim)
         if adim < 1 or nvar < 1 or nparam < 0:
@@ -117,8 +122,8 @@ def read_idl_ascii(path: Path):
         names = lines[i].split()
         i += 1
         ncol = adim + nvar
-        if len(names) < ncol:
-            raise Invalid(f"{path.name}: snapshot {len(frames)} names line holds {len(names)} names, expected at least {ncol}")
+        if len(names) != ncol:
+            raise Invalid(f"{path.name}: snapshot {len(frames)} names line holds {len(names)} names, expected exactly {ncol}")
         npoint = 1
         for s in sizes:
             npoint *= s
