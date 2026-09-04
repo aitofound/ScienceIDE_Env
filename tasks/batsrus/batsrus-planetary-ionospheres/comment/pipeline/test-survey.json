@@ -340,6 +340,28 @@
       ]
     },
     {
+      "id": "ex-moonimpact-restart",
+      "module": "batsrus-planetary-ionospheres",
+      "path": "Param/MOONIMPACT/PARAM.in.restartsave",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "MoonImpact restart example: a 300-step steady background followed by a time-accurate impact plume run restarted from the saved state, including the semi-implicit resistive path",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 2.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 72.3,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "runnable upstream Param/MOONIMPACT/PARAM.in.restartsave and PARAM.in.restartread example pair with no Makefile.test target or shipped reference; measured in the pinned oracle image at 72.3 s run time on 2 MPI ranks (build timed separately); deterministic nominal/variant outputs support pointwise grading; selected after the proposed Jupiter Mag_SSSS example proved parser-incompatible at the pin",
+      "proposed_check": "ex-moonimpact-restart",
+      "config": [
+        "./Config.pl -default -u=MoonImpact -e=MhdHyp -ng=2 -g=6,6,6"
+      ],
+      "references": []
+    },
+    {
       "id": "ex-jupiter-mag-ssss",
       "module": "batsrus-planetary-ionospheres",
       "path": "Param/JUPITER/PARAM.in.Mag_SSSS",
@@ -353,9 +375,9 @@
       },
       "upstream_runtime_s": 120,
       "runtime_measured": false,
-      "suitable": true,
-      "why": "upstream example with no Makefile.test target and no reference output: an official test by the pipeline rule; not run in the Step 1 investigation (configuration must be established from the PARAM file: #CHECKGRIDSIZE gives the block size, #USERMODULE the user module, the variables the equation set); the pinned build generates the reference and the module author measures the runtime and shortens the window through a knob if needed; deterministic, so pointwise",
-      "proposed_check": "ex-jupiter-mag-ssss"
+      "suitable": false,
+      "why": "rechecked against BATSRUS 9dfe746d: this upstream example is a stale deck from an earlier major version; the pinned TestParam.pl rejects #PROBLEMTYPE, numeric fluxfcn_type, VAR iter log strings and obsolete #IONOSPHERE parameters before BATSRUS can start, so it is unsuitable at this pin; the task preserves the exclusion and uses the runnable upstream MoonImpact restart deck pair instead",
+      "proposed_check": ""
     },
     {
       "id": "ex-rotatingframe",

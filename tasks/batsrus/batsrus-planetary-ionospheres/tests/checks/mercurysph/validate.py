@@ -80,22 +80,27 @@ def read_rows(path: Path) -> list[list[float]]:
 
 
 def load(path: Path, spec: dict) -> tuple[np.ndarray, np.ndarray]:
-    """Return the flattened values and, for each value, the scale of its column."""
+    """Return one finite rectangular table and its per-cell column scale."""
     rows = read_rows(path)
     if not rows:
         raise ValueError("no numeric rows found")
     width = len(rows[0])
-    rectangular = all(len(row) == width for row in rows)
+    for row_number, row in enumerate(rows, start=1):
+        if len(row) != width:
+            raise ValueError(
+                f"nonrectangular numeric table: row {row_number} has {len(row)} columns, expected {width}")
+    table = np.asarray(rows, dtype=np.float64)
+    if not np.all(np.isfinite(table)):
+        raise ValueError("contains non-finite numeric values")
     key = spec.get("sort_by_columns")
-    if key and rectangular and max(key) < width:
-        rows.sort(key=lambda row: tuple(row[i] for i in key))
-    values = np.array([value for row in rows for value in row], dtype=np.float64)
-    if rectangular:
-        table = np.array(rows, dtype=np.float64)
-        scale = np.tile(np.abs(table).max(axis=0), table.shape[0])
-    else:
-        scale = np.full(values.shape, np.abs(values).max())
-    return values, scale
+    if key:
+        if (not isinstance(key, list) or not key
+                or any(not isinstance(i, int) or isinstance(i, bool) or i < 0 or i >= width for i in key)):
+            raise ValueError("sort_by_columns contains an invalid column index")
+        order = sorted(range(table.shape[0]), key=lambda n: tuple(table[n, i] for i in key))
+        table = table[order, :]
+    scale = np.broadcast_to(np.abs(table).max(axis=0), table.shape).copy()
+    return table, scale
 
 
 def main() -> int:
@@ -116,24 +121,36 @@ def main() -> int:
         if missing:
             failures.append(f"{rel}: missing on {', '.join(missing)}")
             continue
+        if not np.isfinite(atol) or not np.isfinite(rtol) or atol < 0 or rtol < 0:
+            failures.append(f"{rel}: tolerances must be finite and non-negative")
+            continue
         try:
-            ref_values, scale = load(ref_path, spec)
-            cand_values, _ = load(cand_path, spec)
+            ref_table, scale_table = load(ref_path, spec)
         except (OSError, ValueError) as exc:
-            failures.append(f"{rel}: cannot load: {exc}")
+            failures.append(f"{rel}: cannot load reference: {exc}")
             continue
-        if ref_values.shape != cand_values.shape:
-            failures.append(f"{rel}: {cand_values.size} graded numbers, reference has {ref_values.size}")
+        try:
+            cand_table, _ = load(cand_path, spec)
+        except (OSError, ValueError) as exc:
+            failures.append(f"{rel}: cannot load candidate: {exc}")
             continue
-        if not np.all(np.isfinite(cand_values)):
-            failures.append(f"{rel}: candidate contains non-finite values")
+        if ref_table.shape != cand_table.shape:
+            failures.append(
+                f"{rel}: candidate has {cand_table.shape[0]} rows x {cand_table.shape[1]} columns, "
+                f"reference has {ref_table.shape[0]} rows x {ref_table.shape[1]} columns")
             continue
-        err = np.abs(cand_values - ref_values)
-        bound = atol + rtol * scale
+        ref_values = ref_table.reshape(-1)
+        cand_values = cand_table.reshape(-1)
+        scale = scale_table.reshape(-1)
+        with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+            err = np.abs(cand_values - ref_values)
+            bound = atol + rtol * scale
+            scaled = np.where(scale > 0, err / np.where(scale > 0, scale, 1.0), 0.0)
+        if not np.all(np.isfinite(err)) or not np.all(np.isfinite(bound)) or not np.all(np.isfinite(scaled)):
+            failures.append(f"{rel}: comparison produced non-finite values")
+            continue
         over = int(np.count_nonzero(err > bound))
         max_abs = float(err.max()) if err.size else 0.0
-        with np.errstate(divide="ignore", invalid="ignore"):
-            scaled = np.where(scale > 0, err / np.where(scale > 0, scale, 1.0), 0.0)
         details[rel] = {
             "values": int(ref_values.size),
             "atol": atol,
@@ -156,7 +173,7 @@ def main() -> int:
               "atol": float(comparison["atol"]), "rtol": float(comparison.get("rtol", 0.0)),
               "scale": "column-max", "distance": worst_abs, "files": details,
               "reason": "every graded number is within the bound" if passed else "; ".join(failures)}
-    Path(args.out).write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    Path(args.out).write_text(json.dumps(result, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8")
     print(result["reason"], file=sys.stderr)
     return 0
 
