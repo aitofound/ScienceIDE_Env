@@ -143,6 +143,13 @@ checked; local private paths, secrets, raw logs, task tolerances/rewards/speedup
 benchmark results, merge-readiness claims and Step-2 pass-policy/suitability are not
 published.
 
+**Present it; never produce it silently.** After every report run, open or attach the
+self-contained HTML and paste the bounded Markdown summary in the same human channel,
+including its unknowns and warnings, before or with the source-PR link. If best effort
+leaves the report absent or incomplete, tell the human that explicitly instead of
+quietly proceeding. This is a mandatory communication duty in Step 1.5, not another
+human-input stop and not a report-completeness gate.
+
 This report is **informational and non-blocking**. Missing values, unclassified files,
 and incomplete descriptions remain visible as `unknown`, gaps, or warnings. A report
 invocation may fail on malformed/unsafe input or an unwritable output, but neither

@@ -582,7 +582,7 @@ def cmd_codebase_propose(a) -> None:
     if approved:
         print(f"\napproved: {approved} ({mdoc['approval']['human_ref']!r}, {mdoc['approval']['at']})")
         print("The Step 1.5 metadata report is informational and best effort; it never gates the source PR or later steps.")
-        next_line(f"recommended: sab.py codebase report --codebase {a.codebase}; or proceed directly to the source PR for code/{cb['source']}/ and then STOP 2 for human merge")
+        next_line(f"recommended: sab.py codebase report --codebase {a.codebase}; present its HTML and bounded Markdown to the human; or proceed directly to the source PR for code/{cb['source']}/ and then STOP 2 for human merge")
     else:
         print("\nSTOP 1: show this table and overview.md to the human.")
         next_line(f'sab.py codebase approve-modules --codebase {a.codebase} --human-ref "<their words>" [--modules a,b]')
@@ -610,12 +610,18 @@ def cmd_codebase_approve(a) -> None:
     write_json(mp, mdoc)
     mark_step(a.codebase, "approve-modules")
     metadata_path = d / "codebase-metadata.json"
+    starter_warning = None
     if not metadata_path.is_file():
-        write_json(metadata_path, _metadata_starter(cb, mdoc))
+        try:
+            write_json(metadata_path, _metadata_starter(cb, mdoc))
+        except OSError as exc:
+            starter_warning = f"could not create the informational metadata starter ({type(exc).__name__}); approval remains recorded and the source PR may proceed"
     print(f"approved {len(keep)} module(s): {keep}")
     print(f"\nStep 1.5 informational metadata starter: {metadata_path}")
+    if starter_warning:
+        print(f"WARNING: {starter_warning}")
     print("Fill it to best effort. Unknown fields are allowed; this report never gates the source PR or later steps.")
-    next_line(f"recommended: sab.py codebase report --codebase {a.codebase}; or proceed directly to the source PR for code/{cb['source']}/ and then STOP 2 for human merge")
+    next_line(f"recommended: sab.py codebase report --codebase {a.codebase}; present its HTML and bounded Markdown to the human; or proceed directly to the source PR for code/{cb['source']}/ and then STOP 2 for human merge")
 
 
 def validate_tests(cb: str, doc: dict, source: Path, approved: list[str]) -> tuple[list[str], dict]:
@@ -784,7 +790,12 @@ _METADATA_COUNT_SPECS = (
     ("collected_items", "framework-collected items", "items collected after framework parametrization"),
     ("inner_cases", "inner cases", "optional cases inside one source-level definition that collection does not expose"),
 )
-_METADATA_ABS_PATH = re.compile(r"(?<![A-Za-z0-9_/])/(?!/)|(?<![A-Za-z0-9_])[A-Za-z]:[\\/]")
+_METADATA_ABS_PATH = re.compile(r"\bfile:(?://)?/|(?<![A-Za-z0-9_/])/(?!/)|(?<![A-Za-z0-9_])[A-Za-z]:[\\/]", re.IGNORECASE)
+_METADATA_SECRET_VALUE = re.compile(
+    r"(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9]{20,}|"
+    r"xox[baprs]-[A-Za-z0-9-]{20,}|glpat-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|"
+    r"AIza[A-Za-z0-9_-]{20,}|Bearer\s+[A-Za-z0-9._~+/=-]{20,}|"
+    r"-----BEGIN [^-\n]{0,32}PRIVATE KEY-----)", re.IGNORECASE)
 
 
 def _metadata_key(key) -> str:
@@ -821,8 +832,11 @@ def _metadata_scan_unsafe(value, where: str = "metadata") -> list[str]:
     elif isinstance(value, list):
         for i, child in enumerate(value):
             errors.extend(_metadata_scan_unsafe(child, f"{where}[{i}]"))
-    elif isinstance(value, str) and _METADATA_ABS_PATH.search(value):
-        errors.append(f"{where}: local/private absolute paths are not allowed")
+    elif isinstance(value, str):
+        if _METADATA_ABS_PATH.search(value):
+            errors.append(f"{where}: local/private absolute paths are not allowed")
+        if _METADATA_SECRET_VALUE.search(value):
+            errors.append(f"{where}: secret-like values are not allowed")
     return errors
 
 
@@ -835,7 +849,7 @@ def _metadata_copy_public(value, warnings: list[str], where: str = "metadata", d
         out = {}
         for key, child in value.items():
             low = _metadata_key(key)
-            if any(word in low for word in _METADATA_DANGEROUS_KEYS) or low in _METADATA_DROP_KEYS:
+            if any(word in low for word in _METADATA_DANGEROUS_KEYS) or any(marker in low for marker in _METADATA_DROP_KEYS):
                 warnings.append(f"{where}.{key}: secret/raw-log field omitted")
                 continue
             if low in {_metadata_key(key) for key in _METADATA_PROHIBITED_KEYS}:
@@ -848,7 +862,11 @@ def _metadata_copy_public(value, warnings: list[str], where: str = "metadata", d
     if isinstance(value, list):
         return [_metadata_copy_public(child, warnings, f"{where}[{i}]", depth + 1) for i, child in enumerate(value)]
     if isinstance(value, str):
+        if _METADATA_SECRET_VALUE.search(value):
+            warnings.append(f"{where}: secret-like value redacted")
+            return "<secret-like value redacted>"
         if _METADATA_ABS_PATH.search(value):
+            warnings.append(f"{where}: local/private absolute path redacted")
             return "<local path redacted>"
         if len(value) > 20_000:
             warnings.append(f"{where}: text longer than 20,000 characters was truncated")
@@ -926,7 +944,7 @@ def _metadata_walk(root: Path) -> tuple[list[tuple[str, Path, int, int | None]],
             try:
                 size = item.stat().st_size
             except OSError as exc:
-                warnings.append(f"could not account for {relative}: {exc}")
+                warnings.append(f"could not account for {relative}: {type(exc).__name__}")
                 continue
             files.append((relative, item, size, _metadata_physical_lines(item)))
     return files, directories, symlinks, warnings
@@ -961,7 +979,9 @@ def _metadata_owned_files(root: Path, paths: list[str], all_files: dict[str, tup
         if not candidate.exists():
             warnings.append(f"{owner}: path is absent from the source snapshot: {value!r}")
             continue
-        if candidate.is_file():
+        if candidate == root.resolve():
+            owned.update(all_files)
+        elif candidate.is_file():
             try:
                 owned.add(candidate.relative_to(root.resolve()).as_posix())
             except ValueError:
@@ -1004,30 +1024,31 @@ def _metadata_count_value(section: dict, key: str):
     return None
 
 
-def _metadata_source_tests(state: Path, warnings: list[str]) -> tuple[int | None, int | None, dict[str, int]]:
-    """Use a later tests.json only for neutral file/definition counts, never policy or suitability."""
+def _metadata_source_tests(state: Path, warnings: list[str]) -> tuple[int | None, dict[str, int]]:
+    """Use a later tests.json only for distinct official-test file counts, never definition/policy/suitability claims."""
     path = state / "tests.json"
     if not path.is_file():
-        return None, None, {}
+        return None, {}
     try:
         doc = read_json(path)
     except SystemExit:
         warnings.append("tests.json is malformed; official-test counts remain agent-authored")
-        return None, None, {}
+        return None, {}
     rows = doc.get("tests") if isinstance(doc, dict) else None
     if not isinstance(rows, list):
-        return None, None, {}
-    paths, by_module = set(), {}
+        return None, {}
+    paths: set[str] = set()
+    by_module: dict[str, set[str]] = {}
     for row in rows:
         if not isinstance(row, dict):
             continue
         value = row.get("path")
+        module = row.get("module")
         if isinstance(value, str) and _metadata_is_relative(value):
             paths.add(value)
-        module = row.get("module")
-        if isinstance(module, str):
-            by_module[module] = by_module.get(module, 0) + 1
-    return len(paths), len(rows), by_module
+            if isinstance(module, str):
+                by_module.setdefault(module, set()).add(value)
+    return len(paths), {module: len(values) for module, values in by_module.items()}
 
 
 def _metadata_list(value) -> list:
@@ -1196,12 +1217,12 @@ def _metadata_report_doc(cb: dict, mdoc: dict | None, raw: dict, state: Path, wa
         module_sets[slug] = module_set
         card = {key: _metadata_copy_public(module.get(key), warnings, f"modules.{slug}.{key}")
                 for key in ("slug", "title", "entrypoints", "expensive_path", "rationale", "excluded", "hazards") if key in module}
-        overlay = overlays.get(slug, {})
+        overlay = _metadata_copy_public(overlays.get(slug, {}), warnings, f"modules.{slug}") or {}
         for key, value in overlay.items():
             if key not in ("slug", "paths", "owned_paths"):
-                card[key] = _metadata_copy_public(value, warnings, f"modules.{slug}.{key}")
+                card[key] = value
         card.update({"slug": slug, "owned_paths": paths,
-                     "purpose": card.get("purpose") or module.get("rationale") or None,
+                     "purpose": card.get("purpose") or card.get("rationale") or None,
                      "differences": card.get("differences") or {"status": "unknown", "note": "not supplied"},
                      "classification": "agent-authored module card; CLI-computed size"})
         refs = [value for value in _metadata_list(card.get("shared_component_ids")) if value in shared_ids]
@@ -1234,14 +1255,12 @@ def _metadata_report_doc(cb: dict, mdoc: dict | None, raw: dict, state: Path, wa
                            "shared": _metadata_bucket(module_shared, file_map),
                            "overlap": _metadata_bucket(module_sets.get(slug, set()) & overlap_files, file_map)}
 
-    survey_files, survey_definitions, surveyed_by_module = _metadata_source_tests(state, warnings)
+    survey_files, surveyed_files_by_module = _metadata_source_tests(state, warnings)
     counts = {}
     for key, unit, semantics in _METADATA_COUNT_SPECS:
         supplied = _metadata_count_value(authored_tests, key)
         if key == "test_files" and survey_files is not None:
-            supplied, classification = survey_files, "CLI-computed from later tests.json"
-        elif key == "test_definitions" and survey_definitions is not None:
-            supplied, classification = survey_definitions, "CLI-computed from later tests.json"
+            supplied, classification = survey_files, "CLI-computed from distinct paths in later tests.json"
         else:
             classification = "agent-authored/evidenced"
         counts[key] = _metadata_count(supplied, unit, semantics, classification, warnings, f"official_tests.{key}")
@@ -1252,8 +1271,8 @@ def _metadata_report_doc(cb: dict, mdoc: dict | None, raw: dict, state: Path, wa
         module_counts = {}
         for key, unit, semantics in _METADATA_COUNT_SPECS:
             supplied = _metadata_count_value(section, key)
-            if key == "test_definitions" and slug in surveyed_by_module:
-                supplied, classification = surveyed_by_module[slug], "CLI-computed from later tests.json"
+            if key == "test_files" and slug in surveyed_files_by_module:
+                supplied, classification = surveyed_files_by_module[slug], "CLI-computed from distinct paths in later tests.json"
             else:
                 classification = "agent-authored/evidenced"
             module_counts[key] = _metadata_count(supplied, unit, semantics, classification, warnings,
@@ -1271,11 +1290,17 @@ def _metadata_report_doc(cb: dict, mdoc: dict | None, raw: dict, state: Path, wa
     approval_report = {"proposed_modules": [m["slug"] for m in proposed_modules], "approved_modules": approved,
                        "human_ref": _metadata_copy_public(approval.get("human_ref"), warnings, "approval.human_ref"),
                        "approved_at": approval.get("at"), "classification": "human-owned approval, CLI-copied"}
-    codebase = {"id": cb.get("codebase"), "title": cb.get("title") or cb.get("codebase"),
-                "source_root": f"code/{source}/", "upstream_url": cb.get("repo_url") or None,
-                "upstream_pin": cb.get("pin") or None, "license": cb.get("license") or None,
-                "languages": [value.strip() for value in str(cb.get("language") or "").split(",") if value.strip()],
-                "domain": cb.get("domain") or None, "owner": cb.get("owner") or None,
+    languages = [_metadata_copy_public(value.strip(), warnings, f"codebase.languages[{i}]")
+                 for i, value in enumerate(str(cb.get("language") or "").split(",")) if value.strip()]
+    codebase = {"id": cb.get("codebase"),
+                "title": _metadata_copy_public(cb.get("title") or cb.get("codebase"), warnings, "codebase.title"),
+                "source_root": f"code/{source}/",
+                "upstream_url": _metadata_copy_public(cb.get("repo_url") or None, warnings, "codebase.upstream_url"),
+                "upstream_pin": _metadata_copy_public(cb.get("pin") or None, warnings, "codebase.upstream_pin"),
+                "license": _metadata_copy_public(cb.get("license") or None, warnings, "codebase.license"),
+                "languages": languages,
+                "domain": _metadata_copy_public(cb.get("domain") or None, warnings, "codebase.domain"),
+                "owner": _metadata_copy_public(cb.get("owner") or None, warnings, "codebase.owner"),
                 "source_tree_fingerprint": _metadata_fingerprint(files, symlinks) if files or symlinks else None,
                 "fingerprint_algorithm": "SHA-256 over typed sorted regular-file paths+bytes and symlink paths+safe targets",
                 "measurement_source": snapshot_kind, "agent_authored": _metadata_copy_public(authored_codebase, warnings, "codebase")}
@@ -1460,7 +1485,7 @@ def cmd_codebase_report(a) -> None:
         raw = _metadata_starter(cb, mdoc)
         if not a.metadata:
             write_json(metadata_path, raw)
-            warnings.append(f"created the best-effort starter at {metadata_path}; fill and rerun to replace unknowns")
+            warnings.append("created the best-effort starter in the pipeline state directory; fill and rerun to replace unknowns")
         else:
             warnings.append("requested metadata input is absent; rendered a best-effort starter in memory")
     if not approved_modules(mdoc):
@@ -1471,9 +1496,11 @@ def cmd_codebase_report(a) -> None:
     json_path = output / "codebase-metadata.json"
     html_path = output / "codebase-metadata.html"
     markdown_path = output / "codebase-metadata.md"
+    html_text = render_metadata_html(report)
+    markdown_text = render_metadata_markdown(report)
     write_json(json_path, report)
-    html_path.write_text(render_metadata_html(report), encoding="utf-8")
-    markdown_path.write_text(render_metadata_markdown(report), encoding="utf-8")
+    html_path.write_text(html_text, encoding="utf-8")
+    markdown_path.write_text(markdown_text, encoding="utf-8")
     mark_step(a.codebase, "report")
     print("codebase metadata report written (informational, non-blocking):")
     print(f"  canonical JSON: {rel(json_path)}")
@@ -1482,8 +1509,10 @@ def cmd_codebase_report(a) -> None:
     for warning in report.get("warnings", []):
         print(f"WARNING: {warning}")
     print("The fingerprint covers the measured source snapshot only; report files live outside code/<source>/.")
+    print("\nPRESENT TO THE HUMAN NOW: open or attach the self-contained HTML and paste the bounded Markdown summary in the human channel. Do not produce these artifacts silently; if fields are incomplete, present the visible unknowns and warnings too. This communication duty is not a report gate.\n")
+    print(markdown_text)
     print(STEP15_BRIEF.format(source=cb["source"], cb=a.codebase))
-    next_line(f"STOP 2: open the source PR that adds code/{cb['source']}/ and codebase-reports/{a.codebase}/, then wait for merge; report link and offer the documented human bypass")
+    next_line(f"present codebase-reports/{a.codebase}/codebase-metadata.html and the Markdown above to the human; then STOP 2 at the source PR for code/{cb['source']}/ (or report an explicit nonblocking omission)")
 
 
 # ----------------------------------------------------------------- task mode
@@ -2417,11 +2446,13 @@ def cmd_status(a) -> None:
             nxt = (f"WARNING: Step 1.5 gate bypassed on {byp.get('at')} (\"{byp.get('human_ref')}\"); the task PR must not merge before the source PR; "
                    f"once merged: sab.py codebase source-merged --codebase {cb_id} --human-ref ...; meanwhile Step 2/3 continue")
         elif not (cb.get("source_pr") or {}).get("human_ref") and not line["metadata_report"]["complete"]:
-            nxt = (f"Step 1.5 informational (non-blocking): recommended fill {d / 'codebase-metadata.json'} and run "
-                   f"sab.py codebase report --codebase {cb_id}; or proceed directly to the source PR for code/{cb['source']}/ now. "
+            nxt = (f"Step 1.5 informational (non-blocking): recommended fill {d / 'codebase-metadata.json'}, run "
+                   f"sab.py codebase report --codebase {cb_id}, and present its HTML plus bounded Markdown to the human; "
+                   f"or explicitly report the omission and proceed directly to the source PR for code/{cb['source']}/ now. "
                    f"In either case STOP for human merge, then record sab.py codebase source-merged --codebase {cb_id} --human-ref ...")
         elif not (cb.get("source_pr") or {}).get("human_ref"):
-            nxt = (f"STOP (Step 1.5 source gate): open the source PR that adds code/{cb['source']}/ and codebase-reports/{cb_id}/, "
+            nxt = (f"Step 1.5 presentation: show the human codebase-reports/{cb_id}/codebase-metadata.html and the bounded Markdown if not already shown. "
+                   f"Then STOP (source gate): open the source PR that adds code/{cb['source']}/ and codebase-reports/{cb_id}/, "
                    f"wait for the human to merge it, then sab.py codebase source-merged --codebase {cb_id} --human-ref ...")
         elif not line["survey"]:
             nxt = f"Step 2: sab.py codebase survey-tests --codebase {cb_id}"

@@ -36,8 +36,9 @@ WHERE YOU ARE NEEDED, AND WHAT YOU WILL BE ASKED
                    Recorded in modules.json.approval, copied to comment/pipeline/module.json.
   1.5 metadata     after module approval, before the source PR: run `codebase report`.
                    It writes codebase-reports/{codebase}/codebase-metadata.json (canonical),
-                   .html and bounded .md from the same JSON. Best effort; missing values are
-                   visible as unknown and this report never blocks any pipeline step.
+                   .html and bounded .md from the same JSON. The agent presents the HTML and
+                   bounded summary to you; it must never produce them silently. Best effort;
+                   missing values are visible as unknown and this never blocks a pipeline step.
   2 source PR      after the report (or directly after approval): the PR that vendors the pinned
                    tree under code/{source}/ (size, licence, pin). Review and merge it; the survey
                    and the tasks wait for it. Recorded in codebase state (source_pr: merge commit,
