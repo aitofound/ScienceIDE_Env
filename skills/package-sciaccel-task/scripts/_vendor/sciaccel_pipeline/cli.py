@@ -1,4 +1,4 @@
-"""sab: the ScienceAccelBench packaging CLI (one tool, two modes).
+"""sab: the ScienceAccelBench packaging CLI (one tool, three modes).
 
     sab.py codebase init            --codebase <id> --code-path <checkout> [--source <name>] [--repo-url ...] [--pin ...]
                                     [--license ...] [--language ...] [--arxiv ...] [--owner ...] [--title ...]
@@ -16,6 +16,10 @@
     sab.py task build               --task <leaf> [--which tests|environment|both]
     sab.py task selfcheck           --task <leaf> [--run-root DIR] [--allow-custom-drivers]
     sab.py task review              --task <leaf>                                   # the review brief, the body of the task PR, STOP 5
+    sab.py review codebase          --codebase <id> [--root <checkout>] [--modules <modules.json>] [--base <ref>] [--upstream <checkout>]
+    sab.py review task              --task <leaf> [--root <checkout>] [--base <ref>]  # STOP 2 and STOP 6: what the CLI owns, then the brief
+    sab.py review codebase|task ... --done --human-ref "<the human's words>" [--presented <file.md>]
+    sab.py review status
     sab.py brief                    [--codebase <id>]                               # the pipeline briefing, the first thing the human hears
     sab.py status                   [--codebase <id>] [--task <leaf>] [--ci-freshness]
     sab.py validate-harbor          [leaf ...] [--all tasks]
@@ -43,6 +47,13 @@ Four commands exist only to keep the human informed and in control: `brief`
 `task consent` (the run plan before any Docker work), and `task review` (what
 the human reviews before the task PR). None of them writes science; none of
 them runs anything.
+
+The third mode, `review`, is the reviewer's side of the two review stops: one
+brief per stop that prints what the CLI owns (checkout, change set, tree; for
+a task the presentation table, lint, validate-harbor, the record's freshness)
+and then says what to gather, the fixed shape to present it in, and what to
+ask. Two states, open and decided; the human's words are recorded with
+`--done`. It reads no GitHub state, posts nothing, and runs no Docker.
 """
 from __future__ import annotations
 
@@ -54,6 +65,7 @@ from .codebase import (cmd_codebase_approve, cmd_codebase_init, cmd_codebase_pro
 from .config import POLICIES
 from .metadata import cmd_codebase_report
 from .review import cmd_task_review
+from .reviewer import cmd_review_codebase, cmd_review_status, cmd_review_task
 from .runplan import cmd_task_consent, cmd_task_plan
 from .status import cmd_status, cmd_validate_harbor
 from .taskcmds import (cmd_task_add_check, cmd_task_build, cmd_task_lint, cmd_task_scaffold,
@@ -133,6 +145,24 @@ def main() -> None:
     p.add_argument("--task", required=True)
     p.add_argument("--allow-custom-drivers", action="store_true")
 
+    rp = sub.add_parser("review", help="the reviewer's side of the two review stops: what the CLI owns, then the brief").add_subparsers(dest="cmd", required=True)
+    for name in ("codebase", "task"):
+        p = rp.add_parser(name, help="STOP 2: the source PR" if name == "codebase" else "STOP 6: the task PR")
+        if name == "codebase":
+            p.add_argument("--codebase", required=True)
+            p.add_argument("--source", help="directory name under code/ (default: the codebase id)")
+            p.add_argument("--modules", help="the module cut as modules.json (default: the local codebase state, when it exists)")
+            p.add_argument("--upstream", help="a checkout of the upstream repository at the pin, to diff the vendored tree against")
+        else:
+            p.add_argument("--task", required=True)
+            p.add_argument("--allow-custom-drivers", action="store_true")
+        p.add_argument("--root", help="a detached checkout of the PR head (default: this repository)")
+        p.add_argument("--base", default="origin/main", help="the git ref the PR is diffed against (default origin/main)")
+        p.add_argument("--done", action="store_true", help="record the human's decision and close the review")
+        p.add_argument("--human-ref", help="the human's words, verbatim (with --done)")
+        p.add_argument("--presented", help="the presentation you gave the human, as a file, kept with the record (with --done)")
+    rp.add_parser("status", help="every review under the local state, open or decided")
+
     p = sub.add_parser("brief", help="the pipeline briefing: what happens, where the human is needed, what runs where")
     p.add_argument("--codebase")
 
@@ -154,6 +184,8 @@ def main() -> None:
         {"scaffold": cmd_task_scaffold, "add-check": cmd_task_add_check, "lint": cmd_task_lint,
          "build": cmd_task_build, "selfcheck": cmd_task_selfcheck, "plan": cmd_task_plan,
          "consent": cmd_task_consent, "review": cmd_task_review}[a.cmd](a)
+    elif a.mode == "review":
+        {"codebase": cmd_review_codebase, "task": cmd_review_task, "status": cmd_review_status}[a.cmd](a)
     elif a.mode == "status":
         cmd_status(a)
     elif a.mode == "brief":
