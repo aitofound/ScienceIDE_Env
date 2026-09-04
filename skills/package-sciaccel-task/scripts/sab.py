@@ -790,7 +790,14 @@ _METADATA_COUNT_SPECS = (
     ("collected_items", "framework-collected items", "items collected after framework parametrization"),
     ("inner_cases", "inner cases", "optional cases inside one source-level definition that collection does not expose"),
 )
-_METADATA_ABS_PATH = re.compile(r"\bfile:(?://)?/|(?<![A-Za-z0-9_/])/(?!/)|(?<![A-Za-z0-9_])[A-Za-z]:[\\/]", re.IGNORECASE)
+_METADATA_ABS_PATH = re.compile(
+    r"\bfile:(?://)?/|"
+    r"(?<![A-Za-z0-9_/])/(?!/)|"
+    r"(?<![A-Za-z0-9_])[A-Za-z]:[\\/]|"
+    r"(?<![A-Za-z0-9_])~[A-Za-z0-9._-]*[\\/]|"
+    r"(?<![A-Za-z0-9_])(?:\$(?:HOME|USERPROFILE)|\$\{(?:HOME|USERPROFILE)\}|%(?:HOME|USERPROFILE)%)[\\/]",
+    re.IGNORECASE,
+)
 _METADATA_SECRET_VALUE = re.compile(
     r"(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9]{20,}|"
     r"xox[baprs]-[A-Za-z0-9-]{20,}|glpat-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|"
