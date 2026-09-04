@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -38,10 +39,23 @@ import numpy as np
 class LoadError(Exception):
     pass
 
+_FORTRAN_NO_E = re.compile(r"^([+-]?(?:\d+(?:\.\d*)?|\.\d+))([+-]\d{3})$")
+
+
+def _float(token: str) -> float:
+    """Parse Python floats plus BATSRUS's Fortran exponent-without-E form."""
+    try:
+        return float(token)
+    except ValueError:
+        match = _FORTRAN_NO_E.fullmatch(token)
+        if match is None:
+            raise
+        return float(f"{match.group(1)}e{match.group(2)}")
+
 
 def _floats(line, path, what):
     try:
-        return [float(x) for x in line.split()]
+        return [_float(x) for x in line.split()]
     except ValueError as exc:
         raise LoadError(f"{path.name}: cannot read {what}: {exc}") from None
 
@@ -55,10 +69,10 @@ def load_idl_ascii(path: Path):
     head = lines[1].split()
     if len(head) != 5:
         raise LoadError(f"{path.name}: header line 2 has {len(head)} fields, expected 5")
-    n_step = int(float(head[0]))
-    time = float(head[1])
-    n_dim, n_param, n_var = (int(float(x)) for x in head[2:5])
-    grid = [int(float(x)) for x in lines[2].split()]
+    n_step = int(_float(head[0]))
+    time = _float(head[1])
+    n_dim, n_param, n_var = (int(_float(x)) for x in head[2:5])
+    grid = [int(_float(x)) for x in lines[2].split()]
     i = 3
     params = []
     if n_param > 0:
@@ -69,7 +83,7 @@ def load_idl_ascii(path: Path):
     rows = []
     for ln in lines[i:]:
         if ln.strip():
-            rows.append([float(x) for x in ln.split()])
+            rows.append([_float(x) for x in ln.split()])
     if not rows:
         raise LoadError(f"{path.name}: no data rows")
     width = len(rows[0])
