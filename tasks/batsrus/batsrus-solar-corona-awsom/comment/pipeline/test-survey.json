@@ -1,0 +1,202 @@
+{
+  "module": "batsrus-solar-corona-awsom",
+  "tests": [
+    {
+      "id": "awsom",
+      "module": "batsrus-solar-corona-awsom",
+      "path": "Param/CORONA/PARAM.in.Awsom",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "AWSoM steady solar corona from a magnetogram on 6x4x4 spherical blocks: Alfven-wave heating, radiative cooling, electron conduction",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 105,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "reference reproduced natively (compile 67 s, run 105 s on 2 MPI ranks); upstream compares with DiffNum.pl at rel default, abs default on log_n000001.awsom; every step is deterministic (no random stream), so pointwise on the same graded files",
+      "proposed_check": "awsom",
+      "build_seconds_native": 67,
+      "make_target": "test_awsom",
+      "config": [
+        "./Config.pl -default -u=Awsom -e=Awsom -ng=2 -g=6,4,4"
+      ],
+      "references": [
+        "Param/CORONA/TestOutput/log_n000001.awsom"
+      ]
+    },
+    {
+      "id": "awsomr",
+      "module": "batsrus-solar-corona-awsom",
+      "path": "Param/CORONA/PARAM.in.AwsomR",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "AWSoM-R: the same corona with the threaded-field-line lower boundary (ModThreadedLC)",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 8,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "reference reproduced natively (compile 1 s, run 8 s on 2 MPI ranks); upstream compares with DiffNum.pl at rel default, abs default on log_n000001.awsomr.td; every step is deterministic (no random stream), so pointwise on the same graded files",
+      "proposed_check": "awsomr",
+      "build_seconds_native": 1,
+      "make_target": "test_awsomr",
+      "config": [
+        "./Config.pl -default -u=Awsom -e=Awsom -ng=2 -g=6,4,4"
+      ],
+      "references": [
+        "Param/CORONA/TestOutput/log_n000001.awsomr.td"
+      ]
+    },
+    {
+      "id": "awsom-signb",
+      "module": "batsrus-solar-corona-awsom",
+      "path": "Param/CORONA/PARAM.in.Awsom.signb",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "AWSoM with the signed-B (field reversal) representation, AwsomSA equation",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 96,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "differs from the stored reference beyond upstream tolerance natively (compile 35 s, run 96 s on 2 MPI ranks); upstream compares with DiffNum.pl at rel default, abs default on log_n000001.awsom.signb; every step is deterministic (no random stream), so pointwise on the same graded files",
+      "proposed_check": "awsom-signb",
+      "build_seconds_native": 35,
+      "make_target": "test_awsom_signb",
+      "config": [
+        "./Config.pl -default -u=Awsom -e=AwsomSA -ng=2 -g=6,4,4"
+      ],
+      "references": [
+        "Param/CORONA/TestOutput/log_n000001.awsom.signb"
+      ]
+    },
+    {
+      "id": "stitch",
+      "module": "batsrus-solar-corona-awsom",
+      "path": "Param/CORONA/PARAM.in.STITCH",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "STITCH helicity injection at the coronal base on top of AWSoM",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 175,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "reference reproduced natively (compile 35 s, run 175 s on 2 MPI ranks); upstream compares with DiffNum.pl at rel default, abs default on log_n000000.stitch; every step is deterministic (no random stream), so pointwise on the same graded files",
+      "proposed_check": "stitch",
+      "build_seconds_native": 35,
+      "make_target": "test_stitch",
+      "config": [
+        "./Config.pl -default -u=Awsom -e=Awsom -ng=2 -g=6,4,4"
+      ],
+      "references": [
+        "Param/CORONA/TestOutput/log_n000000.stitch"
+      ]
+    },
+    {
+      "id": "awsom-gpu",
+      "module": "batsrus-solar-corona-awsom",
+      "path": "Param/CORONA/PARAM.in.Awsom.GPU",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "small AWSoM corona in the GPU layout (Config.pl -opt) run on CPU",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 77,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "reference reproduced natively (compile 47 s, run 77 s on 2 MPI ranks); upstream compares with DiffNum.pl at rel default, abs default on log_n000001.awsom_gpu, shk_awsom_gpu.out; every step is deterministic (no random stream), so pointwise on the same graded files",
+      "proposed_check": "awsom-gpu",
+      "build_seconds_native": 47,
+      "make_target": "test_awsom_gpu",
+      "config": [
+        "./Config.pl -default ${OPENACC}",
+        "./Config.pl -u=Awsom -e=Awsom -ng=2 -g=6,4,4",
+        "./Config.pl -opt=Param/CORONA/PARAM.in.Awsom.GPU"
+      ],
+      "references": [
+        "Param/CORONA/TestOutput/log_n000001.awsom_gpu",
+        "Param/CORONA/TestOutput/shk_awsom_gpu.out"
+      ]
+    },
+    {
+      "id": "awsom-large-gpu",
+      "module": "batsrus-solar-corona-awsom",
+      "path": "Param/CORONA/PARAM.in.Awsom.large.GPU",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "large AWSoM corona in the GPU layout (12x8x8 blocks) run on CPU",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 6.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 600,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "exceeded the 180 s cap natively (compile 47 s, run n/a s on 2 MPI ranks); upstream compares with DiffNum.pl at rel default, abs default on log.awsom_large_gpu; every step is deterministic (no random stream), so pointwise on the same graded files; exceeded the 180 s investigation cap natively (2 ranks); the check must shorten MaxIteration or tSimulationMax through a knob, runtime unmeasured",
+      "proposed_check": "awsom-large-gpu",
+      "build_seconds_native": 47,
+      "make_target": "test_awsom_large_gpu",
+      "config": [
+        "./Config.pl -default ${OPENACC}",
+        "./Config.pl -u=Awsom -e=Awsom -ng=2 -g=12,8,8",
+        "./Config.pl -opt=Param/CORONA/PARAM.in.Awsom.large.GPU"
+      ],
+      "references": [
+        "Param/CORONA/TestOutput/log.awsom_large_gpu"
+      ]
+    },
+    {
+      "id": "ex-corona-1dwedge",
+      "module": "batsrus-solar-corona-awsom",
+      "path": "Param/CORONA/PARAM.in.1Dwedge",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "1-D wedge steady corona with AwsomFluids and MhdWavesPe (Config.pl -f -u=AwsomFluids -e=MhdWavesPe -g=6,2,2,256,1)",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 2.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 120,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "upstream example with no Makefile.test target and no reference output: an official test by the pipeline rule; not run in the Step 1 investigation (configuration must be established from the PARAM file: #CHECKGRIDSIZE gives the block size, #USERMODULE the user module, the variables the equation set); the pinned build generates the reference and the module author measures the runtime and shortens the window through a knob if needed; deterministic, so pointwise",
+      "proposed_check": "ex-corona-1dwedge"
+    },
+    {
+      "id": "ex-corona-2dwedge",
+      "module": "batsrus-solar-corona-awsom",
+      "path": "Param/CORONA/PARAM.in.2Dwedge",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "2-D wedge steady corona (Config.pl -f -u=AwsomFluids -e=MhdWavesPe -g=6,2,4,2048,1)",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 2.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 120,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "upstream example with no Makefile.test target and no reference output: an official test by the pipeline rule; not run in the Step 1 investigation (configuration must be established from the PARAM file: #CHECKGRIDSIZE gives the block size, #USERMODULE the user module, the variables the equation set); the pinned build generates the reference and the module author measures the runtime and shortens the window through a knob if needed; deterministic, so pointwise",
+      "proposed_check": "ex-corona-2dwedge"
+    }
+  ]
+}
