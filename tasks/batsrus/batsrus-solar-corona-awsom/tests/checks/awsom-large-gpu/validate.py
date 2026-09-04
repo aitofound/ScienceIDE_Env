@@ -122,8 +122,9 @@ def read_idl_ascii(path: Path):
         names = lines[i].split()
         i += 1
         ncol = adim + nvar
-        if len(names) != ncol:
-            raise Invalid(f"{path.name}: snapshot {len(frames)} names line holds {len(names)} names, expected exactly {ncol}")
+        expected_names = ncol + nparam
+        if len(names) != expected_names:
+            raise Invalid(f"{path.name}: snapshot {len(frames)} names line holds {len(names)} names, expected exactly {expected_names}")
         npoint = 1
         for s in sizes:
             npoint *= s
