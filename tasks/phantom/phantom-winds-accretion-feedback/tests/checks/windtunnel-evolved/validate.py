@@ -18,8 +18,9 @@ other than round-off does not set the bound for every other. In this check that 
 alpha, the Cullen & Dehnen shock-detection switch: it is two derivatives away from the velocity
 field and passes through the clamps max(-divv,0) and max(-d(divv)/dt,0), so it carries a heavy
 tail (842 of 10007 particles differ between two legitimate runs, six of them past 1e-3) while the
-state arrays stay at 1.5e-5, and it is graded at 1e-2, a hundredth of the switch's own range -
-see rubric.warrant. A named array written in float32 is graded under its own bound but is kept out
+state arrays stay at 1.5e-5, and it is graded at 3e-2, three hundredths of the switch's own
+range and above the 1.372e-2 the same pair
+reaches mid-shock - see rubric.warrant. A named array written in float32 is graded under its own bound but is kept out
 of the reported "distance", which stays the dump's binary64 spread; a named array written in
 binary64 (Tdust in the sibling wind check) enters it. Integer arrays (iorig, itype) must be identical; tags listed in comparison.exclude
 are reported, not graded (comparison.exclude is empty in this check's rubric, so
