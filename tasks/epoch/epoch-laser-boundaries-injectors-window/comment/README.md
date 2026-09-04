@@ -388,22 +388,26 @@ warning was the provisional injector-3d runtime, which this revision changed
 from 10 to the measured 37 s declaration.
 
 That run was followed by the exact O3/O2 floor and the two definite-case probes.
-Those fingerprinted evidence/runtime/prose changes required and received a
-second full two-solve selfcheck. It ran 2026-09-04T12:32:46Z--13:07:14Z in the
-additive remote root `phase2-final-20260904T1232Z` with exact contract
-fingerprint `8bf55d577741734934e1802747522fcfa1e56a63a1726e4f10b52e5dac340f28`.
-Nominal run `20260904T123246Z-1913409` took 1037.898 s and variant run
-`20260904T125004Z-1953055` took 1027.0 s including their builds; nominal
-run-only time was 95.4 s, nominal builds 939.0 s and verification 2.958 s.
+Those fingerprinted evidence/runtime/prose changes required a fresh two-solve
+selfcheck after the narrowly authorized whitespace correction commit
+`63c7b21386bb84407baee26add62f2c4b6db0c2f`. It ran 2026-09-04T13:42:49Z--14:17:32Z
+in unique additive remote root
+`/home/huangzesen/work/sab-rev6-codex-state/epoch-pr385-whitespace-rerun-20260904T1339Z/epoch/runs/epoch-laser-boundaries-injectors-window/whitespace-rerun-20260904T1342Z-1462578f2fdc`
+with exact contract fingerprint
+`1462578f2fdc421b5855d0bc3485f403babc6cdf73aa22e2b2036b4c93abec6e`.
+Nominal run `20260904T134249Z-2062786` took 1037.947 s and variant run
+`20260904T140007Z-2093396` took 1042.279 s including their builds; nominal
+run-only time was 95.3 s, nominal builds 939.0 s and verification 1.975 s.
 Reward was 1.0, all 16 checks passed, no check was identical, and the CLI
-reported no problem or warning. The final nominal arrays were byte-identical to
-the first nominal arrays in all 75 graded files; the final nominal/variant and
-first/final histogram hashes are `70fe10f24a64df34b03ea918788a1693113586234f35707a89670598dc256f00`
-and `9a9e66e4d203c90270399566c357c9f6bad769cf1e6e52058a99db46200b9c4b`.
+reported no problem or warning. The fresh nominal arrays were byte-identical to
+the first nominal arrays in all 75 graded files; the fresh nominal/variant and
+first/final histogram hashes are `1ee6e3dd27687fa5c2614f467725388b6256faea5fccd07cbb94f57f19d51efa`
+and `d81511fa9fd515d3cb3a3ed7c43f86fcd09e1a929b2e4383e5a126c1bd933dad`.
 
 `comment/pipeline/self-validation.json` and `runtime-metadata.json` are imported
-only from that final CLI run. Their SHA-256 hashes are
-`8db50a7482d66a6c6d1cfabd832ab9e9d20c0bc64e73f29ead844be5ecbd2def`
-and `3a87fdbdd03907a62f5880d20cf9d37096fde77d5982b12ea69470eb2f06dc79`;
-their contract fingerprint equals an independent recomputation after this
-comment-only edit. No stale first-run record is presented as final.
+only from this fresh CLI run. Their SHA-256 hashes are
+`91bfa7c8b2293e251d15b664733ce32bb6c3778604986d3f92b89fec1eaa757f`
+and `e0d8a734fb7c93b8c78547f3a502d9beca43d827a34989c321d7fbc680c4c2a6`;
+their contract fingerprint equals the independent plan recomputation. The prior
+`8bf55d577741734934e1802747522fcfa1e56a63a1726e4f10b52e5dac340f28` record is
+stale after the deck whitespace correction and is never relabeled as fresh.
