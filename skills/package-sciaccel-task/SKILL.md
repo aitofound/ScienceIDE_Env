@@ -1,8 +1,8 @@
 ---
 name: package-sciaccel-task
-description: Turn one scientific codebase into ScienceAccelBench task environments with the sab.py CLI. Use it to brief the human on the whole pipeline first, register a pinned codebase, investigate it with short native runs, decompose it into semi-independent modules with human approval, get the source PR merged, survey its official tests, and then, per module, scaffold a Harbor-style task, author self-contained checks (test + pass policy, nominal and variant initial conditions), lint, obtain the human's consent to the run plan, build the Docker images, run the two-solve self-validation, and hand the human a review brief for the task PR. The design is SPEC.html next to this file; the CLI validates what you write and never writes science, runs anything remotely, or merges.
-version: 5.5.1
-last_changed_at: "2026-09-04T00:03:00Z"
+description: Turn one scientific codebase into ScienceAccelBench task environments with the sab.py CLI. Use it to brief the human on the whole pipeline first, register a pinned codebase, investigate it with short native runs, decompose it into semi-independent modules with human approval, get the source PR merged, survey its official tests, and then, per module, scaffold a Harbor-style task, author self-contained checks (test + pass policy, nominal and variant initial conditions), lint, obtain the human's consent to the run plan, build the Docker images, run the two-solve self-validation, hand the human a review brief for the task PR, and, on the reviewer's side, brief the review of a source PR or a task PR in one fixed shape. The design is SPEC.html next to this file; the CLI validates what you write and never writes science, runs anything remotely, or merges.
+version: 5.7.0
+last_changed_at: "2026-09-04T22:00:00Z"
 ---
 
 # Package a ScienceAccelBench task
@@ -43,13 +43,27 @@ neither is `custom`.
 A **check** is one **test** (`run.sh`: fixed inputs in, graded files out)
 plus one **pass policy** (`rubric.json` + `validate.py`: the scientific
 **tolerance** under which two runs are equivalent). There are exactly two
-policies: `pointwise`, every graded value compared under a tolerance, used
-whenever the first steps are even semi-deterministic; and `invariants`, used
-only when the result diverges at the first step by construction. Every check
-carries two initial conditions, `nominal` (graded) and `variant`
-(self-validation compares the two). The human curator owns every tolerance.
+policies. `pointwise`, every graded value compared under a tolerance, is
+preferred: use it whenever a bound can contain the check's measured
+sensitivity over the graded window and still reject a real fault by a wide
+margin. `invariants` (moments, distributions, conserved quantities, integral
+norms, each with its own tolerance) is for the cases where pointwise is not
+appropriate: a random stream, a flow that amplifies rounding to the size of
+the observable inside the window the check must keep, a statistic with its own
+sampling error, a discrete output. The definite case: if a few-ULP
+perturbation grows by orders of magnitude within the first few smallest steps,
+consider invariants from the start. Shorten the window first if the physics
+survives it; read the calibration numbers with taste; a heavy tail in a
+diagnostic array while the state arrays are clean gets its own bound or is
+excluded, not a policy change. Every check carries two initial conditions,
+`nominal` (graded) and `variant` (self-validation compares the two). The
+human curator owns every tolerance.
 
 ## How to work
+
+Use the remote skill, never the copy on your branch: before any work, run
+`git fetch origin main && git merge origin/main`, so that
+`skills/package-sciaccel-task/` is the one on `origin/main`.
 
 Run the CLI from `skills/package-sciaccel-task/scripts/` and let it lead:
 
@@ -278,6 +292,53 @@ step remain available.
   changed), selfcheck and `task review` again. CI fails the PR when the
   self-validation record is stale against the contract files. The CLI keeps
   no PR state and never merges.
+
+## Reviewing a PR: the review mode
+
+The reviewer's side of the two review stops is the CLI's third mode, one
+command per stop, run with the current pipeline (`origin/main`'s copy) against
+a detached checkout of the PR head, never with the PR's own skill copy:
+
+```bash
+git fetch origin pull/<N>/head && git worktree add --detach <dir> FETCH_HEAD   # the PR head, read-only
+python3 sab.py review codebase --codebase <id> --root <dir> [--modules <modules.json>] [--upstream <checkout at the pin>]   # STOP 2, the source PR
+python3 sab.py review task     --task tasks/<id>/<slug> --root <dir>                                                       # STOP 6, the task PR
+python3 sab.py review codebase|task ... --done --human-ref "<the human's words>" [--presented <your message, as a file>]
+python3 sab.py review status
+```
+
+Each command prints one page in two parts. First **what the CLI owns**,
+computed from the tree and the records and never typed: the head, the base and
+the change set (what is inside `code/<id>/` or the leaf, what is outside); for
+a codebase the tree in files, lines and MB, its licence at the root, nested
+repositories, non-text files, the vendored tree against upstream at the pin,
+and when a cut is available the lines per module, shared and unowned; for a
+task the review presentation exactly as `task review --present` prints it,
+lint, validate-harbor, the record's freshness, and the rows the table flags.
+Then **the brief**: GATHER, the reading list in order; PRESENT, the fixed shape
+of the message to the human; ASK, the decision to request and the command that
+records their words. The agent gathers and presents; the human decides.
+
+Rules that hold while reviewing:
+
+- **Read-only on the tree.** No edit, no commit, no build, no selfcheck in the
+  PR checkout. Cheap commands are allowed: lint, validate-harbor, status, a
+  check's `validate.py` against the shipped record. A reproduction is `task
+  selfcheck` on your own machine under your own consent, reported as one line
+  of the presentation, not a record.
+- **Only measured numbers**, from the page or from a command you ran; never an
+  estimate beside a measurement. A shipped record is the author's claim; say so.
+- **The margin flags are reading order, not a pass rule.** A bound is judged by
+  whether it rejects a real implementation fault and leaves headroom for a
+  genuinely different implementation on the target. Do not invent thresholds
+  the skill does not define.
+- **The decision is the human's.** RED, YELLOW and GREEN in the presentation
+  are the reviewer's evidence-backed classification of each check, defined in
+  the brief; approve, request changes, redesign, merge, send back or change
+  the cut are the human's words, recorded with `--done --human-ref`. The
+  record under the local state, with the presentation when given, is what the
+  curator posts on the PR, verbatim. The CLI reads no GitHub state, posts
+  nothing and never merges.
 
 ## Repository gates
 
