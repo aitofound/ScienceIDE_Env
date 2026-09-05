@@ -20,21 +20,35 @@ knob SAB_DTMAX "0.5" "time between dumps in code units (official 1154.4); the gr
 knob SAB_NP "20000" "number of gas particles requested in rdisc.setup (official 1000000); the runtime scales roughly linearly with it"
 knob SAB_NMAX "-1" "cap on the number of time steps (nmax in the .in); -1 runs to SAB_TMAX (graded); a small cap exercises build, setup, run and output only"
 knob SAB_THREADS "2" "OMP_NUM_THREADS for phantomsetup and phantom; the graded default; this non-periodic implicit-radiation run is bit-reproducible at this thread count (see rubric.json)"
-# Alternative build: Phantom's own gfortran DEBUG=yes build replaces -O3 with -O0 and enables its runtime checks.
+# Alternative build: unlike the rest of this leaf, this check does NOT use Phantom's DEBUG=yes
+# build (see comment/README.md): under -finit-real=nan + -ffpe-trap=invalid, the module-level
+# rad_errorE/rad_errorU of src/main/radiation_implicit.f90:41 are still NaN the first time
+# get_energies_and_init_ev_files (initial.F90:771) writes the startup .ev record, and
+# ev_data_update's max()/min() over those NaNs (src/main/energies.f90:912) traps before the first
+# step - a debug-build artifact of the diagnostic running before its first legitimate value
+# exists, not a bug this check's physics can expose. The fallback is the optimisation change
+# alone: -O3 -> -O0 in the scratch copy of build/Makefile_defaults_gfortran, no runtime checks.
 # `run.sh altbuild` uses the nominal inputs; selfcheck measures the floor from the second legitimate build.
-ALTBUILD="make SYSTEM=gfortran OPENMP=yes DEBUG=yes: the same pinned source with Phantom's own -O0 gfortran debug build (bounds, NaN and floating-point checks) instead of the nominal -O3 build"
+ALTBUILD="build/Makefile_defaults_gfortran: FFLAGS -O3 -> -O0 in the scratch copy only, no other flag change: the same pinned source and nominal inputs at Phantom's own -O0 instead of the nominal -O3, without the DEBUG=yes runtime checks (this check's DEBUG=yes altbuild traps SIGFPE in energies.f90:912 before the first step; see comment/README.md)"
 if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; [ -z "$ALTBUILD" ] || echo "altbuild: $ALTBUILD"; exit 0; fi
 
 set -euo pipefail
 IC="${1:?usage: run.sh <nominal|variant|altbuild> | run.sh --help}"
 : "${SOURCE_DIR:?}" "${OUT_DIR:?}" "${CHECK_DIR:?}"
 INPUTS="$IC"; MAKE_EXTRA=()
-if [ "$IC" = altbuild ]; then INPUTS=nominal; MAKE_EXTRA=(SYSTEM=gfortran OPENMP=yes DEBUG=yes); fi
+if [ "$IC" = altbuild ]; then INPUTS=nominal; fi
 [ -d "$CHECK_DIR/ic/$INPUTS" ] || { echo "run.sh: no initial condition ic/$INPUTS" >&2; exit 2; }
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 SRC="$WORK/src"; RUN="$WORK/run"
 mkdir -p "$RUN"
 cp -R "$SOURCE_DIR/." "$SRC"
+if [ "$IC" = altbuild ]; then
+  # Optimisation-only alternative build (see ALTBUILD above): flip the one FFLAGS line of the
+  # scratch copy, never SOURCE_DIR, and leave MAKE_EXTRA empty so DEBUG=yes's runtime checks are
+  # not compiled in.
+  sed -i 's/^FFLAGS+= -O3 /FFLAGS+= -O0 /' "$SRC/build/Makefile_defaults_gfortran"
+  grep -q '^FFLAGS+= -O0 ' "$SRC/build/Makefile_defaults_gfortran" || { echo "run.sh: altbuild -O3->-O0 sed did not match" >&2; exit 2; }
+fi
 
 # Build phantom and phantomsetup for this SETUP. Parallel make is broken upstream
 # (build/.depends is empty), so the build is serial and one goal per invocation.
