@@ -38,7 +38,11 @@ WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 cp -R "$SOURCE_DIR/." "$WORK/src"
 # Alternative build (see ALTBUILD): the scratch copy only, never SOURCE_DIR.
 if [ "$IC" = altbuild ]; then
+  n=$(grep -c '^  FFLAGS = -O3 -g -std=f2003$' "$WORK/src/epoch1d/Makefile" || true)
+  [ "$n" -eq 1 ] || { echo "run.sh: expected exactly one FFLAGS line, found $n" >&2; exit 2; }
   sed -i 's/^  FFLAGS = -O3 -g -std=f2003$/  FFLAGS = -O0 -g -std=f2003/' "$WORK/src/epoch1d/Makefile"
+  n=$(grep -c '^  FFLAGS = -O0 -g -std=f2003$' "$WORK/src/epoch1d/Makefile" || true)
+  [ "$n" -eq 1 ] || { echo "run.sh: expected exactly one FFLAGS line after sed, found $n" >&2; exit 2; }
 fi
 
 # Upstream test this check reproduces: code/epoch/epoch1d/tests/test_twostream.py
