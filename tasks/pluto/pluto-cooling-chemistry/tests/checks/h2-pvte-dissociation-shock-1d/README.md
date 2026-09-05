@@ -10,7 +10,7 @@ Dissociative wall shock with H2_COOL and the PVTE_LAW EOS. EOS = PVTE_LAW with H
 
 `ic/nominal/` is the graded deck. ic/variant/pluto.ini multiplies [Parameters] N0 by (1 + 1e-15): 1.0 becomes 1.000000000000001, one ulp of a value the initial condition is built from (init.c reads g_inputParam[N0]). Every initial value that depends on it moves at round-off while the physics is unchanged, so the two runs differ by rounding only and their spread is the floor of this check.
 
-`run.sh altbuild` runs `ic/nominal` on the same pinned source and unchanged `Linux.gcc.defs` architecture with `make CFLAGS='-c -O0'` instead of its `-O3` CFLAGS; grading never uses it, and self-validation measures the check's floor between two legitimate builds from it.
+This check declares no `altbuild`: the mandated make CFLAGS='-c -O0' override drops Linux.gcc.defs' -std=c17 and this pinned PVTE source fails to compile because HD/mappers_loc.c passes double * to Show(double **, int). The failed build/run evidence is retained in the campaign artifacts; nominal and variant behavior is unchanged.
 
 ## The pass policy
 

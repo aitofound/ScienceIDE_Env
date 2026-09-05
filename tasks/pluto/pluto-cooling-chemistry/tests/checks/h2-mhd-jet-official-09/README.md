@@ -10,7 +10,7 @@ Official molecular MHD jet, H2_COOL (config 09). official PLUTO 4.4-patch4 Test_
 
 `ic/nominal/` is the graded deck. ic/variant/pluto.ini multiplies [Parameters] ETA by (1 + 1e-15): 3.0 becomes 3.0000000000000036, one ulp of a value the initial condition is built from (init.c reads g_inputParam[ETA]). Every initial value that depends on it moves at round-off while the physics is unchanged, so the two runs differ by rounding only and their spread is the floor of this check.
 
-`run.sh altbuild` runs `ic/nominal` on the same pinned source and unchanged `Linux.gcc.defs` architecture with `make CFLAGS='-c -O0'` instead of its `-O3` CFLAGS; grading never uses it, and self-validation measures the check's floor between two legitimate builds from it.
+This check declares no `altbuild`: the mandated make CFLAGS='-c -O0' build of this pinned deck produces a NaN at the first time step, so it cannot produce graded output. The failed build/run evidence is retained in the campaign artifacts; nominal and variant behavior is unchanged.
 
 ## The pass policy
 
