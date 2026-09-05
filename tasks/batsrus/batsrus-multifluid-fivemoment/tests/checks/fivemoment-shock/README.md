@@ -21,7 +21,7 @@ BATSRUS for this configuration; the build is reported separately as
 
 ## The two initial conditions
 
-`ic/nominal/PARAM.in` is the graded deck. ic/variant/PARAM.in raises the left-hand ion density of the #SHOCKTUBE block from 1.0 to 1.0000000000000004, two units in the last place of the IEEE binary64 representation (4.4e-16 relative): the size of one rounding difference, which is what a faithful port introduces at every arithmetic operation.
+`ic/nominal/PARAM.in` is the graded deck. ic/variant/PARAM.in raises the left-hand ion density of the #SHOCKTUBE block from 1.0 to 1.0000000000000004, two units in the last place of the IEEE binary64 representation (4.4e-16 relative): the size of one rounding difference, which is what a faithful port introduces at every arithmetic operation. `run.sh altbuild` runs `ic/nominal/PARAM.in` on the same pinned source and deck, built with `./Config.pl -O0` immediately before `make BATSRUS` instead of the shipped gfortran template's `-O3`, a legitimately different build of the identical configuration.
 
 ## The pass policy
 
