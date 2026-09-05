@@ -52,13 +52,16 @@ arrays. That is the strongest possible statement about a halo exchange, and it
 is recorded in the rubric's evidence, but it would make the two self-validation
 runs identical, so the nine-ulp perturbation is used as the variant instead.
 
-`run.sh altbuild` runs `ic/nominal` on the same pinned source built with
-EPOCH's own debug profile (`make -C epoch3d COMPILER=gfortran MODE=debug`: `-O0
--g` instead of the default `-O3`, full warnings promoted to errors,
-`-ffpe-trap=invalid,zero,overflow` and `-fbounds-check` turned on, and
-`-DPARSER_CHECKING -DDECK_DEBUG` compiled in) instead of the default build;
-grading never uses it, while self-validation measures the check's floor between
-the two legitimate builds from it.
+`run.sh altbuild` runs `ic/nominal` on the same pinned source and deck, built
+from a scratch copy of `epoch3d/Makefile` with only its gfortran `FFLAGS` line
+changed from `-O3 -g -std=f2003` to `-O0 -g -std=f2003`. EPOCH's own
+`MODE=debug` profile was tried first and rejected: its
+`-ffpe-trap=invalid,zero,overflow` fires inside Open MPI/PMIx's own `MPI_Init`
+on every multi-rank deck (`mpi_minimal_init`, `mpi_routines.F90`), not in
+EPOCH's arithmetic, aborting before any dump on this rank-layout leaf. Grading
+never uses `altbuild`, while self-validation measures the check's floor between
+the two legitimate builds from it; all five EPOCH leaves use this same altbuild
+definition.
 
 ## The pass policy
 
@@ -147,3 +150,5 @@ sensitivity, not a same-input run/build floor.
 The nominal run took 1.8 s excluding its 65.0 s build, and expected_runtime_s
 is 3 s. The earlier independent same-input build-floor evidence above remains
 distinct.
+
+The -O0 altbuild (`epoch3d/Makefile` FFLAGS `-O3` changed to `-O0` in the scratch build copy, everything else unchanged) differs from the nominal build by 9.34601e-05 at worst, 9.346e-07 of its file's own bound, about 1,069,976x inside it, measured on 2026-09-05.
