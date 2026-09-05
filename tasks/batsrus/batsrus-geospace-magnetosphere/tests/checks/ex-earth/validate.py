@@ -274,8 +274,8 @@ def main() -> int:
         max_err = float(err.max()) if err.size else 0.0
         max_scaled = float(scaled.max()) if scaled.size else 0.0
         details[rel] = {"values": int(r.size), "max_abs_error": max_err,
-                        "max_scaled_error": max_scaled, "atol": atol, "rtol": rtol,
-                        "values_over_bound": over}
+                        "max_scaled_error": max_scaled, "bound_fraction": max_scaled,
+                        "atol": atol, "rtol": rtol, "values_over_bound": over}
         if over:
             failures.append(f"{rel}: {over} of {r.size} values exceed atol={atol:g} + rtol={rtol:g}*|ref| "
                             f"(max |err| {max_err:.3e}, worst {max_scaled:.3g} times the bound)")
@@ -283,7 +283,8 @@ def main() -> int:
         worst_scaled = max(worst_scaled, max_scaled)
     passed = not failures
     result = {"passed": passed, "policy": "pointwise", "atol": default_atol, "rtol": default_rtol,
-              "distance": worst_abs, "max_scaled_error": worst_scaled, "files": details,
+              "distance": worst_abs, "max_scaled_error": worst_scaled, "bound_fraction": worst_scaled,
+              "files": details,
               "reason": (f"all graded values within bound (worst {worst_scaled:.3g} of it, "
                          f"largest absolute difference {worst_abs:.3e})") if passed else "; ".join(failures)}
     Path(a.out).write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
