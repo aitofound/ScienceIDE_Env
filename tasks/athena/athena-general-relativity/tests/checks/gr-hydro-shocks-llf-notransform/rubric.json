@@ -6,6 +6,7 @@
   "configuration": "configure.py -g --prob=gr_shock_tube --coord=minkowski --flux=llf; decks gr_mb_1, gr_mb_2, gr_mb_3, gr_mb_4 from inputs/hydro_sr at 400/400/400/400 cells to t=0.4/0.4/0.4/0.4 (the upstream test's settings); graded: the final conserved state of each deck as a full-precision tab file",
   "expected_runtime_s": 15,
   "variant": "every deck's left density dl multiplied by (1 + 1e-15), a few ulps; changes the round-off path of the whole run without changing the physics, so the two files differ and their distance measures the floor of the policy",
+  "altbuild": "the same pinned source and configure switches built by the same compiler with Athena++ configure.py -debug (its -O0 -g build) instead of the optimized build: a build a correct candidate could plausibly be, with no change of source or deck",
   "comparison": {
     "atol": 1e-08,
     "rtol": 0.0,
