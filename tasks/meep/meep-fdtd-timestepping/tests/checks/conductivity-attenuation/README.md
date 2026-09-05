@@ -58,6 +58,12 @@ by a percent or more -- six thousand million times the bound. Upstream's own
 comparison against the analytic decibels-per-centimetre law at two distances is
 left active.
 
+`run.sh altbuild` runs the same nominal inputs on a second build of the same
+pinned source: the same configure line with `CXXFLAGS='-O0 -g'` given to it, so
+the same compiler builds the same sources without optimisation. Self-validation
+grades that run against the nominal one with this check's own `validate.py` and
+records the distance as this check's floor in `rubric.json`.
+
 ## Runtime
 
 About twelve seconds for the two runs. There is no window or resolution knob: both

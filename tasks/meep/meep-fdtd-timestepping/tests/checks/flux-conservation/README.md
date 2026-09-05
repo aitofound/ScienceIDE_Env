@@ -72,6 +72,12 @@ step counts are graded as integers, so a port that changes the discretisation
 or the integration window fails rather than being compared against a different
 simulation.
 
+`run.sh altbuild` runs the same nominal inputs on a second build of the same
+pinned source: the same configure line with `CXXFLAGS='-O0 -g'` given to it, so
+the same compiler builds the same sources without optimisation. Self-validation
+grades that run against the nominal one with this check's own `validate.py` and
+records the distance as this check's floor in `rubric.json`.
+
 ## Runtime
 
 About three seconds for all nine configurations. There is no window or resolution

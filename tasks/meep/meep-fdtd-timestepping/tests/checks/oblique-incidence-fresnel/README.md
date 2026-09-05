@@ -60,6 +60,12 @@ wrong sign, a Courant rescaling not carried into the update coefficients, or a
 normalisation run stepped a different number of times moves individual
 frequencies by a thousandth while leaving the aggregate curve plausible.
 
+`run.sh altbuild` runs the same nominal inputs on a second build of the same
+pinned source: the same configure line with `CXXFLAGS='-O0 -g'` given to it, so
+the same compiler builds the same sources without optimisation. Self-validation
+grades that run against the nominal one with this check's own `validate.py` and
+records the distance as this check's floor in `rubric.json`.
+
 ## Runtime
 
 About eighty-seven seconds, the second most expensive check in this task, because

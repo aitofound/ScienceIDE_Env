@@ -54,7 +54,13 @@ A conductivity profile evaluated at the wrong half-cell, a conductivity term
 added to the wrong side of the D update, or a dispersive polarization stepped
 out of phase with the field leaves the residue at the probe one or more orders
 of magnitude too large -- against a residue of 3e-13, a difference of 1e-13 or
-more, six hundred million times the measured floor.
+more, six hundred million times the measured spread.
+
+`run.sh altbuild` runs the same nominal inputs on a second build of the same
+pinned source: the same configure line with `CXXFLAGS='-O0 -g'` given to it, so
+the same compiler builds the same sources without optimisation. Self-validation
+grades that run against the nominal one with this check's own `validate.py` and
+records the distance as this check's floor in `rubric.json`.
 
 ## Runtime
 

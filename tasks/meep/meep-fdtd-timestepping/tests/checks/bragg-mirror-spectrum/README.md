@@ -63,6 +63,12 @@ frequencies by a thousandth or more -- and can do so while remaining invisible
 in the aggregate curve distance. The absolute term is a guard for the reflected
 fluxes that cancel to near zero in the mirror's stop band.
 
+`run.sh altbuild` runs the same nominal inputs on a second build of the same
+pinned source: the same configure line with `CXXFLAGS='-O0 -g'` given to it, so
+the same compiler builds the same sources without optimisation. Self-validation
+grades that run against the nominal one with this check's own `validate.py` and
+records the distance as this check's floor in `rubric.json`.
+
 ## Runtime
 
 Under a second for 20000 timesteps across the two simulations. There is no

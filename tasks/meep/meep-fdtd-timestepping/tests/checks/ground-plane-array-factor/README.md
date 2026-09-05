@@ -56,6 +56,12 @@ array factor by far more than the hundredth upstream allows, and typically fills
 in the null at zero degrees. Upstream's comparison against the closed-form array
 factor is left active.
 
+`run.sh altbuild` runs the same nominal inputs on a second build of the same
+pinned source: the same configure line with `CXXFLAGS='-O0 -g'` given to it, so
+the same compiler builds the same sources without optimisation. Self-validation
+grades that run against the nominal one with this check's own `validate.py` and
+records the distance as this check's floor in `rubric.json`.
+
 ## Runtime
 
 About eight seconds for the five runs. There is no window or resolution knob:

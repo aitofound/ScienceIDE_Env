@@ -53,6 +53,12 @@ changes it by whole factors rather than by parts per billion. Reassociating the
 28014-term accumulation costs about 4e-14 relative; the relative term sits well
 above that and six orders below any fault.
 
+`run.sh altbuild` runs the same nominal inputs on a second build of the same
+pinned source: the same configure line with `CXXFLAGS='-O0 -g'` given to it, so
+the same compiler builds the same sources without optimisation. Self-validation
+grades that run against the nominal one with this check's own `validate.py` and
+records the distance as this check's floor in `rubric.json`.
+
 ## Runtime
 
 About two seconds for 28014 timesteps. There is no window or resolution knob: the

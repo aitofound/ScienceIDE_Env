@@ -67,6 +67,12 @@ continuous-wave solver and the far-field sum, sit outside the module's owned
 paths; what the module owns here is the stepping operator that `solve_cw`
 iterates and the near-field DFT accumulation that feeds the transform.
 
+`run.sh altbuild` runs the same nominal inputs on a second build of the same
+pinned source: the same configure line with `CXXFLAGS='-O0 -g'` given to it, so
+the same compiler builds the same sources without optimisation. Self-validation
+grades that run against the nominal one with this check's own `validate.py` and
+records the distance as this check's floor in `rubric.json`.
+
 ## Runtime
 
 About twenty-three seconds for the four configurations. There is no window or
