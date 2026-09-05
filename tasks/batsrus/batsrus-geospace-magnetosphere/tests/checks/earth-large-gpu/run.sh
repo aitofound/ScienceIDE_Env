@@ -25,7 +25,10 @@ set -euo pipefail
 IC="${1:?usage: run.sh <nominal|variant|altbuild> | run.sh --help}"
 : "${SOURCE_DIR:?}" "${OUT_DIR:?}" "${CHECK_DIR:?}"
 INPUTS="$IC"
-if [ "$IC" = altbuild ]; then INPUTS=nominal; fi
+if [ "$IC" = altbuild ]; then
+  [ -n "$ALTBUILD" ] || { echo "run.sh: this check declares no alternative build" >&2; exit 2; }
+  INPUTS=nominal
+fi
 [ -d "$CHECK_DIR/ic/$INPUTS" ] || { echo "run.sh: no initial condition ic/$INPUTS" >&2; exit 2; }
 exec < /dev/null                 # mpiexec must not read the produce driver's stdin
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
