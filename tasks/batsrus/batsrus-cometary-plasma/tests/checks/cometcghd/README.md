@@ -27,7 +27,7 @@ The graded observable is the 150-step history of the 67P coma (volume averages o
 ## Evidence
 
 
-Four measurements, all with this check's own `run.sh`.
+Five measurements, all with this check's own `run.sh`.
 
 * **Two-ULP calibration (nominal against variant), the recorded self-validation.** In the
   task's own oracle image on the x86 worker (Debian, gfortran 12, Open MPI 5, 2 ranks): the log
@@ -41,9 +41,12 @@ Four measurements, all with this check's own `run.sh`.
   gives the same 1.0e-03 and the same 7.17e-06 of the bound.
 * **Floor, optimisation level.** -O3 against -O2 on the x86 worker: bit-identical.
 * **Floor, rank count.** 2 MPI ranks against 4 on the x86 worker: bit-identical as well, recorded
-  in `floor` as 0. At this pin BATSRUS reproduces this run exactly across both axes, so neither
-  can stand in for what an accelerator port does to the arithmetic; the two-ULP variant above is
-  the proxy that does.
+  in `floor` as 0.
+* **Floor, alternative build.** `run.sh altbuild` (`./Config.pl -O0` instead of the shipped -O3,
+  same source and deck) against `run.sh nominal` on the x86 worker: bit-identical as well. At
+  this pin BATSRUS reproduces this run exactly across all three axes, so none of them can stand
+  in for what an accelerator port does to the arithmetic; the two-ULP variant above is the proxy
+  that does.
 * **Wrong-implementation probe.** The self-shadowing of the nucleus was removed from the pinned
   source (`ModUserCometCG.f90`, the `if(.not.is_segment_intersected(XyzStart_D, XyzEnd_D))`
   test at line 534 replaced by `.true.`, so every Sun-facing facet sublimates whether or not
