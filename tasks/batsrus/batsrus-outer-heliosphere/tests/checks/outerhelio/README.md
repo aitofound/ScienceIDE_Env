@@ -40,3 +40,5 @@ nominal-versus-variant spread and the run time on the declared cores are written
 by `sab.py task selfcheck` into `rubric.json`
 (`evidence.self_validation_spread`) and `comment/pipeline/self-validation.json`.
 Nothing here describes the reference outputs.
+
+The altbuild floor -- the same pinned source built with `./Config.pl -O0` instead of the shipped `-O3` -- is 1e-09 absolute, 1.43e-05% of the bound (a headroom of 7,010,764x).

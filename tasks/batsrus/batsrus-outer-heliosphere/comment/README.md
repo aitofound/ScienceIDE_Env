@@ -169,6 +169,63 @@ the run time the calibration run measured, in seconds, on four declared cores.
 The tolerances were finalised by the agent under the human's blanket go-ahead for
 STOP 4 (recorded 2026-09-04) and are open to revision by the reviewer.
 
+## Alternative build (5.10.1 revision)
+
+Every check now declares `run.sh altbuild`: BATSRUS's own optimisation switch,
+`./Config.pl -O0` (`share/Scripts/Config.pl` `set_optimization_`), run
+immediately after the check's own `./Config.pl -default` configuration line(s)
+and before `make BATSRUS`, rewriting every `OPTn` line of the copied tree's
+`Makefile.conf` from the shipped `share/build/Makefile.Linux.gfortran` default
+of `-O3` to `-O0`; verified with `grep -q '^OPT3 = -O0' Makefile.conf` right
+after the reconfigure so a silent no-op fails loudly. Same pinned source, same
+deck, on a legitimately different build - exactly the axis the module's own
+native investigation had already probed (`-O3` versus `-O2`, see "Two builds of
+the pinned source" above), extended here to the compiler's most conservative
+setting and run inside the same Docker image `selfcheck` grades from, rather
+than natively on the host. `outerhelioawsom-restart` applies `-O0` to both of
+its builds (the AWSoM start half and the AWSoM-PUI-bin continuation after the
+equation-set change).
+
+Measured by `sab.py task selfcheck` on 2026-09-05, run root `run1`
+(calibration) and reproduced bit for bit in `run2` (final; the prose numbers
+below are `run2`'s, the fresh record this task PR carries), both on the same
+x86 worker under the same consent as below: all seven altbuild runs pass their
+own check's bound, two of them (`outerhelio-1d`, `outerheliopui-1d`)
+bit-identical to the nominal build, matching the two checks whose native
+`-O3`-versus-`-O2` floor was already exactly zero. Every floor sits comfortably
+inside its bound, the tightest headroom being `outerhelio2d` at just over ten
+thousand times; no check needed the STOP-and-report path the skill reserves for
+a floor landing outside or within about ten times of its bound. The `-O0` build
+is slower to run (measured 1.2x to 2.6x the `-O3` run time across the seven
+checks, from `comment/pipeline/self-validation.json`'s per-check
+`check_seconds` minus `build_seconds` for the nominal and altbuild solves) and
+faster to compile (each check's `-O0` object build measured 16 to 23 s against
+79 to 148 s at `-O3`, because optimisation time dominates gfortran's compile
+time far more than execution time at this problem size); the altbuild run is
+outside grading
+and the budget does not shorten it.
+
+| check | atol | rtol | variant spread | altbuild floor | bound_fraction | headroom |
+|---|---|---|---|---|---|---|
+| outerhelio | 1e-30 | 1e-4 | 5.00e-08 | 1.00e-09 | 1.43e-07 | 7,010,764x |
+| outerhelio-1d | 1e-30 | 1e-4 | 3.00e-09 | 0 (bit-identical) | 0 | infinite |
+| outerhelio2d | 1e-30 | 1e-4 | 2.06e-06 | 2.07e-06 | 9.60e-05 | 10,421x |
+| outerhelioawsom | 1e-30 | 3e-4 | 1.00e-03 | 1.08e-09 | 4.74e-06 | 210,757x |
+| outerhelioawsom-restart | 1e-30 | 3e-4 | 1.00e-03 | 1.00e-20 | 8.55e-08 | 11,694,130x |
+| outerheliopui | 1e-30 | 1e-4 | 2.00e-08 | 1.00e-11 | 4.70e-08 | 21,298,595x |
+| outerheliopui-1d | 1e-30 | 1e-4 | 1.00e-07 | 0 (bit-identical) | 0 | infinite |
+
+`variant spread` and `altbuild floor` are the largest absolute difference over
+all graded values (`evidence.self_validation_spread` and `evidence.floor`);
+`bound_fraction` is the altbuild floor as a fraction of the bound
+(`evidence.floor_bound_fraction`, the largest `|err| / (atol + rtol x column
+scale)` any graded value used); `headroom` is its reciprocal. Every number here
+is from the rubric.json this run wrote, not typed by hand. `outerheliopui-1d`
+remains the check with the least headroom overall, but on the *variant*, not
+the altbuild: its nominal-versus-variant bound_fraction is 0.083 (headroom
+twelve times, unchanged from the previous round and already discussed under
+"How the numbers were chosen" above); its altbuild floor is exactly zero.
+
 ## Blind spots
 
 - No GPU path is exercised. `Config.pl -f` (the fast, GPU-portable update) is
@@ -208,3 +265,36 @@ and on this macOS machine (gfortran 15.2, Open MPI 5). The Docker images and the
 self-validation ran on the same x86 worker under the human's recorded consent of
 2026-09-04. The tolerances were finalised by the agent under the human's blanket
 go-ahead for STOP 4 and are open to revision by the reviewer.
+
+**The 5.10.1 revision runs (2026-09-05).** The merge to pipeline 5.10.1, the
+altbuild port and the validator `bound_fraction` change (this round) were
+self-checked twice on the same worker, `huangzesen@136.114.2.6`, under the same
+standing consent (recorded 2026-09-04T18:22:10Z, re-verified valid on the
+worker before each run), the container itself reporting as host
+`ale-worker.us-central1-c.c.light-result-467615-p0.internal` (x86_64, 88 Docker
+cpus), on a shared 88-core machine also running the other seven BATSRUS
+revisions and unrelated EPOCH, Phantom, gkeyll, qutip, S4 and stim sessions the
+same evening.
+
+`run1` (calibration, run root
+`/mnt/ssd/huangzesen/sab-runs/batsrus-outer-heliosphere-20260905/run1`): host
+load at launch (`uptime` just before the run started) 19.00, 16.80, 22.68 (one,
+five, fifteen minutes). Window 2026-09-05T08:26:36Z to 09:19:14Z: three solves
+(nominal, variant, the new altbuild) plus verify, reward 1.0, 7/7 checks, no
+problems or warnings. Suite run time (builds excluded) 375.0 s against the
+900 s guidance budget (within); builds 687.0 s for the nominal solve. The
+altbuild solve ran in 974.9 s (not counted against the budget, per the skill).
+This run's floors, bound_fractions and headroom numbers are the ones written
+into the prose above, the rubrics and `task.toml`.
+
+`run2` (final, after the prose above was written; fresh run root
+`/mnt/ssd/huangzesen/sab-runs/batsrus-outer-heliosphere-20260905/run2`): host
+load at launch 28.62, 33.34, 36.23 (busier: siblings mid-run). Window
+2026-09-05T09:26:14Z to 10:19:01Z, reward 1.0, 7/7 checks, no problems or
+warnings. Suite run time 366.5 s, builds 647.0 s (614 s the previous, pre-5.10.1
+round; both within noise of each other and of `run1`'s, from the shared
+machine's load, not a code change). The altbuild solve ran in 1123.4 s. Every
+per-check floor, bound_fraction and headroom in `run2`'s rubrics is bit for bit
+identical to `run1`'s (deterministic, non-chaotic checks), so no prose number
+changed and no third run was needed; `comment/pipeline/` and every
+`tests/checks/*/rubric.json` in this PR are `run2`'s, the freshest record.
