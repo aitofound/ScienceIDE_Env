@@ -86,8 +86,8 @@ MPLBACKEND=Agg PYTHONPATH="$WORK/src/python" python3 chirped_pulse.py >"$WORK/ra
 grep '^SAB|' "$SAB_EMIT_FILE" \
   | awk -F'|' '{printf "%s\t%s\n", $2, $3}' \
   | LC_ALL=C sort \
-  | awk -F'\t' '{printf "# %s\n%s\n", $1, $2}' > "$OUT_DIR/chirp.txt"
-n=$(grep -vc '^#' "$OUT_DIR/chirp.txt")
+  | awk -F'\t' '{printf "# %s\n%s\n", $1, $2}' > "$OUT_DIR/chirp.txt" || true  # an empty emit is a failure; the count guard below reports it instead of grep's exit 1 ending the script silently
+n=$(grep -vc '^#' "$OUT_DIR/chirp.txt" || true)
 if [ "$n" -ne 446 ]; then
   echo "run.sh: expected 446 graded values, got $n" >&2; exit 1
 fi

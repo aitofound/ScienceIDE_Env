@@ -414,6 +414,20 @@ guards assert, no pair is byte-identical, and the bound fractions come out at
 margins of 183, 383, 128 and 1472. That is a preview of what the selfcheck will
 record, not a substitute for it.
 
+Revised to skill 5.10.1 by the curator on 2026-09-05, before any selfcheck of
+the thirty-three. `tests/test.sh` is the 5.10.1 template: its build-seconds
+grep no longer ends the driver when a check's log carries no build line. Every
+check's `run.sh` now carries the 5.10.1 strict-mode fallback on its two
+graded-file greps, so a run that emits nothing stops on the count guard's own
+message ("expected N graded values, got 0") instead of on grep's silent exit 1;
+the graded values and the value counts are untouched. The four new rubrics had
+an `evidence.altbuild` block copied from an existing check, stamped with the
+time of the earlier twenty-nine-check selfcheck; it is null now, consistent
+with the null floor above, until the selfcheck measures it. That selfcheck is
+held until the leaf is in its final pre-merge state, so the record under
+`comment/pipeline/` is still the twenty-nine-check one of 2026-09-05T06:35Z
+and the freshness gate reads stale by design until the rerun.
+
 ## Blind spots
 
 **An owned file with no check.** `src/multilevel-atom.cpp` implements the
