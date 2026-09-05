@@ -1,7 +1,7 @@
 {
   "module": {
     "slug": "meep-fdtd-timestepping",
-    "title": "Meep 1.34.0 \u2014 the FDTD time-stepping loop: Yee updates, PML, dispersive polarization and DFT accumulation",
+    "title": "Meep 1.34.0 — the FDTD time-stepping loop: Yee updates, PML, dispersive polarization and DFT accumulation",
     "paths": [
       "src/step.cpp",
       "src/step_db.cpp",
@@ -109,6 +109,20 @@
       "subject": "suite_budget_s",
       "ruling": "Put suite_budget_s back to 900; the measured suite is 277.9 s, so the default was never at risk",
       "why": "An earlier revision raised it to 1200 s to cover a hot run on a passively cooled authoring laptop. Declared run times sum to 431 s and the shipped selfcheck measured 277.9 s. Back at the default 900."
+    },
+    {
+      "at": "2026-09-05",
+      "where": "curator review of task PR #422, round 3",
+      "subject": "conductivity-attenuation",
+      "ruling": "rtol 5e-8, atol unchanged",
+      "why": "The first self-validation of this leaf on x86-64 failed this check: 4 of 39 graded values exceeded atol 1e-12, rtol 5e-12, worst 4.565e-07 absolute and 4.19e-10 relative on the flux five micrometres down the lossy guide, 84 times its bound. Measured on the worker in the leaf's own oracle image: the run is deterministic (a repeated nominal run is bit-identical); the alternative build (-O0 against the nominal -g -O2) is bit-identical, so the floor between two legitimate builds is zero; the step counts are identical in both initial conditions, so no window moved. Stepping the source frequency by 1, 2, 3, 4 and 8 units in the last place moves the graded attenuation ratio by 4.18e-10 to 4.46e-10 relative every time, in a two-state jump that does not scale with the perturbation and lands on the lossless guide for some steps and the lossy one for others; running with eig_tolerance 1e-15 redistributes the jump rather than removing it. The perturbed input reaches the fields only through mp.EigenModeSource, so the check's floor is the reproducibility of an MPB eigensolve, which is outside this module's owned paths, exactly as near2far-green-function's floor is the 1e-6 residual of fields::solve_cw. The bound sits 112 times above the measured 4.46e-10 and a fault a tenth of a percent in size, the smallest the warrant names, still lands 20,000 times above it. The arm64 measurements that set the old 5e-12 bound drew the quiet side of the same two-state process."
+    },
+    {
+      "at": "2026-09-05",
+      "where": "curator review of task PR #422, round 3",
+      "subject": "the checks flagged under a margin of 50",
+      "ruling": "leave the four flagged rows as the author set them",
+      "why": "The same run is the first to measure skill 5.10.0's margin, the bound divided by the worst graded value's error from the validator's bound_fraction. Four checks land under the 50 the presentation uses for reading order: gyrotropic-faraday-rotation 10x, dft-energy-group-velocity 18x, uneven-chunk-flux 21x and nonlinear-harmonic-generation 39x. The 50 is reading order and not a pass rule; all four pass, their warrants defend their bounds, and no bound was moved."
     }
   ]
 }
