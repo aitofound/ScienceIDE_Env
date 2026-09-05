@@ -1,0 +1,233 @@
+{
+  "kind": "native_investigation_not_cli_selfcheck",
+  "source_pin": "14625beca2ce0918f88d1fc84a3c0cdb591e0729",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "build": "pinned native Windows wheel installed in investigation environment; no candidate acceleration or Linux build claim",
+  "numerical_threads": 1,
+  "timeout_per_process_s": 180,
+  "source_build_included": false,
+  "commands": {
+    "nominal": "SOURCE_DIR=<pinned-source> OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 python producer.py --ic ic/nominal --out <nominal-output> --author-manifests",
+    "variant": "SOURCE_DIR=<pinned-source> OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 python producer.py --ic ic/variant --out <variant-output>",
+    "repeat": "SOURCE_DIR=<pinned-source> OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 python producer.py --ic ic/nominal --out <repeat-output>"
+  },
+  "runs": {
+    "nominal": {
+      "check": "examples-arm-panda-engrave",
+      "mode": "author",
+      "exit_code": 0,
+      "timeout": false,
+      "wall_s": 4.129133099981118
+    },
+    "variant": {
+      "check": "examples-arm-panda-engrave",
+      "mode": "variant",
+      "exit_code": 0,
+      "timeout": false,
+      "wall_s": 4.531390400021337
+    },
+    "repeat": {
+      "check": "examples-arm-panda-engrave",
+      "mode": "repeat",
+      "exit_code": 0,
+      "timeout": false,
+      "wall_s": 4.48441609996371
+    }
+  },
+  "input_change": {
+    "nominal": {
+      "kind": "scalar_q0",
+      "index": 3,
+      "value_hex": "-0x1.921f4b1ee2435p+0"
+    },
+    "variant": {
+      "kind": "scalar_q0",
+      "index": 3,
+      "value_hex": "-0x1.921f4b1ee2433p+0"
+    },
+    "ulp_steps": 2,
+    "direction": "positive infinity",
+    "applied_once": true
+  },
+  "selected_pose_spreads": {
+    "check": "examples-arm-panda-engrave",
+    "groups": [
+      {
+        "prefix": "g0_",
+        "trace_shape_nominal": [
+          1278,
+          2,
+          4,
+          4
+        ],
+        "trace_shape_variant": [
+          1278,
+          2,
+          4,
+          4
+        ],
+        "steps_nominal": 7128,
+        "steps_variant": 7128,
+        "steps_repeat": 7128,
+        "variant_selected_pose_abs": 1.5681900222830336e-15,
+        "repeat_selected_pose_abs": 0.0,
+        "variant_identical": false
+      }
+    ],
+    "max_variant_selected_pose_abs": 1.5681900222830336e-15,
+    "max_repeat_selected_pose_abs": 0.0,
+    "selected_pose_variant_identical": false,
+    "trace_shapes_equal": true
+  },
+  "output_contract": {
+    "format": "mink_official_kinematic_trace_v1",
+    "groups": [
+      {
+        "prefix": "g0_",
+        "manifest": "model_manifest_g0.npz",
+        "nq": 7,
+        "nv": 7,
+        "nframes": 2,
+        "trace_count": 1278,
+        "trace_mode": "source_smoothed_planned_qpath",
+        "task_types": [
+          "FrameTask",
+          "AxisAlignTask",
+          "PostureTask"
+        ],
+        "pose_selection": [
+          {
+            "translation": true,
+            "rotation": false
+          },
+          {
+            "translation": false,
+            "rotation": false,
+            "axis": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        ],
+        "external_transition_at_outer_boundary": false,
+        "target_width": 0,
+        "nominal_step_count": 7128,
+        "min_steps": 1,
+        "max_steps": 45520,
+        "preloop_settle_steps": 0
+      }
+    ]
+  },
+  "files_sha256": {
+    "producer.py": "5d5cc1218595df1b5313187c608200130a178ca3fd826362ce014ef7f9bf55a9",
+    "upstream_example.py": "92e97b8e9c3487b2c7d12b0beb96f8cbad5af48630c63fb2efb083ebd5fdee3d",
+    "kinematics.py": "c9e9bd0a62dd5876aa270832642f60a1ba109e07589fcdf2084a25df2bda2f7b",
+    "ic/nominal/input.json": "721b1a6689594d5f8deb6b7243331c8d7cdd35ad150e6b85c65efae8c9ef6de9",
+    "ic/variant/input.json": "168335f1a3e085ba6e47986c7776d53602fd008dff863d6580722574ea47adc6",
+    "schema.json": "c028a95cef1599cbe4b5f9b31d55c2c32c656f52e3e84de22cd18a35a06cd7ec",
+    "model_manifest_g0.npz": "ff8239d1a2cd955e4357654f947deb228ca2dd48363a1d7e035e51d42b30afb2"
+  },
+  "formal_selfcheck": "not run; CLI-owned evidence fields remain untouched",
+  "curator_finalized": false,
+  "python_version": "3.12.14",
+  "installed_packages": {
+    "mink": "1.3.0",
+    "numpy": "2.3.5",
+    "mujoco": "3.11.0",
+    "qpsolvers": "4.12.0",
+    "daqp": "0.8.5",
+    "loop-rate-limiters": "1.2.0"
+  },
+  "daqp_solve_signature": "(H, f, A, bupper, blower=None, sense=None, break_points=<MemoryView of 'ndarray' at 0x24968fd7780>, is_avi=False, primal_tol=1e-06, dual_tol=1e-12, zero_tol=1e-11, pivot_tol=1e-06, progress_tol=1e-14, cycle_tol=10, iter_limit=10000, fval_bound=1e+30, eps_prox=1e-06, eta_prox=1e-06, rho_soft=1e-06, rel_subopt=0.0, abs_subopt=0.0, sing_tol=3.7e-11, refactor_tol=1e-09, time_limit=0, primal_start=None, dual_start=None)",
+  "velocity_guard_derivation": {
+    "DAQP_displacement_primal_tol": 1e-06,
+    "source_dt_s": 0.005,
+    "provisional_velocity_slack_rad_s": 0.0002,
+    "600_sample_baseline_velocity_excess_rad_s": 9.148471e-05
+  },
+  "knob_probe_runs": [
+    {
+      "mode": "nominal",
+      "SAB_FRAMES": 600,
+      "exit_code": 0,
+      "wall_s": 2.8282777999993414,
+      "trace_shapes": {
+        "g0_trace_q": [
+          740,
+          7
+        ],
+        "g0_step_frozen_dofs": [
+          3900,
+          7
+        ],
+        "g0_trace_frozen_dofs": [
+          740,
+          7
+        ]
+      }
+    },
+    {
+      "mode": "nominal",
+      "SAB_FRAMES": 1300,
+      "exit_code": 0,
+      "wall_s": 4.248056700045709,
+      "trace_shapes": {
+        "g0_trace_q": [
+          1440,
+          7
+        ],
+        "g0_step_frozen_dofs": [
+          8100,
+          7
+        ],
+        "g0_trace_frozen_dofs": [
+          1440,
+          7
+        ]
+      }
+    },
+    {
+      "mode": "variant",
+      "SAB_FRAMES": 600,
+      "exit_code": 0,
+      "wall_s": 2.764871800027322,
+      "trace_shapes": {
+        "g0_trace_q": [
+          740,
+          7
+        ],
+        "g0_step_frozen_dofs": [
+          3900,
+          7
+        ],
+        "g0_trace_frozen_dofs": [
+          740,
+          7
+        ]
+      }
+    },
+    {
+      "mode": "variant",
+      "SAB_FRAMES": 1300,
+      "exit_code": 0,
+      "wall_s": 4.1691652000299655,
+      "trace_shapes": {
+        "g0_trace_q": [
+          1440,
+          7
+        ],
+        "g0_step_frozen_dofs": [
+          8100,
+          7
+        ],
+        "g0_trace_frozen_dofs": [
+          1440,
+          7
+        ]
+      }
+    }
+  ],
+  "nominal_timing_includes_trusted_model_fact_export": true,
+  "repeat_timing_excludes_trusted_model_fact_export": true
+}
