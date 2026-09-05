@@ -6,6 +6,7 @@
   "configuration": "PHYSICS=HD; 1D CARTESIAN; 400 zones; solver hllc; LINEAR reconstruction; CHARACTERISTIC_TRACING time stepping; tstop 0.2; CFL 0.8; dbl output '90.5 -1 single_file'",
   "expected_runtime_s": 15,
   "variant": "ic/variant/pluto.ini multiplies the [Grid] X1-grid right edge by (1 + 1e-15): 1.0 becomes 1.000000000000001, one ulp of the domain length. Every cell edge, and with it every initial value evaluated at a cell centre, moves at round-off while the physics is unchanged (the deck has no continuous initial-condition parameter to perturb), so the two runs differ by rounding only and their spread is the floor of this check.",
+  "altbuild": "the same pinned source and Linux.gcc.defs architecture built with make CFLAGS='-c -O0' instead of the nominal -O3 flags: a legitimate unoptimised GCC build a correct candidate could plausibly use, with no source or deck change",
   "comparison": {
     "atol": 1e-08,
     "rtol": 1e-08,
