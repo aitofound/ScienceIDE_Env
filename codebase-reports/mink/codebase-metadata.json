@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "report_type": "codebase-metadata",
-  "generated_at": "2026-09-05T11:59:50Z",
+  "generated_at": "2026-09-05T15:57:18Z",
   "informational": true,
   "non_blocking": true,
   "codebase": {
@@ -16,7 +16,7 @@
     ],
     "domain": "computer-systems",
     "owner": "ZZongzheng0918",
-    "source_tree_fingerprint": "fcd6d9544ed7c368a0936ffdc1b5597f12a569eda3120fca830e7d1509fa69e3",
+    "source_tree_fingerprint": "c75723cb6036208b7aa3df71704bb9dc1208847f6eae01041f1a166493508130",
     "fingerprint_algorithm": "SHA-256 over typed sorted regular-file paths+bytes and symlink paths+safe targets",
     "measurement_source": "vendored source payload",
     "agent_authored": {
@@ -34,7 +34,24 @@
         "acquisition": "GitHub commit archive, checked against the recursive Git tree at the registered pin.",
         "archive_url": "https://codeload.github.com/kevinzakka/mink/tar.gz/14625beca2ce0918f88d1fc84a3c0cdb591e0729",
         "file_verification": "Every one of the 772 regular files matched its upstream Git blob SHA-1 and byte count. No missing or extra files and no symlinks were present. Executable modes are retained from the archive and checked in the Git index.",
-        "source_changes": "None; the full upstream payload is retained, including docs, tests, benchmarks, examples, meshes, stubs, lockfile and licenses. The metadata report is outside the payload."
+        "source_changes": "The complete Mink upstream tree remains byte-identical. The only additional payload is third_party/mujoco_menagerie/: five complete, separately pinned test-model directories plus PROVENANCE.json and VENDORING.md. The metadata report stays outside the payload.",
+        "test_model_addition": {
+          "repository": "https://github.com/deepmind/mujoco_menagerie",
+          "commit": "bf756430b615819654b640f321c71ba5c3ebeef8",
+          "selected_by": "robot_descriptions 1.22.0, _repositories.py: mujoco_menagerie default commit",
+          "purpose": "Exact model fixtures for the pinned Mink official tests; not an expansion of module ownership.",
+          "upstream_files_unchanged": true,
+          "model_licenses": {
+            "agility_cassie": "MIT",
+            "franka_emika_panda": "Apache-2.0",
+            "pal_talos": "Apache-2.0",
+            "unitree_g1": "BSD-3-Clause",
+            "universal_robots_ur5e": "BSD-3-Clause"
+          },
+          "file_count": 247,
+          "payload_bytes": 126865442,
+          "manifest": "third_party/mujoco_menagerie/PROVENANCE.json"
+        }
       },
       "licenses": {
         "library": "Apache-2.0, as declared in pyproject.toml and the root LICENSE.",
@@ -53,7 +70,12 @@
           "examples/unitree_go1/LICENSE",
           "examples/universal_robots_ur5e/LICENSE",
           "examples/wonik_allegro/LICENSE",
-          "LICENSE"
+          "LICENSE",
+          "third_party/mujoco_menagerie/agility_cassie/LICENSE",
+          "third_party/mujoco_menagerie/franka_emika_panda/LICENSE",
+          "third_party/mujoco_menagerie/pal_talos/LICENSE",
+          "third_party/mujoco_menagerie/unitree_g1/LICENSE",
+          "third_party/mujoco_menagerie/universal_robots_ur5e/LICENSE"
         ],
         "bundled_models": {
           "Apache-2.0": [
@@ -79,7 +101,14 @@
             "leap_hand"
           ]
         },
-        "evidence": "Each model's README.md and LICENSE under examples/; upstream README.md also credits Pink, jaxlie and dm_robotics adaptations. All upstream notices are retained verbatim. The root library license is not asserted to replace model licenses."
+        "evidence": "Each model's README.md and LICENSE under examples/; upstream README.md also credits Pink, jaxlie and dm_robotics adaptations. All upstream notices are retained verbatim. The root library license is not asserted to replace model licenses.",
+        "additional_test_models": {
+          "agility_cassie": "MIT",
+          "franka_emika_panda": "Apache-2.0",
+          "pal_talos": "Apache-2.0",
+          "unitree_g1": "BSD-3-Clause",
+          "universal_robots_ur5e": "BSD-3-Clause"
+        }
       },
       "external_dependencies": {
         "runtime": [
@@ -105,7 +134,7 @@
           "tests/",
           "examples/"
         ],
-        "packaging_note": "Declared Python dependencies are public packages; no patched external library is introduced. Several official tests load additional robot models through robot_descriptions. Those model assets are not all in this Mink snapshot; their exact versions and build-time acquisition or vendoring remain unresolved before the task images can be defined."
+        "packaging_note": "Public Python dependencies are unchanged. The exact UR5e, G1, Talos, Panda and Cassie model subtrees selected by robot_descriptions 1.22.0 are now bundled under third_party/mujoco_menagerie at its pinned default commit, including each license and a per-file manifest. Model fixtures need no runtime downloads."
       }
     }
   },
@@ -154,20 +183,20 @@
         "tests",
         "tst"
       ],
-      "generated_vendor_third_party_notes": "Counts cover the complete upstream snapshot, not only src/mink. Python examples, benchmark scripts, shell helpers and generated MuJoCo .pyi stubs count as source by the declared extensions. Only tests/ and test_-prefixed files are classified as test source; runnable examples remain implementation source under this mechanical rule. XML models, meshes, images, documents, license texts, lockfiles and build manifests remain in total payload accounting. The 14 bundled robot model directories carry their own licenses. Unclassified means outside the approved owned/shared path sets, not missing from the source payload."
+      "generated_vendor_third_party_notes": "Counts cover the complete upstream snapshot, not only src/mink. Python examples, benchmark scripts, shell helpers and generated MuJoCo .pyi stubs count as source by the declared extensions. Only tests/ and test_-prefixed files are classified as test source; runnable examples remain implementation source under this mechanical rule. XML models, meshes, images, documents, license texts, lockfiles and build manifests remain in total payload accounting. The 14 bundled robot model directories carry their own licenses. Unclassified means outside the approved owned/shared path sets, not missing from the source payload. Additional model accounting includes five unchanged MuJoCo Menagerie test-fixture subtrees and their provenance records; these are distinct from the versions in Mink examples."
     }
   },
   "size": {
-    "tree_entries": 830,
-    "regular_files": 772,
-    "directories": 58,
+    "tree_entries": 1098,
+    "regular_files": 1021,
+    "directories": 77,
     "symlinks": 0,
     "symlink_entries": [],
-    "payload_bytes": 415770537,
-    "text_files": 496,
-    "text_physical_lines": 5754304,
-    "binary_files": 276,
-    "binary_bytes": 209960634,
+    "payload_bytes": 542700683,
+    "text_files": 629,
+    "text_physical_lines": 7687591,
+    "binary_files": 392,
+    "binary_bytes": 266235170,
     "source_files": 114,
     "source_physical_lines": 40967,
     "implementation_source_files": 89,
@@ -194,6 +223,12 @@
         "text_physical_lines": 0
       },
       {
+        "extension": ".json",
+        "files": 1,
+        "bytes": 63997,
+        "text_physical_lines": 1500
+      },
+      {
         "extension": ".lock",
         "files": 1,
         "bytes": 360169,
@@ -201,9 +236,9 @@
       },
       {
         "extension": ".md",
-        "files": 19,
-        "bytes": 43146,
-        "text_physical_lines": 959
+        "files": 30,
+        "bytes": 55334,
+        "text_physical_lines": 1253
       },
       {
         "extension": ".mtl",
@@ -219,9 +254,9 @@
       },
       {
         "extension": ".obj",
-        "files": 248,
-        "bytes": 203188749,
-        "text_physical_lines": 5697393
+        "files": 340,
+        "bytes": 273510964,
+        "text_physical_lines": 7624537
       },
       {
         "extension": ".patch",
@@ -231,8 +266,8 @@
       },
       {
         "extension": ".png",
-        "files": 38,
-        "bytes": 30366304,
+        "files": 46,
+        "bytes": 42641118,
         "text_physical_lines": 0
       },
       {
@@ -261,8 +296,8 @@
       },
       {
         "extension": ".stl",
-        "files": 236,
-        "bytes": 179401274,
+        "files": 344,
+        "bytes": 223400996,
         "text_physical_lines": 0
       },
       {
@@ -285,9 +320,9 @@
       },
       {
         "extension": ".xml",
-        "files": 64,
-        "bytes": 514589,
-        "text_physical_lines": 9087
+        "files": 88,
+        "bytes": 747386,
+        "text_physical_lines": 13012
       },
       {
         "extension": ".yml",
@@ -297,9 +332,9 @@
       },
       {
         "extension": "[no extension]",
-        "files": 18,
-        "bytes": 71083,
-        "text_physical_lines": 1297
+        "files": 23,
+        "bytes": 95496,
+        "text_physical_lines": 1721
       }
     ],
     "classification": "CLI-computed"
@@ -577,12 +612,10 @@
           "Documentation examples run as subprocesses with exit-code assertions; the Panda example supplies a standard frame/posture IK loop."
         ],
         "known_gaps": [
-          "Only 54 distinct collected items were executed: 52 task/Lie assertions and two documentation subprocess smoke items. The other 208 collected items are not claimed passed.",
           "Primary-file association is incomplete for specialized objectives/limits that also exercise shared or owned solver paths; those tests remain in the source tree for subsequent examination.",
-          "Model loaders require UR5e, G1, Talos and other assets. A reproducible offline dependency arrangement has not yet been established for all model-backed tests.",
           "The unchanged Panda convergence function was probed headlessly at a phase-zero circular offset; it did not meet its own termination criterion in one original 20-step call. The original full interactive example was not run.",
           "Documentation subprocess success asserts execution, not scientific accuracy or convergence. GUI/rendering, continuous examples, every solver backend and cross-platform behavior are not certified by these runs.",
-          "Hidden inner-loop cases and exact per-item wall times have not been independently counted; no full-suite duration has been measured."
+          "The full official suite passed as supplied in separate native processes. This does not establish every advertised scientific property: one G1 bound test mixes qpos/tangent indices, and the Talos finite-difference setup does not constrain random samples to legal joint positions."
         ],
         "execution": [
           {
@@ -621,9 +654,13 @@
             "conditions": "Both pinned examples/docs scripts and the complete pinned Panda model were present; the file run completed within 180 seconds."
           },
           {
-            "scope": "All tests/",
-            "status": "262 items collected successfully; 208 items not executed",
-            "conditions": "mujoco 3.11.0, qpsolvers 4.12.0, daqp 0.8.5, numpy 2.3.5, scipy 1.16.3, pytest 9.0.3, absl-py 2.3.1, robot_descriptions 1.22.0."
+            "scope": "All 23 official tests/test_*.py files",
+            "status": "262 collected items passed; zero failures, errors or skips",
+            "environment": "Windows x64, CPython 3.12.14, official C-enabled Mink 1.3.0 wheel (Python sources verified against the pin); this was not a local native-extension build.",
+            "command": "python -m pytest tests/test_<name>.py -q --disable-warnings --junitxml=<per-file-record>",
+            "conditions": "One fresh process per file, one numerical thread, PYTHONHASHSEED=0, 180-second wall timeout per file. No original test assertions were changed. NumPy random draws not explicitly seeded by upstream remain as upstream supplied them.",
+            "models": "robot_descriptions 1.22.0 using MuJoCo Menagerie bf756430b615819654b640f321c71ba5c3ebeef8; all five required model directories present in a genuine pinned local cache.",
+            "limits": "Native compatibility evidence only. Finite-difference fixtures do not certify legal initial configurations, and a qpos/tangent index mismatch weakens one upstream G1 bound assertion. Documentation subprocess success does not assert pose convergence. Linux source builds and task self-validation remain unperformed."
           }
         ],
         "classification": "agent-authored/evidenced, except any explicitly CLI-labelled counts"
@@ -652,10 +689,10 @@
         "text_physical_lines": 0
       },
       "unclassified": {
-        "regular_files": 749,
-        "bytes": 415649556,
-        "text_files": 473,
-        "text_physical_lines": 5750774
+        "regular_files": 998,
+        "bytes": 542579702,
+        "text_files": 606,
+        "text_physical_lines": 7684061
       }
     },
     "overlaps": [],
@@ -1389,6 +1426,255 @@
       "tests/test_utils.py",
       "tests/test_velocity_limit.py",
       "tests/utils.py",
+      "third_party/mujoco_menagerie/PROVENANCE.json",
+      "third_party/mujoco_menagerie/VENDORING.md",
+      "third_party/mujoco_menagerie/agility_cassie/CHANGELOG.md",
+      "third_party/mujoco_menagerie/agility_cassie/LICENSE",
+      "third_party/mujoco_menagerie/agility_cassie/README.md",
+      "third_party/mujoco_menagerie/agility_cassie/assets/achilles-rod.obj",
+      "third_party/mujoco_menagerie/agility_cassie/assets/cassie-texture.png",
+      "third_party/mujoco_menagerie/agility_cassie/assets/foot-crank.obj",
+      "third_party/mujoco_menagerie/agility_cassie/assets/foot.obj",
+      "third_party/mujoco_menagerie/agility_cassie/assets/heel-spring.obj",
+      "third_party/mujoco_menagerie/agility_cassie/assets/hip-pitch.obj",
+      "third_party/mujoco_menagerie/agility_cassie/assets/hip-roll.obj",
+      "third_party/mujoco_menagerie/agility_cassie/assets/hip-yaw.obj",
+      "third_party/mujoco_menagerie/agility_cassie/assets/knee-spring.obj",
+      "third_party/mujoco_menagerie/agility_cassie/assets/knee.obj",
+      "third_party/mujoco_menagerie/agility_cassie/assets/pelvis.obj",
+      "third_party/mujoco_menagerie/agility_cassie/assets/plantar-rod.obj",
+      "third_party/mujoco_menagerie/agility_cassie/assets/shin.obj",
+      "third_party/mujoco_menagerie/agility_cassie/assets/tarsus.obj",
+      "third_party/mujoco_menagerie/agility_cassie/cassie.png",
+      "third_party/mujoco_menagerie/agility_cassie/cassie.xml",
+      "third_party/mujoco_menagerie/agility_cassie/scene.xml",
+      "third_party/mujoco_menagerie/franka_emika_panda/CHANGELOG.md",
+      "third_party/mujoco_menagerie/franka_emika_panda/LICENSE",
+      "third_party/mujoco_menagerie/franka_emika_panda/README.md",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/finger_0.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/finger_1.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/hand.stl",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/hand_0.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/hand_1.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/hand_2.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/hand_3.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/hand_4.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link0.stl",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link0_0.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link0_1.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link0_10.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link0_11.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link0_2.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link0_3.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link0_4.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link0_5.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link0_7.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link0_8.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link0_9.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link1.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link1.stl",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link2.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link2.stl",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link3.stl",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link3_0.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link3_1.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link3_2.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link3_3.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link4.stl",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link4_0.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link4_1.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link4_2.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link4_3.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link5_0.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link5_1.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link5_2.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link5_collision_0.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link5_collision_1.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link5_collision_2.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link6.stl",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link6_0.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link6_1.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link6_10.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link6_11.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link6_12.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link6_13.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link6_14.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link6_15.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link6_16.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link6_2.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link6_3.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link6_4.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link6_5.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link6_6.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link6_7.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link6_8.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link6_9.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link7.stl",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link7_0.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link7_1.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link7_2.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link7_3.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link7_4.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link7_5.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link7_6.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/assets/link7_7.obj",
+      "third_party/mujoco_menagerie/franka_emika_panda/hand.xml",
+      "third_party/mujoco_menagerie/franka_emika_panda/mjx_hand.xml",
+      "third_party/mujoco_menagerie/franka_emika_panda/mjx_panda.xml",
+      "third_party/mujoco_menagerie/franka_emika_panda/mjx_panda_nohand.xml",
+      "third_party/mujoco_menagerie/franka_emika_panda/mjx_scene.xml",
+      "third_party/mujoco_menagerie/franka_emika_panda/mjx_single_cube.xml",
+      "third_party/mujoco_menagerie/franka_emika_panda/panda.png",
+      "third_party/mujoco_menagerie/franka_emika_panda/panda.xml",
+      "third_party/mujoco_menagerie/franka_emika_panda/panda_nohand.xml",
+      "third_party/mujoco_menagerie/franka_emika_panda/scene.xml",
+      "third_party/mujoco_menagerie/pal_talos/CHANGELOG.md",
+      "third_party/mujoco_menagerie/pal_talos/LICENSE",
+      "third_party/mujoco_menagerie/pal_talos/README.md",
+      "third_party/mujoco_menagerie/pal_talos/assets/arm/arm_1.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/arm/arm_1_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/arm/arm_2.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/arm/arm_2_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/arm/arm_3.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/arm/arm_3_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/arm/arm_4.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/arm/arm_4_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/arm/arm_5.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/arm/arm_5_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/arm/arm_6.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/arm/arm_6_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/arm/arm_7.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/arm/arm_7_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/gripper/base_link.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/gripper/base_link_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/gripper/fingertip.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/gripper/fingertip_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/gripper/gripper_motor_double.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/gripper/gripper_motor_double_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/gripper/gripper_motor_single.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/gripper/gripper_motor_single_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/gripper/gripper_simple_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/gripper/inner_double.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/gripper/inner_double_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/gripper/inner_single.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/gripper/inner_single_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/head/head_1.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/head/head_1_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/head/head_2_default.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/head/head_2_default_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/sensors/orbbec/orbbec.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/torso/base_link.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/torso/base_link_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/torso/torso_1.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/torso/torso_2.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/torso/torso_2_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/v2/ankle_X_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/v2/ankle_X_lo_res.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/v2/ankle_Y_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/v2/ankle_Y_lo_res.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/v2/hip_x_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/v2/hip_x_lo_res.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/v2/hip_y_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/v2/hip_y_lo_res.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/v2/hip_z_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/v2/hip_z_lo_res.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/v2/knee_collision.stl",
+      "third_party/mujoco_menagerie/pal_talos/assets/v2/knee_lo_res.stl",
+      "third_party/mujoco_menagerie/pal_talos/scene_motor.xml",
+      "third_party/mujoco_menagerie/pal_talos/scene_position.xml",
+      "third_party/mujoco_menagerie/pal_talos/talos.png",
+      "third_party/mujoco_menagerie/pal_talos/talos.xml",
+      "third_party/mujoco_menagerie/pal_talos/talos_motor.xml",
+      "third_party/mujoco_menagerie/pal_talos/talos_position.xml",
+      "third_party/mujoco_menagerie/unitree_g1/CHANGELOG.md",
+      "third_party/mujoco_menagerie/unitree_g1/LICENSE",
+      "third_party/mujoco_menagerie/unitree_g1/README.md",
+      "third_party/mujoco_menagerie/unitree_g1/assets/head_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/left_ankle_pitch_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/left_ankle_roll_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/left_elbow_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/left_hand_index_0_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/left_hand_index_1_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/left_hand_middle_0_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/left_hand_middle_1_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/left_hand_palm_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/left_hand_thumb_0_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/left_hand_thumb_1_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/left_hand_thumb_2_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/left_hip_pitch_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/left_hip_roll_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/left_hip_yaw_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/left_knee_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/left_rubber_hand.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/left_shoulder_pitch_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/left_shoulder_roll_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/left_shoulder_yaw_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/left_wrist_pitch_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/left_wrist_roll_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/left_wrist_yaw_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/logo_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/pelvis.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/pelvis_contour_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/right_ankle_pitch_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/right_ankle_roll_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/right_elbow_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/right_hand_index_0_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/right_hand_index_1_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/right_hand_middle_0_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/right_hand_middle_1_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/right_hand_palm_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/right_hand_thumb_0_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/right_hand_thumb_1_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/right_hand_thumb_2_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/right_hip_pitch_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/right_hip_roll_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/right_hip_yaw_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/right_knee_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/right_rubber_hand.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/right_shoulder_pitch_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/right_shoulder_roll_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/right_shoulder_yaw_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/right_wrist_pitch_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/right_wrist_roll_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/right_wrist_yaw_link.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/torso_link_rev_1_0.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/waist_roll_link_rev_1_0.STL",
+      "third_party/mujoco_menagerie/unitree_g1/assets/waist_yaw_link_rev_1_0.STL",
+      "third_party/mujoco_menagerie/unitree_g1/g1.png",
+      "third_party/mujoco_menagerie/unitree_g1/g1.xml",
+      "third_party/mujoco_menagerie/unitree_g1/g1_mjx.xml",
+      "third_party/mujoco_menagerie/unitree_g1/g1_mjx_colliders.png",
+      "third_party/mujoco_menagerie/unitree_g1/g1_with_hands.png",
+      "third_party/mujoco_menagerie/unitree_g1/g1_with_hands.xml",
+      "third_party/mujoco_menagerie/unitree_g1/scene.xml",
+      "third_party/mujoco_menagerie/unitree_g1/scene_mjx.xml",
+      "third_party/mujoco_menagerie/unitree_g1/scene_with_hands.xml",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/CHANGELOG.md",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/LICENSE",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/README.md",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/assets/base_0.obj",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/assets/base_1.obj",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/assets/forearm_0.obj",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/assets/forearm_1.obj",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/assets/forearm_2.obj",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/assets/forearm_3.obj",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/assets/shoulder_0.obj",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/assets/shoulder_1.obj",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/assets/shoulder_2.obj",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/assets/upperarm_0.obj",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/assets/upperarm_1.obj",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/assets/upperarm_2.obj",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/assets/upperarm_3.obj",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/assets/wrist1_0.obj",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/assets/wrist1_1.obj",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/assets/wrist1_2.obj",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/assets/wrist2_0.obj",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/assets/wrist2_1.obj",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/assets/wrist2_2.obj",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/assets/wrist3.obj",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/scene.xml",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/ur5e.png",
+      "third_party/mujoco_menagerie/universal_robots_ur5e/ur5e.xml",
       "typings/generate_mujoco_stubs.sh",
       "typings/mujoco/__init__.pyi",
       "typings/mujoco/_callbacks.pyi",
@@ -1413,8 +1699,8 @@
     ],
     "unclassified_paths_truncated": 0,
     "reconciliation": {
-      "regular_files": 772,
-      "classified_files": 772,
+      "regular_files": 1021,
+      "classified_files": 1021,
       "reconciliation_ok": true
     },
     "not_packaged": [
@@ -1425,19 +1711,17 @@
     ],
     "known_review_gaps": [
       "Source presence and Git byte identity establish provenance, not correctness of every upstream algorithm or model.",
-      "Model-backed official tests beyond the executed subset need dependency pins and native execution evidence before task packaging.",
       "The source-built fallback and official binary wheel were exercised; local compilation of the C extension and Linux image builds have not been performed.",
       "Files outside the eight owned files and shared infrastructure are intentionally visible as unclassified, including official tests, examples, model assets, documentation and additional implementations."
     ],
     "open_questions": [
-      "Which external robot model snapshots must be bundled in a follow-up source update for reproducible execution of all relevant official tests?",
       "Which runtime environment can provide the required compiler, public dependencies and model assets for the subsequent task build?"
     ],
     "classification": "CLI-computed accounting plus agent-authored gaps"
   },
   "warnings": [
-    "749 regular file(s) are unclassified; this is visible but non-blocking",
+    "998 regular file(s) are unclassified; this is visible but non-blocking",
     "modules.mink-constrained-differential-ik.hazards[0]: local/private absolute path redacted"
   ],
-  "notes": "Informational Step 1.5 report for the human-approved module. Source identity, counts, fingerprints and path accounting are computed by the official CLI. Coverage and execution descriptions are author claims supported by the stated commands; remaining unknowns are explicit. No task environment has been authored at this source stage."
+  "notes": "Informational source report for the human-approved module. All original Mink files are unchanged; the explicitly identified model dependency supplement supports reproducible official-test execution. Source identity, counts, fingerprints and path accounting are computed by the official CLI. Scientific prose describes native evidence and its limitations; it does not claim task readiness."
 }

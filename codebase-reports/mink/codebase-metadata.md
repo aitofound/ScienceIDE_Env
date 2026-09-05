@@ -8,8 +8,8 @@ Generated from the canonical JSON. Unknown values are visible; this report never
 | source payload | `code/mink/` | CLI |
 | upstream pin | `14625beca2ce0918f88d1fc84a3c0cdb591e0729` | human/state |
 | license | `Apache-2.0` | human/state |
-| source fingerprint | `fcd6d9544ed7c368a0936ffdc1b5597f12a569eda3120fca830e7d1509fa69e3` | CLI |
-| size | 772 files / 415770537 bytes / 5754304 text lines | CLI |
+| source fingerprint | `c75723cb6036208b7aa3df71704bb9dc1208847f6eae01041f1a166493508130` | CLI |
+| size | 1021 files / 542700683 bytes / 7687591 text lines | CLI |
 
 ### Modules, differences, and official tests
 
@@ -30,7 +30,7 @@ Generated from the canonical JSON. Unknown values are visible; this report never
 | shared | 15 | 67825 | 2074 |
 | owned | 8 | 53156 | 1456 |
 | overlapping_owned | 0 | 0 | 0 |
-| unclassified | 749 | 415649556 | 5750774 |
+| unclassified | 998 | 542579702 | 7684061 |
 
 ### Total official-test counts (units are not interchangeable)
 
@@ -43,12 +43,10 @@ Generated from the canonical JSON. Unknown values are visible; this report never
 
 ### Gaps and warnings
 - Source presence and Git byte identity establish provenance, not correctness of every upstream algorithm or model.
-- Model-backed official tests beyond the executed subset need dependency pins and native execution evidence before task packaging.
 - The source-built fallback and official binary wheel were exercised; local compilation of the C extension and Linux image builds have not been performed.
 - Files outside the eight owned files and shared infrastructure are intentionally visible as unclassified, including official tests, examples, model assets, documentation and additional implementations.
-- Which external robot model snapshots must be bundled in a follow-up source update for reproducible execution of all relevant official tests?
 - Which runtime environment can provide the required compiler, public dependencies and model assets for the subsequent task build?
-- CLI: 749 regular file(s) are unclassified; this is visible but non-blocking
+- CLI: 998 regular file(s) are unclassified; this is visible but non-blocking
 - CLI: modules.mink-constrained-differential-ik.hazards[0]: local/private absolute path redacted
 
 Artifacts: `codebase-metadata.json` (canonical) · `codebase-metadata.html` (self-contained detail)
