@@ -51,6 +51,12 @@ mis-signed Bloch phase, or a boundary applied on the wrong Yee half-step moves a
 sampled field by a thousandth to order unity in relative terms, which is many
 orders of magnitude above the bound.
 
+`run.sh altbuild` runs the same nominal inputs on a second build of the same
+pinned source: the same configure line with `CXXFLAGS='-O0 -g'` given to it, so
+the same compiler builds the same sources without optimisation. Self-validation
+grades that run against the nominal one with this check's own `validate.py` and
+records the distance as this check's floor in `rubric.json`.
+
 ## Runtime
 
 Under half a second for all thirteen cases. There is no window or resolution

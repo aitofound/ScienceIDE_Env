@@ -51,6 +51,12 @@ deviation the upstream assertion of eight decimal places on the normalised
 standard deviation exists to catch, and it is more than a hundred million times
 the bound here.
 
+`run.sh altbuild` runs the same nominal inputs on a second build of the same
+pinned source: the same configure line with `CXXFLAGS='-O0 -g'` given to it, so
+the same compiler builds the same sources without optimisation. Self-validation
+grades that run against the nominal one with this check's own `validate.py` and
+records the distance as this check's floor in `rubric.json`.
+
 ## Runtime
 
 About half a second. There is no window or resolution knob: the window is a fixed

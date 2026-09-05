@@ -53,6 +53,12 @@ halo exchanged one cell out of place, a weight applied with the wrong sign, or a
 saved flux subtracted against a different layout moves the scattered flux by a
 thousandth or more, against a value upstream pins to seven decimal places.
 
+`run.sh altbuild` runs the same nominal inputs on a second build of the same
+pinned source: the same configure line with `CXXFLAGS='-O0 -g'` given to it, so
+the same compiler builds the same sources without optimisation. Self-validation
+grades that run against the nominal one with this check's own `validate.py` and
+records the distance as this check's floor in `rubric.json`.
+
 ## Runtime
 
 About three seconds. There is no window or resolution knob: both runs end when the

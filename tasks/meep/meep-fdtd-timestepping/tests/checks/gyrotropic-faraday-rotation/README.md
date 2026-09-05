@@ -60,6 +60,12 @@ bound still sits a hundred and twenty times above that measured response, and
 order-unity below any real fault. Upstream's own comparison of the extracted
 angle against an analytic rotation rate, to within 1.5 degrees, is left active.
 
+`run.sh altbuild` runs the same nominal inputs on a second build of the same
+pinned source: the same configure line with `CXXFLAGS='-O0 -g'` given to it, so
+the same compiler builds the same sources without optimisation. Self-validation
+grades that run against the nominal one with this check's own `validate.py` and
+records the distance as this check's floor in `rubric.json`.
+
 ## Runtime
 
 About a second. There is no window or resolution knob: the window is a fixed 100

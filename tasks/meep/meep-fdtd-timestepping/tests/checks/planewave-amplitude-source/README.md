@@ -53,6 +53,12 @@ no transient to damp out, so a round-off change in its frequency accumulates as
 a growing phase error rather than staying bounded. The bound still sits a
 hundred times above that measured response and six orders below any fault.
 
+`run.sh altbuild` runs the same nominal inputs on a second build of the same
+pinned source: the same configure line with `CXXFLAGS='-O0 -g'` given to it, so
+the same compiler builds the same sources without optimisation. Self-validation
+grades that run against the nominal one with this check's own `validate.py` and
+records the distance as this check's floor in `rubric.json`.
+
 ## Runtime
 
 About a second for 8000 timesteps. There is no window or resolution knob: the

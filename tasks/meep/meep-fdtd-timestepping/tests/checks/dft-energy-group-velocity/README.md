@@ -56,8 +56,14 @@ energy accumulation wrong cannot satisfy them by rescaling.
 An energy monitor that misses the permittivity weighting, sums the field on the
 wrong Yee half-cell, or applies the decimation factor without renormalising moves
 these quantities by a thousandth or more and breaks the sum rule outright. The
-floor here is looser than in the neighbouring flux checks because the source is
+spread here is looser than in the neighbouring flux checks because the source is
 an eigenmode whose profile is itself solved for at the perturbed frequency.
+
+`run.sh altbuild` runs the same nominal inputs on a second build of the same
+pinned source: the same configure line with `CXXFLAGS='-O0 -g'` given to it, so
+the same compiler builds the same sources without optimisation. Self-validation
+grades that run against the nominal one with this check's own `validate.py` and
+records the distance as this check's floor in `rubric.json`.
 
 ## Runtime
 
