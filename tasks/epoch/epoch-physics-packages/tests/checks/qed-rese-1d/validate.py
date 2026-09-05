@@ -8,7 +8,9 @@ compares invariants. Each entry of rubric.json comparison.invariants is:
   mode "drift":     the column must be conserved within each run on its own:
                     max |x(t) - x(0)| / |x(0)| <= max_relative_drift
 Standard library and numpy only; reads only this check directory. Writes a
-result with "passed", "reason" and "distance" (the largest relative deviation
+result with "passed", "reason", "bound_fraction" (the largest fraction of its
+bound used by any invariant; its reciprocal is the headroom the presentation
+prints) and "distance" (the largest relative deviation
 seen across agreement invariants), which selfcheck records as the spread.
 
     python3 validate.py --reference DIR --candidate DIR --rubric rubric.json --out result.json
@@ -47,7 +49,7 @@ def main() -> int:
     a = ap.parse_args()
     rubric = json.loads(Path(a.rubric).read_text(encoding="utf-8"))
     reference, candidate = Path(a.reference), Path(a.candidate)
-    failures, details, distance = [], {}, 0.0
+    failures, details, distance, bound_fraction = [], {}, 0.0, 0.0
     for inv in rubric["comparison"]["invariants"]:
         name, rel = inv["name"], inv["file"]
         series = {}
@@ -72,7 +74,9 @@ def main() -> int:
             bound = float(inv.get("atol", 0.0)) + float(inv["rtol"]) * abs(ref_v)
             err = abs(cand_v - ref_v)
             distance = max(distance, err / abs(ref_v) if ref_v else err)
-            details[name] = {"mode": mode, "statistic": stat, "reference": ref_v, "candidate": cand_v, "abs_error": err, "bound": bound}
+            frac = (err / bound) if bound > 0 else (0.0 if err == 0 else float("inf"))
+            bound_fraction = max(bound_fraction, frac)
+            details[name] = {"mode": mode, "statistic": stat, "reference": ref_v, "candidate": cand_v, "abs_error": err, "bound": bound, "bound_fraction": frac}
             if err > bound:
                 failures.append(f"{name}: |{cand_v:.6e} - {ref_v:.6e}| = {err:.3e} exceeds bound {bound:.3e}")
         elif mode == "drift":
@@ -81,14 +85,16 @@ def main() -> int:
             for label, v in series.items():
                 x0 = v[0]
                 drifts[label] = float(np.max(np.abs(v - x0)) / (abs(x0) if x0 != 0 else 1.0))
-            details[name] = {"mode": mode, "max_relative_drift": drifts, "bound": limit}
+            frac = (max(drifts.values()) / limit) if limit > 0 else (0.0 if max(drifts.values()) == 0 else float("inf"))
+            bound_fraction = max(bound_fraction, frac)
+            details[name] = {"mode": mode, "max_relative_drift": drifts, "bound": limit, "bound_fraction": frac}
             for label, d in drifts.items():
                 if d > limit:
                     failures.append(f"{name}: {label} drifts {d:.3e} relative, above {limit:.3e}")
         else:
             failures.append(f"{name}: unknown mode {mode!r}")
     passed = not failures
-    result = {"passed": passed, "policy": "invariants", "distance": distance, "invariants": details,
+    result = {"passed": passed, "policy": "invariants", "distance": distance, "bound_fraction": bound_fraction, "invariants": details,
               "reason": "all invariants within bound" if passed else "; ".join(failures)}
     Path(a.out).write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(result["reason"], file=sys.stderr)

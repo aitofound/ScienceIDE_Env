@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Check electron-isotropisation-1d: the TEST half of the check.
 #   run.sh nominal | run.sh variant     run one initial condition (see ic/)
-#   run.sh --help                       list the runtime knobs below
+#   run.sh altbuild                     OPTIONAL: the nominal inputs on the alternative build (ALTBUILD below)
+#   run.sh --help                       list the runtime knobs below, and the altbuild line when one is declared
 # Environment supplied by the produce driver: SOURCE_DIR (read-only source tree),
 # OUT_DIR (empty directory for the graded files), CHECK_DIR (this directory).
 # Reads only CHECK_DIR and SOURCE_DIR; no network; never modifies SOURCE_DIR.
@@ -20,14 +21,32 @@ knob SAB_PPC "5000" "pseudoparticles per cell (upstream: 5000, the graded value)
 knob SAB_T_END "5e-14" "end time in seconds (upstream deck: 5e-14, the graded value); runtime scales linearly"
 knob SAB_NSTEP_SNAPSHOT "100" "timesteps between dumps (upstream: 10); sets how many rows the graded series has"
 knob SAB_MAKE_JOBS "$(cpus_allowed)" "parallel jobs for the one build of the pinned source (default: the CPUs allowed to this container); each job needs about 0.3 GB"
-if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; exit 0; fi
+# Alternative build, OPTIONAL. Set ALTBUILD to one line naming a legitimately different build of the
+# same source (IEEE mode, -O0, a second compiler present in the image: something a correct candidate
+# could plausibly be) ONLY when this check can be built that way; leave it empty otherwise. When it is
+# set, `run.sh altbuild` runs ic/nominal on that build and selfcheck measures the check's floor from it.
+ALTBUILD="the same pinned source built with epoch1d/Makefile's FFLAGS at -O0 instead of -O3 in the scratch build copy only, not SOURCE_DIR (fallback from EPOCH's own MODE=debug profile, whose -ffpe-trap fires in EPOCH's mpi_minimal_init at MPI startup, before any deck-specific code runs, on every check in this leaf, verified on the worker 2026-09-05): the same source at a different optimisation level, which a correct candidate could plausibly be built at"
+if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; [ -z "$ALTBUILD" ] || echo "altbuild: $ALTBUILD"; exit 0; fi
 
 set -euo pipefail
-IC="${1:?usage: run.sh <nominal|variant> | run.sh --help}"
+IC="${1:?usage: run.sh <nominal|variant|altbuild> | run.sh --help}"
 : "${SOURCE_DIR:?}" "${OUT_DIR:?}" "${CHECK_DIR:?}"
-[ -d "$CHECK_DIR/ic/$IC" ] || { echo "run.sh: no initial condition ic/$IC" >&2; exit 2; }
+INPUTS="$IC"
+if [ "$IC" = altbuild ]; then
+  [ -n "$ALTBUILD" ] || { echo "run.sh: this check declares no alternative build" >&2; exit 2; }
+  INPUTS=nominal
+fi
+[ -d "$CHECK_DIR/ic/$INPUTS" ] || { echo "run.sh: no initial condition ic/$INPUTS" >&2; exit 2; }
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 cp -R "$SOURCE_DIR/." "$WORK/src"
+if [ "$IC" = altbuild ]; then
+  # ALTBUILD fallback (a): MODE=debug (the Makefile debug profile) trips gfortran's
+  # -ffpe-trap in EPOCH's own mpi_minimal_init at MPI startup (mpi_routines.F90 line 109),
+  # before any deck-specific code runs, on every check in this leaf; verified on the
+  # worker 2026-09-05. Falling back to the same -O3-vs-O2-style profile without traps:
+  # the one gfortran FFLAGS line of the scratch copy only, never SOURCE_DIR.
+  sed -i 's/^  FFLAGS = -O3 -g -std=f2003$/  FFLAGS = -O0 -g -std=f2003/' "$WORK/src/epoch1d/Makefile"
+fi
 
 # Upstream test this check reproduces: code/epoch/epoch1d/example_decks/electron_isotropisation.deck
 # Build: the Nanbu collision operator is a runtime deck option, so the stock build is used (no DEFINE)
@@ -42,7 +61,7 @@ sed -E -e "s|^[[:space:]]*nx = .*# SAB_NX\$|  nx = $SAB_NX # SAB_NX|" \
   -e "s|^[[:space:]]*npart_per_cell = .*# SAB_PPC\$|  npart_per_cell = $SAB_PPC # SAB_PPC|" \
   -e "s|^[[:space:]]*t_end = .*# SAB_T_END\$|  t_end = $SAB_T_END # SAB_T_END|" \
   -e "s|^[[:space:]]*nstep_snapshot = .*# SAB_NSTEP_SNAPSHOT\$|  nstep_snapshot = $SAB_NSTEP_SNAPSHOT # SAB_NSTEP_SNAPSHOT|" \
-  "$CHECK_DIR/ic/$IC/input.deck" > "$RUN/input.deck"
+  "$CHECK_DIR/ic/$INPUTS/input.deck" > "$RUN/input.deck"
 
 # The rank count is the product of the layout the deck asks for.
 ranks=1
@@ -55,7 +74,7 @@ done
 # the run is launched from the dimension directory of the build; the deck path
 # is fed to the binary on stdin, which is how EPOCH takes its output directory.
 cd "$WORK/src/epoch1d"
-echo "$RUN" | mpirun -n "$ranks" --oversubscribe --bind-to none bin/epoch1d > "$WORK/run.log" 2>&1
+echo "$RUN" | mpirun -n "$ranks" --oversubscribe --bind-to none --allow-run-as-root bin/epoch1d > "$WORK/run.log" 2>&1
 
 # Graded files: the physical series this check compares, extracted from the SDF
 # dumps (never the dumps themselves: their header carries the run date and the
