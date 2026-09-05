@@ -6,6 +6,7 @@
   "configuration": "PHYSICS=MHD; 2D CARTESIAN; 512x512 zones; solver hll; LINEAR reconstruction; HANCOCK time stepping; PARTICLES=PARTICLES_CR; tstop 100.0; CFL 0.4; dbl output '-0.5 -1 single_file'",
   "expected_runtime_s": 48,
   "variant": "ic/variant/pluto.ini multiplies [Parameters] BMAG_0 by (1 + 1e-15): 1.0 becomes 1.000000000000001, one ulp of a value the initial condition is built from (init.c reads g_inputParam[BMAG_0]). Every initial value that depends on it moves at round-off while the physics is unchanged, so the two runs differ by rounding only and their spread is the floor of this check.",
+  "altbuild": "the same pinned source and nominal deck built on the same Linux.gcc.defs architecture with make CFLAGS='-c -O0' instead of its nominal -O3 compiler flags: a build a correct candidate could plausibly be, with no source or deck changes",
   "comparison": {
     "atol": 1e-08,
     "rtol": 1e-08,

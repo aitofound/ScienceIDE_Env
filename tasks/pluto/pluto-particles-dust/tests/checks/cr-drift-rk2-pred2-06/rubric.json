@@ -6,6 +6,7 @@
   "configuration": "PHYSICS=MHD; 2D CARTESIAN; 8x8 zones; solver roe; LINEAR reconstruction; RK2 time stepping; DIVB_CONTROL=CONSTRAINED_TRANSPORT; PARTICLES=PARTICLES_CR; tstop 1.0; CFL 0.5; dbl output '10. -1 single_file'",
   "expected_runtime_s": 10,
   "variant": "ic/variant/pluto.ini multiplies [Parameters] RHO_GAS by (1 + 1e-15): 1.0 becomes 1.000000000000001, one ulp of a value the initial condition is built from (init.c reads g_inputParam[RHO_GAS]). Every initial value that depends on it moves at round-off while the physics is unchanged, so the two runs differ by rounding only and their spread is the floor of this check.",
+  "altbuild": "the same pinned source and nominal deck built on the same Linux.gcc.defs architecture with make CFLAGS='-c -O0' instead of its nominal -O3 compiler flags: a build a correct candidate could plausibly be, with no source or deck changes",
   "comparison": {
     "atol": 1e-08,
     "rtol": 1e-08,
