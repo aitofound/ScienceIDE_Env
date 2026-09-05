@@ -45,10 +45,10 @@ cp -R "$SOURCE_DIR/." "$WORK/src"
 BUILD_START=$(date +%s)
 if [ "$IC" = altbuild ]; then
   MAKEFILE="$WORK/src/epoch1d/Makefile"
-  BEFORE=$(grep -c '^  FFLAGS = -O3 -g -std=f2003$' "$MAKEFILE")
+  BEFORE=$(grep -c '^  FFLAGS = -O3 -g -std=f2003$' "$MAKEFILE" || true)
   [ "$BEFORE" -eq 1 ] || { echo "run.sh: altbuild Makefile FFLAGS pattern matched $BEFORE lines in epoch1d/Makefile, expected 1" >&2; exit 2; }
   sed -i 's/^  FFLAGS = -O3 -g -std=f2003$/  FFLAGS = -O0 -g -std=f2003/' "$MAKEFILE"
-  AFTER=$(grep -c '^  FFLAGS = -O0 -g -std=f2003$' "$MAKEFILE")
+  AFTER=$(grep -c '^  FFLAGS = -O0 -g -std=f2003$' "$MAKEFILE" || true)
   [ "$AFTER" -eq 1 ] || { echo "run.sh: altbuild Makefile FFLAGS edit did not take in epoch1d/Makefile" >&2; exit 2; }
   make -C "$WORK/src/epoch1d" COMPILER=gfortran -j"$SAB_MAKE_JOBS" > "$WORK/make.log" 2>&1
 else
