@@ -20,9 +20,12 @@ comparison.identity_tag (iorig), both sides are sorted by it and compared in tha
 order, and the two identity sets must be equal as sets. The header gates: the dump must be a
 full dump with the same array inventory, particle counts and sink count, and its
 time must agree under the binary64 bound. Standard library and numpy only; reads
-only this check directory. Writes a result with "passed", "reason" and "distance"
+only this check directory. Writes a result with "passed", "reason", "distance"
 (the largest absolute error over every graded binary64 value), which selfcheck
-records as the spread.
+records as the spread, and "bound_fraction": the largest fraction of its own bound,
+|err| / (atol + rtol|ref|), that any graded value uses, taken against whichever of the
+binary64, float32 and sink bounds applies to the array carrying it. Its reciprocal is
+the headroom the presentation prints.
 
     python3 validate.py --reference DIR --candidate DIR --rubric rubric.json --out result.json
 """
@@ -118,10 +121,16 @@ def read_dump(path: Path) -> dict:
     return {"fileident": fileident, "full": full, "header": header, "blocks": blocks}
 
 
-def within(c: np.ndarray, r: np.ndarray, atol: float, rtol: float) -> tuple[int, float]:
+def within(c: np.ndarray, r: np.ndarray, atol: float, rtol: float) -> tuple[int, float, float]:
+    """(values over the bound, largest |err|, largest |err| / bound) for one array under one bound."""
     err = np.abs(c.astype(np.float64) - r.astype(np.float64))
-    over = int(np.count_nonzero(err > atol + rtol * np.abs(r.astype(np.float64))))
-    return over, float(err.max()) if err.size else 0.0
+    bound = atol + rtol * np.abs(r.astype(np.float64))
+    over = int(np.count_nonzero(err > bound))
+    if not err.size:
+        return over, 0.0, 0.0
+    # A zero bound admits an exact match only, so it is infinitely used by any error at all.
+    frac = np.where(bound > 0, err / np.where(bound > 0, bound, 1.0), np.where(err > 0, np.inf, 0.0))
+    return over, float(err.max()), float(frac.max())
 
 
 def main() -> int:
@@ -140,7 +149,7 @@ def main() -> int:
     time_tag = cmp.get("time_tag", "time")
     ident_tag = str(cmp.get("identity_tag", "iorig"))
     reference, candidate = Path(a.reference), Path(a.candidate)
-    worst, worst_rel, failures, details = 0.0, 0.0, [], {}
+    worst, worst_rel, worst_frac, failures, details = 0.0, 0.0, 0.0, [], {}
     for spec in cmp["files"]:
         rel = spec["path"]
         try:
@@ -161,8 +170,9 @@ def main() -> int:
             if time_tag not in C["header"]:
                 failures.append(f"{rel}: header {time_tag} missing on candidate")
             else:
-                over, e = within(np.atleast_1d(C["header"][time_tag]), np.atleast_1d(R["header"][time_tag]), atol, rtol)
-                details[f"{rel}:header:{time_tag}"] = {"max_abs_error": e}
+                over, e, f = within(np.atleast_1d(C["header"][time_tag]), np.atleast_1d(R["header"][time_tag]), atol, rtol)
+                details[f"{rel}:header:{time_tag}"] = {"max_abs_error": e, "bound_fraction": f}
+                worst_frac = max(worst_frac, f)
                 if over:
                     failures.append(f"{rel}: header {time_tag} {float(np.atleast_1d(C['header'][time_tag])[0])!r} differs from reference {float(np.atleast_1d(R['header'][time_tag])[0])!r} beyond the bound")
         if len(R["blocks"]) != len(C["blocks"]):
@@ -222,21 +232,24 @@ def main() -> int:
                     at, rt, kind = atol32, rtol32, "float32"
                 else:
                     at, rt, kind = atol, rtol, "binary64"
-                over, e = within(c, r, at, rt)
+                over, e, f = within(c, r, at, rt)
                 scale = np.abs(r.astype(np.float64))
                 rel_err = float(np.max(np.abs(c.astype(np.float64) - r.astype(np.float64)) / np.where(scale > 0, scale, np.inf))) if r.size else 0.0
                 details[key] = {"kind": kind, "values": int(r.size), "max_abs_error": e, "max_rel_error": rel_err, "values_over_bound": over,
-                                "graded": tag not in exclude}
+                                "bound_fraction": f, "graded": tag not in exclude}
                 if tag in exclude:
                     continue
                 if over:
                     failures.append(f"{key}: {over} of {r.size} values exceed atol={at:g} rtol={rt:g} (max |err| {e:.3e})")
+                # The headroom of the whole check is read from the bound that applies to the array
+                # that carries it, so the binary64, float32, sink and group bounds are comparable.
+                worst_frac = max(worst_frac, f)
                 if kind == "binary64":
                     worst = max(worst, e)
                     worst_rel = max(worst_rel, rel_err)
     passed = not failures
     result = {"passed": passed, "policy": "pointwise", "atol": atol, "rtol": rtol, "distance": worst,
-              "max_relative_error_binary64": worst_rel, "files": details,
+              "bound_fraction": worst_frac, "max_relative_error_binary64": worst_rel, "files": details,
               "reason": "all graded values within bound" if passed else "; ".join(failures)}
     Path(a.out).write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(result["reason"], file=sys.stderr)
