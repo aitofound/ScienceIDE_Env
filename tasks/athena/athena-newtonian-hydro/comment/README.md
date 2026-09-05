@@ -47,6 +47,12 @@ else in this module is closed-form: Newtonian adiabatic hydrodynamics inverts co
 primitive variables with algebra (`src/eos/adiabatic_hydro.cpp`), so the floor of the other
 eleven checks is accumulated round-off and nothing more.
 
+Every check now declares `altbuild` (`configure.py -debug`, Athena++'s own `-O0 -g`
+build with the same compiler and configure switches), so the current CLI writes each
+rubric's floor from the in-image nominal-input altbuild solve. The older host `-O2`
+survey remains provenance in the check READMEs; where it differs, the in-image altbuild
+result is authoritative.
+
 ## Blind spots
 
 The checks grade the final state at one time, so an error that appears and cancels
