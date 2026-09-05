@@ -302,3 +302,41 @@ revision 5.6.0 with no conflict in the leaf or the registry. Finally, all three 
 routines clamp to the end of the table rather than extrapolating or aborting (`photons.F90` lines
 1102 to 1144 and 1156 to 1280), which is benign for these runs but is a pinned behaviour a port has
 to copy, and it is not separately graded.
+
+## Round 2 (skill 5.10.1, 2026-09-05): steward review rows 1-3
+
+The branch was merged onto `main` at skill 5.10.1 (vendor pin `02cab7f2`), clean, no conflict in the
+leaf or the registry.
+
+Row 1, the `tests/test.sh` failure-path guard: both `build="$(grep -o 'SAB_BUILD_SECONDS=...' "$log"
+| tail -1 | cut -d= -f2)"` assignments lacked the `|| true` the 5.10.1 template adds. Under
+`set -euo pipefail`, when a check's `run.sh` exits before ever printing `SAB_BUILD_SECONDS=`, `grep -o`
+finds no match and exits 1, and the pipeline's exit status kills `test.sh` mid-loop before it writes
+`run.failed` or reaches the remaining checks. This was proven, not assumed: a scratch copy of the
+leaf had `electron-isotropisation-1d/run.sh` exit 1 (via a test-only `SAB_FAIL_EARLY=1` guard, never
+committed) before its `BUILD_START` line, with the other four checks stubbed to succeed instantly.
+Run against the pre-fix `tests/test.sh`, `bash tests/test.sh produce <fake-src> <out> nominal`
+printed `RUN [electron-ion-equilibration-1d]` / `OK`, then `RUN [electron-isotropisation-1d]`, and
+stopped there — no `FAILED` line, no `run.failed`, no summary, and `qed-rese-1d/2d/3d` never ran.
+Against the fixed `tests/test.sh` (the exact 5.10.1 template line, both occurrences), the same
+injection produced `FAILED [electron-isotropisation-1d]: run.sh exited nonzero`, a
+`run.failed` marker (`build_seconds=0`, no `SAB_BUILD_SECONDS` line in the log), all four other
+checks reaching `OK` and `run.ok`, and the driver exiting 1 with
+`produce: 1 of 5 checks failed: electron-isotropisation-1d`. `tests/test.sh` is now byte-identical
+to `skills/package-sciaccel-task/templates/task/tests/test.sh` (the only diff before the fix was
+those two lines; no per-task edit was lost).
+
+Row 2, the `grep -c` strict-mode guard on the FFLAGS line count: does not apply to this leaf. All
+five `run.sh` files change the copied Makefile's FFLAGS line with a bare
+`sed -i 's/^  FFLAGS = -O3 -g -std=f2003$/  FFLAGS = -O0 -g -std=f2003/' "$WORK/src/epochNd/Makefile"`
+and have never used `grep -c` to count matches before or after; there is no `grep -c` anywhere under
+`tasks/epoch/epoch-physics-packages/`. Nothing was changed for this row; `bash -n` still passes on
+all five `run.sh` unmodified.
+
+Row 3, the registry: regenerated as the last commit after the merge and the test.sh fix, with
+`node scripts/gen-index.mjs`; `git diff origin/main -- registry/index.yaml` shows only this leaf's
+entries.
+
+The fresh selfcheck this round reran the identical suite (same decks, same builds) purely because
+`tests/test.sh` changed the contract fingerprint; no bound, floor, bound_fraction or prose number
+changed from the round-1 record.
