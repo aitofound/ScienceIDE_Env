@@ -61,10 +61,13 @@ python3 - "$WORK/src/vlasov/creg/$stem.c" "$param" "$VALUE" <<'PY'
 import re, sys
 path, param, value = sys.argv[1:]
 text = open(path, encoding="utf-8").read()
-pattern = rf"(^[ \t]*double[ \t]+{re.escape(param)}[ \t]*=[ \t]*)([^;]+)(;[^\n]*$)"
+# The first declaration of the parameter whose right-hand side is a numeric literal: the driver's context value,
+# not a later local copy such as "double nsource = app->nsource;" inside a callback.
+number = r"[-+]?(?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][-+]?[0-9]+)?"
+pattern = rf"(^[ \t]*double[ \t]+{re.escape(param)}[ \t]*=[ \t]*)({number})([ \t]*;[^\n]*$)"
 text, count = re.subn(pattern, lambda m: m.group(1)+value+m.group(3), text, count=1, flags=re.M)
 if count != 1:
-    raise SystemExit(f"could not replace first declaration of {param}")
+    raise SystemExit(f"could not replace the literal declaration of {param}")
 open(path, "w", encoding="utf-8").write(text)
 PY
 cd "$WORK/src"
