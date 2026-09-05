@@ -13,8 +13,11 @@ span many orders of magnitude and their round-off floors are set by different
 mechanisms (an exactly reproducible integer partition, an integer particle
 count per cell, a field array whose noise scales with its own amplitude), so
 one bound for all of them would either be unachievable on the tightest array
-or vacuous on the loosest. Standard library and numpy only; reads only this
-check directory.
+or vacuous on the loosest. Writes "bound_fraction", the largest fraction of
+the bound |err| / (atol + rtol|ref|) used by any graded value (0/0 is defined
+as 0 for an exact-equality file), per file in "files" and at top level; its
+reciprocal is the headroom the presentation prints. Standard library and
+numpy only; reads only this check directory.
 
     python3 validate.py --reference DIR --candidate DIR --rubric rubric.json --out result.json
 """
@@ -50,7 +53,7 @@ def main() -> int:
     comparison = rubric["comparison"]
     default_atol, default_rtol = float(comparison["atol"]), float(comparison.get("rtol", 0.0))
     reference, candidate = Path(a.reference), Path(a.candidate)
-    worst, failures, details = 0.0, [], {}
+    worst, worst_frac, failures, details = 0.0, 0.0, [], {}
     for spec in comparison["files"]:
         rel = spec["path"]
         atol = float(spec.get("atol", default_atol))
@@ -74,16 +77,26 @@ def main() -> int:
             failures.append(f"{rel}: candidate contains non-finite values")
             continue
         err = np.abs(c - r)
-        over = int(np.count_nonzero(err > atol + rtol * np.abs(r)))
+        bound = atol + rtol * np.abs(r)
+        over = int(np.count_nonzero(err > bound))
         max_err = float(err.max())
+        # bound may be exactly 0 for an exact-equality file (atol=rtol=0, e.g. the
+        # integer partition ladders and per-cell counts): 0/0 is defined as 0 (no
+        # headroom spent when both are 0), a nonzero error over a 0 bound as inf
+        # (already caught by "over" above; bound_fraction just reports it).
+        with np.errstate(divide="ignore", invalid="ignore"):
+            ratio = np.where(bound > 0, err / bound, np.where(err > 0, np.inf, 0.0))
+        frac = float(ratio.max())
         details[rel] = {"values": int(r.size), "max_abs_error": max_err,
-                        "atol": atol, "rtol": rtol, "values_over_bound": over}
+                        "atol": atol, "rtol": rtol, "values_over_bound": over,
+                        "bound_fraction": frac}
         if over:
             failures.append(f"{rel}: {over} of {r.size} values exceed atol={atol:g} rtol={rtol:g} (max |err| {max_err:.3e})")
         worst = max(worst, max_err)
+        worst_frac = max(worst_frac, frac)
     passed = not failures
     result = {"passed": passed, "policy": "pointwise", "atol": default_atol, "rtol": default_rtol,
-              "distance": worst, "files": details,
+              "distance": worst, "bound_fraction": worst_frac, "files": details,
               "reason": "all graded values within their bounds" if passed else "; ".join(failures)}
     Path(a.out).write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(result["reason"], file=sys.stderr)
