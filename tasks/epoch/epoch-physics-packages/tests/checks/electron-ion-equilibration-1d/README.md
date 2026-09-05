@@ -40,7 +40,7 @@ layout, which is the variant of the other four checks, is inert on this deck: EP
 `nprocx = 2` on a five-cell box with "Cannot split the domain using the requested number of CPUs"
 and falls back to one domain, and runs at one, two and five ranks came out identical in the native
 measurement, so the deck asks for a single rank explicitly and the species order carries the
-variant instead. The variant is active: the Phase 2 calibration self-validation that began 2026-09-04T11:25:52Z records the two runs as non-identical at a distance of 0.0261
+variant instead. The variant is active: the Phase 2 calibration self-validation that began 2026-09-04T11:25:52Z records the two runs as non-identical at a distance of 0.0261 `run.sh altbuild` runs ic/nominal on the same pinned source built with epoch1d/Makefile's FFLAGS at -O0 instead of -O3 in the scratch build copy only: EPOCH's own MODE=debug profile traps a floating-point exception in its MPI initialisation before any deck-specific code runs (mpi_routines.F90, verified on the worker 2026-09-05), so this is the fallback optimisation-only build, a correct candidate could plausibly be built either way.
 
 ## The pass policy
 

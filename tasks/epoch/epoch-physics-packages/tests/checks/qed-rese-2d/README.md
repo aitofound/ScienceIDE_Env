@@ -29,7 +29,7 @@ r; the only deck key that touches the seed, `use_random_seed`, is a boolean that
 fixed base for the system clock, it defaults to false and this deck leaves it false, and no deck
 key sets a chosen numeric seed) and the order in which each rank walks its particle list. That is
 the freedom a port has and cannot give back, so the distance between the two runs is the floor
-this check's policy has to live above. The variant is active: the Phase 2 calibration self-validation that began 2026-09-04T11:25:52Z records the two runs as non-identical at a distance of 0.0226
+this check's policy has to live above. The variant is active: the Phase 2 calibration self-validation that began 2026-09-04T11:25:52Z records the two runs as non-identical at a distance of 0.0226 `run.sh altbuild` runs ic/nominal on the same pinned source built with epoch2d/Makefile's FFLAGS at -O0 instead of -O3 in the scratch build copy only: EPOCH's own MODE=debug profile traps a floating-point exception in its MPI initialisation before any deck-specific code runs (mpi_routines.F90, verified on the worker 2026-09-05), so this is the fallback optimisation-only build, a correct candidate could plausibly be built either way.
 
 ## The pass policy
 
