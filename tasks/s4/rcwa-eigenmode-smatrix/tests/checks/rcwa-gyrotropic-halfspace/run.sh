@@ -14,7 +14,7 @@ knob SAB_NUMG "801" "NumBasis, the Fourier basis size. The layer eigenproblem is
 # used by `run.sh altbuild` to run the NOMINAL inputs so that self-validation can measure this
 # check's floor. Every check already rebuilds S4 from source in its own scratch copy, so the
 # alternative build is the same make invocation with CC/CXX swapped: no second tree is needed.
-ALTBUILD="clang and clang++ (Debian bookworm's clang package) instead of gcc and g++, on the same pinned source with the same explicitly pinned flags and the same undefined HAVE_LAPACK, so the in-tree eigensolver and S-matrix linear algebra this module owns are recompiled by a second toolchain rather than replaced by a library"
+ALTBUILD="clang and clang++ (clang 19.1.7, the clang package both images install) instead of gcc and g++ (gcc 14.2.0, the compiler build-essential brings), on the same pinned source with the same explicitly pinned flags and the same undefined HAVE_LAPACK, so the in-tree eigensolver and S-matrix linear algebra this module owns are recompiled by a second toolchain rather than replaced by a library"
 if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; [ -z "$ALTBUILD" ] || echo "altbuild: $ALTBUILD"; exit 0; fi
 
 set -euo pipefail
