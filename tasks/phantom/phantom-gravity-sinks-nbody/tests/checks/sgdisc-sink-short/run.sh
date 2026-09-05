@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Check sgdisc-sink-short: the TEST half of the check.
 #   run.sh nominal | run.sh variant     run one initial condition (see ic/)
-#   run.sh --help                       list the runtime knobs below
+#   run.sh altbuild                     the nominal inputs on the alternative build (see ALTBUILD below)
+#   run.sh --help                       list the runtime knobs below and the altbuild line
 # Environment supplied by the produce driver: SOURCE_DIR (read-only source tree),
 # OUT_DIR (empty directory for the graded files), CHECK_DIR (this directory).
 # Reads only CHECK_DIR and SOURCE_DIR; no network; never modifies SOURCE_DIR.
@@ -24,12 +25,17 @@ knob SAB_TMAX "1.000" "tmax of the .in in code units, about a sixth of an orbit 
 knob SAB_DTMAX "1.000" "dtmax of the .in in code units: with SAB_TMAX it makes the graded window exactly one dump interval, so the last full dump is the end of the window"
 knob SAB_NMAX "-1" "cap on the number of time steps (nmax in the .in, the key Phantom's own buildbot uses to shorten a run, scripts/buildbot.sh:207-212); -1 runs to SAB_TMAX, which is the graded value"
 knob SAB_THREADS "1" "OMP_NUM_THREADS for phantomsetup and phantom; the graded default is 1 so that the reference is produced by a fixed reduction order, which makes the calibration measurement reproducible; the bound does not require the port to reproduce that order"
-if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; exit 0; fi
+# Alternative build: Phantom's own gfortran DEBUG=yes build replaces -O3 with -O0 and enables its runtime checks.
+# `run.sh altbuild` uses the nominal inputs; selfcheck measures the floor from the second legitimate build.
+ALTBUILD="make SYSTEM=gfortran OPENMP=yes DEBUG=yes: the same pinned source with Phantom's own -O0 gfortran debug build (bounds, NaN and floating-point checks) instead of the nominal -O3 build"
+if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; [ -z "$ALTBUILD" ] || echo "altbuild: $ALTBUILD"; exit 0; fi
 
 set -euo pipefail
-IC="${1:?usage: run.sh <nominal|variant> | run.sh --help}"
+IC="${1:?usage: run.sh <nominal|variant|altbuild> | run.sh --help}"
 : "${SOURCE_DIR:?}" "${OUT_DIR:?}" "${CHECK_DIR:?}"
-[ -d "$CHECK_DIR/ic/$IC" ] || { echo "run.sh: no initial condition ic/$IC" >&2; exit 2; }
+INPUTS="$IC"; MAKE_EXTRA=()
+if [ "$IC" = altbuild ]; then INPUTS=nominal; MAKE_EXTRA=(SYSTEM=gfortran OPENMP=yes DEBUG=yes); fi
+[ -d "$CHECK_DIR/ic/$INPUTS" ] || { echo "run.sh: no initial condition ic/$INPUTS" >&2; exit 2; }
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 SRC="$WORK/src"; RUN="$WORK/run"
 mkdir -p "$RUN"
@@ -40,7 +46,7 @@ cp -R "$SOURCE_DIR/." "$SRC"
 # serial and one goal per invocation; two goals in one invocation clean each other.
 export SYSTEM=gfortran OMP_NUM_THREADS="$SAB_THREADS"
 BUILD_START=$(date +%s)
-if ! (cd "$SRC" && make SETUP=sgdisc phantom >"$WORK/make.log" 2>&1 && make SETUP=sgdisc setup >>"$WORK/make.log" 2>&1); then
+if ! (cd "$SRC" && make ${MAKE_EXTRA[@]+"${MAKE_EXTRA[@]}"} SETUP=sgdisc phantom >"$WORK/make.log" 2>&1 && make ${MAKE_EXTRA[@]+"${MAKE_EXTRA[@]}"} SETUP=sgdisc setup >>"$WORK/make.log" 2>&1); then
   echo "run.sh: build failed" >&2; tail -n 40 "$WORK/make.log" >&2; exit 1
 fi
 echo "SAB_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))"   # the driver records it; the budget counts run time only
@@ -58,7 +64,7 @@ cd "$RUN"
 yes '' | head -n 400 | "$SRC/bin/phantomsetup" disc "--np=$SAB_NP" >setup1.log 2>&1 || true
 [ -f disc.setup ] || { echo "run.sh: phantomsetup wrote no disc.setup" >&2; tail -n 40 setup1.log >&2; exit 1; }
 
-python3 - disc.setup "$CHECK_DIR/ic/$IC/setup-overrides.txt" "$SAB_NP" <<'PY'
+python3 - disc.setup "$CHECK_DIR/ic/$INPUTS/setup-overrides.txt" "$SAB_NP" <<'PY'
 import re, sys
 path, overrides, np = sys.argv[1:]
 text = open(path, encoding="ascii", errors="replace").read()
