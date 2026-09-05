@@ -150,6 +150,63 @@ wall respectively; the nominal suite used 379.1 s of run time with 628.0 s of re
 excluded, within the 900 s guidance budget. An independent replay re-parsed every graded value,
 recomputed every spread, and found no value over its unchanged bound.
 
+## The 5.10.1 altbuild floor
+
+Skill 5.10.1 adds a third, optional build per check: `run.sh altbuild` runs `ic/nominal` on the same
+pinned source and deck with `./Config.pl -O0` run right before `make BATSRUS`, which rewrites every
+`OPTn` line of `Makefile.conf` to `-O0` where the shipped gfortran template builds at `OPT3 = -O3`.
+All nine checks of this module declare it (the same one-line `ALTBUILD`, verified with a
+`Makefile.conf` grep so a silent no-op fails loudly), and the CLI's own selfcheck grades the -O0
+output against the -O3 nominal output with each check's own `validate.py`, writing the measured
+floor into `evidence.floor`/`evidence.floor_bound_fraction`/`evidence.altbuild`.
+
+Five of the nine (`anisotropic`, `ex-anisopressure-alfven`, `ex-anisopressure-fastwave`,
+`ex-anisopressure-soundwave`, `viscosity`) are bit-identical between -O0 and -O3, as the module's own
+native floor sweep already found for -O3 versus -O2. The other four measure a small, real, non-zero
+floor with margins between about 480x and about 380,000x under their bound: `hallmhd` 2.72e-08
+(bound_fraction 0.0021, atol=3e-06), `ex-gemreconnection-mhdhyppe` 1.0e-12 (bound_fraction 4.9e-06,
+atol=1e-08), `heatcond-2d` 1.0e-12 (bound_fraction 2.6e-06, atol=3e-08).
+
+| check | atol | rtol | variant spread | altbuild floor | bound_fraction | headroom |
+|---|---|---|---|---|---|---|
+| anisotropic | 1e-07 | 1e-05 | 1e-09 | 0 (identical) | 0 | inf |
+| ex-anisopressure-alfven | 6e-07 | 1e-05 | 5.86e-09 | 0 (identical) | 0 | inf |
+| ex-anisopressure-fastwave | 1e-07 | 1e-05 | 1e-09 | 0 (identical) | 0 | inf |
+| ex-anisopressure-soundwave | 1e-07 | 1e-05 | 6e-10 | 0 (identical) | 0 | inf |
+| ex-current | 2e-08 | 1e-05 | 2e-10 | 3.44373e-09 | 0.1722 | 5.8x |
+| ex-gemreconnection-mhdhyppe | 1e-08 | 1e-05 | 1e-10 | 1.0000e-12 | 4.91e-06 | ~203,600x |
+| hallmhd | 3e-06 | 1e-05 | 3.03e-08 | 2.721e-08 | 0.0021 | ~478x |
+| heatcond-2d | 3e-08 | 1e-05 | 3e-10 | 1.0000e-12 | 2.63e-06 | ~380,000x |
+| viscosity | 2e-08 | 1e-05 | 2e-10 | 0 (identical) | 0 | inf |
+
+**`ex-current` is the tight one.** Its -O0 floor is 3.44373e-09 against atol=2e-08: only 5.8x of
+headroom, against the ~100x-class margins every other check in this leaf carries. It still passes
+(`bound_fraction` 0.1722, 0 values over bound). The floor lands entirely on `satellite.sat` (19000 of
+the check's 42316 graded values); `cut_y.out` and `cut_z.out` stay at round-off (`bound_fraction`
+8.67e-11 and 4.99e-09). The check runs zero time steps (`#STOP MaxIteration 0`), so the graded output
+is a direct readout of `ModCurrent.f90`/`ModFaceGradient.f90`, and `satellite.sat` is the module's only
+off-grid interpolation column; `-O0` disables the vectorization and FMA contraction `-O3` uses there,
+so a larger floating-point difference in that one stencil than the 2-versus-4-rank floor (4e-19) or
+the two-ulp variant spread (2e-10) that originally set atol is a plausible reordering effect, not a
+build failure. The bound is left exactly as measured; it was not loosened here. If a reviewer wants
+the same ~100x-class margin as the other eight checks, the atol that would give it is about 3.4e-07
+(3.44373e-09 x 100, rounded to one significant digit) — noted here as an option for the human's
+decision, **not applied**: no tolerance in this leaf was changed for the 5.10.1 revision.
+
+Measured on `huangzesen@136.114.2.6` (88-core x86_64, Docker 29.1.3, load average 14.75/15.72/22.71 at
+launch, shared with seven sibling BATSRUS revision workers plus EPOCH/gkeyll/qutip/stim/phantom/s4
+sessions) under the standing consent of 2026-09-04 ("go on, i consent to use either local or remote
+device for the docker runs, no need for further consent"). Calibration run
+`/mnt/ssd/huangzesen/sab-runs/batsrus-nonideal-closures-20260905/run1` (2026-09-05T08:26:14Z to
+09:22:59Z) reproduced identically in the final run
+`/mnt/ssd/huangzesen/sab-runs/batsrus-nonideal-closures-20260905/run2` (2026-09-05T09:34:33Z to
+10:37:38Z, contract fingerprint `8541b47334cbb829ab2c8d82b41cbee85f123ebdf1cd13640b642f38c0a8e095`):
+every floor and every spread above is bit-for-bit the same number in both runs. The final run's
+nominal suite used 405.5 s of run time with 657.0 s of reported builds excluded, against the 900 s
+guidance budget, within; the altbuild solve is outside grading and took longer per check (2 to 16x
+the -O3 run seconds under host contention, `-O0`
+is expected to run slower even uncontended).
+
 ## Blind spots
 
 - **Resistivity is only reached through the semi-implicit operator.** No packaged check switches
