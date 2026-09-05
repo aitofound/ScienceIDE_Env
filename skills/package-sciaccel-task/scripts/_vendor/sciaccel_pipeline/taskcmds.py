@@ -189,7 +189,7 @@ def outputs_identical(a: Path, b: Path) -> bool:
 
 def grade_altbuild(leaf: Path, check: str, ref_dir: Path, cand_dir: Path, out: Path) -> dict:
     """Grade the altbuild run of one check against its nominal run with the check's own validate.py, invoked as test.sh invokes it."""
-    res = {"passed": False, "distance": None, "identical": False, "reason": ""}
+    res = {"passed": False, "distance": None, "bound_fraction": None, "identical": False, "reason": ""}
     missing = [n for n, d in (("nominal", ref_dir), (config.ALTBUILD, cand_dir)) if not (d.is_dir() and (d / "run.ok").is_file())]
     if missing:
         res["reason"] = f"no successful run output for: {', '.join(missing)}"
@@ -203,7 +203,9 @@ def grade_altbuild(leaf: Path, check: str, ref_dir: Path, cand_dir: Path, out: P
         res["reason"] = "validate.py failed: " + ((proc.stderr or proc.stdout).strip()[-800:] or "no result written")
         return res
     doc = read_json(out)
-    res.update(passed=doc.get("passed") is True, distance=doc.get("distance"), reason=str(doc.get("reason", "")))
+    bf = doc.get("bound_fraction")
+    res.update(passed=doc.get("passed") is True, distance=doc.get("distance"), reason=str(doc.get("reason", "")),
+               bound_fraction=bf if isinstance(bf, (int, float)) and not isinstance(bf, bool) else None)
     res["identical"] = bool(res["passed"] and outputs_identical(ref_dir, cand_dir))
     return res
 
@@ -293,6 +295,10 @@ def cmd_task_selfcheck(a) -> None:
                 rb = read_json(rp)
                 if isinstance(rb.get("evidence"), dict):
                     rb["evidence"]["self_validation_spread"] = dist if not overrides else {"value": dist, "knob_overrides": overrides}
+                    bf = (rows.get(c) or {}).get("bound_fraction")
+                    if isinstance(bf, (int, float)) and not isinstance(bf, bool):
+                        # the validator's worst value as a fraction of its bound; the presentation prints the reciprocal as the margin
+                        rb["evidence"]["self_validation_bound_fraction"] = bf if not overrides else {"value": bf, "knob_overrides": overrides}
                     write_json(rp, rb)
     # The optional third run: the nominal inputs on the alternative build, for the checks whose run.sh declares one
     # (run.sh --help prints `altbuild: <what differs>`). Graded against nominal with each check's own validator; the
@@ -334,8 +340,12 @@ def cmd_task_selfcheck(a) -> None:
                         rb["evidence"]["floor_how"] = (f"measured by selfcheck on {now()[:10]}: run.sh altbuild ({i['altbuild']}) against run.sh nominal, "
                                                        f"graded with the check's own validate.py: "
                                                        f"{'bit-identical graded output' if res_alt['identical'] else res_alt['reason']}")
-                        rb["evidence"]["altbuild"] = {"what": i["altbuild"], "distance": res_alt["distance"], "identical": res_alt["identical"],
-                                                      "passed": res_alt["passed"], "reason": res_alt["reason"], "at": now()}
+                        rb["evidence"]["altbuild"] = {"what": i["altbuild"], "distance": res_alt["distance"], "bound_fraction": res_alt.get("bound_fraction"),
+                                                      "identical": res_alt["identical"], "passed": res_alt["passed"], "reason": res_alt["reason"], "at": now()}
+                        if res_alt["identical"]:
+                            rb["evidence"]["floor_bound_fraction"] = 0.0
+                        elif isinstance(res_alt.get("bound_fraction"), (int, float)):
+                            rb["evidence"]["floor_bound_fraction"] = res_alt["bound_fraction"]
                         write_json(rp, rb)
                 print(f"  {'PASS' if res_alt['passed'] else 'FAIL'}{' IDENTICAL' if res_alt['identical'] else ''} [{c}] {ic}: {res_alt['reason']}")
     # runtime budget
