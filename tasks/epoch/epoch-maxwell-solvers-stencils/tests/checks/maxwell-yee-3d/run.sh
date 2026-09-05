@@ -45,7 +45,7 @@ cp -R "$SOURCE_DIR/." "$WORK/src"
 # Build: only the dimension this check needs; the makefile builds SDF/FORTRAN first.
 BUILD_START=$(date +%s)
 if [ "$IC" = altbuild ]; then
-  n="$(grep -c '^  FFLAGS = -O3 -g -std=f2003$' "$WORK/src/epoch3d/Makefile")"
+  n="$(grep -c '^  FFLAGS = -O3 -g -std=f2003$' "$WORK/src/epoch3d/Makefile" || true)"
   [ "$n" = 1 ] || { echo "run.sh: expected exactly one gfortran FFLAGS line in epoch3d/Makefile, found $n" >&2; exit 2; }
   sed -i 's/^  FFLAGS = -O3 -g -std=f2003$/  FFLAGS = -O0 -g -std=f2003/' "$WORK/src/epoch3d/Makefile"
   make -C "$WORK/src/epoch3d" COMPILER=gfortran -j"$SAB_MAKE_JOBS" > "$WORK/make.log" 2>&1
