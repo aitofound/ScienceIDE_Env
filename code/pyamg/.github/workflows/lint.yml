@@ -1,0 +1,23 @@
+name: CI-lint
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+jobs:
+    ruff:
+        name: ruff
+        runs-on: ubuntu-latest
+        steps:
+        - name: Checkout code
+          uses: actions/checkout@v6
+        - name: Setup Python
+          uses: actions/setup-python@v6
+        - name: ruff check
+          run: |
+              python -m pip install ruff
+              ruff check

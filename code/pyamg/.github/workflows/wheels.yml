@@ -1,0 +1,84 @@
+name: Build wheels
+
+on:
+  workflow_dispatch:
+    branches:
+      - main
+  release:
+    types:
+      - published
+
+jobs:
+  build_wheels:
+    name: Build wheel for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # macos-13 is an intel runner, macos-14 is apple silicon
+        os: [ubuntu-latest, windows-latest, macos-15, macos-latest]
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          # uncomment to force a wheel build
+          # ref: v5.3.0
+          # fetch-depth: 0
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v3.3.0
+        env:
+          CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-*, cp314-*"
+          CIBW_ARCHS_MACOS: "auto"
+          CIBW_ARCHS_WINDOWS: "AMD64 x86"
+          CIBW_ARCHS_LINUX: "x86_64"
+          CIBW_BUILD_VERBOSITY: 2
+
+      - name: Save wheels
+        uses: actions/upload-artifact@v6
+        with:
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          path: ./wheelhouse/*.whl
+
+  build_sdist:
+    name: Build source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          # uncomment to force a wheel build
+          # ref: v5.3.0
+          # fetch-depth: 0
+
+      - name: Install pypa/build
+        run: pip install 'build[virtualenv]'
+
+      - name: Build sdist
+        run: python -m build --sdist
+
+      - name: Save sdist
+        uses: actions/upload-artifact@v6
+        with:
+          name: cibw-sdist
+          path: dist/*.tar.gz
+
+  upload_all:
+    name: upload to PyPI
+    needs: [build_wheels, build_sdist]
+    environment: publish_pypi
+    permissions:
+          id-token: write
+    runs-on: ubuntu-latest
+    steps:
+    - name: retrieve artifacts
+      uses: actions/download-artifact@v7
+      with:
+        pattern: cibw-*
+        path: dist
+        merge-multiple: true
+    - name: publish to pypi
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        # switch to true to overwrite upload
+        skip-existing: false
