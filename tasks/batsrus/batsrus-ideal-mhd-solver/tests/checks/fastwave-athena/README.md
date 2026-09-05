@@ -19,7 +19,7 @@ Differences from the upstream test: upstream ships no reference for this test (i
 
 ## The two initial conditions
 
-`ic/nominal` holds the deck the check grades. `ic/variant` is the same deck with StateVar Rho of the deck's #UNIFORMSTATE block changed from 1.0 to 1.0000000002. The change is a relative 2e-10, two units of the last digit the graded ASCII plot files print (eleven significant digits), because at four ulps of binary64 the perturbation is erased by the output format of this check and the two runs come out byte-identical. The physics is unchanged; only the round-off path of the whole run differs, so the two decks differ byte-wise, the graded files differ, and their distance is the measured floor of this pass policy.
+`ic/nominal` holds the deck the check grades. `ic/variant` is the same deck with StateVar Rho of the deck's #UNIFORMSTATE block changed from 1.0 to 1.0000000002. The change is a relative 2e-10, two units of the last digit the graded ASCII plot files print (eleven significant digits), because at four ulps of binary64 the perturbation is erased by the output format of this check and the two runs come out byte-identical. The physics is unchanged; only the round-off path of the whole run differs, so the two decks differ byte-wise, the graded files differ, and their distance is the measured floor of this pass policy. `run.sh altbuild` runs the nominal inputs on the alternative build: the same Config.pl configuration with `./Config.pl -O0` before `make BATSRUS`, which sets every `OPTn` level of `Makefile.conf` to `-O0` where the shipped gfortran template uses `-O3` (same pinned source, same deck).
 
 ## The pass policy
 

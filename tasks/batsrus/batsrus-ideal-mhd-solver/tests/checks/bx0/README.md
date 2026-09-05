@@ -19,7 +19,7 @@ Differences from the upstream test: upstream grades the bx0 isosurface point lis
 
 ## The two initial conditions
 
-`ic/nominal` holds the deck the check grades. `ic/variant` is the same deck with StateVar Rho of the deck's #UNIFORMSTATE block changed from 1.0 to 1.000000000000001. The change is a relative 1e-15, about four units in the last place of the double precision BATSRUS parses the deck with. The physics is unchanged; only the round-off path of the whole run differs, so the two decks differ byte-wise, the graded files differ, and their distance is the measured floor of this pass policy.
+`ic/nominal` holds the deck the check grades. `ic/variant` is the same deck with StateVar Rho of the deck's #UNIFORMSTATE block changed from 1.0 to 1.000000000000001. The change is a relative 1e-15, about four units in the last place of the double precision BATSRUS parses the deck with. The physics is unchanged; only the round-off path of the whole run differs, so the two decks differ byte-wise, the graded files differ, and their distance is the measured floor of this pass policy. `run.sh altbuild` runs the nominal inputs on the alternative build: the same Config.pl configuration with `./Config.pl -O0` before `make BATSRUS`, which sets every `OPTn` level of `Makefile.conf` to `-O0` where the shipped gfortran template uses `-O3` (same pinned source, same deck).
 
 ## The pass policy
 

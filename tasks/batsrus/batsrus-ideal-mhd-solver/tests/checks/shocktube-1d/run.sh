@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Check shocktube-1d: the TEST half of the check.
 #   run.sh nominal | run.sh variant     run one initial condition (see ic/)
-#   run.sh --help                       list the runtime knobs below
+#   run.sh altbuild                     OPTIONAL: the nominal inputs on the alternative build (ALTBUILD below)
+#   run.sh --help                       list the runtime knobs below, and the altbuild line when one is declared
 # Environment supplied by the produce driver: SOURCE_DIR (read-only source tree),
 # OUT_DIR (empty directory for the graded files), CHECK_DIR (this directory).
 # Reads only CHECK_DIR and SOURCE_DIR; no network; never modifies SOURCE_DIR.
@@ -16,16 +17,26 @@ knob SAB_TIME_SCALE "1" "multiplies the simulation end time of every #STOP block
 knob SAB_STEP_SCALE "1" "multiplies the iteration limit of every #STOP block that sets a positive one (this deck: no positive limit, so the default 1 is a no-op); the graded file is always the last frame the run wrote"
 knob SAB_MPI_RANKS "2" "MPI ranks BATSRUS.exe runs on (upstream test: 2); the graded state is rank-count independent to about 1e-12, so this only changes the run time"
 knob SAB_MAKE_JOBS "$(cpus_allowed)" "parallel jobs for the build of the pinned source (default: the CPUs allowed to this container); each job needs about 0.3 GB"
-if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; exit 0; fi
+# Alternative build, OPTIONAL: BATSRUS's own optimisation switch. ./Config.pl -O0, run
+# right after this check's own ./Config.pl -default line and before make BATSRUS, rewrites
+# every OPTn line of the copied tree's Makefile.conf from -O3 (the shipped gfortran template)
+# to -O0 (share/Scripts/Config.pl set_optimization_); same pinned source, same deck.
+ALTBUILD="the same Config.pl configuration built with ./Config.pl -O0 before make BATSRUS, which sets every OPTn level of Makefile.conf to -O0 where the shipped gfortran template uses -O3; same pinned source, same deck"
+if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; [ -z "$ALTBUILD" ] || echo "altbuild: $ALTBUILD"; exit 0; fi
 
 set -euo pipefail
 export LC_ALL=C
 # The produce driver feeds the check list to its own read loop on stdin; nothing
 # here reads stdin, and mpiexec and make would swallow it, so detach from it.
 exec < /dev/null
-IC="${1:?usage: run.sh <nominal|variant> | run.sh --help}"
+IC="${1:?usage: run.sh <nominal|variant|altbuild> | run.sh --help}"
 : "${SOURCE_DIR:?}" "${OUT_DIR:?}" "${CHECK_DIR:?}"
-[ -d "$CHECK_DIR/ic/$IC" ] || { echo "run.sh: no initial condition ic/$IC" >&2; exit 2; }
+INPUTS="$IC"
+if [ "$IC" = altbuild ]; then
+  [ -n "$ALTBUILD" ] || { echo "run.sh: this check declares no alternative build" >&2; exit 2; }
+  INPUTS=nominal
+fi
+[ -d "$CHECK_DIR/ic/$INPUTS" ] || { echo "run.sh: no initial condition ic/$INPUTS" >&2; exit 2; }
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 cp -R "$SOURCE_DIR/." "$WORK/src"
 cd "$WORK/src"
@@ -35,7 +46,7 @@ cd "$WORK/src"
 # expects. SAB_TIME_SCALE and SAB_STEP_SCALE rewrite the #STOP blocks; with the
 # defaults (1) the decks are used byte for byte.
 mkdir -p Param/SAB
-cp "$CHECK_DIR"/ic/"$IC"/*.in Param/SAB/
+cp "$CHECK_DIR"/ic/"$INPUTS"/*.in Param/SAB/
 cp "$CHECK_DIR"/ic/nominal/PARAM.in Param/SAB/PARAM.in.opt
 if [ "$SAB_TIME_SCALE" != 1 ] || [ "$SAB_STEP_SCALE" != 1 ]; then
   for deck in Param/SAB/*.in; do
@@ -70,6 +81,10 @@ BUILD_START=$(date +%s)
 ./Config.pl -default >> "$WORK/config.log" 2>&1
 ./Config.pl -u=Default -e=MhdHyp -ng=2 -g=64,1,1 >> "$WORK/config.log" 2>&1
 ./Config.pl -opt=Param/SAB/PARAM.in.opt >> "$WORK/config.log" 2>&1
+if [ "$IC" = altbuild ]; then
+  ./Config.pl -O0 >> "$WORK/config.log" 2>&1
+  grep -q '^OPT3 = -O0' Makefile.conf || { echo "run.sh: altbuild Config.pl -O0 did not set OPT3 in Makefile.conf" >&2; exit 1; }
+fi
 make -j"$SAB_MAKE_JOBS" BATSRUS > "$WORK/make.log" 2>&1
 make PIDL >> "$WORK/make.log" 2>&1
 echo "SAB_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))"   # the driver records it; the budget counts run time only
