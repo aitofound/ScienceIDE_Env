@@ -39,6 +39,8 @@ G14Sod tube uses two column groups (hydrodynamic state and abundances) because
 one absolute bound wide enough for the velocity noise would exceed every
 abundance in the network. The calibration selfcheck on the x86 worker (8 cpus, 4 GB) passed all six checks with every in-container spread equal to its preview to the digit (G14Sod 7.4e-2 absolute in the post-shock plateau, gow17 2.1e-10, H2 with CVODE 2.7e-13, H2 forward Euler 1.1e-13, KIDA 3.4e-8, six-ray 2.7e-8); the bounds were finalized as proposed under the curator's standing instruction, none changed after calibration, and the suite runs in 217 s nominal against the 900 s budget.
 
+Every check declares `altbuild` (`configure.py -debug`, Athena++'s own `-O0 -g` build), so since skill 5.8.0 the floor in each rubric is written by self-validation from the in-image run rather than typed from the earlier -O3/-O2 native comparison; the earlier numbers stay in the check READMEs as history, and where the measurements differ the in-image number is the one recorded.
+
 Base image: both Dockerfiles pin the genuine Debian 12 bookworm-slim digest (sha256:88200866...), not the digest the skill template stamps, which resolves to Debian 13 trixie despite its bookworm tag; trixie ships SUNDIALS 7, whose API this pin of Athena++ (SUNContext of SUNDIALS 6) does not compile against, while bookworm's 6.4.1 does with -std=c++14.
 
 ## Blind spots
