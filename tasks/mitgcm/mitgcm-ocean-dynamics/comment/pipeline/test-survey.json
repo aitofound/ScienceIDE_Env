@@ -1,0 +1,185 @@
+{
+  "module": "mitgcm-ocean-dynamics",
+  "tests": [
+    {
+      "id": "tutorial-barotropic-gyre",
+      "module": "mitgcm-ocean-dynamics",
+      "path": "verification/tutorial_barotropic_gyre/input",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "62x62x1 wind-driven barotropic gyre, implicit free surface (cg2d), 10 steps",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.3,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Linear-ish dissipative gyre spin-up: pointwise.",
+      "proposed_check": "barotropic-gyre"
+    },
+    {
+      "id": "tutorial-baroclinic-gyre",
+      "module": "mitgcm-ocean-dynamics",
+      "path": "verification/tutorial_baroclinic_gyre/input",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "31x31x15 baroclinic double gyre with diagnostics, 12000 s",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 1.2,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Dissipative spin-up: pointwise.",
+      "proposed_check": "baroclinic-gyre"
+    },
+    {
+      "id": "exp2",
+      "module": "mitgcm-ocean-dynamics",
+      "path": "verification/exp2/input",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "45x20x20 global-ish ocean with cd_code (Adams-Bashforth 2 momentum), long integration",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 3.9,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Pointwise over the short window.",
+      "proposed_check": "exp2-cd-code"
+    },
+    {
+      "id": "global-ocean-90x40x15",
+      "module": "mitgcm-ocean-dynamics",
+      "path": "verification/global_ocean.90x40x15/input",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Global 4-degree ocean (36 tiles) with exch2, ptracers, sbo, 10 steps",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 3.6,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Pointwise.",
+      "proposed_check": "global-ocean-4deg"
+    },
+    {
+      "id": "tutorial-rotating-tank",
+      "module": "mitgcm-ocean-dynamics",
+      "path": "verification/tutorial_rotating_tank/input",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Non-hydrostatic rotating tank (cg3d solver), 20 steps",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 5.1,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Non-hydrostatic pressure solve is the expensive path; pointwise over 20 steps.",
+      "proposed_check": "rotating-tank-nonhydro"
+    },
+    {
+      "id": "tutorial-deep-convection",
+      "module": "mitgcm-ocean-dynamics",
+      "path": "verification/tutorial_deep_convection/input",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "50x50x50 non-hydrostatic deep convection, 3 steps",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 17.0,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Pointwise for the first steps; convection becomes chaotic later, so the window must stay short.",
+      "proposed_check": "deep-convection"
+    },
+    {
+      "id": "internal-wave",
+      "module": "mitgcm-ocean-dynamics",
+      "path": "verification/internal_wave/input",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "30x1x20 internal wave with obcs and kl10 mixing, 100 steps",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.6,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Linear wave: pointwise.",
+      "proposed_check": "internal-wave"
+    },
+    {
+      "id": "advect-cs",
+      "module": "mitgcm-ocean-dynamics",
+      "path": "verification/advect_cs/input",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Cubed-sphere solid-body advection of a tracer, 6 faces",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 2.5,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Pure advection: pointwise.",
+      "proposed_check": "advect-cubed-sphere"
+    },
+    {
+      "id": "dome",
+      "module": "mitgcm-ocean-dynamics",
+      "path": "verification/dome/input",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Dense overflow (DOME) with obcs, 24 tiles, 20 steps",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 14.4,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Pointwise.",
+      "proposed_check": "dome-overflow"
+    },
+    {
+      "id": "tutorial-plume-on-slope",
+      "module": "mitgcm-ocean-dynamics",
+      "path": "verification/tutorial_plume_on_slope/input",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "80x1x60 non-hydrostatic plume on a slope, 20 steps",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 4.7,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Pointwise.",
+      "proposed_check": "plume-on-slope"
+    }
+  ]
+}
