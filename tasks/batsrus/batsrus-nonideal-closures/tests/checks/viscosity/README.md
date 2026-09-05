@@ -12,7 +12,7 @@ suite budget does not count. `run.sh --help` lists the knobs. `SAB_TMAX_SCALE` (
 
 ## The two initial conditions
 
-`ic/nominal` is the upstream parameter file `code/batsrus/Param/VISCOSITY/PARAM.in`, unchanged. ic/variant raises #VISCOSITY ViscoCoeffSi from 1.05 to 1.05000000021, two units of the tenth significant digit of the printed output. The deck sets no initial state of its own (ModUserWaves' #PIPEFLOW builds it), so the viscosity coefficient is the active physical input of this configuration; perturbing it changes the viscous stress from the first stage on. The two PARAM.in files differ byte-wise and the graded outputs differ.
+`ic/nominal` is the upstream parameter file `code/batsrus/Param/VISCOSITY/PARAM.in`, unchanged. ic/variant raises #VISCOSITY ViscoCoeffSi from 1.05 to 1.05000000021, two units of the tenth significant digit of the printed output. The deck sets no initial state of its own (ModUserWaves' #PIPEFLOW builds it), so the viscosity coefficient is the active physical input of this configuration; perturbing it changes the viscous stress from the first stage on. The two PARAM.in files differ byte-wise and the graded outputs differ. `run.sh altbuild` runs ic/nominal on the alternative build: the same Config.pl configuration built with `./Config.pl -O0` before `make BATSRUS`, which sets every OPTn level of Makefile.conf to -O0 where the shipped gfortran template uses -O3 (same pinned source, same deck).
 
 ## The pass policy
 
