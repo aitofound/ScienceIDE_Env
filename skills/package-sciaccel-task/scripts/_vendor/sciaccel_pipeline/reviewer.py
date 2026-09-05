@@ -327,7 +327,7 @@ def flagged_rows(ctx: dict) -> list[str]:
     for r in ctx["check_rows"]:
         why = []
         m = r["margin"]
-        if isinstance(m, (int, float)):
+        if isinstance(m, (int, float)) and m != float("inf"):
             if m < MARGIN_LOW:
                 why.append(f"margin {m:.0f}x under {MARGIN_LOW}")
             elif m > MARGIN_HIGH:
