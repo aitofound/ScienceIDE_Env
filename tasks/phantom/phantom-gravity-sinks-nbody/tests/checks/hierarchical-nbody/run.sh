@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Check hierarchical-nbody: the TEST half of the check.
 #   run.sh nominal | run.sh variant     run one initial condition (see ic/)
-#   run.sh --help                       list the runtime knobs below
+#   run.sh altbuild                     the nominal inputs on the alternative build (see ALTBUILD below)
+#   run.sh --help                       list the runtime knobs below and the altbuild line
 # Environment supplied by the produce driver: SOURCE_DIR (read-only source tree),
 # OUT_DIR (empty directory for the graded files), CHECK_DIR (this directory).
 # Reads only CHECK_DIR and SOURCE_DIR; no network; never modifies SOURCE_DIR.
@@ -18,12 +19,17 @@ knob SAB_TMAX "30000." "tmax of the .in in code units (the setup's own default, 
 knob SAB_DTMAX "3000." "dtmax of the .in in code units (the setup's own default is 1.); the dump interval, and with SAB_TMAX it fixes the eleven dumps; the last one is graded"
 knob SAB_NMAX "-1" "cap on the number of time steps (nmax in the .in); -1 runs to SAB_TMAX (graded); a small cap exercises build, setup, run and output only"
 knob SAB_THREADS "1" "OMP_NUM_THREADS for phantomsetup and phantom; the graded default is 1 because a five-sink system with no gas has no parallelism to exploit: two threads measured eight times slower than one on the authoring host, and the sink-sink sums are identical either way"
-if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; exit 0; fi
+# Alternative build: Phantom's own gfortran DEBUG=yes build replaces -O3 with -O0 and enables its runtime checks.
+# `run.sh altbuild` uses the nominal inputs; selfcheck measures the floor from the second legitimate build.
+ALTBUILD="make SYSTEM=gfortran OPENMP=yes DEBUG=yes: the same pinned source with Phantom's own -O0 gfortran debug build (bounds, NaN and floating-point checks) instead of the nominal -O3 build"
+if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; [ -z "$ALTBUILD" ] || echo "altbuild: $ALTBUILD"; exit 0; fi
 
 set -euo pipefail
-IC="${1:?usage: run.sh <nominal|variant> | run.sh --help}"
+IC="${1:?usage: run.sh <nominal|variant|altbuild> | run.sh --help}"
 : "${SOURCE_DIR:?}" "${OUT_DIR:?}" "${CHECK_DIR:?}"
-[ -d "$CHECK_DIR/ic/$IC" ] || { echo "run.sh: no initial condition ic/$IC" >&2; exit 2; }
+INPUTS="$IC"; MAKE_EXTRA=()
+if [ "$IC" = altbuild ]; then INPUTS=nominal; MAKE_EXTRA=(SYSTEM=gfortran OPENMP=yes DEBUG=yes); fi
+[ -d "$CHECK_DIR/ic/$INPUTS" ] || { echo "run.sh: no initial condition ic/$INPUTS" >&2; exit 2; }
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 SRC="$WORK/src"; RUN="$WORK/run"
 mkdir -p "$RUN"
@@ -34,7 +40,7 @@ cp -R "$SOURCE_DIR/." "$SRC"
 # serial and one goal per invocation; two goals in one invocation clean each other.
 export SYSTEM=gfortran OMP_NUM_THREADS="$SAB_THREADS"
 BUILD_START=$(date +%s)
-if ! (cd "$SRC" && make SETUP=hierarchical phantom >"$WORK/make.log" 2>&1 && make SETUP=hierarchical setup >>"$WORK/make.log" 2>&1); then
+if ! (cd "$SRC" && make ${MAKE_EXTRA[@]+"${MAKE_EXTRA[@]}"} SETUP=hierarchical phantom >"$WORK/make.log" 2>&1 && make ${MAKE_EXTRA[@]+"${MAKE_EXTRA[@]}"} SETUP=hierarchical setup >>"$WORK/make.log" 2>&1); then
   echo "run.sh: build failed" >&2; tail -n 40 "$WORK/make.log" >&2; exit 1
 fi
 echo "SAB_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))"   # the driver records it; the budget counts run time only
@@ -43,7 +49,7 @@ echo "SAB_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))"   # the driver records
 # The run directory is fresh on every invocation because phantom rewrites the .in in place
 # after each full dump (logfile -> NN+1, dumpfile -> the last dump), so a second run in a
 # used directory would restart from that dump instead of from t=0.
-cp -R "$CHECK_DIR/ic/$IC/." "$RUN/"
+cp -R "$CHECK_DIR/ic/$INPUTS/." "$RUN/"
 cd "$RUN"
 # phantomsetup is a two-pass program (a call without a .setup writes one and stops); with the
 # .setup supplied it builds the initial condition and reads any remaining prompts from stdin.
