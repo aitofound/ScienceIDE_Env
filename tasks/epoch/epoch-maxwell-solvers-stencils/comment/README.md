@@ -278,6 +278,21 @@ solve (all eighteen declare one): all eighteen pass, three bit-identical (the
   eighteen rubrics, exactly equal to this record's per-check numbers (the
   Altbuild table above).
 
+Residual of the steward's item 4 (timing provenance): the round-2 review fixes
+in this revision (upstream tolerance corrections, the removed false "next
+selfcheck rewrites it" claim, the retained coefficient-fault receipt) forced a
+fresh selfcheck, run root `run3` (started 20:22:23Z, finished 21:20:11Z,
+79.5 s nominal run time, 1050.0 s of builds) -- `comment/pipeline/` and every
+rubric's numeric evidence (`floor`, `self_validation_spread`,
+`floor_bound_fraction`, `altbuild`) now ship `run3`'s values, bit-for-bit
+identical to `run2`'s for every check, only the wall-clock and `at` timestamps
+differing. The public `expected_runtime_derivation` and README timing
+sentences below still derive from the record of 2026-09-05T09:36Z (`run2`,
+described in this section); the shipped pipeline record is 2026-09-05T21:20Z
+(`run3`). Per-check seconds vary run to run on this shared host, so the two
+will not literally agree to the decimal; this is left as a stated residual
+for the human rather than chased with a further rerun.
+
 `run2` is the second of two selfchecks of this revision (the fingerprint rule:
 tests/, task.toml, solution/ and environment/ all changed under 5.10.0, so two
 runs are required). The calibration run, `run1b` (started 07:23:52Z, finished
