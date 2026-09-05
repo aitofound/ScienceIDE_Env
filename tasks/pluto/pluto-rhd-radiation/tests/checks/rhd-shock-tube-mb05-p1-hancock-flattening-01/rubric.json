@@ -6,6 +6,7 @@
   "configuration": "PHYSICS=RHD; 1D CARTESIAN; 400 zones; solver hllc; LINEAR reconstruction; HANCOCK time stepping; tstop 0.4; CFL 0.8; dbl output '0.4 -1 single_file'",
   "expected_runtime_s": 4,
   "variant": "ic/variant/pluto.ini multiplies [Parameters] DN_L by (1 + 1e-15): 1.0 becomes 1.000000000000001, one ulp of a value the initial condition is built from (init.c reads g_inputParam[DN_L]). Every initial value that depends on it moves at round-off while the physics is unchanged, so the two runs differ by rounding only and their spread is the floor of this check.",
+  "altbuild": "the same pinned source and nominal deck built with the Linux.gcc.defs GCC architecture but make CFLAGS='-c -O0' instead of the nominal -O3 compiler flags: an unoptimized build a correct candidate could plausibly use",
   "comparison": {
     "atol": 1e-08,
     "rtol": 1e-08,
