@@ -66,12 +66,12 @@ if [ "${1:-}" = "produce" ]; then
           OMPI_ALLOW_RUN_AS_ROOT=1 OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1 ${passthrough[@]+"${passthrough[@]}"} \
           bash ./run.sh "$IC") >"$log" 2>&1; then
       end=$(date +%s.%N)
-      build="$(grep -o 'SAB_BUILD_SECONDS=[0-9.]*' "$log" | tail -1 | cut -d= -f2)"
+      build="$(grep -o 'SAB_BUILD_SECONDS=[0-9.]*' "$log" | tail -1 | cut -d= -f2 || true)"
       printf 'check=%s\nic=%s\nelapsed_seconds=%s\nbuild_seconds=%s\n' "$check" "$IC" "$(awk "BEGIN{print $end - $start}")" "${build:-0}" >"$out_dir/run.ok"
       echo "OK [$check]"; echo ok >"$STATUS_DIR/$check"
     else
       end=$(date +%s.%N)
-      build="$(grep -o 'SAB_BUILD_SECONDS=[0-9.]*' "$log" | tail -1 | cut -d= -f2)"
+      build="$(grep -o 'SAB_BUILD_SECONDS=[0-9.]*' "$log" | tail -1 | cut -d= -f2 || true)"
       printf 'check=%s\nic=%s\nelapsed_seconds=%s\nbuild_seconds=%s\n' "$check" "$IC" "$(awk "BEGIN{print $end - $start}")" "${build:-0}" >"$out_dir/run.failed"
       echo "FAILED [$check]: run.sh exited nonzero; see $log" >&2; echo failed >"$STATUS_DIR/$check"
     fi
