@@ -1,0 +1,78 @@
+{
+  "check": "kmouflage",
+  "policy": "pointwise",
+  "chaotic": false,
+  "upstream_test": "code/eftcamb/fortran/eftcamb_test/parameters/5_Kmouflage_*.ini",
+  "configuration": "fortran/camb on the three official Kmouflage decks selected by models.txt; l_max_scalar=3500, transfer_kmax=2, eight OpenMP threads, one serial make job",
+  "observable": "every numeric value in nine official output tables for each of three K-mouflage decks",
+  "expected_runtime_s": 15,
+  "default_vs_upstream": "upstream",
+  "variant": "ic/variant/base_params.ini changes ombh2 from 0.0226 to 0.022600000000000006, exactly two binary64 ulps (relative 3.1e-16), perturbing each screened-model solve at roundoff scale",
+  "comparison": {
+    "mode": "absolute-plus-relative-per-file",
+    "rtol": 0.0001,
+    "files": [
+      {
+        "label": "scalCls",
+        "suffix": "scalCls.dat",
+        "format": "text",
+        "atol": 100
+      },
+      {
+        "label": "lensedCls",
+        "suffix": "lensedCls.dat",
+        "format": "text",
+        "atol": 0.1
+      },
+      {
+        "label": "lensedtotCls",
+        "suffix": "lensedtotCls.dat",
+        "format": "text",
+        "atol": 0.1
+      },
+      {
+        "label": "lenspotentialCls",
+        "suffix": "lenspotentialCls.dat",
+        "format": "text",
+        "atol": 0.1
+      },
+      {
+        "label": "totCls",
+        "suffix": "totCls.dat",
+        "format": "text",
+        "atol": 0.1
+      },
+      {
+        "label": "tensCls",
+        "suffix": "tensCls.dat",
+        "format": "text",
+        "atol": 0.01
+      },
+      {
+        "label": "scalarCovCls",
+        "suffix": "scalarCovCls.dat",
+        "format": "text",
+        "atol": 0.1
+      },
+      {
+        "label": "matterpower",
+        "suffix": "matterpower.dat",
+        "format": "text",
+        "atol": 1
+      },
+      {
+        "label": "transfer_out",
+        "suffix": "transfer_out.dat",
+        "format": "text",
+        "atol": 1000
+      }
+    ]
+  },
+  "evidence": {
+    "floor": 9.98e-06,
+    "self_validation_metric": "maximum abs(candidate-reference)/(file atol + rtol*abs(reference)); detailed counts, maxima, combined additive margin, and diagnostic bulk/near-zero component margins are recorded per physical file and file type",
+    "floor_how": "Human-reported maximum relative disagreement on magnitude-carrying entries in five selected official models and ten output types, comparing a native x86 build with legacy reference-machine outputs. This is not an all-73-deck floor or a K-mimic sensitivity measurement. The human-selected bounds remain unchanged; additive rescoring of saved arm64 outputs is diagnostic until a fresh CLI selfcheck.",
+    "self_validation_spread": 0.04773998892427914
+  },
+  "warrant": "Each original text table is compared separately with abs(candidate-reference) <= atol[file] + 1e-4*abs(reference); the human-selected atols remain scalCls=1e2, lensedCls/lensedtotCls/lenspotentialCls/totCls/scalarCovCls=1e-1, tensCls=1e-2, matterpower=1, and transfer_out=1e3. The three K-mouflage decks use the exact models.txt selector and the unmodified pinned source; their retained arm64 calibration had zero failures with combined margins above 20. config.f90:40 sets base_tol=1e-4 and transfer_high_precision=T makes the scalar integration tolerance 1e-6 in cmbmain.f90:1109-1111. Revision 5.6.0 says: \"A heavy tail in a diagnostic array while the state arrays are clean is not a reason to abandon pointwise; give that array its own bound or exclude it as diagnostic, and say which in the warrant.\" Tensor output is exercised through get_tensor_cls=T while vector initialv/derivsv/outputv remain owned but uncovered because get_vector_cls=F. halofit is excluded because do_nonlinear=0; InitialPower is shared and exercised by every check; DarkEnergyInterface.f90 and DarkEnergyFluid.f90 are shared GR-baseline dependencies, while PowellMinimize belongs to the models/background module. The K-mouflage bound is unchanged pending the split-check selfcheck; no K-mimic sensitivity is pooled into it."
+}
