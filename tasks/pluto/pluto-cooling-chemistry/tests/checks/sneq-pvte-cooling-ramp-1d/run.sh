@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Check sneq-pvte-cooling-ramp-1d: the TEST half of the check.
 #   run.sh nominal | run.sh variant     run one initial condition (see ic/)
-#   run.sh altbuild                     run nominal inputs with make CFLAGS='-c -O0' (see ALTBUILD below)
+#   run.sh altbuild                     run nominal inputs with exact nominal CFLAGS, replacing only -O3 with -O0 (see ALTBUILD below)
 #   run.sh --help                       list the runtime knobs and altbuild line below
 # Environment supplied by the produce driver: SOURCE_DIR (read-only source tree),
 # OUT_DIR (empty directory for the graded files), CHECK_DIR (this directory).
@@ -16,16 +16,19 @@ knob() { local name=$1 default=$2 desc=$3; [ -n "${!name:-}" ] || printf -v "$na
 knob SAB_TSTOP "0.05" "[Time] tstop of the deck in code units; the number of steps and the runtime scale linearly with it; the default is the graded window"
 knob SAB_GRID_SCALE "1" "multiplies the zone count of every grid axis of the deck (rounded to a multiple of 4); 1 is the graded deck; runtime scales as scale^(dimensions+1)"
 knob SAB_MAXSTEPS "-1" "cap on the number of time steps (pluto -maxsteps); -1 runs to SAB_TSTOP (graded); a small cap exercises build, run and output only"
-# Alternative build: the same pinned source and Linux.gcc.defs architecture, overriding its optimised CFLAGS on the make line with -c -O0.
-# `run.sh altbuild` runs ic/nominal on it; selfcheck measures the floor from it.
-ALTBUILD="make CFLAGS='-c -O0': the same pinned source and Linux.gcc.defs architecture at -O0 instead of -O3"
+# Alternative build trial: same pinned source, nominal deck, and nominal CFLAGS; only -O3 is replaced by -O0.
+# The command repeats local_make's nominal flags because a GNU make command-line CFLAGS value suppresses ordinary += appends.
+ALTBUILD="make CFLAGS='-c -O0 -std=c17 -Wundef -D_DEFAULT_SOURCE -Wno-error=incompatible-pointer-types': the same pinned source, nominal deck, and Linux.gcc.defs architecture with exact nominal CFLAGS except -O3 replaced by -O0"
 if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; [ -z "$ALTBUILD" ] || echo "altbuild: $ALTBUILD"; exit 0; fi
 
 set -euo pipefail
 IC="${1:?usage: run.sh <nominal|variant|altbuild> | run.sh --help}"
 : "${SOURCE_DIR:?}" "${OUT_DIR:?}" "${CHECK_DIR:?}"
 INPUTS="$IC"; MAKE_EXTRA=()
-if [ "$IC" = altbuild ]; then INPUTS=nominal; MAKE_EXTRA=("CFLAGS=-c -O0"); fi
+if [ "$IC" = altbuild ]; then
+  INPUTS=nominal
+  MAKE_EXTRA=("CFLAGS=-c -O0 -std=c17 -Wundef -D_DEFAULT_SOURCE -Wno-error=incompatible-pointer-types")
+fi
 [ -d "$CHECK_DIR/ic/$INPUTS" ] || { echo "run.sh: no initial condition ic/$INPUTS" >&2; exit 2; }
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 PROBLEM="$WORK/problem"; RUN="$WORK/run"
@@ -45,7 +48,7 @@ if ! (cd "$PROBLEM" && python3 "$PLUTO_DIR/setup.py" --auto-update  >setup.log 2
   echo "run.sh: build failed" >&2; tail -n 40 "$PROBLEM/setup.log" "$PROBLEM/make.log" >&2; exit 1
 fi
 if [ "$IC" = altbuild ]; then
-  echo "SAB_ALTBUILD=make CFLAGS='-c -O0' using Linux.gcc.defs"
+  echo "SAB_ALTBUILD=make CFLAGS='-c -O0 -std=c17 -Wundef -D_DEFAULT_SOURCE -Wno-error=incompatible-pointer-types' using Linux.gcc.defs; exact nominal CFLAGS with only -O3 replaced by -O0"
   awk '/^gcc / {print "SAB_ALTBUILD_COMPILE=" $0; exit}' "$PROBLEM/make.log"
 fi
 
