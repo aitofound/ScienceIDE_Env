@@ -27,9 +27,11 @@ The policy has three parts.
     graded; their position and their OK/FAILED verdict still are. Nothing is put
     there without a reason in the source, stated in rubric.json.
 
-Standard library only; reads only this check directory. Writes "passed", "reason" and
+Standard library only; reads only this check directory. Writes "passed", "reason",
 "distance" (the largest absolute difference over the graded reals), which selfcheck
-records as the spread.
+records as the spread, and "bound_fraction" (the largest fraction of its own bound,
+|err| / (atol + rtol|ref|), used by any graded real; its reciprocal is the headroom
+the presentation prints).
 
     python3 validate.py --reference DIR --candidate DIR --rubric rubric.json --out result.json
 """
@@ -76,7 +78,7 @@ def main() -> int:
     atol, rtol = float(cmp["atol"]), float(cmp.get("rtol", 0.0))
     rel = cmp["files"][0]["path"]
     exclude = list(cmp.get("exclude", []))
-    failures, worst, graded, graded_int, skipped = [], 0.0, 0, 0, 0
+    failures, worst, worst_frac, over, graded, graded_int, skipped = [], 0.0, 0.0, 0, 0, 0, 0
     try:
         R = parse(Path(a.reference) / rel)
         C = parse(Path(a.candidate) / rel)
@@ -104,8 +106,13 @@ def main() -> int:
                     continue
                 graded += 1
                 err = abs(x - y)
+                bound = atol + rtol * abs(y)
                 worst = max(worst, err)
-                if err > atol + rtol * abs(y):
+                # the fraction of its own bound this value uses; the largest over the graded
+                # reals is bound_fraction, and its reciprocal is the headroom
+                worst_frac = max(worst_frac, (err / bound) if bound > 0 else (float("inf") if err > 0 else 0.0))
+                if err > bound:
+                    over += 1
                     failures.append(f"{rel} line {i + 1}: {x!r} differs from reference {y!r} beyond atol={atol:g} rtol={rtol:g}")
         rf, cf = failed_lines(R), failed_lines(C)
         if rf != cf:
@@ -117,6 +124,8 @@ def main() -> int:
             failures.append(f"{rel}: candidate printed no PASSED line")
     passed = not failures
     result = {"passed": passed, "policy": "pointwise", "atol": atol, "rtol": rtol, "distance": worst,
+              "bound_fraction": worst_frac,
+              "files": {rel: {"values": graded, "max_abs_error": worst, "values_over_bound": over, "bound_fraction": worst_frac}},
               "graded_reals": graded, "graded_integers": graded_int, "ungraded_numbers_on_excluded_lines": skipped,
               "failed_assertion_lines": len(failed_lines(C)) if C else None,
               "reason": "all graded values within bound" if passed else "; ".join(failures)}
