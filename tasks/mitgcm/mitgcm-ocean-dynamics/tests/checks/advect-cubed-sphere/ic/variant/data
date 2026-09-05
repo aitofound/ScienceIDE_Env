@@ -1,0 +1,58 @@
+# ====================
+# | Model parameters |
+# ====================
+#
+# Continuous equation parameters
+ &PARM01
+ useSingleCpuIO=.TRUE.,
+ tRef=0.,
+ sRef=0.,
+ diffKrT=0.,
+ diffKhT=0.,
+ diffK4T=0.,
+ diffKrS=0.,
+ diffKhS=0.,
+ diffK4S=0.,
+ momStepping=.FALSE.,
+ tempAdvScheme=33,
+ saltAdvScheme=80,
+ readBinaryPrec=64,
+ writeBinaryPrec=64,
+ &
+
+# Elliptic solver parameters
+ &PARM02
+ cg2dMaxIters=600,
+ cg2dTargetResidual=1.E-12,
+ &
+
+# Time stepping parameters
+ &PARM03
+ dumpInitAndLast=.TRUE.,
+ dumpFreq=0.,
+ nTimeSteps=384,
+ nIter0=0,
+#- to simulate 1 rotation period:
+#endTime=1036800.,
+ abEps=0.1,
+ deltaT=2700.,
+ pChkptFreq=0.,
+ chkptFreq=0.,
+#dumpFreq=86400.,
+ monitorSelect=1,
+ monitorFreq=21600.,
+ &
+
+# Gridding parameters
+ &PARM04
+ rSphere=6370000.000000002,
+ usingCurvilinearGrid=.TRUE.,
+ horizGridFile='grid_cs32',
+ delR=1.E5,
+ &
+
+# Input datasets
+ &PARM05
+ hydrogThetaFile='T.init',
+ hydrogSaltFile='S.init',
+ &
