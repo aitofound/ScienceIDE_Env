@@ -8,7 +8,7 @@ Upstream test: `{{UPSTREAM_TEST}}`. Policy: `{{POLICY}}`.
 
 ## The two initial conditions
 
-<FILL: what ic/nominal is, and how ic/variant differs from it and why that exercises the pass policy (or why an identical copy is the only sensible variant).>
+<FILL: what ic/nominal is, and how ic/variant differs from it and why that exercises the pass policy (or why an identical copy is the only sensible variant); if run.sh accepts altbuild, one sentence on the alternative build it runs the nominal inputs on.>
 
 ## The pass policy
 
