@@ -20,6 +20,10 @@ result with "passed", "reason" and "distance" (the largest absolute error
 seen), which selfcheck records as the measured spread; "scaled_distance" is the
 largest error divided by the bound that applies to it, so a value at or below 1
 means the check passed and the number says how much of the bound was used.
+"bound_fraction" is the same column-scaled quantity under the 5.10.0 template's
+key name (selfcheck reads it into evidence.self_validation_bound_fraction and,
+for the altbuild run, evidence.floor_bound_fraction); it is identical to
+scaled_distance here because this check's bound is already column-scaled.
 
 Two BATSRUS output formats are read:
 
@@ -146,7 +150,7 @@ def main() -> int:
         max_err, max_scaled = float(err.max()), float(scaled.max())
         details[rel] = {"values": int(r.size), "rows": int(r.shape[0]), "columns": int(r.shape[1]),
                         "max_abs_error": max_err, "max_scaled_error": max_scaled,
-                        "values_over_bound": over}
+                        "bound_fraction": max_scaled, "values_over_bound": over}
         if over:
             failures.append(f"{rel}: {over} of {r.size} values exceed atol={atol:g} rtol={rtol:g} "
                             f"(max |err| {max_err:.3e}, max |err|/bound {max_scaled:.3e})")
@@ -154,7 +158,8 @@ def main() -> int:
         worst_scaled = max(worst_scaled, max_scaled)
     passed = not failures
     result = {"passed": passed, "policy": "pointwise", "atol": atol, "rtol": rtol,
-              "distance": worst, "scaled_distance": worst_scaled, "files": details,
+              "distance": worst, "scaled_distance": worst_scaled, "bound_fraction": worst_scaled,
+              "files": details,
               "reason": "all graded values within bound" if passed else "; ".join(failures)}
     Path(a.out).write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(result["reason"], file=sys.stderr)
