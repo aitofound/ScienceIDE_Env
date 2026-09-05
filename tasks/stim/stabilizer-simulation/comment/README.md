@@ -57,29 +57,29 @@ sat inside their own bounds — so a solver could have passed the acceleration
 check by emitting a synthetic sample with those statistics instead of porting
 anything. They live here now; `tests/` states only differences.
 
-| check | invariant | reference mean over 4 seeds | bound | margin |
+| check | invariant | reference mean over 12 seeds | bound | margin |
 |---|---|---|---|---|
-| `detection-event-sampling` | mean-flip-rate | 0.022921032 | 2.0e-04 | 3.1 x |
-| `detection-event-sampling` | max-flip-rate | 0.218621250 | 4.0e-03 | 3.2 x |
-| `detection-event-sampling` | min-flip-rate | 0.003977500 | 1.0e-03 | 4.0 x |
-| `detection-event-sampling` | flip-rate-spread | 0.010977262 | 2.0e-04 | 4.0 x |
-| `detection-event-sampling` | shot-count-dispersion | 0.482645671 | 2.5e-03 | 3.6 x |
-| `detection-event-sampling` | any-event-fraction | 0.991211250 | 2.5e-03 | 4.0 x |
-| `frame-simulator-shot-batch` | mean-detector-rate | 0.015168905 | 1.0e-05 | 4.4 x |
-| `frame-simulator-shot-batch` | max-detector-rate | 0.018527000 | 4.0e-04 | 4.3 x |
-| `frame-simulator-shot-batch` | min-detector-rate | 0.004896000 | 4.0e-04 | 5.3 x |
-| `frame-simulator-shot-batch` | detector-rate-spread | 0.002813551 | 1.0e-05 | 4.3 x |
-| `frame-simulator-shot-batch` | shot-count-dispersion | 0.121686371 | 1.0e-03 | 5.4 x |
-| `frame-simulator-shot-batch` | observable-parity | 0.482786500 | 5.0e-03 | 4.0 x |
-| `repetition-code-memory` | mean-detector-rate | 0.067821022 | 4.0e-04 | 3.7 x |
-| `repetition-code-memory` | max-detector-rate | 0.071293750 | 2.0e-03 | 5.1 x |
-| `repetition-code-memory` | min-detector-rate | 0.028870000 | 1.0e-03 | 4.5 x |
-| `repetition-code-memory` | detector-rate-spread | 0.007914170 | 2.0e-04 | 4.7 x |
-| `repetition-code-memory` | shot-count-dispersion | 0.346719145 | 1.0e-03 | 3.6 x |
-| `repetition-code-memory` | observable-parity | 0.375338750 | 1.0e-02 | 4.5 x |
-| `two-detector-error-probability` | mean-detector-rate | 0.298692167 | 2.0e-03 | 3.9 x |
-| `two-detector-error-probability` | max-detector-rate | 0.480532750 | 4.0e-03 | 3.6 x |
-| `two-detector-error-probability` | min-detector-rate | 0.095096500 | 2.0e-03 | 3.7 x |
+| `detection-event-sampling` | mean-flip-rate | 0.022932409 | 2.0e-04 | 2.6 x |
+| `detection-event-sampling` | max-flip-rate | 0.218866250 | 8.0e-03 | 3.3 x |
+| `detection-event-sampling` | min-flip-rate | 0.003987917 | 8.0e-04 | 2.3 x |
+| `detection-event-sampling` | flip-rate-spread | 0.010985061 | 2.5e-04 | 2.6 x |
+| `detection-event-sampling` | shot-count-dispersion | 0.482836106 | 6.0e-03 | 3.0 x |
+| `detection-event-sampling` | any-event-fraction | 0.991054583 | 2.0e-03 | 2.5 x |
+| `frame-simulator-shot-batch` | mean-detector-rate | 0.015168869 | 1.0e-05 | 2.4 x |
+| `frame-simulator-shot-batch` | max-detector-rate | 0.018536833 | 3.0e-04 | 2.9 x |
+| `frame-simulator-shot-batch` | min-detector-rate | 0.004923000 | 4.0e-04 | 3.0 x |
+| `frame-simulator-shot-batch` | detector-rate-spread | 0.002813482 | 1.0e-05 | 3.0 x |
+| `frame-simulator-shot-batch` | shot-count-dispersion | 0.121682633 | 8.0e-04 | 3.8 x |
+| `frame-simulator-shot-batch` | observable-parity | 0.482684000 | 5.0e-03 | 2.7 x |
+| `repetition-code-memory` | mean-detector-rate | 0.067803884 | 4.0e-04 | 2.4 x |
+| `repetition-code-memory` | max-detector-rate | 0.071207500 | 2.0e-03 | 2.7 x |
+| `repetition-code-memory` | min-detector-rate | 0.029045417 | 1.5e-03 | 1.9 x |
+| `repetition-code-memory` | detector-rate-spread | 0.007875167 | 3.0e-04 | 2.5 x |
+| `repetition-code-memory` | shot-count-dispersion | 0.346448751 | 4.0e-03 | 2.3 x |
+| `repetition-code-memory` | observable-parity | 0.375286250 | 8.0e-03 | 2.0 x |
+| `two-detector-error-probability` | mean-detector-rate | 0.298363250 | 2.5e-03 | 2.6 x |
+| `two-detector-error-probability` | max-detector-rate | 0.480326417 | 4.0e-03 | 2.9 x |
+| `two-detector-error-probability` | min-detector-rate | 0.094904667 | 2.5e-03 | 2.3 x |
 
 ## `two-detector-error-probability`: the closed form, kept out of `tests/`
 
@@ -273,6 +273,89 @@ flags. And every `validate.py` now reports `bound_fraction` (skill 5.10.0), the
 worst graded value as a fraction of its own bound, so the review table's margin
 column prints the real headroom instead of the `0x` artefact both the author and
 the reviewer diagnosed.
+
+## Round 3: the bounds were re-derived from twelve seeds, and why
+
+The curator's selfcheck on the x86_64/AVX2 worker found `detection-event-sampling`'s
+`shot-count-dispersion` using **84.5%** of its band between the two seeds, and
+asked whether the four-seed calibration under-estimated the spread or that pair
+was a 3-sigma draw — "not distinguishable from one run".
+
+It is distinguishable analytically, and it was the first. A coefficient of
+variation over N shots has sampling error `cv/sqrt(2N)`:
+
+| | detection `shot-count-dispersion` |
+|---|---|
+| theoretical per-run sd | 7.63e-4 |
+| pairwise sd (x sqrt 2) | 1.08e-3 |
+| the four-seed empirical sd | **3.01e-4, 2.5x below theory** |
+| the curator's observed error | 2.11e-3 = **2.0 theoretical sigma** |
+
+So their run was an ordinary draw and the band was about three times too tight.
+`max-flip-rate` showed the same signature (measured sd 1.8x below Bernoulli).
+The contrast that proves the point: `frame-simulator-shot-batch`'s
+`observable-parity` measured 0.86x of theory - consistent - and that check's
+bands were healthy at 8-21% used. The frame check's original rubric quoted the
+binomial sigma and was sanity-checked against it; `detection-event-sampling` was
+not.
+
+**A four-seed sd has three degrees of freedom and roughly 40% relative
+uncertainty.** That is the root cause, and it was not confined to one check:
+re-measuring all four sampling checks at twelve seeds moved several empirical
+sds by factors of two to four.
+
+**The method now, applied to all 21 invariants.** Each bound is the larger of
+five sigma on the twelve-seed empirical spread and five sigma on the analytic
+sampling error - but the analytic value is only used where its model is the
+right one:
+
+- a Bernoulli rate whose identity is fixed by the configuration, the mean of a
+  rates array, and a coefficient of variation: the model applies, so it is used.
+- a **max or min over many detectors**: it does not. The Bernoulli sd of the
+  extreme element models a *fixed* detector; the maximum over 12,000 correlated
+  detectors is *more* stable than any one of them, so that value is an upper
+  bound and using it would loosen the band for nothing. `final_bounds.py` tests
+  which case holds **from the data** - whether the same index attains the
+  extreme in every seed - and only applies theory when it does. That test is
+  what keeps `frame-simulator-shot-batch`'s max at 3e-4 rather than the 1e-3 a
+  naive application of theory wanted, and it correctly *does* apply theory to
+  `two-detector-error-probability`, whose max and min are fixed probabilities.
+
+The result is not a blanket loosening: **eight bounds widened and five
+tightened**, because twelve seeds resolve the sd better in both directions.
+Against the curator's run, the worst seed-variant usage falls from 84.5% to
+**35.2%**.
+
+**The altbuild solve was checked too**, since it cannot be re-run off x86_64.
+The record stores a per-check `bound_fraction` rather than per-invariant errors,
+so the safe statement is an upper bound: the new fraction cannot exceed the old
+one times the largest tightening ratio in that check. That gives 40.0%, 40.7%,
+59.4% and 3.6% - all passing, and pessimistic, since it assumes the tightened
+invariant is exactly the one that was worst.
+
+## The grep that killed the leaf on arm64
+
+Found while trying to reproduce the curator's run locally. The revision at head
+`54938c4d` read the resolved machine flag with
+
+    MFLAG="$(grep -hoE -- '-march=native|...' "$WORK/b/build.ninja" | sort -u | tr '\n' ' ')"
+
+under `set -euo pipefail`. **grep exits 1 when it matches nothing**, `pipefail`
+propagates it to the assignment, and `set -e` then killed `run.sh` before it
+printed anything. Stim's machine flags are x86-only, so on any non-x86_64 host
+`MFLAG` is legitimately empty and every check died with an empty log, exit 1, no
+`run.failed` marker. The `case` guard below is only reached for `altbuild`;
+`nominal` never got there. Twelve seeds failed in under a second each before
+`bash -x` put the exit exactly at that assignment.
+
+It passed on the curator's worker because `-march=native` matches there and grep
+returns 0. Fixed with `|| true` in all eight checks; verified on arm64, values
+unchanged.
+
+Worth recording that this is the **mirror image** of a trap this leaf already
+hit, noted above: there grep's *success* masked a cmake failure, here grep's
+*failure* masked everything.
+
 
 ## Runtime, and why wall time is mostly compilation
 

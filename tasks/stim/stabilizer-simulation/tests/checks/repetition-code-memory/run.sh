@@ -49,7 +49,11 @@ cmake -S "$WORK/src" -B "$WORK/b" -G Ninja -DCMAKE_BUILD_TYPE=Release "${CMAKE_E
 
 # The machine flag this configure resolved, read from the generated ninja file:
 # ninja prints targets and not command lines, so the flags never reach cmake.log.
-MFLAG="$(grep -hoE -- '-march=native|-mno-avx2|-mavx2|-mno-sse2|-msse2' "$WORK/b/build.ninja" 2>/dev/null | sort -u | tr '\n' ' ')"
+# `|| true`: grep exits 1 when it matches nothing, and under `set -o pipefail`
+# that failed the assignment and killed run.sh silently, before it printed
+# anything - on every host where stim resolves no machine flags, which is every
+# non-x86_64 host. The empty case is legitimate and the guard below handles it.
+MFLAG="$(grep -hoE -- '-march=native|-mno-avx2|-mavx2|-mno-sse2|-msse2' "$WORK/b/build.ninja" 2>/dev/null | sort -u | tr '\n' ' ' || true)"
 # An altbuild that did not actually change the build would report a floor of 0 for
 # every check and mean nothing, so it fails loudly instead. Stim guards its machine
 # flags on CMAKE_SYSTEM_PROCESSOR (CMakeLists.txt:25) and every one of them is x86,
