@@ -6,6 +6,7 @@
   "configuration": "PHYSICS=HD; 1D SPHERICAL; 400 zones; solver hll; WENO3 reconstruction; RK3 time stepping; tstop 0.5; CFL 0.8; dbl output '0.5 -1 single_file'",
   "expected_runtime_s": 21,
   "variant": "ic/variant/pluto.ini multiplies [Parameters] ENRG0 by (1 + 1e-15): 1.0 becomes 1.000000000000001, one ulp of a value the initial condition is built from (init.c reads g_inputParam[ENRG0]). Every initial value that depends on it moves at round-off while the physics is unchanged, so the two runs differ by rounding only and their spread is the floor of this check.",
+  "altbuild": "the same pinned source and Linux.gcc.defs architecture built with make CFLAGS='-c -O0' instead of the nominal -O3 flags: a legitimate unoptimised GCC build a correct candidate could plausibly use, with no source or deck change",
   "comparison": {
     "atol": 1e-08,
     "rtol": 1e-08,
