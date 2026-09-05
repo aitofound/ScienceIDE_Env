@@ -1,0 +1,21 @@
+name: Changelog
+
+on:
+    pull_request:
+        branches: [ main ]
+
+jobs:
+    changelog:
+        name: "Check changelog update"
+        runs-on: ubuntu-latest
+        steps:
+            - uses: tarides/changelog-check-action@0189fc7eedec3ef3e9648c713908f6f2a6e99057 # v3
+              with:
+                  changelog: CHANGELOG.md
+
+    changelog_success:
+        name: "Changelog success"
+        runs-on: ubuntu-latest
+        needs: [changelog]
+        steps:
+            - run: echo "Changelog workflow completed successfully"
