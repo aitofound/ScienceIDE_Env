@@ -39,13 +39,16 @@ check grades directly: run.sh runs the deck on one rank and on the graded
 layout in a single invocation, and the difference between the two assembled
 fields is itself a graded array.
 
-`run.sh altbuild` runs `ic/nominal` on the same pinned source built with
-EPOCH's own debug profile (`make -C epoch2d COMPILER=gfortran MODE=debug`: `-O0
--g` instead of the default `-O3`, full warnings promoted to errors,
-`-ffpe-trap=invalid,zero,overflow` and `-fbounds-check` turned on, and
-`-DPARSER_CHECKING -DDECK_DEBUG` compiled in) instead of the default build;
-grading never uses it, while self-validation measures the check's floor between
-the two legitimate builds from it.
+`run.sh altbuild` runs `ic/nominal` on the same pinned source and deck, built
+from a scratch copy of `epoch2d/Makefile` with only its gfortran `FFLAGS` line
+changed from `-O3 -g -std=f2003` to `-O0 -g -std=f2003`. EPOCH's own
+`MODE=debug` profile was tried first and rejected: its
+`-ffpe-trap=invalid,zero,overflow` fires inside Open MPI/PMIx's own `MPI_Init`
+on every multi-rank deck (`mpi_minimal_init`, `mpi_routines.F90`), not in
+EPOCH's arithmetic, aborting before any dump on this rank-layout leaf. Grading
+never uses `altbuild`, while self-validation measures the check's floor between
+the two legitimate builds from it; all five EPOCH leaves use this same altbuild
+definition.
 
 ## The upstream deck
 
@@ -138,3 +141,5 @@ the declared expected runtime is 3 s (ceil of 1.5 times run-only, minimum 1
 s). The array-aware record is retained with the review evidence. The bounds
 are not derived from the variant spread: each remains tied to the array scale
 and fault described above.
+
+The -O0 altbuild (`epoch2d/Makefile` FFLAGS `-O3` changed to `-O0` in the scratch build copy, everything else unchanged) differs from the nominal build by 0.000701904 at worst, 7.019e-06 of its file's own bound, about 142,470x inside it, measured on 2026-09-05.

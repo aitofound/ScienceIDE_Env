@@ -237,3 +237,105 @@ are the parts of `redistribute_fields` most likely to be forgotten in a port. Th
 (`processor_summation_bcs`) is graded only through its effect on Jx and the
 densities, never in isolation, and the paired species/no-species call structure
 that guards it is only exercised in its non-`c_bc_mixed` branch. Finally, every bound and window has now been checked by two complete x86-container selfchecks at the revision-6 contract, while the inherited native O3/O2 evidence remains recorded for its distinct build-floor purpose. That evidence is host-specific and does not remove the need to revisit a bound if a future target demonstrates a new legitimate numerical floor.
+
+## 5.10.0 revision (2026-09-05): altbuild third run, validators report bound_fraction
+
+This leaf merged to `origin/main` (skill 5.10.0, vendor pin e9e02f15) and picked
+up the 5.8.0 altbuild third run and the 5.10.0 `bound_fraction` reporting on
+every `validate.py`. `registry.json` and `registry/index.yaml` were resolved to
+main's side at the merge and regenerated as the last commit.
+
+**The alternative build, and why it is not EPOCH's own MODE=debug.** The
+assignment's preferred alternative build was EPOCH's own debug profile
+(`make -C epochNd COMPILER=gfortran MODE=debug`: `-O0 -g`, `-Wall -Wextra
+-pedantic`, `-ffpe-trap=invalid,zero,overflow`, `-fbounds-check`,
+`-DPARSER_CHECKING -DDECK_DEBUG`). It was declared on all 19 checks first and
+tested: the build succeeded in about 47-70 s per dimension, but every run
+aborted with signal 8 (Floating point exception) inside `MPI_Init` itself --
+`__mpi_routines_MOD_mpi_minimal_init` at `src/housekeeping/mpi_routines.F90:109`,
+called from `pic` at `src/epoch1d.F90:76`, on rank 1 of a 2-rank run -- before
+any dump was written. The trap fires inside Open MPI/PMIx's own
+initialisation, not in EPOCH's arithmetic, and this leaf is entirely about
+multi-rank layouts, so `MODE=debug` is unusable here.
+
+Fallback (a) from the assignment was applied instead, on all 19 checks: the
+same pinned source and the same deck, built from a scratch copy of the
+relevant `epochNd/Makefile` with only its gfortran `FFLAGS` line changed from
+`-O3 -g -std=f2003` to `-O0 -g -std=f2003` (no debug traps, no bounds checks) --
+never touching `SOURCE_DIR`. Each `run.sh` counts the matching lines before and
+after the `sed -i` and fails loudly unless exactly one line changed in each
+direction. Proved by hand first on one deck per dimension
+(`halo-fdtd-1d`/`-2d`/`-3d`) inside the `env` image with
+`OMPI_ALLOW_RUN_AS_ROOT=1 OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1` (the same variables
+`tests/test.sh` already exports for every `run.sh` it invokes; the flag is only
+needed when a check is run by hand, outside `test.sh`), all three produced
+`run.ok` and the full set of graded files. All five EPOCH leaves revised on
+2026-09-05 use this same altbuild definition.
+
+**Result: `run.sh altbuild` declared and measured on all 19 checks**, 8 of them
+bit-identical to the nominal `-O3` build. Every floor sits far inside its
+bound; the tightest is `halo-lehe-3d` at 1.724e-05 of its bound
+(headroom about 57,996x). No check is anywhere near the fallback-a-near-bound
+condition that would call for a STOP.
+
+| check | atol | rtol | variant spread | altbuild floor | bound_fraction | headroom |
+|---|---|---|---|---|---|---|
+| decomp-uneven-1d | 1e-06 | 0 | 2.618e-13 | 0 (bit-identical) | 0 | bit-identical |
+| global-reductions-1d | 1e-05 | 0 | 2.277e-12 | 0 (bit-identical) | 0 | bit-identical |
+| halo-cowan-3d | 100 | 0 | 3.357e-04 | 0.0003204 | 3.204e-06 | 312,076x |
+| halo-fdtd-1d | 100 | 0 | 1.678e-04 | 1.025e-05 | 1.164e-07 | 8,594,656x |
+| halo-fdtd-2d | 100 | 0 | 2.594e-04 | 0.0002022 | 2.022e-06 | 494,611x |
+| halo-fdtd-3d | 100 | 0 | 1.106e-04 | 9.346e-05 | 9.346e-07 | 1,069,976x |
+| halo-laser-seam-1d | 100 | 0 | 2.060e-04 | 0 (bit-identical) | 0 | bit-identical |
+| halo-laser-seam-2d | 100 | 0 | 7.477e-04 | 0.0006924 | 6.924e-06 | 144,432x |
+| halo-laser-seam-3d | 100 | 0 | 3.052e-04 | 0.0002747 | 2.747e-06 | 364,089x |
+| halo-lehe-1d | 100 | 0 | 5.341e-04 | 0.0003967 | 3.967e-06 | 252,062x |
+| halo-lehe-3d | 100 | 0 | 1.905e-03 | 0.001724 | 1.724e-05 | 57,996x |
+| halo-pukhov-2d | 100 | 0 | 2.561e-04 | 0.0002313 | 2.313e-06 | 432,402x |
+| halo-pukhov-3d | 100 | 0 | 3.281e-04 | 0.00037 | 3.700e-06 | 270,252x |
+| layout-invariance-2d | 100 | 0 | 8.850e-04 | 0.0007019 | 7.019e-06 | 142,470x |
+| load-balance-1d | 0.001 | 0 | 7.526e-11 | 0 (bit-identical) | 0 | bit-identical |
+| load-balance-2d | 0.001 | 0 | 4.161e-11 | 0 (bit-identical) | 0 | bit-identical |
+| load-balance-3d | 0.001 | 0 | 2.615e-11 | 0 (bit-identical) | 0 | bit-identical |
+| migration-2d | 1e-05 | 0 | 1.918e-13 | 0 (bit-identical) | 0 | bit-identical |
+| migration-3d | 1e-05 | 0 | 6.395e-14 | 0 (bit-identical) | 0 | bit-identical |
+
+**Validators report `bound_fraction`.** Every `validate.py` now writes
+`bound_fraction` (`|err| / (atol + rtol|ref|)`, the largest fraction of the
+bound used by any graded value) per file in `details` and at top level, ported
+from the 5.10.0 pointwise template and adapted to this leaf's existing
+per-file-atol structure. Sixteen checks carry at least one exact-equality file
+(the integer partition ladders and per-cell/per-species counts, atol=rtol=0);
+`bound_fraction` is defined as 0/0 = 0 for those when the candidate matches
+exactly, and as +inf when it does not (already caught by `values_over_bound`).
+Tested against synthetic reference/candidate pairs, including the zero-bound
+pass and fail paths, before the run.
+
+**Run narrative.** Host `ale-worker.us-central1-c.c.light-result-467615-p0.internal`
+(x86_64, 88 Docker CPUs), consent recorded 2026-09-02T14:02:03Z at
+where=136.114.2.6 (the 2026-09-05 fleet revision is covered by the curator's
+standing consent of 2026-09-04, "consent all runs ... also for epochs").
+
+Calibration selfcheck (run1b, run root `run1b`, after the MODE=debug run1 was
+discarded for the reason above): started 2026-09-05T07:55:43Z, finished
+2026-09-05T08:58:03Z, contract fingerprint
+`13a0bd16e3ddf97442faa99d2eedb4abd5713ae05bc2c5a9348c66e05538f9f6`; suite
+run-only time 83.4 s nominal, source builds 1183.0 s reported by the checks,
+within the 900 s run-only budget (guidance); solve walls 1306.1 s (nominal),
+1258.9 s (variant), 1169.9 s (altbuild). SELF-VALIDATION PASSED: 19/19,
+reward 1.0. Every floor, bound_fraction and variant spread in the table above
+and in every rubric/README/task.toml sentence was written from this run.
+
+Final selfcheck (run2, run root `run2`, fresh, same contract fingerprint
+`dc0f2b51fe32b7587bb905a74704d5d9b4cdc56021f9a69da35339992d68f7c5` -- the
+digit change from run1b is the pipeline/runtime-metadata timestamps only, not
+the leaf's content): started 2026-09-05T09:01:19Z, finished
+2026-09-05T10:02:46Z; suite run-only time 86.8 s nominal, source builds
+1216.0 s, within budget; solve walls 1310.4 s (nominal), 1243.0 s (variant),
+1127.4 s (altbuild). SELF-VALIDATION PASSED: 19/19, reward 1.0, altbuild
+measured on 19/19 (8 bit-identical). Every floor, bound_fraction, variant
+spread, `passed`/`identical` verdict and `distance` in run2 is numerically
+identical to run1b's, check by check -- expected, since both altbuild and
+nominal are two deterministic builds of the same pinned source and deck on a
+fixed rank layout -- so no prose changed and no run3 was needed. This
+committed record is run2's.
