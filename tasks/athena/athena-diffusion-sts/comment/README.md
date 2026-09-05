@@ -39,6 +39,13 @@ summary in `floor/summary-athena-diffusion-sts.txt`). The same script ran the -O
 binary on the variant decks to preview the nominal-versus-variant spread, and the
 calibration selfcheck on 8 cpus reproduced every preview to the digit.
 
+The current authoritative floor is now written by the 2026-09-05 CLI self-validation from
+`run.sh altbuild`: the same nominal decks and pinned source built with `configure.py -debug`
+(Athena++'s own `-O0 -g` flags), the same compiler and every other configure switch unchanged.
+All ten alternative builds pass their existing bounds and all ten graded outputs are byte-identical
+to nominal, so every recorded floor and every normalized floor/bound fraction is zero. The earlier
+`-O3`/`-O2` survey remains useful history and variant preview; the in-image CLI record is definitive.
+
 The two builds are bit-identical on every deck of every check, floor 0, and there
 is nothing in the module that could lift the floor above round-off: explicit
 diffusion has no iterative solve and no convergence tolerance anywhere. The
@@ -71,9 +78,10 @@ run, and still 3600 times below the 3.6e-9 change a one-per-cent error in the
 diffusive flux makes to the profile. On the profile itself the check demands six
 significant figures where upstream asks only for a convergence order.
 
-The suite runs in 346 s nominal and 299 s variant against the 900 s budget, of
-which about 140 s is the ten source builds; the declared per-check runtimes were
-set from the measurement and total 371 s.
+The 2026-09-05 CLI run completed in 378.372 s nominal, 364.218 s variant and
+1146.865 s altbuild. The nominal suite was 201.1 s after excluding 168.0 s of
+reported builds, within the unchanged 900 s budget; the `-debug` solve is slower
+by design and is calibration-only, never grading.
 
 ## Blind spots
 
