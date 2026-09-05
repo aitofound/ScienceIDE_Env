@@ -54,9 +54,9 @@ if [ "$IC" = altbuild ]; then
   # Fallback (a): the -O3-vs-O2/-O0 comparison this leaf already measures its native
   # floor with, applied to the scratch copy only -- never SOURCE_DIR. Exactly one line
   # of the copied Makefile must change; fail loudly if that is not the case.
-  before=$(grep -c '^  FFLAGS = -O3 -g -std=f2003$' "epoch2d/Makefile")
+  before=$(grep -c '^  FFLAGS = -O3 -g -std=f2003$' "epoch2d/Makefile" || true)
   sed -i 's/^  FFLAGS = -O3 -g -std=f2003$/  FFLAGS = -O0 -g -std=f2003/' "epoch2d/Makefile"
-  after=$(grep -c '^  FFLAGS = -O0 -g -std=f2003$' "epoch2d/Makefile")
+  after=$(grep -c '^  FFLAGS = -O0 -g -std=f2003$' "epoch2d/Makefile" || true)
   [ "$before" = 1 ] && [ "$after" = 1 ] || { echo "run.sh: expected exactly one gfortran FFLAGS line to change (-O3 -> -O0), before=$before after=$after" >&2; exit 1; }
 fi
 make -C epoch2d COMPILER=gfortran -j"$SAB_MAKE_JOBS" > "$WORK/make.log" 2>&1
