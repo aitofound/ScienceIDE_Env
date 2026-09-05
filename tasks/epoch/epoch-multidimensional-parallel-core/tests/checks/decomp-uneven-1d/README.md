@@ -54,6 +54,14 @@ from the very first dump. That is a different initial condition, not a floor.
 The layout is still reachable through `SAB_NPROCX` for anyone who wants to look
 at it.
 
+`run.sh altbuild` runs `ic/nominal` on the same pinned source built with
+EPOCH's own debug profile (`make -C epoch1d COMPILER=gfortran MODE=debug`: `-O0
+-g` instead of the default `-O3`, full warnings promoted to errors,
+`-ffpe-trap=invalid,zero,overflow` and `-fbounds-check` turned on, and
+`-DPARSER_CHECKING -DDECK_DEBUG` compiled in) instead of the default build;
+grading never uses it, while self-validation measures the check's floor between
+the two legitimate builds from it.
+
 ## The pass policy
 
 The rank partition ladder and the per-species pseudoparticle count per cell are

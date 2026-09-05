@@ -36,6 +36,14 @@ comparison would measure nothing about the floor. That invariance is graded
 directly, as an executable condition, by layout-invariance-2d, and every layout
 here is reachable through the SAB_NPROC knobs.
 
+`run.sh altbuild` runs `ic/nominal` on the same pinned source built with
+EPOCH's own debug profile (`make -C epoch1d COMPILER=gfortran MODE=debug`: `-O0
+-g` instead of the default `-O3`, full warnings promoted to errors,
+`-ffpe-trap=invalid,zero,overflow` and `-fbounds-check` turned on, and
+`-DPARSER_CHECKING -DDECK_DEBUG` compiled in) instead of the default build;
+grading never uses it, while self-validation measures the check's floor between
+the two legitimate builds from it.
+
 ## The upstream deck
 
 `upstream/input.deck` is a byte-for-byte copy of `epoch1d/tests/laser/input.deck`
