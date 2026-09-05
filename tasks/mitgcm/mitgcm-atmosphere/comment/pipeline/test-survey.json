@@ -1,0 +1,94 @@
+{
+  "module": "mitgcm-atmosphere",
+  "tests": [
+    {
+      "id": "hs94-cs-32x32x5",
+      "module": "mitgcm-atmosphere",
+      "path": "verification/hs94.cs-32x32x5/input",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Held-Suarez dry dynamical core on the cubed sphere, 20 steps",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 1.9,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Chaotic at long times; pointwise over the 20-step window.",
+      "proposed_check": "held-suarez-cs"
+    },
+    {
+      "id": "tutorial-held-suarez-cs",
+      "module": "mitgcm-atmosphere",
+      "path": "verification/tutorial_held_suarez_cs/input",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Held-Suarez tutorial with shap_filt and diagnostics",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 5.2,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Pointwise over the short window.",
+      "proposed_check": "held-suarez-tutorial"
+    },
+    {
+      "id": "aim-5l-cs",
+      "module": "mitgcm-atmosphere",
+      "path": "verification/aim.5l_cs/input",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "5-level intermediate physics (aim_v23) with land and thsice on the cubed sphere, 10 steps",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 1.2,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Pointwise.",
+      "proposed_check": "aim-cubed-sphere"
+    },
+    {
+      "id": "atm-gray",
+      "module": "mitgcm-atmosphere",
+      "path": "verification/atm_gray/input",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Gray-radiation atmosphere (atm_phys), 26 levels, 10 steps",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 7.2,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Pointwise.",
+      "proposed_check": "atm-gray"
+    },
+    {
+      "id": "fizhi-cs-32x32x40",
+      "module": "mitgcm-atmosphere",
+      "path": "verification/fizhi-cs-32x32x40/input",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "GEOS fizhi physics on the cubed sphere, 40 levels, 6 steps",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 20,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "Not suitable at first pass: legacy package with its own grid remapping (gridalt) and known compiler fragility; revisit if the aim decks are too few."
+    }
+  ]
+}
