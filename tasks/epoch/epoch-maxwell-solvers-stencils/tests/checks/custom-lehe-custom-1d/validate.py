@@ -8,9 +8,12 @@ SI magnitudes differ by the speed of light (E in V/m, B in T; a propagating
 wave carries |B| = |E|/c), so each file entry may carry its own "atol", and
 the top-level atol is the bound of the electric-field files. That is the only
 change from the stock pointwise validator. Standard library and numpy only;
-reads only this check directory. Writes a result with "passed", "reason" and
+reads only this check directory. Writes a result with "passed", "reason",
 "distance" (the largest absolute error seen, which selfcheck records as the
-measured spread) plus, per file, the error and the bound it was judged by.
+measured spread) and "bound_fraction" (the largest fraction of its bound
+|err| / (atol + rtol|ref|) used by any graded value; its reciprocal is the
+headroom the presentation prints), plus, per file, the error and the bound it
+was judged by.
 
     python3 validate.py --reference DIR --candidate DIR --rubric rubric.json --out result.json
 """
@@ -46,7 +49,7 @@ def main() -> int:
     comparison = rubric["comparison"]
     atol, rtol = float(comparison["atol"]), float(comparison.get("rtol", 0.0))
     reference, candidate = Path(a.reference), Path(a.candidate)
-    worst, worst_fraction, failures, details = 0.0, 0.0, [], {}
+    worst, worst_frac, failures, details = 0.0, 0.0, [], {}
     for spec in comparison["files"]:
         rel = spec["path"]
         file_atol = float(spec.get("atol", atol))
@@ -70,17 +73,17 @@ def main() -> int:
         bound = file_atol + file_rtol * np.abs(r)
         over = int(np.count_nonzero(err > bound))
         max_err = float(err.max()) if err.size else 0.0
+        frac = float((err / bound).max()) if err.size else 0.0
         details[rel] = {"values": int(r.size), "max_abs_error": max_err,
-                        "atol": file_atol, "rtol": file_rtol, "values_over_bound": over}
+                        "atol": file_atol, "rtol": file_rtol, "values_over_bound": over, "bound_fraction": frac}
         if over:
             failures.append(f"{rel}: {over} of {r.size} values exceed atol={file_atol:g} "
                             f"rtol={file_rtol:g} (max |err| {max_err:.3e})")
         worst = max(worst, max_err)
-        if file_atol > 0:
-            worst_fraction = max(worst_fraction, max_err / file_atol)
+        worst_frac = max(worst_frac, frac)
     passed = not failures
     result = {"passed": passed, "policy": "pointwise", "atol": atol, "rtol": rtol, "distance": worst,
-              "worst_fraction_of_atol": worst_fraction, "files": details,
+              "bound_fraction": worst_frac, "files": details,
               "reason": "all graded values within bound" if passed else "; ".join(failures)}
     Path(a.out).write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(result["reason"], file=sys.stderr)
