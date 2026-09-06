@@ -1,0 +1,221 @@
+{
+  "module": "swmf-ring-current-models",
+  "tests": [
+    {
+      "id": "swpc-cimi",
+      "module": "swmf-ring-current-models",
+      "path": "Param/SWPC/PARAM.in_cimi_init",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "GM+IE+IM/CIMI: the kinetic ring current in the IM slot with restart",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 700,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "regression against Param/SWPC/TestOutput* at 1e-5 relative on the GM log, 2e-4 on magnetometers, ionosphere and geoindex files; the first steady-state steps are deterministic and the time-accurate 120 s window is short, so pointwise holds; the check must shorten the steady iterations (MaxIter 70 and 200 are already the test values) and keep the 2-minute time-accurate window",
+      "proposed_check": "swpc-cimi"
+    },
+    {
+      "id": "swpc-cimi-species",
+      "module": "swmf-ring-current-models",
+      "path": "Param/SWPC/PARAM.in_cimi_species_init",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "GM+IE+IM/CIMI with multi-species GM (H+ and O+ densities) and CIMI per-species pressures",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 700,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "regression against Param/SWPC/TestOutput* at 1e-5 relative on the GM log, 2e-4 on magnetometers, ionosphere and geoindex files; the first steady-state steps are deterministic and the time-accurate 120 s window is short, so pointwise holds; the check must shorten the steady iterations (MaxIter 70 and 200 are already the test values) and keep the 2-minute time-accurate window",
+      "proposed_check": "swpc-cimi-species"
+    },
+    {
+      "id": "swpc-cimi-pwom-species",
+      "module": "swmf-ring-current-models",
+      "path": "Param/SWPC/PARAM.in_cimi_pwom_species_init",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "GM+IE+IM/CIMI+PW/PWOM: CIMI with polar-wind outflow feeding the multi-species GM",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 900,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "regression against Param/SWPC/TestOutput* at 1e-5 relative on the GM log, 2e-4 on magnetometers, ionosphere and geoindex files; the first steady-state steps are deterministic and the time-accurate 120 s window is short, so pointwise holds; the check must shorten the steady iterations (MaxIter 70 and 200 are already the test values) and keep the 2-minute time-accurate window; four components, the heaviest SWPC variant",
+      "proposed_check": "swpc-cimi-pwom-species"
+    },
+    {
+      "id": "gm-ie-heidi",
+      "module": "swmf-ring-current-models",
+      "path": "Param/PARAM.in.test.GMIEHEIDI",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "GM+IE+IM/HEIDI: the HEIDI ring-current model coupled to the magnetosphere and ionosphere",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 300,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "compares GM log at 1e-3 relative with 1e-8 absolute and the HEIDI pressure file IM_test1_h_prs.002 at 1e-5; the release notes warn inner-magnetosphere models are sensitive to optimization, so the calibration run decides the bound",
+      "proposed_check": "gm-ie-heidi"
+    },
+    {
+      "id": "cimi-dipole",
+      "module": "swmf-ring-current-models",
+      "path": "IM/CIMI/Makefile",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "CIMI standalone: dipole field drift test",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 120,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "component-level make test target with a stored reference (IM/CIMI/output ignored upstream; the reference is in the repository's test inputs); runtime not measured here",
+      "proposed_check": "cimi-dipole"
+    },
+    {
+      "id": "cimi-drift",
+      "module": "swmf-ring-current-models",
+      "path": "IM/CIMI/Makefile",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "CIMI standalone: bounce-averaged drift of the distribution",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 120,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "component-level make test target with a stored reference (IM/CIMI/output ignored upstream; the reference is in the repository's test inputs); runtime not measured here",
+      "proposed_check": "cimi-drift"
+    },
+    {
+      "id": "cimi-flux",
+      "module": "swmf-ring-current-models",
+      "path": "IM/CIMI/Makefile",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "CIMI standalone: flux output",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 120,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "component-level make test target with a stored reference (IM/CIMI/output ignored upstream; the reference is in the repository's test inputs); runtime not measured here",
+      "proposed_check": "cimi-flux"
+    },
+    {
+      "id": "cimi-uniforml",
+      "module": "swmf-ring-current-models",
+      "path": "IM/CIMI/Makefile",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "CIMI standalone: uniform-L grid variant",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 120,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "component-level make test target with a stored reference (IM/CIMI/output ignored upstream; the reference is in the repository's test inputs); runtime not measured here",
+      "proposed_check": "cimi-uniforml"
+    },
+    {
+      "id": "cimi-waves",
+      "module": "swmf-ring-current-models",
+      "path": "IM/CIMI/Makefile",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "CIMI standalone: wave-particle diffusion terms",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 120,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "component-level make test target with a stored reference (IM/CIMI/output ignored upstream; the reference is in the repository's test inputs); runtime not measured here",
+      "proposed_check": "cimi-waves"
+    },
+    {
+      "id": "cimi-highorder",
+      "module": "swmf-ring-current-models",
+      "path": "IM/CIMI/Makefile",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "CIMI standalone: high-order ELSR advection scheme",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 120,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "component-level make test target with a stored reference (IM/CIMI/output ignored upstream; the reference is in the repository's test inputs); runtime not measured here",
+      "proposed_check": "cimi-highorder"
+    },
+    {
+      "id": "heidi-analytic",
+      "module": "swmf-ring-current-models",
+      "path": "IM/HEIDI/Makefile",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "HEIDI standalone: analytic electric field configuration",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 120,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "component make test target compared with DiffNum; runtime not measured",
+      "proposed_check": "heidi-analytic"
+    },
+    {
+      "id": "heidi-numeric",
+      "module": "swmf-ring-current-models",
+      "path": "IM/HEIDI/Makefile",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "HEIDI standalone: numeric (self-consistent) electric field",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 120,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "component make test target compared with DiffNum; runtime not measured",
+      "proposed_check": "heidi-numeric"
+    }
+  ]
+}
