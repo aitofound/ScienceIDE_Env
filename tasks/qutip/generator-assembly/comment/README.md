@@ -63,78 +63,172 @@ improve. Flagged for the curator rather than silently resolved.
 
 ## Tolerances
 
-Every floor is the measured nominal-versus-variant spread at the graded
-configuration, taken sequentially with nothing else on the machine.
+The bound of every check is the human's and none has moved since round 1. Two
+measured quantities sit under it and they are different things, which earlier
+revisions of this file blurred into the single word "floor":
 
-| check | floor | bound | margin |
-|---|---|---|---|
-| `heom-hierarchy-evolution` | 5.708e-08 | `1e-04 + 1e-06|r|` | 1,752 |
-| `heom-bath-decomposition` | 3.411e-13 | `1e-16 + 1e-12|r|` | 802 |
-| `bloch-redfield-jaynes-cummings` | 1.854e-12 (2.982e-12 in-container) | `1e-09 + 1e-08|r|` | 851 |
-| `bloch-redfield-eigenbasis-tools` | 8.882e-15 (8.438e-15) | `1e-11 + 1e-10|r|` | 2,143 |
-| `dysolve-driven-propagator` | 7.772e-16 | `1e-12 + 1e-10|r|` | 1,529 |
-| `counting-statistics-dqd-current` | 6.661e-16 | `1e-13 + 1e-11|r|` | 1,846 |
-| `heom-public-interface` | 1.110e-16 | `1e-16 + 1e-13|r|` | 306 |
+- the **nominal-versus-variant spread**: how far two legitimate *runs* of the
+  same build separate when one initial-condition value is perturbed by a few
+  ulps. It is what the bound has to clear.
+- the **floor**: since skill 5.8.0 this is measured by `selfcheck` from a third
+  solve, `run.sh altbuild` — the same pinned source and the same pinned wheels
+  with qutip's Cython extensions built at `-O0 -ffp-contract=off` instead of the
+  `-O3 -funroll-loops` `setup.py:118` hard-codes. It is the distance between two
+  legitimate *builds*, and `selfcheck` writes it into each rubric rather than
+  anyone typing it.
 
-The floors span eight orders of magnitude and the split is structural. The
+Measured in the shipped record, in-container under the declared 2 cpus:
+
+| check | spread (x86-64) | spread (arm64) | altbuild floor | bound | margin |
+|---|---|---|---|---|---|
+| `heom-hierarchy-evolution` | 9.957e-08 | 3.695e-08 | 0, bit-identical | `1e-04 + 1e-06|r|` | 1,004x |
+| `heom-bath-decomposition` | 3.411e-13 | 3.411e-13 | 0, bit-identical | `1e-16 + 1e-12|r|` | 802x |
+| `bloch-redfield-jaynes-cummings` | 2.712e-12 | 2.982e-12 | 0, bit-identical | `1e-09 + 1e-08|r|` | 986x |
+| `bloch-redfield-eigenbasis-tools` | 1.066e-14 | 8.438e-15 | 0, bit-identical | `1e-11 + 1e-10|r|` | 1,602x |
+| `dysolve-driven-propagator` | 7.772e-16 | 7.772e-16 | 0, bit-identical | `1e-12 + 1e-10|r|` | 1,310x |
+| `counting-statistics-dqd-current` | 5.551e-16 | 6.661e-16 | 0, bit-identical | `1e-13 + 1e-11|r|` | 3,730x |
+| `heom-public-interface` | 7.772e-16 | 1.110e-16 | 0, bit-identical | `1e-16 + 1e-13|r|` | **46x** |
+
+The margin column is the bound over the worst graded value's error, from the
+validator's `bound_fraction` (skill 5.10.0); the validators in this leaf were
+updated to report it, so the presentation no longer prints `not reported`. The
+native figures the warrants quote — measured on the packaging machine outside a
+container — are in each rubric's `evidence.nominal_versus_variant`.
+
+The spreads span eight orders of magnitude and the split is structural. The
 machine-precision ones — Dysolve, counting statistics, bath decomposition, the
 BR tensor, the HEOM interface — have **no ODE integrator in the path**:
-closed-form expansions, one eigendecomposition, or a pair of sparse solves.
-The two that are orders looser are accumulation-limited: `brmesolve` through
-the integrator (`scipy_integrator.py:29-30` defaults `atol=1e-8, rtol=1e-6`,
-tightened to `1e-10` here so the floor sits below the bound), and
+closed-form expansions, one eigendecomposition, or a pair of sparse solves. The
+two that are orders looser are accumulation-limited: `brmesolve` through the
+integrator (`scipy_integrator.py:29-30` defaults `atol=1e-8, rtol=1e-6`,
+tightened to `1e-10` here so the spread sits below the bound), and
 `heom-hierarchy-evolution` through 50,388 auxiliary operators.
 
-**The shipped record is `selfcheck` run `20260904T213148Z`** (contract
-fingerprint `256e9ee449c0`): reward 1.0, every check passed,
-`values_over_bound = 0` on every graded file, **no problems and no warnings**.
+**Two things in that table are new and neither is cosmetic.**
 
-This file is the only place the run id and its per-run figures appear, and
-that is deliberate. `rubric.json` and `task.toml` are hashed into
-`contract_fingerprint`, so a run id written into either is self-invalidating:
-editing it after run R makes the record stale, and re-running to refresh the
-record produces R+1. An earlier revision of this leaf shipped exactly that
-inconsistency — human-written files citing `20260903T015530Z` while the
-shipped record was `20260903T025927Z`. `comment/` is outside the fingerprint,
-so the citation is stable here.
+**The record moved architecture.** Every earlier record was measured on the
+arm64 machine this leaf was packaged on; this one was measured on an x86-64
+Linux host. Two of the seven spreads are identical to the arm64 ones to every
+digit and five are not, which is what one should expect: a spread is a property
+of the arithmetic on the host that measured it, not of the package. The pass
+result, the bounds and the graded configurations are untouched. Within the
+x86-64 host the numbers are exactly reproducible — the two earlier runs of this
+leaf on the same host (the calibration run and the run before this one) produced
+all seven distances and all seven bound fractions identical to the digit shown
+here.
 
-Measured in `20260904T213148Z`, run time per check with the source build
-excluded:
+**`heom-public-interface` has a 46x margin on this host** against about 300x on
+arm64, because the same two runs separate by several ulps there rather than one.
+That is the tightest margin in the leaf and it sits under the presentation's
+"read this row first" threshold of 50. It is reported, not fixed: the bound is
+the human's and this agent does not move bounds. What a reviewer should weigh is
+that the check is a *gate* — its point is that `path_difference.npy` is exactly
+zero because `HSolverDL` is a thin wrapper — and that a 46x margin still rejects
+any fault that changes the coherence at more than round-off.
 
-| check | solve 1 | solve 2 |
-|---|---|---|
-| `bloch-redfield-jaynes-cummings` | 170.3 s | 174.4 s |
-| `heom-hierarchy-evolution` | 96.9 s | 93.2 s |
-| `dysolve-driven-propagator` | 31.2 s | 29.2 s |
-| `bloch-redfield-eigenbasis-tools` | 3.0 s | 1.2 s |
-| `counting-statistics-dqd-current` | 2.8 s | 3.2 s |
-| `heom-bath-decomposition` | 0.8 s | -0.1 s |
-| `heom-public-interface` | 0.6 s | 1.3 s |
-| **suite** | **305.6 s** | **302.4 s** |
+## The alternative build, and what it measured
 
-Both inside the 900 s guidance. Builds were 1489 s and 1501 s — 2990 s
-of the 3602 s the two solves took, so **83%** of the run, excluded from
-the budget by design and the dominant cost of iterating on this leaf.
+All seven checks declare `run.sh altbuild`. The mechanism is worth writing down
+because qutip has no debug-build switch of the kind Phantom's `DEBUG=yes` gives:
+`setup.py:118` appends `-O3 -funroll-loops` to every extension as
+`extra_compile_args`, and setuptools puts `extra_compile_args` last on each
+compile line, so `CFLAGS` alone cannot lower the optimisation level. `run.sh`
+therefore points `CC` and `CXX` at a four-line wrapper that drops those two
+flags and appends `-O0 -ffp-contract=off`. The wrapper logs every compile it
+wraps and `run.sh` **fails the run if the log is empty**, so an altbuild that
+silently did not take effect cannot be recorded as a floor.
 
-This run's two solves agree to within 1% (305.6 s against 302.4 s) because
-the host was verified idle before it started — no containers across two
-samples 20 s apart, and the competing workload on this machine had finished.
-That agreement is a property of the conditions, not of the package, and no
-claim of run-to-run timing stability is made anywhere in this leaf: an earlier
-run of these same files, same inputs and same limits, differed by 12% on the
-suite and 18% on the acceleration check because other work shared the host.
-`expected_runtime_s` is therefore a declared estimate rather than a
-description of the shipped run. The *spreads*, by contrast, have reproduced to
-every digit across every run of this leaf.
+It took effect, and the record shows it twice over: the per-check source build
+falls from about 304 s to about 114 s, and the acceleration check's run time
+rises from 314 s to 807 s — unoptimised Cython in `brterm`, which is exactly the
+code this module owns.
+
+**And the graded output is bit-identical on all seven checks, so every floor is
+0.** That is a result rather than a null. GCC does not reorder floating-point
+arithmetic without `-ffast-math`, and the default target for this image is
+baseline x86-64, which has no FMA — so `-ffp-contract=off` is a no-op there and
+the optimisation level cannot move a single bit. **The graded output of this
+leaf is invariant under the optimisation level of its compiled extensions**, so
+all of the spread seen in self-validation comes from the inputs and none of it
+from the build. A port has the whole margin available to it.
+
+The same `run.sh altbuild` should be informative rather than degenerate on an
+FMA-baseline target such as arm64, where contraction is on by default and
+turning it off does change the arithmetic. The flag set is deliberately not
+branched on architecture: one build, one sentence in the rubric, and whatever it
+measures on the host that runs it.
+
+## The shipped record
+
+**`selfcheck` ran 2026-09-05T10:48:39Z to 12:44:49Z** on
+`ale-worker` (x86_64 Linux 6.17, 88 cores, Docker 29.1.3), each solve in a
+container limited to the declared 2 cpus and 4 GB, network disabled, under
+consent recorded on that machine at 10:48:36Z. Contract fingerprint
+`49c4f197573d`. **Reward 1.0, 7 of 7 checks passed, `values_over_bound = 0` on
+every graded file, no problems and no warnings.** The three solves carry oracle
+run ids `20260905T104839Z-2800079` (nominal), `20260905T113133Z-4042122`
+(variant) and `20260905T121242Z-593810` (altbuild).
+
+This file is the only place the run ids and the per-run figures appear, and that
+is deliberate. `rubric.json` and `task.toml` are hashed into
+`contract_fingerprint`, so a run id — or any measurement from a run — written
+into either is self-invalidating: editing it after run R makes the record stale,
+and re-running to refresh the record produces R+1 with different numbers. An
+earlier revision of this leaf shipped exactly that inconsistency, human-written
+files citing `20260903T015530Z` while the shipped record was
+`20260903T025927Z`; the revision that added the altbuild hit the same loop again
+through `expected_runtime_s` and the quoted spreads, and the fix was structural
+rather than another substitution. Fingerprinted prose now names the evidence
+*field* and never its value; `comment/` is outside the fingerprint, so every
+digit lives here.
+
+Run time per check with the source build excluded:
+
+| check | solve 1, nominal | solve 2, variant | solve 3, altbuild |
+|---|---|---|---|
+| `bloch-redfield-jaynes-cummings` | 313.5 s | 264.1 s | 807.1 s |
+| `heom-hierarchy-evolution` | 84.1 s | 86.9 s | 267.3 s |
+| `dysolve-driven-propagator` | 29.7 s | 32.3 s | 35.7 s |
+| `bloch-redfield-eigenbasis-tools` | 5.4 s | 3.9 s | 4.9 s |
+| `counting-statistics-dqd-current` | 4.8 s | 5.2 s | 6.3 s |
+| `heom-public-interface` | 0.7 s | 1.0 s | 0.7 s |
+| `heom-bath-decomposition` | 0.7 s | 1.2 s | 1.6 s |
+| **suite** | **439.0 s** | **394.5 s** | **1123.7 s** |
+
+The nominal suite, 439.0 s, is the figure the 900 s guidance is read against,
+and it is inside it. Builds were 2130 s, 2071 s and 795 s — 4996 s of the
+6968 s the three solves took, **72%** of the run, excluded from the budget by
+design and still the dominant cost of iterating on this leaf. The altbuild
+solve's builds are a third of the others' because `-O0` compiles faster; its run
+seconds are the ones that go the other way.
+
+The sub-second rows carry about a second of quantisation: the driver records
+each check's build seconds as an integer and subtracts it from a float elapsed
+time, which is why an earlier record showed `-0.1 s` for a one-second check.
+Nothing in the leaf reads those rows as a measurement finer than that, and
+`expected_runtime_s` is declared with that slack.
+
+`expected_runtime_s` in each rubric is a **declared estimate**, not a
+description of the shipped run. The declarations were reset from a measured
+nominal solve on this host and rounded up; the shipped solve then landed at
+5.4 / 313.5 / 4.8 / 29.7 / 0.7 / 84.1 / 0.7 s against declarations of
+9 / 251 / 4 / 47 / 2 / 92 / 3 s (checks in alphabetical order). One landed above
+its declaration — the acceleration check, 313.5 s against 251 s, a quarter over
+— and the CLI raised no run-time flag on any of them; its flag is at twice the
+declaration. The run before this one, on the same host, put the same check at
+267.4 s and the variant solve here put it at 264.1 s, which is the wall-clock
+wander the caveat below is about. No number in a fingerprinted file claims to be
+from the shipped solve, because no rerun could ever make that true.
 
 The three HEOM checks were on their first container exposure in an earlier run
-and came in at or below their native floors — `heom-hierarchy-evolution`
-measures 3.695e-08 in-container against 5.708e-08 natively, so it has *more*
-headroom than its rubric first claimed, not less.
+and came in at or below their native spreads — `heom-hierarchy-evolution`
+measured 3.695e-08 in-container against 5.708e-08 natively on arm64, so it has
+*more* headroom than its rubric first claimed, not less. On x86-64 it measures
+9.957e-08, above the native arm64 figure; both are in the table above.
 
 **One correction worth recording.** `counting-statistics-dqd-current` first
 shipped a bound with margin 37,295 against a machine-precision spread; it was
-tightened to `1e-13 + 1e-11|r|` at STOP 4 for a margin of about 1,850.
+tightened to `1e-13 + 1e-11|r|` at STOP 4, which measures 3,730x on this host.
 
 A second observation that used to sit here has been removed because it is not
 about this leaf: the floor of the Floquet check moved from 1.211e-09 at N=64 to
@@ -143,16 +237,26 @@ derived at its graded configuration rather than extrapolated from a cheap run.
 That check was authored here under an earlier six-module cut and now belongs to
 `core-data-layer`; the lesson travels with it.
 
-## Two measurement hazards this leaf hit, recorded because they cost real time
+## Three measurement hazards this leaf hit, recorded because they cost real time
 
-**Host contention invalidated a whole solve.** An earlier calibration measured
-`bloch-redfield-jaynes-cummings` at 1246 s in its nominal solve and 176.6 s in
-its variant — identical inputs, identical driver, identical container limits.
-Native profiling jobs were sharing the host during the first half. The spreads
-were unaffected (contention moves wall clock, not arithmetic) but every
-runtime from that solve was useless. Nothing in this leaf now asserts
-run-to-run timing stability: `expected_runtime_s` is a nominal-solve figure
-and the record carries what each solve actually measured.
+**Wall clock is not reproducible even on an idle host.** Run
+`20260903T082734Z` — the clean rerun after the `python3 -s` fix, on a host
+verified idle before it started — put its two solves **10.5% apart on the suite
+and 17.7% apart on the acceleration check**. Nothing was competing with it.
+That is the honest baseline for how much a solve of this leaf wanders on
+identical inputs, and it is why no per-check field here asserts a wall clock:
+`expected_runtime_s` is a declared estimate and the record carries what each
+solve actually measured. An earlier revision of this file attributed that
+10.5%/17.7% gap to host contention; it did not, and the recomputed timing
+history is the author's, on the PR.
+
+**Contention is a separate and much larger effect.** A different calibration
+measured `bloch-redfield-jaynes-cummings` at 1246 s in its nominal solve and
+176.6 s in its variant — identical inputs, identical driver, identical
+container limits — with native profiling jobs sharing the host during the first
+half. The spreads were unaffected, because contention moves wall clock and not
+arithmetic, but every runtime from that solve was useless. The two effects are
+about a factor of forty apart and should not be confused for one another.
 
 **`test.sh` runs `python3 -B -s`, and `-s` excludes the user site directory.**
 Two calibration runs were lost to `ModuleNotFoundError: No module named
@@ -181,6 +285,13 @@ numpy will hit the same wall, and the error message points at the wrong fix.
 - **The bath-decomposition variant took three attempts.** `lam` scales only
   coefficients, `gamma` misses the underdamped bath's own parameter; `T` was
   the only single parameter reaching all three expansions.
+- **The altbuild measures nothing on this host.** `-O0 -ffp-contract=off`
+  produces bit-identical graded output on baseline x86-64, so all seven floors
+  are 0. That is the correct answer for this source on this target rather than a
+  defect, and it is argued in full above — but it does mean the floor column
+  carries no information here, and a reviewer reading headroom should read the
+  spread and margin columns instead. An FMA-baseline target would make the same
+  altbuild informative.
 - **Single-target.** Only the stock `a100-sxm4-80gb.json` is active.
 - **`steadystate` is not in this module** — profiled at 89.1% SciPy SuperLU,
   so porting it means replacing SuperLU rather than accelerating QuTiP. It is

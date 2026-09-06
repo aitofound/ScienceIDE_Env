@@ -52,4 +52,16 @@ Upstream asserts `atol=5e-2` — 5% error. That is not a statement about
 reproducibility: it compares `brmesolve` against `mesolve`, two *different
 approximations* to the same problem. This check compares `brmesolve` against a
 port of `brmesolve` — the same computation — where only round-off may differ.
-The measured floor is `1.85e-12`, and the bound is `1e-9 + 1e-8|reference|`.
+The measured nominal-versus-variant spread is `1.85e-12`, and the bound is `1e-9 + 1e-8|reference|`.
+
+## `run.sh altbuild`
+
+A third run of the same nominal inputs on an alternative legitimate build.
+`run.sh altbuild` rebuilds the pinned source with qutip's Cython extensions
+compiled at `-O0` with `-ffp-contract=off` instead of the `-O3 -funroll-loops`
+that `code/qutip/setup.py:118` hard-codes on every extension; the source tree,
+the pinned `numpy`/`scipy`/`Cython` wheels, the `pip` command and the inputs
+are unchanged, so it is a build a correct candidate could plausibly be rather
+than a different computation. `selfcheck` grades it against the nominal run
+with this check's own `validate.py` and records the distance as this check's
+floor; the measured figures are in the rubric's `evidence`.
