@@ -87,8 +87,8 @@ cd "$WORK/src/tests"
 grep '^SAB|' "$WORK/raw.txt" \
   | awk -F'|' '{printf "%s\t%s\n", $2, $3}' \
   | LC_ALL=C sort \
-  | awk -F'\t' '{printf "# %s\n%s\n", $1, $2}' > "$OUT_DIR/three-d.txt"
-n=$(grep -vc '^#' "$OUT_DIR/three-d.txt")
+  | awk -F'\t' '{printf "# %s\n%s\n", $1, $2}' > "$OUT_DIR/three-d.txt" || true  # an empty emit is a failure; the count guard below reports it instead of grep's exit 1 ending the script silently
+n=$(grep -vc '^#' "$OUT_DIR/three-d.txt" || true)
 if [ "$n" -ne 18773 ]; then
   echo "run.sh: expected 18773 graded values, got $n" >&2; exit 1
 fi

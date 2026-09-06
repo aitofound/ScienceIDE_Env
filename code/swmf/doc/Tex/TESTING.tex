@@ -1,0 +1,226 @@
+%  Copyright (C) 2002 Regents of the University of Michigan, portions used with permission 
+%  For more information, see http://csem.engin.umich.edu/tools/swmf
+\documentclass[twoside,10pt]{article}
+
+\title{Testing Procedures for the Space Weather Modeling Framework\\
+       \hfill \\
+       \SWMFLOGO}
+
+\author{G\'abor T\'oth\\
+  {\it Center for Space Environment Modeling}\\
+  {\it The University of Michigan}\\
+  \hfill \\
+  \CSEMLOGO}
+
+\input HEADER
+
+\section{Description of the Testing Philosophy}
+
+The Space Weather Modeling Framework (SWMF) is
+composed of the core of the framework and the various components
+modeling the physics domains. Since the components are developed 
+independently, it is neither possible nor desirable to enforce a
+rigorous and comprehensive testing procedure for each component.
+As a minimum, however, we require that new components are provided
+with at least one functionality test before they can be integrated
+into the SWMF.
+
+On the other hand we must ensure that the core of the SWMF and
+the key components developed at the Center for Space Environment
+Modeling (CSEM) are well tested and reliable. 
+We also established some base-line testing for the whole
+framework involving all the components to verify that the SWMF
+works as expected for a more or less typical space weather simulation
+run. This test can be run on different platforms, and it serves as
+the portability testing for the SWMF.
+
+In summary our testing philosophy follows a layered approach:
+\begin{itemize}
+\item The SWMF core: individual unit testing
+\item Key components: extensive functionality test suite
+\item New components: at least one functionality test
+\item The SWMF as a whole: comprehensive portability tests
+\end{itemize}
+The core of the SWMF is tested by unit testing, by the functionality
+test suite and also by the portability tests. The key components
+are tested by the functionality test suite and the portability tests.
+New components are tested by their functionality test and the 
+portability tests. Finally all components and couplers are tested
+by the portability tests.
+
+\section{Description of Unit Testing}
+
+The core of the SWMF consists of two layers:
+\begin{itemize}
+\item The super structure:  CON/Control, CON/Interface, CON/Stubs
+\item The infra structure: CON/Library, CON/Coupler, share/, util/
+\end{itemize}
+The super structure, as the name suggests, can only be tested
+together with the components and the infra structure. 
+This complexity can be somewhat reduced if the components are replaced
+with {\it stubs}. The stub components do not do any computation,
+they simply advance the simulation time and use up some CPU time.
+The stub components are implemented in the CON/Stubs directory.
+
+\subsection{Testing CON/Control with CON/Stubs}
+
+The SWMF can be compiled with the stub components if the 
+\begin{verbatim}
+INT_VERSION = Stubs
+\end{verbatim}
+is selected in {\tt Makefile.def}. All component versions
+can be set to 'Empty'. With this choice the core
+of the SWMF can be tested without running the components.
+An example parameter file is provided in
+\begin{verbatim}
+Param/PARAM.in.test.stubs
+\end{verbatim}
+To run the test, compile the SWMF with
+\begin{verbatim}
+./Config.pl -v=Empty
+make -j SWMF INT_VERSION=Stubs
+\end{verbatim}
+then create the run directory and run the test:
+\begin{verbatim}
+make rundir
+cd run
+cp Param/PARAM.in.test.stubs PARAM.in
+mpiexec -n 2 SWMF.exe
+\end{verbatim}
+This test is intended for developers only, so the output is
+relatively complicated. Other than printing to the screen,
+the test creates several files
+\begin{verbatim}
+cd run
+ls STDOUT/*.log ??restart_*
+\end{verbatim}
+The stub components can also be used to predict the parallel 
+execution time for various layouts and control parameters.
+An alternative approach is to use the Scripts/Performance.pl script.
+
+\subsection{Testing CON/Library}
+
+There is a test for the registration of components.
+The list and layout of registered components is described by the 
+\#COMPONENTMAP command in the PARAM.in file.
+An example file is provided in CON/Library/src.
+To test the reading of this file and the various functions provided
+by CON\_world, CON\_comp\_info and CON\_comp\_param, run 
+\begin{verbatim}
+cd CON/Library/src
+make test NP=4 NTHREAD=2
+\end{verbatim}
+This test is intended for developers only, 
+so the output is relatively complicated.
+One can change the PARAM.in file or the number of processors to
+do more extensive testing.
+
+The other modules in this directory (CON\_time and CON\_physics) are
+relatively simple and they do not have a unit tester. These modules
+are tested in the functionality and portability tests.
+
+\subsection{Testing CON/Interface}
+
+The CON/Interface directory contains the couplers between the 
+components of the SWMF. These couplers cannot be tested by themselves.
+The interfaces are tested by the portability tests 
+(see section~\ref{sec:portability}).
+
+\subsection{Testing CON/Coupler}
+
+The CON/Coupler directory contains the parallel coupling toolkit of the SWMF.
+This toolkit is used in some of the component couplers. 
+The unit tester for the coupling toolkit is CON\_test\_global\_message\_pass.
+This module has been used in the past to test the SWMF coupling toolkit. 
+To avoid various problems with the compilers on the SGI Altix machines, 
+the unit tester has been removed recently. 
+The coupling toolkit is tested by the portability tests
+(see section~\ref{sec:portability}).
+
+
+\subsection{Testing share/Library}
+
+This library is used by the SWMF as well as the stand alone components.
+It is crucial to thoroughly test all methods provided by this library.
+To run the unit tests
+\begin{verbatim}
+cd share/Library/test
+make test
+\end{verbatim}
+Although the output looks rather complex, it is mostly caused by the
+compiler messages and the verbose information provided by the make
+program. To get a cleaner output, rerun the tests as
+\begin{verbatim}
+make -s tests
+\end{verbatim}
+There should be now very limited output reporting the tests
+of the various modules and methods. Some of the tests may show small
+differences relative to the expected results due to round off errors.
+
+
+\subsection{Testing util/TIMING and util/NOMPI}
+
+The TIMING utility provides a simple and compiler independent utility
+to measure the CPU time spent on various parts of a Fortran code.
+The NOMPI utility allows to compile an MPI parallel F90 code with the
+NOMPI library instead of the MPI library. The resulting executable
+can run on a single processor. The NOMPI utility is useful for debugging 
+purposes.
+
+The TIMING can be tested with
+\begin{verbatim}
+cd util/TIMING/src
+make tests
+\end{verbatim}
+An example output is provided in 'tests.log'. To compare with this,
+rerun the tests like this
+\begin{verbatim}
+make -s tests > tmp.log
+diff tmp.log tests.log
+\end{verbatim}
+Note that the timings and the order of the output can vary from
+test run to test run. Two of the four tests involve the NOMPI
+library, although only a few of the NOMPI methods are used.
+
+\section{Description of Functionality Testing}
+
+The functionality tests check the functionality of 
+the software in typical configurations. The SWMF uses a hierarchical
+test suite. The top level Makefile.test contains various SWMF
+tests that exercise various subsets of the models running together.
+Each model inside the SWMF has (or should have) functionality tests that
+check the model in stand-alone mode. In addition, there are tests
+for the shared library and some of the utilities. All tests can be executed
+with
+\begin{verbatim}
+make -j test NP=4 NTHREAD=2 >& test_swmf.log
+\end{verbatim}
+where NP sets the number of cores and NTHREAD sets the number OpenMP threads to be used.
+The tests are typically run from 1 to 8 cores and 1 to 2 threads. 
+
+The results of the tests are written into .diff files. An empty .diff
+file means that the test passed. The results can be collected with
+\begin{verbatim}
+make test_check
+\end{verbatim}
+Use
+\begin{verbatim}
+make test_help
+\end{verbatim}
+to see a complete list of functionality tests for the SWMF.
+For individual models or libraries, go into the model directory:
+\begin{verbatim}
+cd GM/BATSRUS
+make test_help
+cd ../../PW/PWOM
+make help
+cd  ../../share/Library/test
+make help
+\end{verbatim}
+The functionality tests are executed on various machines with various compilers and different
+number of processurs every night. The results are collected to a website, currently available at
+\begin{verbatim}
+  http://csem.engin.umich.edu/SWMFTESTS
+\end{verbatim}
+
+\end{document}

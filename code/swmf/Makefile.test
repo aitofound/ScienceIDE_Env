@@ -1,0 +1,2972 @@
+#  Copyright (C) 2002 Regents of the University of Michigan, 
+#  portions used with permission 
+#  For more information, see http://csem.engin.umich.edu/tools/swmf
+#^CMP FILE TESTING
+
+TESTDIR = run_test
+
+TESTMACHINE = `hostname | sed -e 's/\..*//; s/[0-9]*$$//'`
+
+test_help:
+	@echo "    test                        (run all tests with ${MPIRUN})"
+	@echo "    test MPIRUN=                (run tests serially)"
+	@echo "    test NPFLAG=-n NP=3         (run tests with ${PARALLEL} -n 3)"
+	@echo "    test PARALLEL='ibrun'       (run tests with ibrun)"
+	@echo "    test8_compile               (configure and compile test8)"
+	@echo "    test8_rundir                (create run directory for test8)"
+	@echo "    test8_run NP=4              (run test8 with 4 MPI )"
+	@echo "    test8_check                 (check test8 results)"
+	@echo "    test8_check BLESS=YES       (bless test8 results = update references)"
+	@echo "    test8 TESTDIR=run_test08    (run test8 in run_test08 directory)"
+	@echo "    test_gpu                    (run GPU related tests only)"
+	@echo "    test_gpu OPENACC=-noacc     (run GPU tests with CPU code)"
+	@echo "    test_share_library          (run share/Library tests)"
+	@echo "    test_util                   (run util/ tests)"
+	@echo "    test_batl                   (run BATL tests if BATL/ is present)"
+	@echo "    test_comp                   (run component tests)"
+	@echo "    test_swmf                   (run SWMF tests below)"
+	@echo "    test_eeggl                  (run EEGGL test)"
+	@echo "    test_eegtd                  (run Titov-Demouline test)"
+	@echo "    test_esmf                   (run ESMF-SWMF coupling test)"
+	@(if [ -d PW/PWOM    ]; then echo "    test_pw                     (run PW/PWOM test)"; fi)
+	@(if [ -d PS/DGCPM   ]; then echo "    test_ps                     (run PS/DGCPM test)"; fi)
+	@(if [ -d SP/MFLAMPA ]; then echo "    test_sp                     (run SP/MFLAMPA test)"; fi)
+	@(if [ -d IM/RCM2    ]; then echo "    test_swpc                   (run GM-IE-RCM2 test as used by SWPC)"; fi)
+	@(if [ -d IM/RCM2    ]; then echo "    test_swpc_build             (create SWPC_build and run test_swpc)"; fi)
+	@(if [ -d IM/RCM2    ]; then echo "    test_swpc_gpu               (run GM-IE-RCM2 test on GPU)"; fi)
+	@(if [ -d IM/RCM2    ]; then echo "    test_swpc_large_gpu         (run large GM-IE-RCM2 test on GPU)"; fi)
+	@(if [ -d IM/RCM2    ]; then echo "    test_swpc_pe                (run GM-IE-RCM2 test with Pe)"; fi)
+	@(if [ -d IM/RCM2    ]; then echo "    test_swpc_multiion          (run multiion GM-IE-RCM2 SWPC test)"; fi)
+	@(if [ -d IM/RCM2    ]; then echo "    test_swpc_multispecies      (run multispecies GM-IE-RCM2 SWPC test)"; fi)
+	@(if [ -d IM/CIMI    ]; then echo "    test_swpc_cimi              (run anisotropic GM-IE-CIMI SWPC test)"; fi)
+	@(if [ -d IM/CIMI    ]; then echo "    test_swpc_cimi_species      (run multispecies GM-IE-CIMI SWPC test)"; fi)
+	@(if [ -d PW/PWOM    ]; then echo "    test_swpc_pwom              (run GM-IE-RCM2-PWOM SWPC test)"; fi)
+	@(if [ -d PW/PWOM    ]; then echo "    test_swpc_pwom_species      (run multispecies GM-IE-RCM2-PWOM SWPC test)"; fi)
+	@(if [ -d PW/PWOM    ]; then echo "    test_swpc_cimi_pwom_species (run multispecies GM-IE-CIMI-PWOM SWPC test)"; fi)
+	@(if [ -d PC/FLEKS   ]; then echo "    test_swpc_aepic             (run MHD-AEPIC GM-IE-RCM2-PC SWPC test)"; fi)
+	@(if [ -d PW/PWOM    ]; then echo "    test1                       (run GM-IE-PWOM test)"; fi)
+	@(if [ -d UA/GITM    ]; then echo "    test3                       (run GM-IE-IM-UA test)"; fi)
+	@(if [ -d IM/HEIDI   ]; then echo "    test4                       (run GM-IE-HEIDI test)"; fi)
+	@(if [ -d GM/BATSRUS ]; then echo "    test5                       (run EE-SC test)"; fi)
+	@(if [ -d GM/BATSRUS ]; then echo "    test6                       (run SC-IH coupling test: stream-aligned)"; fi)
+	@(if [ -d GM/BATSRUS ]; then echo "    test7                       (run IH-OH test)"; fi)
+	@(if [ -d GM/BATSRUS ]; then echo "    test8                       (run SC-IH AWSoM-R test)"; fi)
+	@(if [ -d GM/BATSRUS ]; then echo "    test9                       (run SC-IH AWSoM test)"; fi)
+	@(if [ -d GM/BATSRUS ]; then echo "    test9gpu                    (run SC-IH AWSoM test on GPU)"; fi)
+	@(if [ -d GM/BATSRUS ]; then echo "    test10                      (run SC-IH real-time test)"; fi)
+	@(if [ -d GM/BATSRUS ]; then echo "    test11                      (run SC-GM coupling test)"; fi)
+	@(if [ -d UA/MGITM   ]; then echo "    test12                      (run GM-UA/MGITM test)"; fi)
+	@(if [ -d PT/AMPS ] && [ -d GM/BATSRUS/srcUserExtra ]; then echo "    test13                      (run GM-PT/AMPS test: Europa)"; fi)
+	@(if [ -d PT/MITTENS ]; then echo "    test14                      (run SC-IH-PT/MITTENS test)"; fi)
+	@(if [ -d SP/MFLAMPA ]; then echo "    test15                      (run SC-IH-SP/MFLAMPA test)"; fi)
+	@(if [ -d SP/MFLAMPA ]; then echo "    test15_build                (configure SC-IH-SP/MFLAMPA, run test15)"; fi)
+	@(if [ -d PC/FLEKS   ]; then echo "    test16_2d                   (run GM-PC/FLEKS test in 2D)"; fi)
+	@(if [ -d PC/FLEKS   ]; then echo "    test16_3d                   (run GM-PC/FLEKS test in 3D)"; fi)
+	@(if [ -d PC/FLEKS   ]; then echo "    test17                      (run GM-PC/FLEKS test: 2D Alfven wave)"; fi)
+	@(if [ -d PC/FLEKS   ]; then echo "    test18                      (run GM-PC/FLEKS test: 3D reconnection)"; fi)
+	@(if [ -d SP/MFLAMPA ]; then echo "    test19                      (run SC-IH-OH-SP/MFLAMPA test)"; fi)
+	@(if [ -d PT/FLEKS   ]; then echo "    test20                      (run OH-PT/FLEKS test: shocktube)"; fi)
+	@(if [ -d PT/FLEKS   ]; then echo "    test21                      (run OH-PT/FLEKS test: OuterHelio)"; fi)
+	@(if [ -d PT/FLEKS   ]; then echo "    test22                      (run OH-PT/FLEKS test: OuterHelio)"; fi)
+	@(if [ -d PC/FLEKS   ]; then echo "    test23_2d                   (run GM-PC/FLEKS test: 2D fast wave with AMR PIC)"; fi)
+	@(if [ -d PC/FLEKS   ]; then echo "    test23_3d                   (run GM-PC/FLEKS test: 3D fast wave with AMR PIC)"; fi)
+	@(if [ -d PC/FLEKS   ]; then echo "    test25                      (run PC/FLEKS test: 3D light wave with AMR PIC)"; fi)
+	@echo "    test_check                  (collect test results into test_swmf.res)"
+
+# Nothing should be done parallel in this Makefile
+.NOTPARALLEL:
+
+# Config.pl flag for compilation with OpenACC. Set to -noacc to disable it.
+OPENACC = -acc
+
+test:
+	@rm -f *.diff
+	-@(${MAKE} test_share_library)
+	-@(${MAKE} test_util)
+	-@(${MAKE} test_comp)
+	-@(${MAKE} test_swmf)
+	-@(if [ -d BATL ]; then ${MAKE} test_batl; fi)
+	-@(${MAKE} test_check)
+
+test_gpu:
+	@rm -f *.diff
+	-@(${MAKE} test_swpc_gpu TESTDIR=run_test_swpc_gpu)
+	-@(${MAKE} test_swpc_large_gpu TESTDIR=run_test_swpc_large_gpu)
+	-@(${MAKE} test9gpu TESTDIR=run_test09gpu)
+	-@(cd GM/BATSRUS; ${MAKE} test_gpu)
+	-@(${MAKE} test_check)
+
+test_swmf:
+	-@(${MAKE} test_eeggl TESTDIR=run_test_eeggl)
+	-@(if [ "${ESMFMKFILE}" != "" ]; then ${MAKE} test_esmf; fi)
+	-@(if [ -d PS/DGCPM   ]; then ${MAKE} test_ps TESTDIR=run_test_ps; fi)
+	-@(if [ -d IM/RCM2    ]; then ${MAKE} test_swpc_gpu TESTDIR=run_test_swpc_gpu; fi)
+	-@(if [ -d IM/RCM2    ]; then ${MAKE} test_swpc TESTDIR=run_test_swpc; fi)
+	-@(if [ -d IM/RCM2    ]; then ${MAKE} test_swpc_pe TESTDIR=run_test_swpc_pe; fi)
+	-@(if [ -d IM/RCM2    ]; then ${MAKE} test_swpc_multiion TESTDIR=run_test_swpc_multiion; fi)
+	-@(if [ -d IM/RCM2    ]; then ${MAKE} test_swpc_multispecies TESTDIR=run_test_swpc_multispecies; fi)
+	-@(if [ -d IM/CIMI    ]; then ${MAKE} test_swpc_cimi TESTDIR=run_test_swpc_cimi; fi)
+	-@(if [ -d IM/CIMI    ]; then ${MAKE} test_swpc_cimi_species TESTDIR=run_test_swpc_cimi_species; fi)
+	-@(if [ -d PW/PWOM    ]; then ${MAKE} test_swpc_pwom TESTDIR=run_test_swpc_pwom; fi)
+	-@(if [ -d PW/PWOM    ]; then ${MAKE} test_swpc_pwom_species TESTDIR=run_test_swpc_pwom_species; fi)
+	-@(if [ -d PW/PWOM ] && [ -d IM/CIMI ]; then ${MAKE} test_swpc_cimi_pwom_species TESTDIR=run_test_swpc_cimi_pwom_species; fi)
+	-@(if [ -d PW/PWOM    ]; then ${MAKE} test1 TESTDIR=run_test01; fi)
+	-@(if [ -d IM/HEIDI   ]; then ${MAKE} test4 TESTDIR=run_test04; fi)
+	-@(if [ -d GM/BATSRUS ]; then ${MAKE} test5 TESTDIR=run_test05; fi)
+	-@(if [ -d GM/BATSRUS ]; then ${MAKE} test6 TESTDIR=run_test06; fi)
+	-@(if [ -d GM/BATSRUS ]; then ${MAKE} test7 TESTDIR=run_test07; fi)
+	-@(if [ -d GM/BATSRUS ]; then ${MAKE} test8 TESTDIR=run_test08; fi)
+	-@(if [ -d GM/BATSRUS ]; then ${MAKE} test9 TESTDIR=run_test09; fi)
+	-@(if [ -d GM/BATSRUS ]; then ${MAKE} test9gpu TESTDIR=run_test09gpu; fi)
+	-@(if [ -d GM/BATSRUS ]; then ${MAKE} test11 TESTDIR=run_test11; fi)
+	-@(if [ -d UA/MGITM   ]; then ${MAKE} test12 TESTDIR=run_test12; fi)
+	-@(if [ -d PT/AMPS ] && [ -d GM/BATSRUS/srcUserExtra ]; then ${MAKE} test13 TESTDIR=run_test13; fi)
+	-@(if [ -d SP/MFLAMPA ]; then ${MAKE} test15 TESTDIR=run_test15; fi)
+	-@(if [ -d SP/MFLAMPA ]; then ${MAKE} test19 TESTDIR=run_test19; fi)
+	-@(if [ -d PC/FLEKS   ]; then ${MAKE} test16_2d TESTDIR=run_test16_2d; fi)
+	-@(if [ -d PC/FLEKS   ]; then ${MAKE} test16_3d TESTDIR=run_test16_3d; fi)
+	-@(if [ -d PC/FLEKS   ]; then ${MAKE} test17 TESTDIR=run_test17; fi)
+	-@(if [ -d PC/FLEKS   ]; then ${MAKE} test18 TESTDIR=run_test18; fi)
+	-@(if [ -d PC/FLEKS   ]; then ${MAKE} test_swpc_aepic TESTDIR=run_test_swpc_aepic; fi)
+	-@(if [ -d PT/FLEKS   ]; then ${MAKE} test20 TESTDIR=run_test20; fi)
+	-@(if [ -d PT/FLEKS   ]; then ${MAKE} test21 TESTDIR=run_test21; fi)
+	-@(if [ -d PT/FLEKS   ]; then ${MAKE} test22 TESTDIR=run_test22; fi)
+	-@(if [ -d PC/FLEKS   ]; then ${MAKE} test23_2d TESTDIR=run_test23_2d; fi)
+	-@(if [ -d PC/FLEKS   ]; then ${MAKE} test23_3d TESTDIR=run_test23_3d; fi)
+	-@(if [ -d PC/FLEKS   ]; then ${MAKE} test25 TESTDIR=run_test25; fi)
+	./Config.pl -noamrex
+
+
+
+# Setting BLESS=YES or Y will copy the solution into the reference solution
+BLESS=NO
+
+DIFFNUM = ${SCRIPTDIR}/DiffNum.pl -BLESS=${BLESS}
+
+DIFF_FILES = share/Library/test/*.diff util/*/src*/*.diff ESMF/*/*.diff ??/*/*.diff *.diff
+
+# This expression provides the number of AMPS processes used in a test
+# Unfortunately AMPS results depend on the number of processors
+NAMPS = `ls ${TESTDIR}/PT/thread* | wc -l | tr -d ' '`
+
+# Note: the "cat ... > /dev/null" makes sure that file sizes are correct on nyx
+
+test_check:
+	-@cat ${DIFF_FILES} > /dev/null
+	-@ls -ltr  ${DIFF_FILES} > test_swmf.res
+	-@(if [ -f BATL/test11.diff ]; then ls -ltr BATL/*.diff >> test_swmf.res; fi)
+	@cat test_swmf.res
+	@echo '=============================================================='\
+		>> test_swmf.res
+	-@head -100 ${DIFF_FILES} >> test_swmf.res
+	-@(if [ -f BATL/test11.diff ]; then head -100 BATL/*.diff >> test_swmf.res; fi)
+	@echo ' '
+	@echo 'See test_swmf.res and test_swmf.log for more detail...'
+	@echo ' '
+	@echo '=============================================================='\
+		>> test_swmf.res
+	share/Scripts/test_speed.pl . >> test_swmf.res
+
+### Unit tests of the share/Library ###
+
+test_share_library:
+	rm -f share/Library/test/*.diff
+	cd share/Library/src; ${MAKE} LIB
+	cd share/Library/test; make test
+	ls -l share/Library/test/*.diff
+
+### Unit tests of the utilities ###
+
+test_util:
+	cd util; make test
+
+### Unit tests of the BATL library ###
+
+test_batl:
+	cd BATL; ${MAKE} test
+
+### Component tests ###
+
+test_comp:
+	for i in `ls -d [A-Z][A-Z]/*/ | grep -v /Empty/`; \
+		do ( cd $$i; ${MAKE} test; ); done
+	ls -ltr [A-Z][A-Z]/*/*.diff
+
+### SWMF tests ###
+
+### test_cz: convection zone model FSAM test ###
+
+test_cz:
+	@echo "starting..."        >  test_cz.diff
+	@echo "test_cz_compile..." >> test_cz.diff
+	${MAKE} test_cz_compile
+	@echo "test_cz_rundir..."  >> test_cz.diff
+	${MAKE} test_cz_rundir
+	@echo "test_cz_run..."     >> test_cz.diff
+	${MAKE} test_cz_run
+	@echo "test_cz_check..."   >> test_cz.diff
+	${MAKE} test_cz_check
+
+test_cz_compile:
+	./Config.pl -default -v=Empty,CZ/FSAM -fishpak
+	cp CZ/FSAM/srcProblem/ModUserSetup.SWMF.f90 CZ/FSAM/src/ModUserSetup.f90
+	cp CZ/FSAM/srcProblem/ModPar.SWMF.f90 CZ/FSAM/src/ModPar.f90
+	${MAKE} SWMF
+
+test_cz_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.CZ ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+	cp ${CZDIR}/input/gong.l4b.14 ${TESTDIR}/
+
+test_cz_run:
+	cd ${TESTDIR}; ${PARALLEL} ${NPFLAG} 6 ./SWMF.exe > runlog
+
+test_cz_check:
+	-${DIFFNUM} -a=1e-5 -t -p="grep 'ref error='" \
+		${TESTDIR}/runlog \
+		${CZDIR}/output/runlog.ref \
+		> test_cz.diff
+	ls -ltr test_cz.diff
+
+### test_pw: Polarwind test ###
+
+test_pw:
+	@echo "starting..." > test_pw.diff
+	@echo "test_pw_compile..." >> test_pw.diff
+	${MAKE} test_pw_compile
+	@echo "test_pw_rundir..." >> test_pw.diff
+	${MAKE} test_pw_rundir
+	@echo "test_pw_run..." >> test_pw.diff
+	${MAKE} test_pw_run
+	@echo "test_pw_check..." >> test_pw.diff
+	${MAKE} test_pw_check
+
+test_pw_compile:
+	./Config.pl -default -v=Empty,PW/PWOM -o=PW:Earth
+	${MAKE} SWMF
+	make PIDL
+
+test_pw_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.PW ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test_pw_run:
+	cd ${TESTDIR}/PW; rm -f log.out restartOUT/* plots/*
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+
+test_pw_check:
+	-@(${DIFFNUM} -b -r=1e-8 \
+		${TESTDIR}/PW/plots/north_plots_iline0001.out \
+		${PWDIR}/data/output/Earth/north_plots_iline0001.out \
+		> test_pw.diff)
+	ls -ltr test_pw*.diff
+
+
+### test_ps: Plasmasphere model DGCPM test ###
+
+test_ps:
+	@echo "starting..." > test_ps.diff
+	@echo "test_ps_compile..." >> test_ps.diff
+	${MAKE} test_ps_compile
+	@echo "test_ps_rundir..." >> test_ps.diff
+	${MAKE} test_ps_rundir
+	@echo "test_ps_run..." >> test_ps.diff
+	${MAKE} test_ps_run
+	@echo "test_ps_check..." >> test_ps.diff
+	${MAKE} test_ps_check	
+
+test_ps_compile:
+	./Config.pl -default -v=Empty,PS/DGCPM
+	${MAKE} SWMF
+	
+test_ps_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.PS ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+	cp ${PSDIR}/Input/kp_test.dat ${TESTDIR}/PS/Input/
+
+test_ps_run:
+	cd ${TESTDIR}; ${PARALLEL} ${NPFLAG} 1 ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl -M RESULTS
+
+test_ps_check:
+	-@(${DIFFNUM} -t -r=1e-8 \
+		${TESTDIR}/RESULTS/PS/dgcpm_t20011021_010000_000.dat \
+		${PSDIR}/Output/dgcpm_t20011021_010000_000.ref \
+		> test_ps.diff)
+	-@(${DIFFNUM} -t -r=1e-8 \
+		${TESTDIR}/RESULTS/PS/PS_t20011021_000000_000.log \
+		${PSDIR}/Output/PS_t20011021_000000_000.ref \
+		>> test_ps.diff)
+	-@(${DIFFNUM} -t -r=1e-8 \
+		${TESTDIR}/RESULTS/PS/slice_*_t20011021_000000_000.dat \
+		${PSDIR}/Output/slice_L6p60_t20011021_000000_000.ref \
+		>> test_ps.diff)
+	ls -ltr test_ps*.diff
+
+### test1: PW+IE+GM ###
+
+test1:
+	@echo "test1_compile..." > test01_gm.diff
+	@echo "test1_compile..." > test01_ie.diff
+	@echo "test1_compile..." > test01_pw.diff
+	${MAKE} test1_compile
+	@echo "test1_rundir..." >> test01_gm.diff
+	@echo "test1_rundir..." >> test01_ie.diff
+	@echo "test1_rundir..." >> test01_pw.diff
+	${MAKE} test1_rundir
+	@echo "test1_run..." >> test01_gm.diff
+	@echo "test1_run..." >> test01_ie.diff
+	@echo "test1_run..." >> test01_pw.diff
+	${MAKE} test1_run
+	@echo "test1_check..." >> test01_gm.diff
+	@echo "test1_check..." >> test01_ie.diff
+	@echo "test1_check..." >> test01_pw.diff
+	${MAKE} test1_check
+
+test1_compile:
+	./Config.pl -default -v=Empty,GM/BATSRUS,IE/Ridley_serial,PW/PWOM
+	./Config.pl -o=GM:u=Default,e=Mhd,ng=2,g=8,8,8,PW:Earth,IE:g=91,181
+	${MAKE} SWMF
+	make PIDL
+
+test1_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.GMIEPW ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test1_run:
+	cd ${TESTDIR}/PW; rm -f log.out restartOUT/* plots/*
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl -M RESULTS
+
+test1_check:
+	-@(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/RESULTS/PW/north_plots_iline0001.out \
+		output/test1/PW_north_plots_iline0001.out.gz \
+		> test01_pw.diff)
+	-@(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/RESULTS/PW/north_plots_iline0002.out \
+		output/test1/PW_north_plots_iline0002.out.gz \
+		>> test01_pw.diff)
+	-@(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/RESULTS/PW/north_plots_iline0003.out \
+		output/test1/PW_north_plots_iline0003.out.gz \
+		>> test01_pw.diff)
+	-@(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/RESULTS/PW/north_plots_iline0004.out \
+		output/test1/PW_north_plots_iline0004.out.gz \
+		>> test01_pw.diff)
+	-@(${DIFFNUM} -b -r=1e-3 -a=1e-8 \
+		${TESTDIR}/RESULTS/GM/log_n000001.log \
+		output/test1/GM_log_n000001.log \
+		> test01_gm.diff)
+	-@(${DIFFNUM} -b -t -r=1e-5 \
+		${TESTDIR}/RESULTS/IE/IE*.log \
+		output/test1/IE.log \
+		> test01_ie.diff)
+	-@(${DIFFNUM} -b -r=1e-4 -a=1e-4 \
+		${TESTDIR}/RESULTS/IE/it140410_000110_000.idl \
+		output/test1/IE*.idl.gz \
+		>> test01_ie.diff)
+	ls -l test01_*.diff
+
+### test_swpc_build: configure SWMF with GM+IE+IM+RB only. ###
+
+# Configure with 4 components: GM+IE+IM+RB. Remove unused models.
+# Run test_swpc in the reduced SWMF build SWPC_build.
+
+BUILD=SWPC_build
+test_swpc_build:
+	rm -rf ${BUILD}
+	Scripts/Configure.pl -d=${BUILD}
+	cd ${BUILD}; rm -rf IM/HEIDI IM/CIMI IE/RIM util/HYPRE
+	cd ${BUILD}; ./Config.pl -install \
+	   	     	-compiler=${FORTRAN_COMPILER_NAME},${C_COMPILER_NAME}
+	cd ${BUILD}; make test_swpc
+
+### test_swpc: GM+IE+IM+RB ###
+
+test_swpc:
+	@echo "test_swpc_compile..." > test_swpc_rcm_gm.diff
+	@echo "test_swpc_compile..." > test_swpc_rcm_ie.diff
+	@echo "test_swpc_compile..." > test_swpc_rcm_rb.diff
+	${MAKE} test_swpc_compile
+	@echo "test_swpc_rundir..." >> test_swpc_rcm_gm.diff
+	@echo "test_swpc_rundir..." >> test_swpc_rcm_ie.diff
+	@echo "test_swpc_rundir..." >> test_swpc_rcm_rb.diff
+	${MAKE} test_swpc_rundir
+	@echo "test_swpc_run..." >> test_swpc_rcm_gm.diff
+	@echo "test_swpc_run..." >> test_swpc_rcm_ie.diff
+	@echo "test_swpc_run..." >> test_swpc_rcm_rb.diff
+	${MAKE} test_swpc_run
+	@echo "test_swpc_restart..." >> test_swpc_rcm_gm.diff
+	@echo "test_swpc_restart..." >> test_swpc_rcm_ie.diff
+	@echo "test_swpc_restart..." >> test_swpc_rcm_rb.diff
+	${MAKE} test_swpc_restart
+	@echo "test_swpc_check..." >> test_swpc_rcm_gm.diff
+	@echo "test_swpc_check..." >> test_swpc_rcm_ie.diff
+	@echo "test_swpc_check..." >> test_swpc_rcm_rb.diff
+	${MAKE} test_swpc_check
+
+test_swpc_compile:
+	./Config.pl -default
+	./Config.pl -v=Empty,GM/BATSRUS,IE/Ridley_serial,IM/RCM2,RB/RBE
+	./Config.pl -o=GM:u=Default,e=Mhd,ng=2,g=8,8,8,IE:g=181,361
+	${MAKE} SWMF
+	make PIDL INTERPOLATE
+
+test_swpc_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cd Param/SWPC/; cp PARAM.in_SWPC_v2_init PARAM.in_SWPC_v2_restart *.in *.dat ../../${TESTDIR}/
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in_SWPC_v2_init
+	perl -pi -e 'if(/MaxIter|MaxBlock/){s/700/70/; s/1500/200/; s/5000/350/}; s/#BORIS/BORIS/; s/^\#(COMPONENTMAP.*production)/$$1/i; s/^(COMPONENTMAP.*nightly)/\#$$1/i' ${TESTDIR}/PARAM.in_SWPC_v2_init
+	perl -pi -e 's/^360(\s+nGridLon)/72$$1/; s/^171(\s+nGridLat)/25$$1/;' ${TESTDIR}/PARAM.in_SWPC_v2_init
+	perl -pi -e 's/^221(\s+nGridLon)/23$$1/; s/^131(\s+nGridLat)/13$$1/;' ${TESTDIR}/PARAM.in_SWPC_v2_init
+	cp ${TESTDIR}/PARAM.in_SWPC_v2_init ${TESTDIR}/PARAM.in
+	ln -s ${BINDIR}/INTERPOLATE.exe ${TESTDIR}/
+
+test_swpc_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./Restart.pl -i SWMF_RESTART.20140410_000200
+
+test_swpc_restart:
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in_SWPC_v2_restart
+	perl -pi -e 's/#BORIS/BORIS/; s/^\#(COMPONENTMAP.*production)/$$1/i; s/^(COMPONENTMAP.*nightly)/\#$$1/i' ${TESTDIR}/PARAM.in_SWPC_v2_restart
+	perl -pi -e 's/^360(\s+nGridLon)/72$$1/; s/^171(\s+nGridLat)/25$$1/;' ${TESTDIR}/PARAM.in_SWPC_v2_restart
+	perl -pi -e 's/^221(\s+nGridLon)/23$$1/; s/^131(\s+nGridLat)/13$$1/;' ${TESTDIR}/PARAM.in_SWPC_v2_restart
+	cd ${TESTDIR}; cp PARAM.in_SWPC_v2_restart PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog_restart
+	cd ${TESTDIR}; ./PostProc.pl -noptec
+	cd ${TESTDIR}; ./INTERPOLATE.exe < INTERPOLATE.in
+
+test_swpc_check:
+	-@(${DIFFNUM} -b -r=1e-5 -a=2e-8 \
+		${TESTDIR}/GM/IO2/log_e20140410-000200.log \
+		Param/SWPC/TestOutput/log_e20140410-000200.log \
+		> test_swpc_rcm_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=4e-5 \
+		${TESTDIR}/GM/IO2/magnetometers_e20140410-000200.mag \
+		Param/SWPC/TestOutput/magnetometers_e20140410-000200.mag \
+		>> test_swpc_rcm_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=1e-5 \
+		${TESTDIR}/GM/IO2/ABK.txt \
+		Param/SWPC/TestOutput/ABK.txt \
+		>> test_swpc_rcm_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=2e-4 \
+		${TESTDIR}/GM/IO2/mag_grid_global_e20140410-000300.out \
+		Param/SWPC/TestOutput/mag_grid_e20140410-000300.out.gz \
+		>> test_swpc_rcm_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=2e-4 \
+		${TESTDIR}/GM/IO2/mag_grid_us_e20140410-000300.out \
+		Param/SWPC/TestOutput/mag_grid_us_e20140410-000300.out.gz \
+		>> test_swpc_rcm_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=2e-4 \
+		${TESTDIR}/GM/IO2/superindex_e20140410-000200.log \
+		Param/SWPC/TestOutput/superindex_e20140410-000200.log \
+		>> test_swpc_rcm_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-5 -a=1e-8 \
+		${TESTDIR}/GM/IO2/geoindex_e20140410-000200.log \
+		Param/SWPC/TestOutput/geoindex_e20140410-000200.log \
+		>> test_swpc_rcm_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/IE/ionosphere/IE_t140410_000200.log \
+		Param/SWPC/TestOutput/IE_t140410_000200.log \
+		> test_swpc_rcm_ie.diff)
+	-@(${DIFFNUM} -b -r=4e-4 -a=7e-5 \
+		${TESTDIR}/IE/ionosphere/it140410_000300_000.idl \
+		Param/SWPC/TestOutput/it140410_000300_000.idl.gz \
+		>> test_swpc_rcm_ie.diff)
+	-@(${DIFFNUM} -b -r=1e-3 \
+                ${TESTDIR}/RB/plots/20140410_000300_e.fls \
+		Param/SWPC/TestOutput/RB_20140410_000300_e.fls.gz \
+		> test_swpc_rcm_rb.diff)
+	ls -l test_swpc_rcm_??.diff
+
+### test_swpc: GM+IE+IM with Pe ###
+
+test_swpc_pe:
+	@echo "test_swpc_pe_compile..." > test_swpc_pe_gm.diff
+	@echo "test_swpc_pe_compile..." > test_swpc_pe_ie.diff
+	${MAKE} test_swpc_pe_compile
+	@echo "test_swpc_pe_rundir..." >> test_swpc_pe_gm.diff
+	@echo "test_swpc_pe_rundir..." >> test_swpc_pe_ie.diff
+	${MAKE} test_swpc_pe_rundir
+	@echo "test_swpc_pe_run..." >> test_swpc_pe_gm.diff
+	@echo "test_swpc_pe_run..." >> test_swpc_pe_ie.diff
+	${MAKE} test_swpc_pe_run
+	@echo "test_swpc_pe_restart..." >> test_swpc_pe_gm.diff
+	@echo "test_swpc_pe_restart..." >> test_swpc_pe_ie.diff
+	${MAKE} test_swpc_pe_restart
+	@echo "test_swpc_pe_check..." >> test_swpc_pe_gm.diff
+	@echo "test_swpc_pe_check..." >> test_swpc_pe_ie.diff
+	${MAKE} test_swpc_pe_check
+
+test_swpc_pe_compile:
+	./Config.pl -default -v=Empty,GM/BATSRUS,IE/Ridley_serial,IM/RCM2
+	./Config.pl -o=GM:u=Default,e=MhdPe,ng=2,g=8,8,8,IE:g=181,361
+	${MAKE} SWMF
+	make PIDL INTERPOLATE
+
+test_swpc_pe_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cd Param/SWPC/; cp PARAM.in_pe_init PARAM.in_pe_restart *.in *.dat ../../${TESTDIR}/
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in_pe_init
+	perl -pi -e 'if(/MaxIter|MaxBlock/){s/700/70/; s/1500/200/; s/5000/350/}; s/#BORIS/BORIS/; s/^\#(COMPONENTMAP.*production)/$$1/i; s/^(COMPONENTMAP.*nightly)/\#$$1/i' ${TESTDIR}/PARAM.in_pe_init
+	perl -pi -e 's/^360(\s+nGridLon)/72$$1/; s/^171(\s+nGridLat)/25$$1/;' ${TESTDIR}/PARAM.in_pe_init
+	perl -pi -e 's/^221(\s+nGridLon)/23$$1/; s/^131(\s+nGridLat)/13$$1/;' ${TESTDIR}/PARAM.in_pe_init
+	cp ${TESTDIR}/PARAM.in_pe_init ${TESTDIR}/PARAM.in
+	ln -s ${BINDIR}/INTERPOLATE.exe ${TESTDIR}/
+
+test_swpc_pe_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./Restart.pl -i SWMF_RESTART.20140410_000200
+
+test_swpc_pe_restart:
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in_pe_restart
+	perl -pi -e 's/#BORIS/BORIS/; s/^\#(COMPONENTMAP.*production)/$$1/i; s/^(COMPONENTMAP.*nightly)/\#$$1/i' ${TESTDIR}/PARAM.in_pe_restart
+	perl -pi -e 's/^360(\s+nGridLon)/72$$1/; s/^171(\s+nGridLat)/25$$1/;' ${TESTDIR}/PARAM.in_pe_restart
+	perl -pi -e 's/^221(\s+nGridLon)/23$$1/; s/^131(\s+nGridLat)/13$$1/;' ${TESTDIR}/PARAM.in_pe_restart
+	cd ${TESTDIR}; cp PARAM.in_pe_restart PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog_restart
+	cd ${TESTDIR}; ./PostProc.pl -noptec
+	cd ${TESTDIR}; ./INTERPOLATE.exe < INTERPOLATE.in
+
+test_swpc_pe_check:
+	-@(${DIFFNUM} -b -r=1e-5 -a=2e-8 \
+		${TESTDIR}/GM/IO2/log_e20140410-000200.log \
+		Param/SWPC/TestOutputPe/log_e20140410-000200.log \
+		> test_swpc_pe_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=4e-5 \
+		${TESTDIR}/GM/IO2/magnetometers_e20140410-000200.mag \
+		Param/SWPC/TestOutputPe/magnetometers_e20140410-000200.mag \
+		>> test_swpc_pe_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=1e-5 \
+		${TESTDIR}/GM/IO2/ABK.txt \
+		Param/SWPC/TestOutputPe/ABK.txt \
+		>> test_swpc_pe_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=2e-4 \
+		${TESTDIR}/GM/IO2/mag_grid_global_e20140410-000300.out \
+		Param/SWPC/TestOutputPe/mag_grid_e20140410-000300.out.gz \
+		>> test_swpc_pe_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=2e-4 \
+		${TESTDIR}/GM/IO2/mag_grid_us_e20140410-000300.out \
+		Param/SWPC/TestOutputPe/mag_grid_us_e20140410-000300.out.gz \
+		>> test_swpc_pe_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=2e-4 \
+		${TESTDIR}/GM/IO2/superindex_e20140410-000200.log \
+		Param/SWPC/TestOutputPe/superindex_e20140410-000200.log \
+		>> test_swpc_pe_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-5 -a=1e-8 \
+		${TESTDIR}/GM/IO2/geoindex_e20140410-000200.log \
+		Param/SWPC/TestOutputPe/geoindex_e20140410-000200.log \
+		>> test_swpc_pe_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/IE/ionosphere/IE_t140410_000200.log \
+		Param/SWPC/TestOutputPe/IE_t140410_000200.log \
+		> test_swpc_pe_ie.diff)
+	-@(${DIFFNUM} -b -r=1e-3 -a=7e-5 \
+		${TESTDIR}/IE/ionosphere/it140410_000300_000.idl \
+		Param/SWPC/TestOutputPe/it140410_000300_000.idl.gz \
+		>> test_swpc_pe_ie.diff)
+	ls -l test_swpc_pe_??.diff
+
+### test_swpc_aepic: GM+IE+IM+PC ###
+
+test_swpc_aepic:
+	@echo "test_swpc_aepic_compile..." > test_swpc_aepic_gm.diff
+	@echo "test_swpc_aepic_compile..." > test_swpc_aepic_pc.diff
+	${MAKE} test_swpc_aepic_compile
+	@echo "test_swpc_aepic_rundir..." >> test_swpc_aepic_gm.diff
+	@echo "test_swpc_aepic_rundir..." >> test_swpc_aepic_pc.diff
+	${MAKE} test_swpc_aepic_rundir
+	@echo "test_swpc_aepic_run..." >> test_swpc_aepic_gm.diff
+	@echo "test_swpc_aepic_run..." >> test_swpc_aepic_pc.diff
+	${MAKE} test_swpc_aepic_run
+	@echo "test_swpc_aepic_check..." >> test_swpc_aepic_gm.diff
+	@echo "test_swpc_aepic_check..." >> test_swpc_aepic_pc.diff
+	${MAKE} test_swpc_aepic_check
+
+test_swpc_aepic_compile:
+	./Config.pl -default -amrex
+	./Config.pl -v=Empty,GM/BATSRUS,IE/Ridley_serial,IM/RCM2,PC/FLEKS
+	./Config.pl -o=GM:u=Default,e=Mhd,ng=2,g=8,8,8,IE:g=91,181
+	${MAKE} SWMF
+	make PIDL INTERPOLATE
+
+test_swpc_aepic_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cd Param/SWPC/; cp PARAM.in_aepic_init *.in *.dat ../../${TESTDIR}/
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in_aepic_init
+	cp ${TESTDIR}/PARAM.in_aepic_init ${TESTDIR}/PARAM.in
+	ln -s ${BINDIR}/INTERPOLATE.exe ${TESTDIR}/
+
+test_swpc_aepic_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl
+	
+test_swpc_aepic_check:
+	-@(${DIFFNUM} -b -r=1e-4 -a=1e-9 \
+		${TESTDIR}/GM/IO2/y=0_var_1_e20140410-000005-000.out \
+		Param/SWPC/TestOutputAepic/y=0_var_1_e20140410-000005-000.out.gz \
+		> test_swpc_aepic_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-4  -a=1e-9 \
+		${TESTDIR}/GM/IO2/z=0_var_2_e20140410-000005-000.out \
+		Param/SWPC/TestOutputAepic/z=0_var_2_e20140410-000005-000.out.gz \
+		>> test_swpc_aepic_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-4 -a=5e-7\
+                ${TESTDIR}/PC/plots/y=0_var_region0_1_t00000005_n00000020.out \
+		Param/SWPC/TestOutputAepic/y=0_var_region0_1_t00000005_n00000020.out.gz \
+		> test_swpc_aepic_pc.diff)
+	-@(${DIFFNUM} -b -r=1e-4 -a=5e-7\
+                ${TESTDIR}/PC/plots/z=0_var_region0_0_t00000005_n00000020.out \
+		Param/SWPC/TestOutputAepic/z=0_var_region0_0_t00000005_n00000020.out.gz \
+		>> test_swpc_aepic_pc.diff)	
+	ls -l test_swpc_aepic_??.diff
+
+### test_swpc_gpu: GM+IE+IM and GM runs on GPU or in GPU compatible mode ###
+
+test_swpc_gpu:
+	@echo "test_swpc_gpu_compile..." > test_swpc_gpu_gm.diff
+	@echo "test_swpc_gpu_compile..." > test_swpc_gpu_ie.diff
+	${MAKE} test_swpc_gpu_compile
+	@echo "test_swpc_gpu_rundir..." >> test_swpc_gpu_gm.diff
+	@echo "test_swpc_gpu_rundir..." >> test_swpc_gpu_ie.diff
+	${MAKE} test_swpc_gpu_rundir
+	@echo "test_swpc_gpu_run..." >> test_swpc_gpu_gm.diff
+	@echo "test_swpc_gpu_run..." >> test_swpc_gpu_ie.diff
+	${MAKE} test_swpc_gpu_run
+	@echo "test_swpc_gpu_restart..." >> test_swpc_gpu_gm.diff
+	@echo "test_swpc_gpu_restart..." >> test_swpc_gpu_ie.diff
+	${MAKE} test_swpc_gpu_restart
+	@echo "test_swpc_gpu_check..." >> test_swpc_gpu_gm.diff
+	@echo "test_swpc_gpu_check..." >> test_swpc_gpu_ie.diff
+	${MAKE} test_swpc_gpu_check
+
+test_swpc_gpu_compile:
+	./Config.pl -v=Empty,GM/BATSRUS,IE/Ridley_serial,IM/RCM2
+	./Config.pl -o=GM:u=Default,e=Mhd,ng=2,g=8,8,8,IE:g=91,181
+	./Config.pl -o=GM:opt=../../Param/SWPC/PARAM.in_SWPC_gpu_init
+	./Config.pl -default ${OPENACC}
+	${MAKE} SWMF
+	make PIDL
+
+test_swpc_gpu_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cd Param/SWPC; cp PARAM.in_*gpu* SATELLITES.in *.dat ../../${TESTDIR}/
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in_SWPC_gpu_init
+	perl -pi -e 'if(/MaxIter|MaxBlock/){s/700/120/; s/1500/200/; s/5000/1000/}; s/#BORIS/BORIS/;' \
+	     ${TESTDIR}/PARAM.in_SWPC_gpu_init
+	cp ${TESTDIR}/PARAM.in_SWPC_gpu_init ${TESTDIR}/PARAM.in
+
+test_swpc_gpu_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./Restart.pl
+
+test_swpc_gpu_restart:
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in_SWPC_gpu_restart
+	perl -pi -e 's/#BORIS/BORIS/' ${TESTDIR}/PARAM.in_SWPC_gpu_restart
+	cd ${TESTDIR}; cp PARAM.in_SWPC_gpu_restart PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog_restart
+	cd ${TESTDIR}; ./PostProc.pl -noptec
+
+test_swpc_gpu_check:
+	-@(${DIFFNUM} -b -r=2e-5 -a=2e-8 \
+		${TESTDIR}/GM/IO2/log_e20140410-000200.log \
+		Param/SWPC/TestOutputGPU/log_e20140410-000200.log \
+		> test_swpc_gpu_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=3e-4 \
+		${TESTDIR}/GM/IO2/magnetometers_e20140410-000200.mag \
+		Param/SWPC/TestOutputGPU/magnetometers_e20140410-000200.mag \
+		>> test_swpc_gpu_gm.diff)
+	-@(${DIFFNUM} -b -r=3e-4 -a=4e-4 \
+		${TESTDIR}/GM/IO2/mag_grid_global_e20140410-000300.out \
+		Param/SWPC/TestOutputGPU/mag_grid_e20140410-000300.out.gz \
+		>> test_swpc_gpu_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-5 -a=1e-8 \
+		${TESTDIR}/GM/IO2/geoindex_e20140410-000200.log \
+		Param/SWPC/TestOutputGPU/geoindex_e20140410-000200.log \
+		>> test_swpc_gpu_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-4 \
+		${TESTDIR}/IE/ionosphere/IE_t140410_000200.log \
+		Param/SWPC/TestOutputGPU/IE_t140410_000200.log \
+		> test_swpc_gpu_ie.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=1e-4 \
+		${TESTDIR}/IE/ionosphere/it140410_000300_000.idl \
+		Param/SWPC/TestOutputGPU/it140410_000300_000.idl.gz \
+		>> test_swpc_gpu_ie.diff)
+	ls -l test_swpc_gpu_??.diff
+
+
+### test_swpc_large_gpu: GM+IE+IM and GM runs on GPU for performance check ###
+
+test_swpc_large_gpu:
+	@echo "test_swpc_large_gpu_compile..." > test_swpc_large_gpu_gm.diff
+	@echo "test_swpc_large_gpu_compile..." > test_swpc_large_gpu_ie.diff
+	${MAKE} test_swpc_large_gpu_compile
+	@echo "test_swpc_large_gpu_rundir..." >> test_swpc_large_gpu_gm.diff
+	@echo "test_swpc_large_gpu_rundir..." >> test_swpc_large_gpu_ie.diff
+	${MAKE} test_swpc_large_gpu_rundir
+	@echo "test_swpc_large_gpu_run..." >> test_swpc_large_gpu_gm.diff
+	@echo "test_swpc_large_gpu_run..." >> test_swpc_large_gpu_ie.diff
+	${MAKE} test_swpc_large_gpu_run
+	@echo "test_swpc_large_gpu_check..." >> test_swpc_large_gpu_gm.diff
+	@echo "test_swpc_large_gpu_check..." >> test_swpc_large_gpu_ie.diff
+	${MAKE} test_swpc_large_gpu_check
+
+test_swpc_large_gpu_compile:
+	./Config.pl -v=Empty,GM/BATSRUS,IE/Ridley_serial,IM/RCM2
+	./Config.pl -o=GM:u=Default,e=Mhd,ng=2,g=8,8,8,IE:g=91,181
+	./Config.pl -o=GM:opt=../../Param/SWPC/PARAM.in_SWPC_large_gpu
+	./Config.pl -default ${OPENACC}
+	${MAKE} SWMF
+	make PIDL
+
+test_swpc_large_gpu_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cd Param/SWPC; cp PARAM.in_SWPC_large_gpu SATELLITES.in *.dat ../../${TESTDIR}/
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in_SWPC_large_gpu
+	perl -pi -e 'if(/MaxIter|MaxBlock/){s/700/70/; s/1500/200/}' \
+	     ${TESTDIR}/PARAM.in_SWPC_large_gpu
+	cp ${TESTDIR}/PARAM.in_SWPC_large_gpu ${TESTDIR}/PARAM.in
+
+test_swpc_large_gpu_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl -noptec
+
+test_swpc_large_gpu_check:
+	-@(${DIFFNUM} -b -r=1e-5 -a=2e-8 \
+		${TESTDIR}/GM/IO2/log_e20140410-000000.log \
+		Param/SWPC/TestOutputLargeGPU/log_e20140410-000000.log \
+		> test_swpc_large_gpu_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=1e-5 \
+		${TESTDIR}/GM/IO2/magnetometers_e20140410-000000.mag \
+		Param/SWPC/TestOutputLargeGPU/magnetometers_e20140410-000000.mag \
+		>> test_swpc_large_gpu_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=2e-4 \
+		${TESTDIR}/GM/IO2/mag_grid_global_e20140410-000000.out \
+		Param/SWPC/TestOutputLargeGPU/mag_grid_e20140410-000000.out.gz \
+		>> test_swpc_large_gpu_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-5 -a=1e-8 \
+		${TESTDIR}/GM/IO2/geoindex_e20140410-000000.log \
+		Param/SWPC/TestOutputLargeGPU/geoindex_e20140410-000000.log \
+		>> test_swpc_large_gpu_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/IE/ionosphere/IE_t140410_000000.log \
+		Param/SWPC/TestOutputLargeGPU/IE_t140410_000000.log \
+		> test_swpc_large_gpu_ie.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=1e-4 \
+		${TESTDIR}/IE/ionosphere/it140410_000100_000.idl \
+		Param/SWPC/TestOutputLargeGPU/it140410_000100_000.idl.gz \
+		>> test_swpc_large_gpu_ie.diff)
+	ls -l test_swpc_large_gpu_??.diff
+
+### test_swpc_multiion: GM+IE+IM with multiion MHD ###
+
+test_swpc_multiion:
+	@echo "test_swpc_multiion_compile..." > test_swpc_multiion_gm.diff
+	@echo "test_swpc_multiion_compile..." > test_swpc_multiion_ie.diff
+	${MAKE} test_swpc_multiion_compile
+	@echo "test_swpc_multiion_rundir..." >> test_swpc_multiion_gm.diff
+	@echo "test_swpc_multiion_rundir..." >> test_swpc_multiion_ie.diff
+	${MAKE} test_swpc_multiion_rundir
+	@echo "test_swpc_multiion_run..." >> test_swpc_multiion_gm.diff
+	@echo "test_swpc_multiion_run..." >> test_swpc_multiion_ie.diff
+	${MAKE} test_swpc_multiion_run
+	@echo "test_swpc_multiion_restart..." >> test_swpc_multiion_gm.diff
+	@echo "test_swpc_multiion_restart..." >> test_swpc_multiion_ie.diff
+	${MAKE} test_swpc_multiion_restart
+	@echo "test_swpc_multiion_check..." >> test_swpc_multiion_gm.diff
+	@echo "test_swpc_multiion_check..." >> test_swpc_multiion_ie.diff
+	${MAKE} test_swpc_multiion_check
+
+test_swpc_multiion_compile:
+	./Config.pl -default -v=Empty,GM/BATSRUS,IE/Ridley_serial,IM/RCM2
+	./Config.pl -o=GM:u=Default,e=MultiIon,ng=2,g=8,8,8,IE:g=181,361
+	${MAKE} SWMF
+	make PIDL
+
+test_swpc_multiion_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cd Param/SWPC/; cp PARAM.in_multiion_* *.in *.dat ../../${TESTDIR}/
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in_multiion_init
+	perl -pi -e 'if(/MaxIter|MaxBlock/){s/700/70/; s/1500/200/; s/5000/350/}; s/#BORIS/BORIS/' ${TESTDIR}/PARAM.in_multiion_init
+	cp ${TESTDIR}/PARAM.in_multiion_init ${TESTDIR}/PARAM.in
+
+test_swpc_multiion_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./Restart.pl -i SWMF_RESTART.20140410_000200
+
+test_swpc_multiion_restart:
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in_multiion_restart
+	perl -pi -e 's/#BORIS/BORIS/' ${TESTDIR}/PARAM.in_multiion_restart
+	cd ${TESTDIR}; cp PARAM.in_multiion_restart PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog_restart
+	cd ${TESTDIR}; ./PostProc.pl -noptec
+
+test_swpc_multiion_check:
+	-@(${DIFFNUM} -b -r=1e-5 -a=1e-8 \
+		${TESTDIR}/GM/IO2/log_e20140410-000200.log \
+		Param/SWPC/TestOutputMultiIon/log_e20140410-000200.log \
+		> test_swpc_multiion_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-3 -a=2e-5 \
+		${TESTDIR}/GM/IO2/magnetometers_e20140410-000200.mag \
+		Param/SWPC/TestOutputMultiIon/magnetometers*0200.mag \
+		>> test_swpc_multiion_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=1e-5 \
+		${TESTDIR}/GM/IO2/mag_grid_global_e20140410-000300.out \
+		Param/SWPC/TestOutputMultiIon/mag_grid_e20140410-000300.out \
+		>> test_swpc_multiion_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-5 -a=1e-8 \
+		${TESTDIR}/GM/IO2/geoindex_e20140410-000200.log \
+		Param/SWPC/TestOutputMultiIon/geoindex_e20140410-000200.log \
+		>> test_swpc_multiion_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/IE/ionosphere/IE_t140410_000200.log \
+		Param/SWPC/TestOutputMultiIon/IE_t140410_000200.log \
+		> test_swpc_multiion_ie.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=1e-4 \
+		${TESTDIR}/IE/ionosphere/it140410_000300_000.idl \
+		Param/SWPC/TestOutputMultiIon/it140410_000300_000.idl.gz \
+		>> test_swpc_multiion_ie.diff)
+	ls -l test_swpc_multiion_*.diff
+
+### test_swpc_multispecies: GM+IE+IM with multispecies MHD ###
+
+test_swpc_multispecies:
+	@echo "test_swpc_multispecies_compile..." > test_swpc_multispecies_gm.diff
+	@echo "test_swpc_multispecies_compile..." > test_swpc_multispecies_ie.diff
+	${MAKE} test_swpc_multispecies_compile
+	@echo "test_swpc_multispecies_rundir..." >> test_swpc_multispecies_gm.diff
+	@echo "test_swpc_multispecies_rundir..." >> test_swpc_multispecies_ie.diff
+	${MAKE} test_swpc_multispecies_rundir
+	@echo "test_swpc_multispecies_run..." >> test_swpc_multispecies_gm.diff
+	@echo "test_swpc_multispecies_run..." >> test_swpc_multispecies_ie.diff
+	${MAKE} test_swpc_multispecies_run
+	@echo "test_swpc_multispecies_restart..." >> test_swpc_multispecies_gm.diff
+	@echo "test_swpc_multispecies_restart..." >> test_swpc_multispecies_ie.diff
+	${MAKE} test_swpc_multispecies_restart
+	@echo "test_swpc_multispecies_check..." >> test_swpc_multispecies_gm.diff
+	@echo "test_swpc_multispecies_check..." >> test_swpc_multispecies_ie.diff
+	${MAKE} test_swpc_multispecies_check
+
+test_swpc_multispecies_compile:
+	./Config.pl -default -v=Empty,GM/BATSRUS,IE/Ridley_serial,IM/RCM2
+	./Config.pl -o=GM:u=Default,e=MhdHpOp,ng=2,g=8,8,8,IE:g=181,361
+	${MAKE} SWMF
+	make PIDL
+
+test_swpc_multispecies_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cd Param/SWPC/; cp PARAM.in_multispecies_init PARAM.in_multispecies_restart *.in *.dat ../../${TESTDIR}/
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in_multispecies_init
+	perl -pi -e 'if(/MaxIter|MaxBlock/){s/700/70/; s/1500/200/; s/5000/350/}; s/#BORIS/BORIS/' ${TESTDIR}/PARAM.in_multispecies_init
+	cp ${TESTDIR}/PARAM.in_multispecies_init ${TESTDIR}/PARAM.in
+
+test_swpc_multispecies_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./Restart.pl -i SWMF_RESTART.20140410_000200
+
+test_swpc_multispecies_restart:
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in_multispecies_restart
+	perl -pi -e 's/#BORIS/BORIS/' ${TESTDIR}/PARAM.in_multispecies_restart
+	cd ${TESTDIR}; cp PARAM.in_multispecies_restart PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog_restart
+	cd ${TESTDIR}; ./PostProc.pl -noptec
+
+test_swpc_multispecies_check:
+	-@(${DIFFNUM} -b -r=1e-5 -a=1e-8 \
+		${TESTDIR}/GM/IO2/log_e20140410-000200.log \
+		Param/SWPC/TestOutputMultiSpecies/log_e20140410-000200.log \
+		> test_swpc_multispecies_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-3 -a=3e-5 \
+		${TESTDIR}/GM/IO2/magnetometers_e20140410-000200.mag \
+		Param/SWPC/TestOutputMultiSpecies/magnetometers_e20140410-000200.mag \
+		>> test_swpc_multispecies_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=1e-5 \
+		${TESTDIR}/GM/IO2/mag_grid_global_e20140410-000300.out \
+		Param/SWPC/TestOutputMultiSpecies/mag_grid_e20140410-000300.out \
+		>> test_swpc_multispecies_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-5 -a=1e-8 \
+		${TESTDIR}/GM/IO2/geoindex_e20140410-000200.log \
+		Param/SWPC/TestOutputMultiSpecies/geoindex_e20140410-000200.log \
+		>> test_swpc_multispecies_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/IE/ionosphere/IE_t140410_000200.log \
+		Param/SWPC/TestOutputMultiSpecies/IE_t140410_000200.log \
+		> test_swpc_multispecies_ie.diff)
+	-@(${DIFFNUM} -b -r=3e-4 -a=1e-4 \
+		${TESTDIR}/IE/ionosphere/it140410_000300_000.idl \
+		Param/SWPC/TestOutputMultiSpecies/it140410_000300_000.idl.gz \
+		>> test_swpc_multispecies_ie.diff)
+	ls -l test_swpc_multispecies_*.diff
+
+### test_swpc_cimi: GM+IE+IM/CIMI ###
+
+test_swpc_cimi:
+	@echo "test_swpc_cimi_compile..." > test_swpc_cimi_gm.diff
+	@echo "test_swpc_cimi_compile..." > test_swpc_cimi_ie.diff
+	${MAKE} test_swpc_cimi_compile
+	@echo "test_swpc_cimi_rundir..." >> test_swpc_cimi_gm.diff
+	@echo "test_swpc_cimi_rundir..." >> test_swpc_cimi_ie.diff
+	${MAKE} test_swpc_cimi_rundir
+	@echo "test_swpc_cimi_run..." >> test_swpc_cimi_gm.diff
+	@echo "test_swpc_cimi_run..." >> test_swpc_cimi_ie.diff
+	${MAKE} test_swpc_cimi_run
+	@echo "test_swpc_cimi_restart..." >> test_swpc_cimi_gm.diff
+	@echo "test_swpc_cimi_restart..." >> test_swpc_cimi_ie.diff
+	${MAKE} test_swpc_cimi_restart
+	@echo "test_swpc_cimi_check..." >> test_swpc_cimi_gm.diff
+	@echo "test_swpc_cimi_check..." >> test_swpc_cimi_ie.diff
+	${MAKE} test_swpc_cimi_check
+
+test_swpc_cimi_compile:
+	./Config.pl -default -v=Empty,GM/BATSRUS,IE/Ridley_serial,IM/CIMI
+	./Config.pl -o=GM:u=Default,e=MhdAnisoP,ng=2,g=8,8,8,IE:g=181,361
+	./Config.pl -o=IM:EarthHO,GridExpanded
+	${MAKE} SWMF
+	make PIDL
+
+test_swpc_cimi_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cd Param/SWPC/; cp PARAM.in_cimi_init PARAM.in_cimi_restart *.in *.dat ../../${TESTDIR}/
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in_cimi_init
+	perl -pi -e 'if(/MaxIter|MaxBlock/){s/700/70/; s/1500/200/; s/5000/350/}; s/#BORIS/BORIS/; s/^\#(COMPONENTMAP.*production)/$$1/i; s/^(COMPONENTMAP.*nightly)/\#$$1/i' ${TESTDIR}/PARAM.in_cimi_init
+	cp ${TESTDIR}/PARAM.in_cimi_init ${TESTDIR}/PARAM.in
+
+test_swpc_cimi_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./Restart.pl -i SWMF_RESTART.20140410_000200
+
+test_swpc_cimi_restart:
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in_cimi_restart
+	perl -pi -e 's/#BORIS/BORIS/; s/^\#(COMPONENTMAP.*production)/$$1/i; s/^(COMPONENTMAP.*nightly)/\#$$1/i' ${TESTDIR}/PARAM.in_cimi_restart
+	cd ${TESTDIR}; cp PARAM.in_cimi_restart PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog_restart
+	cd ${TESTDIR}; ./PostProc.pl -noptec
+
+test_swpc_cimi_check:
+	-@(${DIFFNUM} -b -r=1e-5 -a=1e-8 \
+		${TESTDIR}/GM/IO2/log_e20140410-000200.log \
+		Param/SWPC/TestOutputCimi/log_e20140410-000200.log \
+		> test_swpc_cimi_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=1e-5 \
+		${TESTDIR}/GM/IO2/magnetometers_e20140410-000200.mag \
+		Param/SWPC/TestOutputCimi/magnetometers_e20140410-000200.mag \
+		>> test_swpc_cimi_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=1e-5 \
+		${TESTDIR}/GM/IO2/mag_grid_global_e20140410-000300.out \
+		Param/SWPC/TestOutputCimi/mag_grid_e20140410-000300.out \
+		>> test_swpc_cimi_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-5 -a=1e-8 \
+		${TESTDIR}/GM/IO2/geoindex_e20140410-000200.log \
+		Param/SWPC/TestOutputCimi/geoindex_e20140410-000200.log \
+		>> test_swpc_cimi_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/IE/ionosphere/IE_t140410_000200.log \
+		Param/SWPC/TestOutputCimi/IE_t140410_000200.log \
+		> test_swpc_cimi_ie.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=1e-4 \
+		${TESTDIR}/IE/ionosphere/it140410_000300_000.idl \
+		Param/SWPC/TestOutputCimi/it140410_000300_000.idl.gz \
+		>> test_swpc_cimi_ie.diff)
+	ls -l test_swpc_cimi_*.diff
+
+### test_swpc_cimi_species: GM+IE+IM/CIMI ###
+
+test_swpc_cimi_species:
+	@echo "test_swpc_cimi_species_compile..." > test_swpc_cimi_species_gm.diff
+	@echo "test_swpc_cimi_species_compile..." > test_swpc_cimi_species_ie.diff
+	${MAKE} test_swpc_cimi_species_compile
+	@echo "test_swpc_cimi_species_rundir..." >> test_swpc_cimi_species_gm.diff
+	@echo "test_swpc_cimi_species_rundir..." >> test_swpc_cimi_species_ie.diff
+	${MAKE} test_swpc_cimi_species_rundir
+	@echo "test_swpc_cimi_species_run..." >> test_swpc_cimi_species_gm.diff
+	@echo "test_swpc_cimi_species_run..." >> test_swpc_cimi_species_ie.diff
+	${MAKE} test_swpc_cimi_species_run
+	@echo "test_swpc_cimi_species_restart..." >> test_swpc_cimi_species_gm.diff
+	@echo "test_swpc_cimi_species_restart..." >> test_swpc_cimi_species_ie.diff
+	${MAKE} test_swpc_cimi_species_restart
+	@echo "test_swpc_cimi_species_check..." >> test_swpc_cimi_species_gm.diff
+	@echo "test_swpc_cimi_species_check..." >> test_swpc_cimi_species_ie.diff
+	${MAKE} test_swpc_cimi_species_check
+
+test_swpc_cimi_species_compile:
+	./Config.pl -default -v=Empty,GM/BATSRUS,IE/Ridley_serial,IM/CIMI
+	./Config.pl -o=GM:u=Default,e=MhdHpOp,ng=2,g=8,8,8,IE:g=181,361
+	./Config.pl -o=IM:EarthHO,GridExpanded
+	${MAKE} SWMF
+	make PIDL
+
+test_swpc_cimi_species_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cd Param/SWPC/; cp PARAM.in_*cimi_species* *.in *.dat ../../${TESTDIR}/
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in_cimi_species_init
+	perl -pi -e 'if(/MaxIter|MaxBlock/){s/700/70/; s/1500/200/; s/5000/350/}; s/#BORIS/BORIS/; s/^\#(COMPONENTMAP.*production)/$$1/i; s/^(COMPONENTMAP.*nightly)/\#$$1/i' ${TESTDIR}/PARAM.in_cimi_species_init
+	cp ${TESTDIR}/PARAM.in_cimi_species_init ${TESTDIR}/PARAM.in
+
+test_swpc_cimi_species_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./Restart.pl -i SWMF_RESTART.20140410_000200
+
+test_swpc_cimi_species_restart:
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in_cimi_species_restart
+	perl -pi -e 's/#BORIS/BORIS/; s/^\#(COMPONENTMAP.*production)/$$1/i; s/^(COMPONENTMAP.*nightly)/\#$$1/i' ${TESTDIR}/PARAM.in_cimi_species_restart
+	cd ${TESTDIR}; cp PARAM.in_cimi_species_restart PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog_restart
+	cd ${TESTDIR}; ./PostProc.pl -noptec
+
+test_swpc_cimi_species_check:
+	-@(${DIFFNUM} -b -r=1e-5 -a=1e-8 \
+		${TESTDIR}/GM/IO2/log_e20140410-000200.log \
+		Param/SWPC/TestOutputCimiSpecies/log_e20140410-000200.log \
+		> test_swpc_cimi_species_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=1e-5 \
+		${TESTDIR}/GM/IO2/magnetometers_e20140410-000200.mag \
+		Param/SWPC/TestOutputCimiSpecies/magnetometers_e20140410-000200.mag \
+		>> test_swpc_cimi_species_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=1e-5 \
+		${TESTDIR}/GM/IO2/mag_grid_global_e20140410-000300.out \
+		Param/SWPC/TestOutputCimiSpecies/mag_grid_e20140410-000300.out \
+		>> test_swpc_cimi_species_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-5 -a=1e-8 \
+		${TESTDIR}/GM/IO2/geoindex_e20140410-000200.log \
+		Param/SWPC/TestOutputCimiSpecies/geoindex_e20140410-000200.log \
+		>> test_swpc_cimi_species_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/IE/ionosphere/IE_t140410_000200.log \
+		Param/SWPC/TestOutputCimiSpecies/IE_t140410_000200.log \
+		> test_swpc_cimi_species_ie.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=5e-5 \
+		${TESTDIR}/IE/ionosphere/it140410_000300_000.idl \
+		Param/SWPC/TestOutputCimiSpecies/it140410_000300_000.idl.gz \
+		>> test_swpc_cimi_species_ie.diff)
+	ls -l test_swpc_cimi_species_*.diff
+
+### test_swpc_pwom: GM+IE+IM/RCM2+PW/PWOM ###
+
+test_swpc_pwom:
+	@echo "test_swpc_pwom_compile..." > test_swpc_pwom_gm.diff
+	@echo "test_swpc_pwom_compile..." > test_swpc_pwom_ie.diff
+	${MAKE} test_swpc_pwom_compile
+	@echo "test_swpc_pwom_rundir..." >> test_swpc_pwom_gm.diff
+	@echo "test_swpc_pwom_rundir..." >> test_swpc_pwom_ie.diff
+	${MAKE} test_swpc_pwom_rundir
+	@echo "test_swpc_pwom_run..." >> test_swpc_pwom_gm.diff
+	@echo "test_swpc_pwom_run..." >> test_swpc_pwom_ie.diff
+	${MAKE} test_swpc_pwom_run
+	@echo "test_swpc_pwom_restart..." >> test_swpc_pwom_gm.diff
+	@echo "test_swpc_pwom_restart..." >> test_swpc_pwom_ie.diff
+	${MAKE} test_swpc_pwom_restart
+	@echo "test_swpc_pwom_check..." >> test_swpc_pwom_gm.diff
+	@echo "test_swpc_pwom_check..." >> test_swpc_pwom_ie.diff
+	${MAKE} test_swpc_pwom_check
+
+test_swpc_pwom_compile:
+	./Config.pl -default
+	./Config.pl -v=Empty,GM/BATSRUS,IE/Ridley_serial,IM/RCM2,PW/PWOM
+	./Config.pl -o=GM:u=Default,e=Mhd,ng=2,g=8,8,8,IE:g=181,361,PW:Earth
+	${MAKE} SWMF
+	make PIDL
+
+test_swpc_pwom_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cd Param/SWPC/; cp PARAM.in_pwom_init PARAM.in_pwom_restart *.in *.dat ../../${TESTDIR}/
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in_pwom_init
+	perl -pi -e 'if(/MaxIter|MaxBlock|nTotalLine/){s/700/70/; s/1500/200/; s/5000/350/; s/252/4/;}; s/#BORIS/BORIS/; s/^\#(COMPONENTMAP.*production)/$$1/i; s/^(COMPONENTMAP.*nightly)/\#$$1/i' ${TESTDIR}/PARAM.in_pwom_init
+	cp ${TESTDIR}/PARAM.in_pwom_init ${TESTDIR}/PARAM.in
+
+test_swpc_pwom_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./Restart.pl -i SWMF_RESTART.20140410_000200
+
+test_swpc_pwom_restart:
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in_pwom_restart
+	perl -pi -e 's/252/4/; s/#BORIS/BORIS/; s/^\#(COMPONENTMAP.*production)/$$1/i; s/^(COMPONENTMAP.*nightly)/\#$$1/i' ${TESTDIR}/PARAM.in_pwom_restart
+	cd ${TESTDIR}; cp PARAM.in_pwom_restart PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog_restart
+	cd ${TESTDIR}; ./PostProc.pl -noptec
+
+test_swpc_pwom_check:
+	-@(${DIFFNUM} -b -r=1e-5 -a=1e-8 \
+		${TESTDIR}/GM/IO2/log_e20140410-000200.log \
+		Param/SWPC/TestOutputPwom/log_e20140410-000200.log \
+		> test_swpc_pwom_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=2e-5 \
+		${TESTDIR}/GM/IO2/magnetometers_e20140410-000200.mag \
+		Param/SWPC/TestOutputPwom/magnetometers_e20140410-000200.mag \
+		>> test_swpc_pwom_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=2e-4 \
+		${TESTDIR}/GM/IO2/mag_grid_global_e20140410-000300.out \
+		Param/SWPC/TestOutputPwom/mag_grid_e20140410-000300.out \
+		>> test_swpc_pwom_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-5 -a=1e-8 \
+		${TESTDIR}/GM/IO2/geoindex_e20140410-000200.log \
+		Param/SWPC/TestOutputPwom/geoindex_e20140410-000200.log \
+		>> test_swpc_pwom_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/IE/ionosphere/IE_t140410_000200.log \
+		Param/SWPC/TestOutputPwom/IE_t140410_000200.log \
+		> test_swpc_pwom_ie.diff)
+	-@(${DIFFNUM} -b -r=5e-4 -a=2e-4 \
+		${TESTDIR}/IE/ionosphere/it140410_000300_000.idl \
+		Param/SWPC/TestOutputPwom/it140410_000300_000.idl.gz \
+		>> test_swpc_pwom_ie.diff)
+	ls -l test_swpc_pwom_*.diff
+
+### test_swpc_pwom_species: multispecies GM+IE+IM/RCM2+PW/PWOM ###
+
+test_swpc_pwom_species:
+	@echo "test_swpc_pwom_species_compile..." \
+	      > test_swpc_pwom_species_gm.diff
+	@echo "test_swpc_pwom_species_compile..." \
+	      > test_swpc_pwom_species_ie.diff
+	${MAKE} test_swpc_pwom_species_compile
+	@echo "test_swpc_pwom_species_rundir..." \
+	      >> test_swpc_pwom_species_gm.diff
+	@echo "test_swpc_pwom_species_rundir..." \
+	      >> test_swpc_pwom_species_ie.diff
+	${MAKE} test_swpc_pwom_species_rundir
+	@echo "test_swpc_pwom_species_run..." \
+	      >> test_swpc_pwom_species_gm.diff
+	@echo "test_swpc_pwom_species_run..." \
+	      >> test_swpc_pwom_species_ie.diff
+	${MAKE} test_swpc_pwom_species_run
+	@echo "test_swpc_pwom_species_restart..." \
+	      >> test_swpc_pwom_species_gm.diff
+	@echo "test_swpc_pwom_species_restart..." \
+	      >> test_swpc_pwom_species_ie.diff
+	${MAKE} test_swpc_pwom_species_restart
+	@echo "test_swpc_pwom_species_check..." \
+	      >> test_swpc_pwom_species_gm.diff
+	@echo "test_swpc_pwom_species_check..." \
+	      >> test_swpc_pwom_species_ie.diff
+	${MAKE} test_swpc_pwom_species_check
+
+test_swpc_pwom_species_compile:
+	./Config.pl -default
+	./Config.pl -v=Empty,GM/BATSRUS,IE/Ridley_serial,IM/RCM2,PW/PWOM
+	./Config.pl -o=GM:u=Default,e=MhdHpOp,ng=2,g=8,8,8,IE:g=181,361
+	./Config.pl -o=PW:Earth
+	${MAKE} SWMF
+	make PIDL
+
+test_swpc_pwom_species_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cd Param/SWPC/; cp PARAM.in_*pwom_species* *.in *.dat ../../${TESTDIR}/
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in_pwom_species_init
+	perl -pi -e 'if(/MaxIter|MaxBlock|nTotalLine/){s/700/70/; s/1500/200/; s/5000/350/; s/252/4/;}; s/#BORIS/BORIS/; s/^\#(COMPONENTMAP.*production)/$$1/i; s/^(COMPONENTMAP.*nightly)/\#$$1/i' ${TESTDIR}/PARAM.in_pwom_species_init
+	cp ${TESTDIR}/PARAM.in_pwom_species_init ${TESTDIR}/PARAM.in
+
+test_swpc_pwom_species_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./Restart.pl -i SWMF_RESTART.20140410_000200
+
+test_swpc_pwom_species_restart:
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in_pwom_species_restart
+	perl -pi -e 's/252/4/; s/#BORIS/BORIS/; s/^\#(COMPONENTMAP.*production)/$$1/i; s/^(COMPONENTMAP.*nightly)/\#$$1/i' ${TESTDIR}/PARAM.in_pwom_species_restart
+	cd ${TESTDIR}; cp PARAM.in_pwom_species_restart PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog_restart
+	cd ${TESTDIR}; ./PostProc.pl -noptec
+
+test_swpc_pwom_species_check:
+	-@(${DIFFNUM} -b -r=1e-5 -a=1e-8 \
+		${TESTDIR}/GM/IO2/log_e20140410-000200.log \
+		Param/SWPC/TestOutputPwomSpecies/log_e20140410-000200.log \
+		> test_swpc_pwom_species_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=4e-5 \
+		${TESTDIR}/GM/IO2/magnetometers_e20140410-000200.mag \
+		Param/SWPC/TestOutputPwomSpecies/magnetometers_e20140410-000200.mag \
+		>> test_swpc_pwom_species_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=2e-4 \
+		${TESTDIR}/GM/IO2/mag_grid_global_e20140410-000300.out \
+		Param/SWPC/TestOutputPwomSpecies/mag_grid_e20140410-000300.out \
+		>> test_swpc_pwom_species_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-5 -a=1e-8 \
+		${TESTDIR}/GM/IO2/geoindex_e20140410-000200.log \
+		Param/SWPC/TestOutputPwomSpecies/geoindex_e20140410-000200.log \
+		>> test_swpc_pwom_species_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/IE/ionosphere/IE_t140410_000200.log \
+		Param/SWPC/TestOutputPwomSpecies/IE_t140410_000200.log \
+		> test_swpc_pwom_species_ie.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=1e-4 \
+		${TESTDIR}/IE/ionosphere/it140410_000300_000.idl \
+		Param/SWPC/TestOutputPwomSpecies/it140410_000300_000.idl.gz \
+		>> test_swpc_pwom_species_ie.diff)
+	ls -l test_swpc_pwom_species_*.diff
+
+### test_swpc_cimi_pwom_species: GM+IE+IM/CIMI ###
+
+test_swpc_cimi_pwom_species:
+	@echo "test_swpc_cimi_pwom_species_compile..." > test_swpc_cimi_pwom_species_gm.diff
+	@echo "test_swpc_cimi_pwom_species_compile..." > test_swpc_cimi_pwom_species_ie.diff
+	${MAKE} test_swpc_cimi_pwom_species_compile
+	@echo "test_swpc_cimi_pwom_species_rundir..." >> test_swpc_cimi_pwom_species_gm.diff
+	@echo "test_swpc_cimi_pwom_species_rundir..." >> test_swpc_cimi_pwom_species_ie.diff
+	${MAKE} test_swpc_cimi_pwom_species_rundir
+	@echo "test_swpc_cimi_pwom_species_run..." >> test_swpc_cimi_pwom_species_gm.diff
+	@echo "test_swpc_cimi_pwom_species_run..." >> test_swpc_cimi_pwom_species_ie.diff
+	${MAKE} test_swpc_cimi_pwom_species_run
+	@echo "test_swpc_cimi_pwom_species_restart..." >> test_swpc_cimi_pwom_species_gm.diff
+	@echo "test_swpc_cimi_pwom_species_restart..." >> test_swpc_cimi_pwom_species_ie.diff
+	${MAKE} test_swpc_cimi_pwom_species_restart
+	@echo "test_swpc_cimi_pwom_species_check..." >> test_swpc_cimi_pwom_species_gm.diff
+	@echo "test_swpc_cimi_pwom_species_check..." >> test_swpc_cimi_pwom_species_ie.diff
+	${MAKE} test_swpc_cimi_pwom_species_check
+
+test_swpc_cimi_pwom_species_compile:
+	./Config.pl -default
+	./Config.pl -v=Empty,GM/BATSRUS,IE/Ridley_serial,IM/CIMI,PW/PWOM
+	./Config.pl -o=GM:u=Default,e=MhdHpOp,ng=2,g=8,8,8,IE:g=181,361
+	./Config.pl -o=IM:EarthHO,GridExpanded
+	./Config.pl -o=PW:Earth
+	${MAKE} SWMF
+	make PIDL
+
+test_swpc_cimi_pwom_species_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cd Param/SWPC/; cp PARAM.in_*cimi_pwom_species* *.in *.dat ../../${TESTDIR}/
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in_cimi_pwom_species_init
+	perl -pi -e 'if(/MaxIter|MaxBlock|nTotalLine/){s/700/70/; s/1500/200/; s/5000/350/; s/252/4/;}; s/#BORIS/BORIS/; s/^\#(COMPONENTMAP.*production)/$$1/i; s/^(COMPONENTMAP.*nightly)/\#$$1/i' ${TESTDIR}/PARAM.in_cimi_pwom_species_init
+	cp ${TESTDIR}/PARAM.in_cimi_pwom_species_init ${TESTDIR}/PARAM.in
+
+test_swpc_cimi_pwom_species_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./Restart.pl -i SWMF_RESTART.20140410_000200
+
+test_swpc_cimi_pwom_species_restart:
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in_cimi_pwom_species_restart
+	perl -pi -e 's/252/4/; s/#BORIS/BORIS/; s/^\#(COMPONENTMAP.*production)/$$1/i; s/^(COMPONENTMAP.*nightly)/\#$$1/i' ${TESTDIR}/PARAM.in_cimi_pwom_species_restart
+	cd ${TESTDIR}; cp PARAM.in_cimi_pwom_species_restart PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog_restart
+	cd ${TESTDIR}; ./PostProc.pl -noptec
+
+test_swpc_cimi_pwom_species_check:
+	-@(${DIFFNUM} -b -r=1e-5 -a=1e-8 \
+		${TESTDIR}/GM/IO2/log_e20140410-000200.log \
+		Param/SWPC/TestOutputCimiPwomSpecies/log_e20140410-000200.log \
+		> test_swpc_cimi_pwom_species_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=3e-5 \
+		${TESTDIR}/GM/IO2/magnetometers_e20140410-000200.mag \
+		Param/SWPC/TestOutputCimiPwomSpecies/magnetometers_e20140410-000200.mag \
+		>> test_swpc_cimi_pwom_species_gm.diff)
+	-@(${DIFFNUM} -b -r=2e-4 -a=5e-5 \
+		${TESTDIR}/GM/IO2/mag_grid_global_e20140410-000300.out \
+		Param/SWPC/TestOutputCimiPwomSpecies/mag_grid_e20140410-000300.out \
+		>> test_swpc_cimi_pwom_species_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-5 -a=1e-8 \
+		${TESTDIR}/GM/IO2/geoindex_e20140410-000200.log \
+		Param/SWPC/TestOutputCimiPwomSpecies/geoindex_e20140410-000200.log \
+		>> test_swpc_cimi_pwom_species_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/IE/ionosphere/IE_t140410_000200.log \
+		Param/SWPC/TestOutputCimiPwomSpecies/IE_t140410_000200.log \
+		> test_swpc_cimi_pwom_species_ie.diff)
+	-@(${DIFFNUM} -b -r=3e-4 -a=5e-5 \
+		${TESTDIR}/IE/ionosphere/it140410_000300_000.idl \
+		Param/SWPC/TestOutputCimiPwomSpecies/it140410_000300_000.idl.gz \
+		>> test_swpc_cimi_pwom_species_ie.diff)
+	ls -l test_swpc_cimi_pwom_species_*.diff
+
+### test_3: configure SWMF with GM+IE+IM+UA only. ###
+
+test3:  
+	@echo "test3_compile..." > test03_gm.diff
+	@echo "test3_compile..." > test03_ie.diff	
+	@echo "test3_compile..." > test03_ua_gitm.diff
+	${MAKE} test3_compile
+	@echo "test3_rundir..." >> test03_gm.diff
+	@echo "test3_rundir..." >> test03_ie.diff
+	@echo "test3_rundir..." >> test03_ua_gitm.diff
+	${MAKE} test3_rundir
+	@echo "test3_run..." >> test03_gm.diff
+	@echo "test3_run..." >> test03_ie.diff
+	@echo "test3_run..." >> test03_ua_gitm.diff
+	${MAKE} test3_run
+	@echo "test3_restart..." >> test03_gm.diff
+	@echo "test3_restart..." >> test03_ie.diff
+	@echo "test3_restart..." >> test03_ua_gitm.diff
+	${MAKE} test3_restart
+	@echo "test3_check..." >> test03_gm.diff
+	@echo "test3_check..." >> test03_ie.diff
+	@echo "test3_check..." >> test03_ua_gitm.diff
+	${MAKE} test3_check
+
+test3_compile:
+	./Config.pl -default
+	./Config.pl -v=Empty,GM/BATSRUS,IE/Ridley_serial,IM/RCM2,UA/GITM
+	./Config.pl -o=GM:u=Default,e=Mhd,ng=2,g=8,8,8,IE:g=181,361
+	${MAKE} SWMF
+	make PIDL
+	cd UA/GITM; make POST
+
+test3_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.GMIEIMUA ${TESTDIR}/
+	cp Param/PARAM.in.test.restart.GMIEIMUA ${TESTDIR}/
+	cp ${TESTDIR}/PARAM.in.test.GMIEIMUA ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test3_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./Restart.pl
+
+test3_restart:
+	cd ${TESTDIR}; cp PARAM.in.test.restart.GMIEIMUA PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog_restart
+	cd ${TESTDIR}; ./pGITM.py
+	cd ${TESTDIR}; ./PostProc.pl -M -cat RESULTS; \
+	mv runlog_restart RESULTS
+
+test3_check:
+	-@(${DIFFNUM} -b -r=1e-5 -a=2e-2 \
+		${TESTDIR}/RESULTS/UA/ua_ie_buffer_t20021221_104600.out \
+	 	output/test3/ua_ie_buffer_t20021221_104600.out.gz \
+		> test03_ua_gitm.diff)
+	-@(${DIFFNUM} -b -r=1e-5 -a=2e-4 \
+		${TESTDIR}/RESULTS/IE/IE_t021221_104500.log \
+	 	output/test3/IE_t021221_104500.log \
+		> test03_ie.diff)
+	-@(${DIFFNUM} -b -r=1e-5 -a=2e-8 \
+		${TESTDIR}/RESULTS/GM/log_n000001.log \
+	 	output/test3/log_n000001.log \
+		> test03_gm.diff)
+	@ls -l test03*.diff
+	
+### test4: GM+IE+HEIDI ###
+
+test4:
+	@echo "test4_compile..." > test04_gm.diff
+	@echo "test4_compile..." > test04_ie.diff
+	${MAKE} test4_compile
+	@echo "test4_rundir..." >> test04_gm.diff
+	@echo "test4_rundir..." >> test04_ie.diff
+	${MAKE} test4_rundir
+	@echo "test4_run..." >> test04_gm.diff
+	@echo "test4_run..." >> test04_ie.diff
+	${MAKE} test4_run
+	@echo "test4_check..." >> test04_gm.diff
+	@echo "test4_check..." >> test04_ie.diff
+	${MAKE} test4_check
+
+test4_compile:
+	./Config.pl -default -v=Empty,GM/BATSRUS,IE/Ridley_serial,IM/HEIDI
+	./Config.pl -o=GM:u=Default,e=Mhd,ng=2,g=8,8,8,IE:g=91,181
+	${MAKE} SWMF
+	make PIDL
+
+test4_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.GMIEHEIDI ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test4_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl -M RESULTS
+
+test4_check:
+	-@(${DIFFNUM} -b -r=1e-3 -a=1e-8 \
+		${TESTDIR}/RESULTS/GM/log_n000000.log \
+		output/test4/GM_log_n000000.log \
+		> test04_gm.diff)
+	-@(${DIFFNUM} -b -t -r=1e-5 \
+		${TESTDIR}/RESULTS/IE/IE*.log \
+		output/test4/IE.log \
+		> test04_ie.diff)
+	ls -l test04_*.diff
+
+### test5: Eruptive Event generator coupled to the corona ###
+test5:
+	@echo "test5_compile..." > test05_ee.diff
+	${MAKE} test5_compile
+	@echo "test_rundir..." >> test05_ee.diff
+	${MAKE} test5_rundir
+	@echo "test5_run..." >> test05_ee.diff
+	${MAKE} test5_run
+	@echo "test5_check..." >> test05_ee.diff
+	${MAKE} test5_check
+
+test5_compile:
+	./Config.pl -default -v=Empty,EE/BATSRUS,SC/BATSRUS
+	./Config.pl -o=EE:u=Swarm,e=MhdEos,ng=2,g=10,10,10
+	./Config.pl -o=SC:u=Awsom,e=Awsom,ng=2,g=4,4,4
+	${MAKE} SWMF
+	make PIDL
+
+test5_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cd ${TESTDIR}; cp ../GM/BATSRUS/data/FLUXEMERGENCE/*Sph.dat .
+	cd ${TESTDIR}; cp ../GM/BATSRUS/data/FLUXEMERGENCE/EOS.* .
+	cd ${TESTDIR}; gunzip *.gz
+
+test5_run:
+	cd ${TESTDIR}; cp Param/PARAM.in.test.EE.3D PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog_3d
+	cd ${TESTDIR}; ./Restart.pl
+	cd ${TESTDIR}; ./PostProc.pl -M RESULTS/run_3d
+	cd ${TESTDIR}; cp Param/PARAM.in.test.EE PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog_restart
+	cd ${TESTDIR}; ./PostProc.pl -M -cat RESULTS/run_restart; \
+	               mv runlog_restart RESULTS/run_restart
+	cd ${TESTDIR}; cp Param/PARAM.in.test.SC PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./Restart.pl
+	cd ${TESTDIR}; ./PostProc.pl -M -cat RESULTS/run_SC
+	cd ${TESTDIR}; cp Param/PARAM.in.test.EESC PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl -M -cat RESULTS/coupled
+
+test5_check:
+	-(${DIFFNUM} -b -r=1e-5 -a=2e-15 \
+		${TESTDIR}/RESULTS/coupled/EE/log_n000010.log \
+		output/test5/EE.log \
+		> test05_ee.diff)
+	-(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/RESULTS/coupled/SC/log_n000070.log \
+		output/test5/SC.log \
+		> test05_sc.diff)
+	ls -l test05_*.diff
+
+
+### test6: SC + IH with stream aligned field lines ###
+
+test6:
+	@echo "test6_compile..." > test06_sc_sa.diff
+	@echo "test6_compile..." > test06_ih_sa.diff
+	${MAKE} test6_compile
+	@echo "test6_rundir..." >> test06_sc_sa.diff
+	@echo "test6_rundir..." >> test06_ih_sa.diff
+	${MAKE} test6_rundir
+	@echo "test6_run..." >> test06_sc_sa.diff
+	@echo "test6_run..." >> test06_ih_sa.diff
+	${MAKE} test6_run
+	@echo "test6_check..." >> test06_sc_sa.diff
+	@echo "test6_check..." >> test06_ih_sa.diff
+	${MAKE} test6_check
+
+test6_compile:
+	./Config.pl -default -v=Empty,SC/BATSRUS,IH/BATSRUS
+	./Config.pl -o=SC:u=Awsom,e=AwsomSA,ng=2,g=6,4,4
+	./Config.pl -o=IH:u=Awsom,e=AwsomSA,ng=2,g=4,4,4
+	${MAKE} SWMF
+	make PIDL
+
+test6_rundir:
+	rm -rf ${TESTDIR}
+	$(MAKE) rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.SCIH_streamaligned ${TESTDIR}/PARAM.in
+	cp SC/BATSRUS/data/input/Gong_harmonics.dat ${TESTDIR}/SC/
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test6_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl -M -cat RESULTS
+
+test6_check:
+	-(${DIFFNUM} -b -r=1e-5 -a=1e-26 \
+		${TESTDIR}/RESULTS/SC/log_n000000.log \
+		output/test6/SC_log_n000000.log \
+		> test06_sc_sa.diff)
+	-(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/RESULTS/IH/log_n000000.log \
+		output/test6/IH_log_n000000.log \
+		> test06_ih_sa.diff)
+	ls -l test06_*.diff
+
+### test7: IH+OH test ###
+
+test7:
+	@echo "test7_compile..." > test07_ih.diff
+	@echo "test7_compile..." > test07_oh.diff
+	${MAKE} test7_compile
+	@echo "test7_rundir..." >> test07_ih.diff
+	@echo "test7_rundir..." >> test07_oh.diff
+	${MAKE} test7_rundir
+	@echo "test7_run..." >> test07_ih.diff
+	@echo "test7_run..." >> test07_oh.diff
+	${MAKE} test7_run
+	@echo "test7_check..." >> test07_ih.diff
+	@echo "test7_check..." >> test07_oh.diff
+	${MAKE} test7_check
+
+test7_compile:
+	./Config.pl -default -v=Empty,IH/BATSRUS,OH/BATSRUS
+	./Config.pl -o=IH:u=Waves,e=Mhd,ng=2,g=4,4,4
+	./Config.pl -o=OH:u=Waves,e=Mhd,ng=2,g=4,4,4
+	${MAKE} SWMF
+	make PIDL
+
+test7_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.IHOH.CoupleSphToXyz ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test7_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl -M RESULTS
+
+test7_check:
+	-(${DIFFNUM} -b -r=1e-5 -a=2e-29\
+		${TESTDIR}/RESULTS/IH/log_n000000.log \
+		output/test7/Sph_IH_log_n000000.log \
+		> test07_ih.diff)
+	-(${DIFFNUM} -b -r=1e-5 -a=1e-29\
+		${TESTDIR}/RESULTS/OH/log_n000000.log \
+		output/test7/Xyz_OH_log_n000000.log \
+		> test07_oh.diff)
+	ls -l test07_*.diff
+
+
+### test8: SC + IH with Threaded-Field-Line boundary condition test ###
+
+test8:
+	@echo "test8_compile..." > test08_sc_thread.diff
+	@echo "test8_compile..." > test08_ih.diff
+	${MAKE} test8_compile
+	@echo "test8_rundir..." >> test08_sc_thread.diff
+	@echo "test8_rundir..." >> test08_ih.diff
+	${MAKE} test8_rundir
+	@echo "test8_run..." >> test08_sc_thread.diff
+	@echo "test8_run..." >> test08_ih.diff
+	${MAKE} test8_run
+	@echo "test8_restart..." >> test08_sc_thread.diff
+	@echo "test8_restart..." >> test08_ih.diff
+	${MAKE} test8_restart
+	@echo "test8_check..." >> test08_sc_thread.diff
+	@echo "test8_check..." >> test08_ih.diff
+	${MAKE} test8_check
+
+test8_compile:
+	./Config.pl -default -v=Empty,SC/BATSRUS,IH/BATSRUS
+	./Config.pl -o=SC:u=Awsom,e=Awsom,ng=2,g=4,4,4
+	./Config.pl -o=IH:u=Awsom,e=Awsom,ng=2,g=4,4,4
+	${MAKE} SWMF
+	make PIDL
+
+test8_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.SCIH_threadbc ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test8_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./Restart.pl
+
+test8_restart:
+	cd ${TESTDIR}; mv PARAM.in PARAM.in_start; rm -f PARAM.in_orig_
+	cd ${TESTDIR}; cp Param/PARAM.in.test.restart.SCIH_threadbc PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog_restart
+	cd ${TESTDIR}; ./PostProc.pl -M -cat RESULTS
+
+test8_check:
+	-(${DIFFNUM} -b -r=1e-5 -a=1e-26 \
+		${TESTDIR}/RESULTS/SC/log_n000000.log \
+		output/test8/SC_log_n000000.log \
+		> test08_sc_thread.diff)
+	-(${DIFFNUM} -b -r=1e-5 -a=1e-26 \
+		${TESTDIR}/RESULTS/SC/rfr_rwi_4_*.outs \
+		output/test8/SC_rfr.ref.gz \
+		>> test08_sc_thread.diff)
+	-(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/RESULTS/SC/los_sdo_aia*.out \
+		SC/BATSRUS/data/output/test8/SC_los_sdo_aia.out.gz \
+		>> test08_sc_thread.diff)
+	-(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/RESULTS/IH/log_n000000.log \
+		output/test8/IH_log_n000000.log \
+		> test08_ih.diff)
+	ls -l test08_*.diff
+
+### test9: SC + IH + GM. Test 2nd and 5th order schemes ### 
+
+test9:
+	@echo "test9_compile..." > test09_sc.diff
+	@echo "test9_compile..." > test09_ih.diff
+	@echo "test9_compile..." > test09_gm.diff
+	${MAKE} test9_compile
+	@echo "test9_rundir..." >> test09_sc.diff
+	@echo "test9_rundir..." >> test09_ih.diff
+	@echo "test9_rundir..." >> test09_gm.diff
+	${MAKE} test9_rundir
+	@echo "test9_run..." >> test09_sc.diff
+	@echo "test9_run..." >> test09_ih.diff
+	${MAKE} test9_run
+	@echo "test9_cme..." >> test09_sc.diff
+	@echo "test9_cme..." >> test09_ih.diff
+	${MAKE} test9_cme
+	@echo "test9_restart..." >> test09_sc.diff
+	@echo "test9_restart..." >> test09_ih.diff
+	${MAKE} test9_restart
+	@echo "test9_ihgm..." >> test09_ih.diff
+	@echo "test9_ihgm..." >> test09_gm.diff 
+	${MAKE} test9_ihgm
+	@echo "test9_check..." >> test09_sc.diff
+	@echo "test9_check..." >> test09_ih.diff
+	@echo "test9_check..." >> test09_gm.diff
+	${MAKE} test9_check
+
+test9_compile:
+	./Config.pl -default -v=Empty,SC/BATSRUS,IH/BATSRUS,GM/BATSRUS
+	./Config.pl -o=SC:u=Awsom,e=AwsomAnisoPi,ng=2,g=6,8,8
+	./Config.pl -o=IH:u=Awsom,e=AwsomAnisoPi,ng=2,g=8,8,8
+	./Config.pl -o=GM:u=Default,e=Mhd,ng=2,g=8,8,8
+	${MAKE} SWMF
+	make PIDL
+	make FDIPS
+	
+test9_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.start.SCIH ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+	cp Param/map_04.out ${TESTDIR}/SC/
+	cp -f ${MAGNETOGRAMDIR}/FDIPS.in.orig ${TESTDIR}/SC/FDIPS.in
+	perl -i -pe 's/dipole11.out/map_04.out/' ${TESTDIR}/SC/FDIPS.in
+	perl -i -pe 's/#(CHANGEPOLARFIELD)/$$1/; s/20/90/ if /n(Theta|Phi)/' ${TESTDIR}/SC/FDIPS.in
+	cd ${TESTDIR}/SC; ${PARALLEL} ${NPFLAG} 4 ./FDIPS.exe > runlog_fdips
+
+test9_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl -m RESULTS/run_start
+	cd ${TESTDIR}; ./Restart.pl -i RESULTS/run_start/RESTART
+
+test9_cme:
+	cd ${TESTDIR}; mv PARAM.in PARAM.in_start; rm -f PARAM.in_orig_
+	cd ${TESTDIR}; cp Param/PARAM.in.test.cme.SCIH PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl RESULTS/run_cme
+	cd ${TESTDIR}; cp -r RESULTS/run_start/RESTART/IH \
+	   RESULTS/run_cme/RESTART/
+	cd ${TESTDIR}; ./Restart.pl -i RESULTS/run_cme/RESTART
+
+test9_restart:
+	cd ${TESTDIR}; mv PARAM.in PARAM.in_cme; rm -f PARAM.in_orig_
+	cd ${TESTDIR}; cp Param/PARAM.in.test.restart.SCIH PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl -m RESULTS/run_restart
+	cd ${TESTDIR}; ./Restart.pl -i RESULTS/run_restart/RESTART
+
+test9_ihgm:
+	cd ${TESTDIR}; mv PARAM.in PARAM.in.restart; rm -f PARAM.in_orig_
+	cd ${TESTDIR}; cp Param/PARAM.in.test.IHGM PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl -m RESULTS/run_ihgm
+
+test9_check:
+	-(${DIFFNUM} -b -r=1e-5 -a=1e-27 \
+		${TESTDIR}/RESULTS/run_start/SC/log_n000001.log \
+		output/test9/SC_log_n000001.log \
+		> test09_sc.diff)
+	-(${DIFFNUM} -b -r=1e-4 -a=1e-27 \
+                ${TESTDIR}/RESULTS/run_start/SC/los_sdo_aia_6_n00000010.out \
+                output/test9/SC_los_sdo_aia_6_n0000010.out.gz \
+                >> test09_sc.diff)
+	-(${DIFFNUM} -b -r=1e-4 -a=1e-27 \
+                ${TESTDIR}/RESULTS/run_start/SC/los_sta_euvi_4_n00000010.out \
+                output/test9/SC_los_sta_euvi_4_n0000010.out.gz \
+                >> test09_sc.diff)
+	-(${DIFFNUM} -b -r=1e-4 -a=1e-27 \
+                ${TESTDIR}/RESULTS/run_start/SC/los_stb_euvi_5_n00000010.out \
+                output/test9/SC_los_stb_euvi_5_n0000010.out.gz \
+                >> test09_sc.diff)
+	-(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/RESULTS/run_start/IH/log_n000001.log \
+		output/test9/IH_log_n000001.log \
+		> test09_ih.diff)
+	-(${DIFFNUM} -b -r=2e-5 -a=1e-27 \
+		${TESTDIR}/RESULTS/run_start/IH/trj_earth_n00000010.sat \
+		output/test9/IH_trj_earth_n00000010.sat \
+		>> test09_ih.diff)	
+	-(${DIFFNUM} -b -r=1e-5 -a=1e-27 \
+		${TESTDIR}/RESULTS/run_cme/SC/log_n000010.log \
+		output/test9/SC_log_n000010.log \
+		> test09_sc_cme.diff)
+	-(${DIFFNUM} -b -r=1e-5 -a=1e-27 \
+		${TESTDIR}/RESULTS/run_cme/SC/los_soho_c2_4_t00000010_n00000012.out \
+		output/test9/SC_cme_los_soho_c2_4_t00000010_n0000012.out \
+		>> test09_sc_cme.diff)
+	-(${DIFFNUM} -b -r=1e-5 -a=1e-27 \
+      	 	${TESTDIR}/RESULTS/run_cme/SC/shk_var_10_t00000010_n00000012.out \
+                output/test9/SC_shk_var_10_t00000010_n00000012.out \
+		>> test09_sc_cme.diff)
+	-(${DIFFNUM} -b -r=1e-5 -a=1e-27 \
+		${TESTDIR}/RESULTS/run_restart/SC/los_soho_c2_4_t00000010_n00000012.out \
+		output/test9/SC_restart_los_soho_c2_4_t00000010_n0000012.out \
+		> test09_sc_restart.diff)
+	-(${DIFFNUM} -b -r=2e-5 -a=1e-27 \
+		${TESTDIR}/RESULTS/run_restart/IH/sat_earth_n00000012.sat \
+		output/test9/IH_sat_earth_n00000012.sat \
+		> test09_ih_restart.diff)
+	-(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/RESULTS/run_restart/IH/log_n000011.log \
+		output/test9/IH_log_n000011.log \
+		>> test09_ih_restart.diff)
+	-(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/RESULTS/run_ihgm/GM/log_n000000.log \
+		output/test9/GM_log_n000000.log \
+		> test09_gm.diff)
+	ls -l test09_*.diff
+
+### test10: real-time SC + IH test ###
+### Uses two real GONG magnetogram, however, the actual time difference
+### of about 5 hours is artificially reduced to 150 second, with the command
+### perl -i -pe 's/2261.2270982/2261.2164177/' map_01.out
+### All the other commands reealistically reproduce the actual scheme
+### for real-time simulations with the AWSoM-R
+
+test10:
+	@echo "test10_compile..." > test10_sc_thread.diff
+	@echo "test10_compile..." > test10_ih.diff
+	${MAKE} test10_compile
+	@echo "test10_rundir..." >> test10_sc_thread.diff
+	@echo "test10_rundir..." >> test10_ih.diff
+	${MAKE} test10_rundir
+	@echo "test10_run..." >> test10_sc_thread.diff
+	@echo "test10_run..." >> test10_ih.diff
+	${MAKE} test10_run
+	@echo "test10_restart..." >> test10_sc_thread.diff
+	@echo "test10_restart..." >> test10_ih.diff
+	${MAKE} test10_restart
+	@echo "test10_check..." >> test10_sc_thread.diff
+	@echo "test10_check..." >> test10_ih.diff
+	${MAKE} test10_check
+
+test10_compile:
+	./Config.pl -default -v=Empty,SC/BATSRUS,IH/BATSRUS
+	./Config.pl -o=SC:u=Awsom,e=Awsom,ng=2,g=4,4,4
+	./Config.pl -o=IH:u=Awsom,e=Awsom,ng=2,g=4,4,4
+	${MAKE} SWMF
+	make PIDL
+	cd ${EMPIRICALEEDIR}; ${MAKE} FRM
+	cd ${MAGNETOGRAMDIR}; \
+	   	${MAKE} HARMONICS; \
+		${MAKE} CONVERTHARMONICS; \
+		${MAKE} FDIPS
+
+test10_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cd ${TESTDIR}/SC; perl -i -pe \
+	's/dipole11uniform/fitsfile_01/; s/harmonics11uniform/endmagnetogram/; s/\d+(\s+MaxOrder)/30$$1/' \
+	HARMONICS.in;  perl -i -pe \
+	's/harmonics/endmagnetogram/; s/\d+(\s+MaxOrder)/30$$1/; s/\d+(\s+nR)/30$$1/; s/\d+(\s+nLon)/90$$1/; s/\d+(\s+nLat)/90$$1/' \
+	HARMONICSGRID.in
+	@echo " Before starting real time simulation from scratch, download the latest GONG magnetogram"
+	cd ${TESTDIR}/SC; \
+	cp ${SCDIR}/data/input/2261_222.fits.gz .; \
+	gzip -d *.fits.gz; mv *.fits endmagnetogram; \
+	python3 remap_magnetogram.py \
+	endmagnetogram fitsfile; \
+	./HARMONICS.exe |tee harmonics.log; \
+	mv MAGNETOGRAMTIME.in ENDMAGNETOGRAMTIME.in; \
+	${MPIRUN} ./CONVERTHARMONICS.exe > convert.log ; \
+	mv  harmonics_bxyz.out ../harmonics_new_bxyz.out; \
+	cp ${DIR}/Param/PARAM.in.realtime.SCIH_threadbc \
+	PARAM.tmp; \
+	${DIR}/share/Scripts/ParamConvert.pl \
+	PARAM.tmp ../PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test10_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+
+test10_restart:
+	cd ${TESTDIR}; ./Restart.pl; \
+	mv PARAM.in PARAM.in_start; rm -f PARAM.in_orig_
+	@echo "Before restarting real-time simulation remove start magnetogram"
+	cd ${TESTDIR}; rm -f harmonics_bxyz.out; \
+	mv  harmonics_new_bxyz.out harmonics_bxyz.out
+	cd ${TESTDIR}/SC; \
+	rm -f STARTMAGNETOGRAMTIME.in startmagnetogram.dat PARAM.tmp; \
+	rm -f *.fits.gz *.fits harmonics.log fitsfile_01.out; \
+	rm -f endmagnetogram*; \
+	cp ENDMAGNETOGRAMTIME.in STARTMAGNETOGRAMTIME.in
+	@echo "Download new magnetogram"
+	cd ${TESTDIR}/SC; \
+	cp ${SCDIR}/data/input/2261_218.fits.gz .; \
+	gzip -d *.fits.gz; mv *.fits endmagnetogram; \
+	python3 remap_magnetogram.py \
+	endmagnetogram fitsfile; \
+	perl -i -pe \
+	's/0.2270982/0.2164177/' fitsfile_01.out; \
+	./HARMONICS.exe |tee harmonics.log; \
+	mv MAGNETOGRAMTIME.in ENDMAGNETOGRAMTIME.in; \
+	cp ${DIR}/Param/PARAM.in.realtime.restart.SCIH_threadbc \
+	PARAM.tmp; \
+	${DIR}/share/Scripts/ParamConvert.pl \
+	PARAM.tmp ../PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog_restart
+	cd ${TESTDIR}; ./PostProc.pl -M -cat RESULTS
+
+test10_check:
+	-(${DIFFNUM} -b -r=1e-5 -a=1e-26 \
+		${TESTDIR}/RESULTS/SC/log_n000000.log \
+		output/test10/SC_log_n000000.log \
+		> test10_sc_thread.diff)
+	-(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/RESULTS/IH/log_n000001.log \
+		output/test10/IH_log_n000000.log \
+		> test10_ih.diff)
+	ls -l test10_*.diff
+
+# SC + GM test
+
+test11:
+	@echo "test11_compile..." > test11_gm.diff
+	@echo "test11_compile..." > test11_sc.diff
+	${MAKE} test11_compile
+	@echo "test11_rundir..." >> test11_gm.diff
+	@echo "test11_rundir..." >> test11_sc.diff
+	${MAKE} test11_rundir
+	@echo "test11_run..." >> test11_gm.diff
+	@echo "test11_run..." >> test11_sc.diff
+	${MAKE} test11_run
+	@echo "test11_check..." >> test11_gm.diff
+	@echo "test11_check..." >> test11_sc.diff
+	${MAKE} test11_check
+
+test11_compile:
+	./Config.pl -default -v=Empty,SC/BATSRUS,GM/BATSRUS
+	./Config.pl -o=SC:u=Awsom,e=Awsom,g=4,4,4,ng=2
+	./Config.pl -o=GM:u=Default,e=Mhd,g=4,4,4,ng=2
+	${MAKE} SWMF
+
+test11_rundir:
+	rm -rf ${TESTDIR}
+	$(MAKE) rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.SCGM ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test11_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl -M -cat RESULTS
+
+test11_check:
+	-(${DIFFNUM} -b -r=1e-5 -a=1e-26 \
+		     ${TESTDIR}/RESULTS/SC/log_n000000.log \
+		     output/test11/SC_log_n000000.log \
+		     > test11_sc.diff)
+	-(${DIFFNUM} -b -r=1e-5 \
+		     ${TESTDIR}/RESULTS/GM/log_n000000.log \
+		     output/test11/GM_log_n000000.log \
+		     > test11_gm.diff)
+	ls -l test11_*.diff
+
+### test9gpu: SC/AWSOM + IH/AWSOM on GPU ###
+
+test9gpu:
+	@echo "test9gpu_compile..." > test09gpu_sc.diff
+	${MAKE} test9gpu_compile
+	@echo "test9gpu_rundir..." >> test09gpu_sc.diff
+	${MAKE} test9gpu_rundir
+	@echo "test9gpu_run..." >> test09gpu_sc.diff
+	${MAKE} test9gpu_run
+	${MAKE} test9gpu_cme
+	${MAKE} test9gpu_restart
+	@echo "test9gpu_check..." >> test09gpu_sc.diff
+	${MAKE} test9gpu_check
+
+test9gpu_compile:
+	./Config.pl -v=Empty,SC/BATSRUS,IH/BATSRUS
+	./Config.pl -o=SC:u=Awsom,e=Awsom,ng=2,g=6,8,8
+	./Config.pl -o=IH:u=Awsom,e=Awsom,ng=2,g=8,8,8
+	./Config.pl -default ${OPENACC}
+	./Config.pl -o=SC:opt=${DIR}/Param/PARAM.in.test.start.SCIH_gpu
+	./Config.pl -o=IH:opt=${DIR}/Param/PARAM.in.test.start.SCIH_gpu
+	${MAKE} SWMF
+	make PIDL
+	
+test9gpu_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.start.SCIH_gpu ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test9gpu_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl -m -replace RESULTS/run_start
+	cd ${TESTDIR}; ./Restart.pl -i RESULTS/run_start/RESTART
+
+test9gpu_cme:
+	cd ${TESTDIR}; mv PARAM.in PARAM.in_start; rm -f PARAM.in_orig_
+	cd ${TESTDIR}; cp Param/PARAM.in.test.cme.SCIH_gpu PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+	./Config.pl -o=SC:opt=${DIR}/${TESTDIR}/PARAM.in
+	${MAKE} SWMF
+	make PIDL
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl -m -replace RESULTS/run_cme
+	cd ${TESTDIR}; cp -r RESULTS/run_start/RESTART/IH RESULTS/run_cme/RESTART/
+	cd ${TESTDIR}; ./Restart.pl -i RESULTS/run_cme/RESTART
+
+test9gpu_restart:
+	cd ${TESTDIR}; mv PARAM.in PARAM.in_cme; rm -f PARAM.in_orig_
+	cd ${TESTDIR}; cp Param/PARAM.in.test.restart.SCIH_gpu PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+	./Config.pl -o=SC:opt=${DIR}/${TESTDIR}/PARAM.in,IH:opt=${DIR}/${TESTDIR}/PARAM.in
+	${MAKE} SWMF
+	make PIDL
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl -m -replace RESULTS/run_restart
+
+test9gpu_check:
+	-(${DIFFNUM} -b -r=1e-5 -a=1e-27 \
+		${TESTDIR}/RESULTS/run_start/SC/log_n000001.log \
+		output/test9gpu/SC_log_n000001.log \
+		> test09gpu_sc.diff)
+	-(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/RESULTS/run_start/IH/log_n000001.log \
+		output/test9gpu/IH_log_n000001.log \
+		> test09gpu_ih.diff)
+	-(${DIFFNUM} -b -r=1e-5 -a=1e-27 \
+		${TESTDIR}/RESULTS/run_cme/SC/log_n000010.log \
+		output/test9gpu/SC_log_n000010.log \
+		> test09gpu_sc_cme.diff)
+	-(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/RESULTS/run_restart/IH/log_n000011.log \
+		output/test9gpu/IH_log_n000011.log \
+		> test09gpu_ih_restart.diff)
+	ls -l test09gpu_*.diff
+
+### test12: GM/BATSRUS coupled with UA/MGITM  ###
+
+test12:
+	@echo "test12_compile..." > test12_gm.diff
+	${MAKE} test12_compile
+	@echo "test12_rundir..." >> test12_gm.diff
+	${MAKE} test12_rundir
+	@echo "test12_run..." >> test12_gm.diff
+	if [ ${NP} -eq 1 -o ${NP} -eq 2 ]; then \
+	     ${MAKE} test12_run; \
+	else \
+	     $(MAKE) test12_run NP=4; \
+	fi
+	@echo "test12_check..." >> test12_gm.diff
+	${MAKE} test12_check
+
+test12_compile:
+	./Config.pl -default -v=Empty,GM/BATSRUS,UA/MGITM
+	./Config.pl -o=GM:u=Mars,e=MhdMars,g=8,8,8,UA:Mars,g=8,4,120,4
+	${MAKE} SWMF
+	make PIDL
+	make PGITM
+
+test12_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.GMUA.MGITM ${TESTDIR}/PARAM.in
+	cd ${TESTDIR}; cp GM/Param/MARS/marsmgsp.txt .
+
+#gunzip -c GM/BATSRUS/data/MARS/NOGW_150308_UT19_MHDINPUTS.dat.gz \
+#		> ${TESTDIR}/NOGW_150308_UT19_MHDINPUTS.dat
+
+test12_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl -m -replace RESULTS
+
+test12_check:
+	-(${DIFFNUM} -b -r=2e-2 \
+		${TESTDIR}/RESULTS/GM/log*.log output/test12/GM.log \
+		> test12_gm.diff)
+	-(${DIFFNUM} -b -r=2e-2 \
+		${TESTDIR}/RESULTS/UA/log*.dat output/test12/UA.log \
+		> test12_ua.diff)
+	ls -l test12*.diff
+
+### test13: Europa's exosphere model with GM and PT ###
+
+test13:
+	@echo "test13_compile..." > test13_pt.diff
+	${MAKE} test13_compile
+	@echo "test13_rundir..." >> test13_pt.diff
+	${MAKE} test13_rundir
+	@echo "test13_run..." >> test13_pt.diff
+	${MAKE} test13_run
+	@echo "test13_check..." >> test13_pt.diff
+	${MAKE} test13_check
+
+test13_compile:
+	./Config.pl -default -v=Empty,GM/BATSRUS,PT/AMPS
+	./Config.pl -o=GM:u=EuropaSingleMHDPe,e=MhdPe,ng=2,g=8,8,8
+	./Config.pl -o=PT:spice-path=nospice,spice-kernels=nospice,application=europa-test,amps-test=on 
+	${MAKE} SWMF
+
+test13_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.GMPT.Europa ${TESTDIR}/PARAM.in
+	cp -r PT/AMPS/data/input/Europa/TestCase/RESTART_n003000 ${TESTDIR}/
+	cd ${TESTDIR}; ./Restart.pl -i RESTART_n003000
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test13_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+
+test13_check:
+	-(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/PT/plots/amps.dat \
+		output/test13/amps.ref_np${NAMPS} \
+		> test13_pt.diff)
+		ls -l test13*.diff
+
+### test14: SC+IH+PT
+
+test14:
+	rm -f test14_scihpt.diff
+	@echo "test14_compile..." > test14_scihpt.diff
+	${MAKE} test14_compile
+	@echo "test14_rundir..." >> test14_scihpt.diff
+	${MAKE} test14_rundir
+	@echo "test14_run..." >> test14_scihpt.diff
+	${MAKE} test14_run
+	@echo "test14_check..." >> test14_scihpt.diff
+	${MAKE} test14_check
+
+test14_compile:
+	./Config.pl -default -v=Empty,SC/BATSRUS,IH/BATSRUS,PT/MITTENS
+	./Config.pl -o=SC:u=Awsom,e=Awsom,ng=2,g=4,4,4
+	./Config.pl -o=IH:u=Awsom,e=Awsom,ng=2,g=4,4,4
+	./Config.pl -o=PT:g=2000
+	${MAKE} SWMF
+	make PIDL
+
+test14_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.SCIHPT ${TESTDIR}/PARAM.in
+	cp GM/BATSRUS/Param/CORONA/RadCoolCorona.dat ${TESTDIR}/RadCoolCorona.dat
+	cp -r PT/MITTENS/data/input/test14/RESTART_t0020.0000s ${TESTDIR}/
+	cd ${TESTDIR}; ./Restart.pl -i RESTART_t0020.0000s
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test14_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl -M RESULTS
+
+test14_check:
+	cat ${TESTDIR}/RESULTS/PT/MH_data_*_*_t00000030.out \
+	    > ${TESTDIR}/RESULTS/PT/MH_data.outs
+	-(${DIFFNUM} -a=1e-6 -r=1e-6 -b \
+		${TESTDIR}/RESULTS/PT/MH_data.outs \
+		output/test14/MH_data.ref.gz \
+		> test14_scihpt.diff)
+	ls -l test14_scihpt.diff
+
+### test15: SP/MFLAMPA model coupled with SC and IH models ###
+
+test15_build:
+	rm -rf SP_build
+	Scripts/Configure.pl -on=SP,SC,IH -off=IM,IE,RB -d=SP_build
+	cd SP_build; ./Config.pl -install \
+	   	     	-compiler=${FORTRAN_COMPILER_NAME},${C_COMPILER_NAME}
+	cd SP_build; make test15
+
+test15:
+	rm -f test15_scihsp.diff
+	@echo "test15_compile..." > test15_scihsp.diff
+	${MAKE} test15_compile
+	@echo "test15_rundir..." >> test15_scihsp.diff
+	${MAKE} test15_rundir
+	@echo "test15_run..." >> test15_scihsp.diff
+	${MAKE} test15_run
+	@echo "test15_restart..." >> test15_scihsp.diff
+	${MAKE} test15_restart
+	@echo "test15_check..." >> test15_scihsp.diff
+	${MAKE} test15_check
+
+test15_compile:
+	./Config.pl -default -v=Empty,SC/BATSRUS,IH/BATSRUS,SP/MFLAMPA
+	./Config.pl -o=SC:u=Awsom,e=Awsom,ng=2,g=4,4,4
+	./Config.pl -o=IH:u=Awsom,e=Awsom,ng=2,g=4,4,4
+	./Config.pl -o=SP:g=2000
+	${MAKE} SWMF
+	make PIDL
+
+test15_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.SCIHSP ${TESTDIR}/PARAM.in
+	cp GM/BATSRUS/Param/CORONA/RadCoolCorona.dat ${TESTDIR}/RadCoolCorona.dat
+	cp -r SP/MFLAMPA/data/input/test15/RESTART_t0020.0000s ${TESTDIR}/
+	cd ${TESTDIR}; ./Restart.pl -i RESTART_t0020.0000s
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test15_run:
+	cd ${TESTDIR}; rm -rf RESTART_t0025.0000s
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./Restart.pl
+
+test15_restart:
+	cd ${TESTDIR}; mv PARAM.in PARAM.in_start; rm -f PARAM.in_orig_
+	cd ${TESTDIR}; cp Param/PARAM.in.test.restart.SCIHSP PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog_restart
+	cd ${TESTDIR}; ./PostProc.pl -M RESULTS
+
+test15_check:
+	cat ${TESTDIR}/RESULTS/SP/MH_data_*_*_t00000030_n000010.out \
+	    > ${TESTDIR}/RESULTS/SP/MH_data.outs
+	-(${DIFFNUM} -a=1e-6 -r=1e-6 -b \
+		${TESTDIR}/RESULTS/SP/MH_data.outs \
+		output/test15/MH_data.ref.gz \
+		> test15_scihsp.diff)
+	ls -l test15_scihsp.diff
+
+# test for MFLAMPA inside the SWMF
+
+test_sp:
+	@echo "test_sp_compile..." > test_sp.diff
+	${MAKE} test_sp_compile
+	@echo "test_sp_rundir..." >> test_sp.diff
+	${MAKE} test_sp_rundir
+	@echo "test_sp_run..." >> test_sp.diff
+	${MAKE} test_sp_run
+	@echo "test_sp_check..." >> test_sp.diff
+	${MAKE} test_sp_check
+
+test_sp_compile:
+	./Config.pl -default -v=Empty,SP/MFLAMPA
+	./Config.pl -o=SP:g=2000
+	${MAKE} SWMF
+	make PIDL
+
+test_sp_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	mkdir ${TESTDIR}/MH_data/
+	cp Param/PARAM.in.test.SP ${TESTDIR}/PARAM.in
+	cd ${TESTDIR}; tar xzf ../SP/MFLAMPA/data/input/test15/MH_data.tgz
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test_sp_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl -M RESULTS
+
+test_sp_check:
+	cat ${TESTDIR}/RESULTS/SP/MH_data_*_*_t00000030_n000010.out \
+	    > ${TESTDIR}/RESULTS/SP/MH_data.outs
+	-(${DIFFNUM} -a=1e-6 -r=1e-6 -b \
+		${TESTDIR}/RESULTS/SP/MH_data.outs \
+		SP/MFLAMPA/output/MH_data.outs.ref.gz \
+		> test_sp.diff)
+	ls -l test_sp.diff
+
+
+### test16_3d: GM/BATSRUS+PC/FLEKS. BATSRUS only provides initial conditions.
+
+test16_3d:
+	@echo "test16_3d_compile..." > test16_3d_gmpc.diff
+	$(MAKE) test16_3d_compile
+	@echo "test16_3d_rundir..." > test16_3d_gmpc.diff
+	$(MAKE) test16_3d_rundir
+	@echo "test16_3d_run..." > test16_3d_gmpc.diff
+	$(MAKE) test16_3d_run
+	@echo "test16_3d_check..." > test16_3d_gmpc.diff
+	$(MAKE) test16_3d_check
+
+test16_3d_compile:
+	./Config.pl -default -amrex -v=Empty,PC/FLEKS,GM/BATSRUS
+	./Config.pl -o=GM:u=Default,e=MultiIonPe,ng=2,g=8,8,1 -o=PC:lev=9
+	$(MAKE) SWMF
+	$(MAKE) PIDL
+	
+test16_3d_rundir:
+	rm -rf ${TESTDIR}
+	$(MAKE) rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.GMPC.FLEKS.periodic  ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test16_3d_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl RESULTS/3d
+
+test16_3d_check:
+	-@(${DIFFNUM} -b -r=1e-7 \
+	   ${TESTDIR}/RESULTS/3d/PC/z=0_fluid_region0_0_t00000002_n00000007.out \
+	   output/test16/z=0.ref.gz \
+		> test16_3d_gmpc.diff)
+	-@(${DIFFNUM} -b -r=1e-12 \
+	   ${TESTDIR}/RESULTS/3d/PC/log_pic_n00000000.log \
+	   output/test16/PC.log \
+		>> test16_3d_gmpc.diff)
+	-@(${DIFFNUM} -b -r=1e-12 \
+	   ${TESTDIR}/RESULTS/3d/PC/log_pt_n00000000.log \
+	   output/test16/PT.log \
+		>> test16_3d_gmpc.diff)		
+	ls -l test16_3d_gmpc.diff
+
+### test16_2d: GM/BATSRUS+PC/FLEKS. BATSRUS only provides initial conditions.
+
+test16_2d:
+	@echo "test16_2d_compile..." > test16_2d_gmpc.diff
+	$(MAKE) test16_2d_compile
+	@echo "test16_2d_rundir..." > test16_2d_gmpc.diff
+	$(MAKE) test16_2d_rundir
+	@echo "test16_2d_run..." > test16_2d_gmpc.diff
+	$(MAKE) test16_2d_run
+	@echo "test16_2d_check..." > test16_2d_gmpc.diff
+	$(MAKE) test16_2d_check
+
+test16_2d_compile:
+	./Config.pl -default -amrex2d -v=Empty,PC/FLEKS,GM/BATSRUS -tp=PBEG
+	./Config.pl -o=GM:u=Default,e=MultiIonPe,ng=2,g=8,8,1 -o=PC:lev=9
+	$(MAKE) SWMF
+	$(MAKE) PIDL
+	
+test16_2d_rundir:
+	rm -rf ${TESTDIR}
+	$(MAKE) rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.GMPC.FLEKS.2D.periodic  ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test16_2d_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl RESULTS/2d
+
+test16_2d_check:
+	-@(${DIFFNUM} -b -r=1e-7 \
+	   ${TESTDIR}/RESULTS/2d/PC/z=0_fluid_region0_0_t00000002_n00000007.out \
+	   output/test16/z=0.ref.gz \
+		> test16_2d_gmpc.diff)
+	ls -l test16_2d_gmpc.diff
+
+
+### test17: GM/BATSRUS+PC/FLEKS. 2D Alfven wave ###
+
+test17:
+	@echo "test17_compile..." > test17_gmpc.diff
+	$(MAKE) test17_compile
+	@echo "test17_rundir..." > test17_gmpc.diff
+	$(MAKE) test17_rundir
+	@echo "test17_run..." > test17_gmpc.diff
+	$(MAKE) test17_run
+	@echo "test17_check..." > test17_gmpc.diff
+	$(MAKE) test17_check
+
+test17_compile:
+	./Config.pl -default -amrex -v=Empty,PC/FLEKS,GM/BATSRUS
+	./Config.pl -o=GM:u=Default,e=MhdAnisoP,ng=2,g=8,8,1
+	$(MAKE) SWMF
+	$(MAKE) PIDL
+	
+test17_rundir:
+	rm -rf ${TESTDIR}
+	$(MAKE) rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.GMPC.FLEKS.2D.2steps  ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test17_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl RESULTS/2step
+	cd ${TESTDIR}; ./Restart.pl -v -i RESULTS/2step/RESTART
+	cp Param/PARAM.in.test.GMPC.FLEKS.2D.restart ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl RESULTS/2restart
+	cp Param/PARAM.in.test.GMPC.FLEKS.2D.4steps  ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl RESULTS/4steps
+	cp Param/PARAM.in.test.GMPC.FLEKS.2D.adapt  ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl RESULTS/adapt
+	
+
+test17_check:
+	-@(${DIFFNUM} -b -r=1e-7 -a=1e-14 \
+	   ${TESTDIR}/RESULTS/2restart/PC/z=0_fluid_region0_0_t00000005_n00000004.out \
+	   output/test17/z=0_FLEKS0.ref.gz \
+		> test17_gmpc.diff)
+	-@(${DIFFNUM} -b -r=1e-7 -a=1e-14 \
+	   ${TESTDIR}/RESULTS/2restart/PC/z=0_fluid_region1_0_t00000004_n00000007.out \
+	   output/test17/z=0_FLEKS1.ref.gz \
+		>> test17_gmpc.diff)
+	-@(${DIFFNUM} -b -r=1e-7 -a=1e-14 \
+	   ${TESTDIR}/RESULTS/4steps/PC/z=0_fluid_region0_0_t00000005_n00000004.out \
+	   output/test17/z=0_FLEKS0.ref.gz \
+		>> test17_gmpc.diff)
+	-@(${DIFFNUM} -b -r=1e-7 -a=1e-14 \
+	   ${TESTDIR}/RESULTS/4steps/PC/z=0_fluid_region1_0_t00000004_n00000007.out \
+	   output/test17/z=0_FLEKS1.ref.gz \
+		>> test17_gmpc.diff)					
+	-@(${DIFFNUM} -b -r=1e-7 -a=1e-14 \
+	   ${TESTDIR}/RESULTS/2restart/GM/z=0_var_1_t00000005_n00000004.out \
+	   output/test17/z=0_GM.ref.gz \
+		>> test17_gmpc.diff)
+	-@(${DIFFNUM} -b -r=1e-7 -a=1e-14 \
+	   ${TESTDIR}/RESULTS/4steps/GM/z=0_var_1_t00000005_n00000004.out \
+	   output/test17/z=0_GM.ref.gz \
+		>> test17_gmpc.diff)
+	-@(${DIFFNUM} -b -r=1e-7 -a=1e-14 \
+           ${TESTDIR}/RESULTS/adapt/PC/z=0_fluid_region0_0_t00000010_n00000008.out \
+           output/test17/z=0_FLEKS_adapt.ref.gz \
+                >> test17_gmpc.diff)
+	-@(${DIFFNUM} -b -r=1e-7 -a=1e-14 \
+           ${TESTDIR}/RESULTS/adapt/GM/z=0_var_1_t00000010_n00000008.out \
+           output/test17/z=0_GM_adapt.ref.gz \
+                >> test17_gmpc.diff)
+
+	ls -l test17_gmpc.diff
+
+
+### test18: BATSRUS+FLEKS. 3D reconnection ###
+
+test18:
+	@echo "test18_compile..." > test18_gmpc.diff
+	$(MAKE) test18_compile
+	@echo "test18_rundir..." > test18_gmpc.diff
+	$(MAKE) test18_rundir
+	@echo "test18_run..." > test18_gmpc.diff
+	$(MAKE) test18_run
+	@echo "test18_check..." > test18_gmpc.diff
+	$(MAKE) test18_check
+
+test18_compile:
+	./Config.pl -default -amrex -v=Empty,PC/FLEKS,GM/BATSRUS
+	./Config.pl -o=GM:u=GemReconnect,e=MhdHyp,ng=2,g=4,4,4
+	$(MAKE) SWMF
+	$(MAKE) PIDL
+	
+test18_rundir:
+	rm -rf ${TESTDIR}
+	$(MAKE) rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.GMPC.FLEKS.3D  ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test18_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl RESULTS
+
+test18_check:
+	-@(${DIFFNUM} -b -r=1e-6 -a=1e-15 \
+	     ${TESTDIR}/RESULTS/PC/3d_var_region0_0_t00000016_n00000016.out \
+	     output/test18/3d.ref.gz \
+	     > test18_gmpc.diff)
+	ls -l test18_gmpc.diff
+
+### test19: SC+IH+OH+SP ###
+
+test19:
+	rm -f test19*.diff
+	@echo "test19_compile..." > test19_sp.diff
+	${MAKE} test19_compile
+	@echo "test19_rundir..." >> test19_sp.diff
+	${MAKE} test19_rundir
+	@echo "test19_run..." >> test19_sp.diff
+	${MAKE} test19_run
+	@echo "test19_restart..." >> test19_sp.diff
+	${MAKE} test19_restart
+	@echo "test19_check..." >> test19_sp.diff
+	${MAKE} test19_check
+
+test19_compile:
+	./Config.pl -default
+	./Config.pl -v=Empty,SC/BATSRUS,IH/BATSRUS,OH/BATSRUS,SP/MFLAMPA
+	./Config.pl -o=SC:u=Awsom,e=AwsomWdiff,ng=2,g=4,4,4
+	./Config.pl -o=IH:u=Awsom,e=AwsomWdiff,ng=2,g=4,4,4
+	./Config.pl -o=OH:u=Awsom,e=Awsom,ng=2,g=4,4,4
+	./Config.pl -o=SP:g=2000
+	${MAKE} SWMF
+	make PIDL
+
+test19_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.SCIHOHSP ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test19_run:
+	cd ${TESTDIR}; rm -rf RESTART
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./Restart.pl -o -W RESTART
+
+test19_restart:
+	cd ${TESTDIR}; rm -rf RESULTS runlog_restart
+	cd ${TESTDIR}; ./Restart.pl -i RESTART
+	cd ${TESTDIR}; mv PARAM.in PARAM.in_start; rm -f PARAM.in_orig_
+	cd ${TESTDIR}; cp Param/PARAM.in.test.restart.SCIHOHSP PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog_restart
+	cd ${TESTDIR}; ./PostProc.pl -M -cat RESULTS
+
+test19_check:
+	-(${DIFFNUM} -b -r=1e-5 -a=1e-26 \
+		${TESTDIR}/RESULTS/SC/log_n000000.log \
+		output/test19/SC_log_n000000.log \
+		> test19_sc.diff)
+	-(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/RESULTS/SC/los_sdo_aia*.out \
+		SC/BATSRUS/data/output/test19/SC_los_sdo_aia.out.gz \
+		>> test19_sc.diff)
+	-(${DIFFNUM} -b -r=1e-5 \
+		${TESTDIR}/RESULTS/IH/log_n000000.log \
+		output/test19/IH_log_n000000.log \
+		> test19_ih.diff)
+	cat ${TESTDIR}/RESULTS/SP/MH_data_*_*_t00000150_n000010.out \
+	    > ${TESTDIR}/RESULTS/SP/MH_data.outs
+	-(${DIFFNUM} -a=3e-5 -r=3e-6 -b \
+		${TESTDIR}/RESULTS/SP/MH_data.outs \
+		output/test19/MH_data.ref.gz \
+		> test19_sp.diff)
+	ls -l test19*.diff
+
+### test20: OH/BATSRUS (single-ion) coupled with PT/FLEKS in a shocktube ###
+
+test20:
+	@echo "test20_compile..." > test20_ohpt.diff
+	${MAKE} test20_compile
+	@echo "test20_rundir..." >> test20_ohpt.diff
+	${MAKE} test20_rundir
+	@echo "test20_run..." >> test20_ohpt.diff
+	${MAKE} test20_run
+	@echo "test20_check..." >> test20_ohpt.diff
+	${MAKE} test20_check
+
+test20_compile:
+	./Config.pl -default -v=Empty,OH/BATSRUS,PT/FLEKS
+	./Config.pl -o=OH:u=OuterHelio,e=SwhPui,ng=2,g=4,4,4
+	${MAKE} SWMF
+	make PIDL
+
+test20_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.OHPT.FLEKS.shocktube  ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test20_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; rm -rf RESULTS; ./PostProc.pl RESULTS
+
+test20_check:
+	-@(${DIFFNUM} -b -r=1e-7 \
+                ${TESTDIR}/RESULTS/OH/z*006.out \
+                output/test20/z=0_OH.ref.gz \
+		> test20_ohpt.diff)
+	-@(${DIFFNUM} -b -r=1e-7 \
+                ${TESTDIR}/RESULTS/PT/z*0200.out \
+                output/test20/z=0_PT.ref.gz \
+		>> test20_ohpt.diff)		
+	ls -l test20_ohpt.diff
+
+### test21: OH/BATSRUS coupled with PT/FLEKS  ###
+
+test21:
+	@echo "test21_4neu_compile..." > test21_ohpt.diff
+	${MAKE} test21_4neu_compile
+	@echo "test21_4neu_rundir..." >> test21_ohpt.diff
+	${MAKE} test21_4neu_rundir
+	@echo "test21_4neu_run..." >> test21_ohpt.diff
+	${MAKE} test21_4neu_run
+	@echo "test21_oh_pt_compile..." >> test21_ohpt.diff
+	${MAKE} test21_oh_pt_compile
+	@echo "test21_oh_pt_rundir..." >> test21_ohpt.diff
+	${MAKE} test21_oh_pt_rundir
+	@echo "test21_oh_pt_run..." >> test21_ohpt.diff
+	${MAKE} test21_oh_pt_run
+	@echo "test21_check..." >> test21_ohpt.diff
+	${MAKE} test21_check
+
+
+test21_check:
+	-@(${DIFFNUM} -b -a=1e-13 -r=1e-7 \
+                ${TESTDIR}/RESULTS/neu_couple/OH/y*04011.out \
+                output/test21/y=0_neu_OH.ref.gz \
+		> test21_ohpt.diff)
+	-@(${DIFFNUM} -b -a=1e-13 -r=1e-7 \
+                ${TESTDIR}/RESULTS/swh/OH/z*206_n*.out \
+                output/test21/z=0_OH.ref.gz \
+		>> test21_ohpt.diff)
+	-@(${DIFFNUM} -b -a=1e-13 -r=1e-7 \
+                ${TESTDIR}/RESULTS/swh/PT/z*010.out \
+                output/test21/z=0_PT.ref.gz \
+		>> test21_ohpt.diff)		
+	ls -l test21_ohpt.diff
+
+test21_4neu:
+	@echo "test21_4neu_compile..." > test21_4neu.diff
+	${MAKE} test21_4neu_compile
+	@echo "test21_4neu_rundir..." >> test21_4neu.diff
+	${MAKE} test21_4neu_rundir
+	@echo "test21_4neu_run..." >> test21_4neu.diff
+	${MAKE} test21_4neu_run
+	@echo "test21_4neu_check..." >> test21_4neu.diff
+	${MAKE} test21_4neu_check
+
+test21_4neu_compile:
+	./Config.pl -default -v=Empty,OH/BATSRUS,PT/FLEKS
+	./Config.pl -o=OH:u=OuterHelio,e=OuterHelio,ng=2,g=4,4,4 -o=PT:lev=5
+	${MAKE} SWMF
+	make PIDL
+
+test21_4neu_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+
+test21_4neu_run:
+	cp Param/PARAM.in.test.OHPT.FLEKS.outerhelio.4neu.start  ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; rm -rf RESULTS; ./PostProc.pl RESULTS/neu_start
+	cp Param/PARAM.in.test.OHPT.FLEKS.outerhelio.4neu.couple  ${TESTDIR}/PARAM.in
+	cd ${TESTDIR}; ./Restart.pl -v -i RESULTS/neu_start/RESTART
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in	
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl RESULTS/neu_couple
+	
+test21_4neu_check:
+	-@(${DIFFNUM} -b -a=1e-13 -r=1e-7 \
+                ${TESTDIR}/RESULTS/neu_couple/OH/y*04011.out \
+                output/test21/y=0_neu_OH.ref.gz \
+		> test21_4neu.diff)
+	ls -l test21_4neu.diff
+
+test21_oh_pt:
+	@echo "test21_oh_pt_compile..." > test21_oh_pt.diff
+	${MAKE} test21_oh_pt_compile
+	@echo "test21_oh_pt_rundir..." >> test21_oh_pt.diff
+	${MAKE} test21_oh_pt_rundir
+	@echo "test21_oh_pt_run..." >> test21_oh_pt.diff
+	${MAKE} test21_oh_pt_run
+	@echo "test21_oh_pt_check..." >> test21_oh_pt.diff
+	${MAKE} test21_oh_pt_check
+
+test21_oh_pt_compile:
+	./Config.pl -default -v=Empty,OH/BATSRUS,PT/FLEKS
+	./Config.pl -o=OH:u=OuterHelio,e=Swh,ng=2,g=4,4,4 -o=PT:lev=5
+	${MAKE} SWMF
+	make PIDL
+
+test21_oh_pt_rundir:
+	cp Param/PARAM.in.test.OHPT.FLEKS.outerhelio.swh  ${TESTDIR}/PARAM.in
+	cd ${TESTDIR}; ./Restart.pl -v -i RESULTS/neu_couple/RESTART	
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test21_oh_pt_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl RESULTS/swh
+
+test21_oh_pt_check:
+	-@(${DIFFNUM} -b -a=1e-13 -r=1e-7 \
+                ${TESTDIR}/RESULTS/swh/OH/z*206_n*.out \
+                output/test21/z=0_OH.ref.gz \
+		> test21_oh_pt.diff)
+	-@(${DIFFNUM} -b -a=1e-13 -r=1e-7 \
+                ${TESTDIR}/RESULTS/swh/PT/z*010.out \
+                output/test21/z=0_PT.ref.gz \
+		>> test21_oh_pt.diff)		
+	ls -l test21_oh_pt.diff
+
+### test22: OH/BATSRUS multi-ion coupled with PT/FLEKS  ###
+
+test22:
+	@echo "test22_4neu_compile..." > test22_ohpt.diff
+	${MAKE} test22_4neu_compile
+	@echo "test22_4neu_rundir..." >> test22_ohpt.diff
+	${MAKE} test22_4neu_rundir
+	@echo "test22_4neu_run..." >> test22_ohpt.diff
+	${MAKE} test22_4neu_run
+	@echo "test22_oh_pt_compile..." >> test22_ohpt.diff
+	${MAKE} test22_oh_pt_compile
+	@echo "test22_oh_pt_rundir..." >> test22_ohpt.diff
+	${MAKE} test22_oh_pt_rundir
+	@echo "test22_oh_pt_run..." >> test22_ohpt.diff
+	${MAKE} test22_oh_pt_run
+	@echo "test22_check..." >> test22_ohpt.diff
+	${MAKE} test22_check
+
+
+test22_check:
+	-@(${DIFFNUM} -b -a=1e-13 -r=1e-9 \
+                ${TESTDIR}/RESULTS/neu_couple/OH/y*0314_n*.out \
+                output/test22/y=0_neu_OH.ref.gz \
+		> test22_ohpt.diff)
+	-@(${DIFFNUM} -b -a=1e-13 -r=1e-9 \
+                ${TESTDIR}/RESULTS/swhpui/OH/z*206_n*.out \
+                output/test22/z=0_OH.ref.gz \
+		>> test22_ohpt.diff)
+	-@(${DIFFNUM} -b -a=1e-13 -r=1e-9 \
+                ${TESTDIR}/RESULTS/swhpui/PT/z*010.out \
+                output/test22/z=0_PT.ref.gz \
+		>> test22_ohpt.diff)		
+	ls -l test22_ohpt.diff
+
+test22_4neu:
+	@echo "test22_4neu_compile..." > test22_4neu.diff
+	${MAKE} test22_4neu_compile
+	@echo "test22_4neu_rundir..." >> test22_4neu.diff
+	${MAKE} test22_4neu_rundir
+	@echo "test22_4neu_run..." >> test22_4neu.diff
+	${MAKE} test22_4neu_run
+	@echo "test22_4neu_check..." >> test22_4neu.diff
+	${MAKE} test22_4neu_check
+
+test22_4neu_compile:
+	./Config.pl -default -v=Empty,OH/BATSRUS,PT/FLEKS
+	./Config.pl -o=OH:u=OuterHelio,e=OuterHelioPUI,ng=2,g=4,4,4 -o=PT:lev=5
+	${MAKE} SWMF
+	make PIDL
+
+test22_4neu_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+
+test22_4neu_run:
+	cp Param/PARAM.in.test.OHPT.FLEKS.outerhelio.pui.4neu.start  ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; rm -rf RESULTS; ./PostProc.pl RESULTS/neu_start
+	cp Param/PARAM.in.test.OHPT.FLEKS.outerhelio.pui.4neu.couple  ${TESTDIR}/PARAM.in
+	cd ${TESTDIR}; ./Restart.pl -v -i RESULTS/neu_start/RESTART
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in	
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl RESULTS/neu_couple
+	
+test22_4neu_check:
+	-@(${DIFFNUM} -b -a=1e-13 -r=1e-9 \
+                ${TESTDIR}/RESULTS/neu_couple/OH/y*0314_n*.out \
+                output/test22/y=0_neu_OH.ref.gz \
+		> test22_4neu.diff)
+	ls -l test22_4neu.diff
+
+test22_oh_pt:
+	@echo "test22_oh_pt_compile..." > test22_oh_pt.diff
+	${MAKE} test22_oh_pt_compile
+	@echo "test22_oh_pt_rundir..." >> test22_oh_pt.diff
+	${MAKE} test22_oh_pt_rundir
+	@echo "test22_oh_pt_run..." >> test22_oh_pt.diff
+	${MAKE} test22_oh_pt_run
+	@echo "test22_oh_pt_check..." >> test22_oh_pt.diff
+	${MAKE} test22_oh_pt_check
+
+test22_oh_pt_compile:
+	./Config.pl -default -v=Empty,OH/BATSRUS,PT/FLEKS
+	./Config.pl -o=OH:u=OuterHelio,e=SwhPui,ng=2,g=4,4,4 -o=PT:lev=5
+	${MAKE} SWMF
+	make PIDL
+
+test22_oh_pt_rundir:
+	cp Param/PARAM.in.test.OHPT.FLEKS.outerhelio.swhpui  ${TESTDIR}/PARAM.in
+	cd ${TESTDIR}; ./Restart.pl -v -i RESULTS/neu_couple/RESTART	
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test22_oh_pt_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl RESULTS/swhpui
+
+test22_oh_pt_check:
+	-@(${DIFFNUM} -b -a=1e-13 -r=1e-9 \
+                ${TESTDIR}/RESULTS/swhpui/OH/z*206_n*.out \
+                output/test22/z=0_OH.ref.gz \
+		> test22_oh_pt.diff)
+	-@(${DIFFNUM} -b -a=1e-13 -r=1e-9 \
+                ${TESTDIR}/RESULTS/swhpui/PT/z*010.out \
+                output/test22/z=0_PT.ref.gz \
+		>> test22_oh_pt.diff)		
+	ls -l test22_oh_pt.diff
+
+### 2D fast wave test with AMR-PIC. BATSRUS only provides initial conditions.
+
+test23_2d:
+	@echo "test23_2d_compile..." > test23_2d_gmpc.diff
+	$(MAKE) test23_2d_compile
+	@echo "test23_2d_rundir..." > test23_2d_gmpc.diff
+	$(MAKE) test23_2d_rundir
+	@echo "test23_2d_run..." > test23_2d_gmpc.diff
+	$(MAKE) test23_2d_run
+	@echo "test23_2d_check..." > test23_2d_gmpc.diff
+	$(MAKE) test23_2d_check
+
+test23_2d_compile:
+	./Config.pl -default -amrex2d -v=Empty,PC/FLEKS,GM/BATSRUS
+	./Config.pl -o=GM:u=Default,e=MhdAnisoP,ng=2,g=8,8,1 -o=PC:lev=9
+	$(MAKE) SWMF
+	$(MAKE) PIDL
+	
+test23_2d_rundir:
+	rm -rf ${TESTDIR}
+	$(MAKE) rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.GMPC.FLEKS.AMR.FASTWAVE.2D  ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test23_2d_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl RESULTS/2D
+
+test23_2d_check:
+	-@(${DIFFNUM} -b -a=2e-9 -r=1e-5 \
+	   ${TESTDIR}/RESULTS/2D/PC/z=0*5.out \
+	   output/test23/2D/z=0.ref.gz \
+		> test23_2d_gmpc.diff)
+	-@(${DIFFNUM} -b -a=1e-11 -r=1e-11 \
+	   ${TESTDIR}/RESULTS/2D/PC/log_pic_n00000000.log \
+	   output/test23/2D/PC.log \
+		>> test23_2d_gmpc.diff)	
+	ls -l test23_2d_gmpc.diff
+
+### 3D fast wave test with AMR-PIC. BATSRUS only provides initial conditions.
+
+test23_3d:
+	@echo "test23_3d_compile..." > test23_3d_gmpc.diff
+	$(MAKE) test23_3d_compile
+	@echo "test23_3d_rundir..." > test23_3d_gmpc.diff
+	$(MAKE) test23_3d_rundir
+	@echo "test23_3d_run..." > test23_3d_gmpc.diff
+	$(MAKE) test23_3d_run
+	@echo "test23_3d_check..." > test23_3d_gmpc.diff
+	$(MAKE) test23_3d_check
+
+test23_3d_compile:
+	./Config.pl -default -amrex3d -v=Empty,PC/FLEKS,GM/BATSRUS
+	./Config.pl -o=GM:u=Default,e=MhdAnisoP,ng=2,g=8,8,8 -o=PC:lev=9
+	$(MAKE) SWMF
+	$(MAKE) PIDL
+	
+test23_3d_rundir:
+	rm -rf ${TESTDIR}
+	$(MAKE) rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.GMPC.FLEKS.AMR.FASTWAVE.3D  ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test23_3d_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl RESULTS/3D
+
+test23_3d_check:
+	-@(${DIFFNUM} -b -a=1e-9 -r=1e-5 \
+	   ${TESTDIR}/RESULTS/3D/PC/z=0*3.out \
+	   output/test23/3D/z=0.ref.gz \
+		> test23_3d_gmpc.diff)
+	-@(${DIFFNUM} -b -a=1e-11 -r=1e-11 \
+	   ${TESTDIR}/RESULTS/3D/PC/log_pic_n00000000.log \
+	   output/test23/3D/PC.log \
+		>> test23_3d_gmpc.diff)	
+	ls -l test23_3d_gmpc.diff
+
+### test25: PC/FLEKS. 3D Light wave test with AMR-PC.
+###         FLEKS runs with periodic boundary conditions. 
+
+test25:
+	@echo "test25_compile..." > test25_gmpc.diff
+	$(MAKE) test25_compile
+	@echo "test25_rundir..." > test25_gmpc.diff
+	$(MAKE) test25_rundir
+	@echo "test25_run..." > test25_gmpc.diff
+	$(MAKE) test25_run
+	@echo "test25_check..." > test25_gmpc.diff
+	$(MAKE) test25_check
+
+test25_compile:
+	./Config.pl -default -amrex3d -v=Empty,PC/FLEKS,GM/BATSRUS
+	./Config.pl -o=GM:u=Default,e=MhdAnisoP,ng=2,g=8,8,8 -o=PC:lev=9
+	$(MAKE) SWMF
+	$(MAKE) PIDL
+	
+test25_rundir:
+	rm -rf ${TESTDIR}
+	$(MAKE) rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.FLEKS.AMR.LightWave.3D  ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test25_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl RESULTS/
+
+test25_check:
+	-@(${DIFFNUM} -b -a=1e-9 -r=1e-5 \
+	   ${TESTDIR}/RESULTS/PC/z=0*010_n*.out \
+	   output/test25/z=0.ref.gz \
+		> test25_gmpc.diff)
+	-@(${DIFFNUM} -b -a=1e-11 -r=1e-11 \
+	   ${TESTDIR}/RESULTS/PC/log_pic_n00000000.log \
+	   output/test25/PC.log \
+		>> test25_gmpc.diff)	
+	ls -l test25_gmpc.diff
+	
+### test_ramscb: GM+IE+IM/RAMSCB ###
+
+test_ramscb:
+	@echo "test_ramscb_compile..." > test_ramscb_gm.diff
+	@echo "test_ramscb_compile..." > test_ramscb_ie.diff
+	@echo "test_ramscb_compile..." > test_ramscb_im.diff
+	${MAKE} test_ramscb_compile
+	@echo "test_ramscb_rundir..." >> test_ramscb_gm.diff
+	@echo "test_ramscb_rundir..." >> test_ramscb_ie.diff
+	@echo "test_ramscb_rundir..." >> test_ramscb_im.diff
+	${MAKE} test_ramscb_rundir
+	@echo "test_ramscb_run..." >> test_ramscb_gm.diff
+	@echo "test_ramscb_run..." >> test_ramscb_ie.diff
+	@echo "test_ramscb_run..." >> test_ramscb_im.diff
+	${MAKE} test_ramscb_run
+	@echo "test_ramscb_check..." >> test_ramscb_gm.diff
+	@echo "test_ramscb_check..." >> test_ramscb_ie.diff
+	@echo "test_ramscb_check..." >> test_ramscb_im.diff
+	${MAKE} test_ramscb_check
+
+test_ramscb_compile:
+	./Config.pl -default -v=Empty,GM/BATSRUS,IE/Ridley_serial,IM/RAM_SCB
+	./Config.pl -o=GM:u=Default,e=Mhd,ng=2,g=8,8,8,IE:g=91,181
+	${MAKE} SWMF
+	make PIDL
+
+test_ramscb_rundir:
+	rm -rf ${TESTDIR}
+	${MAKE} rundir RUNDIR=${DIR}/${TESTDIR}
+	cp ${IMDIR}/input/PARAM.in.test.gmieim.simple ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test_ramscb_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl -M RESULTS
+
+test_ramscb_check:
+	-@(${DIFFNUM} -b -r=1e-3 -a=1e-8 \
+		${TESTDIR}/RESULTS/GM/log_n000001.log \
+		${IMDIR}/output/test_ramscb/GM_log_n000001.log \
+		> test_ramscb_gm.diff)
+	-@(${DIFFNUM} -b -r=1e-3 -a=1e-8 \
+		${TESTDIR}/RESULTS/IM/ram/log_n000001.log \
+		${IMDIR}/output/test_ramscb/IM_log_n000001.log \
+		> test_ramscb_im.diff)
+	-@(${DIFFNUM} -b -r=1e-6 \
+		${TESTDIR}/RESULTS/IE/IE*.log \
+		${IMDIR}/output/test_ramscb/IE.log \
+		> test_ramscb_ie.diff)
+	ls -l test_ramscb*.diff
+
+###############################################################################
+test_esmf:
+	cd ESMF/ESMF_SWMF; ${MAKE} test
+###############################################################################
+test_eeggl:
+	@echo "test_eeggl_compile..." > test_eeggl.diff
+	${MAKE} test_eeggl_compile
+	@echo "test_eeggl_rundir..." >> test_eeggl.diff
+	${MAKE} test_eeggl_rundir
+	@echo "test_eeggl_run..." >> test_eeggl.diff
+	${MAKE} test_eeggl_run
+	@echo "test_eeggl_check..." >> test_eeggl.diff
+	${MAKE} test_eeggl_check
+
+test_eeggl_compile:
+	./Config.pl -default -v=Empty,SC/BATSRUS,IH/BATSRUS
+	cd ${EMPIRICALEEDIR}; make FRM
+
+test_eeggl_rundir:
+	rm -rf ${TESTDIR}
+	$(MAKE) rundir RUNDIR=${DIR}/${TESTDIR}
+	cp ${MAGNETOGRAMDIR}/fitsfile.fits ${TESTDIR}/SC/
+
+test_eeggl_run:
+	cd ${TESTDIR}/SC; \
+	python3 remap_magnetogram.py fitsfile.fits map; \
+	python3  GLSETUP.py map_01.out -CMESpeed 600 \
+		 --DoNotPlot --CMEGrid \
+		-LonPosIn 333.5 -LatPosIn 22.6 \
+		-LonNegIn 324.5 -LatNegIn 24.0 > runlog_eeggl
+
+test_eeggl_check:
+	-${DIFFNUM} -t -r=1e-7 -a=1e-9 \
+	    ${TESTDIR}/SC/CME.in ${MAGNETOGRAMDIR}/CME.ref > test_eeggl.diff
+	-${DIFFNUM} -t -r=1e-7 -a=1e-9 \
+	    ${TESTDIR}/SC/FRMagnetogram.out \
+	    ${SCDIR}/data/output/FRMagnetogram.ref >> test_eeggl.diff
+	@ls -l test_eeggl.diff
+
+###############################################################################
+test_eegtd:
+	@echo "test_eegtd_setup..." > test_eegtd.diff
+	${MAKE} TDSETUP RUNDIR=${DIR}/${TESTDIR}
+	@echo "test_eegtd_run..." >> test_eegtd.diff
+	${MAKE} test_eegtd_run
+	@echo "test_eegtd_check..." >> test_eegtd.diff
+	${MAKE} test_eegtd_check
+
+test_eegtd_run:
+	cd ${TESTDIR}/SC; \
+	python3 TDSETUP.py field_2d.out -LonPosIn 45.50 -LatPosIn 6.08 \
+		-LonNegIn 48.50 -LatNegIn 10.60 -LonFPPosIn 42.50 \
+		-LatFPPosIn 8.50 -LonFPNegIn 65.50 -LatFPNegIn 16.50 \
+		-a2r0Ratio 0.25 -ApexIn 0.18 -BStrapMax 8.0 > run.log; \
+	perl -i -pe 's/#END/#MAGNETOGRAM\nfitsfile_01.out\n\n#END/' CME.in;\
+	perl -i -pe 's/#END/#ELIMINATECMEBR\nfitsfile_01.out\n\n#END/' \
+	CME.in;\
+	cp field_2d.out field_orig.out; \
+	./ELIMINATECMEBR.exe |tee eliminatecmebr.log; \
+	perl -i -pe 's/#MAGNETOGRAM/MAGNETOGRAM/' CME.in;\
+	perl -i -pe 's/#ELIMINATECMEBR/ELIMINATECMEBR/' CME.in; \
+	./HARMONICS.exe |tee harmonics.log
+	@echo " Reconstruction of potential field takes a while, please, wait"
+	cd ${TESTDIR}/SC; \
+	${MPIRUN} ./CONVERTHARMONICS.exe > convert.log
+
+test_eegtd_check:
+	-${DIFFNUM} ${TESTDIR}/SC/CME.in \
+	     output/test_eegtd/CME.in > test_eegtd.diff
+	@ls -l test_eegtd.diff
+
+###############################################################################
+####### Test if TD configuration is in equiliblium
+test_tdequil:
+	@echo "test_tdequil_compile..." > test_tdequil.diff
+	${MAKE} test_tdequil_compile
+	@echo "test_tdequil_rundir..." >> test_tdequil.diff
+	${MAKE} test_tdequil_rundir
+	@echo "test_tdequil_run..." >> test_tdequil.diff
+	${MAKE} test_tdequil_run
+#	@echo "test_tdequil_check..." >> test_tdequil.diff
+#	${MAKE} test_tdequil_check
+
+test_tdequil_compile:
+	./Config.pl -default -v=Empty,SC/BATSRUS
+	./Config.pl -o=SC:u=Awsom,e=Mhd,ng=2,g=4,4,1
+	${MAKE} SWMF
+	make PIDL
+
+test_tdequil_rundir:
+	rm -rf ${TESTDIR}
+	$(MAKE) rundir RUNDIR=${DIR}/${TESTDIR}
+	cp Param/PARAM.in.test.SC.TDEquil ${TESTDIR}/PARAM.in
+	-Scripts/TestParam.pl -F ${TESTDIR}/PARAM.in
+
+test_tdequil_run:
+	cd ${TESTDIR}; ${MPIRUN} ./SWMF.exe > runlog
+	cd ${TESTDIR}; ./PostProc.pl -M -cat RESULTS
+
+#test_tdequil_check:
+
