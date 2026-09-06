@@ -1,0 +1,63 @@
+name: SWMF OH-PT Integration Test
+
+on:
+  pull_request:
+    branches: [ "master" ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout FLEKS (for local composite actions)
+        uses: actions/checkout@v6
+
+      - name: Setup SWMF dependency tree
+        uses: ./.github/actions/setup-swmf
+        with:
+          fleks-path: SWMF/PT/FLEKS
+          fleks-cache-exclude: PT/FLEKS
+          # OH-PT runs the 3D AMReX build only (-amrex3d via -default), so the
+          # AMReX cache key encodes the 3D dimension explicitly.
+          amrex-cache-suffix: 3d
+          config-components: OH/BATSRUS,PT/FLEKS
+          # OH-PT configures PT/FLEKS (no PC component), so no "-o=PC:..." flag.
+          config-extra: ''
+          verify-amrex: 'true'
+
+      - name: Build and Run test20
+        working-directory: SWMF
+        run: |
+          make -j$(nproc) test20
+
+      - name: Build and Run test21
+        working-directory: SWMF
+        run: |
+          make -j$(nproc) test21
+
+      - name: Build and Run test22
+        working-directory: SWMF
+        run: |
+          make -j$(nproc) test22
+
+      - name: Verify Test Results
+        working-directory: SWMF
+        run: |
+          FAILED=0
+          for diff_file in test20_ohpt.diff test21_oh_pt.diff test22_ohpt.diff; do
+            if [ -s "$diff_file" ]; then
+              echo "::error::Test verification failed! Non-zero diff detected in $diff_file"
+              cat "$diff_file"
+              FAILED=1
+            else
+              echo "Test verification successful for $diff_file! Diff is empty."
+            fi
+          done
+
+          if [ $FAILED -ne 0 ]; then
+            exit 1
+          fi
