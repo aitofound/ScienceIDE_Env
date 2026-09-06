@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """Generic pyamg.krylov probe: run one or two solvers on one shipped problem for a
-fixed iteration count (tol=0) and grade the solution, residual history and flag.
+fixed iteration count (tol=0) and grade the solution and the residual history.
 
 Reads ic/<nominal|variant>/input.json, whose only active value is rhs_scale
-(applied to the first entry of the right-hand side); seed is carried for
-provenance only. Writes observable.npy: for each requested (method, criteria)
-combination, in order, [real(solution), imag(solution) (zeros if real),
-padded residual history, [len(residuals), flag]] concatenated.
+(a uniform scale factor on every entry of the right-hand side); seed is carried
+for provenance only. Writes observable.npy: for each requested (method,
+criteria) combination, in order, [real(solution), imag(solution) (zeros if
+real), residual history padded with zeros to maxiter+2] concatenated.
+
+The solver's second return value is deliberately NOT graded: with tol=0 pyamg's
+halting status degenerates to the iteration count (pyamg/krylov/_cg.py:196
+`return (x, it)`), and an iteration count is bookkeeping, not physics. A
+candidate that stops early still fails on the zero-padded residual history and
+on the solution itself.
 """
 import argparse
 import json
@@ -35,7 +41,8 @@ def build_problem(name, size):
     if name == 'advection2d':
         A, b = pyamg.gallery.advection_2d((size, size))
         return A.tocsr().astype(np.float64), b.astype(np.float64)
-    if name in ('unit_square', 'unit_cube', 'bar', 'recirc_flow', 'helmholtz_2D'):
+    if name in ('unit_square', 'unit_cube', 'bar', 'recirc_flow', 'helmholtz_2D',
+                'airfoil', 'knot', 'local_disc_galerkin_diffusion'):
         data = pyamg.gallery.load_example(name)
         A = data['A'].tocsr()
         return A.astype(np.complex128 if np.issubdtype(A.dtype, np.complexfloating) else np.float64), None
@@ -51,7 +58,8 @@ def main():
                      help='optional second method graded on the same problem and right-hand side (agreement checks)')
     ap.add_argument('--problem', required=True,
                      choices=['poisson2d', 'poisson3d', 'unit_square', 'unit_cube', 'bar', 'recirc_flow',
-                              'advection2d', 'helmholtz_2D'])
+                              'advection2d', 'helmholtz_2D', 'airfoil', 'knot',
+                              'local_disc_galerkin_diffusion'])
     ap.add_argument('--size', type=int, default=0, help='grid dimension per axis for poisson2d/poisson3d/advection2d')
     ap.add_argument('--iterations', type=int, required=True)
     ap.add_argument('--precond', choices=['none', 'sa'], default='none')
@@ -107,7 +115,7 @@ def main():
             padded[:take] = np.asarray(residuals[:take], dtype=np.float64)
             sol_r = np.real(solution).astype(np.float64)
             sol_i = np.imag(solution).astype(np.float64) if is_complex else np.zeros_like(sol_r)
-            values.extend([sol_r, sol_i, padded, np.asarray([len(residuals), float(flag)], dtype=np.float64)])
+            values.extend([sol_r, sol_i, padded])
 
     np.save(a.out, np.concatenate(values), allow_pickle=False)
 
