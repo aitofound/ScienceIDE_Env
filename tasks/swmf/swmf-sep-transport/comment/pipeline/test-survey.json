@@ -1,0 +1,203 @@
+{
+  "module": "swmf-sep-transport",
+  "tests": [
+    {
+      "id": "sc-ih-mittens",
+      "module": "swmf-sep-transport",
+      "path": "Param/PARAM.in.test.SCIHPT",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "SC+IH with PT/MITTENS Monte Carlo SEP transport from a stored restart",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 300,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "MH_data.ref.gz at 1e-6; Monte Carlo, so the check passes only with a fixed seed; verify the seed in the calibration run, otherwise invariants",
+      "proposed_check": "sc-ih-mittens"
+    },
+    {
+      "id": "sc-ih-mflampa",
+      "module": "swmf-sep-transport",
+      "path": "Param/PARAM.in.test.SCIHSP",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "SC+IH with SP/MFLAMPA field-line SEP transport from a stored restart, restart",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 300,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "MH_data.ref.gz at 1e-6; deterministic Poisson-bracket advection along lines",
+      "proposed_check": "sc-ih-mflampa"
+    },
+    {
+      "id": "sc-ih-oh-mflampa",
+      "module": "swmf-sep-transport",
+      "path": "Param/PARAM.in.test.SCIHOHSP",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "SC+IH+OH+SP: four-component chain with SEP lines extended through the outer heliosphere, restart",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 600,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "SC and IH logs at 1e-5, MH_data at 3e-6 relative; needs the test19 LOS reference from SWMF_data",
+      "proposed_check": "sc-ih-oh-mflampa"
+    },
+    {
+      "id": "mflampa-alone",
+      "module": "swmf-sep-transport",
+      "path": "Param/PARAM.in.test.SP",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "SP/MFLAMPA alone in the framework reading the MH_data.tgz line archive",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 120,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "MH_data.ref.gz at 1e-6",
+      "proposed_check": "mflampa-alone"
+    },
+    {
+      "id": "mflampa-mflampa",
+      "module": "swmf-sep-transport",
+      "path": "SP/MFLAMPA/Makefile",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "MFLAMPA standalone basic run",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 90,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "component make test target with DiffNum reference; runtime not measured",
+      "proposed_check": "mflampa-mflampa"
+    },
+    {
+      "id": "mflampa-poisson",
+      "module": "swmf-sep-transport",
+      "path": "SP/MFLAMPA/Makefile",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "MFLAMPA Poisson solver unit test",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 90,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "component make test target with DiffNum reference; runtime not measured",
+      "proposed_check": "mflampa-poisson"
+    },
+    {
+      "id": "mflampa-poisson-bracket",
+      "module": "swmf-sep-transport",
+      "path": "SP/MFLAMPA/Makefile",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "MFLAMPA Poisson-bracket advection scheme test",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 90,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "component make test target with DiffNum reference; runtime not measured",
+      "proposed_check": "mflampa-poisson-bracket"
+    },
+    {
+      "id": "mflampa-spectra",
+      "module": "swmf-sep-transport",
+      "path": "SP/MFLAMPA/Makefile",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "MFLAMPA spectra output",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 90,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "component make test target with DiffNum reference; runtime not measured",
+      "proposed_check": "mflampa-spectra"
+    },
+    {
+      "id": "mflampa-steady",
+      "module": "swmf-sep-transport",
+      "path": "SP/MFLAMPA/Makefile",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "MFLAMPA steady-state solution",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 90,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "component make test target with DiffNum reference; runtime not measured",
+      "proposed_check": "mflampa-steady"
+    },
+    {
+      "id": "mflampa-mpi",
+      "module": "swmf-sep-transport",
+      "path": "SP/MFLAMPA/Makefile",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "MFLAMPA MPI decomposition test with prerun",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 90,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "component make test target with DiffNum reference; runtime not measured",
+      "proposed_check": "mflampa-mpi"
+    },
+    {
+      "id": "mittens-shock",
+      "module": "swmf-sep-transport",
+      "path": "PT/MITTENS/Makefile",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "MITTENS standalone shock acceleration test",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 120,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "component make test with a DiffNum reference; Monte Carlo, seed to be verified",
+      "proposed_check": "mittens-shock"
+    }
+  ]
+}
