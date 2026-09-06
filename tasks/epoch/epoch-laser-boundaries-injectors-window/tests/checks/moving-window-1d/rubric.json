@@ -1,75 +1,239 @@
 {
   "check": "moving-window-1d",
-  "policy": "pointwise",
+  "policy": "invariants",
   "chaotic": false,
   "upstream_test": "code/epoch/epoch1d/example_decks/window.deck",
   "configuration": "epoch1d/example_decks/window.deck at its shipped physics (256 cells over 1 m, simple_outflow at both ends, a moving window started at t = 0 travelling at 2e8 m/s, five cold macroparticles per cell loaded from a density profile that is 1 in the background and 2 in a 0.6 m slab centred at x = 1.31 m, i.e. entirely outside the initial box) run to the deck's own end time of 10 ns, with the dump cadence coarsened from the deck's 1e-10 s to 1e-9 s so the check writes 11 dumps rather than 101; graded: the electron number density in every one of the 256 cells and the 257 x cell edges of the shifted grid, at dumps 1, 5 and 10",
-  "observable": "electron Ndens (256 cells) and the 257 x cell edges at dumps 1, 5 and 10; window deck, float64",
+  "observable": "the moving grid's origin and extent per graded dump (exact/near-exact agreement: a deterministic arithmetic recurrence, src/housekeeping/window.F90), and the loaded density profile's mean, excess-mass centroid and width along every spatial axis and its total excess mass -- moments of the profile rather than the raw per-cell density array",
   "expected_runtime_s": 1,
   "default_vs_upstream": "dumps every 1e-9 s of the deck's 1e-10 s; SAB_DT_SNAPSHOT=1e-10 restores",
-  "variant": "the deck's background electron number density, the constant dens_bg, multiplied by (1 + 1e-15): exactly five ulps of a binary64 value at 1.0, one ulp there being 2.2e-16. The number of macroparticles per cell is fixed by nparticles_per_cell, so the perturbation changes only the weight every loaded and every inserted particle carries, which is the quantity the window's leading-edge loader computes from the density stack; it therefore reaches the graded density from the first dump without disturbing the random stream, the particle count or the shift schedule. Verified: the two decks differ byte-wise on exactly one line and the graded density arrays differ, while the graded grid arrays stay identical, which is correct because the grid recurrence does not read the density.",
+  "variant": "the deck's explicit MPI rank layout, changed to a different valid decomposition of the same rank count (nprocx=2 to nprocx=1 for moving-window-1d; nprocx=2,nprocy=2 to nprocx=1,nprocy=4 for moving-window-2d; nprocx=2,nprocy=2,nprocz=1 to nprocx=1,nprocy=1,nprocz=4 for moving-window-3d), for the same reason as the injector checks: the electron load is a per-cell random draw from EPOCH's seeded stream, so a different rank layout is a correct, differently-ordered realisation of the same physics. The grid-origin/extent invariants are expected to stay exact under this variant (the window shift is a global arithmetic recurrence, not a per-rank random draw); the density-profile moments are expected to differ by the loader's finite-N realisation spread.",
   "altbuild": "run.sh altbuild builds the same pinned source and deck with epoch1d/Makefile's one gfortran FFLAGS line (line 72, -O3 -g -std=f2003) changed to -O0 -g -std=f2003 in the scratch build copy only, the same shipped flags at one lower optimisation level; a correct candidate could plausibly ship this build since it is the same compiler invocation the Makefile already offers at a different optimisation level. EPOCH's own MODE=debug profile was tried first and rejected: it aborts with SIGFPE inside Open MPI's own mpi_minimal_init (src/housekeeping/mpi_routines.F90:109) before any EPOCH arithmetic runs, on every dimension, so -ffpe-trap is not usable as this check's alternative build under this Open MPI.",
   "comparison": {
-    "atol": 1e-10,
-    "rtol": 0.0,
-    "files": [
+    "invariants": [
       {
-        "path": "Ndens_0001.f64",
-        "format": "f64",
-        "atol": 1e-10
+        "name": "grid-origin-dump0001",
+        "file": "grid_dump0001.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 0,
+        "mode": "agreement",
+        "statistic": "final",
+        "atol": 0.0,
+        "rtol": 1e-12,
+        "_bound_note": "PLACEHOLDER pending run-3 calibration and the curator's bound sign-off (skill 5.10.2 pass-policy rule: tolerances are the human's); loose on purpose so the calibration selfcheck records the spread rather than gating on it"
       },
       {
-        "path": "Ndens_0005.f64",
-        "format": "f64",
-        "atol": 1e-10
+        "name": "grid-extent-dump0001",
+        "file": "grid_dump0001.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 1,
+        "mode": "agreement",
+        "statistic": "final",
+        "atol": 0.0,
+        "rtol": 1e-12,
+        "_bound_note": "PLACEHOLDER pending run-3 calibration and the curator's bound sign-off (skill 5.10.2 pass-policy rule: tolerances are the human's); loose on purpose so the calibration selfcheck records the spread rather than gating on it"
       },
       {
-        "path": "Ndens_0010.f64",
-        "format": "f64",
-        "atol": 1e-10
+        "name": "density-mean-density-dump0001",
+        "file": "density_dump0001.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 0,
+        "mode": "agreement",
+        "statistic": "final",
+        "atol": 1000000000.0,
+        "rtol": 0.0,
+        "_bound_note": "PLACEHOLDER pending run-3 calibration and the curator's bound sign-off (skill 5.10.2 pass-policy rule: tolerances are the human's); loose on purpose so the calibration selfcheck records the spread rather than gating on it"
       },
       {
-        "path": "GridX_0001.f64",
-        "format": "f64",
-        "atol": 1e-10
+        "name": "density-center-x-dump0001",
+        "file": "density_dump0001.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 1,
+        "mode": "agreement",
+        "statistic": "final",
+        "atol": 1000000000.0,
+        "rtol": 0.0,
+        "_bound_note": "PLACEHOLDER pending run-3 calibration and the curator's bound sign-off (skill 5.10.2 pass-policy rule: tolerances are the human's); loose on purpose so the calibration selfcheck records the spread rather than gating on it"
       },
       {
-        "path": "GridX_0005.f64",
-        "format": "f64",
-        "atol": 1e-10
+        "name": "density-width-x-dump0001",
+        "file": "density_dump0001.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 2,
+        "mode": "agreement",
+        "statistic": "final",
+        "atol": 1000000000.0,
+        "rtol": 0.0,
+        "_bound_note": "PLACEHOLDER pending run-3 calibration and the curator's bound sign-off (skill 5.10.2 pass-policy rule: tolerances are the human's); loose on purpose so the calibration selfcheck records the spread rather than gating on it"
       },
       {
-        "path": "GridX_0010.f64",
-        "format": "f64",
-        "atol": 1e-10
+        "name": "density-excess-mass-dump0001",
+        "file": "density_dump0001.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 3,
+        "mode": "agreement",
+        "statistic": "final",
+        "atol": 1000000000.0,
+        "rtol": 0.0,
+        "_bound_note": "PLACEHOLDER pending run-3 calibration and the curator's bound sign-off (skill 5.10.2 pass-policy rule: tolerances are the human's); loose on purpose so the calibration selfcheck records the spread rather than gating on it"
+      },
+      {
+        "name": "grid-origin-dump0005",
+        "file": "grid_dump0005.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 0,
+        "mode": "agreement",
+        "statistic": "final",
+        "atol": 0.0,
+        "rtol": 1e-12,
+        "_bound_note": "PLACEHOLDER pending run-3 calibration and the curator's bound sign-off (skill 5.10.2 pass-policy rule: tolerances are the human's); loose on purpose so the calibration selfcheck records the spread rather than gating on it"
+      },
+      {
+        "name": "grid-extent-dump0005",
+        "file": "grid_dump0005.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 1,
+        "mode": "agreement",
+        "statistic": "final",
+        "atol": 0.0,
+        "rtol": 1e-12,
+        "_bound_note": "PLACEHOLDER pending run-3 calibration and the curator's bound sign-off (skill 5.10.2 pass-policy rule: tolerances are the human's); loose on purpose so the calibration selfcheck records the spread rather than gating on it"
+      },
+      {
+        "name": "density-mean-density-dump0005",
+        "file": "density_dump0005.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 0,
+        "mode": "agreement",
+        "statistic": "final",
+        "atol": 1000000000.0,
+        "rtol": 0.0,
+        "_bound_note": "PLACEHOLDER pending run-3 calibration and the curator's bound sign-off (skill 5.10.2 pass-policy rule: tolerances are the human's); loose on purpose so the calibration selfcheck records the spread rather than gating on it"
+      },
+      {
+        "name": "density-center-x-dump0005",
+        "file": "density_dump0005.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 1,
+        "mode": "agreement",
+        "statistic": "final",
+        "atol": 1000000000.0,
+        "rtol": 0.0,
+        "_bound_note": "PLACEHOLDER pending run-3 calibration and the curator's bound sign-off (skill 5.10.2 pass-policy rule: tolerances are the human's); loose on purpose so the calibration selfcheck records the spread rather than gating on it"
+      },
+      {
+        "name": "density-width-x-dump0005",
+        "file": "density_dump0005.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 2,
+        "mode": "agreement",
+        "statistic": "final",
+        "atol": 1000000000.0,
+        "rtol": 0.0,
+        "_bound_note": "PLACEHOLDER pending run-3 calibration and the curator's bound sign-off (skill 5.10.2 pass-policy rule: tolerances are the human's); loose on purpose so the calibration selfcheck records the spread rather than gating on it"
+      },
+      {
+        "name": "density-excess-mass-dump0005",
+        "file": "density_dump0005.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 3,
+        "mode": "agreement",
+        "statistic": "final",
+        "atol": 1000000000.0,
+        "rtol": 0.0,
+        "_bound_note": "PLACEHOLDER pending run-3 calibration and the curator's bound sign-off (skill 5.10.2 pass-policy rule: tolerances are the human's); loose on purpose so the calibration selfcheck records the spread rather than gating on it"
+      },
+      {
+        "name": "grid-origin-dump0010",
+        "file": "grid_dump0010.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 0,
+        "mode": "agreement",
+        "statistic": "final",
+        "atol": 0.0,
+        "rtol": 1e-12,
+        "_bound_note": "PLACEHOLDER pending run-3 calibration and the curator's bound sign-off (skill 5.10.2 pass-policy rule: tolerances are the human's); loose on purpose so the calibration selfcheck records the spread rather than gating on it"
+      },
+      {
+        "name": "grid-extent-dump0010",
+        "file": "grid_dump0010.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 1,
+        "mode": "agreement",
+        "statistic": "final",
+        "atol": 0.0,
+        "rtol": 1e-12,
+        "_bound_note": "PLACEHOLDER pending run-3 calibration and the curator's bound sign-off (skill 5.10.2 pass-policy rule: tolerances are the human's); loose on purpose so the calibration selfcheck records the spread rather than gating on it"
+      },
+      {
+        "name": "density-mean-density-dump0010",
+        "file": "density_dump0010.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 0,
+        "mode": "agreement",
+        "statistic": "final",
+        "atol": 1000000000.0,
+        "rtol": 0.0,
+        "_bound_note": "PLACEHOLDER pending run-3 calibration and the curator's bound sign-off (skill 5.10.2 pass-policy rule: tolerances are the human's); loose on purpose so the calibration selfcheck records the spread rather than gating on it"
+      },
+      {
+        "name": "density-center-x-dump0010",
+        "file": "density_dump0010.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 1,
+        "mode": "agreement",
+        "statistic": "final",
+        "atol": 1000000000.0,
+        "rtol": 0.0,
+        "_bound_note": "PLACEHOLDER pending run-3 calibration and the curator's bound sign-off (skill 5.10.2 pass-policy rule: tolerances are the human's); loose on purpose so the calibration selfcheck records the spread rather than gating on it"
+      },
+      {
+        "name": "density-width-x-dump0010",
+        "file": "density_dump0010.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 2,
+        "mode": "agreement",
+        "statistic": "final",
+        "atol": 1000000000.0,
+        "rtol": 0.0,
+        "_bound_note": "PLACEHOLDER pending run-3 calibration and the curator's bound sign-off (skill 5.10.2 pass-policy rule: tolerances are the human's); loose on purpose so the calibration selfcheck records the spread rather than gating on it"
+      },
+      {
+        "name": "density-excess-mass-dump0010",
+        "file": "density_dump0010.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 3,
+        "mode": "agreement",
+        "statistic": "final",
+        "atol": 1000000000.0,
+        "rtol": 0.0,
+        "_bound_note": "PLACEHOLDER pending run-3 calibration and the curator's bound sign-off (skill 5.10.2 pass-policy rule: tolerances are the human's); loose on purpose so the calibration selfcheck records the spread rather than gating on it"
       }
     ]
   },
   "evidence": {
-    "floor": 0.0,
-    "floor_how": "measured by selfcheck on 2026-09-05: run.sh altbuild (the same pinned source and deck on the same shipped gfortran build with epoch1d/Makefile's one FFLAGS line (line 72, -O3 -g -std=f2003) changed to -O0 -g -std=f2003 in the scratch build copy only: EPOCH's own MODE=debug profile aborts with SIGFPE inside Open MPI's own mpi_minimal_init (src/housekeeping/mpi_routines.F90:109) under this Open MPI before any EPOCH arithmetic runs, so this check uses the shipped build's exact flags at one lower optimisation level instead, dropping none of the compiler's own semantics and none of EPOCH's own code path.) against run.sh nominal, graded with the check's own validate.py: bit-identical graded output",
-    "variant_preview": {
-      "GridX_0001.f64": 0.0,
-      "GridX_0005.f64": 0.0,
-      "GridX_0010.f64": 0.0,
-      "Ndens_0001.f64": 1.998e-15,
-      "Ndens_0005.f64": 1.776e-15,
-      "Ndens_0010.f64": 1.776e-15
-    },
-    "variant_preview_spread": 1.998e-15,
-    "self_validation_spread": 1.7763568394002505e-15,
-    "self_validation_bound_fraction": 1.7763568394002505e-05,
-    "expected_runtime_derivation": "First full selfcheck started 2026-09-04T11:33:23Z on the x86_64 worker with 8 CPUs: run 0.4399 s excluding a 53 s build; expected_runtime_s = ceil(1.5 * 0.4399) = 1 s.",
+    "redesign_note": "numeric floor/spread/bound_fraction values below are from the previous pointwise design's files and do not describe this check's redesigned invariants; run 3 (calibration) and run 4 (final) on 136.114.2.6 refill this block",
     "altbuild": {
-      "what": "the same pinned source and deck on the same shipped gfortran build with epoch1d/Makefile's one FFLAGS line (line 72, -O3 -g -std=f2003) changed to -O0 -g -std=f2003 in the scratch build copy only: EPOCH's own MODE=debug profile aborts with SIGFPE inside Open MPI's own mpi_minimal_init (src/housekeeping/mpi_routines.F90:109) under this Open MPI before any EPOCH arithmetic runs, so this check uses the shipped build's exact flags at one lower optimisation level instead, dropping none of the compiler's own semantics and none of EPOCH's own code path.",
-      "distance": 0.0,
-      "bound_fraction": 0.0,
-      "identical": true,
-      "passed": true,
-      "reason": "all graded values within bound",
-      "at": "2026-09-05T09:21:37Z"
-    },
-    "floor_bound_fraction": 0.0
+      "what": "the same pinned source and deck on the same shipped gfortran build with epoch1d/Makefile's one FFLAGS line (line 72, -O3 -g -std=f2003) changed to -O0 -g -std=f2003 in the scratch build copy only: EPOCH's own MODE=debug profile aborts with SIGFPE inside Open MPI's own mpi_minimal_init (src/housekeeping/mpi_routines.F90:109) under this Open MPI before any EPOCH arithmetic runs, so this check uses the shipped build's exact flags at one lower optimisation level instead, dropping none of the compiler's own semantics and none of EPOCH's own code path."
+    }
   },
-  "warrant": "The graded observable is the electron number density in every one of the 256 cells and the 257 x cell edges of the shifted grid, at dumps 1, 5 and 10, compared value by value with an absolute bound of 1e-10 and no relative term. Physical: this deck has no fields and no thermal motion, so what it measures is exactly the window's bookkeeping. Once per step moving_window accumulates dt*window_v_x/dx into window_shift_fraction and shifts by FLOOR of it (epoch1d/src/housekeeping/window.F90:316-320); each shift inserts fresh particles at the leading edge with weights taken from a triangle-weighted interpolation of the density stack evaluated at the old last cell (insert_particles, window.F90:158-261), advances the grid origin by one dx through the recurrence x_grid_min = x_global(1) + dx and rebuilds x_global from it (window.F90:68 and the loop under it), copies every field array down one cell (shift_field, window.F90:141-154), and only then removes the particles that fell behind the new x_min (remove_particles, window.F90:265-286). The ordering is load-bearing and the faults are all O(1) in the graded arrays: doing remove_particles before the grid update strands a cell's worth of stale particles at the left edge as a density spike; evaluating the density stack at the new rather than the old last cell fills the incoming cell with the wrong density wherever the profile has a gradient, which in this deck is the whole point; losing the x_max_boundary guard so only one rank inserts empties a growing strip at the right edge; and any error in the shift count moves the graded grid by a whole dx = 3.9e-3 m, seven orders of magnitude above the bound. Achievable: at the pinned rank layout the run is deterministic, and the two builds, -O3 and -O2, are bit-identical on every graded array, so the floor is exactly zero. The variant's five-ulp density perturbation gives a largest absolute difference over the graded arrays that evidence.variant_preview and evidence.self_validation_spread record, and it does not grow with the window because nothing in this deck feeds the density back into the dynamics. The bound of 1e-10, in m^-3 for the density and in m for the grid (both quantities are of order unity here, so one number serves), is about 56000 times the smallest per-file margin of that spread. The headroom is spent on two things a correct port may legitimately do: accumulate the per-cell density in a different order over the five macroparticles that touch each cell, which costs a few ulps of a value of order one, and compute the grid origin in closed form as x_min + N*dx instead of EPOCH's recurrence, which after the 512 shifts of the graded window differs by about 3e-13 m. The shift schedule itself is not at risk: over the graded window the accumulator's closest approach to an integer boundary is 6.8e-05, eleven orders of magnitude above a 1e-15 perturbation, so no plausible reordering of the arithmetic can change which step a shift happens on. The 2026-09-04 x86 calibration and final selfchecks confirmed a non-identical nominal-versus-variant result within every per-file bound. Together with the source and cross-platform mechanisms above, that evidence finalizes the pointwise policy, bounds and graded window without weakening any check. The alternative build measured on 2026-09-05 on the assigned x86_64 worker (the pinned source's shipped gfortran flags with epoch1d/Makefile's line 72 changed from -O3 to -O0 in the scratch build copy only, adopted after EPOCH's own MODE=debug profile proved unusable: it aborts with SIGFPE inside Open MPI's own mpi_minimal_init, src/housekeeping/mpi_routines.F90:109, before any EPOCH arithmetic runs, on every dimension) landed bit-identical to run.sh nominal on every graded file: floor exactly zero."
+  "warrant": "Redesigned 2026-09-06 under the round-2 steward review (item 4) and the curator's option A: the previous pointwise policy compared the per-cell electron density and the grid coordinate arrays value-for-value. The electron load (a per-cell random draw from EPOCH's seeded KISS stream, 7842432 + rank; src/housekeeping/random_generator.f90, src/housekeeping/setup.F90) is subject to the same reordering argument as the injector checks: a differently parallelised, equally correct implementation can draw the same physical density profile in a different per-cell order. The moving window's shift, by contrast (src/housekeeping/window.F90), is a deterministic arithmetic recurrence timed off dt and window_v_x with no random draw in it at all, so the grid origin and extent stay graded exact/near-exact, unchanged in kind from the previous policy -- only wrapped in the invariants comparison alongside the redesigned density statistics so no check is added or removed. The redesigned density statistics are the profile's mean, its excess-mass centroid and width along every spatial axis (the blob the deck loads on top of the background, dens_blob over dens_bg within the deck's stated region) and its total excess mass: moments of the physical profile the loader is supposed to produce, not the raw per-cell occupancy a reordering can permute. A mis-scaled density stack, a shift schedule that loses or duplicates cells, or a loader that puts the blob in the wrong place all move these moments by O(1), while a legitimate reordering of the same per-cell draws does not. Bounds below are PLACEHOLDER pending the run-3 calibration of the realisation spread across rank layouts and the curator's sign-off (skill 5.10.2: tolerances are the human's)."
 }
