@@ -109,12 +109,16 @@ def main() -> int:
     assert group == "main"
     for d in DUMPS:
         blocks = read_blocks(run_dir / f"{d:04d}.sdf")
-        x = blocks["Grid/Grid"][0]
+        x_nodes = blocks["Grid/Grid"][0]
         rho = blocks["Derived/Number_Density/electron"]
-        dx = _spacing(x)
+        dx = _spacing(x_nodes)
 
-        write_row(out_dir, f"grid_dump{d:04d}.txt", [float(x[0]), float(x[-1] - x[0])])
+        write_row(out_dir, f"grid_dump{d:04d}.txt", [float(x_nodes[0]), float(x_nodes[-1] - x_nodes[0])])
 
+        # Grid/Grid is node-centered (nx+1 points); density is cell-centered
+        # (nx values). Use cell-centre coordinates for the density moments
+        # (measured on the worker 2026-09-06: x_nodes.size == rho.size + 1).
+        x = 0.5 * (x_nodes[:-1] + x_nodes[1:])
         excess = rho - DENS_BG
         excess_mass = float(excess.sum() * dx)
         mean_density = float(rho.mean())

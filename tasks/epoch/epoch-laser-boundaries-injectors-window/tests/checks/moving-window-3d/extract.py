@@ -110,12 +110,18 @@ def main() -> int:
     assert group == "main"
     for d in DUMPS:
         blocks = read_blocks(run_dir / f"{d:04d}.sdf")
-        x, y, z = blocks["Grid/Grid"][0], blocks["Grid/Grid"][1], blocks["Grid/Grid"][2]
+        x_nodes, y_nodes, z_nodes = blocks["Grid/Grid"][0], blocks["Grid/Grid"][1], blocks["Grid/Grid"][2]
         rho = blocks["Derived/Number_Density/electron"]  # shape (nx, ny, nz)
-        dx, dy, dz = _spacing(x), _spacing(y), _spacing(z)
+        dx, dy, dz = _spacing(x_nodes), _spacing(y_nodes), _spacing(z_nodes)
 
-        write_row(out_dir, f"grid_dump{d:04d}.txt", [float(x[0]), float(x[-1] - x[0])])
+        write_row(out_dir, f"grid_dump{d:04d}.txt", [float(x_nodes[0]), float(x_nodes[-1] - x_nodes[0])])
 
+        # Grid/Grid is node-centered (nx+1/ny+1/nz+1 points); density is
+        # cell-centered. Use cell-centre coordinates for the moments
+        # (measured on the worker 2026-09-06).
+        x = 0.5 * (x_nodes[:-1] + x_nodes[1:])
+        y = 0.5 * (y_nodes[:-1] + y_nodes[1:])
+        z = 0.5 * (z_nodes[:-1] + z_nodes[1:])
         xg, yg, zg = np.meshgrid(x, y, z, indexing="ij")
         excess = rho - DENS_BG
         vol = dx * dy * dz
