@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "report_type": "codebase-metadata",
-  "generated_at": "2026-09-05T05:35:39Z",
+  "generated_at": "2026-09-06T02:04:10Z",
   "informational": true,
   "non_blocking": true,
   "codebase": {
@@ -19,7 +19,7 @@
     "owner": "yiminnn <yiminliu.career@gmail.com>",
     "source_tree_fingerprint": "51636eff9a1de677ced86babe8ff52c91cfde190b68959ac87f6c3868a7b9b14",
     "fingerprint_algorithm": "SHA-256 over typed sorted regular-file paths+bytes and symlink paths+safe targets",
-    "measurement_source": "Step 1 investigation checkout intended for vendoring",
+    "measurement_source": "vendored source payload",
     "agent_authored": {
       "description": "Scirpy is the scverse toolkit for adaptive immune receptor repertoire (AIRR) analysis of single-cell data: T-cell and B-cell receptor sequences recovered alongside transcriptomes. Its scientific core is the definition of a clonotype, the grouping of cells whose receptors are similar enough to descend from a common ancestor. That reduces to a numerical problem: given N unique CDR3 amino-acid sequences, compute the pairwise distance matrix under an immunological distance metric, keep only pairs below a cutoff so the result is sparse CSR, then build a receptor graph over those pairs and take its connected components or cluster it. The distance step is O(N^2) and is the expensive one; real repertoires reach 1e5-1e6 unique CDR3s. Pure Python with hatchling; no compiled extension of its own. The hot loops are Numba njit/prange kernels owned by scirpy. There is no simulation driver or input deck: the production entry points are library calls.",
       "evidence": [
@@ -30,7 +30,7 @@
     }
   },
   "measurement": {
-    "scope": "Step 1 investigation checkout intended for vendoring",
+    "scope": "vendored source payload",
     "regular_file_rule": "all regular files below the source snapshot",
     "physical_line_rule": "UTF-8/NUL-free bytes: newline count plus one final non-newline line",
     "text_binary_rule": "NUL-containing or non-UTF-8 files are binary for line accounting",
@@ -207,14 +207,13 @@
   "approval": {
     "proposed_modules": [
       "sequence-distance-metrics",
-      "clonotype-network",
-      "repertoire-statistics"
+      "clonotype-network"
     ],
     "approved_modules": [
       "sequence-distance-metrics"
     ],
-    "human_ref": "STOP 1: approved only sequence-distance-metrics. clonotype-network and repertoire-statistics stay proposed-only (Leiden/invariants argument and the unmeasured 404-test file are harder to defend; repertoire-statistics has little accelerator upside). Also asked to raise a sciaccel-idea issue with the curator about biology being in scope before the source PR is opened.",
-    "approved_at": "2026-09-04T07:35:42Z",
+    "human_ref": "STOP 1, second pass after PR #491 review: approved the two-module cut and, within it, only sequence-distance-metrics for packaging. repertoire-statistics folded into clonotype-network as the reviewer asked, because its summaries are computed over the clonotype assignments the graph layer produces and share its data model. clonotype-network stays proposed-only: its runtimes are unmeasured and it spans two determinism regimes.",
+    "approved_at": "2026-09-06T02:03:44Z",
     "classification": "human-owned approval, CLI-copied"
   },
   "shared_components": [
@@ -231,8 +230,7 @@
       ],
       "used_by": [
         "sequence-distance-metrics",
-        "clonotype-network",
-        "repertoire-statistics"
+        "clonotype-network"
       ],
       "relationship": "runtime/build",
       "evidence": [
@@ -337,41 +335,52 @@
     },
     {
       "slug": "clonotype-network",
-      "title": "Clonotype neighborhood graph and clonotype definition",
+      "title": "Clonotype definition, receptor network and repertoire statistics",
       "entrypoints": [
         "scirpy.pp.ir_dist",
         "scirpy.tl.define_clonotypes",
         "scirpy.tl.define_clonotype_clusters",
-        "scirpy.tl.ir_query"
+        "scirpy.tl.ir_query",
+        "scirpy.tl.clonotype_modularity",
+        "scirpy.tl.alpha_diversity",
+        "scirpy.tl.repertoire_overlap",
+        "scirpy.tl.clonal_expansion"
       ],
-      "expensive_path": "Reduction of per-chain distance matrices into a cell-by-cell receptor distance graph under the dual-chain matching rules, then connected components or Leiden clustering over that sparse graph. Dominated by sparse matrix products and graph traversal on up to 10^6 nodes.",
-      "rationale": "The graph layer is a distinct concern from the pairwise kernel: it is where receptor-level matching semantics live, and its determinism profile differs. It is covered by its own large test files (test_ir_dist.py, 404 collected; test_clonotypes.py, 52).",
+      "expensive_path": "Reduction of per-chain distance matrices into a cell-by-cell receptor distance graph under the dual-chain matching rules, then connected components or Leiden clustering over that sparse graph, then the statistics computed over the resulting clonotype assignments. Dominated by sparse matrix products and graph traversal on up to 10^6 nodes; clonotype_modularity adds a negative-binomial null model evaluated by resampling connectivity over the same graph.",
+      "rationale": "Everything downstream of the pairwise kernel that depends on the clonotype definition. The graph layer and the repertoire summaries are one module because the summaries are computed over the clonotype assignments the graph layer produces and share its data model: separating them would cut between a result and its immediate consumers rather than between different science. Covered by test_ir_dist.py (404 collected), test_clonotypes.py (52), test_ir_query.py and test_tools.py.",
       "excluded": [
-        "src/scirpy/ir_dist/metrics.py: proposed as its own module"
+        "src/scirpy/ir_dist/metrics.py: the pairwise kernel, proposed as its own module"
       ],
       "hazards": [
         "define_clonotype_clusters uses igraph Leiden clustering, which is seeded but partition-dependent; those checks would need the invariants policy rather than pointwise.",
+        "clonotype_modularity evaluates a negative-binomial null model by resampling and is stochastic; invariants as well.",
         "Per-test runtimes in test_ir_dist.py are unmeasured: the file did not finish within 2.5 minutes as a whole and was stopped. A targeted per-test run is needed before this module is scaffolded.",
-        "Parts of the suite may call dataset loaders that download through pooch, which cannot run in the network-disabled oracle."
+        "Parts of the suite may call dataset loaders that download through pooch, which cannot run in the network-disabled oracle.",
+        "The module spans two determinism regimes: connected-components clonotype definition is deterministic, while Leiden clustering and the modularity null model are not. Check policies will differ within the module."
       ],
       "approval_status": "proposed-only",
-      "purpose": "The graph layer is a distinct concern from the pairwise kernel: it is where receptor-level matching semantics live, and its determinism profile differs. It is covered by its own large test files (test_ir_dist.py, 404 collected; test_clonotypes.py, 52).",
+      "purpose": "Everything downstream of the pairwise kernel that depends on the clonotype definition: the receptor graph built from the per-chain distance matrices, the clonotype and clonotype-cluster assignment on top of it, and the repertoire summaries computed over those assignments.",
       "primary_inputs": [
         "per-chain sparse distance matrices from sequence-distance-metrics",
-        "AIRR chain index (awkward array) per cell"
+        "AIRR chain index (awkward array) per cell",
+        "cell metadata table for the group-by summaries"
       ],
       "primary_outputs": [
         "cell-by-cell sparse receptor distance graph",
-        "clonotype and clonotype-cluster assignment per cell"
+        "clonotype and clonotype-cluster assignment per cell",
+        "per-clonotype and per-group summary statistics as pandas objects"
       ],
       "algorithm_stages": [
         "reduce per-chain distances under the dual-chain matching rules",
         "build the sparse cell graph",
-        "connected components or Leiden clustering"
+        "connected components or Leiden clustering",
+        "group-by reductions over the cell table for diversity, clonal expansion, overlap, spectratype, convergence and mutational load",
+        "negative-binomial null-model resampling over the clonotype graph for clonotype_modularity"
       ],
       "unique_responsibilities": [
         "receptor-level matching semantics across chain pairs",
-        "clonotype and clonotype-cluster definition"
+        "clonotype and clonotype-cluster definition",
+        "diversity, clonal expansion, repertoire overlap, spectratype, convergence, mutational load, clonotype modularity and imbalance"
       ],
       "not_responsible_for": [
         "src/scirpy/ir_dist/metrics.py: proposed as its own module"
@@ -382,90 +391,19 @@
       "depends_on_modules": [
         "sequence-distance-metrics"
       ],
-      "differences": "Consumes the distance matrices the kernel module produces and adds cell/chain semantics and graph clustering. Leiden clustering is seeded but partition-dependent, so its checks would need the invariants policy rather than pointwise.",
+      "differences": "Consumes the distance matrices the kernel module produces and adds cell and chain semantics, graph clustering, and the repertoire summaries computed over the resulting clonotype assignments. Merged with the former repertoire-statistics module at review of PR #491: the summaries are computed over the clonotype assignments this module produces and share its data model, so separating them cut between a result and its immediate consumers rather than between different science. The module spans two determinism regimes: connected-components clonotype definition is deterministic, while Leiden clustering and the modularity null model are not, so check policies will differ within it.",
       "evidence": [
         "src/scirpy/ir_dist/_clonotype_neighbors.py (504 lines)",
         "src/scirpy/tl/_clonotypes.py (708 lines)",
-        "src/scirpy/tests/test_ir_dist.py: 404 collected items"
+        "src/scirpy/tests/test_ir_dist.py: 404 collected items",
+        "src/scirpy/tl/_clonotype_modularity.py (350 lines)",
+        "src/scirpy/tests/test_tools.py (1095 lines)"
       ],
       "owned_paths": [
         "src/scirpy/ir_dist/_clonotype_neighbors.py",
         "src/scirpy/ir_dist/__init__.py",
         "src/scirpy/tl/_clonotypes.py",
-        "src/scirpy/tl/_ir_query.py"
-      ],
-      "classification": "agent-authored module card; CLI-computed size and approval status",
-      "metrics": {
-        "owned": {
-          "regular_files": 4,
-          "bytes": 80612,
-          "text_files": 4,
-          "text_physical_lines": 1963
-        },
-        "shared": {
-          "regular_files": 48,
-          "bytes": 17405887,
-          "text_files": 30,
-          "text_physical_lines": 8291
-        },
-        "overlap": {
-          "regular_files": 0,
-          "bytes": 0,
-          "text_files": 0,
-          "text_physical_lines": 0
-        }
-      }
-    },
-    {
-      "slug": "repertoire-statistics",
-      "title": "Repertoire-level statistics and clonotype metrics",
-      "entrypoints": [
-        "scirpy.tl.clonotype_modularity",
-        "scirpy.tl.alpha_diversity",
-        "scirpy.tl.repertoire_overlap",
-        "scirpy.tl.clonal_expansion"
-      ],
-      "expensive_path": "clonotype_modularity evaluates a negative-binomial null model by resampling connectivity over the clonotype graph; the remaining statistics are group-by reductions over the cell table.",
-      "rationale": "Downstream summary statistics, separable from both the kernel and the graph, covered by test_tools.py.",
-      "excluded": [
-        "Plotting counterparts under src/scirpy/pl/"
-      ],
-      "hazards": [
-        "clonotype_modularity resampling is stochastic and would need the invariants policy.",
-        "Most of these are pandas group-by reductions with little accelerator upside; this module is the weakest of the three and may not be worth packaging."
-      ],
-      "approval_status": "proposed-only",
-      "purpose": "Downstream summary statistics, separable from both the kernel and the graph, covered by test_tools.py.",
-      "primary_inputs": [
-        "clonotype assignments and the cell metadata table",
-        "clonotype graph (clonotype_modularity only)"
-      ],
-      "primary_outputs": [
-        "per-clonotype or per-group summary statistics as pandas objects"
-      ],
-      "algorithm_stages": [
-        "group-by reductions over the cell table",
-        "negative-binomial null-model resampling for clonotype_modularity"
-      ],
-      "unique_responsibilities": [
-        "diversity, clonal expansion, repertoire overlap, spectratype, convergence, mutational load, clonotype modularity and imbalance"
-      ],
-      "not_responsible_for": [
-        "Plotting counterparts under src/scirpy/pl/"
-      ],
-      "shared_component_ids": [
-        "shared-infrastructure"
-      ],
-      "depends_on_modules": [
-        "clonotype-network"
-      ],
-      "differences": "Summary statistics over results the other two modules produce. Mostly pandas group-by reductions with little accelerator upside, and clonotype_modularity is stochastic; the weakest of the three and possibly not worth packaging.",
-      "evidence": [
-        "src/scirpy/tl/_clonotype_modularity.py (350 lines)",
-        "src/scirpy/util/_negative_binomial.py (83 lines)",
-        "src/scirpy/tests/test_tools.py (1095 lines)"
-      ],
-      "owned_paths": [
+        "src/scirpy/tl/_ir_query.py",
         "src/scirpy/tl/_clonotype_modularity.py",
         "src/scirpy/tl/_clonotype_imbalance.py",
         "src/scirpy/tl/_diversity.py",
@@ -475,16 +413,15 @@
         "src/scirpy/tl/_convergence.py",
         "src/scirpy/tl/_mutational_load.py",
         "src/scirpy/tl/_group_abundance.py",
-        "src/scirpy/tl/_chain_qc.py",
-        "src/scirpy/util/_negative_binomial.py"
+        "src/scirpy/tl/_chain_qc.py"
       ],
       "classification": "agent-authored module card; CLI-computed size and approval status",
       "metrics": {
         "owned": {
-          "regular_files": 10,
-          "bytes": 68039,
-          "text_files": 10,
-          "text_physical_lines": 1789
+          "regular_files": 14,
+          "bytes": 148651,
+          "text_files": 14,
+          "text_physical_lines": 3752
         },
         "shared": {
           "regular_files": 48,
@@ -594,15 +531,17 @@
           "src/scirpy/tests/test_ir_dist.py",
           "src/scirpy/tests/test_clonotypes.py",
           "src/scirpy/tests/test_ir_query.py",
-          "src/scirpy/tests/test_ir_dist_util.py"
+          "src/scirpy/tests/test_ir_dist_util.py",
+          "src/scirpy/tests/test_tools.py"
         ],
         "selectors": [
           "src/scirpy/tests/test_ir_dist.py",
-          "src/scirpy/tests/test_clonotypes.py"
+          "src/scirpy/tests/test_clonotypes.py",
+          "src/scirpy/tests/test_tools.py"
         ],
         "counts": {
           "test_files": {
-            "value": 4,
+            "value": 5,
             "unit": "files",
             "semantics": "distinct official test files considered",
             "classification": "agent-authored/evidenced"
@@ -630,57 +569,17 @@
           "ir_dist orchestration",
           "clonotype and clonotype-cluster definition",
           "ir_query",
-          "sparse block/union helpers"
+          "sparse block/union helpers",
+          "diversity, clonal expansion, repertoire overlap, spectratype, convergence, mutational load, clonotype modularity"
         ],
         "known_gaps": [
           "per-test runtimes unmeasured",
-          "some tests may call pooch dataset loaders, which cannot run in the network-disabled oracle"
+          "some tests may call pooch dataset loaders, which cannot run in the network-disabled oracle",
+          "test_tools.py was neither collected nor timed; the module is proposed-only"
         ],
         "execution": [
           "test_ir_dist.py did not finish within 2.5 minutes as a whole file and was stopped; it spawns joblib/loky workers. Recorded as unmeasured."
         ],
-        "classification": "agent-authored/evidenced, except any explicitly CLI-labelled counts"
-      },
-      "repertoire-statistics": {
-        "sources": [
-          "src/scirpy/tests/test_tools.py"
-        ],
-        "selectors": [
-          "src/scirpy/tests/test_tools.py"
-        ],
-        "counts": {
-          "test_files": {
-            "value": 1,
-            "unit": "files",
-            "semantics": "distinct official test files considered",
-            "classification": "agent-authored/evidenced"
-          },
-          "test_definitions": {
-            "value": null,
-            "unit": "source-level test definitions",
-            "semantics": "source-level functions or methods, not collected cases",
-            "classification": "agent-authored/evidenced"
-          },
-          "collected_items": {
-            "value": null,
-            "unit": "framework-collected items",
-            "semantics": "items collected after framework parametrization",
-            "classification": "agent-authored/evidenced"
-          },
-          "inner_cases": {
-            "value": null,
-            "unit": "inner cases",
-            "semantics": "optional cases inside one source-level definition that collection does not expose",
-            "classification": "agent-authored/evidenced"
-          }
-        },
-        "covers": [
-          "diversity, clonal expansion, repertoire overlap, spectratype, convergence, mutational load, clonotype modularity"
-        ],
-        "known_gaps": [
-          "not collected or run in this investigation; the module was not approved"
-        ],
-        "execution": [],
         "classification": "agent-authored/evidenced, except any explicitly CLI-labelled counts"
       }
     },
@@ -800,12 +699,17 @@
       {
         "what": "src/scirpy/util/, src/scirpy/get/, src/scirpy/pp/_index_chains.py",
         "why": "Shared infrastructure listed above: the AIRR indexing and accessor layer every module depends on. Not independently meaningful as a port."
+      },
+      {
+        "what": "src/scirpy/util/_negative_binomial.py",
+        "why": "Null-model helper used only by clonotype_modularity; counted with shared infrastructure under util/."
       }
     ],
     "known_review_gaps": [
       "Per-test runtimes for test_ir_dist.py (404 items) are unmeasured; only sequence-distance-metrics has measured runtimes.",
       "The GPU path could not be exercised: no CUDA device on the investigation machine, and cupy-cuda12x is an optional extra.",
-      "test_tools.py was neither collected nor timed, because repertoire-statistics was not approved."
+      "test_tools.py was neither collected nor timed; it now belongs to clonotype-network, which is proposed-only.",
+      "Module cut revised at review of PR #491 from three modules to two: repertoire-statistics was folded into clonotype-network. The vendored tree is unchanged."
     ],
     "open_questions": [
       "RESOLVED (issue #464, curator huangzesen): biology is fully in scope. biology-biomedicine is a first-class field in registry/fields.json and the issue form, and the retired seed entry archive/sa-0005 (MrBayes, phylogenetic likelihood loop to GPU) already carries that domain. The absence of biology under code/ reflects who has contributed so far, not policy. An earlier draft of this report stated there was no biology precedent; that was wrong and is corrected here.",
@@ -816,7 +720,7 @@
   },
   "warnings": [
     "61 regular file(s) are unclassified; this is visible but non-blocking",
-    "repository/cache directory excluded from source accounting: .git"
+    "shared component 'shared-infrastructure': unknown used_by modules omitted: ['repertoire-statistics']"
   ],
   "notes": "Fill every field to best effort. Unknown is acceptable; this report is informational and non-blocking."
 }
