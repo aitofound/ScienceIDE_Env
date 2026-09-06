@@ -1,0 +1,73 @@
+#CPUTIMEMAX
+600         CpuTimeMax # regression test: abort if stuck
+
+#READMHDATA
+T                     DoReadMhData
+MH_data_shock   NameInputDir
+1       iLonFile
+1       iLatFile
+
+#MHDATA
+ascii       TypeFile
+MH_data.lst     NameTagFile
+
+#COORDSYSTEM
+GSM      TypeCoordSystem
+
+#FIELDLINEGRID
+1    nLon
+1    nLat
+
+#STOP
+5000       nIterMax
+100        TimeMax # [s]
+
+#BOUNDARY
+reflect     BoundaryInner
+absorb      BoundaryOuter
+
+#ADVECTION
+F       UseLogScaling
+
+#SHOCK
+F         DoSharpenShock
+300       nSearchMax
+0.0       dLogRhoThreshold
+
+#SDEBINNING
+T           DoBinEntireFieldline
+400         nLagrBins
+120         BinTimeWindow
+
+#DISTRIBUTION
+200         nEnergyBin
+10.0        eBinMin      # [keV]
+1e7         eBinMax      # [keV]
+10.0        InjEnergy    # [keV]
+1.0         InjCoeff
+
+#SDE
+1.0         TimeStepFactor   # 0.01
+0.01        MaxTimeStep # [s]
+
+#DIFFUSION
+MHD         UpstreamDxxModel     # (1) MHD (2) PSP (3) analytical
+0.03        CorrelationLength    # default = 0.03
+1.0         ScalingFactor        # Scales MHD Dxx
+T           UseConstantDiffusion # if True, negates above parameters
+10.0        DxxConst
+
+#PARTICLE
+100             nInject        # how many particles injected per lagrangian coordinate
+F               UseSplit
+40              nSplit         # number of energy thresholds where splitting occurs
+1.0             SplitEnergyMin # [MeV]
+100.0           SplitEnergyMax # [MeV]
+
+#INPUTSEED
+T               UseInputSeedFile
+
+#TEST
+T           DoRunTest
+
+#END
