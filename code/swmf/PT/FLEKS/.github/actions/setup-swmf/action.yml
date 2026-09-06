@@ -1,0 +1,196 @@
+name: 'Setup SWMF dependency tree'
+description: >-
+  Check out the SWMF framework and FLEKS, restore/cache the AMReX and SWMF
+  dependency trees, and populate the share/ and util/ (including AMReX)
+  dependencies that the FLEKS build needs. FLEKS is checked out inside the
+  SWMF tree (SWMF-nested standalone layout).
+inputs:
+  fleks-path:
+    description: 'Path (relative to workspace) where FLEKS is checked out.'
+    required: true
+    default: SWMF/PC/FLEKS
+  fleks-cache-exclude:
+    description: >-
+      FLEKS component directory under SWMF/ to exclude from the SWMF cache
+      (e.g. "PC/FLEKS" or "PT/FLEKS").
+    required: true
+    default: PC/FLEKS
+  amrex-cache-suffix:
+    description: >-
+      Suffix appended to the AMReX cache key, encoding the AMReX spatial
+      dimension(s) this job builds (e.g. "2d3d", "3d").
+    required: true
+    default: 3d
+  config-components:
+    description: >-
+      The "-v=Empty,..." component list passed to SWMF's Config.pl to populate
+      the dependency tree.
+    required: true
+    default: PC/FLEKS,GM/BATSRUS
+  config-extra:
+    description: >-
+      An optional extra "-o=..." component-option flag appended to the SWMF
+      Config.pl invocation (e.g. "PC:tp=PBEG"). Pass empty to omit it.
+    required: true
+    default: PC:tp=PBEG
+  verify-amrex:
+    description: >-
+      Whether to run the "Verify & Fix AMReX Build Cache" step. Enable when the
+      job builds AMReX (default). Disable for jobs that only link a prebuilt lib.
+    required: true
+    default: 'true'
+outputs:
+  amrex-hash:
+    description: 'Hash of the AMReX master commit used for the cache key.'
+    value: ${{ steps.amrex-hash.outputs.hash }}
+  swmf-cache-hit:
+    description: "'true' if the SWMF cache was restored."
+    value: ${{ steps.cache-swmf.outputs.cache-hit }}
+runs:
+  using: 'composite'
+  steps:
+    - name: Force HTTPS for GitHub
+      shell: bash
+      run: |
+        git config --global url."https://github.com/".insteadOf git@github.com:
+
+    - name: Install Dependencies
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libopenmpi-dev openmpi-bin
+
+    - name: Checkout SWMF Framework
+      uses: actions/checkout@v6
+      with:
+        repository: SWMFsoftware/SWMF
+        path: SWMF
+
+    - name: Get AMReX Hash
+      id: amrex-hash
+      shell: bash
+      run: |
+        echo "hash=$(git ls-remote https://github.com/SWMFsoftware/AMREX.git master | awk '{print $1}')" >> $GITHUB_OUTPUT
+
+    - name: Cache AMReX
+      id: cache-amrex
+      uses: actions/cache@v5
+      with:
+        path: SWMF/util/AMREX
+        # "-v2" invalidates earlier caches that were saved with an incomplete
+        # InstallDir* (missing include/AMReX_Config.H), which broke dimension
+        # detection in validate_tests.py.
+        key: ${{ runner.os }}-amrex-v2-${{ steps.amrex-hash.outputs.hash }}-${{ inputs.amrex-cache-suffix }}
+
+    - name: Cache SWMF
+      id: cache-swmf
+      uses: actions/cache@v5
+      with:
+        path: |
+          SWMF
+          !SWMF/${{ inputs.fleks-cache-exclude }}
+          !SWMF/util/AMREX
+        key: ${{ runner.os }}-swmf-v6-${{ hashFiles('SWMF/Config.pl') }}
+
+    - name: Checkout FLEKS (Current Commit)
+      uses: actions/checkout@v6
+      with:
+        # Checked out AFTER the SWMF cache restore so the current FLEKS commit
+        # always wins, even if the SWMF cache contained a stale SWMF/PC/FLEKS.
+        path: ${{ inputs.fleks-path }}
+
+    - name: Install or Update SWMF Components
+      working-directory: SWMF
+      shell: bash
+      run: |
+        if [ "${{ steps.cache-swmf.outputs.cache-hit }}" == "true" ]; then
+          echo "Cache hit. Updating components..."
+          ./share/Scripts/gitall pull
+        else
+          echo "Cache miss. Installing components..."
+          # If util directory exists but is not a git repo (e.g. due to AMREX
+          # cache restore), restore the util repository while preserving the
+          # cached AMREX folder.
+          if [ -d util ] && [ ! -d util/.git ]; then
+            echo "util directory exists but is not a git repository. Preserving AMREX cache..."
+            if [ -d util/AMREX ]; then
+              mv util/AMREX ../AMREX_temp
+            fi
+            rm -rf util
+            git clone --depth 1 https://github.com/SWMFsoftware/util.git util
+            if [ -d ../AMREX_temp ]; then
+              mv ../AMREX_temp util/AMREX
+            fi
+          fi
+        fi
+        # Remove empty HYPRE directory to avoid make install failure
+        rm -rf util/HYPRE
+        # Remove empty/incomplete AMREX folder to force Config.pl to clone it cleanly
+        if [ ! -f util/AMREX/GNUmakefile ]; then
+          rm -rf util/AMREX
+        fi
+        # Configure the SWMF component tree, which populates the share/ and
+        # util/ (including AMReX) dependencies that the FLEKS build needs.
+        if [ -n "${{ inputs.config-extra }}" ]; then
+          ./Config.pl -install=BATSRUS -v=Empty,${{ inputs.config-components }} -o=${{ inputs.config-extra }}
+        else
+          ./Config.pl -install=BATSRUS -v=Empty,${{ inputs.config-components }}
+        fi
+
+    - name: Verify & Fix AMReX Build Cache
+      if: inputs.verify-amrex == 'true'
+      working-directory: SWMF/util/AMREX
+      shell: bash
+      run: |
+        # An install dir with libamrex.a but missing AMReX_Config.H is
+        # incomplete (the header records AMREX_SPACEDIM); remove it so Config.pl
+        # rebuilds it, then recreate the InstallDir symlink to a complete install.
+        for d in InstallDir2D InstallDir3D; do
+          if [ -f "$d/lib/libamrex.a" ] && [ ! -f "$d/include/AMReX_Config.H" ]; then
+            echo "WARNING: $d has libamrex.a but is missing include/AMReX_Config.H; removing to force a clean rebuild"
+            rm -rf "$d"
+          fi
+        done
+        # Prefer the dimension this job actually builds (from amrex-cache-suffix),
+        # so the InstallDir symlink points at the right install (e.g. the 2D job
+        # must point at InstallDir2D, not a leftover InstallDir3D).
+        case "${{ inputs.amrex-cache-suffix }}" in
+          *2d*|*2D*) PREFER=2 ;;
+          *) PREFER=3 ;;
+        esac
+        # Recreate InstallDir as a symlink to a complete install, preferring the
+        # dimension this job builds. Never delete a complete install directory;
+        # only replace the (possibly broken/corrupted) symlink itself.
+        rm -f InstallDir
+        for d in "InstallDir${PREFER}D" InstallDir3D InstallDir2D; do
+          if [ -f "$d/lib/libamrex.a" ] && [ -f "$d/include/AMReX_Config.H" ]; then
+            ln -s "$d" InstallDir
+            echo "InstallDir -> $d (recreated)"
+            break
+          fi
+        done
+        if [ ! -L InstallDir ] && [ -d InstallDir ]; then
+          # InstallDir is a real directory (cache restored the symlink target as a
+          # dir). Keep it only if it is a complete install; otherwise remove it.
+          if [ -f InstallDir/lib/libamrex.a ] && [ -f InstallDir/include/AMReX_Config.H ]; then
+            echo "InstallDir is a complete real directory; keeping"
+          else
+            rm -rf InstallDir
+            for d in "InstallDir${PREFER}D" InstallDir3D InstallDir2D; do
+              if [ -f "$d/lib/libamrex.a" ] && [ -f "$d/include/AMReX_Config.H" ]; then
+                ln -s "$d" InstallDir
+                break
+              fi
+            done
+          fi
+        fi
+        echo "AMReX build-cache status:"
+        for d in InstallDir2D InstallDir3D; do
+          if [ -f "$d/lib/libamrex.a" ] && [ -f "$d/include/AMReX_Config.H" ]; then
+            echo "  $d: COMPLETE (libamrex.a + AMReX_Config.H present)"
+          elif [ -f "$d/lib/libamrex.a" ]; then
+            echo "  $d: PARTIAL (libamrex.a present, AMReX_Config.H missing)"
+          else
+            echo "  $d: MISSING (will be built)"
+          fi
+        done
