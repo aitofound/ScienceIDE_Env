@@ -1,6 +1,6 @@
 # decomp-uneven-1d
 
-Upstream test: `epoch1d/tests/landau/input.deck`. Policy: `pointwise`.
+Upstream test: `epoch1d/tests/landau/input.deck`. Policy: `invariants` for the per-species pseudoparticle-per-cell arrays, `pointwise` for the rest.
 
 ## The test
 
@@ -112,33 +112,9 @@ values it ships -- the two scale knobs at 1 rewrite `75 * femto` as `75.0 *
 femto`, the same number -- so the difference from upstream is both visible and
 reversible.
 
-## Policy under revision 5.6.0
+## Policy under revision 5.10.2
 
-Policy under SPEC revision 5.6.0: pointwise, with the check flagged chaotic
-where the deck is unstable. The 2026-09-04 x86 calibration record's per-array rows are what settles
-this: over the graded window the nominal-against-variant distance stays four to
-seven orders of magnitude inside every floating-point bound and exactly zero on
-every integer array, so a pointwise bound does contain the sensitivity and does
-reject a fault. The window was cut to where that holds, which is the order
-5.6.0 asks for -- shorten the window first, go to invariants only when the
-physics does not survive it. The particle loading is seeded per rank rather
-than drawn from a live random stream, so this is not the stochastic-package
-case that 5.6.0 sends to invariants. The integer arrays -- the rank partition
-ladder, the per-species pseudoparticle count per cell, and the per-species
-per-rank counts where this check grades them -- are compared at atol 0.
-Revision 5.6.0 lists "an output whose values are discrete, a bin index or a
-switch, where a small change flips the value outright" among the invariants
-cases, and this is deliberately not that case. None of these is a
-discretisation of a continuous quantity that a rounding difference could tip
-across a bin edge: the ladder is the output of an exact integer remainder rule
-and of an integer load histogram, the per-cell count is the number of particles
-whose position floors into that cell, with no halo sum and no arithmetic on the
-count itself, and the per-rank count is an allgather of list lengths. The count
-is exact by construction rather than rounded to an integer, which is why zero
-tolerance is a legitimate pointwise bound here and not the discrete-output
-invariants case. The 2026-09-04 x86 calibration record confirms it: every one of
-these arrays came back with max_abs_error exactly 0.0 and values_over_bound 0
-under the variant, in all 19 checks.
+The rank partition ladder stays pointwise at atol 0: mpi_routines.F90's remainder rule is a fixed function of nprocx and the cell count, never of a particle position, so a correct port reproduces it exactly and a different tie-break is a different, still-valid partition, not noise. The per-species pseudoparticle-per-cell arrays move to an invariants comparison (kind conservation): each is reduced to its sum, the exact global count of that species at the dump, which must still agree with the reference exactly (atol 0), because conservation of particle number is exact whichever cell a boundary particle floors into. The 2026-09-05 steward review (item 3) is why: a legitimate target-arithmetic difference near either uneven seam can move a boundary particle's cell without dropping or duplicating it, and the old per-cell atol=0 bound would have failed that correct port. Both native probes (the 1e-15 density variant, which does not move the seeded position draw, and the -O0 altbuild, bit-identical to -O3) measure exactly zero spread on the conserved count, so the bound stays 0; any nonzero deviation is a real dropped or duplicated particle, and the density arrays above still catch a wrong-neighbour handoff.
 
 ## Evidence
 
