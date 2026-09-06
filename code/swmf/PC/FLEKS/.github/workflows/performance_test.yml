@@ -1,0 +1,102 @@
+name: Performance Test
+
+on:
+  pull_request:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+jobs:
+  performance-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout FLEKS (for local composite actions)
+        uses: actions/checkout@v6
+
+      - name: Setup SWMF dependency tree
+        uses: ./.github/actions/setup-swmf
+        with:
+          fleks-path: SWMF/PC/FLEKS
+          fleks-cache-exclude: PC/FLEKS
+          amrex-cache-suffix: 3d
+          config-components: PC/FLEKS,GM/BATSRUS
+          verify-amrex: 'true'
+
+      - name: Cache Standalone Build
+        id: cache-standalone
+        uses: actions/cache@v5
+        with:
+          path: SWMF/PC/FLEKS/bin/FLEKS.exe
+          key: ${{ runner.os }}-fleks-standalone-${{ hashFiles('SWMF/PC/FLEKS/**/*.cpp', 'SWMF/PC/FLEKS/**/*.h', 'SWMF/PC/FLEKS/**/Makefile*') }}
+          restore-keys: |
+            ${{ runner.os }}-fleks-standalone-
+
+      - name: Build Standalone FLEKS
+        if: steps.cache-standalone.outputs.cache-hit != 'true'
+        working-directory: SWMF/PC/FLEKS
+        run: |
+          make EXE -j$(nproc)
+
+      - name: Run Standalone Performance Checks
+        working-directory: SWMF/PC/FLEKS/tests
+        run: |
+          ls -lh ../bin/FLEKS.exe
+          ldd ../bin/FLEKS.exe
+          python3 validate_performance.py
+
+      - name: Write Job Summary
+        if: always()
+        run: |
+          if [ -f SWMF/PC/FLEKS/tests/performance_summary.md ]; then
+            cat SWMF/PC/FLEKS/tests/performance_summary.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Post PR Comment
+        uses: actions/github-script@v7
+        if: always() && github.event.pull_request && (github.event_name == 'pull_request_target' || github.event.pull_request.head.repo.full_name == github.repository)
+        with:
+          script: |
+            const fs = require('fs');
+            const perfPath = 'SWMF/PC/FLEKS/tests/performance_summary.md';
+            let body = '';
+
+            if (fs.existsSync(perfPath)) {
+              body += fs.readFileSync(perfPath, 'utf8') + '\n';
+            }
+
+            if (body) {
+              // 1. List existing comments to find one matching our performance report
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+
+              const prComment = comments.find(comment =>
+                comment.body.includes('### ⚡ Standalone FLEKS Performance Report')
+              );
+
+              if (prComment) {
+                // 2. Update existing comment in place
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: prComment.id,
+                  body: body
+                });
+                console.log('Successfully updated existing PR comment with performance results.');
+              } else {
+                // 3. Create a new comment if none exists
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: body
+                });
+                console.log('Successfully created new PR comment with performance results.');
+              }
+            }
