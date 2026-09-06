@@ -162,6 +162,23 @@ grid `cimi-uniforml` runs. The label was set from the upstream Makefile.test
 structure before any check had actually been run; the calibration run's
 numbers, not that assumption, now decide it.
 
+## Third run-time revision (2026-09-06, curator ruling): heidi-analytic's window against its own #TIMESTEP
+
+The risk flagged above was real: `heidi-analytic`'s own `#TIMESTEP` is 20 s,
+longer than the second revision's 15 s window, so the run would take at most
+one partial step. `#TIMESTEP` is the deck's numerical-scheme parameter and
+is not touched. The window is instead set to 40 s, two full `#TIMESTEP`
+steps, with `#OUTPUTINFO`/`#INJECTIONFREQUENCY` sample frequency set to
+20 s so a frame is saved at t=0, 20 and 40 s -- three frames, one fewer than
+the upstream deck's four (`test1_h_prs.003` is not produced at this window;
+`HEIDI_GRADED` is now sized per check, `heidi-numeric` unaffected at four
+frames on its unchanged 120 s window). Estimated run time is restated from
+61 s to 162 s (scaled the same way as every other estimate in this file,
+from the pre-revision measurement of 485 s for the original 120 s window);
+the suite total is restated from about 1200 s to about 1301 s, and
+`suite_budget_s` raised from 1500 to 1600. No run was made to confirm either
+number.
+
 ## Validator revision (2026-09-06): iteration counts, skill 5.10.2
 
 `validate.py` (identical across all 19 checks) previously graded every number
