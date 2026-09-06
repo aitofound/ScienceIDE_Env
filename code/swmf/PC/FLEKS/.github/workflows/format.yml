@@ -1,0 +1,105 @@
+---
+name: Format Check and Build
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  style:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+
+    - name: Set up tools
+      run: |
+        python3 -m pip install --upgrade pip
+        python3 -m pip install clang-format==20.1.8 findent
+
+    - name: Format changed files
+      id: format-check
+      run: |
+        # Determine which source files changed in this PR/push.
+        # - pull_request: diff against the PR base commit (checkout is the merge ref).
+        # - push:         diff against the previous commit on the branch.
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          base_ref="${{ github.event.pull_request.base.sha }}"
+          changed=$(git diff --name-only --diff-filter=ACMRT "$base_ref" | grep -E '\.(h|cpp|f90|F90)$' || true)
+        else
+          changed=$(git diff --name-only --diff-filter=ACMRT "HEAD^" 2>/dev/null | grep -E '\.(h|cpp|f90|F90)$' || true)
+        fi
+        if [ -z "$changed" ]; then
+          echo "No relevant source files changed; skipping format check."
+          exit 0
+        fi
+        echo "Changed source files:"; echo "$changed"
+        # Track a copy of each changed file, then run the formatter on them in place
+        while IFS= read -r f; do
+          [ -f "$f" ] || continue
+          cp "$f" "$f.format.orig"
+        done <<< "$changed"
+        python3 tools/format_all.py
+        # Report files that the formatter modified
+        needs_format=""
+        while IFS= read -r f; do
+          if [ -f "$f.format.orig" ]; then
+            if ! cmp -s "$f" "$f.format.orig"; then
+              needs_format="$needs_format $f"
+              echo "::error::$f needs formatting"
+            fi
+            rm -f "$f.format.orig"
+          fi
+        done <<< "$changed"
+        if [ -n "$needs_format" ]; then
+          echo "files<<EOF" >> "$GITHUB_OUTPUT"
+          printf '%s\n' $needs_format >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "::error::Some changed files need formatting."
+          exit 1
+        fi
+        echo "All changed files are properly formatted."
+
+    - name: Comment on PR with files to format
+      if: failure() && github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const changed = `${{ steps.format-check.outputs.files }}`.split(/\s+/).filter(Boolean);
+          const body = `## Formatting check failed\n\nThe following files need formatting. Run \`python3 tools/format_all.py\` locally and commit the changes:\n\n` +
+            changed.map(f => `- \`${f}\``).join("\n") +
+            `\n\nThen push again to re-trigger this check.`;
+          const { repo, owner } = context.repo;
+          await github.rest.issues.createComment({
+            owner, repo,
+            issue_number: context.issue.number,
+            body,
+          });
+
+  # Keep master formatted even if an unformatted PR is merged: on every push to
+  # master, reformat the whole codebase and auto-commit the result.
+  autoformat-master:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    permissions:
+      contents: write
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+
+    - name: Set up tools
+      run: |
+        python3 -m pip install --upgrade pip
+        python3 -m pip install clang-format==20.1.8 findent
+
+    - name: Run format script
+      run: python3 tools/format_all.py
+
+    - name: Auto-commit formatting changes
+      uses: stefanzweifel/git-auto-commit-action@v7
+      with:
+        commit_message: "style: Auto-formatting"
+        commit_user_name: "github-actions[bot]"
+        commit_user_email: "github-actions[bot]@users.noreply.github.com"
