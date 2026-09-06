@@ -67,10 +67,13 @@ definition.
 
 ## The pass policy
 
-The rank partition ladder and the per-species pseudoparticle count per cell are
-compared exactly: they are integers, produced by integer arithmetic and by
-flooring each particle into one cell, and there is no rounding for a tolerance
-to absorb. The floating-point arrays are compared under absolute bounds of
+The rank partition ladder is compared exactly: it is an integer array produced
+by integer arithmetic on the cell count and nprocx alone, and there is no
+rounding for a tolerance to absorb. The per-species pseudoparticle count per
+cell is *not* compared cell by cell; each array is reduced to its exact global
+total, which must agree exactly (see "Policy under revision 5.10.2" below for
+why the per-cell reading had to go). The floating-point arrays are compared
+under absolute bounds of
 1e-11 V/m on Ex, 1e-26 C/m^3 on the charge density and 1e-06 m^-3 on the number
 densities.
 
