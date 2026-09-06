@@ -1,0 +1,145 @@
+#DESCRIPTION
+Wave injection (monochromatic): a Bz wave is injected at the x-lo boundary face via the WAVEBC boundary and propagates into a pure-EM domain.
+
+#INITFROMSWMF
+F                       initFromSWMF
+
+#GEOMETRY
+-40.0                   xMin
+ 40.0                   xMax
+-30.0                   yMin
+ 30.0                   yMax
+-4.0                    zMin
+ 4.0                    zMax
+
+#NCELL
+80                      nCellX
+60                      nCellY
+8                       nCellZ
+
+#MAXBLOCKSIZE
+20                      maxBlockSizeX
+20                      maxBlockSizeY
+2                       maxBlockSizeZ
+
+#PERIODICITY
+F                       isPeriodicX
+T                       isPeriodicY
+T                       isPeriodicZ
+
+#FIELDBOXBOUNDARY
+wave                    fieldBoxBoundaryLo
+outflow                 fieldBoxBoundaryHi
+periodic                fieldBoxBoundaryLo
+periodic                fieldBoxBoundaryHi
+periodic                fieldBoxBoundaryLo
+periodic                fieldBoxBoundaryHi
+
+#PARTICLEBOXBOUNDARY
+0                       iSpecies
+outflow                 particleBoxBoundaryLo
+outflow                 particleBoxBoundaryHi
+periodic                particleBoxBoundaryLo
+periodic                particleBoxBoundaryHi
+periodic                particleBoxBoundaryLo
+periodic                particleBoxBoundaryHi
+
+#SOLVEEM
+T                       solveEM
+
+#PLASMA
+1                       nSpecies
+0.01                    mass
+-1.0                    charge
+
+#UNIFORMSTATE
+1.0                     rho
+0.0                     ux
+0.0                     uy
+0.0                     uz
+1.0e4                   T
+0.0                     bx
+0.0                     by
+0.0                     bz
+0.0                     ex
+0.0                     ey
+0.0                     ez
+
+#NORMALIZATION
+1.0                     lNormSI
+1.0                     uNormSI
+
+#TESTCASE
+lightwave               testCase
+
+#WAVEBC
+1                       nWaveFace
+0                       direction
+lo                      side
+1                       nComp
+0                       iField
+-1                      iSpecies
+0                       profile
+1.0e-4                  amplitude
+0.10                    frequency
+0.0                     waveLength
+0.0                     phase
+1.0                     dir_x
+0.0                     dir_y
+0.0                     dir_z
+0.0                     pol_x
+0.0                     pol_y
+1.0                     pol_z
+0.0                     tStart
+-1.0                    tEnd
+0.0                     rampTime
+0.0                     tCenter
+1.0                     tWidth
+
+#TIMESTEPPING
+T                       useFixedDt
+0.4                     dt
+
+#DISCRETIZATION
+0.50                    theta
+0.0                     ratioDivC2C
+
+#MONITOR
+10                      dnReport
+
+#DIVE
+F                       doCorrectDivE
+
+#REGION
+region1                name
+box                     shape
+-20.0                   min
+ 20.0                   max
+-15.0                   min
+ 15.0                   max
+-2.0                    min
+ 2.0                    max
+
+#REFINEREGION
+0                       iLev
++region1                regions
+
+#GRIDEFFICIENCY
+1.0                     gridEfficiency
+
+#RESAMPLING
+F                       doReSampling
+
+#SAVEPLOT
+1                       nPlot
+z=0 var ascii planet    plotString
+-1                      dnSavePlot
+10.0                    dtSavePlot
+-1                      dxSavePlot
+Ex Ey Ez Bx By Bz       plotVar
+
+#STOP
+-1                      MaxIter
+10.0                    TimeMax
+
+#RUN
