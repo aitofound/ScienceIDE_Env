@@ -38,3 +38,5 @@ translation are not exercised by this check; only the density-loading
 translation and the grid bookkeeping are graded. No check was added or
 removed. Bounds are PLACEHOLDER pending the run-3 calibration and the
 curator's sign-off.
+
+Extractor fix, 2026-09-06 (measured on the worker against real SDF dumps): `Grid/Grid` is EPOCH's node-centred coordinate array (nx+1 points along each axis); `Derived/Number_Density/electron` is cell-centred (nx values). `extract.py` was computing the density-profile moments against the node coordinates directly, which raised a numpy broadcast error (measured: (256,) vs (257,) in 1-D, (256,256) vs (257,257) in 2-D, (64,64,64) vs (65,65,65) in 3-D). It now takes cell centres as the midpoints of adjacent grid nodes for the density moments; the grid-origin/extent invariant above is unaffected (it reads the node array directly, as EPOCH reports it).
