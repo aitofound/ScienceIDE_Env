@@ -1,0 +1,156 @@
+#DESCRIPTION
+Ion Beam-Beam Instability Standalone Test - HYBRID PIC
+(kinetic ions / massless fluid electrons)
+
+Hybrid counterpart of PARAM.in (the full-PIC beam test).  The electrons are
+replaced by an implicit massless neutralizing fluid, so the plasma is a single
+kinetic ion species (H+) and the ion beam-beam instability is driven purely by
+the kinetic-ion two-stream / cyclotron response.  The grid, guide field, beam
+ratio/speeds, density, normalization and output are identical to PARAM.in so the
+FFT transverse-wave validation applies unchanged.
+
+#INITFROMSWMF
+F                       initFromSWMF
+
+#GEOMETRY
+-1e3                    xMin
+ 1e3                    xMax
+-1.0                    yMin
+ 1.0                    yMax
+-1.0                    zMin
+ 1.0                    zMax
+
+#NCELL
+64                      nCellX
+1                       nCellY
+1                       nCellZ
+
+#MAXBLOCKSIZE
+64                      maxBlockSizeX
+1                       maxBlockSizeY
+1                       maxBlockSizeZ
+
+#PERIODICITY
+T                       isPeriodicX
+T                       isPeriodicY
+T                       isPeriodicZ
+
+Standard Maxwell/GMRES solver disabled; use the Ohm's-law + Faraday hybrid
+field advance instead.
+#SOLVEEM
+F                       solveEM
+
+#HYBRIDPIC
+T                       useHybridPIC
+
+Hall term drives the ion-scale electromagnetic beam-beam instability.
+#HALLTERM
+T                       useHallTerm
+
+#BSUBCYCLE
+1                       nBSubcycle
+
+#RESISTIVITY
+0.0                     etaResistivity  [m^2/s, SI magnetic diffusivity]
+
+#ELECTRONTEMPERATURE
+0.0                     electronTemperature  [eV]
+1.0                     electronGamma
+1.0                     electronDensity0
+
+Single kinetic ion species (q = m = 1); the electron is an implicit
+neutralizing massless fluid, so no electron particle species is present.
+#PLASMA
+1                       nSpecies
+1.0                     mass        Species 0: H+
+1.0                     charge
+
+#UNIFORMSTATE
+5.0                     rho [amu/cc]   Species 0: H+ (quasi-neutral)
+-0.4                    ux [km/s normalized; -400 km/s background]
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+10000.0                 T [K]
+5.0e-9                  bx [T]
+0.0                     by [T]
+0.0                     bz [T]
+0.0                     ex [V/m]
+0.0                     ey [V/m]
+0.0                     ez [V/m]
+
+TESTCASE Beam splits the single H+ species: 1% of the macroparticles become the
+beam (ux = +0.4, weight scaled up), the remaining 99% the colder background
+(weight scaled down), preserving total particle count and mass.  The mean Vx is
+conserved at 0.01*0.4 + 0.99*(-0.4) = -0.392.
+#TESTCASE
+Beam
+0                       iSpecies
+0.01                    ratio
+0.4                     vel
+0.0                     vel
+0.0                     vel
+
+Digital-filter smoothing of the ion moments before the Ohm's law low-passes the
+PIC shot noise whose time-integration by Faraday produces spurious transverse
+field drift, while conserving the domain mean so the beam-beam instability seed
+is preserved.
+#SMOOTHMOMENTS
+T                       doSmoothMoments
+1                       nSmoothMoments
+0.5                     coefSmoothMoments
+
+#TIMESTEPPING
+T                       useFixedDt
+0.001                   dt
+
+#NORMALIZATION
+1000.0                  lNormSI
+1.0e6                   uNormSI
+
+#MONITOR
+10                      dnReport
+
+#SAVELOG
+10                      dnSavePic
+10                      dnSavePT
+
+#PARTICLES
+2000                    nParticle per cell in X
+1                       nParticle per cell in Y
+1                       nParticle per cell in Z
+
+#SAVEPLOT
+1                       nPlot
+z=0 var ascii planet  plotString
+-1                      dn
+0.02                    dt
+1                       dx
+rhoS0 Bx By Bz          varName
+
+#PARTICLETRACKER
+T           usePT
+
+#TPPARTICLES
+4           particles per cell in X
+4           particles per cell in Y
+1           particles per cell in Z
+
+#TPREGION
+uniform         region
+
+#TPCELLINTERVAL
+64          nIntervalX
+1           nIntervalY
+1           nIntervalZ
+
+#TPSAVE
+0           iSpecies
+planet      IOUnit
+10          dnSave
+0.5         launchThreshold
+
+#STOP
+-1                      MaxIter
+0.1                     TimeMax
+
+#RUN
