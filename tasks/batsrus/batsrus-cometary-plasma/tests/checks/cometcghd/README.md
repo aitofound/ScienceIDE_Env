@@ -30,7 +30,7 @@ The graded observable is the 150-step history of the 67P coma (volume averages o
 Five measurements, all with this check's own `run.sh`.
 
 * **Two-ULP calibration (nominal against variant), the recorded self-validation.** In the
-  task's own oracle image on the x86 worker (Debian, gfortran 12, Open MPI 5, 2 ranks): the log
+  task's own oracle image on the x86 worker (Debian 13.1 (trixie), GNU Fortran 14.2.0, Open MPI 5.0.7, 2 ranks): the log
   file and the coarse 3-D dump are byte-identical between the two initial conditions; the three
   cut planes differ by at most 1.0e-03 on a value of 3.17e+07, one unit in the last digit the
   ASCII IDL writer prints, which is 7.2e-13 of that column's magnitude. The largest error
@@ -40,13 +40,13 @@ Five measurements, all with this check's own `run.sh`.
   of each variable's own magnitude. The same comparison run natively on macOS with gfortran 15.2
   gives the same 1.0e-03 and the same 7.17e-06 of the bound.
 * **Floor, optimisation level.** -O3 against -O2 on the x86 worker: bit-identical.
-* **Floor, rank count.** 2 MPI ranks against 4 on the x86 worker: bit-identical as well, recorded
-  in `floor` as 0.
-* **Floor, alternative build.** `run.sh altbuild` (`./Config.pl -O0` instead of the shipped -O3,
-  same source and deck) against `run.sh nominal` on the x86 worker: bit-identical as well. At
-  this pin BATSRUS reproduces this run exactly across all three axes, so none of them can stand
-  in for what an accelerator port does to the arithmetic; the two-ULP variant above is the proxy
-  that does.
+* **Floor, rank count** (the author's earlier measurement, 2026-09-04). 2 MPI ranks against 4 on
+  the x86 worker: bit-identical as well, i.e. 0.
+* **Floor, alternative build** (the CLI's `evidence.floor`, this round). `run.sh altbuild`
+  (`./Config.pl -O0` instead of the shipped -O3, same source and deck) against `run.sh nominal` on
+  the x86 worker: bit-identical as well, recorded in `floor` as 0. At this pin BATSRUS reproduces
+  this run exactly across all three axes, so none of them can stand in for what an accelerator
+  port does to the arithmetic; the two-ULP variant above is the proxy that does.
 * **Wrong-implementation probe.** The self-shadowing of the nucleus was removed from the pinned
   source (`ModUserCometCG.f90`, the `if(.not.is_segment_intersected(XyzStart_D, XyzEnd_D))`
   test at line 534 replaced by `.true.`, so every Sun-facing facet sublimates whether or not

@@ -31,7 +31,7 @@ Four measurements, all with this check's own `run.sh`, and all of them on `ic/no
 where the variant is named.
 
 * **Two-ULP calibration (nominal against variant), the recorded self-validation.** In the
-  task's own oracle image on the x86 worker (Debian, gfortran 12, Open MPI 5, 2 ranks, 8 docker
+  task's own oracle image on the x86 worker (Debian 13.1 (trixie), GNU Fortran 14.2.0, Open MPI 5.0.7, 2 ranks, 8 docker
   cpus): the largest absolute difference over the 273014 graded values is 5.0e-05, on a
   volume-averaged density of 4.54e+05 in `final_y0.out`, which is five units in the last digit
   the ASCII IDL writer prints, and the largest error measured against the bound that applies to
