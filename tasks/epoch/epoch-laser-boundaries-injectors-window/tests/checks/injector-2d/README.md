@@ -41,3 +41,5 @@ random stream, which does not exercise robustness to reordering). No check
 was added or removed and the graded dumps are unchanged. Bounds are
 PLACEHOLDER pending the run-3 calibration of the realisation spread across
 rank layouts and the curator's sign-off (tolerances are the human's).
+
+Extractor fix, 2026-09-06 (measured on the worker against real SDF dumps): the dist_fn/x_px block's direction1 = dir_x is a spatial direction, so despite `resolution1 = 1` in the deck EPOCH still writes it as an (nx, 200) block tied to the actual grid, not a flat 200-bin array (measured: 25600 bins for nx=128 in injector-1d, 12800 for injector-2d/3d). `extract.py` now sums (marginalises) the block over the spatial axis before computing the momentum mean/variance and before writing `beam_dist_shape.f64`, which grades the 1-D momentum histogram's shape (the L1 distance between normalised probability mass functions), not the raw 2-D x-px occupancy -- the marginal-momentum option of the two the round-2 review offered, chosen because the observable text and warrant above already describe a momentum distribution, not a joint x-px one.
