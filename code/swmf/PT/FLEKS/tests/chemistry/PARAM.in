@@ -1,0 +1,226 @@
+#DESCRIPTION
+Mars Chemistry Test: 10 BATSRUS ModUserMars reactions with 4 ion species
+
+#INITFROMSWMF
+F                       initFromSWMF
+
+#GEOMETRY
+-9.0e6                  xMin
+ 9.0e6                  xMax
+-1.0                    yMin
+ 1.0                    yMax
+-1.0                    zMin
+ 1.0                    zMax
+
+#NCELL
+32                      nCellX
+1                       nCellY
+1                       nCellZ
+
+#MAXBLOCKSIZE
+32                      maxBlockSizeX
+1                       maxBlockSizeY
+1                       maxBlockSizeZ
+
+#PERIODICITY
+T                       isPeriodicX
+T                       isPeriodicY
+T                       isPeriodicZ
+
+#SOLVEEM
+T                       solveEM
+
+#PLASMA
+5                       nSpecies
+0.01                    mass        Species 0: electron
+-1.0                    charge
+1.0                     mass        Species 1: H+
+1.0                     charge
+16.0                    mass        Species 2: O+
+1.0                     charge
+32.0                    mass        Species 3: O2+
+1.0                     charge
+44.0                    mass        Species 4: CO2+
+1.0                     charge
+
+#UNIFORMSTATE
+0.0558238636363636      rho [amu/cc]   Species 0: electron (quasi-neutral)
+0.0                     ux [km/s]
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+10000.0                 T [K]
+5.0                     rho [amu/cc]   Species 1: H+
+0.0                     ux [km/s]
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+10000.0                 T [K]
+5.0                     rho [amu/cc]   Species 2: O+
+0.0                     ux [km/s]
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+10000.0                 T [K]
+5.0                     rho [amu/cc]   Species 3: O2+
+0.0                     ux [km/s]
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+10000.0                 T [K]
+5.0                     rho [amu/cc]   Species 4: CO2+
+0.0                     ux [km/s]
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+10000.0                 T [K]
+5.0e-9                  bx [T]
+0.0                     by [T]
+0.0                     bz [T]
+0.0                     ex [V/m]
+0.0                     ey [V/m]
+0.0                     ez [V/m]
+
+#SOURCE
+T                       useSource
+
+#BODYSIZE
+3.0e6                   radius        Mars-like planet radius
+
+#EXOSPHERE
+Chamberlain             typeProfile
+3                       nComponent
+1.0e10                  n0            H component
+2000.0e3                H0
+300.0                   T0
+0.0                     k0
+5.0e10                  n0            O component
+300.0e3                 H0
+300.0                   T0
+0.0                     k0
+5.0e10                  n0            CO2 component
+200.0e3                 H0
+300.0                   T0
+0.0                     k0
+
+#CHEMISTRY
+10                      nReactions
+0                       reactantIon   R1: CO2 + hv -> CO2+ + e-
+4                       productIon
+2                       neutralComp
+1                       rateType
+2.47e-2                 rateCoef
+0.0                     tempExp
+0.0                     refTemp
+0                       reactantIon   R2: O + hv -> O+ + e-
+2                       productIon
+1                       neutralComp
+1                       rateType
+8.89e-3                 rateCoef
+0.0                     tempExp
+0.0                     refTemp
+4                       reactantIon   R3: CO2+ + O -> O2+ + CO
+3                       productIon
+1                       neutralComp
+0                       rateType
+1.64e-5                 rateCoef
+0.0                     tempExp
+0.0                     refTemp
+2                       reactantIon   R4: O+ + CO2 -> O2+ + CO
+3                       productIon
+2                       neutralComp
+0                       rateType
+1.1e-4                  rateCoef
+0.0                     tempExp
+0.0                     refTemp
+4                       reactantIon   R5: CO2+ + O -> O+ + CO2
+2                       productIon
+1                       neutralComp
+0                       rateType
+9.60e-6                 rateCoef
+0.0                     tempExp
+0.0                     refTemp
+3                       reactantIon   R6: O2+ + e- -> O + O
+0                       productIon
+-1                      neutralComp
+0                       rateType
+7.38e-3                 rateCoef
+0.0                     tempExp
+0.0                     refTemp
+4                       reactantIon   R7: CO2+ + e- -> CO + O
+0                       productIon
+-1                      neutralComp
+0                       rateType
+3.1e-2                  rateCoef
+0.0                     tempExp
+0.0                     refTemp
+1                       reactantIon   R8: H+ + O -> O+ + H
+2                       productIon
+1                       neutralComp
+0                       rateType
+5.084e-5                rateCoef
+0.0                     tempExp
+0.0                     refTemp
+2                       reactantIon   R9: O+ + H -> H+ + O
+1                       productIon
+0                       neutralComp
+0                       rateType
+6.4e-5                  rateCoef
+0.0                     tempExp
+0.0                     refTemp
+0                       reactantIon   R10: H + hv -> H+ + e-
+1                       productIon
+0                       neutralComp
+1                       rateType
+5.58e-3                 rateCoef
+0.0                     tempExp
+0.0                     refTemp
+
+#TIMESTEPPING
+T                       useFixedDt
+0.1                     dt
+
+#NORMALIZATION
+1000.0                  lNormSI
+1.0e6                   uNormSI
+
+#MONITOR
+1                       dnReport
+
+#PARTICLES
+4                       nParticle per cell in X
+1                       nParticle per cell in Y
+1                       nParticle per cell in Z
+
+#COMOVING
+T                       solvePartInCoMov
+5                       nSmoothBackGroundU
+
+#UPWINDE
+T                       useUpwindE
+1                       limiterTheta
+
+#UPWINDB
+T                       doSmoothB
+1                       theta
+
+#SMOOTHJ
+T
+1
+0.5
+
+#EFIELDSOLVER
+1.0e-6                  EFieldTol
+200                     EFieldIter
+
+#DIVE
+T
+1
+
+#SAVEPLOT
+1                       nPlot
+z=0 fluid ascii planet    plotString
+-1                      dn
+1.0                     dt
+1                       dx
+
+#STOP
+20                      MaxIter
+1.0                     TimeMax
+
+#RUN

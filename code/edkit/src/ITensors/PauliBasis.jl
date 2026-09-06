@@ -1,0 +1,467 @@
+#---------------------------------------------------------------------------------------------------
+"""
+Convert doubled local Hilbert space coordinates to Pauli-basis coordinates:
+    T[i,:,:] = σⁱ/2
+The orthogonality is from Tr[σⁱσʲ] = 2δⁱʲ. 
+The expectation ⟨ψ|σᵅ|ψ⟩ in the tranfermatrix is 
+    Bᵅ = Ā⋅σᵅ⋅A / 2
+
+This tensor is used by the Pauli-MPS/MPO conversion routines.
+"""
+const PAULI_CONVERSION = let T = zeros(ComplexF64, 4, 2, 2)
+    for i in 1:4 
+        T[i, :, :] += conj.(PAULI[i]) / 2
+    end
+    T
+end
+#---------------------------------------------------------------------------------------------------
+"""
+Reverse Pauli conversion:
+    ∑ᵢ T⁻¹[:,:,i]⊗T[i,:,:] = δ[2×2,2×2]
+
+This tensor maps Pauli-basis coordinates back to operator-space coordinates.
+"""
+const PAULI_INV_CONV = let T = zeros(ComplexF64, 2, 2, 4)
+    for i in 1:4 
+        T[:, :, i] += PAULI[i]
+    end
+    T
+end
+#---------------------------------------------------------------------------------------------------
+export pauli
+"""
+    pauli(i, L=1) 
+
+Return ith (size-L) Pauli matrices.
+
+Arguments:
+- `i`: 1-based Pauli-string index in base-4 ordering.
+- `L`: number of physical qubits/sites.
+
+Returns:
+- The dense matrix for the corresponding Pauli string.
+"""
+function pauli(i::Integer, L::Integer=1) 
+    inds = digits(i-1, base=4, pad=L) |> reverse!
+    σ(inds)
+end
+#---------------------------------------------------------------------------------------------------
+"""
+pauli(Is::AbstractVector{<:Number})
+
+Return a matrix from Pauli coefficients
+
+Real coefficients are the default Hermitian/operator-space convention used by
+`pauli_list(A)`. Complex coefficients are also accepted for reconstructing
+general non-Hermitian operators, for example from `pauli_list(A, ComplexF64)`.
+
+Arguments:
+- `Is`: coefficient vector in the Pauli-product basis.
+
+Returns:
+- The dense operator reconstructed from those coefficients.
+"""
+function pauli(Is::AbstractVector{<:Number})
+    L = round(Integer, log(4, length(Is)))
+    @assert 4^L == length(Is)
+    out = zeros(promote_type(ComplexF64, eltype(Is)), 2^L, 2^L)
+    for i in eachindex(Is)
+        out += Is[i] * pauli(i, L)
+    end
+    out
+end
+#---------------------------------------------------------------------------------------------------
+"""
+Compute `tr(A * B)` when `A` is stored as a sparse Pauli matrix.
+
+This is an internal helper used while converting dense matrices into Pauli-basis
+coefficient lists.
+"""
+function pauli_mtr(A::SparseMatrixCSC, B::AbstractMatrix)
+    rows, vals = rowvals(A), nonzeros(A)
+    res = zero(promote_type(eltype(A), eltype(B)))
+    for j in axes(A, 2)
+        val, row = vals[j], rows[j]
+        res += val * B[j, row]
+    end
+    #res = tr(A * B)
+    res
+end
+#---------------------------------------------------------------------------------------------------
+export pauli_list
+"""
+    pauli_list(A)
+
+Return pauli components of a 2×2 matrix `A`.
+
+More generally, `A` may act on `n` qubits as long as its dimension is `2^n`.
+
+Returns:
+- The coefficient vector of `A` in the normalized Pauli-product basis.
+"""
+function pauli_list(A::AbstractMatrix, T::DataType=Float64)
+    n = round(Integer, log(2, size(A, 1)))
+    N = 2^n
+    @assert N == size(A, 1) "dimension D = $(size(A, 1)) not right."
+    list = Vector{T}(undef, N^2)
+    for i in eachindex(list)
+        c = pauli_mtr(pauli(i, n), A) / N 
+        list[i] = T <: Real ? real(c) : c 
+    end
+    return list
+end
+#---------------------------------------------------------------------------------------------------
+"""
+    pauli_op_mat(f)
+
+Matrix representation for f(ρ).
+
+Arguments:
+- `f`: linear map on operators.
+- `L`: number of sites in operator space.
+
+Returns:
+- The Pauli-basis matrix representation of the superoperator `f`.
+"""
+function pauli_op_mat(f, L::Integer=1)
+    N = 4^L
+    mat = Matrix{Float64}(undef, N, N)
+    for i in axes(mat, 2)
+        mat[:, i] = f(pauli(i, L)) |> pauli_list
+    end
+    return mat
+end
+
+#---------------------------------------------------------------------------------------------------
+"""
+    dissipation(L,ρ)
+
+Compute dissipation
+    D[L]ρ = L⋅ρ⋅L⁺ - 1/2{L⁺L,ρ}
+Returns:
+- The matrix `D[L](ρ)`.
+"""
+function dissipation(L::AbstractMatrix, ρ::AbstractMatrix)
+    Lρ = L * ρ
+    Ld = L'
+    LLρ = Ld * Lρ
+    return Lρ * Ld - (LLρ + LLρ') / 2
+end
+#---------------------------------------------------------------------------------------------------
+"""
+    commutation(L,ρ)
+
+Compute commutation
+    -i[H, ρ]
+
+Returns:
+- The matrix `-i[H, ρ]`.
+"""
+function commutation(H::AbstractMatrix, ρ::AbstractMatrix)
+    Hρ = -1im * H * ρ 
+    Hρ + Hρ'
+end
+#---------------------------------------------------------------------------------------------------
+export dissipation_mat
+"""
+    dissipation_mat(L)
+
+Matrix representation for D[L].
+
+Returns:
+- The Pauli-basis matrix of the dissipator generated by jump operator `L`.
+"""
+function dissipation_mat(L::AbstractMatrix)
+    n = round(Integer, log(2, size(L, 1)))
+    @assert 2^n == size(L, 1) "dimension D = $(size(L, 1)) not right."
+    f = ρ -> dissipation(L,ρ)
+    pauli_op_mat(f, n)
+end
+#---------------------------------------------------------------------------------------------------
+export commutation_mat
+"""
+    commutation_mat(L)
+
+Matrix representation for -i[H,⋅].
+
+Returns:
+- The Pauli-basis matrix of the commutator superoperator generated by `H`.
+"""
+function commutation_mat(H::AbstractMatrix)
+    n = round(Integer, log(2, size(H, 1)))
+    @assert 2^n == size(H, 1) "dimension D = $(size(H, 1)) not right."
+    f = ρ -> commutation(H,ρ)
+    pauli_op_mat(f, n)
+end
+
+
+#---------------------------------------------------------------------------------------------------
+# Define Pauli basis
+#---------------------------------------------------------------------------------------------------
+ITensors.space(::SiteType"Pauli") = 4
+
+ITensors.state(::StateName"I", ::SiteType"Pauli") = [1, 0, 0, 0]
+ITensors.state(::StateName"X", ::SiteType"Pauli") = [0, 1, 0, 0]
+ITensors.state(::StateName"Y", ::SiteType"Pauli") = [0, 0, 1, 0]
+ITensors.state(::StateName"Z", ::SiteType"Pauli") = [0, 0, 0, 1]
+ITensors.state(::StateName"Up", ::SiteType"Pauli") = [1/2, 0, 0, 1/2]
+ITensors.state(::StateName"Dn", ::SiteType"Pauli") = [1/2, 0, 0, -1/2]
+#---------------------------------------------------------------------------------------------------
+# MPS/MPO
+#---------------------------------------------------------------------------------------------------
+"""
+Construct the auxiliary-space symmetrizer used when converting doubled tensor
+networks into Pauli-space tensor networks.
+"""
+function _umat(n::Int64)
+    B1 = ParityBasis(L=2, p=1, base=n)      # symmetric basis 
+    B2 = ParityBasis(L=2, p=-1, base=n)     # anti-symmetrix basis 
+    n1, n2 = size(B1, 1), size(B2, 1)
+    out = zeros(ComplexF64, n^2, n^2)       # whole space
+    for i in 1:n1                           # fill in the element in symmetric space 
+        a = 1 / change!(B1, i)              # normalization 
+        out[index(B1.dgt; base=n), i] += a 
+        reverse!(B1.dgt)                    # symmetrization
+        out[index(B1.dgt; base=n), i] += a 
+    end
+    for i in 1:n2                           # fill in the element in the anti-symmetric space 
+        j = n1 + i 
+        b = 1im / change!(B2, i) 
+        out[index(B2.dgt; base=n), j] += b
+        reverse!(B2.dgt)
+        out[index(B2.dgt; base=n), j] -= b
+    end
+    out
+end
+const lru_umat = LRU{Int64, Matrix{ComplexF64}}(maxsize=30)
+"""
+Memoized wrapper around [`_umat`](@ref).
+"""
+function cached_umat(n::Int64)
+    get!(lru_umat, n) do
+        _umat(n)
+    end
+end
+#---------------------------------------------------------------------------------------------------
+export mps2pmps
+"""
+Convert a pure-state MPS to a Pauli-basis MPS representation of the
+corresponding operator-space object.
+
+Arguments:
+- `ψ`: input MPS.
+- `S`: Pauli site indices.
+
+Returns:
+- A Pauli-space `MPS`.
+"""
+function mps2pmps(ψ::MPS, S::AbstractVector)
+    s = siteinds(ψ)
+    L = length(s)
+    psi = MPS(L)
+    
+    # create doubled tensor
+    psi[1] = begin
+        l1 = linkind(ψ, 1)
+        Cl = combiner(l1, l1')
+        C = ITensor(PAULI_CONVERSION, S[1], s[1]', s[1])
+        # Bᵅ = Ā⋅σᵅ⋅A / 2
+        ψ[1]' * conj(ψ[1]) * C * Cl
+    end
+    
+    for i in 2:L-1 
+        li = linkind(ψ, i)
+        Cl2 = combiner(li, li')
+        C = ITensor(PAULI_CONVERSION, S[i], s[i]', s[i])
+        psi[i] = ψ[i]' * conj(ψ[i]) * C * Cl * Cl2
+        Cl = Cl2
+    end
+
+    psi[L] = begin
+        C = ITensor(PAULI_CONVERSION, S[L], s[L]', s[L])
+        ψ[L]' * conj(ψ[L]) * C * Cl
+    end
+
+    # symmetrize the doubled auxilliary space
+    for i in 1:L-1
+        n = linkdim(ψ, i)
+        u = cached_umat(n)
+        l0 = commonind(psi[i], psi[i+1])
+        l = Index(n^2, tags="Link,l=$i")
+        U = ITensor(u, l0, l)
+        Ud = ITensor(u', l, l0)
+        psi[i] = psi[i] * U |> real
+        psi[i+1] = Ud * psi[i+1]
+    end
+    psi[L] = real(psi[L])
+    psi
+end
+#---------------------------------------------------------------------------------------------------
+export pmps2mpo
+"""
+    pmps2mpo(ψ, s)
+
+Convert Pauli MPS to MPO.
+"""
+function pmps2mpo(ψ::MPS, s::AbstractVector)
+    L = length(s)
+    S = siteinds(ψ)
+    @assert length(ψ) == L 
+    O = MPO(L) 
+    for i in eachindex(s)
+        si = s[i]
+        C = ITensor(PAULI_INV_CONV, si', si, S[i])
+        O[i] = C * ψ[i]
+    end
+    O
+end
+#---------------------------------------------------------------------------------------------------
+
+export mpo2pmpo
+"""
+Convert MPO to Pauli MPO
+
+Returns:
+- The Pauli-basis MPO corresponding to the ordinary MPO `H`.
+"""
+function mpo2pmpo(H::MPO, S::AbstractVector)
+    s = [e[2] for e in siteinds(H)]
+    L = length(s)
+    PH = MPO(L)
+    
+    # create doubled tensor
+    PH[1] = begin
+        l1 = linkind(H, 1)
+        Cl = combiner(l1, l1'')
+        C = ITensor(PAULI_CONVERSION, S[1]', s[1]''', s[1])
+        C2 = ITensor(PAULI_INV_CONV, s[1]'', s[1]', S[1])
+        H[1]'' * H[1] * C * C2 * Cl
+    end
+    
+    for i in 2:L-1 
+        li = linkind(H, i)
+        Cl2 = combiner(li, li'')
+        C = ITensor(PAULI_CONVERSION, S[i]', s[i]''', s[i])
+        C2 = ITensor(PAULI_INV_CONV, s[i]'', s[i]', S[i])
+        PH[i] = H[i]'' * H[i] * C * C2 * Cl * Cl2
+        Cl = Cl2
+    end
+
+    PH[L] = begin
+        C = ITensor(PAULI_CONVERSION, S[L]', s[L]''', s[L])
+        C2 = ITensor(PAULI_INV_CONV, s[L]'', s[L]', S[L])
+        H[L]'' * H[L] * C * C2 * Cl
+    end
+
+    #symmetrize the doubled auxilliary space
+    for i in 1:L-1
+        n = linkdim(H, i)
+        u = cached_umat(n)
+        l0 = commonind(PH[i], PH[i+1])
+        l = Index(n^2, tags="Link,l=$i")
+        U = ITensor(u, l0, l)
+        Ud = ITensor(u', l, l0)
+        PH[i] = PH[i] * U |> real
+        PH[i+1] = Ud * PH[i+1]
+    end
+    PH[L] = real(PH[L])
+
+    PH
+end
+
+#---------------------------------------------------------------------------------------------------
+# Function on Pauli basis
+#---------------------------------------------------------------------------------------------------
+"""
+Return the operator norm (N = |⟨I|ρ⟩|).
+
+The renormed (ρ/N = I + ⋯) is the correct density matrix. 
+"""
+function density_norm(ψ::MPS)
+    s = siteinds(ψ)
+    V = ITensor(1.0)
+    for j in eachindex(s)
+        V *= ψ[j] * state(s[j], 1)
+    end
+    scalar(V) |> abs
+end
+#---------------------------------------------------------------------------------------------------
+"""
+    density_expect(ψ::MPS, o::Integer; normalize=true)
+
+Compute one-site expectation values of the Pauli-basis label `o` across all
+sites of a Pauli-space MPS.
+
+Returns:
+- A vector of expectation values, optionally normalized by the identity-sector
+  amplitude.
+"""
+function density_expect(ψ::MPS, o::Integer; normalize::Bool=true)
+    s = siteinds(ψ)
+    L = let V = ITensor(1.0)
+        l = Vector{ITensor}(undef, length(s)); l[1] = V
+        for j in 2:length(s) 
+            V *= ψ[j-1] * state(s[j-1], 1)
+            l[j] = V
+        end
+        l
+    end
+    R = let V = ITensor(1.0)
+        l = Vector{ITensor}(undef, length(s)); l[end] = V
+        for j in length(s)-1:-1:1
+            V *= ψ[j+1] * state(s[j+1], 1)
+            l[j] = V
+        end
+        l
+    end
+    out = Vector{Float64}(undef, length(s))
+    for j in eachindex(s)
+        V = ψ[j] * state(s[j], o)
+        out[j] = L[j] * V * R[j] |> scalar |> real 
+    end
+    if normalize
+        N = L[2]*R[1] |> scalar |> real 
+        out ./= N
+    end
+    out
+end
+#---------------------------------------------------------------------------------------------------
+"""
+    density_expect(ψ::MPS, h::AbstractMatrix)
+
+Compute translationally local expectation values of a dense local operator `h`
+from a Pauli-space MPS.
+"""
+function density_expect(ψ::MPS, h::AbstractMatrix)
+    n = round(Int, log(2, size(h, 1)))
+    hl = pauli_list(h)
+    s = siteinds(ψ)
+    L = let V = ITensor(1.0)
+        l = Vector{ITensor}(undef, length(s)); l[1] = V
+        for j in 2:length(s) 
+            V *= ψ[j-1] * state(s[j-1], 1)
+            l[j] = V
+        end
+        l
+    end
+    R = let V = ITensor(1.0)
+        l = Vector{ITensor}(undef, length(s)); l[end] = V
+        for j in length(s)-1:-1:1
+            V *= ψ[j+1] * state(s[j+1], 1)
+            l[j] = V
+        end
+        l
+    end
+    out = Vector{Float64}(undef, length(s)-n+1)
+    for j in eachindex(out)
+        V = L[j]
+        for k in j:j+n-1 
+            V = V * ψ[k]
+        end
+        V = V * R[j+n-1]
+        vec = Array(V, s[j+n-1:-1:j]...)
+        list = reshape(vec, :)
+        out[j] = dot(list, hl)
+    end
+    out
+end
