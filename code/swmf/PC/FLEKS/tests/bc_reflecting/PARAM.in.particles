@@ -1,0 +1,123 @@
+#DESCRIPTION
+Reflecting-wall particle-boundary-condition test (pure particle push).
+
+Electromagnetic field solver is turned OFF (solveEM=F, useHybridPIC=F), so the
+fields stay frozen at the uniform initial state and the run reduces to the
+particle pusher.  This isolates the REFLECTING particle boundary condition --
+the field solver is intentionally disabled because a flowing plasma crossing a
+conducting wall would build an inconsistent motional (u x B) electric field.
+
+A single kinetic ion species (q=+1, m=1) streams toward the +x face (ux > 0).
+Both x faces are REFLECTING particle boundaries: a particle crossing the face
+has its normal velocity flipped and its position mirrored back inside, so
+particle number and kinetic energy are (ideally) conserved.
+
+The bulk flow has a small oblique component (uy != 0) so BOTH normal and oblique
+incidence are exercised in one run; edge cases (fast particles crossing the
+wall in a single step) are covered by the large bulk velocity.  y and z are
+thin (fake-2D/1D) and periodic.
+
+#INITFROMSWMF
+F                       initFromSWMF
+
+#GEOMETRY
+-3.2                    xMin  [code units; Lx = 6.4 d_i]
+ 3.2                    xMax
+-0.05                   yMin
+ 0.05                   yMax
+-0.05                   zMin
+ 0.05                   zMax
+
+#NCELL
+8                       nCellX
+1                       nCellY
+1                       nCellZ
+
+#MAXBLOCKSIZE
+16                      maxBlockSizeX
+1                       maxBlockSizeY
+1                       maxBlockSizeZ
+
+#PERIODICITY
+F                       isPeriodicX
+T                       isPeriodicY
+T                       isPeriodicZ
+
+#FIELDBOXBOUNDARY
+conducting              fieldBoxBoundaryLo
+conducting              fieldBoxBoundaryHi
+periodic                fieldBoxBoundaryLo
+periodic                fieldBoxBoundaryHi
+periodic                fieldBoxBoundaryLo
+periodic                fieldBoxBoundaryHi
+
+#PARTICLEBOXBOUNDARY
+0                       iSpecies
+reflect                 particleBoxBoundaryLo  (x)
+reflect                 particleBoxBoundaryHi
+periodic                particleBoxBoundaryLo  (y)
+periodic                particleBoxBoundaryHi
+periodic                particleBoxBoundaryLo  (z)
+periodic                particleBoxBoundaryHi
+
+Electromagnetic field solver OFF: the fields are frozen at the uniform initial
+state and the run exercises only the particle pusher + boundary reflection.
+#SOLVEEM
+F                       solveEM
+
+#HYBRIDPIC
+F                       useHybridPIC
+
+Single kinetic ion species (q = m = 1).
+#PLASMA
+1                       nSpecies
+1.0                     mass
+1.0                     charge
+
+#UNIFORMSTATE
+5.0                     rho [amu/cc]   Species 0: ions
+80.0                    ux [km/s]      bulk flow toward +x wall (U_code = 0.8)
+4.0                     uy [km/s]      small oblique component (~2.9 deg)
+0.0                     uz [km/s]
+10000.0                 T [K]
+0.0                     bx [T]
+0.0                     by [T]
+5.2195e-9               bz [T]         guide field, tangential to the x-wall
+0.0                     ex [V/m]
+0.0                     ey [V/m]
+0.0                     ez [V/m]
+
+#TIMESTEPPING
+T                       useFixedDt
+0.02                    dt
+
+#NORMALIZATION
+1.0e5                   lNormSI   [m]
+1.0e5                   uNormSI   [m/s]   speed of light cLight_SI = uNormSI
+
+#MONITOR
+50                      dnReport
+
+#SAVELOG
+1                       dnSavePic
+1                       dnSavePT
+
+#PARTICLES
+100                     npcelx
+1                       npcely
+1                       npcelz
+
+#SAVEPLOT
+1                       nPlot
+z=0 var ascii pic       plotString
+-1                      dn
+10.0                    dt
+1                       dx
+rhoS0 uxS0 uyS0 uzS0 Bx By Bz Ex Ey Ez   plotVar
+
+#STOP
+-1                      MaxIter
+12.0                    TimeMax   (transit = Lx/U_code = 6.4/0.8 = 8; 12 covers a
+                                  full transit + one reflection)
+
+#RUN
