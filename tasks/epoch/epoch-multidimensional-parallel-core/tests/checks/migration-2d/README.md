@@ -40,8 +40,9 @@ build dominates the wall time and is reported separately as
 constant `dens` by `(1 + 1e-15)`, six units in the last place of the binary64
 the dumps carry. Every pseudoparticle weight changes in its last bits, so
 deposition and the field advance take a different round-off path; the positions
-do not move, which is what leaves the integer per-cell counts comparable
-exactly.
+do not move, so the two runs produce identical per-cell counts (they are
+nonetheless graded as conserved global totals, not cell by cell; see "Policy
+under revision 5.10.2" below).
 
 A different rank layout cannot be the variant here. EPOCH seeds its random
 generator with 7842432 plus the rank number and every rank loads its own
@@ -63,12 +64,15 @@ definition.
 
 ## The pass policy
 
-The per-species pseudoparticle count per cell and the rank partition ladder are
-compared exactly. Both are integers -- one from EPOCH's integer partition rule,
-the other from flooring each particle into a cell with no halo summation -- and
-they are the sharpest statement this check can make: if a particle is lost at a
-seam, duplicated across a corner, or kept a step too long by the rank that
-should have handed it on, one of these arrays changes by a whole particle.
+The rank partition ladder is compared exactly: it is an integer set once from
+nprocx and nprocy at parse time and never read off a particle position. The
+per-species pseudoparticle count per cell is *not* compared cell by cell -- a
+legitimate target can floor a near-seam particle into the neighbouring cell
+without losing it -- so each array is reduced to its exact global total per
+side, which must agree exactly. If a particle is lost at a seam, duplicated, or
+kept a step too long by the rank that should have handed it on, that total
+changes by a whole particle, and the density arrays below move with it. See
+"Policy under revision 5.10.2" for the full argument.
 
 The floating-point arrays are compared under absolute bounds of 1e-11 V/m on
 Ex, 1e-20 A/m^2 on Jx, 1e-24 C/m^3 on the charge density and 1e-05 m^-3 on the

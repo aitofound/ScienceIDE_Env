@@ -79,11 +79,16 @@ definition.
 
 ## The pass policy
 
-The per-species pseudoparticle count per cell and the rank partition ladder are
-compared exactly, as integers. With two pseudoparticles per cell per species, a
-single particle delivered to the wrong rank, dropped, or duplicated at an edge
-or a corner is a change of fifty per cent in that cell's count -- there is
-nothing for a tolerance to do here except weaken the test.
+The rank partition ladder is compared exactly: it is an integer set once from
+nprocx, nprocy and nprocz at parse time and never read off a particle position.
+The per-species pseudoparticle count per cell is *not* compared cell by cell --
+a legitimate target can floor a near-face particle into the neighbouring cell
+without losing it -- so each array is reduced to its exact global total per
+side, which must agree exactly. With two pseudoparticles per cell per species,
+a single particle delivered to the wrong rank, dropped, or duplicated is a
+whole particle out of that total and a change of fifty per cent in the cell's
+count, which the density arrays below carry. See "Policy under revision 5.10.2"
+for the full argument.
 
 The floating-point arrays are compared under absolute bounds of 1e-12 V/m on
 Ex, 1e-20 A/m^2 on Jx and 1e-05 m^-3 on the number densities. They catch the
