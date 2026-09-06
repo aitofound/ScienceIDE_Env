@@ -1,0 +1,111 @@
+#DESCRIPTION
+Free-stream (uniform-equilibrium) regression test of the HYBRID field solver
+(generalized Ohm's law + Faraday) with the Hall term OFF: solveEM=F,
+useHybridPIC=T, useHallTerm=F.
+
+A perfectly uniform plasma is the exact steady solution, so this validates that
+the hybrid convection-only field advance keeps a uniform state steady.  Shares
+the identical grid, plasma, normalization, timestepping, and output with
+PARAM.in (full PIC), differing only in the field-solver block.
+
+#INITFROMSWMF
+F                       initFromSWMF
+
+#GEOMETRY
+-3.2                    xMin  [code units; Lx = 6.4 d_i]
+ 3.2                    xMax
+-0.05                   yMin
+ 0.05                   yMax
+-0.05                   zMin
+ 0.05                   zMax
+
+#NCELL
+32                      nCellX
+1                       nCellY
+1                       nCellZ
+
+#MAXBLOCKSIZE
+64                      maxBlockSizeX
+1                       maxBlockSizeY
+1                       maxBlockSizeZ
+
+#PERIODICITY
+T                       isPeriodicX
+T                       isPeriodicY
+T                       isPeriodicZ
+
+Standard Maxwell/GMRES solver disabled; use the Ohm's-law + Faraday hybrid
+field advance instead.
+#SOLVEEM
+F                       solveEM
+
+#HYBRIDPIC
+T                       useHybridPIC
+
+#HALLTERM
+F                       useHallTerm
+
+#RESISTIVITY
+0.0                     etaResistivity  [m^2/s, SI magnetic diffusivity]
+
+#ELECTRONTEMPERATURE
+0.0                     electronTemperature  [eV]
+1.0                     electronGamma
+1.0                     electronDensity0
+
+#BSUBCYCLE
+1                       nBSubcycle
+
+Single kinetic ion species (q = m = 1); the electron is an implicit
+neutralizing massless fluid, so no electron particle species is present.
+#PLASMA
+1                       nS
+1.0                     mass
+1.0                     charge
+
+#UNIFORMSTATE
+5.0                     rho [amu/cc]   Species 0: ions (n = 5 /cc)
+20.0                    ux [km/s]      uniform bulk flow along guide field (U_code = 0.2)
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+10000.0                 T [K]
+1.0439e-8               bx [T]       uniform guide field Bx0 (B_code ~ 1)
+0.0                     by [T]
+0.0                     bz [T]
+0.0                     ex [V/m]
+0.0                     ey [V/m]
+0.0                     ez [V/m]
+
+#TIMESTEPPING
+T                       useFixedDt
+0.02                    dt
+
+#NORMALIZATION
+1.0e5                   lNormSI   [m]  ~ d_i so d_i ~ 1 in code units
+1.0e5                   uNormSI   [m/s] tNorm = 1 s; sets cLight_SI = uNormSI
+
+#MONITOR
+50                      dnReport
+
+#SAVELOG
+1                       dnSavePic
+1                       dnSavePT
+
+#PARTICLES
+2000                    npcelx
+1                       npcely
+1                       npcelz
+
+#SAVEPLOT
+1                       nPlot
+z=0 fluid ascii pic     plotString
+-1                      dn
+10.0                    dt
+1                       dx
+Bx By Bz Ex Ey Ez       varName
+
+#STOP
+-1                      MaxIter
+10.0                    TimeMax   ~1.6 ion gyroperiods (stability)
+
+#RUN
