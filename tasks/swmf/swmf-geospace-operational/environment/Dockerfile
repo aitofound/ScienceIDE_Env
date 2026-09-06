@@ -8,8 +8,8 @@ FROM debian:bookworm-slim@sha256:1caf1c703c8f7e15dcf2e7769b35000c764e6f50e4d7401
 # Keep this apt-get line identical to the one in tests/Dockerfile.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential python3 python3-numpy ca-certificates \
+    gfortran perl csh openmpi-bin libopenmpi-dev gzip \
     && rm -rf /var/lib/apt/lists/*
-# <FILL: append the module's build and run dependencies to the apt-get line above (compilers, MPI, FFTW, HDF5, ...), then delete this line>
 
 COPY code/swmf/ /workspace/code/
 COPY tests/ /workspace/tests/
