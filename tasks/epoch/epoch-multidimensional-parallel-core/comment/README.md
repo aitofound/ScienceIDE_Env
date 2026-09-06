@@ -514,11 +514,38 @@ measured on 19/19 (8 bit-identical). verifier (nominal-vs-variant) 7.2 s.
 No `expected_runtime_s` needed a change: every check's declared value already
 covers this round's measured run-only time with the same or greater headroom
 as run1b/run2 (the per-check `check_seconds` in `comment/pipeline/
-self-validation.json` are the round-2 record). This committed record is
-run3's; a run4 follows in a fresh root purely to confirm nothing moved after
-this file and the seven checks' prose were finalised from run3's own numbers
-(the same decks, same builds -- no number is expected to move, and none did:
-see the run4 line below).
+self-validation.json` are the round-2 record). run3's numbers are the ones
+this file and the seven redesigned checks' prose were written from; a run4
+followed in a fresh root to confirm nothing moved once that prose was
+finalised.
 
-RUN4_LINE
+**Run 4, the committed record (2026-09-06).** Same host, same consent, same
+pinned source and decks; run root
+`/mnt/data/huangzesen/sab-runs/epoch-multidimensional-parallel-core-20260905/run4/`,
+log `~/work/sciaccelbench/epoch-multidimensional-parallel-core-20260905/run4.log`,
+contract fingerprint
+`48d9bb6d0dd54fd61988b7f399b333bd6a3f8b0743f65867ed15715777152a43`. That
+fingerprint differs from run3's for one reason only: `contract_fingerprint`
+hashes every file under `tests/`, and each selfcheck rewrites the `evidence`
+block of all 19 `rubric.json` with its own timestamps. No contract file
+changed between run3 and run4 -- verified by diffing the worker's leaf tree
+against the committed tree file by file, which came back identical outside
+the rubrics' `evidence.*.at` strings and the (unfingerprinted) `comment/`
+directory. started 2026-09-06T11:30:46Z, finished 2026-09-06T12:47:45Z;
+solve walls 1891.6 s (nominal), 1602.8 s (variant), 1116.1 s (altbuild);
+suite run-only time 148.0 s against the 900 s guidance, source builds
+1738.0 s, verifier (nominal versus variant) 4.4 s. SELF-VALIDATION PASSED:
+19 checks, reward 1.0, altbuild measured on 19 of 19 (8 bit-identical).
+Every `floor`, `floor_bound_fraction`, `self_validation_spread`,
+`self_validation_bound_fraction`, `variant_preview_spread` and altbuild
+`distance`/`identical` verdict in run4 is numerically identical to run3's,
+check by check and field by field -- so no number anywhere in this file, in
+any warrant, README or in `task.toml` moved, and none needed correcting.
+Against run3 the nominal solve wall moved +1.0 percent (1872.4 to 1891.6 s),
+the variant -21.4 percent (2038.0 to 1602.8 s) and the altbuild -41.2 percent
+(1898.8 to 1116.1 s), while the suite's own run-only time moved 140.0 to
+148.0 s and the builds 1729.0 to 1738.0 s: shared-host load, not a change in
+the work done. Wall time is not graded. This is
+the record committed on the branch and the one the review presentation was
+generated from.
 
