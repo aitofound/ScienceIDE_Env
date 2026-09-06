@@ -16,4 +16,4 @@ The gate only bounds cross-format agreement to within 0.01 on a reshaped scalar 
 
 ## Evidence
 
-not yet measured; supplied by the altbuild solve at the next selfcheck The nominal-versus-variant self-validation spread is recorded into this check's `rubric.json` after each selfcheck run.
+nominal solve versus the run.sh altbuild solve of this same check (the pinned source rebuilt with -Csetup-args=-Doptimization=0 -Csetup-args=-Dbuildtype=debug), compared by this check's validate.py; both solves and the comparison are run by `sab.py task selfcheck --task tasks/pyamg/classical-amg`, which writes the distance into evidence.floor. The nominal-versus-variant self-validation spread is recorded into this check's `rubric.json` after each selfcheck run.
