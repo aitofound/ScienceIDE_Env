@@ -28,8 +28,8 @@ local_disc_galerkin_diffusion, alongside the `poisson` and `advection_2d` genera
 
 Remaining official supply this revision did **not** package, for a future round: the `elasticity`,
 `linear_elasticity`, `diffusion`, `gauge_laplacian` and `stokes` gallery generators. `linear_elasticity` (BSR
-blocks), `gauge_laplacian` (complex Hermitian) and `stokes` (indefinite saddle point) would each add a genuinely
-new operator class; they are named here rather than packaged because each needs its own measured window and this
+blocks), `gauge_laplacian` (complex) and `stokes` (a saddle-point system) would each add a genuinely new operator
+class -- those three descriptions are pyamg's own gallery documentation, not measurements taken here; they are named here rather than packaged because each needs its own measured window and this
 revision already carries three new checks whose windows were measured from scratch.
 
 **One problem per check, sized to the method's class.** SPD paths get 2-D/3-D `poisson` grids and the shipped `unit_square`,
