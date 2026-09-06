@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "pin": "25b9caab93dc809d2d5580781c6bff31f185ebf8",
+  "reviewed_on": "2026-09-06",
+  "policy": "Preserve production source and notebook cell sources; retain data only with identified publisher terms and attribution; enumerate data-only omissions and cleared notebook outputs. This is not an exact full-tree import.",
+  "groups": [
+    {
+      "id": "basic-map",
+      "paths": [
+        "etc/sealev_boundary/moz_06min.tar.gz"
+      ],
+      "disposition": "retain",
+      "license": "CC-BY-4.0 (map data); Apache-2.0 (embedded source files)",
+      "evidence": [
+        "https://global-hydrodynamics.github.io/CaMa-Flood/"
+      ],
+      "basis": "The publisher licenses basic river maps without 3- or 15-arcsecond grids under CC BY 4.0. This archive has a 6-arcminute map and 1-arcminute auxiliary grids. The embedded Fortran/scripts retain their Apache notices.",
+      "attribution": "CaMa-Flood basic river map, Dai Yamazaki and contributors, University of Tokyo; Yamazaki et al. (2011, 2013, 2019).",
+      "modifications": "None relative to the pinned upstream blob.",
+      "original_files": [
+        {
+          "path": "etc/sealev_boundary/moz_06min.tar.gz",
+          "bytes": 729970,
+          "sha256": "3fd2f461a8b51d3acb77960c431746cd83420d614a234dccd11c51041a4df196"
+        }
+      ]
+    },
+    {
+      "id": "era5-land",
+      "paths": [
+        "inp/download_ERA5/ori_japan/ERA5-Land_runoff_200001.nc",
+        "inp/download_ERA5/runoff_japan_nc/runoff_200001.nc"
+      ],
+      "disposition": "retain",
+      "license": "CC-BY-4.0",
+      "evidence": [
+        "https://cds.climate.copernicus.eu/datasets/reanalysis-era5-land?tab=overview",
+        "https://forum.ecmwf.int/t/cc-by-licence-to-replace-licence-to-use-copernicus-products-on-02-july-2025/13464"
+      ],
+      "basis": "The ERA5-Land catalogue identifies the CC-BY licence. The source NetCDF identifies ECMWF and records a 2026-05-19 conversion, after the announced 2025-07-02 licence change. The paired file is the upstream CaMa-Flood conversion.",
+      "attribution": "Copernicus Climate Change Service (C3S), ECMWF: ERA5-Land hourly data from 1950 to present, DOI 10.24381/cds.e2161bac. Contains modified Copernicus Climate Change Service information (2000); upstream processing in 2026.",
+      "modifications": "Upstream selected Japan and January 2000 and converted runoff into CaMa-Flood forcing; ScienceAccelBench preserves both blobs unchanged. Neither the European Commission nor ECMWF is responsible for use of this information.",
+      "original_files": [
+        {
+          "path": "inp/download_ERA5/ori_japan/ERA5-Land_runoff_200001.nc",
+          "bytes": 1087561,
+          "sha256": "446e5a73626fa57d8b801172c89c6f89fd59030bb679b369c9d70f42da6271bc"
+        },
+        {
+          "path": "inp/download_ERA5/runoff_japan_nc/runoff_200001.nc",
+          "bytes": 1385276,
+          "sha256": "342a4e41568bd3735e48234cdef9064319085460434cccab3c35dddc5577079f"
+        }
+      ]
+    },
+    {
+      "id": "mozambique-forcing-restart",
+      "paths": [
+        "etc/sealev_boundary/test_moz_06min_sealev.tar.gz"
+      ],
+      "disposition": "omit",
+      "license": "unresolved for the complete archive",
+      "evidence": [
+        "etc/sealev_boundary/preprocess_gtsm.ipynb",
+        "etc/sealev_boundary/test5-moz_06min_sealev.sh"
+      ],
+      "basis": "The archive combines ERA5 runoff, GTSM sea-level output and a model restart. The GTSM file has no global provenance/licence attributes. General ERA5 terms do not establish rights to the other two files.",
+      "effect": "The official sea-level example needs this archive from a separately authorised upstream checkout.",
+      "original_files": [
+        {
+          "path": "etc/sealev_boundary/test_moz_06min_sealev.tar.gz",
+          "bytes": 489152,
+          "sha256": "eac79762e9afe8d255fb04e84e54f54283cfd86d115105970d566cd3cd03f127"
+        }
+      ]
+    },
+    {
+      "id": "mekong-model-output",
+      "paths": [
+        "etc/upstream_inflow/data/list_points.txt",
+        "etc/upstream_inflow/data/mekong_inflow.csv",
+        "etc/upstream_inflow/gauge/UbonRatchathani_2000.txt",
+        "etc/upstream_inflow/gauge/UbonRatchathani_2001.txt",
+        "etc/upstream_inflow/gauge/Vientiane_2000.txt",
+        "etc/upstream_inflow/gauge/Vientiane_2001.txt"
+      ],
+      "disposition": "omit",
+      "license": "unresolved for these sample data",
+      "evidence": [
+        "etc/upstream_inflow/s02-extract_outflw_ori.sh",
+        "etc/upstream_inflow/x02-merge_gauge_csv.py"
+      ],
+      "basis": "The gauge headers identify out_ori/outflw files, and the extraction script turns model output into the CSV. These are model-generated series, not established observation records. The upstream code licence does not establish a separate sample-data grant.",
+      "effect": "The inflow workflow can regenerate these from a licensed model run; the source script remains.",
+      "original_files": [
+        {
+          "path": "etc/upstream_inflow/data/list_points.txt",
+          "bytes": 212,
+          "sha256": "64696048e1f9a7eeb4d0492779b264ace508bd78fb28a9dd445ff3068b4ee301"
+        },
+        {
+          "path": "etc/upstream_inflow/data/mekong_inflow.csv",
+          "bytes": 565533,
+          "sha256": "84e2206a6365cf88a1124c98d99da1ad7be5ea3f1856942f68833f0308355953"
+        },
+        {
+          "path": "etc/upstream_inflow/gauge/UbonRatchathani_2000.txt",
+          "bytes": 207964,
+          "sha256": "64c4ab53030b6f82ab16f483f0843b1e6770357a8dbe6837bba414dd5a094db1"
+        },
+        {
+          "path": "etc/upstream_inflow/gauge/UbonRatchathani_2001.txt",
+          "bytes": 203185,
+          "sha256": "19a3b81831613d3c7adfd30663d45995259a7ab71f93d0f3c8e09ef336477d5d"
+        },
+        {
+          "path": "etc/upstream_inflow/gauge/Vientiane_2000.txt",
+          "bytes": 218190,
+          "sha256": "6f58c1ef9356bb2c13b2ab479d7975458192bd22f1c0e3e477059faeab5bb940"
+        },
+        {
+          "path": "etc/upstream_inflow/gauge/Vientiane_2001.txt",
+          "bytes": 217382,
+          "sha256": "17f0f78542b2acfc909340a04d41fd319ab966c41154450be46b859d3f90bf0e"
+        }
+      ]
+    },
+    {
+      "id": "dummy-validation",
+      "paths": [
+        "etc/validation/txt_conus/discharge/MISSISSIPPI-MISSISSIPPI_STATION_1.txt",
+        "etc/validation/txt_conus/discharge/MISSISSIPPI-MISSISSIPPI_STATION_2.txt",
+        "etc/validation/txt_conus/discharge/MISSISSIPPI-MISSISSIPPI_STATION_3.txt"
+      ],
+      "disposition": "omit",
+      "license": "not independently established",
+      "evidence": [
+        "etc/validation/ReadMe.md"
+      ],
+      "basis": "The upstream README explicitly calls all sample observation data dummy because actual observations cannot be redistributed. This corrects the earlier review interpretation, but supplies no explicit data licence; this submission conservatively omits the three output tables.",
+      "effect": "The plotting/validation scripts remain; users provide their own licensed inputs and generated output.",
+      "original_files": [
+        {
+          "path": "etc/validation/txt_conus/discharge/MISSISSIPPI-MISSISSIPPI_STATION_1.txt",
+          "bytes": 29021,
+          "sha256": "414aecf10079c4c2f2400d78863f977d6570a4c04e88942d44daeaaf0e8e274a"
+        },
+        {
+          "path": "etc/validation/txt_conus/discharge/MISSISSIPPI-MISSISSIPPI_STATION_2.txt",
+          "bytes": 29021,
+          "sha256": "8d491f1085344d631b6c704fd03461fd4a4d05654a6815f4d461526d26983075"
+        },
+        {
+          "path": "etc/validation/txt_conus/discharge/MISSISSIPPI-MISSISSIPPI_STATION_3.txt",
+          "bytes": 29021,
+          "sha256": "b70dc39c24743da29a03907743b199d80ea58eb5ff7fb7a304717ed2b9675679"
+        }
+      ]
+    },
+    {
+      "id": "dam-allocation-output",
+      "paths": [
+        "map/src/src_param/dam_alloc_error.txt"
+      ],
+      "disposition": "omit",
+      "license": "unresolved GRanD-derived attributes",
+      "evidence": [
+        "map/src/src_param/dam_alloc_error.txt",
+        "https://www.globaldamwatch.org/grand",
+        "https://depts.washington.edu/saswe/grand/GRanD_Technical_Documentation_v1_1.pdf"
+      ],
+      "basis": "The table includes GRanD-labelled area/capacity and named dam records. No specific database version or redistribution grant accompanies this output; terms for a newer GDW/HydroATLAS product cannot license this older table by inference.",
+      "effect": "The dam preprocessing source remains; this diagnostic output is not a compile dependency.",
+      "original_files": [
+        {
+          "path": "map/src/src_param/dam_alloc_error.txt",
+          "bytes": 31141,
+          "sha256": "527bf03926ff099c1fe73cd2a590889a76acf4a57bb23e29f233e01441fc9070"
+        }
+      ]
+    }
+  ],
+  "other_assets": {
+    "documentation": "Retained upstream manuals and PNG figures as project documentation under the root Apache licence; no embedded dataset objects found in the DOCX files.",
+    "notebook": "GTSM preprocessing notebook retained with stored outputs and execution counts cleared. All cell sources and metadata remain identical to upstream; the audit checks this against the original upstream Git blob.",
+    "configuration": "Retained dimensions, grid descriptors, runoff-info text and namelist fixtures. These are configuration/schema material, not time-series input data."
+  },
+  "curator_decision": "Acceptance of the explicit data-only omissions is requested; no third-party redistribution permission or curator approval is fabricated.",
+  "added_packaging_files": [
+    "DATA-LICENSES.md"
+  ],
+  "cleared_notebook_outputs": [
+    {
+      "path": "etc/sealev_boundary/preprocess_gtsm.ipynb",
+      "original_sha256": "e6ebb7d3f66939e51ffb3d15a0ee13196b2b88d26f3d15b9719122e01c07456a",
+      "cleared_sha256": "3210c60e7db299b1eba2e048d949075c752291c22c46393374670f3a310c2bc1",
+      "removed_output_count": 13,
+      "reason": "Remove stored GTSM-derived tables/plots/data previews; preserve all cell sources and metadata."
+    }
+  ]
+}
