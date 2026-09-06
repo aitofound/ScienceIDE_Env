@@ -1,0 +1,42 @@
+#!/bin/tcsh
+
+# Information:
+# https://www2.cisl.ucar.edu/computing-data/computing
+
+# Name of run
+#PBS -N SWMF
+
+# Account to be charged
+#PBS -A UMIC0006
+
+# Up to 12 hours (24 hrs for preempt, 6 hrs for develop)
+#PBS -l walltime=12:00:00
+
+# Queues: main, preempt, develop
+# preempt (charged at 20 %) Information -
+# https://ncar-hpc-docs.readthedocs.io/en/latest/pbs/preemption/
+# develop : max 256 cores
+#PBS -q main
+#PBS -j oe
+#PBS -m abe
+
+# Job-Priority can be set for main queue: 
+# premium # 150% charge
+# regular # 100% charge (also interactive)
+# economy #  70% charge
+
+#PBS -l job_priority=regular
+
+
+# Send email notifications:
+### PBS -M UMUSERNAME@umich.edu
+
+# There are 128 cores / node
+#PBS -l select=10:ncpus=128:mpiprocs=128
+
+### Set TMPDIR as recommended
+# setenv TMPDIR /glade/scratch/username/temp
+# mkdir -p $TMPDIR
+
+### Run the executable
+mpiexec ./SWMF.exe > runlog_`date +%y%m%d%H%M`

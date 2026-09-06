@@ -28,12 +28,14 @@ TEMPLATES = Path(__file__).resolve().parent / "templates"
 KEBAB = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*\Z")
 POLICIES = ("pointwise", "invariants")
 ICS = ("nominal", "variant")
+ALTBUILD = "altbuild"  # the optional third run: the nominal inputs on an alternative legitimate build
+ALTBUILD_LINE = re.compile(r"^altbuild:\s*(\S.*)$")  # printed by run.sh --help when the check declares one
 CHECK_FILES = ("check.json", "run.sh", "rubric.json", "validate.py", "README.md")
 FILL = re.compile(r"<FILL\b")
 TOKEN = re.compile(r"\{\{[A-Z_]+\}\}")
 KNOB_LINE = re.compile(r"^[A-Z][A-Z0-9_]*=\S+")
 THIN = 4
-REVISION = "5.7.0"  # the SPEC/skill revision this CLI implements; must equal SKILL.md version
+REVISION = "5.11.0"  # the SPEC/skill revision this CLI implements; must equal SKILL.md version
 DEFAULT_BUDGET_S = 900
 SHARED_CODE_PATTERNS = (
     (re.compile(r"sys\.path"), "manipulates sys.path"),
