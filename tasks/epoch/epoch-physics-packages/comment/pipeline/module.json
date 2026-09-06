@@ -39,7 +39,7 @@
       "epoch1d/example_decks/electron_ion_equilibration.deck, epoch1d/example_decks/electron_isotropisation.deck (Nanbu binary collisions)",
       "epoch{1,2}d/example_decks/ionisation.deck (field ionisation; multiphoton, tunnelling, BSI)"
     ],
-    "expensive_path": "Per particle per step: the QED optical-depth update and photon emission with table interpolation (photons.F90, TABLES/), the Nanbu pairwise Coulomb scattering over every cell's particle pairs (collisions.F90, cost quadratic in particles per cell), and the field-ionisation rate evaluation per ion (ionise.F90).",
+    "expensive_path": "Per particle per step: the QED optical-depth update and photon emission with table interpolation (photons.F90, TABLES/), the Nanbu Coulomb scattering over every cell's particle list (collisions.F90: a per-cell Fisher-Yates shuffle, one draw per particle, followed by one sequential walk pairing the shuffled list -- cost linear in particles per cell for a fixed number of colliding species, not quadratic; verified against the source 2026-09-05), and the field-ionisation rate evaluation per ion (ionise.F90).",
     "rationale": "These packages are per-particle stochastic kernels layered on the PIC cycle (photons.F90 uses collisions), each behind its own compile-time or deck switch; they are the physics beyond the core cycle and were merged into one module on 2026-08-31 because each alone has too few official decks.",
     "excluded": [
       "bremsstrahlung.F90 and bethe_heitler.F90 (-DBREMSSTRAHLUNG): one example deck, listed under not_packaged for a later module",
