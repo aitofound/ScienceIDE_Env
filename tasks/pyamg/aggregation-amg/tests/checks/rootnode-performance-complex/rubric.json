@@ -1,4 +1,5 @@
 {
+  "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; verified on the arm64 authoring host that -O0 reaches every C++ compile command in compile_commands.json; falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg on the grading host; per the altbuild-floors-are-host-specific pitfall, a zero floor from this altbuild on the x86 worker is 'not measured', not 'stable', and is reported as such rather than called stable",
   "chaotic": false,
   "check": "rootnode-performance-complex",
   "comparison": {
@@ -12,19 +13,18 @@
     ],
     "rtol": 1e-10
   },
-  "configuration": "Task-owned upstream test group TestComplexSolverPerformance from pyamg/aggregation/tests/test_rootnode.py; then a representative module probe with SAB_PROBE_SIZE=18, fixed seed 20260904, fixed iteration counts, and observable.npy graded.",
-  "default_vs_upstream": "upstream test group unchanged; SAB_PROBE_SIZE changes only the additional graded probe",
+  "configuration": "Task-owned upstream gate TestComplexSolverPerformance::test_basic (this class has only test_basic and test_nonhermitian; the latter is its own check); then rootnode_solver on a gauge_laplacian(30) operator, the inherently imaginary QCD problem the upstream complex class's own setUp uses, a fixed 6-cycle solve (tol=0) from a seeded initial guess and the consistent right-hand side b = A @ (seeded random vector) that the upstream case itself builds. The solution field (900 complex (1800 real values) graded values), the residual history and the hierarchy depth are graded.",
+  "default_vs_upstream": "upstream unchanged. The probe grades the solution field the upstream case discards, over a fixed 6-cycle window with tol=0 in place of the upstream tolerance-terminated solve, so no adaptive iteration count enters the graded set; the right-hand side is built exactly as the upstream case builds it (b = A @ random).",
   "evidence": {
     "floor": null,
-    "floor_how": "A same-input two-build reproducibility floor has not been measured. The nominal-versus-variant distance is retained only as self_validation_spread after selfcheck and is input-sensitivity evidence, not a reproducibility floor.",
-    "native_group_runtime_s": 0.723,
-    "native_group_runtime_source": "pytest JUnit testcase durations from the 2026-09-04 native survey",
-    "self_validation_spread": 1.0658141036401503e-14
+    "floor_how": "not yet measured: filled by `task selfcheck` from run.sh altbuild graded against nominal",
+    "self_validation_bound_fraction": null,
+    "self_validation_spread": null
   },
-  "expected_runtime_s": 1.6,
-  "observable": "fixed-step smoothed-aggregation solution, residual history, and hierarchy depth",
+  "expected_runtime_s": 2.0,
+  "observable": "fixed-step rootnode_solver solution field, residual history and hierarchy depth on a gauge_laplacian(30) operator",
   "policy": "pointwise",
   "upstream_test": "code/pyamg/pyamg/aggregation/tests/test_rootnode.py",
-  "variant": "rhs_scale changes from 1.0 to 1.000000000000001 (about five binary64 ulps) on the first right-hand-side entry of the representative probe; the immutable official test group and seed stay fixed, so the changed graded output supplies nominal-versus-variant pointwise sensitivity evidence without changing the problem class",
-  "warrant": "The graded observable is the fixed-step smoothed-aggregation solution, residual history, and hierarchy depth, written as binary64 and compared value by value under atol 1e-12 plus rtol 1e-10 after the task-owned copy of the complete upstream test group passes. The check exercises complex root-node basic and non-Hermitian solver-performance cases in TestComplexSolverPerformance. Physical: an incorrect aggregate map, candidate fit, prolongator smoother, coarse operator, or residual cycle either violates an immutable official assertion before output is produced or changes the representative solution/update and residual values by much more than rounding. Achievable: the probe uses fixed sparse matrices, a fixed seed, binary64 arrays, fixed iteration counts and tol=0 where a solver is involved, so only floating-point operation ordering in pyamg/aggregation/aggregation.py:26, pyamg/aggregation/rootnode.py:25, and pyamg/aggregation/smooth.py:61 sets sensitivity to legitimate floating-point operation ordering. The curator finalized pointwise atol 1e-12 and rtol 1e-10 after calibration measured a maximum absolute spread of 1.0658141036401503e-14; that nominal-versus-variant spread is input-sensitivity evidence rather than a same-input reproducibility floor, while the absolute and relative terms provide implementation and scale-aware allowance."
+  "variant": "variant_scale multiplies the seeded random vector v that builds the right-hand side b = A @ v by 1.000000000000001 (about five binary64 ulps applied uniformly); the seed, the operator, the hierarchy and the iteration count stay fixed.",
+  "warrant": "The graded observable is the solution field of a fixed 6-cycle solve (tol=0) of rootnode_solver on a gauge_laplacian(30) operator, the inherently imaginary QCD problem the upstream complex class's own setUp uses (900 complex (1800 real values) graded values), followed by that solve's residual history and the hierarchy depth, compared under atol 1e-12 plus rtol 1e-10 after the immutable gate methods pass. Physical: the solution field is the production quantity of a linear solve, and it is the quantity the upstream module's own test_precision compares directly (pyamg/aggregation/tests/test_aggregation.py:583); a wrong Hermitian root-node hierarchy build or complex smoother in pyamg/aggregation/rootnode.py:24 moves it far beyond this bound, and the residual history and hierarchy depth reject a coarsening that differs at all. Achievable: the right-hand side is consistent (b = A @ v, the construction every upstream solver test in this class uses), so the fixed-step iteration converges instead of stalling on a component the operator cannot reach; the seed precedes every draw, the cycle count is fixed and tol is 0, so only floating-point operation ordering sets the legitimate sensitivity."
 }

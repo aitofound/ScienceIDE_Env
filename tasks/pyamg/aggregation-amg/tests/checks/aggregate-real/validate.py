@@ -4,10 +4,11 @@
 Compares every graded value of the candidate with the reference:
     |candidate - reference| <= atol + rtol * |reference|      for every value
 with atol/rtol and the file list read from rubric.json. Standard library and
-numpy only; reads only this check directory. Adapt the loaders to the
-module's output formats; keep the numbers in rubric.json. Writes a result
-with "passed", "reason" and "distance" (the largest absolute error seen), which
-selfcheck records as the measured spread.
+numpy only; reads only this check directory. Writes a result with "passed",
+"reason", "distance" (the largest absolute error seen, which selfcheck
+records as the measured spread) and "bound_fraction" (the largest fraction of
+the bound |err| / (atol + rtol|ref|) used by any graded value; its reciprocal
+is the headroom the presentation prints).
 
     python3 validate.py --reference DIR --candidate DIR --rubric rubric.json --out result.json
 """
@@ -43,7 +44,7 @@ def main() -> int:
     comparison = rubric["comparison"]
     atol, rtol = float(comparison["atol"]), float(comparison.get("rtol", 0.0))
     reference, candidate = Path(a.reference), Path(a.candidate)
-    worst, failures, details = 0.0, [], {}
+    worst, worst_frac, failures, details = 0.0, 0.0, [], {}
     for spec in comparison["files"]:
         rel = spec["path"]
         ref_path, cand_path = reference / rel, candidate / rel
@@ -62,14 +63,17 @@ def main() -> int:
             failures.append(f"{rel}: candidate contains non-finite values")
             continue
         err = np.abs(c - r)
-        over = int(np.count_nonzero(err > atol + rtol * np.abs(r)))
+        bound = atol + rtol * np.abs(r)
+        over = int(np.count_nonzero(err > bound))
         max_err = float(err.max()) if err.size else 0.0
-        details[rel] = {"values": int(r.size), "max_abs_error": max_err, "values_over_bound": over}
+        frac = float((err / bound).max()) if err.size else 0.0
+        details[rel] = {"values": int(r.size), "max_abs_error": max_err, "values_over_bound": over, "bound_fraction": frac}
         if over:
             failures.append(f"{rel}: {over} of {r.size} values exceed atol={atol:g} rtol={rtol:g} (max |err| {max_err:.3e})")
         worst = max(worst, max_err)
+        worst_frac = max(worst_frac, frac)
     passed = not failures
-    result = {"passed": passed, "policy": "pointwise", "atol": atol, "rtol": rtol, "distance": worst,
+    result = {"passed": passed, "policy": "pointwise", "atol": atol, "rtol": rtol, "distance": worst, "bound_fraction": worst_frac,
               "files": details, "reason": "all graded values within bound" if passed else "; ".join(failures)}
     Path(a.out).write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(result["reason"], file=sys.stderr)
