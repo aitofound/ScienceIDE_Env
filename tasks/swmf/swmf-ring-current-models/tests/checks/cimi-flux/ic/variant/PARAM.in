@@ -1,0 +1,70 @@
+#ECHO
+T
+
+#STARTTIME
+2009		iYear
+07		iMonth
+22		iDay
+00		iHour
+00		iMinute
+00		iSecond
+
+#STOP
+100.0		TimeMax
+
+#STRONGDIFFUSION
+T
+
+#NGDC_INDICES
+Indices.dat	NameNgdcFile
+
+#MHD_INDICES
+imf.dat		UpstreamFiles
+
+#SMOOTH
+F		UseSmooth
+300.0		SmoothWindow
+
+#BMODEL
+t04		NameModel
+
+#IEMODEL
+T		UseWeimer
+
+#SAVEPLOT
+1		nCIMIPlotType
+fls all		StringPlot
+60.		DtOutput
+F		DoSaveSeparateFiles
+
+#SAVELOG
+10.0		DtLogOut
+
+#INITIALF2
+F		IsEmptyInitial
+F		IsGmInitial
+T		IsDataInitial
+F		IsRBSPData
+
+#TYPEBOUNDARY
+Circle		TypeBoundary
+
+#PLASMASHEET
+T		UseYoungEtAl
+T		UseBoundaryEbihara
+
+#RESTART
+F		IsRestart
+
+#SAVERESTART
+100.0		DtSaveRestart
+
+#TIMESIMULATION
+0.0		Time
+
+#IMTIMESTEP
+30.		IMDeltaT [s]
+30.		IMDeltaTMax [s]
+
+#STRICTDRIFT
+T		IsStrictDrift
