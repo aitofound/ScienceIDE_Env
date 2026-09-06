@@ -1,0 +1,56 @@
+#!/bin/csh
+
+# Job script for Pleiades computer at NASA Ames.
+#
+# This file must be customized and run from the run directory! For example
+#
+#   cd run
+#   qsub job.p4fe
+#
+# To avoid having too many output files run
+#
+#    PostProc.pl -g -r=360 >& PostProc.log &
+#
+# on the head node (post-processes every 10 minutes).
+#
+
+#PBS -S /bin/csh
+#PBS -N MV15
+
+# ncpus should be a multiple of 4, mpiprocs=ncpus
+# set the number of CPU-s by changing select: nProc = select*mpiprocs
+##PBS -l select=6:ncpus=24:model=has
+#PBS -l select=1:ncpus=1:model=san
+#PBS -l walltime=2:00:00
+#PBS -W group_list=s0905
+
+
+# cd into the run directory
+cd $PBS_O_WORKDIR
+
+#### These settings were found useful for large runs 
+
+setenv MPI_MSGS_PER_HOST 100000
+setenv MPI_MSGS_PER_PROC 100000
+setenv MPI_MSGS_MAX      100000
+
+mpiexec GITM.exe > runlog_`date +%y%m%d%H%M`
+
+exit
+
+# To use automated resubmission remove the 'exit' command above
+# Use the #CPUTIMEMAX and #CHECKSTOP commands in PARAM.in
+# so the code stops before the wall clock time is exceeded.
+
+# Do not continue unless the job finished successfully
+if(! -f GITM.DONE) exit
+
+# Link latest restart files
+./Restart.pl
+
+# Provide a PARAM.in.restart file if you wish and uncomment these lines:
+# if(! -f PARAM.in.start) cp PARAM.in PARAM.in.start
+# if(-f PARAM.in.restart) cp PARAM.in.restart PARAM.in
+
+# Check final time/iteration and resubmit if not done (modify as needed!)
+if(! -d RESTART_t008.00h) qsub job.cfe2
