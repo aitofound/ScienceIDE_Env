@@ -1,0 +1,113 @@
+{
+  "module": "swmf-geospace-operational",
+  "tests": [
+    {
+      "id": "swpc-geospace-rb",
+      "module": "swmf-geospace-operational",
+      "path": "Param/SWPC/PARAM.in_SWPC_v2_init",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "GM+IE+IM/RCM2+RB: the SWPC v2 Geospace configuration with the radiation-belt model, 2014-04-10 event, steady state then 2 min time-accurate with restart; GM-IE, GM-IM, IE-IM, GM-RB couplings",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 700,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "regression against Param/SWPC/TestOutput* at 1e-5 relative on the GM log, 2e-4 on magnetometers, ionosphere and geoindex files; the first steady-state steps are deterministic and the time-accurate 120 s window is short, so pointwise holds; the check must shorten the steady iterations (MaxIter 70 and 200 are already the test values) and keep the 2-minute time-accurate window",
+      "proposed_check": "swpc-geospace-rb"
+    },
+    {
+      "id": "swpc-geospace-pe",
+      "module": "swmf-geospace-operational",
+      "path": "Param/SWPC/PARAM.in_pe_init",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "GM+IE+IM/RCM2 with separate electron pressure (MhdPe equation set), restart, INTERPOLATE of magnetometer stations",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 376,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "measured here: 285 s run plus 91 s restart on 2 ranks, empty diff files against TestOutputPe; regression against Param/SWPC/TestOutput* at 1e-5 relative on the GM log, 2e-4 on magnetometers, ionosphere and geoindex files; the first steady-state steps are deterministic and the time-accurate 120 s window is short, so pointwise holds; the check must shorten the steady iterations (MaxIter 70 and 200 are already the test values) and keep the 2-minute time-accurate window",
+      "proposed_check": "swpc-geospace-pe"
+    },
+    {
+      "id": "swpc-multiion",
+      "module": "swmf-geospace-operational",
+      "path": "Param/SWPC/PARAM.in_multiion_init",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "GM+IE+IM/RCM2 with multi-ion MHD (solar-wind H+ and ionospheric O+ fluids) fed by the RCM2 pressure and the IE outflow",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 700,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "regression against Param/SWPC/TestOutput* at 1e-5 relative on the GM log, 2e-4 on magnetometers, ionosphere and geoindex files; the first steady-state steps are deterministic and the time-accurate 120 s window is short, so pointwise holds; the check must shorten the steady iterations (MaxIter 70 and 200 are already the test values) and keep the 2-minute time-accurate window",
+      "proposed_check": "swpc-multiion"
+    },
+    {
+      "id": "swpc-multispecies",
+      "module": "swmf-geospace-operational",
+      "path": "Param/SWPC/PARAM.in_multispecies_init",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "GM+IE+IM/RCM2 with multi-species MHD (one momentum, several densities)",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 700,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "regression against Param/SWPC/TestOutput* at 1e-5 relative on the GM log, 2e-4 on magnetometers, ionosphere and geoindex files; the first steady-state steps are deterministic and the time-accurate 120 s window is short, so pointwise holds; the check must shorten the steady iterations (MaxIter 70 and 200 are already the test values) and keep the 2-minute time-accurate window",
+      "proposed_check": "swpc-multispecies"
+    },
+    {
+      "id": "swpc-gpu-compatible",
+      "module": "swmf-geospace-operational",
+      "path": "Param/SWPC/PARAM.in_SWPC_gpu_init",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "GM+IE+IM/RCM2 built with Config.pl -o=GM:opt=PARAM.in (parameters baked in, the GPU-portable fast update path) and run on the CPU",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 500,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "regression against Param/SWPC/TestOutput* at 1e-5 relative on the GM log, 2e-4 on magnetometers, ionosphere and geoindex files; the first steady-state steps are deterministic and the time-accurate 120 s window is short, so pointwise holds; the check must shorten the steady iterations (MaxIter 70 and 200 are already the test values) and keep the 2-minute time-accurate window; the opt build is the GPU-compatible code path so this check is the natural acceleration candidate",
+      "proposed_check": "swpc-gpu-compatible"
+    },
+    {
+      "id": "swpc-large-gpu-compatible",
+      "module": "swmf-geospace-operational",
+      "path": "Param/SWPC/PARAM.in_SWPC_large_gpu",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "the larger production-size GM grid in GPU-compatible mode, no restart; upstream uses it as a performance check",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 900,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "regression against Param/SWPC/TestOutput* at 1e-5 relative on the GM log, 2e-4 on magnetometers, ionosphere and geoindex files; the first steady-state steps are deterministic and the time-accurate 120 s window is short, so pointwise holds; the check must shorten the steady iterations (MaxIter 70 and 200 are already the test values) and keep the 2-minute time-accurate window; runtime is the unknown here, the test may need its MaxIter knob lowered",
+      "proposed_check": "swpc-large-gpu-compatible"
+    }
+  ]
+}
