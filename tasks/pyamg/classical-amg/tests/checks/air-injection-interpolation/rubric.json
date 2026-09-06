@@ -1,5 +1,5 @@
 {
-  "altbuild": "The pybind11/C++ core built with -Doptimization=0 -Dbuildtype=debug (meson-python) instead of the pinned release build; a correct candidate could plausibly ship as an unoptimized or debug build on another target, and the pitfall altbuild-floors-are-host-specific applies (an x86 worker may floor at zero, an arm64 host may not).",
+  "altbuild": "The pybind11/C++ core built with -Doptimization=0 only (meson-python); buildtype stays release so no -g debug info is added, keeping object size close to the pinned build's -O3 objects (an earlier -Dbuildtype=debug variant OOM-killed cc1plus on the heavily-templated pybind11 bindings even at one compile job under the declared 2 GB). A correct candidate could plausibly ship as an unoptimized build on another target, and the pitfall altbuild-floors-are-host-specific applies (an x86 worker may floor at zero, an arm64 host may not).",
   "chaotic": false,
   "check": "air-injection-interpolation",
   "comparison": {
