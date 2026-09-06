@@ -71,6 +71,11 @@ for marker in markers:
         raise SystemExit("run.sh: deck marker %s matched %d lines, expected 1" % (marker, n))
 open(path, "w", encoding="utf-8").write(text)
 PY
+# The MPI rank count must match this IC's own nprocx line (ic/variant uses a
+# different valid rank layout than ic/nominal, round-2 review item 4), so it
+# is read from the deck rather than hardcoded.
+NPROCX=$(grep -oE '^\s*nprocx\s*=\s*[0-9]+' "$WORK/main/input.deck" | grep -oE '[0-9]+$')
+[ -n "$NPROCX" ] || { echo "run.sh: no nprocx line in $INPUTS/input.deck" >&2; exit 2; }
 ( cd "$WORK/src/epoch1d" && echo "$WORK/main" \
-    | mpirun -n 2 --oversubscribe --bind-to none ./bin/epoch1d > "$WORK/main/epoch.log" 2>&1 )
+    | mpirun -n "$NPROCX" --oversubscribe --bind-to none ./bin/epoch1d > "$WORK/main/epoch.log" 2>&1 )
 python3 "$CHECK_DIR/extract.py" "$WORK/main" "$OUT_DIR" main
