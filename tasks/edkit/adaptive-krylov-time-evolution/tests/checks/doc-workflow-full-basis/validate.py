@@ -1,14 +1,26 @@
 #!/usr/bin/env python3
-"""SAB pointwise pair policy; same-input ED accuracy is a separate run gate.
+"""SAB pass policy for one EDKit check: the pointwise pair comparison plus the
+same-input dense-diagonalisation gate.
 
-distance is only max |candidate state - reference state| in complex magnitude.
-bound_fraction is the largest pair error / (atol + rtol * |reference|).
-No oracle residual, conservation diagnostic, or solver counter is mixed into
-these calibration metrics. Discrete API/shape requirements still gate pass.
+Revised 2026-09-06 by the curator: the gate that oracle.py used to apply inside
+run.sh now runs here, so the check has one test (run.sh) and one pass policy
+(this file with rubric.json). Both parts must pass:
+
+1. pair: max |candidate state - reference state| in complex magnitude under
+   the rubric's atol/rtol per case. distance and bound_fraction report only
+   this comparison; no oracle residual, conservation diagnostic or solver
+   counter is mixed into the calibration metrics.
+2. oracle: each run's states against an independent NumPy dense
+   diagonalisation of its own immutable inputs, under the rubric's
+   `comparison.scientific` caps (oracle.py, next to this file). Applied to the
+   reference and the candidate with their own inputs.
+
+Discrete API and shape requirements still gate pass.
 """
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import math
 import os
@@ -146,6 +158,27 @@ def pair_evaluate(reference: dict, candidate: dict, reference_inputs: dict, cand
             "cases": details, "reason": "; ".join(failures) if failures else "all complex state values and discrete requirements pass"}
 
 
+def oracle_evaluate(check_dir: Path, inputs: dict, result: dict, rubric: dict) -> dict:
+    """The same-input gate: this run's states against an independent dense diagonalisation of its own inputs."""
+    if "scientific" not in rubric.get("comparison", {}):
+        return {"passed": True, "kind": "none", "reason": "the rubric declares no same-input oracle"}
+    spec = importlib.util.spec_from_file_location("sab_oracle", check_dir / "oracle.py")
+    if spec is None or spec.loader is None:
+        raise ValueError("oracle.py is missing next to validate.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    report = module.evaluate(inputs, result, rubric)
+    failures = []
+    for ident, row in report.get("cases", {}).items():
+        if not row.get("passed"):
+            failures.append(f"{ident}: " + "; ".join(row.get("failures", ["oracle failed"])))
+    for row in report.get("cross_checks", []):
+        if not row.get("passed"):
+            failures.append("cross-check " + str(row.get("kind", "?")) + ": " + str(row.get("reason", "over bound")))
+    report["reason"] = "; ".join(failures) if failures else "every state within the same-input oracle caps"
+    return report
+
+
 def input_mode(root: Path) -> str:
     # run.ok is written by the trusted produce driver after run.sh completes.
     marker = {}
@@ -168,10 +201,17 @@ def main() -> int:
     try:
         if input_mode(args.reference) != "nominal":
             raise ValueError("SAB reference must use nominal inputs")
+        rubric = json.loads(args.rubric.read_text())
         reference_inputs = read_toml(check_dir / "ic" / "nominal" / "input.toml")
         candidate_inputs = read_toml(check_dir / "ic" / input_mode(args.candidate) / "input.toml")
-        report = pair_evaluate(read_toml(args.reference / "result.toml"), read_toml(args.candidate / "result.toml"),
-                               reference_inputs, candidate_inputs, json.loads(args.rubric.read_text()))
+        reference, candidate = read_toml(args.reference / "result.toml"), read_toml(args.candidate / "result.toml")
+        report = pair_evaluate(reference, candidate, reference_inputs, candidate_inputs, rubric)
+        report["oracle"] = {"reference": oracle_evaluate(check_dir, reference_inputs, reference, rubric),
+                            "candidate": oracle_evaluate(check_dir, candidate_inputs, candidate, rubric)}
+        gate = [f"{who} run: {row['reason']}" for who, row in report["oracle"].items() if not row.get("passed")]
+        if gate:
+            report["passed"] = False
+            report["reason"] = (report["reason"] + "; " if not report["passed"] and report["reason"] else "") + "same-input oracle: " + "; ".join(gate)
     except (OSError, ValueError, KeyError, TypeError, OverflowError) as exc:
         report = {"passed": False, "policy": "pointwise", "distance": None, "bound_fraction": None, "reason": str(exc)}
     args.out.write_text(json.dumps(report, indent=2, sort_keys=True, allow_nan=False) + "\n")
