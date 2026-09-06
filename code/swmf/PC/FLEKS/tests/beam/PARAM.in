@@ -1,0 +1,141 @@
+#DESCRIPTION
+Ion Beam-Beam Instability Standalone Test
+
+#INITFROMSWMF
+F                       initFromSWMF
+
+#GEOMETRY
+-1e3                    xMin
+ 1e3                    xMax
+-1.0                    yMin
+ 1.0                    yMax
+-1.0                    zMin
+ 1.0                    zMax
+
+#NCELL
+64                      nCellX
+1                       nCellY
+1                       nCellZ
+
+#MAXBLOCKSIZE
+64                      maxBlockSizeX
+1                       maxBlockSizeY
+1                       maxBlockSizeZ
+
+#PERIODICITY
+T                       isPeriodicX
+T                       isPeriodicY
+T                       isPeriodicZ
+
+#SOLVEEM
+T                       solveEM
+
+#PLASMA
+2                       nSpecies
+0.01                    mass        Species 0: electron
+-1.0                    charge
+1.0                     mass        Species 1: H+
+1.0                     charge
+
+#UNIFORMSTATE
+0.05                    rho [amu/cc]   Species 0: electron (quasi-neutral)
+-400.0                  ux [km/s]
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+10000.0                 T [K]
+5.0                     rho [amu/cc]   Species 1: H+
+-400.0                  ux [km/s]
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+10000.0                 T [K]
+5.0e-9                  bx [T]
+0.0                     by [T]
+0.0                     bz [T]
+0.0                     ex [V/m]
+0.0                     ey [V/m]
+0.0                     ez [V/m]
+
+#TESTCASE
+Beam
+1                       iSpecies
+0.01                    ratio
+0.4                     vel
+0.0                     vel
+0.0                     vel
+
+#TIMESTEPPING
+F                       useFixedDt
+0.2                     cfl
+
+#NORMALIZATION
+1000.0                  lNormSI
+1.0e6                   uNormSI
+
+#MONITOR
+1                       dnReport
+
+#PARTICLES
+100                     nParticle per cell in X
+1                       nParticle per cell in Y
+1                       nParticle per cell in Z
+
+#COMOVING
+T                       solvePartInCoMov
+5                       nSmoothBackGroundU
+
+#UPWINDE
+T                       useUpwindE
+1                       limiterTheta
+
+#UPWINDB
+T                       doSmoothB
+1                       theta
+
+#SMOOTHJ
+T
+1
+0.5
+
+#EFIELDSOLVER
+1.0e-6                  EFieldTol
+200                     EFieldIter
+
+#DIVE
+T
+1
+
+#SAVEPLOT
+1                       nPlot
+z=0 var ascii planet    plotString
+-1                      dn
+0.1                     dt
+1                       dx
+rhoS1 Bx By Bz          varName
+
+#STOP
+-1                      MaxIter
+0.1                     TimeMax   ~0.008 ion gyroperiods (short growth window)
+
+#PARTICLETRACKER
+T           usePT
+
+#TPPARTICLES
+4           particles per cell in X
+4           particles per cell in Y
+1           particles per cell in Z
+
+#TPREGION
+uniform         region
+
+#TPCELLINTERVAL
+64          nIntervalX
+1           nIntervalY
+1           nIntervalZ
+
+#TPSAVE
+0           iSpecies
+planet      IOUnit
+10          dnSave
+0.5         launchThreshold
+
+#RUN

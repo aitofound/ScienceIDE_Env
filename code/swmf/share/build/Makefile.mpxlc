@@ -1,0 +1,24 @@
+# C language related part of Makefile.conf: Makefile.mpxlc
+C_COMPILER_NAME=xlc
+
+COMPILE.c     = mpxlc
+COMPILE.mpicc = mpxlc
+COMPILE.mpicxx= mpxlC
+
+LINK.cpp = ${COMPILE.c} -lstdc++
+
+CPPLIB = -lstdc++ -lmpi_cxx
+
+#DEBUGC = -g
+
+.SUFFIXES: .c .cpp
+
+FLAGC = ${SEARCH_H} ${FLAGC_EXTRA} -c ${OPT5} ${DEBUGC}
+
+FLAGCC = ${FLAGC} -std=c++17
+
+.c.o:
+	${COMPILE.c} ${FLAGC} $< -o $@
+
+.cpp.o:
+	${COMPILE.mpicxx} ${FLAGCC} $< -o $@
