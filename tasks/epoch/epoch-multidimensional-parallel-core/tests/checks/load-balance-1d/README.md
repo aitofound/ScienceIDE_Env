@@ -1,6 +1,6 @@
 # load-balance-1d
 
-Upstream deck: `epoch1d/example_decks/injectors.deck`. Policy: `pointwise`.
+Upstream deck: `epoch1d/example_decks/injectors.deck`. Policy: `invariants` for the load-balanced x-partition and the per-species pseudoparticle-per-cell arrays, `pointwise` for the rest.
 
 ## The test
 
@@ -94,31 +94,11 @@ output of an integer particle histogram reduced across the ranks, projected
 onto each axis and split greedily with a bounded improvement loop; every step
 of that is integer arithmetic on integer input, so a port that gets the load
 metric, the projection or the improvement gate wrong lands on a different
-ladder immediately. Achievable: at a fixed layout the run is reproducible --
-the draw is seeded and deposition walks each rank's own list in its own order
--- and each floating-point bound sits far above the round-off floor of a
-fixed-layout run and far below what any of the faults above produces. Policy
-under SPEC revision 5.6.0: pointwise. The floating-point arrays are graded
-under bounds that sit far above the round-off floor of a fixed-layout run and
-far below what any of the faults above produces, which is the condition 5.6.0
-sets for preferring pointwise; the window was chosen short enough for that to
-hold, which is the order 5.6.0 asks for. The particle loading is seeded per
-rank rather than drawn from a live random stream, so this is not the
-stochastic-package case that 5.6.0 sends to invariants. The integer arrays --
-the rank partition ladder and the per-species pseudoparticle count per cell --
-are graded pointwise at atol 0. Revision 5.6.0 lists "an output whose values
-are discrete, a bin index or a switch, where a small change flips the value
-outright" among the invariants cases, and this is deliberately not that case.
-Those values are not a discretisation of a continuous quantity that a rounding
-difference could tip across a bin edge: the ladder is the output of an exact
-integer remainder rule and of an integer load histogram, and the per-cell count
-is the number of particles whose position floors into that cell, with no halo
-sum and no arithmetic on the count itself. They are exact by construction, and
-the 2026-09-04 x86 calibration record confirms it: every array of this kind in the
-leaf came back with max_abs_error exactly 0.0 and values_over_bound 0 under the
-variant. Zero tolerance is therefore the bound that contains the measured
-sensitivity, and it is the sharpest statement the check makes about the
-decomposition.
+ladder immediately. Achievable: at a fixed layout the run is reproducible -- the draw is seeded and deposition walks each rank's own list in its own order -- and each floating-point bound sits far above the round-off floor of a fixed-layout run and far below what any of the faults above produces.
+
+## Policy under revision 5.10.2
+
+The per-species pseudoparticle-per-cell arrays move to an invariants comparison (kind conservation, atol 0): each is reduced to its sum, the exact global count of that species at the dump, which must agree with the reference exactly, because conservation of particle number is exact regardless of which cell or which rank a particle ends up in. The rank partition ladder no longer stays pointwise as a whole: balance.F90 moves the dlb_threshold-triggered seams along x only, a discontinuous decision -- whether the sampled imbalance fraction is a hair above or below 0.95 -- that a legitimate target's different reduction order can flip one interval earlier or later without the port being wrong. The first nprocx-1 entries of each `cpu_rank_<dump>.f64` (the load-balanced x-boundaries) are graded by three invariants instead: `ladder_coverage` (the boundaries are strictly increasing and lie in (0, 128), checked on each run independently -- a dropped, duplicated or misrouted particle that starves an x-band to zero width fails this even without moving any single value), `load_quality` (the max-over-mean particle load of the four x-bands the ladder defines must agree with the reference within atol 0.25), and `repartition_count` (how many of the five graded dumps show a different x-ladder than the dump before it must agree with the reference within atol 1). This is the 2026-09-05 steward review's item 3: 'load-quality and redistribution properties rather than exact equality to every CPU partition boundary.' Both native probes available to this leaf (the 1e-15 density variant and the -O0 altbuild) measure exactly zero spread on every one of these statistics, because neither moves a particle across a cell or an x-band boundary or shifts when the 0.95 threshold is crossed; the load_quality and repartition_count bounds are therefore derived from the measured per-cell particle count next to each x seam (see Evidence below and comment/README.md), not from a nonzero native measurement, and ladder_coverage carries no tolerance parameter at all, only a validity condition. Item 5 of the same review: this deck sets dlb_threshold = 0.95 and dlb_maximum_interval = 8, which the upstream deck leaves unset -- unset switches the balancer off entirely -- and SAB_DLB_THRESHOLD/SAB_DLB_INTERVAL restore the upstream (disabled) behaviour.
 
 ## Evidence
 
