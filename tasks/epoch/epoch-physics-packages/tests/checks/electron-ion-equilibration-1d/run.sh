@@ -9,9 +9,13 @@
 
 # Runtime knobs. Defaults are the graded values; override for iteration only,
 # e.g. SAB_T_END=3e-13 sab.py task selfcheck ...
-# The MPI rank layout (nprocx/nprocy/nprocz in the deck) is deliberately NOT a
-# knob: it selects the per-rank random streams and the particle order, so it is
-# part of the initial condition, and ic/variant is exactly a different layout.
+# Unlike the other checks in this leaf, ic/variant here is NOT a rank-layout change:
+# this deck runs on a single rank regardless (EPOCH refuses to decompose 5 cells across
+# more than one process), so the variant instead exchanges the two begin:species blocks
+# (electrons and protons swap places), which reorders the shared random stream the
+# Nanbu operator consumes. The rank layout is still not a knob for the reason the other
+# checks state (it would select per-rank random streams and particle order), it is just
+# inert on this five-cell deck.
 # Parallel build jobs default to the CPUs this container may use (cgroup v2 cpu.max), not the host count.
 cpus_allowed() { local q p; if [ -r /sys/fs/cgroup/cpu.max ] && read -r q p < /sys/fs/cgroup/cpu.max && [ "$q" != max ]; then echo $(( (q + p - 1) / p )); else nproc 2>/dev/null || getconf _NPROCESSORS_ONLN; fi; }
 KNOB_HELP=""
