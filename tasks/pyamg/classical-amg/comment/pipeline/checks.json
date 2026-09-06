@@ -1,5 +1,5 @@
 {
-  "written_at": "2026-09-06T20:02:03Z",
+  "written_at": "2026-09-06T20:07:41Z",
   "checks": [
     {
       "name": "air-injection-interpolation",
@@ -10,7 +10,7 @@
         "SAB_GRID_SIZE=30  advection_2d grid edge (N); the transfer-operator build grows roughly as N^2"
       ],
       "variant": "matrix_perturb_ulps changes from 0 to 2 on advection_2d's first stored entry; injection places a value of exactly 1.0 at each C-point row regardless of A's entries (by construction, injection has no weight to perturb), and the measured spread was exactly 0, so the variant is identical: injection_interpolation's output depends only on the C/F splitting (itself measured identical, see ruge-stuben-rs-splitting), not on A's values; selfcheck must confirm the perturbed ic/variant input differs byte-wise from ic/nominal even though the graded output does not.",
-      "altbuild": "the pybind11/C++ core built with -Doptimization=0 -Dbuildtype=debug (meson-python), instead of the pinned release build",
+      "altbuild": "the pybind11/C++ core built with -Doptimization=0 (meson-python; buildtype stays release, no added debug info), instead of the pinned -O3 release build",
       "bounds": [
         1e-12,
         1e-10
@@ -23,7 +23,7 @@
       "labels": [],
       "knobs": [],
       "variant": "matrix_perturb_ulps changes from 0 to 2 on recirc_flow's 6th stored entry (index 5; index 0 is pruned before any node's local stencil is assembled and is inert); the measured spread was 2.22e-16",
-      "altbuild": "the pybind11/C++ core built with -Doptimization=0 -Dbuildtype=debug (meson-python), instead of the pinned release build",
+      "altbuild": "the pybind11/C++ core built with -Doptimization=0 (meson-python; buildtype stays release, no added debug info), instead of the pinned -O3 release build",
       "no_knobs": true,
       "bounds": [
         1e-12,
@@ -37,7 +37,7 @@
       "labels": [],
       "knobs": [],
       "variant": "matrix_perturb_ulps changes from 0 to 2 on recirc_flow's first stored entry; one_point places a value of exactly 1.0 at the single strongest connection regardless of its magnitude (only the argmax index depends on A), and the measured spread was exactly 0 at every tested perturbation index (0, 1, 5, 10, 50, 100, 500), so the variant is identical: selfcheck must confirm the perturbed ic/variant input differs byte-wise from ic/nominal even though the graded output does not.",
-      "altbuild": "the pybind11/C++ core built with -Doptimization=0 -Dbuildtype=debug (meson-python), instead of the pinned release build",
+      "altbuild": "the pybind11/C++ core built with -Doptimization=0 (meson-python; buildtype stays release, no added debug info), instead of the pinned -O3 release build",
       "no_knobs": true,
       "bounds": [
         1e-12,
@@ -52,8 +52,8 @@
       "knobs": [
         "SAB_MAXITER=15  fixed AIR multigrid iterations per interpolation/restriction combination (tol=0)"
       ],
-      "variant": "rhs_scale changes from 1.0 to 1.000000000000001 on the first entry of the random vector that builds b=A@r; the measured spread was 2.44e-15",
-      "altbuild": "the pybind11/C++ core built with -Doptimization=0 -Dbuildtype=debug (meson-python), instead of the pinned release build",
+      "variant": "rhs_scale changes from 1.0 to 1.000000000000001 on the first entry of the random vector that builds b=A@r; the measured spread was 1.11e-15",
+      "altbuild": "the pybind11/C++ core built with -Doptimization=0 (meson-python; buildtype stays release, no added debug info), instead of the pinned -O3 release build",
       "bounds": [
         1e-12,
         1e-10
@@ -68,8 +68,8 @@
         "SAB_GRID_SIZE=30  advection_2d grid edge (N); one AIR V-cycle grows roughly as N^2",
         "SAB_MAXITER=10  fixed AIR multigrid iterations (tol=0, never a tolerance-terminated solve)"
       ],
-      "variant": "rhs_scale changes from 1.0 to 1.000000000000001 on the first entry of the random vector that builds b=A@r; the measured spread was 1.94e-16",
-      "altbuild": "the pybind11/C++ core built with -Doptimization=0 -Dbuildtype=debug (meson-python), instead of the pinned release build",
+      "variant": "rhs_scale changes from 1.0 to 1.000000000000001 on the first entry of the random vector that builds b=A@r; the measured spread was 1.67e-16",
+      "altbuild": "the pybind11/C++ core built with -Doptimization=0 (meson-python; buildtype stays release, no added debug info), instead of the pinned -O3 release build",
       "bounds": [
         1e-12,
         1e-10
@@ -82,7 +82,7 @@
       "labels": [],
       "knobs": [],
       "variant": "matrix_perturb_ulps changes from 0 to 2 on airfoil's first stored entry; binormalize's fixed-point iteration is continuous in A's entries, and the measured spread was 2.22e-16",
-      "altbuild": "the pybind11/C++ core built with -Doptimization=0 -Dbuildtype=debug (meson-python), instead of the pinned release build",
+      "altbuild": "the pybind11/C++ core built with -Doptimization=0 (meson-python; buildtype stays release, no added debug info), instead of the pinned -O3 release build",
       "no_knobs": true,
       "bounds": [
         1e-12,
@@ -98,7 +98,7 @@
         "SAB_PROBE_SIZE=30  poisson grid edge (N); each CR relaxation sweep grows roughly as N^2"
       ],
       "variant": "matrix_perturb_ulps changes from 0 to 2 on the matrix's first stored entry; CR's relaxation start is the fixed constant vector (B=None), not random, so the C/F choice is fully deterministic given A, and the measured spread was exactly 0, so the variant is identical: selfcheck must confirm the perturbed ic/variant input differs byte-wise from ic/nominal even though the graded output does not.",
-      "altbuild": "the pybind11/C++ core built with -Doptimization=0 -Dbuildtype=debug (meson-python), instead of the pinned release build",
+      "altbuild": "the pybind11/C++ core built with -Doptimization=0 (meson-python; buildtype stays release, no added debug info), instead of the pinned -O3 release build",
       "bounds": [
         1e-12,
         1e-10
@@ -111,7 +111,7 @@
       "labels": [],
       "knobs": [],
       "variant": "weight_perturb_ulps changes from 0 to 2 on the first published weight entry; split.MIS is deterministic here because explicit, non-random weights are passed (unlike the internal _preprocess path used by PMIS/PMISc, which adds random weights), and the measured spread was exactly 0, so the variant is identical: selfcheck must confirm the perturbed ic/variant input differs byte-wise from ic/nominal even though the graded output does not.",
-      "altbuild": "the pybind11/C++ core built with -Doptimization=0 -Dbuildtype=debug (meson-python), instead of the pinned release build",
+      "altbuild": "the pybind11/C++ core built with -Doptimization=0 (meson-python; buildtype stays release, no added debug info), instead of the pinned -O3 release build",
       "no_knobs": true,
       "bounds": [
         1e-12,
@@ -130,7 +130,7 @@
         "SAB_MAXITER=9  fixed multigrid iterations (tol=0); 9 is what the pinned build takes to cross the example's own tol=1e-10 at SAB_GRID_SIZE=500"
       ],
       "variant": "rhs_scale changes from 1.0 to 1.000000000000001 on the first seeded right-hand-side entry; the measured spread was 2.22e-16",
-      "altbuild": "the pybind11/C++ core built with -Doptimization=0 -Dbuildtype=debug (meson-python), instead of the pinned release build",
+      "altbuild": "the pybind11/C++ core built with -Doptimization=0 (meson-python; buildtype stays release, no added debug info), instead of the pinned -O3 release build",
       "bounds": [
         1e-12,
         1e-10
@@ -143,7 +143,7 @@
       "labels": [],
       "knobs": [],
       "variant": "matrix_perturb_ulps changes from 0 to 2 on airfoil's first stored entry; classical_interpolation's weight formula is continuous in A's entries, and the measured spread was 5.55e-17",
-      "altbuild": "the pybind11/C++ core built with -Doptimization=0 -Dbuildtype=debug (meson-python), instead of the pinned release build",
+      "altbuild": "the pybind11/C++ core built with -Doptimization=0 (meson-python; buildtype stays release, no added debug info), instead of the pinned -O3 release build",
       "no_knobs": true,
       "bounds": [
         1e-12,
@@ -159,7 +159,7 @@
         "SAB_PROBE_SIZE=30  poisson grid edge (N); sparse work grows roughly as N^2"
       ],
       "variant": "matrix_perturb_ulps changes from 0 to 2 on the matrix's first stored entry; split.CLJP's amg_core.cljp_naive_splitting core takes no random weights and is deterministic given S, and the measured spread was exactly 0, so the variant is identical: selfcheck must confirm the perturbed ic/variant input differs byte-wise from ic/nominal even though the graded output does not.",
-      "altbuild": "the pybind11/C++ core built with -Doptimization=0 -Dbuildtype=debug (meson-python), instead of the pinned release build",
+      "altbuild": "the pybind11/C++ core built with -Doptimization=0 (meson-python; buildtype stays release, no added debug info), instead of the pinned -O3 release build",
       "bounds": [
         1e-12,
         1e-10
@@ -172,7 +172,7 @@
       "labels": [],
       "knobs": [],
       "variant": "matrix_perturb_ulps changes from 0 to 2 on knot's first stored entry; CLJPc reuses CLJP's deterministic core plus a fixed vertex coloring, and the measured spread was exactly 0, so the variant is identical: selfcheck must confirm the perturbed ic/variant input differs byte-wise from ic/nominal even though the graded output does not.",
-      "altbuild": "the pybind11/C++ core built with -Doptimization=0 -Dbuildtype=debug (meson-python), instead of the pinned release build",
+      "altbuild": "the pybind11/C++ core built with -Doptimization=0 (meson-python; buildtype stays release, no added debug info), instead of the pinned -O3 release build",
       "no_knobs": true,
       "bounds": [
         1e-12,
@@ -186,7 +186,7 @@
       "labels": [],
       "knobs": [],
       "variant": "matrix_perturb_ulps changes from 0 to 2 on bar's first stored entry; direct_interpolation's weight formula is a continuous function of A's entries, and the measured spread was 2.22e-16 (one binary64 ulp of an O(1) weight)",
-      "altbuild": "the pybind11/C++ core built with -Doptimization=0 -Dbuildtype=debug (meson-python), instead of the pinned release build",
+      "altbuild": "the pybind11/C++ core built with -Doptimization=0 (meson-python; buildtype stays release, no added debug info), instead of the pinned -O3 release build",
       "no_knobs": true,
       "bounds": [
         1e-12,
@@ -201,8 +201,8 @@
       "knobs": [
         "SAB_GRID_SIZE=16  linear_elasticity grid edge (N); the 2x2-block operator has 2*N^2 unknowns"
       ],
-      "variant": "matrix_perturb_ulps changes from 0 to 2 on the (pre-conversion) elasticity matrix's first stored entry; the measured spread was 2.84e-14 (the largest of the classical family's structural checks, reflecting the extra arithmetic in the dense/BSR conversion paths)",
-      "altbuild": "the pybind11/C++ core built with -Doptimization=0 -Dbuildtype=debug (meson-python), instead of the pinned release build",
+      "variant": "matrix_perturb_ulps changes from 0 to 2 on the (pre-conversion) elasticity matrix's first stored entry; the measured spread was 1.14e-13, the largest in the leaf, reflecting the extra arithmetic in the dense/BSR conversion paths",
+      "altbuild": "the pybind11/C++ core built with -Doptimization=0 (meson-python; buildtype stays release, no added debug info), instead of the pinned -O3 release build",
       "bounds": [
         1e-12,
         1e-10
@@ -217,8 +217,8 @@
         "SAB_GRID_SIZE=250  poisson grid edge (N); one V-cycle's work grows roughly as N^2",
         "SAB_MAXITER=15  fixed multigrid iterations per interpolation choice (tol=0, never a tolerance-terminated solve)"
       ],
-      "variant": "rhs_scale changes from 1.0 to 1.000000000000001 on the first entry of the random vector that builds b=A@r (about five binary64 ulps); the measured spread was 9.77e-15",
-      "altbuild": "the pybind11/C++ core built with -Doptimization=0 -Dbuildtype=debug (meson-python), instead of the pinned release build",
+      "variant": "rhs_scale changes from 1.0 to 1.000000000000001 on the first entry of the random vector that builds b=A@r (about five binary64 ulps); the measured spread was 7.77e-15",
+      "altbuild": "the pybind11/C++ core built with -Doptimization=0 (meson-python; buildtype stays release, no added debug info), instead of the pinned -O3 release build",
       "bounds": [
         1e-12,
         1e-10
@@ -233,7 +233,7 @@
         "SAB_PROBE_SIZE=40  poisson grid edge (N); the strength graph and removal pass grow roughly as N^2"
       ],
       "variant": "matrix_perturb_ulps changes from 0 to 2 on the matrix's first stored entry; the measured spread was 1.78e-15",
-      "altbuild": "the pybind11/C++ core built with -Doptimization=0 -Dbuildtype=debug (meson-python), instead of the pinned release build",
+      "altbuild": "the pybind11/C++ core built with -Doptimization=0 (meson-python; buildtype stays release, no added debug info), instead of the pinned -O3 release build",
       "bounds": [
         1e-12,
         1e-10
@@ -246,7 +246,7 @@
       "labels": [],
       "knobs": [],
       "variant": "matrix_perturb_ulps changes from 0 to 2 (two ulps) on airfoil's first stored matrix entry; RS's C/F choice is a discrete graph-coloring decision, and the measured nominal-versus-variant spread was exactly 0 (the split is insensitive to a two-ulp change), so the variant is effectively identical: selfcheck must confirm the perturbed ic/variant input differs byte-wise from ic/nominal even though the graded output does not.",
-      "altbuild": "the pybind11/C++ core built with -Doptimization=0 -Dbuildtype=debug (meson-python), instead of the pinned release build",
+      "altbuild": "the pybind11/C++ core built with -Doptimization=0 (meson-python; buildtype stays release, no added debug info), instead of the pinned -O3 release build",
       "no_knobs": true,
       "bounds": [
         1e-12,
