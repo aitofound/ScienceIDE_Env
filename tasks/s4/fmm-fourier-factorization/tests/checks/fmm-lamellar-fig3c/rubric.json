@@ -20,10 +20,19 @@
     ]
   },
   "evidence": {
-    "floor": 1.4599432773820809e-12,
-    "floor_how": "Measured by run.sh altbuild: the same source rebuilt at -O0 with -DHAVE_BLAS -DHAVE_LAPACK, run on ic/nominal and compared with this check's own validator. Per stream - stdout: 180 values, spread 2.010e-12, altbuild floor 1.460e-12. Choosing the two build changes together was deliberate: tested separately, -DHAVE_LAPACK alone leaves the rasterization output bit-identical and -O0 alone leaves Li's crossed-grating output bit-identical, so either one on its own would have recorded a floor of zero on part of this suite.",
-    "self_validation_spread": null,
-    "self_validation_bound_fraction": null
+    "floor": 2.280065025672684e-12,
+    "floor_how": "measured by selfcheck on 2026-09-06: run.sh altbuild (-O0 instead of -O2, plus -DHAVE_BLAS -DHAVE_LAPACK (LAPACK zgeev in place of the in-tree eigensolver)) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
+    "self_validation_spread": 6.610045844013257e-12,
+    "self_validation_bound_fraction": null,
+    "altbuild": {
+      "what": "-O0 instead of -O2, plus -DHAVE_BLAS -DHAVE_LAPACK (LAPACK zgeev in place of the in-tree eigensolver)",
+      "distance": 2.280065025672684e-12,
+      "bound_fraction": null,
+      "identical": false,
+      "passed": true,
+      "reason": "all graded values within bound",
+      "at": "2026-09-06T01:14:46Z"
+    }
   },
   "warrant": "Physical. A third lamellar configuration, 180 graded values is produced by the Fourier factorization this module owns - the Toeplitz permittivity and inverse-permittivity matrices, Kottke subpixel averaging and the polarization-basis construction - and it is exactly the quantity Li's inverse rule was invented to get right. A port that applies the direct rule where the inverse rule is required, drops the subpixel average, rasterises the shape at the wrong offset or truncates the Fourier sum asymmetrically changes these values in the third or fourth significant figure, not the twelfth, so a bound of 1e-08 separates a correct port from each of those faults by many orders of magnitude. Achievable. The bound sits 4975x above the largest measured difference between two legitimate results of this same check (2.010e-12), which is the larger of the alternative-build floor and the two-initial-condition spread. That headroom covers a different BLAS, instruction set or summation order on another platform while staying far below any physically wrong answer. Provenance: Liu & Fan, Opt. Express 17, 21897 (2009), Fig. 3c. "
 }
