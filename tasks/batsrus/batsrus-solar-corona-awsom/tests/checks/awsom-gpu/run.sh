@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Check awsom-gpu: the TEST half of the check.
 #   run.sh nominal | run.sh variant     run one initial condition (see ic/)
-#   run.sh --help                       list the runtime knobs below
+#   run.sh altbuild                     OPTIONAL: the nominal inputs on the alternative build (ALTBUILD below)
+#   run.sh --help                       list the runtime knobs below, and the altbuild line when one is declared
 # Environment supplied by the produce driver: SOURCE_DIR (read-only source tree),
 # OUT_DIR (empty directory for the graded files), CHECK_DIR (this directory).
 # Reads only CHECK_DIR and SOURCE_DIR; no network; never modifies SOURCE_DIR.
@@ -25,16 +26,26 @@ knob SAB_TIME_SCALE "1.0" "multiplies every positive tSimulationMax, so it short
 knob SAB_MPI_RANKS "2" "MPI ranks of the graded run; the graded reference is produced with 2 (BATSRUS is rank-count independent only to round-off, so changing this changes the graded numbers)"
 knob SAB_MPI_EXTRA "" "extra arguments passed to mpiexec (for example --oversubscribe on a host with fewer slots than ranks); empty is the graded value and does not change the result"
 knob SAB_BUILD_JOBS "4" "make -j for the BATSRUS build; affects build time only, never the graded values"
-if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; exit 0; fi
+# Alternative build, OPTIONAL. Set ALTBUILD to one line naming a legitimately different build of the
+# same source (IEEE mode, -O0, a second compiler present in the image: something a correct candidate
+# could plausibly be) ONLY when this check can be built that way; leave it empty otherwise. When it is
+# set, `run.sh altbuild` runs ic/nominal on that build and selfcheck measures the check's floor from it.
+ALTBUILD="the same Config.pl configuration built with ./Config.pl -O0 before make BATSRUS, which sets every OPTn level of Makefile.conf to -O0 where the shipped gfortran template uses -O3; same pinned source, same deck"
+if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; [ -z "$ALTBUILD" ] || echo "altbuild: $ALTBUILD"; exit 0; fi
 
 set -euo pipefail
 # mpiexec forwards standard input to rank 0 and drains it. The produce driver
 # feeds the check list to its own loop on standard input, so a check that leaves
 # stdin connected swallows the checks after it; take stdin away here.
 exec < /dev/null
-IC="${1:?usage: run.sh <nominal|variant> | run.sh --help}"
+IC="${1:?usage: run.sh <nominal|variant|altbuild> | run.sh --help}"
 : "${SOURCE_DIR:?}" "${OUT_DIR:?}" "${CHECK_DIR:?}"
-[ -d "$CHECK_DIR/ic/$IC" ] || { echo "run.sh: no initial condition ic/$IC" >&2; exit 2; }
+INPUTS="$IC"
+if [ "$IC" = altbuild ]; then
+  [ -n "$ALTBUILD" ] || { echo "run.sh: this check declares no alternative build" >&2; exit 2; }
+  INPUTS=nominal
+fi
+[ -d "$CHECK_DIR/ic/$INPUTS" ] || { echo "run.sh: no initial condition ic/$INPUTS" >&2; exit 2; }
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 export LC_ALL=C          # silences the perl locale warnings of Config.pl and PostProc.pl
 cp -R "$SOURCE_DIR/." "$WORK/src"
@@ -47,6 +58,10 @@ BUILD_START=$(date +%s)
   ./Config.pl -default
   ./Config.pl -u=Awsom -e=Awsom -ng=2 -g=6,4,4
   ./Config.pl -opt=Param/CORONA/PARAM.in.Awsom.GPU
+  if [ "$IC" = altbuild ]; then
+    ./Config.pl -O0 >> "$WORK/config.log" 2>&1
+    grep -q '^OPT3 = -O0' Makefile.conf || { echo "run.sh: Config.pl -O0 did not set OPT3" >&2; exit 1; }
+  fi
   make -j"$SAB_BUILD_JOBS" BATSRUS
   make PIDL
 } > "$WORK/build.log" 2>&1 || { echo "run.sh: build failed" >&2; tail -n 60 "$WORK/build.log" >&2; exit 1; }
@@ -55,7 +70,7 @@ echo "SAB_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))"   # the driver records
 # ---- run directory and initial condition ------------------------------------
 make rundir RUNDIR="$WORK/src/run" COMPONENT=SC STANDALONE=YES GMDIR="$WORK/src" > "$WORK/rundir.log" 2>&1 \
   || { echo "run.sh: make rundir failed" >&2; tail -n 40 "$WORK/rundir.log" >&2; exit 1; }
-cp "$CHECK_DIR/ic/$IC/PARAM.in" "$WORK/src/run/PARAM.in"
+cp "$CHECK_DIR/ic/$INPUTS/PARAM.in" "$WORK/src/run/PARAM.in"
 
 # The knobs edit the copied PARAM.in only; at their defaults the file is unchanged.
 python3 - "$WORK/src/run/PARAM.in" "$SAB_MAX_ITERATION" "$SAB_SESSIONS" "$SAB_TIME_SCALE" <<'PY'

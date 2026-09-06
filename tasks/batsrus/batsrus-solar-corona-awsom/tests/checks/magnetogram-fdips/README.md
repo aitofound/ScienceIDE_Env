@@ -14,7 +14,7 @@ build is part of the check and never touches the source tree; `run.sh` prints
 
 `ic/nominal/` holds the inputs above, unchanged from the pinned tree.
 
-ic/variant/dipole11.out.gz is ic/nominal/dipole11.out.gz with every Br value of the magnetogram multiplied by 1 + 2e-10 and written back in the same fixed-width format, which is two units of the last printed digit of that file. The magnetogram is the physical input of the solver, and the potential-field problem is linear in it, so the perturbation is the smallest one this input can carry without being rounded away. The two files differ byte-wise (verified: the same rewrite at scale 1.0 reproduces the input byte for byte) and the graded outputs differ.
+ic/variant/dipole11.out.gz is ic/nominal/dipole11.out.gz with every Br value of the magnetogram multiplied by 1 + 2e-10 and written back in the same fixed-width format, which is two units of the last printed digit of that file. The magnetogram is the physical input of the solver, and the potential-field problem is linear in it, so the perturbation is the smallest one this input can carry without being rounded away. The two files differ byte-wise (verified: the same rewrite at scale 1.0 reproduces the input byte for byte) and the graded outputs differ. `run.sh altbuild` runs ic/nominal on the same configuration built with `./Config.pl -O0` added before `make`, instead of a second initial condition.
 
 ## The pass policy
 

@@ -14,7 +14,7 @@ build is part of the check and never touches the source tree; `run.sh` prints
 
 `ic/nominal/` holds the inputs above, unchanged from the pinned tree.
 
-ic/variant/PARAM.in is ic/nominal/PARAM.in with the single value 1e6 of #POYNTINGFLUX PoyntingFluxPerBSi written as 1.0000000000000002e6: two ulps of binary64, a relative change of 2.2e-16. PoyntingFluxPerBSi is the Poynting flux per unit magnetic field injected at the inner boundary, the one number that sets the Alfven-wave energy the whole AWSoM solution is driven by (src/ModTurbulence.f90 PoyntingFluxPerB), so the perturbation enters the very first source-term evaluation of every cell; it is far below any precision at which the parameter is known and far below the eleven digits the graded files carry, so the two runs differ by rounding alone. The two PARAM.in files differ byte-wise and the graded files differ.
+ic/variant/PARAM.in is ic/nominal/PARAM.in with the single value 1e6 of #POYNTINGFLUX PoyntingFluxPerBSi written as 1.0000000000000002e6: two ulps of binary64, a relative change of 2.2e-16. PoyntingFluxPerBSi is the Poynting flux per unit magnetic field injected at the inner boundary, the one number that sets the Alfven-wave energy the whole AWSoM solution is driven by (src/ModTurbulence.f90 PoyntingFluxPerB), so the perturbation enters the very first source-term evaluation of every cell; it is far below any precision at which the parameter is known and far below the eleven digits the graded files carry, so the two runs differ by rounding alone. The two PARAM.in files differ byte-wise and the graded files differ. `run.sh altbuild` runs ic/nominal on the same configuration built with `./Config.pl -O0` added before `make`, instead of a second initial condition.
 
 ## The pass policy
 
