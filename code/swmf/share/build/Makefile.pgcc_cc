@@ -1,0 +1,25 @@
+# C language related part of Makefile.conf: Makefile.pgcc
+C_COMPILER_NAME=pgcc
+# This file is for Bluewaters (and similar) system with PGI C compiler with cc wrapper
+
+COMPILE.c     = cc
+COMPILE.mpicc = CC
+COMPILE.mpicxx= CC
+
+LINK.cpp = ${COMPILE.c} -lstdc++
+
+CPPLIB = -lstdc++ -lmpi++ -lmpi_cxx
+
+#DEBUGC = -g
+
+.SUFFIXES: .c .cpp
+
+FLAGC = ${SEARCH_C} ${FLAGC_EXTRA} -c ${OPT3} ${OPENMPFLAG} ${DEBUGC}
+
+FLAGCC = ${FLAGC} -std=c++11
+
+.c.o:
+	${COMPILE.c} ${FLAGC} $< -o $@
+
+.cpp.o:
+	${COMPILE.mpicxx} ${FLAGCC} $< -o $@

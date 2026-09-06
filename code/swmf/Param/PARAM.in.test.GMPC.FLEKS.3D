@@ -1,0 +1,230 @@
+ID Root Last Stride
+#COMPONENTMAP
+GM  0 -1  1		CompMap
+PC  0  7  1		CompMap
+
+#DESCRIPTION
+Param/PARAM.in.test.GMPC.FLEKS.3D: Run GM and PC in time accurate mode		StringDescription
+
+#PLANET
+NONE			NamePlanet
+
+#TIMEACCURATE
+T			IsTimeAccurate
+
+#SAVERESTART
+F			DoSaveRestart
+
+#PROGRESS
+1			DnProgressShort
+1			DnProgressLong
+
+#COUPLE2
+GM			NameComp1		NameSource
+PC			NameComp2		NameTarget
+-1			DnCouple
+0.5			DtCouple
+
+#COUPLETIME
+PC			NameComp
+F			DoCoupleOnTime
+
+#BEGIN_COMP GM ---------------------------------------------------------------
+
+#IOUNITS
+NONE			TypeIoUnit
+
+#NORMALIZATION
+NONE			TypeNormalization
+
+#PLASMA
+1.0			FluidMass [amu]		MassFluid
+1.0			IonCharge [e]		ChargeIon
+1.0			ElectronTemperatureRatio
+
+#NONCONSERVATIVE
+T			UseNonConservative
+
+#CHECKGRIDSIZE
+4			nI
+4			nJ
+4			nK
+2050			MinBlockAll
+
+#GRID
+16			nRootBlock1
+8			nRootBlock2
+8			nRootBlock3
+-12.8			xMin
+ 12.8			xMax
+-6.4			yMin
+ 6.4			yMax
+-6.4			zMin
+ 6.4			zMax
+
+#UNIFORMSTATE
+1.0			StateVar Rho
+0.0			StateVar Ux
+0.0			StateVar Uy
+0.0			StateVar Uz
+0.0			StateVar Bx
+0.0			StateVar By
+0.015			StateVar Bz
+0.0			StateVar Hyp
+0.000157080		StateVar p
+
+#PICUNIT
+ 1.0			xUnitPicSi
+ 1.0			uUnitPicSi
+
+#PICGRID
+1			nPicGrid
+-6.4  			xMinPic
++6.4			xMaxPic
+-3.2			yMinPic
++3.2			yMaxPic
+-2.4			zMinPic
++2.4			zMaxPic
+0.8			DxPic
+0.8			DyPic
+0.8			DzPic
+
+#PICADAPT
+T			DoAdaptPic
+-1			DnAdaptPic
+1			DtAdaptPic
+
+#PICPATCH
+2			PatchSize
+
+#PICCRITERIA
+1			nPicCriteria
+rho			StringPicCriteria
+0			MinCriteriaValue
+0			MaxCriteriaValue
+
+#USERINPUTBEGIN -----------------------------------
+
+#GEM
+0.2			Apert		Amplitude
+
+#GEMPARAM
+0.005			B0
+0.000157080		Tp
+1.0			CurrentSheetWidth
+
+#GEMPERTURB
+0.0			ExponentialWidth		GaussWidthX
+0.0			ExponentialWidth		GaussWidthY
+25.6			WaveLengthX
+25.6			WaveLengthY
+
+#USERINPUTEND -------------------------------------
+
+#OUTERBOUNDARY
+periodic		TypeBc1		TypeCellBc
+periodic		TypeBc2		TypeCellBc
+float			TypeBc3		TypeCellBc
+float			TypeBc4		TypeCellBc
+float			TypeBc5		TypeCellBc
+float			TypeBc6		TypeCellBc
+
+#SCHEME
+2			nOrder
+Rusanov			TypeFlux
+minmod			TypeLimiter
+
+#HYPERBOLICDIVB
+T			UseHyperbolicDivb		UseHyperbolicDivB
+0.02			SpeedHypDim
+0.1			HypDecay
+
+#TIMESTEPPING
+2			nStage
+0.1			CflExpl
+
+#SAVELOGFILE
+F			DoSaveLogfile
+
+#SAVEINITIAL
+F			DoSaveInitial
+
+#END_COMP GM -----------------------------------------------------------------
+
+#BEGIN_COMP PC ---------------------------------------------------------------
+
+#TIMESTEPPING
+T			useFixedDt
+1			dt
+
+#RESAMPLING
+T			doReSampling
+0.95			splittingLimit  (0.8 is a typical value)
+1.1			mergingLimit (3 is a typical value)
+0.0			maxWeightRatio
+
+#SAVEPLOT
+1			nPlotFile
+3d var ascii planet		StringPlot
+4			DnSavePlot
+-1			DtSavePlot
+1			DxSavePlot
+{fluid} numS0 numS1		NameVars
+
+#END_COMP PC -----------------------------------------------------------------
+
+
+#STOP
+-1			MaxIter
+4			TimeMax
+
+#RUN ##########################################################################
+
+#BEGIN_COMP GM ---------------------------------------------------------------
+
+#PICCRITERIA
+1			nPicCriteria
+rho			StringPicCriteria
+-1			MinCriteriaValue
+1000			MaxCriteriaValue
+
+#END_COMP GM -----------------------------------------------------------------
+
+#STOP
+-1			MaxIter
+8			TimeMax
+
+#RUN ##########################################################################
+
+#BEGIN_COMP GM ---------------------------------------------------------------
+
+#PICCRITERIA
+1			nPicCriteria
+rho			StringPicCriteria
+0			MinCriteriaValue
+0			MaxCriteriaValue
+
+#END_COMP GM -----------------------------------------------------------------
+
+#STOP
+-1			MaxIter
+12			TimeMax
+
+#RUN ##########################################################################
+
+#BEGIN_COMP GM ---------------------------------------------------------------
+
+#PICCRITERIA
+1			nPicCriteria
+rho			StringPicCriteria
+-1			MinCriteriaValue
+1000			MaxCriteriaValue
+
+#END_COMP GM -----------------------------------------------------------------
+
+#STOP
+-1			MaxIter
+16			TimeMax
+
+
+
