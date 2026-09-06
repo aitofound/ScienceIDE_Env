@@ -24,6 +24,6 @@ Every binary64 value of `observable.npy` is compared under atol 1e-12 plus rtol 
 
 ## Evidence
 
-Calibration (x86 worker, 2026-09-06): maximum absolute spread PENDING_SPREAD, bound_fraction PENDING_FRACTION.
+Calibration (x86 worker, 2026-09-06): the numbers the final selfcheck measured are in `rubric.json`.
 The final selfcheck's numbers are in `rubric.json`'s `evidence.self_validation_spread` and
 `evidence.self_validation_bound_fraction`; the altbuild floor is in `evidence.floor`.
