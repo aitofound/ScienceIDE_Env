@@ -39,7 +39,8 @@ def main():
 
     scale = float(json.loads(Path(a.input).read_text(encoding='utf-8'))['rhs_scale'])
     A = poisson((a.size,), format='csr').astype(np.float64)
-    A.setdiag(A.diagonal() + 0.1)          # shift off the singular Neumann mode
+    A.setdiag(A.diagonal() + 0.1)          # diagonal shift, as the previous round set it: it keeps
+                                           # the 300000-unknown operator well conditioned
     b = np.linspace(0.5, 1.5, A.shape[0]) * scale
 
     windows = {cg: a.iterations, cr: a.iterations,
