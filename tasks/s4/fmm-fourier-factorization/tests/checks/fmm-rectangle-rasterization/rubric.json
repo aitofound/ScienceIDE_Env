@@ -24,10 +24,19 @@
     ]
   },
   "evidence": {
-    "floor": 1.0047518372857667e-14,
-    "floor_how": "Measured by run.sh altbuild: the same source rebuilt at -O0 with -DHAVE_BLAS -DHAVE_LAPACK, run on ic/nominal and compared with this check's own validator. Per stream - stdout: 16384 values, spread 1.000e-06, altbuild floor 0.000e+00; stderr: 90000 values, spread 1.358e-09, altbuild floor 1.005e-14. Choosing the two build changes together was deliberate: tested separately, -DHAVE_LAPACK alone leaves the rasterization output bit-identical and -O0 alone leaves Li's crossed-grating output bit-identical, so either one on its own would have recorded a floor of zero on part of this suite.",
-    "self_validation_spread": null,
-    "self_validation_bound_fraction": null
+    "floor": 1.000088900582341e-12,
+    "floor_how": "measured by selfcheck on 2026-09-06: run.sh altbuild (-O0 instead of -O2, plus -DHAVE_BLAS -DHAVE_LAPACK (LAPACK zgeev in place of the in-tree eigensolver)) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
+    "self_validation_spread": 1.0000000010279564e-06,
+    "self_validation_bound_fraction": null,
+    "altbuild": {
+      "what": "-O0 instead of -O2, plus -DHAVE_BLAS -DHAVE_LAPACK (LAPACK zgeev in place of the in-tree eigensolver)",
+      "distance": 1.000088900582341e-12,
+      "bound_fraction": null,
+      "identical": false,
+      "passed": true,
+      "reason": "all graded values within bound",
+      "at": "2026-09-06T01:14:47Z"
+    }
   },
   "warrant": "Physical. The fourier reconstruction of the permittivity for this shape, graded on two files: the 64x64 unit-cell realization (stdout) and the 151x151 real-space epsilon map (stderr) is produced by the Fourier factorization this module owns - the Toeplitz permittivity and inverse-permittivity matrices, Kottke subpixel averaging and the polarization-basis construction - and it is exactly the quantity Li's inverse rule was invented to get right. A port that applies the direct rule where the inverse rule is required, drops the subpixel average, rasterises the shape at the wrong offset or truncates the Fourier sum asymmetrically changes these values in the third or fourth significant figure, not the twelfth, so a bound of 0.001 separates a correct port from each of those faults by many orders of magnitude. Achievable. The bound sits 1000x above the largest measured difference between two legitimate results of this same check (1.000e-06), which is the larger of the alternative-build floor and the two-initial-condition spread. That headroom covers a different BLAS, instruction set or summation order on another platform while staying far below any physically wrong answer. "
 }

@@ -15,15 +15,24 @@
     "files": [
       {
         "path": "output.txt",
-        "format": "s4-text"
+        "format": "s4-orders"
       }
     ]
   },
   "evidence": {
-    "floor": 4.0072112295064244e-16,
-    "floor_how": "Measured by run.sh altbuild: the same source rebuilt at -O0 with -DHAVE_BLAS -DHAVE_LAPACK, run on ic/nominal and compared with this check's own validator. Per stream - stdout: 392 values, spread 1.006e-16, altbuild floor 4.007e-16. Choosing the two build changes together was deliberate: tested separately, -DHAVE_LAPACK alone leaves the rasterization output bit-identical and -O0 alone leaves Li's crossed-grating output bit-identical, so either one on its own would have recorded a floor of zero on part of this suite.",
-    "self_validation_spread": null,
-    "self_validation_bound_fraction": null
+    "floor": 12.0,
+    "floor_how": "measured by selfcheck on 2026-09-06: run.sh altbuild (-O0 instead of -O2, plus -DHAVE_BLAS -DHAVE_LAPACK (LAPACK zgeev in place of the in-tree eigensolver)) against run.sh nominal, graded with the check's own validate.py: output.txt: 112 of 392 values exceed atol=1e-12 rtol=0 (max |err| 1.200e+01)",
+    "self_validation_spread": 1.0061396160665481e-16,
+    "self_validation_bound_fraction": null,
+    "altbuild": {
+      "what": "-O0 instead of -O2, plus -DHAVE_BLAS -DHAVE_LAPACK (LAPACK zgeev in place of the in-tree eigensolver)",
+      "distance": 12.0,
+      "bound_fraction": null,
+      "identical": false,
+      "passed": false,
+      "reason": "output.txt: 112 of 392 values exceed atol=1e-12 rtol=0 (max |err| 1.200e+01)",
+      "at": "2026-09-06T01:14:46Z"
+    }
   },
   "warrant": "Physical. The diffraction efficiency of every propagating order of a 2-d crossed rectangular grating is produced by the Fourier factorization this module owns - the Toeplitz permittivity and inverse-permittivity matrices, Kottke subpixel averaging and the polarization-basis construction - and it is exactly the quantity Li's inverse rule was invented to get right. A port that applies the direct rule where the inverse rule is required, drops the subpixel average, rasterises the shape at the wrong offset or truncates the Fourier sum asymmetrically changes these values in the third or fourth significant figure, not the twelfth, so a bound of 1e-12 separates a correct port from each of those faults by many orders of magnitude. Achievable. The bound sits 2496x above the largest measured difference between two legitimate results of this same check (4.007e-16), which is the larger of the alternative-build floor and the two-initial-condition spread. That headroom covers a different BLAS, instruction set or summation order on another platform while staying far below any physically wrong answer. Provenance: Li, JOSA A 14, 2758 (1997), Example 1. "
 }
