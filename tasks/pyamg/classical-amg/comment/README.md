@@ -91,29 +91,49 @@ not covered by this bound.
 
 Every check declares `run.sh altbuild`: the pybind11/C++ core built with
 `-Doptimization=0` only (meson-python; buildtype stays release, so no `-g`
-debug info is added -- see "Build caps" below for why). Per the pitfall
-`altbuild-floors-are-host-specific`, an x86 worker's `-O0` may floor at (or
-very near) zero if no FMA/reassociation reaches the graded arithmetic on
-baseline gcc; the measured floor from this revision's selfcheck is recorded
-per check in rubric.json's `evidence.floor` and reported, not called
-"stable" if it is exactly zero.
+debug info is added -- see "Build caps" below for why).
+
+**Measured: the floor is exactly zero on all 17 checks.** The `-O0` build's
+output was bit-identical to the pinned `-O3` build's for every graded array on
+this x86_64 worker (gcc 12, Debian bookworm), so `evidence.floor` is 0.0
+everywhere. This is exactly the pitfall `altbuild-floors-are-host-specific`,
+and it is reported as a measurement, not as evidence that the checks are
+"stable": a zero floor says this compiler pair did not reorder any graded
+arithmetic here, not that no legitimate build can. PyAMG's classical kernels
+are integer-indexed graph walks and short scalar accumulations over CSR rows
+with no reduction long enough for gcc to vectorise or contract into an FMA at
+`-O3`, which is the mechanism that makes the two builds agree bit for bit. On
+a host where FMA contraction does reach these loops (arm64, per the pitfall)
+the floor would not be zero, and the bound would need re-reading there.
+
+The consequence a reviewer should weigh: on the seven checks whose variant is
+also exactly identical (below), neither the variant nor the altbuild supplies
+any measured sensitivity, so their bound rests on the argument in the warrant
+alone -- that any implementation fault moves a discrete label by exactly 1.0,
+which is 12 orders of magnitude over atol.
 
 ## Runtime and budget
 
-Measured on the x86 worker under the declared 1 cpu / 2.0 GB: 135 s of check
-run time on one initial condition, against the 900 s `suite_budget_s`
-guidance. Two checks dominate it, `air-upwind-advection` (56 s: `local_air`
-assembles a small local least-squares system per F-point on the 900-unknown
-advection operator, four levels deep) and `ruge-stuben-poisson-convergence`
-(35 s: three interpolation choices x 15 V-cycles on a 62500-unknown Poisson
-problem); both expose the size and the cycle count as knobs, and both stay in
-because the physics they exercise needs the size. Every `expected_runtime_s`
-in this revision is the measured per-check run time, not an estimate.
+Measured on the x86 worker under the declared 1 cpu / 2.0 GB: **81.8 s** of
+check run time on one initial condition, against the 900 s `suite_budget_s`
+guidance (`budget: within`). Two checks dominate it,
+`ruge-stuben-poisson-convergence` (26.8 s: three interpolation choices x 15
+V-cycles on a 62500-unknown Poisson problem) and `air-upwind-advection`
+(20.9 s: `air_solver`'s `local_air` restriction assembles a small local
+least-squares system per F-point on the advection_2d operator, four levels
+deep); together they are 58% of the suite. Both expose their size and cycle
+count as knobs and both stay at these sizes because that is what the physics
+needs. Every `expected_runtime_s` is a measured per-check run time, taken from
+an earlier run on the same host while it carried more load (2.9-56 s there
+against 1.4-26.8 s here), so each is conservative and none trips the
+freshness warning.
 
 Build time is the larger number and is excluded from the budget by design:
-each of the 17 checks builds the pinned pybind11 core itself, about 147 s each,
-2506 s per solve. The three-solve selfcheck therefore costs hours of wall
-time, almost all of it compiling.
+each of the 17 checks builds the pinned pybind11 core itself, 1483 s per solve
+here. The three solves took 1567 s, 1491 s and 919 s of wall time (the
+altbuild solve is faster because `-O0` compiles quicker than `-O3`), so a full
+selfcheck is about an hour, almost all of it compiling. Sharing one build
+across checks would break the self-contained-check rule, so it was not done.
 
 ## Blind spots
 
