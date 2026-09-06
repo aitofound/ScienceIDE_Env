@@ -1,0 +1,119 @@
+name: Tests
+
+# Test on all pushes, except when the push is literally just a tag (because we
+# tag automatically via CI, and therefore there's no extra code in that push).
+on:
+  push:
+    tags-ignore:
+      - 'v*'
+  pull_request:
+    branches:
+      - '*'
+
+
+jobs:
+  tests:
+    env:
+      ENV_NAME: tests
+      PYTHON: ${{ matrix.python-version }}
+      OS: ${{ matrix.os }}
+      CC: ${{ matrix.compiler }}
+    name: Test Suite
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # include only unique combinations to test all the "corners" of the matrix
+          # without testing every single combination (which would be too much).
+          - os: ubuntu-latest
+            python-version: "3.12"
+            compiler: gcc
+          - os: ubuntu-latest
+            python-version: "3.13"
+            compiler: clang
+          - os: macos-latest
+            python-version: "3.14"
+            compiler: gcc
+          - os: macos-latest
+            python-version: "3.12"
+            compiler: clang
+
+    defaults:
+     run:
+       # Adding -l {0} ensures conda can be found properly in each step
+       shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@master
+        with:
+          fetch-depth: 0
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v4
+        with:
+          channels: conda-forge,defaults
+          python-version: ${{ matrix.python-version }}
+          channel-priority: true
+
+      - name: Make it a Debug Run
+        if: "contains(env.commit_message, 'ci debug')"
+        run: |
+          echo "log_level=ULTRA_DEBUG" >> $GITHUB_ENV
+          echo "extra_pytest_args=-s --log-level-21=DEBUG" >> $GITHUB_ENV
+
+      - name: Make it a Normal Run
+        if: "!contains(env.commit_message, 'ci debug')"
+        run: |
+          echo "log_level=WARNING" >> $GITHUB_ENV
+          echo "extra_pytest_args=" >> $GITHUB_ENV
+
+      - name: Install Non-Python Dependencies
+        run: |
+          conda install pip fftw gsl numba compilers pkg-config
+
+      - name: Install OpenMP for clang on Linux
+        if: matrix.os == 'ubuntu-latest' && matrix.compiler == 'clang'
+        run: |
+          conda install llvm-openmp
+
+      - name: Install 21cmFAST
+        run: |
+          LOG_LEVEL=${{ env.log_level }} python -m pip install ".[dev]"
+
+      - name: Run Unit Tests
+        run: |
+          python -m pytest -n 2 -l ${{ env.extra_pytest_args }} \
+          --ignore tests/test_integration_features.py \
+          --cov=py21cmfast --cov-config=.coveragerc \
+          -vv --cov-report xml:./coverage.xml --durations=25
+
+
+      - name: Run Integration Tests
+        run: |
+          python -m pytest -n 2 -l ${{ env.extra_pytest_args }} \
+            tests/test_integration_features.py \
+            --cov=py21cmfast --cov-config=.coveragerc \
+            -vv  --cov-append --cov-report xml:./coverage.xml \
+            --durations=25 --plots=testplots \
+            --junitxml=junit.xml -o junit_family=legacy
+
+      - name: Archive Integration Test Plots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: integration-test-plots-${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.compiler }}
+          path: |
+            testplots/*.pdf
+
+      - uses: codecov/codecov-action@v6
+        if: matrix.os == 'ubuntu-latest' && success() && !contains(github.event.pull_request.labels.*.name, 'auto-pr')
+        with:
+          fail_ci_if_error: true
+          verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
