@@ -1,0 +1,141 @@
+[build-system]
+requires = ["scikit-build-core>=0.10", "numpy"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "mink"
+version = "1.3.0"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+readme = { file = "README.md", content-type = "text/markdown" }
+authors = [
+    {name = "Kevin Zakka", email = "zakka@berkeley.edu"},
+]
+keywords = ["inverse", "kinematics", "mujoco"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Framework :: Robot Framework :: Library",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering",
+]
+description = "Python inverse kinematics based on MuJoCo"
+requires-python = ">=3.10"
+dependencies = [
+    "mujoco >= 3.10.0",
+    "qpsolvers[daqp] >= 4.12.0",
+    "typing_extensions",
+]
+
+[dependency-groups]
+dev = [
+    "ipdb>=0.13.13",
+    "pyright>=1.1.408",
+    "pytest>=9.0.3",
+    "absl-py",
+    "coveralls",
+    "robot_descriptions>=1.14.0",
+    "ruff>=0.14.3",
+    "ty>=0.0.1a23",
+    "loop-rate-limiters >= 0.1.0",
+    "imageio>=2.37.3",
+    "imageio-ffmpeg>=0.6.0",
+]
+doc = [
+    "sphinx>=7.2.6",
+    "sphinx-autobuild",
+    "sphinx-copybutton",
+    "sphinx-design",
+    "sphinx-favicon",
+    "sphinx-mathjax-offline",
+    "toml>=0.10.2",
+    "sphinx-book-theme>=1.1.4",
+]
+
+[project.urls]
+Source = "https://github.com/kevinzakka/mink"
+Tracker = "https://github.com/kevinzakka/mink/issues"
+Changelog = "https://github.com/kevinzakka/mink/blob/main/CHANGELOG.md"
+Homepage = "https://kevinzakka.github.io/mink/"
+Documentation = "https://kevinzakka.github.io/mink/"
+
+[tool.ruff]
+src = ["src"]  # Helpful for recognizing first-party imports.
+exclude = [
+  "typings",
+]
+lint.select = [
+    "E",    # pycodestyle errors.
+    "F",    # Pyflakes rules.
+    "PLC",  # Pylint convention warnings.
+    "PLE",  # Pylint errors.
+    "PLR",  # Pylint refactor recommendations.
+    "PLW",  # Pylint warnings.
+    "I",    # Import sorting.
+]
+lint.ignore = [
+    "E741",     # Ambiguous variable name. (l, O, or I)
+    "E501",     # Line too long.
+    "PLR2004",  # Magic value used in comparison.
+    "PLR0915",  # Too many statements.
+    "PLR0913",  # Too many arguments.
+    "PLC0414",  # Import alias does not rename variable.
+    "PLC1901",  # Use falsey strings.
+    "PLR5501",  # Use `elif` instead of `else if`.
+    "PLR0911",  # Too many return statements.
+    "PLR0912",  # Too many branches.
+    "PLW0603",  # Global statement updates are discouraged.
+    "PLW2901",  # For loop variable overwritten.
+]
+
+[tool.pyright]
+pythonVersion = "3.10"
+ignore = ["typings", "scripts", "docs"]
+stubPath = "typings"
+
+[tool.ty.environment]
+extra-paths = ["typings"]
+
+[tool.ty.src]
+include = ["src", "tests"]
+exclude = ["typings"]
+
+[tool.coverage.report]
+exclude_also = [
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+    "def __repr__",
+    "if use_taylor:",
+    "if t2 < get_epsilon",
+    "if norm < get_epsilon",
+    "MINK_DISABLE_NATIVE",
+    "except ImportError:",
+    "def ljac",
+    "def rjac",
+]
+omit = [
+    "*exceptions.py",
+    "*/contrib/*",
+]
+
+[tool.scikit-build]
+wheel.packages = ["src/mink"]
+sdist.exclude = ["examples", "benchmarks", "docs", "tests", "typings", "uv.lock"]
+
+[tool.cibuildwheel]
+build-frontend = "build[uv]"
+
+[tool.cibuildwheel.macos]
+archs = ["x86_64", "arm64"]
+
+[[tool.scikit-build.overrides]]
+if.failed = true
+wheel.cmake = false
+wheel.packages = ["src/mink"]
