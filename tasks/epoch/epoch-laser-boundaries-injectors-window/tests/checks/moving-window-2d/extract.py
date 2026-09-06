@@ -110,12 +110,17 @@ def main() -> int:
     assert group == "main"
     for d in DUMPS:
         blocks = read_blocks(run_dir / f"{d:04d}.sdf")
-        x, y = blocks["Grid/Grid"][0], blocks["Grid/Grid"][1]
+        x_nodes, y_nodes = blocks["Grid/Grid"][0], blocks["Grid/Grid"][1]
         rho = blocks["Derived/Number_Density/electron"]  # shape (nx, ny)
-        dx, dy = _spacing(x), _spacing(y)
+        dx, dy = _spacing(x_nodes), _spacing(y_nodes)
 
-        write_row(out_dir, f"grid_dump{d:04d}.txt", [float(x[0]), float(x[-1] - x[0])])
+        write_row(out_dir, f"grid_dump{d:04d}.txt", [float(x_nodes[0]), float(x_nodes[-1] - x_nodes[0])])
 
+        # Grid/Grid is node-centered (nx+1/ny+1 points); density is
+        # cell-centered. Use cell-centre coordinates for the moments
+        # (measured on the worker 2026-09-06).
+        x = 0.5 * (x_nodes[:-1] + x_nodes[1:])
+        y = 0.5 * (y_nodes[:-1] + y_nodes[1:])
         xg, yg = np.meshgrid(x, y, indexing="ij")
         excess = rho - DENS_BG
         excess_mass = float(excess.sum() * dx * dy)
