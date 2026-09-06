@@ -1,0 +1,54 @@
+ModReadParam::read_file: read and broadcast nLine= 116 lines of text
+
+#MAGNETOGRAMFILE
+dipole11.out		NameFileIn
+3500.0			BrMax
+
+#CHANGEPOLARFIELD
+3.0			PolarFactor
+2.0			PolarExponent
+
+#DOMAIN
+1.0			rMin         (default is 1)
+25.0			rMax         (default is 2.5)
+T			UseLogRadius (default is F)
+F			UseWedge
+
+#CHEBYSHEV
+F			UseChebyshevNode
+
+#GRID
+20			nR
+20			nTheta		nThetaCoarse
+20			nPhi		nPhiCoarse
+
+#TIMING
+F			UseTiming
+
+#PARALLEL
+2			nProcTheta
+2			nProcPhi
+
+#SOLVER                 ! NO HYPRE
+BiCGSTAB		NameSolver (BiCGSTAB)
+ILU			NamePreconditioner (ILU or NONE)
+1e-10			Tolerance
+
+#OUTPUT
+field			TypeOutput    (field, bxyz, potential, or tecplot)
+fdips_field.out		NameFileField
+ascii			TypeFileField (ascii, real4 or real8)
+
+#OUTPUT
+bxyz			TypeOutput    (field, bxyz, potential, or tecplot)
+fdips_bxyz.out		NameFileField		NameFileBxyz
+ascii			TypeFileField (ascii, real4 or real8)		TypeFileBxyz
+ read_orig_magnetogram: nTheta0, nPhi0, LongitudeShift =  180 360   0.0000000000000000   0.0000000000000000
+ read_orig_magnetogram: Removing BrAverage =   3.3101093882342630E-18
+ nThetaLgr =  10 nThetaSml =  10
+ nPhiLgr   =  10 nPhiSml   =  10
+ Partitioning in nThetaAll gives:  20 Actual nThetaAll is:  20
+ Partitioning in nPhiAll gives:    20 Actual nPhiAll is:    20
+ nIter, Tolerance, iError= 72   9.2142892232256361E-11 0
+ max(abs(divb)) =    5.9010161201911160E-09
+ nProcTheta, nProcPhi= 2 2

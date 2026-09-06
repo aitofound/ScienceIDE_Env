@@ -1,0 +1,71 @@
+#ifndef _CONSTANTS_H_
+#define _CONSTANTS_H_
+
+#include <AMReX.H>
+#include <AMReX_SPACE.H>
+
+//========= Physical constants =====================
+inline constexpr double fourPI = 3.14159265359 * 4;
+inline constexpr double dPI = 3.14159265358979323846;
+
+inline constexpr double cProtonMassSI = 1.67262192e-27; // kg
+inline constexpr double cUnitChargeSI = 1.60217663e-19; // C
+
+inline constexpr double cBoltzmannSI = 1.380649e-23;
+
+inline constexpr double mu0 = fourPI * 1e-7; // unit N/A^2
+
+inline constexpr double cAUSI = 1.495978707e11; // m
+
+inline constexpr double gamma0 = 5./3; 
+inline constexpr double invGamma = 1./gamma0;
+//===================================================
+
+//========= Numerical constants =====================
+// Sentinel stored in the cells that a regrid creates and the old grid does
+// not cover.
+inline constexpr double cUninitialized = -1e30;
+
+// FLEKS is always 3D. But it can be fake 2D with one cell in the z-direction.
+inline constexpr int nDim = amrex::SpaceDim;
+
+// Always contains 3 velocity components.
+inline constexpr int nDim3 = 3; 
+
+namespace config{
+// Level of grids. 
+inline constexpr int nLevMax = 1; 
+}
+
+inline constexpr int ix_ = 0, iy_ = 1, iz_ = 2;
+inline constexpr int iSupID_ = 0; 
+
+inline constexpr int nMoments = 11;
+inline constexpr int iRho_ = 0;
+inline constexpr int iUx_ = 1, iUy_ = 2, iUz_ = 3;
+inline constexpr int iMx_ = 1, iMy_ = 2, iMz_ = 3;
+inline constexpr int iPxx_ = 4, iPyy_ = 5, iPzz_ = 6, iPxy_ = 7, iPxz_ = 8,
+                     iPyz_ = 9, iNum_ = 10;
+// Number of ion moment components (rho + 3 momentum) used by the hybrid solver.
+inline constexpr int nHybridMomentsComps = 4;
+
+inline constexpr bool doTiling = false;                
+
+inline constexpr int nPicPartReal = 4;
+inline constexpr int nPicPartInt = 1;
+
+inline constexpr int nPTRecord = 20;
+inline constexpr int ptRecordSize = 7;
+inline constexpr int nPTPartReal = nPicPartReal + ptRecordSize * nPTRecord,
+                     nPTPartInt = 2;
+#ifdef _PT_COMPONENT_
+static const std::string component = "PT";
+#else
+static const std::string component = "PC";
+#endif
+
+inline constexpr int iSuccess = 0; 
+inline constexpr int iFail = 1; 
+
+enum FluidType { PICFluid, InteractionFluid, SourceFluid };
+#endif
