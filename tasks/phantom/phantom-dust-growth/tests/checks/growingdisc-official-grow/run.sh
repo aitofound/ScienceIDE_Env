@@ -20,21 +20,39 @@ knob SAB_TMAX "1.777E+04" "tmax of grow.in in code units; the release value; nma
 knob SAB_NMAX "-1" "cap on the number of time steps (nmax in the .in); -1 runs to the window above (graded); a small cap exercises build, setup, run and output only"
 knob SAB_THREADS "2" "OMP_NUM_THREADS for phantomsetup and phantom; the graded default; changing it changes the order in which the OpenMP loops sum, so the graded arrays may move at round-off, within the check's bound"
 knob SAB_MAXP "20000" "particle-array bound passed to phantomsetup as --maxp; must exceed SAB_NP+SAB_NP_DUST"
-# Alternative build: Phantom's own gfortran DEBUG=yes build replaces -O3 with -O0 and enables its runtime checks.
-# `run.sh altbuild` uses the nominal inputs; selfcheck measures the floor from the second legitimate build.
-ALTBUILD="make SYSTEM=gfortran OPENMP=yes DEBUG=yes: the same pinned source with Phantom's own -O0 gfortran debug build (bounds, NaN and floating-point checks) instead of the nominal -O3 build"
+# Alternative build: this check falls back to the optimisation change alone, no runtime
+# checks. Phantom's own DEBUG=yes build (make SYSTEM=gfortran OPENMP=yes DEBUG=yes, the
+# alternative build of the other nine checks of this leaf) traps a SIGFPE on the very first
+# call to check_dustprop (src/main/growth.f90:604): before the porosity module has assigned
+# any particle a real filling factor, both filfacprev(i) and filfac(i) are 0, get_size
+# (growth.f90:1053, `if (dens>0 .and. f>0) ... else get_size=0`) returns 0 for both sdustprev
+# and sdust, and line 604's sdustprev/sdust term evaluates 0.0/0.0 - an indeterminate IEEE
+# operation the nominal -O3 build silently carries forward as a transient NaN (overwritten by
+# the next real filling-factor update) and that -ffpe-trap=invalid halts on. Per the curator's
+# 2026-09-05 ruling this check's altbuild is the flags-preserving build without the runtime
+# checks: the same pinned source and nominal inputs, only FFLAGS -O3 -> -O0 in the scratch
+# copy of build/Makefile_defaults_gfortran, MAKE_EXTRA=() empty (no DEBUGFLAG, no -ffpe-trap).
+# `run.sh altbuild` uses the nominal inputs; selfcheck measures the floor from this build.
+ALTBUILD="sed the one FFLAGS+= -O3 line of the scratch copy's build/Makefile_defaults_gfortran to -O0, MAKE_EXTRA=() empty: the same pinned source and nominal inputs with only the optimisation flag changed and no runtime checks - make SYSTEM=gfortran OPENMP=yes DEBUG=yes (this leaf's other nine checks) traps a SIGFPE in check_dustprop (src/main/growth.f90:604) on the very first call, before the porosity module sets a real filling factor"
 if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; [ -z "$ALTBUILD" ] || echo "altbuild: $ALTBUILD"; exit 0; fi
 
 set -euo pipefail
 IC="${1:?usage: run.sh <nominal|variant|altbuild> | run.sh --help}"
 : "${SOURCE_DIR:?}" "${OUT_DIR:?}" "${CHECK_DIR:?}"
 INPUTS="$IC"; MAKE_EXTRA=()
-if [ "$IC" = altbuild ]; then INPUTS=nominal; MAKE_EXTRA=(SYSTEM=gfortran OPENMP=yes DEBUG=yes); fi
+if [ "$IC" = altbuild ]; then INPUTS=nominal; fi
 [ -d "$CHECK_DIR/ic/$INPUTS" ] || { echo "run.sh: no initial condition ic/$INPUTS" >&2; exit 2; }
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 SRC="$WORK/src"; RUN="$WORK/run"
 mkdir -p "$RUN" "$SRC"
 cp -R "$SOURCE_DIR/." "$SRC"
+if [ "$IC" = altbuild ]; then
+  # Fallback (a) per the curator's 2026-09-05 ruling: the optimisation change alone, in the
+  # scratch copy only (SOURCE_DIR is never modified). make SYSTEM=gfortran OPENMP=yes
+  # DEBUG=yes traps a SIGFPE in check_dustprop (see ALTBUILD above); MAKE_EXTRA stays empty.
+  sed -i 's/^FFLAGS+= -O3 /FFLAGS+= -O0 /' "$SRC/build/Makefile_defaults_gfortran"
+  grep -q '^FFLAGS+= -O0 ' "$SRC/build/Makefile_defaults_gfortran" || { echo "run.sh: altbuild sed did not match the FFLAGS+= -O3 line" >&2; exit 2; }
+fi
 
 # The initial condition: this check's fixed inputs from ic/<ic>/.
 cp -R "$CHECK_DIR/ic/$INPUTS/." "$RUN/"
