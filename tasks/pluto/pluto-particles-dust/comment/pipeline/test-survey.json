@@ -1,0 +1,293 @@
+{
+  "module": "pluto-particles-dust",
+  "tests": [
+    {
+      "id": "cr-bell-1d-hancock-01",
+      "module": "pluto-particles-dust",
+      "path": "Test_Problems/Particles/CR/Bell_Instability/pluto_01.ini",
+      "policy": "pointwise",
+      "chaotic": true,
+      "exercises": "A cold cosmic-ray current stream (eps = 0.1, u_CR = v_A/eps) drives Bell's non-resonant instability in a 1D periodic box. Particles push the gas through the MHD-PIC momentum/energy feedback source; the seeded perpendicular field grows exponentially and saturates before t = 10.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 13,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "official Test_Problems configuration; deterministic serial arithmetic, dbl output; pointwise under a round-off-level bound is the natural policy (flagged chaotic: nonlinear instability or turbulence amplifies round-off; the calibration spread decides the window)",
+      "proposed_check": "cr-bell-1d-hancock-01"
+    },
+    {
+      "id": "cr-bell-2d-ct-vpot-03",
+      "module": "pluto-particles-dust",
+      "path": "Test_Problems/Particles/CR/Bell_Instability/pluto_03.ini",
+      "policy": "pointwise",
+      "chaotic": true,
+      "exercises": "The same instability rotated in the x-y plane so the wavevector is oblique to the grid (Lx = sqrt5, Ly = sqrt5/2). Staggered magnetic fields are initialised from the vector potential and evolved with constrained transport (arithmetic EMF average) while CR feedback acts in two dimensions.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 36,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "official Test_Problems configuration; deterministic serial arithmetic, dbl output; pointwise under a round-off-level bound is the natural policy (flagged chaotic: nonlinear instability or turbulence amplifies round-off; the calibration spread decides the window)",
+      "proposed_check": "cr-bell-2d-ct-vpot-03"
+    },
+    {
+      "id": "cr-bell-2d-ct-mpi2-04",
+      "module": "pluto-particles-dust",
+      "path": "Test_Problems/Particles/CR/Bell_Instability/pluto_04.ini",
+      "policy": "pointwise",
+      "chaotic": true,
+      "exercises": "Official configuration #04 is the parallel twin of #03 and is executed on two Open MPI ranks. Particles cross the rank boundary every step, feedback deposits straddle the sub-domain edge, and the reference dumps are written through the collective MPI-IO particle writers.",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 1.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 31,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "official Test_Problems configuration; deterministic serial arithmetic, dbl output; pointwise under a round-off-level bound is the natural policy (flagged chaotic: nonlinear instability or turbulence amplifies round-off; the calibration spread decides the window)",
+      "proposed_check": "cr-bell-2d-ct-mpi2-04"
+    },
+    {
+      "id": "cr-bell-3d-ct-contact-05",
+      "module": "pluto-particles-dust",
+      "path": "Test_Problems/Particles/CR/Bell_Instability/pluto_05.ini",
+      "policy": "pointwise",
+      "chaotic": true,
+      "exercises": "Full 3D Bell instability on a 96x48x48 box (one wavelength along the oblique wavevector) with 221,184 CR particles, constrained transport using the CT_CONTACT EMF average, divergence monitoring, and both VTK and binary64 particle dumps. This is the expensive row.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 204,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "official Test_Problems configuration; deterministic serial arithmetic, dbl output; pointwise under a round-off-level bound is the natural policy (flagged chaotic: nonlinear instability or turbulence amplifies round-off; the calibration spread decides the window)",
+      "proposed_check": "cr-bell-3d-ct-contact-05"
+    },
+    {
+      "id": "cr-gyration-nonrel-rest-01",
+      "module": "pluto-particles-dust",
+      "path": "Test_Problems/Particles/CR/Gyration/pluto_01.ini",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "One test particle (no feedback) gyrates in a uniform Bz = 1 field with the gas at rest. The co-moving-frame trajectory is written every step and compared with the analytic circular orbit; kinetic energy must be conserved by the Boris rotation.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 12,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "official Test_Problems configuration; deterministic serial arithmetic, dbl output; pointwise under a round-off-level bound is the natural policy",
+      "proposed_check": "cr-gyration-nonrel-rest-01"
+    },
+    {
+      "id": "cr-gyration-nonrel-drift-02",
+      "module": "pluto-particles-dust",
+      "path": "Test_Problems/Particles/CR/Gyration/pluto_02.ini",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The gas streams at v_x = 1 so the particle sees E = -v x B and drifts while gyrating. Analysis() Lorentz-transforms position and velocity into the co-moving frame where the orbit is again a circle.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 13,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "official Test_Problems configuration; deterministic serial arithmetic, dbl output; pointwise under a round-off-level bound is the natural policy",
+      "proposed_check": "cr-gyration-nonrel-drift-02"
+    },
+    {
+      "id": "cr-gyration-rel-rest-03",
+      "module": "pluto-particles-dust",
+      "path": "Test_Problems/Particles/CR/Gyration/pluto_03.ini",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Four-velocity u = 100 with c = 10 gives a Lorentz factor of about 10; the Larmor period stretches by gamma and tstop = 300 covers the same number of orbits at first_dt = 5.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 13,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "official Test_Problems configuration; deterministic serial arithmetic, dbl output; pointwise under a round-off-level bound is the natural policy",
+      "proposed_check": "cr-gyration-rel-rest-03"
+    },
+    {
+      "id": "cr-gyration-rel-drift-04",
+      "module": "pluto-particles-dust",
+      "path": "Test_Problems/Particles/CR/Gyration/pluto_04.ini",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Combines the gamma ~ 10 particle with a streaming fluid (v_x = 1): relativistic velocity addition at initialisation, the electric kick, and the Lorentz-transformed diagnostic all act at once.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 12,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "official Test_Problems configuration; deterministic serial arithmetic, dbl output; pointwise under a round-off-level bound is the natural policy",
+      "proposed_check": "cr-gyration-rel-drift-04"
+    },
+    {
+      "id": "cr-drift-nsub1-nopred-01",
+      "module": "pluto-particles-dust",
+      "path": "Test_Problems/Particles/CR/Relative_Drift/pluto_01.ini",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Gas and a 1% CR population start with opposite momenta in a uniform Bz = 2 pi field; momentum exchange makes both gyrate around the centre-of-momentum frame with the analytic frequency Omega = Omega_g + Omega_p. One particle sub-step per MHD step and no predictor (first-order coupling).",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 12,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "official Test_Problems configuration; deterministic serial arithmetic, dbl output; pointwise under a round-off-level bound is the natural policy",
+      "proposed_check": "cr-drift-nsub1-nopred-01"
+    },
+    {
+      "id": "cr-drift-nsub1-pred1-02",
+      "module": "pluto-particles-dust",
+      "path": "Test_Problems/Particles/CR/Relative_Drift/pluto_02.ini",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Same physics as row 01 with PARTICLES_CR_PREDICTOR = 1: the gas velocity seen by the particles is extrapolated to the half step before the kick, halving the phase error.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 13,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "official Test_Problems configuration; deterministic serial arithmetic, dbl output; pointwise under a round-off-level bound is the natural policy",
+      "proposed_check": "cr-drift-nsub1-pred1-02"
+    },
+    {
+      "id": "cr-drift-nsub5-nopred-03",
+      "module": "pluto-particles-dust",
+      "path": "Test_Problems/Particles/CR/Relative_Drift/pluto_03.ini",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Five fixed particle sub-steps per MHD step (PARTICLES_CR_NSUB = -5) without predictor; the sub-cycle loop, its intermediate field interpolation and the accumulated feedback across sub-steps are exercised.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 13,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "official Test_Problems configuration; deterministic serial arithmetic, dbl output; pointwise under a round-off-level bound is the natural policy",
+      "proposed_check": "cr-drift-nsub5-nopred-03"
+    },
+    {
+      "id": "cr-drift-nsub5-pred1-04",
+      "module": "pluto-particles-dust",
+      "path": "Test_Problems/Particles/CR/Relative_Drift/pluto_04.ini",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Combines five sub-steps with the first-order predictor, the most accurate Hancock variant of the official set (final analytic error ~1.3e-4).",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 13,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "official Test_Problems configuration; deterministic serial arithmetic, dbl output; pointwise under a round-off-level bound is the natural policy",
+      "proposed_check": "cr-drift-nsub5-pred1-04"
+    },
+    {
+      "id": "cr-drift-nsub4-pred2-05",
+      "module": "pluto-particles-dust",
+      "path": "Test_Problems/Particles/CR/Relative_Drift/pluto_05.ini",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "PARTICLES_CR_PREDICTOR = 2 forces an even sub-step count (Nsub = 4) and uses the second-order predictor-corrector coupling.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 13,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "official Test_Problems configuration; deterministic serial arithmetic, dbl output; pointwise under a round-off-level bound is the natural policy",
+      "proposed_check": "cr-drift-nsub4-pred2-05"
+    },
+    {
+      "id": "cr-drift-rk2-pred2-06",
+      "module": "pluto-particles-dust",
+      "path": "Test_Problems/Particles/CR/Relative_Drift/pluto_06.ini",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Identical particle settings to row 05 but the fluid advances with TIME_STEPPING = RK2 instead of MUSCL-Hancock, changing where in the stage sequence the feedback source and particle update are applied.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 12,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "official Test_Problems configuration; deterministic serial arithmetic, dbl output; pointwise under a round-off-level bound is the natural policy",
+      "proposed_check": "cr-drift-rk2-pred2-06"
+    },
+    {
+      "id": "cr-xpoint-noguide-01",
+      "module": "pluto-particles-dust",
+      "path": "Test_Problems/Particles/CR/Xpoint/pluto_01.ini",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "1,048,576 test particles with a seeded Maxwellian velocity spread are released in a frozen (tfreeze = 0) X-type reconnection field with an out-of-plane electric field cE_z = 0.5 on a 512x512 grid; they are accelerated and expelled through outflow boundaries over 200 pusher steps.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 8.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 48,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "official Test_Problems configuration; deterministic serial arithmetic, dbl output; pointwise under a round-off-level bound is the natural policy",
+      "proposed_check": "cr-xpoint-noguide-01"
+    },
+    {
+      "id": "cr-xpoint-guide-02",
+      "module": "pluto-particles-dust",
+      "path": "Test_Problems/Particles/CR/Xpoint/pluto_02.ini",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Same setup with a guide field B_z = 0.1: the guide field magnetises the orbits near the null, changes the acceleration efficiency and the escape pattern.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 8.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 46,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "official Test_Problems configuration; deterministic serial arithmetic, dbl output; pointwise under a round-off-level bound is the natural policy",
+      "proposed_check": "cr-xpoint-guide-02"
+    }
+  ]
+}

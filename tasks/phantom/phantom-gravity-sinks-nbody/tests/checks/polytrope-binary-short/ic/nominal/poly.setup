@@ -1,0 +1,45 @@
+# input file for binary and multiple star setup routines
+
+# units
+           mass_unit =      solarm    ! mass unit (e.g. solarm,jupiterm,1e6*solarm)
+           dist_unit =      solarr    ! distance unit (e.g. au,pc,kpc,0.1pc)
+
+# how many bodies
+              nstars =           2    ! number of bodies to add (0-10)
+
+# options for body 1
+           iprofile1 =           2    ! 0=Sink,1=Unif,2=Poly,3=Dens,4=KEPL,5=MESA,6=Piec
+              Rstar1 =    1.0 rsun    ! radius of body 1 (code units or e.g. 1 rsun)
+              Mstar1 =    1.0 msun    ! mass of body 1 (code units or e.g. 1 msun)
+                 np1 =        1000    ! number of particles
+
+# options for body 2
+           iprofile2 =           2    ! 0=Sink,1=Unif,2=Poly,3=Dens,4=KEPL,5=MESA,6=Piec
+              Rstar2 =    1.0 rsun    ! radius of body 2 (code units or e.g. 1 rsun)
+              Mstar2 =    1.0 msun    ! mass of body 2 (code units or e.g. 1 msun)
+
+# equation of state used to set the thermal energy profile
+                ieos =           2    ! 1=isothermal,2=idealgas,10=MESA,12=idealplusrad,23=Tillotson
+               gamma =  1.66666667    ! Adiabatic index
+                  mu =      0.5988    ! mean molecular weight
+
+# relaxation options
+               relax =           T    ! relax bodies into equilibrium
+            tol_ekin =   1.000E-07    ! tolerance on ekin/epot to stop relaxation
+              maxits =        1000    ! maximum number of relaxation iterations
+   write_rho_to_file =           T    ! write density profile(s) to file
+            corotate =           F    ! set stars in corotation
+          gwinspiral =           F    ! set gravitational wave inspiral
+
+# orbit 
+               itype =           0    ! orbital elements (0=aeiOwf,1=flyby,2=Orbit Reconstructor,3=dx,dv,4=x,v)
+                   a =  10.000000000000000    ! semi-major axis (code units; dist_unit = solarr)
+                   e =       0.000    ! eccentricity
+                   i =       0.000    ! inclination (deg)
+                   O =       0.000    ! position angle of ascending node (deg)
+                   w =        270.    ! argument of periapsis (deg)
+                   f =        180.    ! initial true anomaly (180=apoastron)
+
+# timestepping
+             norbits =         10.    ! maximum number of binary orbits
+              deltat =       0.100    ! output interval as fraction of binary period

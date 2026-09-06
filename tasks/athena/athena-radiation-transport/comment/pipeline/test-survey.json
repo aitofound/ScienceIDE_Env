@@ -1,0 +1,203 @@
+{
+  "module": "athena-radiation-transport",
+  "tests": [
+    {
+      "id": "cr-diffusion",
+      "module": "athena-radiation-transport",
+      "path": "tst/regression/scripts/tests/cr/cr_diffusion.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Cosmic-ray diffusion with the CR transport module",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 161,
+      "runtime_measured": true,
+      "suitable": false,
+      "why": "Cosmic rays are not an approved module (single upstream test); recorded for completeness.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 160.8,
+        "athena_cpu_s": 146.6,
+        "launches": 6
+      }
+    },
+    {
+      "id": "irad-amr-linwave",
+      "module": "athena-radiation-transport",
+      "path": "tst/regression/scripts/tests/implicit_radiation/amr_linwave.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Radiation-modified linear wave with implicit angular transport under AMR",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 21,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic implicit iteration; pointwise with the iteration tolerance as floor.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 21.0,
+        "athena_cpu_s": 7.1,
+        "launches": 1
+      },
+      "proposed_check": "implicit-rad-amr-linwave",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "irad-linwave",
+      "module": "athena-radiation-transport",
+      "path": "tst/regression/scripts/tests/implicit_radiation/rad_linearwave.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Radiation-modified linear wave, implicit scheme",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 204,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic; pointwise with measured floor.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 203.5,
+        "athena_cpu_s": 189.5,
+        "launches": 32
+      },
+      "proposed_check": "implicit-rad-linwave",
+      "budget_note": "needs a shorter default (knob keeps the upstream setting)"
+    },
+    {
+      "id": "irad-source",
+      "module": "athena-radiation-transport",
+      "path": "tst/regression/scripts/tests/implicit_radiation/rad_source.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Thermal relaxation between gas and radiation, implicit source term",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 35,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic; the relaxation history compares pointwise.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 35.3,
+        "athena_cpu_s": 21.4,
+        "launches": 3
+      },
+      "proposed_check": "implicit-rad-source",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "mgroup-rad-source",
+      "module": "athena-radiation-transport",
+      "path": "tst/regression/scripts/tests/multi_group/rad_source.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Multi-group thermal relaxation with the implicit radiation module",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 16,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic; pointwise on the per-group history.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 15.6,
+        "athena_cpu_s": 0.1,
+        "launches": 1
+      },
+      "proposed_check": "multigroup-rad-source",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "nrad-amr-linwave",
+      "module": "athena-radiation-transport",
+      "path": "tst/regression/scripts/tests/nr_radiation/amr_linwave.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Radiation-modified linear wave with explicit angular transport under AMR",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 54,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic; pointwise.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 54.0,
+        "athena_cpu_s": 39.0,
+        "launches": 1
+      },
+      "proposed_check": "rad-amr-linwave",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "nrad-linwave",
+      "module": "athena-radiation-transport",
+      "path": "tst/regression/scripts/tests/nr_radiation/rad_linearwave.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Radiation-modified linear wave, explicit scheme",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 391,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic; pointwise.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 391.3,
+        "athena_cpu_s": 376.2,
+        "launches": 32
+      },
+      "proposed_check": "rad-linwave",
+      "budget_note": "needs a shorter default (knob keeps the upstream setting)"
+    },
+    {
+      "id": "nrad-source",
+      "module": "athena-radiation-transport",
+      "path": "tst/regression/scripts/tests/nr_radiation/rad_source.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Thermal relaxation, explicit radiation source",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 39,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic; pointwise.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 39.4,
+        "athena_cpu_s": 24.8,
+        "launches": 3
+      },
+      "proposed_check": "rad-source",
+      "budget_note": "fits as is"
+    }
+  ]
+}

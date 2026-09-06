@@ -1,0 +1,62 @@
+name: test
+
+on:
+  workflow_call:
+
+env:
+  OMP_STACKSIZE: 512M
+  OMP_NUM_THREADS: 4
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        system:
+          - gfortran
+          - ifort
+          - ifx
+        debug:
+          - no
+          - yes
+        input: # [SETUP, phantom_tests]
+          - ['test', '']
+          - ['testkd', '']
+          - ['testdust', 'dust']
+          - ['testgr', 'gr ptmass']
+          - ['testgrav', 'gravity ptmass setstar sinktree']
+          - ['testgrowth', 'dustgrowth']
+          - ['testnimhd', 'nimhd']
+          - ['test2', '']
+          - ['testcyl', '']
+          - ['testapr', 'apr derivs']
+
+    name: |
+      test (SYSTEM=${{ matrix.system }},
+            DEBUG=${{ matrix.debug }},
+            SETUP=${{ matrix.input[0] }},
+            targets=${{ matrix.input[1] }})
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: "Nuke the github workspace before doing anything"
+      run: rm -r ${{ github.workspace }} && mkdir ${{ github.workspace }}
+
+    - name: Setup Intel repo
+      if: matrix.system == 'ifort' || matrix.system == 'ifx'
+      uses: fortran-lang/setup-fortran@v1
+      with:
+          compiler: ${{ matrix.system == 'ifort' && 'intel-classic' || 'intel' }}
+
+    - name: "Clone phantom"
+      uses: actions/checkout@v4
+
+    - name: "Compile phantom"
+      run: make SETUP=${{ matrix.input[0] }} DEBUG=${{ matrix.debug }} phantomtest
+      env:
+        SYSTEM: ${{ matrix.system }}
+
+    - name: "Run phantom tests"
+      run: ./bin/phantomtest ${{ matrix.input[1] }}

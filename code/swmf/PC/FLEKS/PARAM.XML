@@ -1,0 +1,2190 @@
+<commandList name="FLexible Exascale Kinetic Simulator: PC and PT Components">
+
+<!-- Set variables for expressions and rules -->
+<set name="nDim" type="integer" value="$_Value{nDim}" />
+
+<commandgroup name="Output">
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! OUTPUT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+<command name="SAVEPLOT">
+  <parameter name="nPlotFile" type="integer" min="0" max="15" default="0" />
+  <for name="iPlot" from="1" to="$nPlotFile">
+    <parameter name="StringPlot" type="strings" min="4" max="5">
+      <part name="plotarea" type="string" input="select" required="T">
+	<option name="3D" value="3d"/>
+	<option name="cut" value="cut"/>
+	<option name="x=0" />
+	<option name="y=0" />
+	<option name="z=0" />
+      </part>
+      <part name="plotvar" type="string" required="T" input="select">
+	<option name="Fluid variables" value="fluid" />
+	<option name="Set variables"   value="var"/>
+	<option name="Particles 0"     value="particles0" />
+	<option name="Particles 1"     value="particles1" />
+	<option name="Particles 2"     value="particles2" />
+	<option name="Particles 3"     value="particles3" />
+	<option name="Particles 0"     value="particlePop1" />
+	<option name="Particles 1"     value="particlePop2" />
+	<option name="Particles 2"     value="particlePop3" />
+	<option name="Particles 3"     value="particlePop4" />
+      </part>
+      <part name="plotform" type="string" input="select" required="T">
+	<option value="amrex" name="AMReX built-in format"/>
+  <option value="hdf5" name="HDF5 format"/>
+	<option value="real4" name="IDL single prec"/>
+	<option value="real8" name="IDL double prec"/>
+	<option value="ascii" name="IDL ascii"/>
+      </part>
+  <part name="plotlevel" type="string" input="select" required="F">
+	<option value="ilev0" name="Level 0"/>
+  <option value="ilev1" name="Level 1"/>
+  <option value="ilev2" name="Level 2"/>
+      </part>
+      <part name="plotunit" type="string" input="select" required="T">
+	<option value="si"     name="SI units"/>
+	<option value="planet" name="planet units"/>
+	<option value="pic"    name="PIC normalized units"/>
+      </part>
+      <part name="maxtimeunit" type="string" input="select" required="F">
+	<option value="hour"   name="hour"/>
+  <option value="year"   name="year"/>
+      </part>
+      <part name="compactplot" type="string" input="select" required="F"
+	    if="$plotform !~ /amrex/">
+	<option value="compact"/>
+      </part>
+    </parameter>
+    <parameter name="DnSavePlot" type="integer" min="-1" default="-1"/>
+    <parameter name="DtSavePlot" type="real" min="-1" default="-1.0"/>
+    <if expr="$plotarea =~ /\bdpl|cut|slc\b/">
+      <parameter name="xMinCut" type="real" />
+      <parameter name="xMaxCut" type="real" min="$xMinCut"/>
+      <parameter name="yMinCut" type="real" />
+      <parameter name="yMaxCut" type="real" min="$yMinCut"/>
+      <parameter name="zMinCut" type="real" if="$nDim==3"/>
+      <parameter name="zMaxCut" type="real" min="$zMinCut" if="$nDim==3"/>
+    </if>
+    <parameter name="DxSavePlot" type="real" min="-1.0" default="-1.0" />
+    <if expr="$plotvar =~ /\bvar\b/i">
+      <parameter name="NameVars" type="string" length="200"/>
+    </if>
+  </for>
+    
+#SAVEPLOT
+6                                 nPlot
+z=0 var real4 planet year         plotString
+-1                                dn
+20                                dt
+1                                 dx
+{fluid} ppcS0                     varName
+y=0 fluid real4 pic hour          plotString
+-100                              dn
+5                                 dt
+-1                                dx
+3d fluid amrex planet             plotString
+-1                                dn
+10                                dt
+1                                 dx
+3d fluid real4 planet compact     plotString
+-1                                dn
+10                                dt
+1                                 dx
+cut fluid real8 si ilev1          plotString
+-1                                dn
+100                               dt
+5                                 xMin
+10                                xMax
+-2                                yMin
+2                                 yMax
+-2                                zMin
+2                                 zMax
+1                                 dx
+3d particles0 amrex planet        plotString
+-1                                dn
+200                               dt
+1                                 dx   
+
+The first parameter is nPlotFile, which is the number of files to be saved.
+Each output starts with StringPlot, which specifies the output region,
+variables, file format and variable units.
+The plotting frequencies are given by DnOutput and DtOutput. 
+
+StringPlot has the format: 'domain variables format unit maxtimeunit'.
+
+The first part 'domain' can be one of the following: 
+\begin{verbatim}
+x=x0     - a 2D cut of x=x0 plane. 'x0' is the coordinate. 
+y=y0     - a 2D cut of y=y0 plane. 'y0' is the coordinate. 
+z=z0     - a 2D cut of z=z0 plane. 'z0' is the coordinate.
+3d       - the whole computational domain.
+cut      - part of the 3D domain. Need to specify the output range.
+\end{verbatim}
+
+The value of 'variables' can be:
+\begin{verbatim}
+particlesN - location, velocity and weight of species N particles (N=0,1,..)
+fluid      - all the fluid variables of the first two species:
+             'rhoS0 rhoS1 Bx By Bz Ex Ey Ez uxS0 uyS0 uzS0 uxS1 uyS1 uzS1 pS0 pS1 pXXS0 pYYS0 pZZS0 pXYS0 pXZS0 pYZS0 pXXS1 pYYS1 pZZS1 pXYS1 pXZS1 pYZS1'
+var        - read from parameter file. The available variables:
+             'Bx By Bz Ex Ey Ez ppcS* rhoS* uxS* uyS* uzS* pS* pXXS* pYYS* pZZS* pXYS* pXZS* pYZS* qc divEc dx',
+             where '*' is the number of the species. The variables 'qc' and
+	     'divEc' are the net charge and the divergence of the electric field
+	     at the cell center, respectively.
+\end{verbatim}
+
+The file format can be 'real4', 'real8', 'ascii' 'amrex' or 'hdf5'. The IDL formats
+'real4', 'real8' and 'ascii' support the 2D/3D and 'cut' ouput domains for
+the fields. But they can not save particles. The 'amrex' format supports
+'3d' and 'cut' domains for saving particles, and '3d' domain for saving fields.
+'hdf5' supports '3d' domain for fields, if both AMReX and FLEKS are compiled with a 
+ parallel HDF5 library.
+
+ The 'plotlevel' can be 'ilev0', 'ilev1', 'ilev2' .....
+ If plotlevel is not mentioned all levels are plotted.
+ If plotlevel is mentioned only that level is plotted.
+ 
+ Paraview's 'contour' filter does not work well for both 'amrex' and 'hdf5' files. 
+ Since Paraview contour each block individually, there are cracks across the block 
+ interface. This is a long standing issue of Paraview
+(https://public.kitware.com/pipermail/paraview/2013-October/029492.html 
+https://discourse.paraview.org/t/amrex-output-contour-plot/4723), and it looks like
+Paraview developers will not fix it. So a compromised solution is to convert the files 
+to vtm (Paraview) with the scripts in FLEKS/tools. 
+
+The 'unit' can be:
+\begin{verbatim}
+pic    - normalized CGS units
+si     - SI units
+planet - planetary unit. (nT, micro-volt/m, km/s, planet radius, amu/cm^3, nPa)
+\end{verbatim}
+
+The 'maxtimeunit' determines the largest time unit of of the 8-digit file
+name. The default is 'hour', and 'year' is also available.
+\begin{verbatim}
+hour   - HHHHMMSS
+year   - YYYY0DDD (DDD is the day of the year)
+\end{verbatim}
+
+No plot file is saved by default.
+
+The idl format files can be visualized by SWMF IDL scripts. The amrex format
+files can be visualized with Paraview, Visit or yt. Paraview is probably the 
+most user-friendly choice. However, Paraview does not support AMR data well
+so far (https://gitlab.kitware.com/paraview/paraview/-/issues/20074). To avoid
+these issues, amrex format files can be converted to either Tecplot ascii (.dat) 
+or vtk files with the scripts (amrex2tec.sh and amrex2vtk.sh) in FLEKS/tools.
+</command>
+
+<command name="MONITOR" alias="MONITOR_FLEKS0,MONITOR_FLEKS1,MONITOR_FLEKS2" multiple="T">
+  <parameter name="dnReport" type="integer" default="10"/>
+#MONITOR
+10                 dnReport
+
+This command controls the frequency of printing simulation information, 
+such as the GMRES convergence history, to STDOUT. The default frequency
+is every 10 steps. 
+</command>
+
+<command name="SAVELOG" alias="SAVELOG_FLEKS0,SAVELOG_FLEKS1,SAVELOG_FLEKS2" multiple="T">
+  <parameter name="dnSavePic" type="integer" default="10"/>
+  <parameter name="dnSavePT" type="integer" default="10"/>
+
+#SAVELOG
+1                          dnSavePic
+5                          dnSavePT
+
+The frequencies of saving log information for the PIC and 
+particle tracker components, respectively. 
+
+</command>
+
+<command name="TPSAVE" alias="TPSAVE_FLEKS0,TPSAVE_FLEKS1,TPSAVE_FLEKS2" multiple="T">
+  <parameter name="iSpecies" type="integer" required="T"/>
+  <parameter name="unit" type="string" input="select">
+    <option value="si"     name="SI units"/>
+    <option value="planet" name="planet units" default="T"/>
+    <option value="pic"    name="PIC normalized units"/>
+  </parameter>
+  <parameter name="dnSave" type="integer" default="1"/>
+  <parameter name="launchThreshold" type="real" min="0.0" max="1.0" default="0.5"/>
+
+#TPSAVE
+0                          iSpecies
+planet                     unit
+10                         dnSave
+0.5                        launchThreshold
+
+The unit and frequence of saving test particles, and the threshold for relaunching particles.
+
+</command>
+
+<command name="NOUTFILE" alias="NOUTFILE_FLEKS0,NOUTFILE_FLEKS1,NOUTFILE_FLEKS2" multiple="T">
+  <parameter name="nFileField" type="integer" default="64"/>
+  <parameter name="nFileParticle" type="integer" default="256"/>
+  
+
+#NOUTFILE
+64                  nFileField
+256                 nFileParticle
+
+Number of files per AMREX format field or particle output. 
+
+</command>
+
+</commandgroup>
+
+<commandgroup name="Scheme">
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! SCHEME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+<command name="PIC" alias="PIC_FLEKS0,PIC_FLEKS1,PIC_FLEKS2" multiple="T">
+  <parameter name="usePIC" type="logical" default="T"/>
+
+#PIC
+T                   usePIC
+
+Turning on/off the PIC module. 
+</command>
+
+<command name="EXPLICITPIC" alias="EXPLICITPIC_FLEKS0,EXPLICITPIC_FLEKS1,EXPLICITPIC_FLEKS2" multiple="T">
+  <parameter name="useExplicitPIC" type="logical" default="F"/>
+
+#EXPLICITPIC
+F                 useExplicitPIC
+
+When this flag is true, the simulation will use an explicit PIC solver.
+</command>
+
+<command name="COMOVING" alias="COMOVING_FLEKS0,COMOVING_FLEKS1,COMOVING_FLEKS2" multiple="T">
+  <parameter name="solveFieldInCoMov" type="logical" default="F"/>
+  <parameter name="nSmoothBackGroundU" type="integer" default="0"/>
+
+#COMOVING
+F                 solveFieldInCoMov
+0                 nSmoothBackGroundU
+
+This command enables solving the electromagnetic fields in a co-moving frame of reference.
+</command>
+
+<command name="SOLVEEM" alias="SOLVEEM_FLEKS0,SOLVEEM_FLEKS1,SOLVEEM_FLEKS2" multiple="T">
+  <parameter name="solveEM" type="logical" default="T"/>
+
+#SOLVEEM
+T                 solveEM
+
+This command enables or disables the electromagnetic field solver.
+</command>
+
+<command name="HYBRIDPIC" alias="HYBRIDPIC_FLEKS0,HYBRIDPIC_FLEKS1,HYBRIDPIC_FLEKS2" multiple="T">
+  <parameter name="useHybridPIC" type="logical" default="F"/>
+
+#HYBRIDPIC
+F                 useHybridPIC
+
+When true, the hybrid PIC field solver (generalized Ohm's law with kinetic
+ions and a fluid electron) is used instead of the full PIC field solver.
+Mutually exclusive with SOLVEEM.
+
+=== Generalized Ohm's law: how each command controls a separate term ===
+
+The hybrid solver advances B from the electric field given by the generalized
+Ohm's law
+\begin{verbatim}
+    E = -U_i x B         (convection, always on)
+      + eta * J          (resistivity, #RESISTIVITY)
+      + (J x B)/rho_q    (Hall, #HALLTERM)
+      - grad(Pe)/rho_q   (electron pressure/ambipolar, #ELECTRONTEMPERATURE)
+      - (eta_h/4pi) curl(nabla^2 B)  (hyper-resistivity, #HYPERRESISTIVITY)
+\end{verbatim}
+Each term is enabled/disabled and parametrised independently of #HYBRIDPIC, so
+you can build arbitrary subsets (e.g. Hall-only, resistive-MHD-like, with/without
+electron pressure). Time accuracy: the hybrid scheme is second order in time via
+a staggered leapfrog with linear time-interpolation of the ion moments. Within
+each magnetic sub-step the ion velocity moment and density used in the Ohm's law
+are interpolated between the previous deposit $(J^{n-1/2})$ and the current one
+$(J^{n+1/2})$ as
+$X(h) = (0.5 - h) X^{n-1/2} + (0.5 + h) X^{n+1/2}$,
+where h is the sub-step fraction (h=0 gives $J^n = 1/2(J^{n-1/2}+J^{n+1/2})$;
+h=1 gives $J^{n+1} = 3/2 J^{n+1/2} - 1/2 J^{n-1/2})$. The particle Boris push
+uses the integer-step E field from the previous field advance.
+Related numerical controls:
+\begin{verbatim}
+    #BSUBCYCLE - sub-steps for the explicit Hall-whistler CFL,
+    #MINIMUMDENSITY - caps the 1/rho factors in the Hall and pressure terms,
+    #FIELDINTEGRATOR - time integrator for the Faraday (B) update,
+    #AVGFIELDB, #SMOOTHMOMENTS - damp PIC shot noise in the Ohm's law.
+\end{verbatim}
+</command>
+
+<command name="RESISTIVITY" alias="RESISTIVITY_FLEKS0,RESISTIVITY_FLEKS1,RESISTIVITY_FLEKS2" multiple="T">
+  <parameter name="etaResistivity" type="real" default="0.0"/>
+
+#RESISTIVITY
+0.0               etaResistivity
+
+[Ohm's-law term: resistivity] Resistive term eta * J in the generalized Ohm's
+law. etaResistivity is the SI magnetic diffusivity [m\^2/s]; it is converted to
+code units internally (etaCode = 4*pi*etaSI*Si2NoV*Si2NoL).
+0 disables the resistive term.
+</command>
+
+<command name="ELECTRONTEMPERATURE" alias="ELECTRONTEMPERATURE_FLEKS0,ELECTRONTEMPERATURE_FLEKS1,ELECTRONTEMPERATURE_FLEKS2" multiple="T">
+  <parameter name="electronTemperature" type="real" default="0.0"/>
+  <parameter name="electronGamma" type="real" default="1.0"/>
+  <parameter name="electronDensity0" type="real" default="1.0"/>
+
+#ELECTRONTEMPERATURE
+0.0               electronTemperature
+1.0               electronGamma
+1.0               electronDensity0
+
+[Ohm's-law term: electron pressure / ambipolar] Electron temperature [eV] for
+the electron pressure gradient term -grad(Pe)/rho in the Ohm's law. Converted to
+code units internally
+(TeCode = TeEV * e / (mp * uNormSI\^2)).
+0 disables the term (Hall-only mode). gamma=1 is isothermal (Pe = Te * rho),
+otherwise adiabatic Pe = P0 (rho/rho0)\^gamma. electronDensity0 is in code
+units (default 1.0 = reference charge density).
+</command>
+
+<command name="BSUBCYCLE" alias="BSUBCYCLE_FLEKS0,BSUBCYCLE_FLEKS1,BSUBCYCLE_FLEKS2" multiple="T">
+  <parameter name="nBSubcycle" type="integer" min="1" default="1"/>
+
+#BSUBCYCLE
+1                 nBSubcycle
+
+Number of sub-steps used to advance the magnetic field within one coarse time
+step in the hybrid solver (refines the B-field integration). The total advance
+is always exactly one coarse step dt: nBSubcycle full integrator steps of
+size dt/nBSubcycle are taken (e.g. with #FIELDINTEGRATOR rk4, nBSubcycle
+nested 4th-order Runge-Kutta steps). Because RK4 has a large linear-stability
+region along the imaginary axis (where the Hall-whistler oscillatory modes live),
+with rk4 a single sub-step (nBSubcycle 1) is usually sufficient for stability.
+Only used when #HYBRIDPIC is T.
+</command>
+
+<command name="HALLTERM" alias="HALLTERM_FLEKS0,HALLTERM_FLEKS1,HALLTERM_FLEKS2" multiple="T">
+  <parameter name="useHallTerm" type="logical" default="T"/>
+
+#HALLTERM
+T                 useHallTerm
+
+[Ohm's-law term: Hall] Enable (default) or disable the Hall term (J x B) / rho
+in the generalized Ohm's law used by the hybrid (HYBRIDPIC) field solver. Set to
+F to advance the field with the convection term only (E = -U_i x B, plus any
+resistivity / electron pressure gradient that is independently enabled). With the
+Hall term off the explicit Hall-whistler CFL no longer applies, so BSUBCYCLE 1
+(no sub-cycling) is sufficient.
+</command>
+
+<command name="HYPERRESISTIVITY" alias="HYPERRESISTIVITY_FLEKS0,HYPERRESISTIVITY_FLEKS1,HYPERRESISTIVITY_FLEKS2" multiple="T">
+  <parameter name="etaHyperSI" type="real" default="0.0"/>
+  <parameter name="etaHyperMode" type="string" default="si"/>
+  <parameter name="etaHyperCh" type="real" default="0.01"/>
+
+#HYPERRESISTIVITY
+0.0               etaHyperSI
+si                etaHyperMode
+0.01              etaHyperCh
+
+[Ohm's-law term: hyper-resistivity] Fourth-order hyper-resistivity eta_h *
+nabla\^2 J in the generalized Ohm's law (equivalently -(eta_h/4*pi) * nabla x
+(nabla\^2 B)). It damps grid-scale / PIC
+shot-noise that the second-order resistivity cannot reach. etaHyperSI is the SI
+value [m\^4/s] (used when etaHyperMode = "si"; converted to code units as
+etaCode = 4*pi*etaSI*Si2NoV*Si2NoL\^3). When etaHyperMode = "grid", eta_h is
+instead scaled to the CFL stability bound on each sub-step:
+   eta_h = 4*pi * C_h * dx_min\^4 / dt_sub,
+where C_h is the dimensionless etaHyperCh (typical 1e-3 .. 1e-2). "grid" mode is
+robust to resolution and time-step changes and is the recommended setting for
+general production runs. 0 (either mode) disables the term. Only used when
+HYBRIDPIC is T.
+</command>
+
+<command name="MINIMUMDENSITY" alias="MINIMUMDENSITY_FLEKS0,MINIMUMDENSITY_FLEKS1,MINIMUMDENSITY_FLEKS2" multiple="T">
+  <parameter name="rhoMinOhm" type="real" default="0.0"/>
+
+#MINIMUMDENSITY
+0.0               rhoMinOhm
+
+Minimum charge density for the 1/rho factors in the Hall term and the electron
+pressure gradient term of the hybrid Ohm's law. It caps 1/rho so that cells with
+tiny or zero charge density do not produce unbounded contributions. The electron
+pressure closure itself always uses the true density. A value $\le 0$ (default)
+means automatic: rhoFloor = 1e-6 * #ELECTRONTEMPERATURE electronDensity0.
+Only used when #HYBRIDPIC is T.
+</command>
+
+<command name="FIELDINTEGRATOR" alias="FIELDINTEGRATOR_FLEKS0,FIELDINTEGRATOR_FLEKS1,FIELDINTEGRATOR_FLEKS2" multiple="T">
+  <parameter name="fieldIntegrator" type="string" input="select" required="T">
+    <option value="rk4"/>
+    <option value="ssprk3"/>
+  </parameter>
+
+#FIELDINTEGRATOR
+rk4               fieldIntegrator
+
+Time integrator for the hybrid Faraday (B) update driven by the generalized Ohm's
+law. This is the single control for the time integration of B (there is no
+separate time-centring flag). "rk4" is the classic 4th-order Runge-Kutta on B,
+evaluating the Ohm's law at four trial B states; it is the default and has a
+large linear-stability region, so with rk4 you typically do not need a large
+#BSUBCYCLE for stability. "ssprk3" is the strong-stability-preserving RK3 with
+a time-centred E. Only used when HYBRIDPIC is T.
+    </command>
+
+<command name="AVGFIELDB" alias="AVGFIELDB_FLEKS0,AVGFIELDB_FLEKS1,AVGFIELDB_FLEKS2,BAVERAGE" multiple="T">
+  <parameter name="useAvgFieldB" type="logical" default="F"/>
+  <parameter name="nAvgFieldB" type="integer" default="10"/>
+
+#AVGFIELDB
+F                    useAvgFieldB
+10                   nAvgFieldB
+
+Time-averaged (exponential moving average) magnetic field. B_avg =
+alpha*B_avg + (1-alpha)*B\^{n+1} with alpha = 1 - 1/nAvgFieldB. B_avg replaces
+the instantaneous B inside the generalized Ohm's law (convection / Hall terms)
+and in the particle Boris push, damping the high-frequency PIC shot noise that
+pollutes the Hall term and particle orbits. B_avg is NOT divergence-clean and is
+never used in the Faraday update, so no projection is required. Only used when
+HYBRIDPIC is T.
+</command>
+
+<command name="PARTMODE" alias="PARTMODE_FLEKS0,PARTMODE_FLEKS1,PARTMODE_FLEKS2" multiple="T">
+  <parameter name="partMode" type="string" input="select" required="T">
+    <option value="SEP"/>
+    <option value="PIC"/>
+  </parameter>
+
+#PARTMODE
+SEP               partMode
+
+This command sets the particle mode to either SEP (Solar Energetic Particles) or PIC (Particle-In-Cell).
+</command>
+
+<command name="PARTICLETRACKER" alias="PARTICLETRACKER_FLEKS0,PARTICLETRACKER_FLEKS1,PARTICLETRACKER_FLEKS2" multiple="T">
+  <parameter name="useParticleTracker" type="logical" default="F"/>
+
+#PARTICLETRACKER
+T                   useParticleTracker 
+
+Turning on/off the test particle module. 
+</command>
+
+<command name="SOURCE" alias="SOURCE_FLEKS0,SOURCE_FLEKS1,SOURCE_FLEKS2" multiple="T">
+  <parameter name="useSource" type="logical" default="F"/>
+
+#SOURCE
+F                   useSource
+
+Turning on/off the user source. PT builds use source by default unless
+this command sets useSource to false.
+</command>
+
+<command name="TIMESTEPPING" alias="TIMESTEPPING_FLEKS0,TIMESTEPPING_FLEKS1,TIMESTEP,TIMESTEP_FLEKS2,TIMESTEP_FLEKS0,TIMESTEP_FLEKS1,TIMESTEP_FLEKS2" multiple="T">
+  <parameter name="useFixedDt" type="logical" default="F"/>
+  <parameter name="dt" type="real" if="$useFixedDt"/>
+  <parameter name="cfl" type="real" default="0.2" if="not $useFixedDt"/>
+
+#TIMESTEPPING
+F                  useFixedDt
+0.1                cfl (if useFixedDt is false)
+
+#TIMESTEPPING_FLEKS1
+T                  useFixedDt
+0.01               dt  (if useFixedDt is true)
+
+Setting the CFL or fixed time step. The typical CFL number is 0.1~0.4.
+</command>
+
+<command name="CONSTANTPPV" alias="CONSTANTPPV_FLEKS0,CONSTANTPPV_FLEKS1,CONSTANTPPV_FLEKS2" multiple="T">
+  <parameter name="isPPVconstant" type="logical" default="F"/>
+
+#CONSTANTPPV
+F                   isPPVconstant 
+
+If isPPVconstant is true then particles per volume is constant across all refinement levels,
+otherwise particles per cell is constant.
+</command>
+
+<command name="PRESPLITTING" alias="PRESPLITTING_FLEKS0,PRESPLITTING_FLEKS1,PRESPLITTING_FLEKS2" multiple="T">
+  <parameter name="doPreSplitting" type="logical" default="F"/>
+
+#PRESPLITTING
+F                   doPreSplitting
+
+If doPreSplitting is true then target particles-per-cell number in the near vicinity of refined
+regions is set such that the particles-per-volume number matches the refined level.
+</command>
+
+<command name="REFINEMENTRATIO" alias="REFINEMENTRATIO_FLEKS0,REFINEMENTRATIO_FLEKS1,REFINEMENTRATIO_FLEKS2" multiple="T">
+  <parameter name="refinementratio" type="integer" default="2"/>
+
+#REFINEMENTRATIO
+2                   refinementRatio
+
+Setting the refinement ratio for AMR. The default is 2.
+</command>
+
+<command name="RANDOMPARTICLESLOCATION" alias="RANDOMPARTICLESLOCATION_FLEKS0,RANDOMPARTICLESLOCATION_FLEKS1,RANDOMPARTICLESLOCATION_FLEKS2" multiple="T">
+  <parameter name="isParticleLocationRandom" type="logical" default="T"/>
+
+#RANDOMPARTICLESLOCATION
+T                   isParticleLocationRandom  
+
+If isParticleLocationRandom is true then particles are initialized with 
+randomaized position, otherwise particles are equally spaced.
+</command>
+
+<command name="RESAMPLING" alias="RESAMPLING_FLEKS0,RESAMPLING_FLEKS1,RESAMPLING_FLEKS2" multiple="T">
+  <parameter name="doReSampling" type="logical" default="T"/>
+  <if expr="$doReSampling">
+    <parameter name="splittingLimit" type="real" default="0.8" max="1"/>
+    <parameter name="mergingLimit" type="real" default="1.5" min="1"/>
+    <parameter name="maxWeightRatio" type="real" default="1.0"/>
+  </if>
+  
+#RESAMPLING
+T                   doReSampling (rest is read if true)
+0.8                 splittingLimit 
+0.5                 mergingLimit 
+4                   maxWeightRatio
+
+Turning on/off the particle splitting and merging to control the number of
+particles per cell. If the initial particle number per cell is nPart, 
+splitting (merging) will be triggered once the particle numer per cell 
+becomes lower (higher) than splittingLimit*nPart (mergingLimit*nPart). 
+
+If maxWeightRatio is set and it is larger than 1, then the particles with
+wights larger than maxWeightRatio*averageWeight will be split, where 
+averageWeight is the average weight of the particles in a cell. It is 
+recommended to set maxWeightRatio to 4-8 for OH-PT simulations. 
+
+</command>
+
+<command name="FASTMERGE" alias="FASTMERGE_FLEKS0,FASTMERGE_FLEKS1,FASTMERGE_FLEKS2" multiple="T">
+  <parameter name="fastMerge" type="logical" default="F"/>   
+  <parameter name="nOld" type="integer" min="6"/>
+  <parameter name="nNew" type="integer" min="5"/>
+  <parameter name="nTry" type="integer" min="1"/>
+  <parameter name="mergeRatioMax" type="real" min="1"/>
+  
+
+#FASTMERGE
+T			  fastMerge
+16			nOld
+10			nNew
+3		  	nTry
+4			  mergeRatioMax
+
+When the 'fastMerge' feature is enabled, the merging algorithm aims 
+to merge 'nOld' particles (where 'nOld' is greater than 'nNew') into 
+'nNew' particles (with 'nNew' being equal to or greater than 5). 
+The goal is to achieve this while ensuring the total mass, momentum, 
+and energy are conserved.
+
+To accomplish this, 'nOld - nNew' particles inside the same 6D-space 
+cell are selected for merging with a Lagrange multiplier solver. 
+This solver minimizes the relative change in the mass of the 'nNew' particles.
+
+The selection process for the 'nOld - nNew' particles chosen 
+for deletion is random, and they are chosen from the 'nOld' particles.
+However, it's important to note that the Lagrange multiplier solver may 
+fail to find a physically meaningful solution. In such cases, two conditions 
+should be met:
+(1). The mass of all the new particles must be positive.
+(2). The change in mass of the new particles should not be excessive, 
+satisfying both 'pNew/pOld .lt. mergeRatioMax' 
+and 'pOld/pNew .lt. mergeRatioMax'.
+If the solver fails, the code will make up to 'nTry' attempts to select 
+another set of 'nOld - nNew' particles for deletion until it succeeds.
+
+For simulations involving particle sources, it's recommended to use
+ the following parameters: 'nOld = 16', 'nNew = 10', 'nTry = 3', 
+ and '2 .le. mergeRatioMax .le. 4'.
+
+</command>
+
+
+<command name="MERGELIGHT" alias="MERGELIGHT_FLEKS0,MERGELIGHT_FLEKS1,MERGELIGHT_FLEKS2" multiple="T">
+  <parameter name="MERGELIGHT" type="logical" default="F"/>   
+  <parameter name="mergePartRatioMax" type="real" min="1"/>
+
+#MERGELIGHT 
+T        mergeLight 
+10       mergePartRatioMax
+
+When the 'mergeLight' feature is turned on, the merging algorithm will select
+the light particles for merging. Among these light particles, the ratio between
+the heaviest and the lightest particle should be less than 'mergePartRatioMax',
+otherwise, the merging will not be performed.
+
+</command>
+
+<command name="VACUUM" alias="VACUUM_FLEKS0,VACUUM_FLEKS1,VACUUM_FLEKS2" multiple="T">
+  <parameter name="vacuum" type="real" default="0.0"/>
+
+#VACUUM
+1E-5            vacuum [amu/cc]
+
+If the mass density of a cell is below the 'vacuum' threshold, 
+no macro particles are initially launched from that cell. 
+The particle splitting algorithm also excludes cells with 
+densities less than 'vacuum'. The unit of of 'vacuum' is 'amu/cc'.
+
+</command>
+
+<command name="PARTICLELEVRATIO" alias="PARTICLELEVRATIO_FLEKS0,PARTICLELEVRATIO_FLEKS1,PARTICLELEVRATIO_FLEKS2" multiple="T">
+  <parameter name="pLevRatio" type="real" default="1.2"/>
+  
+#PARTICLELEVRATIO
+1.2                 pLevRatio  
+
+For particle splitting and resampling, the base particle number per cell 
+of the level iLev is set to n0*(pLevRatio**iLev), where n0 is the ppc set 
+through #PARTICLES command. The goal is to maintain a larger ppc number
+for the levels of higher resolution.
+
+</command>
+
+<command name="LOADBALANCE" alias="LOADBALANCE_FLEKS0, LOADBALANCE_FLEKS2">
+  <parameter name="loadBalanceStrategy" type="string" input="select" required="T">
+    <option value="particle" />
+    <option value="cell"   />
+    <option value="hybrid" />
+  </parameter>
+  <if expr="$loadBalanceStrategy =~ /hybrid/">
+    <parameter name="cellWeight" type="integer" default="100" />
+  </if>
+  <parameter name="dn" type="integer" default="-1" required="T" />
+  <parameter name="dt" type="real" default="-1" required="T" />
+
+#LOADBALANCE
+particle                    loadBalanceStrategy
+20                          dn 
+-1.0                        dt
+
+#LOADBALANCE
+cell                        loadBalanceStrategy
+-1                          dn 
+8.0                         dt
+
+#LOADBALANCE
+hybrid                      loadBalanceStrategy
+100                         cellWeight
+20                          dn
+-1.0                        dt
+
+Load balancing the blocks based on the work load of each cell. The work load
+is measured by the particle number per cell (ppc) when loadBalanceStrategy
+is 'particle', which is recommended for OH-PT simulations. If loadBalanceStrategy
+is 'cell', the work loads of all active cells (excluding refined cells) are
+assumed to be the same. 
+
+If 'hybrid' is selected, the work load of a cell is calculated as the sum of
+the particle count and a fixed 'cellWeight'. This ensures cells
+without particles still contribute to the load balance, accounting for the
+overhead of interpolation and memory management.
+
+'dn' and 'dt' control the load balancing frequency.
+</command>
+
+<command name="DISCRETIZATION" alias="DISCRETIZE">
+  <parameter name="theta" type="real" default="0.51"/>
+  <parameter name="ratioDivC2C" type="real" default="0.1" />
+
+#DISCRETIZATION
+0.51                        theta
+0.1                         ratioDivC2C
+
+The Theta parameter sets $\theta$ for the time centering of the electric field,
+which is calculated at the time $t_{n+\theta}$. When $\theta$ 
+is 0.5, the total energy is conserved if ratioDivC2C is 0. However, 
+the exact energy conservation may produce artifical oscillations. 
+Typical values for Theta are from 0.51 to 0.6.
+
+The ratioDivC2C parameter is the fraction of div(E) calculated from an
+extended stencil in the discretization of the Maxwell equation.
+Using an extended stencil helps to suppress short-wavelength oscillations. 
+
+Default values are shown.
+</command>
+
+<command name="EFIELDSOLVER">
+  <parameter name="EFieldTol" type="real" default="1e-6"/>
+  <parameter name="EFieldIter" type="integer" default="200"/>
+  
+#EFIELDSOLVER
+1e-6                     EFieldTol
+200                      EFieldIter
+
+The tolerance and the maximum iteration number of the electric field 
+solver. The default values are shown above.
+</command>
+
+<command name="DIVE">
+  <parameter name="doCorrectDivE" type="logical" default="T"/>
+  <parameter name="nDivECorrection" type="integer" default="3"
+	     if="$doCorrectDivE"/>
+#DIVE
+T                         doCorrectDivE
+3                         nDivECorrection (read if doCorrectDivE=T)
+
+Turning on/off the accurate div(E) cleaning, which corrects the particle
+locations to satisfy Gauss's law: div(E) = net_charge. 
+Default is true as it is required for accuracy of long simulations. The
+correction repeats nDivECorrection (default is 3) times. If the divE 
+cleaning is time consuming, reducing nDivECorrection to 1 may also work.
+</command>
+
+<command name="DIVB" alias="DIVB_FLEKS0,DIVB_FLEKS1,DIVB_FLEKS2" multiple="T">
+  <parameter name="useHyperbolicCleaning" type="logical" default="F"/>
+  <parameter name="hypDecay" type="real" default="0.1" if="$useHyperbolicCleaning"/>
+
+#DIVB
+T                         useHyperbolicCleaning
+0.1                       hypDecay (read if useHyperbolicCleaning=T)
+
+This command enables hyperbolic divergence cleaning for the magnetic field.
+
+</command>
+
+<command name="SMOOTHE" alias="SMOOTHE_FLEKS0,SMOOTHE_FLEKS1,SMOOTHE_FLEKS2" multiple="T">
+  <parameter name="doSmoothE" type="logical" default="F"/>
+  <if expr="$doSmoothE">
+    <parameter name="nSmoothE" type="integer" default="1"/>
+  </if>
+  
+#SMOOTHE
+T                  doSmoothE (rest is read if true)
+1                  nSmoothE 
+
+#SMOOTHE_FLEKS2
+F                  doSmoothE 
+
+The smoothing algorithm used here is the same as the 'digital filtering'.
+It seems it is common to apply smoothing tens of times (nSmoothE) for
+challenging simulations (https://doi.org/10.1016/j.jcp.2011.04.003). 
+
+However, smoothing electric field is not always helpful. It adds diffusion to 
+electric field and may artifically increase reconnection rate as it was seen in 
+the island merge simulations. On the other hand, it seems the smoothing may 
+transform the short-wavelength oscillations into long-wavelength oscillations, 
+and the long-wavelength field aligned electric field would accelerate electrons. 
+
+</command>
+
+<command name="SMOOTHJ" alias="SMOOTHJ_FLEKS0,SMOOTHJ_FLEKS1,SMOOTHJ_FLEKS2" multiple="T">
+  <parameter name="doSmoothJ" type="logical" default="F"/>
+  <if expr="$doSmoothJ">
+    <parameter name="nSmoothJ" type="integer" default="0"/>
+    <parameter name="coefSmoothJ" type="real" default="0.5"/>
+  </if>
+
+#SMOOTHJ
+T                         doSmoothJ (rest is read if true)
+5                         nSmoothJ
+0.5                       coefSmoothJ
+
+This command applies digital filtering smoothing to the current density J
+to reduce numerical noise. The coefSmoothJ parameter controls the smoothing
+strength through the formula:
+J_new = (1-coef) * J_old + (coef/2) * (J_left + J_right)
+
+It is recommended to apply the smoothing 1-3 times (nSmoothJ).
+</command>
+
+<command name="SMOOTHMOMENTS" alias="SMOOTHMOMENTS_FLEKS0,SMOOTHMOMENTS_FLEKS1,SMOOTHMOMENTS_FLEKS2" multiple="T">
+  <parameter name="doSmoothMoments" type="logical" default="F"/>
+  <if expr="$doSmoothMoments">
+    <parameter name="nSmoothMoments" type="integer" default="0"/>
+    <parameter name="coefSmoothMoments" type="real" default="0.5"/>
+  </if>
+
+#SMOOTHMOMENTS
+T                         doSmoothMoments (rest is read if true)
+3                         nSmoothMoments
+0.5                       coefSmoothMoments
+
+This command applies digital-filter smoothing to the ion fluid moments
+(density rho and momentum density rho*U) before the generalized Ohm's law
+in the hybrid PIC solver. It is a low-pass filter on the PIC shot noise that
+otherwise accumulates un-damped through the explicit Ohm-Faraday loop and
+appears as a spurious magnetic-energy drift in a quiescent free-stream. The
+coefSmoothMoments parameter controls the smoothing strength through:
+m_new = (1-coef) * m_old + (coef/2) * (m_left + m_right)
+applied in each direction; the filter conserves the domain mean, so a uniform
+equilibrium is preserved. It is recommended to apply the smoothing a few times
+(nSmoothMoments = 1-4). Only used when #HYBRIDPIC is T.
+</command>
+
+
+
+<command name="UPWINDE" alias="UPWINDE_FLEKS0,UPWINDE_FLEKS1,UPWINDE_FLEKS2" multiple="T">
+  <parameter name="useUpwindE" type="logical" default="F"/>
+  <parameter name="limiterThetaE" type="real" default="0.0"/>  
+
+#UPWINDE
+F                         useUpwindE
+0.0                       limiterThetaE
+
+When useUpwindE is true, a Lax-Friedrichs artificial viscosity term is added
+to the electric field equation to suppress numerical oscillations and 
+improve stability.
+
+The limiterThetaE parameter controls the limiter used in the upwind scheme.
+A value of 0 gives a fully diffusive first-order upwind scheme, while a value
+of 1 leads to the minmod limiter, and a value of 2 gives the least diffusive limiter.
+When useLaggedLimiter is false and limiterThetaE is not 0, the electric field
+solver uses Newton-Krylov. Otherwise, it uses GMRES.
+
+</command>
+
+<command name="LAGGEDLIMITER" alias="LAGGEDLIMITER_FLEKS0,LAGGEDLIMITER_FLEKS1,LAGGEDLIMITER_FLEKS2" multiple="T">
+  <parameter name="useLaggedLimiter" type="logical" default="F"/>
+
+#LAGGEDLIMITER
+F                         useLaggedLimiter
+
+When useLaggedLimiter is true, the limiter for the upwind electric field
+correction is calculated from the lagged node electric field. Otherwise, it is
+calculated from the current electric field solve vector.
+
+</command>
+
+<command name="UPWINDB" alias="UPWINDB_FLEKS0,UPWINDB_FLEKS1,UPWINDB_FLEKS2" multiple="T">
+  <parameter name="useUpwindB" type="logical" default="F"/>
+  <parameter name="limiterThetaB" type="real" default="0.0"/>
+  <parameter name="fixedUpwindVel" type="real" default="0.0"/>
+
+#UPWINDB
+F                         useUpwindB
+0.0                       limiterThetaB
+0.0                       fixedUpwindVel
+
+Similar to the #UPWINDE command, but for the magnetic field equation. Optional
+fixedUpwindVel overrides the upwind reconstruction velocity with a constant;
+default 0.0 keeps the normal plasma-background-velocity reconstruction.
+
+</command>
+
+<command name="FIXEDUMAX" alias="FIXEDUMAX_FLEKS0,FIXEDUMAX_FLEKS1,FIXEDUMAX_FLEKS2" multiple="T">
+  <parameter name="fixedUMax" type="real" default="-1.0"/>
+
+#FIXEDUMAX
+-1.0                      fixedUMax
+
+Optional fixed CFL signal speed for the upwind scheme. Default -1.0 keeps the
+particle-thermal-velocity estimate; tests that need a constant signal speed set a
+non-negative value (e.g. the TopHat test uses 1.0).
+
+</command>
+
+<command name="CMAXE" alias="CMAXE_FLEKS0,CMAXE_FLEKS1,CMAXE_FLEKS2" multiple="T">
+  <parameter name="cMaxE" type="real" default="-1.0"/>
+
+#CMAXE
+-1.0                      cMaxE
+
+This command sets the diffusion speed for the upwind electric field correction.
+If cMaxE is negative, the local plasma speed is used, otherwise cMaxE is used.
+</command>
+
+
+<command name="TPRELATIVISTIC" alias="TPRELATIVISTIC_FLEKS0,TPRELATIVISTIC_FLEKS1,TPRELATIVISTIC_FLEKS2" multiple="T">
+  <parameter name="isRelativistic" type="logical" default="F"/>
+  
+#TPRELATIVISTIC
+T                         isRelativistic
+
+If it is true, the test particle velocity update will be relativistic.
+</command>
+
+</commandgroup>
+
+<commandgroup name="Inital and boundary conditions">
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!! INITIAL AND BOUNDARY CONDITIONS !!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+<command name="GEOMETRY" alias="GEOMETRY_FLEKS0,GEOMETRY_FLEKS1,GEOMETRY_FLEKS2" multiple="T">
+  <parameter name="xMin" type="real"/>
+  <parameter name="xMax" type="real"/>
+  <parameter name="yMin" type="real"/>
+  <parameter name="yMax" type="real"/>
+  <parameter name="zMin" type="real"/>
+  <parameter name="zMax" type="real"/>
+	
+#GEOMETRY
+-1			            xMin 
+1 	                xMax 
+-1			            yMin 
+1 	                yMax 
+-1			            zMin 
+1 	                zMax 
+
+It is used to set the simulation domain size for OH-PT simulations. 
+For MHD-AEPIC simulations, the domain is set from BATSRUS and 
+this command should only exist in the restart file.
+</command>
+
+<command name="NCELL" alias="NCELL_FLEKS0,NCELL_FLEKS1,NCELL_FLEKS2" multiple="T">
+  <parameter name="nCellX" type="integer"/>
+  <parameter name="nCellY" type="integer"/>
+  <parameter name="nCellZ" type="integer"/>
+#NCELL 
+32					nCellX 
+64					nCellY
+48					nCellZ 
+
+It is used to set the domain cell number for OH-PT simulations. 
+For MHD-AEPIC simulations, the cell number is set from BATSRUS and 
+this command should only exist in the restart file.
+</command>
+
+<command name="REGION" alias="REGION_FLEKS0,REGION_FLEKS1,REGION_FLEKS2" multiple="T">
+  <parameter name="regionName" type="string"/>
+  <parameter name="shape" type="string" input="select" required="T">
+    <option value="box"     />
+    <option value="paraboloid" />
+    <option value="shell"    />
+    <option value="sphere"   />
+  </parameter>
+  <if expr="$shape =~ /paraboloid/">
+    <parameter name="iAxis" type="integer" min="0" max="2"/>    
+  </if>
+  <if expr="$shape !~ /box/">
+    <parameter name="centerX" type="real" />
+    <parameter name="centerY" type="real" />
+    <parameter name="centerZ" type="real" if="$nDim==3"/>
+  </if>
+  <if expr="$shape =~ /box\b/">
+    <parameter name="xMinBox" type="real" />
+    <parameter name="xMaxBox" type="real" />
+    <parameter name="yMinBox" type="real" />
+    <parameter name="yMaxBox" type="real" />
+    <parameter name="zMinBox" type="real" if="$nDim==3"/>
+    <parameter name="zMaxBox" type="real" if="$nDim==3"/>
+  </if>
+  <if expr="$shape =~ /sphere|shell/">
+    <parameter name="radiusInner" type="real" min="0"
+	       if="$shape =~ /shell/"/>
+    <parameter name="radius"  type="real" min="0+$RadiusInner"/>
+  </if>
+  <if expr="$shape =~ /paraboloid/">
+    <parameter name="height"     type="real" />
+    <parameter name="radius1"    type="real" min="0"/>
+    <parameter name="radius2"    type="real" min="0" />
+  </if>  
+
+#REGION
+region1		regionName
+box			  shape
+-64.0			xMin
+-32.0			xMax
+-16.0			yMin
+16.0			yMax
+-16.0			zMin
+  0.0			zMax
+
+#REGION
+sphere1		nameRegion
+sphere  	shape
+-10.0			centerX
+ 10.0			centerY
+  0.0			centerZ
+ 20.0			radius
+
+#REGION
+shell1	  nameRegion
+shell     shape
+-10.0			centerX
+ 10.0			centerY
+  0.0			centerZ
+ 20.0			radiusInner
+ 20.0			radiusOuter
+
+
+#REGION
+p1	            nameRegion
+paraboloid   	  shape
+0               iAxis
+-10.0			      centerX
+ 10.0			      centerY
+  0.0			      centerZ
+-10             height
+ 20.0			      radius1
+ 10.0			      radius2
+
+The regions defined here can be used for setting refinement areas. 
+
+For a 'paraboloid', the iAxis is the axis of the paraboloid, and it can 
+be 0 (x-dir), 1 (y-dir), or 2 (z-dir). Its height can be negative, which 
+indicates the orientation direction. The direction of the paraboloid (iAxis)
+and the directions of radius1 and radius2 form a right-hand system. If 
+iAxis is the x/y/z direction, radius1 is the radius in the y/z/x direction,
+and radius isin the z/x/y direction.
+
+</command>
+
+<command name="REFINEREGION" alias="REFINEREGION_FLEKS0,REFINEREGION_FLEKS1, REFINEREGION_FLEKS2" multiple="T">
+  <parameter name="refineLev" type="integer" min="0"/>
+  <parameter name="refineArea" type="string" />
+
+#REFINEREGION
+0                         refineLev
++box1 -sphere1		        StringRegion
+
+#REFINEREGION
+1                         refineLev
++box2 -sphere2		        StringRegion
+
+This command is used to specify the regions of refinement for the 
+level refineLev. The cells inside the '+' shapes but outside the '-' 
+shapes will be refined.
+
+Multiple #REFINEREGION commands can be used for different levels.
+
+</command>
+
+<command name="GRIDEFFICIENCY" alias="GRIDEFFICIENCY_FLEKS0,GRIDEFFICIENCY_FLEKS1, GRIDEFFICIENCY_FLEKS2" multiple="T">
+  <parameter name="gridEfficiency" type="real" min="0" max="1" default="0.7"/>
+  
+#GRIDEFFICIENCY
+0.7                       gridEfficiency
+
+From AMReX online docs: "This threshold value (gridEfficiency), which defaults
+to 0.7 (or 70%), is used to ensure that grids do not contain too large a fraction of un-tagged cells."
+
+For a block, if the ratio of its cells that are labelled for refinement is 
+more than 'gridEfficiency', the whole block will be refined. Since the block
+decomposition may be different for the same setup but on different numbers of 
+cores, these simulations may refine grids differently if 'gridEfficiency'
+is not 1. 
+
+</command>
+
+<command name="PARTICLES" alias="PARTICLES_FLEKS0,PARTICLES_FLEKS1,PARTICLES_FLEKS2" multiple="T">
+  <parameter name="nParticleX" type="integer" min="1" default="6"/>
+  <parameter name="nParticleY" type="integer" min="1" default="6"/>
+  <parameter name="nParticleZ" type="integer" min="1" default="6"/>
+
+#PARTICLES
+6                  particles per cell in X 
+6                  particles per cell in Y 
+6                  particles per cell in Z 
+
+#PARTICLES_FLEKS1
+10                 particles per cell in X 
+10                 particles per cell in Y 
+1                  particles per cell in Z 
+
+The command sets particle numbers in each direction for initial
+condition and ghost cells for a FLEKS region.
+</command>
+
+<command name="SOURCEPARTICLES" alias="SOURCEPARTICLES_FLEKS0,SOURCEPARTICLES_FLEKS1,SOURCEPARTICLES_FLEKS2" multiple="T">
+  <parameter name="nParticleX" type="integer" min="0" default="0"/>
+  <parameter name="nParticleY" type="integer" min="0" default="0"/>
+  <parameter name="nParticleZ" type="integer" min="0" default="0"/>
+
+#SOURCEPARTICLES
+1                  particles per cell in X 
+1                  particles per cell in Y 
+1                  particles per cell in Z 
+
+#SOURCEPARTICLES_FLEKS1
+10                 particles per cell in X 
+10                 particles per cell in Y 
+1                  particles per cell in Z 
+
+The command sets particle number per cell for plasma sources.
+</command>
+
+<command name="ADAPTIVESOURCEPPC" alias="ADAPTIVESOURCEPPC_FLEKS0,ADAPTIVESOURCEPPC_FLEKS1,ADAPTIVESOURCEPPC_FLEKS2" multiple="T">
+  <parameter name="useAdaptiveSourcePPC" type="logical" default="F"/>
+
+#ADAPTIVESOURCEPPC
+T                  useAdaptiveSourcePPC
+
+If it is true, the particle number per cell per step for the sources will 
+be reduced to as low as 1 if the source density is low.
+</command>
+
+<command name="SUPID" alias="SUPID_FLEKS0,SUPID_FLEKS1,SUPID_FLEKS2" multiple="T">
+   <parameter name="nSpecies" type="integer" min="0" max="15" default="0" />
+    <for from="1" to="$nSpecies">
+      <parameter name="supID" type="integer"/>
+    </for>
+
+#SUPID_FLEKS0                                                 
+3                       nSpecies
+1                       supID
+1                       supID
+1                       supID
+
+The starting supID for each species. This command should only exist in 
+a restart file.
+</command>
+
+<command name="TPREGION" alias="TPREGION_FLEKS0,TPREGION_FLEKS1,TPREGION_FLEKS2" multiple="F">
+  <parameter name="region" type="string"/>     
+
+#TPREGION
+boundary           region
+
+#TPREGION_FLEKS0
+uniform            region
+
+#TPREGION
++box1         		 region
+
+This command is used to specify the regions of test particle seeds. 
+Users can choose the option of generating test particles:
+* 'uniform': in the whole domain
+* 'boundary': at all the boundaries
+* 'sideX+': at the X+ boundary
+* '+/-region': in a user defined region, used together with #REGION.
+Cells inside the '+' shapes and outside the '-' shapes will be selected.
+
+</command>
+
+<command name="TPSTATESI" alias="TPSTATE_FLEKS0,TPSTATE_FLEKS1,TPSTATE_FLEKS2" multiple="T">
+  <parameter name="nState" type="integer" min="0" default="0"/>
+  <parameter name="iSpecies" type="integer"/>
+  <parameter name="vth" type="real"/>
+  <parameter name="vx" type="real"/>
+  <parameter name="vy" type="real"/>
+  <parameter name="vz" type="real"/>
+  
+
+#TPSTATESI                                   
+1                       nState
+1                       iSpecies
+0                       vth[m/s]
+1e5                     vx[m/s]
+2e5                     vy[m/s]
+1e6                     vz[m/s]
+
+Initializating test particles with user defined thermal velocity (vth) and 
+bulk velocities (vx, vy and vz) for iSpecies. The velocities are in SI unit. 
+
+</command>
+
+<command name="TPPARTICLES" alias="TPPARTICLES_FLEKS0,TPPARTICLES_FLEKS1,TPPARTICLES_FLEKS2" multiple="T">
+  <parameter name="nParticleX" type="integer" min="1" default="1"/>
+  <parameter name="nParticleY" type="integer" min="1" default="1"/>
+  <parameter name="nParticleZ" type="integer" min="1" default="1"/>
+
+#TPPARTICLES
+1                  particles per cell in X
+1                  particles per cell in Y
+1                  particles per cell in Z
+
+This command sets the number of test particles per cell. 
+
+</command>
+
+<command name="TPCELLINTERVAL" alias="TPCELLINTERVAL_FLEKS0,TPCELLINTERVAL_FLEKS1,TPCELLINTERVAL_FLEKS2" multiple="T">
+  <parameter name="nIntervalX" type="integer" min="1" default="1"/>
+  <parameter name="nIntervalY" type="integer" min="1" default="1"/>
+  <parameter name="nIntervalZ" type="integer" min="1" default="1"/>
+
+#TPCELLINTERVAL
+1                  nIntervalX
+1                  nIntervalY
+1                  nIntervalZ
+
+Generating test particles for every cell may be too much for large applications. 
+This command allows generating test particles for every nInterval cells in the
+region defined by command #TPREGION. If the interval is larger than those
+defined in #MAXBLOCKSIZE, the interval is equivalent to the maximum block size.
+</command>
+
+
+<command name="ELECTRON" alias="ELECTRON_FLEKS0,ELECTRON_FLEKS1,ELECTRON_FLEKS2" multiple="T">
+  <parameter name="electronChargePerMass" type="real" default="-100"/>
+
+#ELECTRON
+-100                     electronChargePerMass
+
+#ELECTRON_FLEKS1
+-100                      electronChargePerMass for FLEKS region 1
+
+This command sets the charge per mass in normalized unit for electrons.
+If the _FLEKSX is added, it only sets the value for the X FLEKS region.
+It is ignored when FLEKS is coupled with BATSRUS configured with the 
+five-moment or six-moment fluid closures that define the electron mass.
+
+Default value is shown.
+</command>
+
+<command name="TESTCASE" alias="TESTCASE_FLEKS0,TESTCASE_FLEKS1,TESTCASE_FLEKS2" multiple="T">
+  <parameter name="testCase" type="string"/>
+
+#TESTCASE 
+Beam		testCase
+
+It will set the initial conditions for a specific test case. The kernel names no
+test case: the name is resolved by the InitialCondition registry (case-insensitive)
+and an unknown name aborts listing the registered names. Wave / sinusoidal tests
+are all ONE parameterized plug-in (WaveIC) registered as lightwave, hybridwave,
+convectionwave, ionacousticwave and a generic waveic; non-wave tests have
+dedicated plug-ins (beam, tophat). See the AGENT.md "Adding a New Test Case"
+workflow.
+</command>
+
+<command name="WAVEIC" alias="WAVEIC_FLEKS0,WAVEIC_FLEKS1,WAVEIC_FLEKS2" multiple="T">
+  <parameter name="seedE" type="logical" default="F"/>
+  <parameter name="seedB" type="logical" default="F"/>
+  <parameter name="seedWeight" type="logical" default="F"/>
+  <parameter name="oblique" type="logical" default="F"/>
+  <parameter name="guideField" type="logical" default="F"/>
+  <parameter name="velKick" type="logical" default="F"/>
+  <parameter name="dirX" type="real"/>
+  <parameter name="dirY" type="real"/>
+  <parameter name="dirZ" type="real"/>
+  <parameter name="waveLength" type="real"/>
+  <parameter name="waveMode" type="integer"/>
+  <parameter name="frac" type="real"/>
+  <parameter name="pert" type="real"/>
+
+#WAVEIC 
+T       seedE
+T       seedB
+F       oblique
+T       guideField
+T       velKick
+0.6     dirX
+0.8     dirY
+0.0     dirZ
+48.0    waveLength
+1       waveMode
+0.02    frac
+0.1     pert
+
+Optional sub-parameters for a WaveIC wave initial condition (selected by a
+#TESTCASE name of waveic / lightwave / hybridwave / convectionwave /
+ionacousticwave). All parameters are optional: when absent the plug-in uses its
+preset for the selected name. seedE/seedB/seedWeight toggle E-field / B-field /
+sinusoidal-density-perturbation seeding; oblique + dir + waveLength give an
+oblique plane wave (wavelength in cells), otherwise the wave is x-aligned with
+kx = 2*pi*waveMode/Lx; guideField adds the uniform Bx0 guide field under the B
+perturbation (B1 = frac*Bx0); velKick adds the matching Alfven ion velocity
+kick; pert is the density perturbation amplitude.
+</command>
+
+<command name="PERIODICITY">
+  <parameter name="isPeriodicX" type="logical" default="F" />
+  <parameter name="isPeriodicY" type="logical" default="F" />
+  <parameter name="isPeriodicZ" type="logical" default="F" />
+  
+#PERIODICITY
+F                 isPeriodicX
+F                 isPeriodicY
+F                 isPeriodicZ
+
+We may want to use periodic boundary conditions in some directions even in
+a coupled simulation, and the command above can be used. Note that if there
+is only one cell in one direction, periodic boundary conditions will be used
+in this direction and the parameter above will be ignored. Otherwise,
+the default value is false.
+
+This command is the authoritative *topology* setting for the AMReX geometry;
+it is not a boundary condition and it cannot be replaced by the `periodic`
+value of `#FIELDBOXBOUNDARY` / `#PARTICLEBOXBOUNDARY`.  The geometry (and with
+it `amrex::Geometry::isPeriodic`) has to exist before those commands are
+parsed, so causality runs the other way: their `periodic` entries are
+auto-derived from this command, and a mismatch is reported rather than
+silently ignored.
+</command>
+
+<command name="MAXBLOCKSIZE" alias="MAXBLOCKSIZE_FLEKS0,MAXBLOCKSIZE_FLEKS1,MAXBLOCKSIZE_FLEKS2" multiple="T">
+  <parameter name="nCellX" type="integer" min="1" default="8"/>
+  <parameter name="nCellY" type="integer" min="1" default="8"/>
+  <parameter name="nCellZ" type="integer" min="1" default="8"/>
+
+#MAXBLOCKSIZE
+8                   nCellX
+8                   nCellY
+1                   nCellZ 
+
+This command sets the largest block size that is allowed. All blocks are 
+equal to or smaller than the sizes set here. Users can search 
+"grid information summary" and "load balance report" to obtain the 
+grid information. 
+
+8 to 16 cells per direction usually reach a good balance between 
+efficiency and flexibility. 8*8*8 or 16*8*8 are typical for a 3D simulation.
+</command>
+
+
+<command name="INITFROMSWMF" alias="INITFROMSWMF_FLEKS0,INITFROMSWMF_FLEKS1,INITFROMSWMF_FLEKS2" multiple="T">
+  <parameter name="initFromSWMF" type="logical" default="T"/>
+
+#INITFROMSWMF
+T                   initFromSWMF
+
+By default, the PIC EM fields and particles are initialized based on the 
+fields received from SWMF. If initFromSWMF is set to false, PIC will be 
+initialized from the #UNIFORMSTATE command.
+</command>
+
+<command name="NORMALIZATION" alias="NORMALIZATION_FLEKS0,NORMALIZATION_FLEKS1,NORMALIZATION_FLEKS2" multiple="T">
+  <parameter name="lNorm" type="real"/>
+  <parameter name="uNorm" type="real"/>
+
+#NORMALIZATION
+1.495978707E11          lNorm [m]
+3.0e8                   uNorm [m/s]
+
+If PIC is not initialized from SWMF (#INITFROMSWMF), length and speed 
+normalization should be set here. Both lNorm and uNorm are in SI units.
+
+Code units map from SI as code_length = SI_length/lNorm and
+code_time = SI_time * uNorm/lNorm (so tNorm = lNorm/uNorm s per code-time unit).
+</command>
+
+<command name="SCALINGFACTOR" alias="SCALINGFACTOR_FLEKS0,SCALINGFACTOR_FLEKS1,SCALINGFACTOR_FLEKS2" multiple="T">
+  <parameter name="scaling" type="real" default="1.0"/>
+
+#SCALINGFACTOR
+1.0               scaling
+
+This command sets the scaling factor for the simulation.
+</command>
+
+<command name="BODYSIZE" alias="BODYSIZE_FLEKS0,BODYSIZE_FLEKS1,BODYSIZE_FLEKS2" multiple="T">
+  <parameter name="radius" type="real" default="1.0"/>
+
+#BODYSIZE
+1.0               radius
+
+This command sets the size of the planet or other body in the simulation.
+</command>
+
+<command name="EXOSPHERE" alias="EXOSPHERE_FLEKS0,EXOSPHERE_FLEKS1,EXOSPHERE_FLEKS2" multiple="T">
+  <parameter name="typeProfile" type="string"/>
+  <parameter name="nComponent" type="integer"/>
+  <parameter name="n0" type="real"/>
+  <parameter name="H0" type="real"/>
+  <parameter name="T0" type="real"/>
+  <parameter name="k0" type="real"/>
+
+#EXOSPHERE
+Exponential      typeProfile
+1                nComponent
+1.0e6            n0
+100e3            H0
+100.0            T0
+0.0              k0
+
+This command configures the static exospheric neutral density profile.
+The typeProfile can be "Exponential", "Power-Law", or "Chamberlain".
+The coefficients n0, H0, T0, k0 are specified as multi-component arrays
+for each neutral species. The total neutral density at radius $r$ (measured
+from the planet center, with $r \geq r_{planet}$) is the sum over all
+nComponent species:
+$$
+  n(r) = \sum_i n_i(r)
+$$
+where each component density $n_i(r)$ depends on typeProfile:
+
+\begin{verbatim}
+  Exponential (uses n0, H0):
+    n_i(r) = n0_i * exp(-(r - r_planet) / H0_i)
+
+  Power-Law (uses n0, k0):
+    n_i(r) = n0_i * (r_planet / r)^k0_i
+
+  Chamberlain (uses n0, H0):
+    n_i(r) = n0_i * exp(-H0_i * (1/r_planet - 1/r))
+\end{verbatim}
+
+Here $r_{planet}$ is the body radius set by #BODYSIZE, $n0_i$ is the surface
+number density [m$^{-3}$] at $r = r_{planet}$, $H0_i$ is the scale height [m],
+and $k0_i$ is the power-law index. $T0_i$ is the neutral temperature [K] of
+the exosphere component. It is used as the ionization source temperature:
+the pressure of newly created ions is set to $n \times k_B \times T0_i$. $T0_i$
+must be positive whenever any ionization source process is enabled. To
+enable ionization source processes, use the separate #PHOTOIONIZATION,
+#ELECTRONIMPACT, and/or #CHARGEEXCHANGE commands below. If none of those
+commands are present, no ionization source is applied.
+</command>
+
+<command name="PHOTOIONIZATION" alias="PHOTOIONIZATION_FLEKS0,PHOTOIONIZATION_FLEKS1,PHOTOIONIZATION_FLEKS2" multiple="T">
+  <parameter name="nuPhoto0" type="real"/>
+
+#PHOTOIONIZATION
+1.0e-6                  nuPhoto0
+1.0e-6                  nuPhoto0
+
+This command enables photoionization as an exosphere source process.
+The number of neutral components is taken from #EXOSPHERE (nComponent);
+#EXOSPHERE must appear before #PHOTOIONIZATION in PARAM.in.
+nuPhoto0 is the photoionization rate [1/s] at the planet surface,
+specified as a multi-component array (one value per #EXOSPHERE component,
+in the same order). The rate at distance $r$ follows geometric dilution:
+$$
+  \nu(r) = \nu_{photo,0} \, (r_{planet} / r)^2
+$$
+</command>
+
+<command name="SHADOWCYLINDER" alias="SHADOWCYLINDER_FLEKS0,SHADOWCYLINDER_FLEKS1,SHADOWCYLINDER_FLEKS2" multiple="T">
+  <parameter name="solarDirX" type="real"/>
+  <parameter name="solarDirY" type="real"/>
+  <parameter name="solarDirZ" type="real"/>
+  <parameter name="radius" type="real"/>
+
+#SHADOWCYLINDER
+1.0                     solarDirX
+0.0                     solarDirY
+0.0                     solarDirZ
+6.371e6                 radius [m]
+
+This command defines a planetary shadow cylinder on the nightside
+(anti-sunward direction). Photoionization production is set to zero
+for all grid points inside this cylinder.
+
+solarDirX/Y/Z are the components of the unit vector pointing from
+the planet center toward the Sun. They will be normalized automatically.
+radius is the radius of the shadow cylinder [m], typically the
+planetary radius.
+
+If this command is absent, photoionization is applied spherically
+symmetrically (no shadow).
+</command>
+
+<command name="ELECTRONIMPACT" alias="ELECTRONIMPACT_FLEKS0,ELECTRONIMPACT_FLEKS1,ELECTRONIMPACT_FLEKS2" multiple="T">
+  <parameter name="eIon" type="real"/>
+  <parameter name="Acoeff" type="real"/>
+  <parameter name="Kcoeff" type="real"/>
+  <parameter name="Xcoeff" type="real"/>
+
+#ELECTRONIMPACT
+13.6                    eIon
+1.0e-8                  Acoeff
+0.5                     Kcoeff
+0.8                     Xcoeff
+13.6                    eIon
+1.0e-8                  Acoeff
+0.5                     Kcoeff
+0.8                     Xcoeff
+
+This command enables electron impact ionization as an exosphere source
+process. The number of neutral components is taken from #EXOSPHERE
+(nComponent); #EXOSPHERE must appear before #ELECTRONIMPACT in PARAM.in.
+Uses the Voronov 1997 rate coefficient:
+$$
+  \langle \sigma v \rangle = \frac{A \, t^K}{X + t} \, \exp(-E_i/T_e), \quad t = T_e/E_i
+$$
+eIon is the ionization energy [eV], Acoeff is the Voronov A coefficient
+[cm\^3/s], Kcoeff is K, Xcoeff is X.
+Each parameter is specified as a multi-component array (one set per
+#EXOSPHERE component, in the same order).
+</command>
+
+<command name="CHARGEEXCHANGE" alias="CHARGEEXCHANGE_FLEKS0,CHARGEEXCHANGE_FLEKS1,CHARGEEXCHANGE_FLEKS2" multiple="T">
+  <parameter name="nIonSpecies" type="integer"/>
+  <parameter name="sigmaCX" type="real"/>
+
+#CHARGEEXCHANGE
+2                       nIonSpecies
+2.0e-15                 sigmaCX       H neutral - H+ ion [cm\^2]
+1.0e-15                 sigmaCX       H neutral - O+ ion [cm\^2]
+1.5e-15                 sigmaCX       O neutral - H+ ion [cm\^2]
+1.0e-15                 sigmaCX       O neutral - O+ ion [cm\^2]
+
+This command enables charge exchange as an exosphere source process.
+The number of neutral components is taken from #EXOSPHERE (nComponent);
+#EXOSPHERE must appear before #CHARGEEXCHANGE in PARAM.in.
+nIonSpecies must match the number of ion species (nS - 1 from #PLASMA,
+since species 0 is the electron); #PLASMA must also appear before
+#CHARGEEXCHANGE.
+Uses a constant cross-section model:
+$$
+  \langle \sigma v \rangle = \sigma_{CX} \, u_{ion}
+$$
+sigmaCX is the charge exchange cross section [cm\^2], specified as a
+matrix with one row per neutral component (in #EXOSPHERE order) and one
+column per ion species, in row-major order.  Each neutral component
+exchanges charge with every ion species, and the total charge-exchange
+frequency for a neutral component is the sum over all ion species:
+$$
+  \nu_{CX}(iC) = \sum_{iSp} n_{iSp} \, \sigma_{CX}(iC, iSp) \, u_{iSp}
+$$
+The resulting source is deposited into the mapped ion species (iC + 1).
+</command>
+
+<command name="KINETICSOURCE" alias="KINETICSOURCE_FLEKS0,KINETICSOURCE_FLEKS1,KINETICSOURCE_FLEKS2" multiple="T">
+  <parameter name="kineticSource" type="logical" default="F"/>
+
+#KINETICSOURCE
+T                 kineticSource
+
+This command toggles how source plasma is injected when coupled to the
+outer heliosphere (OH) module via charge exchange (#CHARGEEXCHANGE).
+
+When kineticSource is true, the charge-exchange-produced ions are added
+as macro particles. During #CHARGEEXCHANGE the mass removed from each
+neutral is collected into per-cell source particle tiles (sourceParts),
+which are then added to the particle array by add_source_particles using
+#SOURCEPARTICLES nppc and #ADAPTIVESOURCEPPC. The newly created particles
+inherit a sampled velocity distribution (the neutral bulk velocity and the
+ion thermal speed) rather than the fluid source fields, giving a proper
+kinetic treatment of the pickup-ion source.
+
+When kineticSource is false (the default), the ion source is deposited as
+a fluid (node fluid) source through the SourceInterface and is injected
+each step by fill_source_particles() from the fluid source moments
+(see #SOURCE and #SOURCEPARTICLES).
+
+The flag is set to true automatically in Particle-Tracker (PT) builds,
+where kinetic source injection is the expected behaviour. It is only
+relevant for OH-PT coupled runs that use charge exchange; it has no
+effect in standalone PIC runs.
+</command>
+
+<command name="RECOMBINATION" alias="RECOMBINATION_FLEKS0,RECOMBINATION_FLEKS1,RECOMBINATION_FLEKS2" multiple="T">
+  <parameter name="nReactions" type="integer"/>
+  <parameter name="ionSpecies" type="integer"/>
+  <parameter name="rateCoef" type="real"/>
+  <parameter name="tempExponent" type="real"/>
+  <parameter name="refTemp" type="real"/>
+
+#RECOMBINATION
+1                       nReactions
+2                       ionSpecies    O2+ (species 2)
+7.38e-3                 rateCoef      [cm\^3/s]
+0.56                    tempExponent
+300.0                   refTemp       [K]
+
+This command enables dissociative recombination as a source process:
+ion+ + e- -> neutrals.  It requires useElectronFluid = true, i.e. species 0
+must be the electron (set via #PLASMA with a negative charge).  The electron
+density $n_e$ and temperature $T_e$ are taken from the electron fluid.  The
+recombing ion is consumed (a loss term written to the particle loss array),
+and the neutral products are not tracked as fluids.  The electron density
+decrease is handled implicitly by the quasi-neutrality condition, so only
+the ion species needs to be listed.
+
+nReactions is the number of recombination reactions.  For each reaction,
+the following 4 parameters are read:
+  ionSpecies    - 1-based ion species index (1..nS-1).  Species 0 (the
+                  electron) cannot recombine with itself.
+  rateCoef      - Base rate coefficient k0 [cm\^3/s].
+  tempExponent  - Temperature exponent alpha.  When 0, k = k0 (constant,
+                  independent of temperature).  When non-zero, refTemp
+                  must be positive.
+  refTemp       - Reference temperature $T_{ref}$ [K].
+
+The temperature-dependent rate coefficient is:
+$$
+  k(T_e) = k_0 \, (T_{ref} / T_e)^{\alpha}
+$$
+where $T_e$ is the electron temperature in Kelvin.
+
+#RECOMBINATION does not require #EXOSPHERE because recombination depends
+on the electron and ion fluids, not on the neutral exosphere.  #PLASMA
+must appear before #RECOMBINATION so that the ion species indices and the
+electron fluid flag can be validated.
+</command>
+
+<command name="CHEMISTRY" alias="CHEMISTRY_FLEKS0,CHEMISTRY_FLEKS1,CHEMISTRY_FLEKS2" multiple="T">
+  <parameter name="nReactions" type="integer"/>
+  <parameter name="reactantIon" type="integer"/>
+  <parameter name="productIon" type="integer"/>
+  <parameter name="neutralComp" type="integer"/>
+  <parameter name="rateType" type="integer"/>
+  <parameter name="rateCoef" type="real"/>
+  <parameter name="tempExp" type="real"/>
+  <parameter name="refTemp" type="real"/>
+
+#CHEMISTRY
+3                       nReactions
+0                       reactantIon   R1: CO2 + hv   -> CO2+ + e-  (photoionization)
+4                       productIon
+2                       neutralComp
+1                       rateType
+2.47e-2                 rateCoef      nu0 [s^-1]
+0.0                     tempExp
+0.0                     refTemp
+4                       reactantIon   R2: CO2+ + O   -> O2+  + CO   (charge exchange)
+3                       productIon
+1                       neutralComp
+0                       rateType
+1.64e-5                 rateCoef      k0 [cm^3/s]
+0.0                     tempExp
+0.0                     refTemp
+3                       reactantIon   R3: O2+ + e-   -> O    + O    (recombination)
+0                       productIon
+-1                      neutralComp
+0                       rateType
+7.38e-3                 rateCoef      k0 [cm^3/s]
+0.56                    tempExp
+300.0                   refTemp
+
+This command provides a unified chemistry framework that supports
+photoionization, charge exchange (cross-species ion conversion), and
+recombination through a single reaction table.  It requires
+useElectronFluid = true (species 0 = electron, set via #PLASMA).  The
+electron density $n_e$ and temperature $T_e$ are taken from the electron
+fluid, and electron density changes are handled implicitly by the
+quasi-neutrality condition. Only ion species need to be listed as
+reactants or products.
+
+nReactions is the number of reactions.  For each reaction, the following
+7 parameters are read:
+  reactantIon  - Consumed ion species index: 0 = none (photoionization),
+                 1..nS-1 = ion species.
+  productIon   - Produced ion species index: 0 = none (recombination),
+                 1..nS-1 = ion species.
+  neutralComp  - Exosphere neutral component: -1 = none (recombination),
+                 0..nComponent-1 = #EXOSPHERE component index.
+  rateType     - 0 = thermal rate $k(T_e)$; 1 = photoionization $(1/r^2)$.
+  rateCoef     - k0 [cm$^3$/s] for thermal; nu0 [s$^{-1}$] at the planet
+                 surface for photoionization.
+  tempExp      - Temperature exponent alpha (thermal only).  When 0,
+                 k = k0 (constant).  When non-zero, refTemp > 0 is
+                 required.
+  refTemp      - Reference temperature $T_{ref}$ [K] (thermal only).
+
+The rate coefficient for thermal reactions (rateType = 0) is:
+$$
+  k(T_e) = k_0 \, (T_{ref} / T_e)^{\alpha}
+$$
+For photoionization (rateType = 1), the rate follows geometric dilution:
+$$
+  \nu(r) = \nu_0 \, (r_{planet} / r)^2
+$$
+and is set to zero inside the shadow cylinder defined by #SHADOWCYLINDER
+(if present).
+
+Three reaction categories are supported:
+  1. Photoionization (reactantIon = 0, rateType = 1):
+     neutral + hv -> ion+ + e-.  The neutral is at rest; the produced ion
+     inherits the neutral temperature (T0 from #EXOSPHERE).  neutralComp
+     must be >= 0.
+  2. Charge exchange / ion conversion (reactantIon > 0, productIon > 0,
+     rateType = 0): ion1+ + neutral -> ion2+ + neutral'.  The product ion
+     inherits the reactant ion's velocity and temperature.  neutralComp
+     must be >= 0.
+  3. Recombination (reactantIon > 0, productIon = 0, neutralComp = -1,
+     rateType = 0): ion+ + e- -> neutrals.  The ion is consumed; the rate
+     is $k \times n_e$.  No neutral component is needed.
+
+#EXOSPHERE must appear before #CHEMISTRY if any reaction uses
+neutralComp >= 0.  #PLASMA must also appear before #CHEMISTRY.  #CHEMISTRY
+supersedes the simpler #PHOTOIONIZATION, #CHARGEEXCHANGE, and
+#RECOMBINATION commands; use either the unified #CHEMISTRY table or the
+individual commands, not both.
+</command>
+
+<command name="PLASMA" alias="PLASMA_FLEKS0,PLASMA_FLEKS1,PLASMA_FLEKS2" multiple="T">
+  <parameter name="nS" type="integer"/>
+  <parameter name="mass" type="real"/>
+  <parameter name="charge" type="real"/>
+
+#PLASMA
+1                       nS
+1                       mass
+0                       charge ! neutral particle
+
+#PLASMA_FLEKS0
+2                       nS
+1                       mass
+1                       charge
+0.1                     mass
+-1                      charge
+
+If PIC is not initialized from SWMF (#INITFROMSWMF), set particle
+mass and charge here. The units of mass and charge are amu and 
+elementary charge, respectively. If the charge is 0, then it is a 
+neutral species. 
+
+</command>
+
+
+<command name="UNIFORMSTATE" alias="UNIFORMSTATE_FLEKS0,UNIFORMSTATE_FLEKS1,UNIFORMSTATE_FLEKS2" multiple="T">
+  <parameter name="rho" type="real"/>  
+  <parameter name="ux" type="real"/>  
+  <parameter name="uy" type="real"/>  
+  <parameter name="uz" type="real"/>  
+  <parameter name="T" type="real"/>  
+  <parameter name="Bx" type="real"/>  
+  <parameter name="By" type="real"/>  
+  <parameter name="Bz" type="real"/>  
+  <parameter name="Ex" type="real"/>  
+  <parameter name="Ey" type="real"/>  
+  <parameter name="Ez" type="real"/>  
+
+#UNIFORMSTATE
+1.8                 rho [amu/cc]  ! Species 1 
+100                 ux [km/s]
+0                   uy [km/s]
+0                   uz [km/s]
+6000                T  [K] 
+0.18                rho [amu/cc]  ! Species 2 
+100                 ux [km/s]
+0                   uy [km/s]
+0                   uz [km/s]
+6000                T  [K] 
+0.0                 Bx [?]
+0.0                 By [?]
+0.0                 Bz [?]
+0.0                 Ex [?]
+0.0                 Ey [?]
+0.0                 Ez [?]
+
+If PIC is not initialized from SWMF (#INITFROMSWMF), set uniform initial
+conditions here. For each plasma species, provide rho [amu/cc], ux/uy/uz
+[km/s], and T [K]. The background electromagnetic fields B [T] and E [V/m]
+are specified once at the end (in SI units).
+
+When useElectronFluid is enabled, the electron species (species 0) density
+is read directly from its rho value rather than being computed from a
+quasi-neutrality condition. The user is responsible for ensuring charge
+neutrality, i.e. rho_e = (sum_i rho_i / m_i) * m_e, where m_e and m_i are
+the species masses declared in #PLASMA.
+</command>
+
+
+<command name="OHION" alias="OHION_FLEKS0,OHION_FLEKS1, OHION_FLEKS2" multiple="T">
+  <parameter name="rAnalytic" type="real" min="0" default="0.0"/>
+  <parameter name="doGetFromOH" type="logical" default="F"/>
+  <if expr="not($doGetFromOH)">
+    <parameter name="rCutoff" type="real" min="0" default="0.0"/>
+    <parameter name="swRho" type="real" min="0" default="0.0"/>
+    <parameter name="swT" type="real" min="0" default="0.0"/>
+    <parameter name="swU" type="real" min="0" default="0.0"/>
+  </if>
+
+#OHION 
+30			  rAnalytic [AU]
+T        doGetFromOH
+
+
+#OHION
+30			  rAnalytic [AU]
+F         doGetFromOH
+4			    rCutoff   [AU]
+0.00874		swRho [amu/cc]
+1.0e5			swT   [K]
+400			  swU   [km/s]
+
+This is only used for OH-PT coupling. The units of the parameters are
+shown in the example above. Inside the sphere of r .le. rAnalytic, the 
+ion properties are obtained from the OH module if doGetFromOH is true. 
+Otherwise, the following analytic expressions are used for obtainning 
+the ion density, temperature, and velocity: 
+rho(r) = swRho * (rAnalytic/r)**2, T(r) = swT, and u(r) = swU 
+along the ratial direction. Inside r .le. rCutoff, the density is set 
+to rho(rCutoff). 
+</command>
+
+<command name="MAXCHARGEEXCHANGERATE" alias="MAXCHARGEEXCHANGERATE_FLEKS0,MAXCHARGEEXCHANGERATE_FLEKS1,MAXCHARGEEXCHANGERATE_FLEKS2" multiple="T">
+  <parameter name="maxChargeExchangeRate" type="real" default="1"/>
+
+#MAXCHARGEEXCHANGERATE
+0.2              maxChargeExchangeRate
+
+This command sets the maximum allowed fraction of a particle's weight that 
+can be exchanged in one time step during charge exchange. If the actual 
+exchange ratio exceeds this limit, the time step will be reduced 
+accordingly for the next step. This is only used for OH-PT coupling.
+</command>
+
+
+<command name="PARTICLEBOXBOUNDARY" alias="PARTICLEBOXBOUNDARY_FLEKS0,PARTICLEBOXBOUNDARY_FLEKS1,PARTICLEBOXBOUNDARY_FLEKS2" multiple="T">
+  <parameter name="iSpecies" type="integer" required="T"/>
+  <for from="1" to="$nDim">
+    <parameter name="particleBoxBoundaryLo" type="string" input="select" required="T">
+      <option value="periodic"/>
+      <option value="coupled"/>
+      <option value="outflow"/>
+      <option value="open"/>
+      <option value="vacuum"/>
+      <option value="reflect"/>
+      <option value="absorb"/>
+      <option value="inflow"/>
+    </parameter>
+    <parameter name="particleBoxBoundaryHi" type="string" input="select" required="T">
+      <option value="periodic"/>
+      <option value="coupled"/>
+      <option value="outflow"/>
+      <option value="open"/>
+      <option value="vacuum"/>
+      <option value="reflect"/>
+      <option value="absorb"/>
+      <option value="inflow"/>
+    </parameter>
+  </for>
+
+#PARTICLEBOXBOUNDARY
+0                 iSpecies
+coupled           particleBoxBoundaryLo
+coupled           particleBoxBoundaryHi
+outflow           particleBoxBoundaryLo
+outflow           particleBoxBoundaryHi
+outflow           particleBoxBoundaryLo
+outflow           particleBoxBoundaryHi
+
+This command defines the kinetic boundary conditions for one particle species
+(`iSpecies`); repeat the block for every species.  A species with no block of
+its own keeps the default `coupled`.
+
+* `periodic` -- requires the direction to be periodic in `#PERIODICITY` too.
+  The stored value is auto-derived from the geometry, so the geometry wins and
+  a mismatch is reported.
+* `coupled` (default) -- MHD-AEPIC: the ghost-cell population is re-seeded
+  from the fluid / MHD state.
+* `outflow` (alias `open`) -- particles crossing the face are deleted; there
+  is no tally and no ghost-cell population (Hybrid-VPIC "open").
+* `vacuum` -- like `outflow`, and additionally asserts that nothing exists
+  beyond the face; no tally.
+* `reflect` -- specular reflection: position and normal velocity are
+  mirrored.  Energy conserving; use for symmetry planes and electrostatic
+  walls.
+* `absorb` -- particles crossing the face are removed and tallied per face
+  (count / charge / mass); there is no re-emission.  Pair it with `absorb` in
+  `#FIELDBOXBOUNDARY` on the same face for a fully absorbing boundary.
+* `inflow` -- a flux-weighted (half-space) drifting Maxwellian is injected at
+  the physical face (Hybrid-VPIC style) and outgoing particles are deleted.
+  The upstream state comes from `#INFLOW`.
+
+Field-domain spellings (`conducting`, `fixed`, `wave`) are not
+particle boundary conditions.  They are still accepted for backward
+compatibility, mapped to the nearest particle value, and reported as
+deprecated.  See `#FIELDBOXBOUNDARY` and `Doc/Boundary_Conditions.md`.
+</command>
+
+<command name="FIELDBOXBOUNDARY" alias="FIELDBOXBOUNDARY_FLEKS0,FIELDBOXBOUNDARY_FLEKS1,FIELDBOXBOUNDARY_FLEKS2" multiple="F">
+  <for from="1" to="$nDim">
+    <parameter name="fieldBoxBoundaryLo" type="string" input="select" required="T">
+      <option value="periodic"/>
+      <option value="coupled"/>
+      <option value="outflow"/>
+      <option value="open"/>
+      <option value="vacuum"/>
+      <option value="conducting"/>
+      <option value="absorb"/>
+      <option value="inflow"/>
+      <option value="fixed"/>
+      <option value="wave"/>
+    </parameter>
+    <parameter name="fieldBoxBoundaryHi" type="string" input="select" required="T">
+      <option value="periodic"/>
+      <option value="coupled"/>
+      <option value="outflow"/>
+      <option value="open"/>
+      <option value="vacuum"/>
+      <option value="conducting"/>
+      <option value="absorb"/>
+      <option value="inflow"/>
+      <option value="fixed"/>
+      <option value="wave"/>
+    </parameter>
+  </for>
+
+#FIELDBOXBOUNDARY
+coupled           fieldBoxBoundaryLo
+coupled           fieldBoxBoundaryHi
+outflow           fieldBoxBoundaryLo
+outflow           fieldBoxBoundaryHi
+outflow           fieldBoxBoundaryLo
+outflow           fieldBoxBoundaryHi
+
+This is the single entry point for the electromagnetic boundary conditions.
+One face type is given per physical face; the B operator and the E operator
+read the same value and differ only through their own convention (selected
+internally by `isB`):
+
+* `periodic` -- requires the direction to be periodic in `#PERIODICITY` too.
+  As for particles, the value is auto-derived from the geometry.
+* `coupled` (default) -- MHD-AEPIC: the ghost fields are taken from the
+  fluid / MHD state.
+* `outflow` (alias `open`) -- zero-gradient (Neumann) ghost cells.
+* `vacuum` -- no field beyond the face.
+* `conducting` -- perfectly conducting wall (PEC): B_normal = 0 and
+  B_tangential mirrored, E_tangential = 0 and E_normal mirrored.  Only
+  correct for a stationary conductor; a flowing plasma needs E_t = -u x B.
+* `absorb` -- outgoing-characteristic (matched-impedance) absorber, so an
+  outgoing EM wave leaves the box without reflection.  Pair it with
+  `#PARTICLEBOXBOUNDARY absorb` for a fully absorbing boundary.  The
+  characteristic speed is set by `#ABSORB`.
+* `inflow` -- upstream-driven open face; the upstream state comes from
+  `#INFLOW`.
+* `fixed` -- Dirichlet: the ghost cells of E and B are pinned to the
+  initial / uniform state (`#UNIFORMSTATE`).
+* `wave` -- hard wave source (antenna); requires `#WAVEBC`.
+
+The same value means slightly different things in the two field solvers:
+
+* full PIC (`#SOLVEEM T`): E and B are both evolved, so the type constrains
+  both.
+* hybrid PIC (`#HYBRIDPIC T`): only `centerB` is evolved, so the type
+  constrains B.  The electric field is a derived quantity assembled by the
+  generalized Ohm's law, and the same face type is used only to close its
+  ghost ring (so the Faraday curl at the edge cell and the Boris push gather
+  are well defined) -- it is not an independent constraint.
+
+The particle-domain spelling `reflect` is accepted for backward compatibility,
+mapped to `conducting`, and reported as deprecated.  See
+`Doc/Boundary_Conditions.md`.
+
+`#BFIELDBOXBOUNDARY` is deprecated in favor of this command.
+</command>
+
+<command name="ABSORB" alias="ABSORB_FLEKS" multiple="F">
+  <parameter name="charSpeed" type="real" required="T" default="0.0"/>
+
+#ABSORB
+0.0                 charSpeed
+
+This command tunes the absorbing field boundary condition (`#FIELDBOXBOUNDARY
+... absorb ...`).  `charSpeed` sets the characteristic speed used in the
+matched-impedance blend; the default `0.0` means auto (light speed, `c = 1` in
+FLEKS code units).  See `Doc/Boundary_Conditions.md`.
+</command>
+
+<command name="INFLOW" alias="INFLOW_FLEKS" multiple="F">
+  <parameter name="rho" type="real" default="0.0"/>
+  <parameter name="ux" type="real" default="0.0"/>
+  <parameter name="uy" type="real" default="0.0"/>
+  <parameter name="uz" type="real" default="0.0"/>
+  <parameter name="T" type="real" default="0.0"/>
+
+#INFLOW
+5.0                      rho [amu/cc]
+20.0                     ux [km/s]
+0.0                      uy [km/s]
+0.0                      uz [km/s]
+10000.0                  T [K]
+
+Specifies the upstream plasma state for the inflow (open) boundary condition
+(`#FIELDBOXBOUNDARY ... inflow ...` / `#PARTICLEBOXBOUNDARY ... inflow ...`).
+All values are in SI units, mirroring `#UNIFORMSTATE`.  When an `inflow` face
+is present and this command is supplied:
+
+* the EM-field ghost cells at an `inflow` face are filled by a zero-gradient
+  copy of the adjacent edge cell (ghost B = edge B, ghost E = edge E, for every
+  component) -- the upstream B field is set by `#UNIFORMSTATE`, NOT here, and is
+  NOT pinned by this command.  Use `#FIELDBOXBOUNDARY fixed` on the inflow
+  face instead if you want the ghost fields pinned to the upstream state;
+* the inflow flux is supplied by flux-weighted particle injection at the
+  boundary face, sampled from a drifting Maxwellian with the upstream density
+  (rho), bulk velocity (ux, uy, uz), and temperature (T).
+
+Without this command, an `inflow` face falls back to the zero-gradient ghost
+copy (the original open-boundary behaviour).  Pair `inflow` at one face with
+`outflow` at the opposite face for a wind-tunnel-style domain.
+</command>
+
+<command name="WAVEBC" alias="WAVEBC_FLEKS" multiple="F">
+  <parameter name="nWaveFace" type="integer" default="0"/>
+  <parameter name="direction" type="integer"/>
+  <parameter name="side" type="string" input="select">
+    <option value="lo"/>
+    <option value="hi"/>
+  </parameter>
+  <parameter name="nComp" type="integer"/>
+  <parameter name="iField" type="integer"/>
+  <parameter name="iSpecies" type="integer"/>
+  <parameter name="profile" type="integer"/>
+  <parameter name="amplitude" type="real"/>
+  <parameter name="frequency" type="real"/>
+  <parameter name="waveLength" type="real"/>
+  <parameter name="phase" type="real"/>
+  <for from="1" to="3">
+    <parameter name="dir" type="real"/>
+  </for>
+  <for from="1" to="3">
+    <parameter name="pol" type="real"/>
+  </for>
+  <parameter name="tStart" type="real"/>
+  <parameter name="tEnd" type="real"/>
+  <parameter name="rampTime" type="real"/>
+  <parameter name="tCenter" type="real"/>
+  <parameter name="tWidth" type="real"/>
+
+#WAVEBC
+1                       nWaveFace
+0                       direction     (0=x,1=y,2=z)
+lo                      side          (lo or hi)
+1                       nComp
+0                       iField        (0=Bx,1=By,2=Bz,3=Ex,...)
+0                       iSpecies
+0                       profile       (0=continuous,1=pulse)
+1.0e-2                  amplitude     (code units; SI if #SIFLEKS)
+0.1                     frequency     (code units; SI if #SIFLEKS)
+0.0                     waveLength
+0.0                     phase
+1.0                     dir
+0.0                     dir
+0.0                     dir
+0.0                     pol
+0.0                     pol
+1.0                     pol
+0.0                     tStart
+-1.0                    tEnd          (inactive)
+0.0                     rampTime
+0.0                     tCenter
+0.0                     tWidth
+
+This command drives a hard wave source on a boundary face selected by
+`#FIELDBOXBOUNDARY ... wave ...`.  `nWaveFace` gives the number of faces; for
+each face, `direction` + `side` select the face (0=x,1=y,2=z; lo/hi), and
+`nComp` gives the number of field components injected on that face.  For each
+component: `iField` selects the field component (Bx=0, By=1, Bz=2, Ex=3, ...),
+`iSpecies` the species for kinetic driving, `profile` the temporal envelope
+(0 = continuous sinusoid, 1 = finite pulse), `amplitude`/`frequency`/`waveLength`/
+`phase` the wave, `dir`/`pol` the propagation and polarization vectors, and
+`tStart`/`tEnd`/`rampTime`/`tCenter`/`tWidth` gate and shape the injection.
+Values are in code units (an SI-to-code conversion is applied internally when
+the fluid interface provides the normalization).  See
+`Doc/Wave_Injection_BC_Design.md`.
+</command>
+</commandgroup>
+
+<commandgroup name="SCRIPT COMMANDS">
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!! SCRIPT COMMANDS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+<command name="INCLUDE">
+	<parameter name="NameIncludeFile" type="string" />
+#INCLUDE
+PC/restartIN/FLEKS0_restart.H		NameIncludeFile
+
+Include a file. The most useful application is including the restart
+header file as shown by the example. Including this file helps make sure
+that the original and restarted runs use consistent settings.
+
+The default is to use a single PARAM.in file.
+</command>
+
+<command name="MEMORY" alias="MEMORY_FLEKS0,MEMORY_FLEKS1,MEMORY_FLEKS2" multiple="T">
+  <parameter name="dnMemory" type="integer" default="-1"/>
+
+#MEMORY
+100            dnMemory
+
+This parameter designates how frequently (in simulation cycles) FLEKS should 
+perform explicit garbage collection and memory diagnostic tracking. 
+If `dnMemory` is -1 or less, garbage collection tracking is disabled.
+</command>
+
+</commandgroup>
+
+<commandgroup name="Restart">
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! RESTART !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+<command name="RESTART" alias="RESTART_FLEKS0,RESTART_FLEKS1,RESTART_FLEKS2" multiple="T">
+  <parameter name="doRestart" type="logical" default="F"/>
+
+#RESTART 
+F                 doRestart 
+
+This command should only exist in the restart file FLEKSX_restart.H
+to indicate that the FLEKS region is restarted from a file.
+
+In PARAM.in, users should use the command #INCLUDE instead of #RESTART
+to control the restart.
+</command>
+
+<command name="RECEIVEICONLY" alias="RECEIVEICONLY_FLEKS0,RECEIVEICONLY_FLEKS1,RECEIVEICONLY_FLEKS2" multiple="T">
+  <parameter name="receiveICOnly" type="logical" default="F"/>
+
+pass
+</command>
+
+<command name="RESTARTFIONLY" alias="RESTARTFIONLY_FLEKS0,RESTARTFIONLY_FLEKS1,RESTARTFIONLY_FLEKS2" multiple="T">
+  <parameter name="doRestartFIOnly" type="logical" default="F"/>
+
+#RESTARTFIONLY 
+F                 doRestartFIOnly 
+
+This command should only exist in the restart file FLEKSX_restart.H. If 
+it is true, only the fluid interface restarts.
+</command>
+
+<command name="TPRESTART" alias="TPRESTART_FLEKS0,TPRESTART_FLEKS1,TPRESTART_FLEKS2" multiple="T">
+  <parameter name="doTPRestart" type="logical" default="F"/>
+
+#TPRESTART
+F                 doTPRestart
+
+This command should only exist in the restart file FLEKSX_restart.H
+to indicate that the test particle information of the FLEKS region is
+restarted from a file.
+</command>
+
+<command name="FLUIDVARNAMES" alias="FLUIDVARNAMES_FLEKS0,FLUIDVARNAMES_FLEKS1,FLUIDVARNAMES_FLEKS2" multiple="T">
+  <parameter name="nVar" type="integer" min="0" max="100" default="0"/>
+  <for from="1" to="$nVar">
+    <parameter name="varName" type="string"/>
+  </for>
+
+PASS
+
+</command>
+
+<command name="NSTEP" alias="NSTEP_FLEKS0,NSTEP_FLEKS1,NSTEP_FLEKS2" multiple="T">
+  <parameter name="nStep" type="integer"/>
+
+#NSTEP
+100                 nStep 
+
+The cycle number of the restart file. 
+
+This command should only exist in the restart file FLEKSX_restart.H
+</command>
+
+<command name="TIMESIMULATION" alias="TIMESIMULATION_FLEKS0,TIMESIMULATION_FLEKS1,TIMESIMULATION_FLEKS2" multiple="T">
+  <parameter name="timeSimulation" type="real"/>
+
+#TIMESIMULATION
+1.3                 timeSimulation
+
+The simulation time of the restart file. 
+
+This command should only exist in the restart file FLEKSX_restart.H
+</command>
+
+<command name="DT" alias="DT_FLEKS0,DT_FLEKS1,DT_FLEKS2" multiple="T">
+  <parameter name="dtSI" type="real"/>
+  <parameter name="dtNextSI" type="real"/>
+
+#DT
+0.1                 dtSI 
+0.12	            dtNextSI 
+
+The last and the next time step. 
+
+This command should only exist in the restart file FLEKSX_restart.H
+</command>
+
+<command name="SELECTPARTILCE">
+  <parameter name="doSelectParticle" type="logical"/>
+  <parameter name="selectParticleInputFile" type="string"/>
+
+#SELECTPARTICLE                                                                   
+T                                                                                                         
+PC/select_particle.in
+
+This is the command to select particles with supid and id. The first line 
+of the input file PC/select_particle.in is the number of particles to select.
+Then each line is the supid and id separated by space.
+
+</command>
+
+</commandgroup>
+
+</commandList>

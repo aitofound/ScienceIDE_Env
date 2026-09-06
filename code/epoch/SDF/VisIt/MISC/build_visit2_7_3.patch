@@ -1,0 +1,35 @@
+--- a/build_visit2_7_3	2014-08-12 16:43:27.000000000 +0100
++++ b/build_visit2_7_3	2014-08-12 16:43:34.000000000 +0100
+@@ -228,7 +228,7 @@
+    export CXX_COMPILER=${CXX_COMPILER:-"g++"}
+    # Disable Fortran on Darwin since it causes HDF5, H5Part, Silo, ADIOS builds to explode.
+    export FC_COMPILER=""
+-   export C_OPT_FLAGS=${C_OPT_FLAGS:-"-O2"}
++   export C_OPT_FLAGS=${C_OPT_FLAGS:-"-O2 -std=gnu89"}
+    export CFLAGS=${CFLAGS:-"-fno-common -fexceptions"}
+    export CXX_OPT_FLAGS=${CXX_OPT_FLAGS:-"-O2"}
+    export CXXFLAGS=${CXXFLAGS:-"-fno-common -fexceptions"}
+@@ -3906,6 +3906,7 @@
+     fi
+     
+     cd $VISIT_DIR
++    bv_patch_2_7_3
+     #cp $START_DIR/$(hostname).cmake config-site
+ 
+     #
+@@ -4012,6 +4013,15 @@
+     return 0
+ }
+ 
++function bv_patch_2_7_3
++{
++  info "Patching VisIt . . ."
++  grep -v objC avt/VisWindow/CMakeLists.txt > Make.tmp
++  mv -f avt/VisWindow/CMakeLists.txt avt/VisWindow/CMakeLists.txt.orig
++  mv -f Make.tmp avt/VisWindow/CMakeLists.txt
++  patch -p2 < ../../visit2_7_3-Legend.patch
++}
++
+ function bv_patch_2_5_0
+ {
+ 

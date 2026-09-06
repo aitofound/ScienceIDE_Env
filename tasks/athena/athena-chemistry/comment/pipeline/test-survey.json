@@ -1,0 +1,201 @@
+{
+  "module": "athena-chemistry",
+  "tests": [
+    {
+      "id": "chem-g14sod",
+      "module": "athena-chemistry",
+      "path": "tst/regression/scripts/tests/chemistry/chem_G14Sod.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Gong et al. 2014 Sod-shock chemistry with CVODE stiff integration coupled to hydro",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 74,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic given CVODE's adaptive tolerances; abundances and hydro state compare pointwise under a floor set by the ODE tolerance. Needs SUNDIALS with C++14 headers (Debian's 6.4 fails under -std=c++11).",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 73.9,
+        "athena_cpu_s": 42.3,
+        "launches": 1
+      },
+      "proposed_check": "chem-g14sod",
+      "budget_note": "needs a shorter default (knob keeps the upstream setting)"
+    },
+    {
+      "id": "chem-h2",
+      "module": "athena-chemistry",
+      "path": "tst/regression/scripts/tests/chemistry/chem_H2.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "H2 formation network with the forward-Euler chemistry solver in a uniform cell",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 21,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Explicit ODE update, bitwise deterministic; abundance history compares pointwise.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 21.2,
+        "athena_cpu_s": 0.1,
+        "launches": 1
+      },
+      "proposed_check": "chem-h2-euler",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "chem-h2-gaussian",
+      "module": "athena-chemistry",
+      "path": "tst/regression/scripts/tests/chemistry/chem_H2_gaussian.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "H2 network with CVODE on a Gaussian density profile: chemistry coupled to advection",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 182,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic under CVODE tolerances; abundances compare pointwise with a measured floor.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 182.0,
+        "athena_cpu_s": 160.8,
+        "launches": 6
+      },
+      "proposed_check": "chem-h2-cvode",
+      "budget_note": "needs a shorter default (knob keeps the upstream setting)"
+    },
+    {
+      "id": "chem-gow17",
+      "module": "athena-chemistry",
+      "path": "tst/regression/scripts/tests/chemistry/chem_gow17.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "gow17 ISM network with constant radiation field, CVODE dense solver",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 16,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic; equilibrium abundances compare pointwise.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 15.8,
+        "athena_cpu_s": 0.2,
+        "launches": 1
+      },
+      "proposed_check": "chem-gow17",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "chem-kida-gow17",
+      "module": "athena-chemistry",
+      "path": "tst/regression/scripts/tests/chemistry/chem_kida_gow17.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "KIDA-format network reader driving the gow17 reactions (18 species), CVODE",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 16,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic; abundances compare pointwise. Also covers the network-file parser.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 16.4,
+        "athena_cpu_s": 0.3,
+        "launches": 1
+      },
+      "proposed_check": "chem-kida",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "chem-pdr-static",
+      "module": "athena-chemistry",
+      "path": "tst/regression/scripts/tests/chemistry/chem_pdr_static.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Static photodissociation region with six-ray radiation and gow17 chemistry",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 120,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "Broken upstream at this pin: the script imports a 'chemistry' helper module that does not exist in the tree, so it cannot run. Excluded.",
+      "survey_run": {
+        "rc": 1,
+        "wall_s": 0.2,
+        "athena_cpu_s": 0.0,
+        "launches": 0
+      }
+    },
+    {
+      "id": "chem-six-ray",
+      "module": "athena-chemistry",
+      "path": "tst/regression/scripts/tests/chemistry/chem_six_ray.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Six-ray column-density shielding on a VTK-initialised cloud with gow17 chemistry",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 81,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Deterministic column sweep and CVODE update; abundances compare pointwise. Depends on a VTK fixture under tst/regression/data.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 81.3,
+        "athena_cpu_s": 64.8,
+        "launches": 1
+      },
+      "proposed_check": "chem-six-ray",
+      "budget_note": "needs a shorter default (knob keeps the upstream setting)"
+    },
+    {
+      "id": "chem-read-vtk",
+      "module": "athena-chemistry",
+      "path": "tst/regression/scripts/tests/chemistry/read_vtk.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Problem generator that initialises from a VTK file",
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 14,
+      "runtime_measured": true,
+      "suitable": false,
+      "why": "Input-format reader test; it does not exercise chemistry or a solver, so it does not discriminate a port.",
+      "survey_run": {
+        "rc": 0,
+        "wall_s": 14.4,
+        "athena_cpu_s": 0.0,
+        "launches": 1
+      }
+    }
+  ]
+}
