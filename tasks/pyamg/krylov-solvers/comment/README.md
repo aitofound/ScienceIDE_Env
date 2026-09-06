@@ -30,6 +30,20 @@ or `cpus` in `task.toml`; it only stops the build from oversubscribing the host 
 Verified with `tests/test.sh produce` on one check before relaunching the full selfcheck under a fresh
 `--run-root`.
 
+**Second OOM, altbuild only (measured 2026-09-06, same worker, same run):** with the `-j2` cap above in
+place, the nominal and variant solves passed 15/15, but the altbuild solve then failed all 15 checks with
+the identical `cc1plus` kill signature. Cause: `-Dbuildtype=debug` adds `-g` on top of `-Doptimization=0`,
+and a single `-O0 -g` compile of `pyamg/amg_core/relaxation_bind.cpp` (this leaf's most heavily templated
+translation unit) alone exceeded the declared 2 GB even at `-j1` (verified directly: `-j1` still killed it;
+dropping only `-g` by switching to `-Dbuildtype=plain` -- keeping `-Doptimization=0` explicit, unaffected by
+the buildtype change -- built successfully at `-j1` in 47 s and at `-j2` in 49 s, `compile_commands.json`
+confirmed `-O0` reached every one of the 9 compiled objects both times). Every check's altbuild now builds
+with `-Csetup-args=-Doptimization=0 -Csetup-args=-Dbuildtype=plain` (was `=debug`); `run.sh` also keeps the
+altbuild serialized at `-j1` (rather than the nominal/variant cap of up to 2) as extra headroom against a
+more heavily loaded host than the one this was verified on, since dropping `-g` alone was already sufficient
+at both `-j1` and `-j2` in the direct verification. Verified again with a direct `run.sh altbuild` invocation
+on the fixed oracle image before relaunching.
+
 ## Tolerances
 
 The working pointwise policy compares every binary64 value in observable.npy under atol 1e-12 plus rtol 1e-10,
