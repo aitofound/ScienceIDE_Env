@@ -60,7 +60,7 @@ declares.
 
 ## Evidence
 
-Calibration (x86 worker, 2026-09-06): maximum absolute spread PENDING_SPREAD, bound_fraction PENDING_FRACTION.
+Calibration (x86 worker, 2026-09-06): the numbers the final selfcheck measured are in `rubric.json`.
 The final selfcheck's numbers are in `rubric.json`'s `evidence.self_validation_spread` and
 `evidence.self_validation_bound_fraction`; the alternative build's floor is in `evidence.floor`. Note that CG, CR
 and BiCGStab never enter pyamg's C++ core, so their contribution to that floor is zero by construction; only the

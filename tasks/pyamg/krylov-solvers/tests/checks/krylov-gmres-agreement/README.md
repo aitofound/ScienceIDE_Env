@@ -21,6 +21,6 @@ The immutable test_gmres gate asserts that GMRES Householder and GMRES MGS agree
 
 ## Evidence
 
-Calibration (x86_64 remote worker, 2026-09-06): maximum absolute spread PENDING_SPREAD, bound_fraction PENDING_FRACTION. The final
+Calibration (x86_64 remote worker, 2026-09-06): the numbers the final selfcheck measured are in `rubric.json`. The final
 selfcheck's numbers are in `rubric.json`'s `evidence.self_validation_spread` and
 `evidence.self_validation_bound_fraction`; the altbuild floor is in `evidence.floor`.
