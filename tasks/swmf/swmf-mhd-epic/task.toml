@@ -114,7 +114,11 @@ two Dockerfiles, the fill fields above, and comment/README.md.
 # vendored AMReX library from source and compiles BATSRUS and the FLEKS C++ solver
 # before it runs, which is 250 to 400 s of compilation at 16 jobs and is what sets
 # the wall time of a grading pass. SAB_MAKE_JOBS follows the container's cgroup
-# quota, so a smaller allocation still works, only slower.
-cpus = 32
+# quota, so a smaller allocation still works, only slower. Declared at 16 here
+# because that is what this revision's Docker Desktop host has; on the x86
+# worker (136.114.2.6, 88 cores) 32 cpus is what was measured and preferred
+# (see comment/README.md), and should be restored once selfcheck moves back
+# to that host or another x86 machine with the cores to spare.
+cpus = 16
 memory_gb = 24.0
-suite_budget_s = 3000
+suite_budget_s = 1600
