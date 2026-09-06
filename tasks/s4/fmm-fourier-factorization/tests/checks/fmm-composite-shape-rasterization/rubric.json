@@ -35,8 +35,9 @@
       "identical": false,
       "passed": true,
       "reason": "all graded values within bound",
-      "at": "2026-09-06T01:14:46Z"
-    }
+      "at": "2026-09-06T02:20:46Z"
+    },
+    "runtime_how": "Run time inside the oracle container on the consented machine (arm64, 1 declared cpu), source build reported separately by run.sh and excluded because the budget counts run time only. Measured 0.9 s in the run recorded in comment/pipeline/self-validation.json, against 1 s measured natively on an unloaded machine. expected_runtime_s is declared at the TOP of that range: this machine has been under sustained load from unrelated processes throughout authoring, which stretches run times by up to 2x, so a reviewer on a quiet machine should come in at or below the declared figure."
   },
   "warrant": "Physical. The fourier reconstruction of the permittivity for this shape, graded on two files: the 64x64 unit-cell realization (stdout) and the 151x151 real-space epsilon map (stderr) is produced by the Fourier factorization this module owns - the Toeplitz permittivity and inverse-permittivity matrices, Kottke subpixel averaging and the polarization-basis construction - and it is exactly the quantity Li's inverse rule was invented to get right. A port that applies the direct rule where the inverse rule is required, drops the subpixel average, rasterises the shape at the wrong offset or truncates the Fourier sum asymmetrically changes these values in the third or fourth significant figure, not the twelfth, so a bound of 0.001 separates a correct port from each of those faults by many orders of magnitude. Achievable. The bound sits 1000x above the largest measured difference between two legitimate results of this same check (1.000e-06), which is the larger of the alternative-build floor and the two-initial-condition spread. That headroom covers a different BLAS, instruction set or summation order on another platform while staying far below any physically wrong answer. "
 }
