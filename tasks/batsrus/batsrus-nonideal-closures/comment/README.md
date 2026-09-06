@@ -29,8 +29,9 @@ the electron-pressure AWSoM closures, which belong to the solar-corona module.
 
 ## Check set and the THIN flag
 
-The module was flagged THIN at the survey: `tests.json` lists nine suitable official tests for it,
-below the human's target of ten to thirty. All nine are packaged: the four Makefile.test targets
+`tests.json` lists nine suitable official tests for this module, below the human's target of ten to
+thirty but at or above the CLI's own THIN threshold of fewer than four; under the current CLI the
+module is not THIN, and `task review` prints "not THIN". All nine are packaged: the four Makefile.test targets
 (`test_hallmhd`, `test_viscosity`, `test_heatcond_2d`, `test_anisotropic`) and the five upstream
 example decks with no target of their own (`Param/CURRENT/PARAM.in`,
 `Param/GEMRECONNECTION/PARAM.in.MhdHypPe` and the three `Param/ANISOPRESSURE` examples).
@@ -120,11 +121,16 @@ the main reason the tolerances were left where the native sweep put them: hallmh
 ex-anisopressure-soundwave 6.0e-10, heatcond-2d 3.0e-10, viscosity 2.0e-10, ex-current 2.0e-10,
 ex-gemreconnection-mhdhyppe 1.0e-10. Every margin (atol over spread) is between 99 and 167.
 
-The worker is shared with seven sibling packaging agents, so the measured run times are contended
-and vary between runs: `hallmhd` took 24 s in the calibration run and 91 s in the recorded one, and
-the record carries the resulting warning against its declared 25 s. The declared
-`expected_runtime_s` of every check is the Docker measurement, so a reviewer on an idle machine
-should see the same or less; only `hallmhd`'s number should be read as "tens of seconds, contended".
+The worker is shared with seven sibling packaging agents, so the measured run times were contended
+and varied between runs: `hallmhd` took 24 s in the calibration run and 91 s in the recorded one at
+this baseline. At this baseline, `expected_runtime_s` in every rubric was still the original
+authoring-time estimate rather than a Docker measurement, and the review round of 2026-09-06 found
+five of the nine "far from" their declared numbers (the CLI's own phrase); that round reset every
+check's `expected_runtime_s` to the run2 value measured on 2026-09-05 (`check_run_seconds_nominal` in
+`comment/pipeline/self-validation.json`), so the claim that the declared numbers are the Docker
+measurement now holds again as of that round, not before it. A reviewer on an idle, uncontended
+machine should see the same or less; a reviewer on a shared host should expect `hallmhd` and the
+other short checks to run several times slower under contention, the way they did here.
 
 An implementation note that cost a run: the stock `tests/test.sh produce` feeds its list of checks
 to a `while read` loop, and a check that reads standard input drains that pipe. `mpiexec` forwards
@@ -163,9 +169,10 @@ floor into `evidence.floor`/`evidence.floor_bound_fraction`/`evidence.altbuild`.
 Five of the nine (`anisotropic`, `ex-anisopressure-alfven`, `ex-anisopressure-fastwave`,
 `ex-anisopressure-soundwave`, `viscosity`) are bit-identical between -O0 and -O3, as the module's own
 native floor sweep already found for -O3 versus -O2. The other four measure a small, real, non-zero
-floor with margins between about 480x and about 380,000x under their bound: `hallmhd` 2.72e-08
-(bound_fraction 0.0021, atol=3e-06), `ex-gemreconnection-mhdhyppe` 1.0e-12 (bound_fraction 4.9e-06,
-atol=1e-08), `heatcond-2d` 1.0e-12 (bound_fraction 2.6e-06, atol=3e-08).
+floor with margins (after the ex-current bound raise below) between about 116x and about 380,000x
+under their bound: `ex-current` 3.44373e-09 (bound_fraction 0.0086093, atol=4e-07, raised — see
+below), `hallmhd` 2.72e-08 (bound_fraction 0.0021, atol=3e-06), `ex-gemreconnection-mhdhyppe` 1.0e-12
+(bound_fraction 4.9e-06, atol=1e-08), `heatcond-2d` 1.0e-12 (bound_fraction 2.6e-06, atol=3e-08).
 
 | check | atol | rtol | variant spread | altbuild floor | bound_fraction | headroom |
 |---|---|---|---|---|---|---|
@@ -173,25 +180,37 @@ atol=1e-08), `heatcond-2d` 1.0e-12 (bound_fraction 2.6e-06, atol=3e-08).
 | ex-anisopressure-alfven | 6e-07 | 1e-05 | 5.86e-09 | 0 (identical) | 0 | inf |
 | ex-anisopressure-fastwave | 1e-07 | 1e-05 | 1e-09 | 0 (identical) | 0 | inf |
 | ex-anisopressure-soundwave | 1e-07 | 1e-05 | 6e-10 | 0 (identical) | 0 | inf |
-| ex-current | 2e-08 | 1e-05 | 2e-10 | 3.44373e-09 | 0.1722 | 5.8x |
+| ex-current | 4e-07 (raised from 2e-08) | 1e-05 | 2e-10 | 3.44373e-09 | 0.0086093 | ~116x |
 | ex-gemreconnection-mhdhyppe | 1e-08 | 1e-05 | 1e-10 | 1.0000e-12 | 4.91e-06 | ~203,600x |
 | hallmhd | 3e-06 | 1e-05 | 3.03e-08 | 2.721e-08 | 0.0021 | ~478x |
 | heatcond-2d | 3e-08 | 1e-05 | 3e-10 | 1.0000e-12 | 2.63e-06 | ~380,000x |
 | viscosity | 2e-08 | 1e-05 | 2e-10 | 0 (identical) | 0 | inf |
 
-**`ex-current` is the tight one.** Its -O0 floor is 3.44373e-09 against atol=2e-08: only 5.8x of
-headroom, against the ~100x-class margins every other check in this leaf carries. It still passes
-(`bound_fraction` 0.1722, 0 values over bound). The floor lands entirely on `satellite.sat` (19000 of
-the check's 42316 graded values); `cut_y.out` and `cut_z.out` stay at round-off (`bound_fraction`
-8.67e-11 and 4.99e-09). The check runs zero time steps (`#STOP MaxIteration 0`), so the graded output
-is a direct readout of `ModCurrent.f90`/`ModFaceGradient.f90`, and `satellite.sat` is the module's only
-off-grid interpolation column; `-O0` disables the vectorization and FMA contraction `-O3` uses there,
-so a larger floating-point difference in that one stencil than the 2-versus-4-rank floor (4e-19) or
-the two-ulp variant spread (2e-10) that originally set atol is a plausible reordering effect, not a
-build failure. The bound is left exactly as measured; it was not loosened here. If a reviewer wants
-the same ~100x-class margin as the other eight checks, the atol that would give it is about 3.4e-07
-(3.44373e-09 x 100, rounded to one significant digit) — noted here as an option for the human's
-decision, **not applied**: no tolerance in this leaf was changed for the 5.10.1 revision.
+**`ex-current`'s bound was raised: the review round of 2026-09-06.** At the original atol=2e-08 the
+-O0 floor of 3.44373e-09 gave only 5.8x headroom (bound_fraction 0.1722), against the ~100x-class
+margins every other check in this leaf carries; the check still passed (0 values over bound), but this
+was the tight one of the nine. The curator inspected the floor directly and traced the entire 3.44373e-09
+to a single value: row 499 (0-indexed) of `satellite.sat`, column By, where the reference value is
+exactly 0.0 and the -O0 build writes -3.44373e-09 — a satellite sample that lands on a true symmetry
+zero of the current density, not a stencil-wide reordering. Of the check's other 42,315 graded values,
+474 more differ between -O0 and -O3 (all in `satellite.sat`'s By and jx columns, By reaching 0.0951 and
+jx sitting at 4.235e-22 in magnitude), and every one of those 474 is at or below 2.2e-13, six orders of
+magnitude under the row-499 outlier; `cut_y.out` and `cut_z.out` (16650 and 6666 values) stay at
+round-off (bound_fraction 8.67e-11 and 4.99e-09 under the old atol). Under the curator's standing
+"floors set the bounds with headroom for accelerators" ruling — a bound is judged by whether it
+rejects a real fault and leaves headroom for a different implementation, and a legitimate build that
+lands near or over a check's bound gets the bound raised to admit that floor with headroom — the
+curator's worker raised atol from 2e-08 to 4e-07: about 116x the measured floor, 4.2e-6 of the By
+column magnitude (0.0951) and 3.0e-6 of jy (0.135), which the row-499 sample sits nowhere near in
+magnitude but which sets the scale for what "small" means on this trajectory. The physical fault the
+warrant is built on — a one-sided difference at the two `#GRIDLEVEL` resolution changes, at the body
+boundary, or a lost coarse-fine correction, all of which move the transverse currents by order 1e-2 —
+is still rejected by more than four orders of magnitude under the new bound. Recomputed against the
+run2 oracle outputs with the new atol, the check's own `validate.py` reports bound_fraction 0.008609325
+(`cut_y.out` 4.34e-12, `cut_z.out` 2.50e-10, `satellite.sat` 0.008609325), about 116x headroom, in line
+with the rest of the leaf; `ex-current` is no longer the tight one. This bound change is the curator's
+worker's, made under the standing ruling above, not the original authoring agent's; it is reversible by
+the human. It was recorded before the run3 selfcheck rerun below, whose recorded evidence confirms it.
 
 Measured on `huangzesen@136.114.2.6` (88-core x86_64, Docker 29.1.3, load average 14.75/15.72/22.71 at
 launch, shared with seven sibling BATSRUS revision workers plus EPOCH/gkeyll/qutip/stim/phantom/s4
