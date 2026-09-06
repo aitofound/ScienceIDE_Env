@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """scipy-gmres-compatibility probe: pyamg's gmres_mgs and gmres_householder
-against scipy.sparse.linalg.gmres, on the shipped nonsymmetric unit_square
-operator, fixed restart and iteration count, tol=0 (never a
+against scipy.sparse.linalg.gmres, on the shipped unit_square operator
+(191 unknowns, symmetric to 5.5e-17 relative -- measured), fixed restart and iteration count, tol=0 (never a
 tolerance-terminated solve).
 
 The three graded blocks are the three solutions and the three residual
