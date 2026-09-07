@@ -239,16 +239,20 @@ production path calls `read_var('BodyNDim', ...)` in `ModSetParameters.f90`
 (lines 2494-2503); `ModReadParam.f90`'s `read_var_r8` reads the token into a
 default `real` temporary and assigns it to the `real(Real8_)` result (lines
 686-780). Thus the effective reader is binary64 in the approved Linux gfortran
-build. The inherited variants were decimal 1e-10 perturbations, not two ULPs;
-they are corrected below without changing any nominal input, output cadence,
-window, coupling clock, bounds or source.
+build. The inherited variants were decimal 1e-10 perturbations, not the measured
+reader-level perturbations; they are corrected below without changing any
+nominal input, output cadence, window, coupling clock, bounds or source. The
+swpc-pe-init exception is selected by the remote BodyNDim ladder recorded below.
 
 All twenty checks' active BodyNDim variant literals are audited here. For the
 multi-ion decks, the listed H+ line is the only changed line; the O+ BodyNDim
-line remains byte-identical. `before_ulp` and `after_ulp` are signed upward
-binary64-bit distances from the nominal parsed value; every corrected pair is
-exactly two upward ULPs. The table also records the actual reader type rather
-than relying on a Python-only parse.
+line remains byte-identical. Except for swpc-pe-init, `before_ulp` and
+`after_ulp` are signed upward binary64-bit distances from the nominal parsed
+value and every corrected pair is exactly two upward ULPs. The swpc-pe-init
+row reports the selected rung in binary32 ULPs because the remote ladder was
+staged at source-backed binary32 spacings; its Fortran reader remains the
+binary64 reader described above. The table records the actual reader type
+rather than relying on a Python-only parse.
 
 | check | nominal decimal | before variant decimal | before ULP | corrected variant decimal | after ULP | actual reader type |
 |---|---:|---:|---:|---:|---:|---|
@@ -264,7 +268,7 @@ than relying on a Python-only parse.
 | swpc-multispecies-young-init | 7.5 | 7.50000000075 | 844425 | 7.500000000000002 | 2 | default REAL -> binary64 under -fdefault-real-8 |
 | swpc-multispecies-young-restart | 7.5 | 7.50000000075 | 844425 | 7.500000000000002 | 2 | default REAL -> binary64 under -fdefault-real-8 |
 | swpc-order5 | 28.0 | 28.0000000028 | 788130 | 28.000000000000007 | 2 | default REAL -> binary64 under -fdefault-real-8 |
-| swpc-pe-init | 28.0 | 28.0000000028 | 788130 | 28.000000000000007 | 2 | default REAL -> binary64 under -fdefault-real-8 |
+| swpc-pe-init | 28.0 | 28.0000000028 | 788130 | 28.0000019073486328125 | 1 (binary32) | default REAL -> binary64; selected rung is one source-backed binary32 ULP |
 | swpc-pe-restart | 28.0 | 28.0000000028 | 788130 | 28.000000000000007 | 2 | default REAL -> binary64 under -fdefault-real-8 |
 | swpc-simple-init | 28.0 | 28.0000000028 | 788130 | 28.000000000000007 | 2 | default REAL -> binary64 under -fdefault-real-8 |
 | swpc-simple-restart | 28.0 | 28.0000000028 | 788130 | 28.000000000000007 | 2 | default REAL -> binary64 under -fdefault-real-8 |
@@ -292,6 +296,18 @@ rejected. The old current-summary claim that could not load its relaxation-probe
 variant/altbuild paths is superseded; it is not used as current evidence. These
 are calibration gates only; the one fresh full-20 remote selfcheck remains the
 source of final success.
+
+The remote BodyNDim calibration for swpc-pe-init used the exact source-backed
+ladder 28.0000019073486328125 (1 binary32 ULP), 28.000030517578125 (16), and
+28.00048828125 (256), with the nominal 28.0 deck and unchanged runner defaults.
+The 1-ULP rung was the first staged-and-consumed rung with a named finite
+arithmetic change: `magnetometers.mag`, `ionosphere.idl`, and
+`mag_grid_global.out` changed in the six-output calibration set while
+`log.log`, `geoindex.log`, and `ie.log` remained numerically unchanged; the
+validator reported finite values, unchanged schemas/endpoints, and worst
+scaled difference 0.0997755051 within the pointwise bound. The larger rungs
+were not run because the minimum active rung had been established. This is a
+numerical-noise warrant, not a claim of a physical scenario.
 
 ## Pointwise-physical-only revision (skill 5.10.2, 2026-09-06)
 
