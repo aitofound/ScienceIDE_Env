@@ -1,0 +1,157 @@
+#
+#  ISC License
+#
+#  Copyright (c) 2016, Autonomous Vehicle Systems Lab, University of Colorado at Boulder
+#
+#  Permission to use, copy, modify, and/or distribute this software for any
+#  purpose with or without fee is hereby granted, provided that the above
+#  copyright notice and this permission notice appear in all copies.
+#
+#  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+#  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+#  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+#  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+#  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+#  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+#  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
+
+import inspect
+import os
+import shutil
+import subprocess
+import sys
+from datetime import date
+
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import pytest
+
+SHOW_PLOTS_REMOVAL_DATE = date(2027, 2, 12)
+SHOW_PLOTS_DEPRECATION_MESSAGE = (
+    "The pytest option '--show_plots' is deprecated and will be removed after February 12, 2027."
+)
+SHOW_PLOTS_ELEVATED_MESSAGE = (
+    "The pytest option '--show_plots' has been deprecated for a year and will be removed shortly."
+)
+
+
+def _patch_rerunfailures_socket_cleanup():
+    """
+    Close pytest-rerunfailures server-side sockets when xdist is active.
+
+    pytest-rerunfailures 16.1 opens localhost sockets to coordinate reruns
+    between xdist workers, but accepted server connections are not closed by
+    the plugin.  This narrow patch preserves the plugin handler while ensuring
+    each accepted connection is closed when the handler exits.
+    """
+    try:
+        import pytest_rerunfailures
+    except ImportError:
+        return
+
+    server_status_db = getattr(pytest_rerunfailures, "ServerStatusDB", None)
+    if server_status_db is None:
+        return
+    if getattr(server_status_db, "_bsk_socket_cleanup_patched", False):
+        return
+
+    original_run_connection = server_status_db.run_connection
+
+    def run_connection_with_socket_close(self, conn):
+        with conn:
+            return original_run_connection(self, conn)
+
+    server_status_db.run_connection = run_connection_with_socket_close
+    server_status_db._bsk_socket_cleanup_patched = True
+
+
+_patch_rerunfailures_socket_cleanup()
+
+filename = inspect.getframeinfo(inspect.currentframe()).filename
+path = os.path.dirname(os.path.abspath(filename))
+print(path)
+
+# remove the old report because we don't want stale data around, even without pytest-html
+# for more see reportconf.py
+if os.path.exists('tests/report/'):
+    shutil.rmtree('tests/report/')
+
+
+def pytest_addoption(parser):
+    parser.addoption("--show_plots", action="store_true",
+                     help="test(s) shall display plots")
+    parser.addoption("--report", action="store_true",  # --report is easier, more controlled than --html=<pathToReport>
+                         help="whether or not to gen a pytest-html report. The report is saved in ./tests/report")
+
+
+def _show_plots_warning_details(today=None):
+    if today is None:
+        today = date.today()
+
+    if today > SHOW_PLOTS_REMOVAL_DATE:
+        return SHOW_PLOTS_ELEVATED_MESSAGE, "red"
+    return SHOW_PLOTS_DEPRECATION_MESSAGE, "yellow"
+
+
+def pytest_terminal_summary(terminalreporter, exitstatus, config):
+    if not config.getoption("--show_plots"):
+        return
+
+    warning_message, terminal_color = _show_plots_warning_details()
+    message = f"DEPRECATION WARNING: {warning_message}"
+    terminalreporter.write_sep("=", "SHOW_PLOTS DEPRECATION", **{terminal_color: True}, bold=True)
+    terminalreporter.write_line(message, **{terminal_color: True}, bold=True)
+
+
+def pytest_unconfigure(config):
+    failures_db = getattr(config, "failures_db", None)
+    socket_handle = getattr(failures_db, "sock", None)
+    if socket_handle is None:
+        return
+    try:
+        socket_handle.close()
+    except OSError:
+        pass
+
+
+@pytest.fixture(scope="module")
+def show_plots(request):
+    return request.config.getoption("--show_plots")
+
+
+def _apply_basilisk_plot_defaults():
+    mpl.rcParams.update({
+        "figure.facecolor": "white",
+        "xtick.labelsize": 9,
+        "ytick.labelsize": 9,
+        "figure.figsize": (5.75, 2.5),
+        "axes.labelsize": 10,
+        "legend.fontsize": 9,
+        "figure.autolayout": True,
+        "figure.max_open_warning": 30,
+        "legend.loc": "lower right",
+    })
+
+
+@pytest.fixture(autouse=True)
+def reset_matplotlib_state():
+    _apply_basilisk_plot_defaults()
+    try:
+        yield
+    finally:
+        plt.close("all")
+        _apply_basilisk_plot_defaults()
+
+# we don't want to reconfigure pytest per pytest-html unless we have it
+# for more on this, see the reportconf.py file.
+reqs = subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'])
+installed_packages = [r.decode().split('==')[0] for r in reqs.split()]
+
+if ('--report' in sys.argv) and ('pytest-html' not in installed_packages):
+    print('ERROR: you need to pip install pytest-html package to use the --report flag')
+    quit()
+
+if 'pytest-html' in installed_packages:
+    with open(path + "/reportconf.py") as reportConfig:
+        exec(reportConfig.read(), globals())
