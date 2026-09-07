@@ -1,0 +1,46 @@
+1. Resampling of the SEM Wavefield
+   During resampling, the refined sampling interval (`deltat_refine`) is selected
+   from the sequence
+
+       delta_t_DSM / 2^n,   n = 1, 2, 3, ...
+
+   (i.e., `delta_t_DSM/2`, `delta_t_DSM/4`, `delta_t_DSM/8`, etc.).
+
+   `deltat_refine` is chosen to be the closest value to the original SEM sampling
+   interval (`deltat_SEM` in `read.f90`). This strategy ensures compatibility
+   between the SEM and DSM data while minimizing resampling errors. By selecting
+   `deltat_refine` as `delta_t_DSM / 2^n`, the first `nfreq_DSM` frequency
+   components of the FFT of the resampled SEM seismograms can be used directly
+   for convolution with the DSM FFT, eliminating the need for additional
+   frequency interpolation.
+
+2. In the final step of the IFFT, zeros are appended to the frequency spectrum
+   (`ismooth = 8`) to generate seismograms with a smaller sampling interval.
+   This zero-padding increases the temporal resolution of the output waveforms
+   without changing the frequency content.
+
+To do:
+
+1. Implement linear convolution to eliminate wrap-around effects.
+
+   The current implementation performs circular convolution, causing the late
+   portions of the seismograms to wrap around to the beginning of the time
+   series. This issue can be eliminated by zero-padding the signals before
+   convolution.
+
+   However, applying zero-padding in the time domain requires several
+   computationally expensive steps:
+
+     a. Read all DSM frequency-domain data.
+     b. Perform an inverse FFT (IFFT).
+     c. Append zeros to the time-domain seismograms.
+     d. Recompute the FFT.
+
+   Although doubling the signal length through zero-padding provides a simple
+   solution, only the even-indexed FFT coefficients remain identical to the
+   original FFT. The odd-indexed coefficients must be obtained by sinc
+   interpolation of the original FFT values, since zero-padding in the time
+   domain is equivalent to sinc interpolation in the frequency domain.
+   Consequently, all DSM frequency components must be read to perform the
+   interpolation, making the procedure both computationally expensive and
+   memory intensive.

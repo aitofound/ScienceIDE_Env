@@ -1,0 +1,46 @@
+1. Units of Single Force, Explosion, and Moment Tensor Sources
+
+For a single-force source, the input force is specified in dyn. In `param.f`, the force is multiplied by a scaling factor of 1.0e-20, which can be written as
+
+    1.0e-20 = 1.0e-5 × 1.0e-15.
+
+The two factors arise from the following unit conversions:
+
+- 1.0e-5 converts dyn to N, since
+      1 dyn = 1.0e-5 N.
+- 1.0e-15 converts Pa·m^2 to GPa·km^2, since
+      1 Pa·m^2 = 1.0e-15 GPa·km^2.
+
+For a moment tensor or explosion source, the input unit is dyn·cm. In `param.f`, the source amplitude is multiplied by a scaling factor of 1.0e-25, which can be written as
+
+    1.0e-25 = 1.0e-7 × 1.0e-18.
+
+The conversion is
+
+    1 dyn·cm
+      = 1.0e-7 N·m
+      = 1.0e-7 Pa·m^3
+      = 1.0e-25 GPa·km^3.
+
+
+2. Source Time Function for Moment Tensor Sources
+
+The current implementation (see `b1` and `b2` in the subroutines `comp_excitation` and `comp_excitation0` in `compwave.f`) produces
+
+- displacement seismograms for a delta function of moment release, or
+- velocity seismograms for a delta function of moment rate.
+
+In reality, earthquakes release seismic moment according to a moment-rate function. Therefore, to obtain displacement seismograms corresponding to a delta function of moment rate, the source term must be integrated.
+
+This integration can be performed in two ways:
+
+A. Integrate the computed seismograms after the simulation.
+
+B. Divide `b1` and `b2` by i*omega in the frequency domain during the computation.
+
+For the second approach, it is unclear whether the artificial attenuation term (i.e., the imaginary part of omega) should be included in omega. To avoid introducing additional errors, it is recommended to use a small value of omega_imag (e.g., omega_imag < 1.0e-3) when using this method.
+
+Why is a delta function of moment release used instead of a delta function of moment rate as the source time function?
+
+Answer:
+This convention originates from the original DSM code and has been retained in the current implementation.
