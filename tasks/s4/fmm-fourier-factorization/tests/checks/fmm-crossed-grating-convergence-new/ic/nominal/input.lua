@@ -37,6 +37,5 @@ for ng = 41,401,40 do
 	power_inc = S:GetPoyntingFlux('StuffAbove', 0)
 	G = S:GetGList()
 	P = S:GetPoyntingFluxByOrder('AirBelow', 0)
-	actualg = S:GetNumG()
-	print(actualg, P[6][1]/power_inc) -- 1+4+1
+	print(P[6][1]/power_inc) -- 1+4+1
 end

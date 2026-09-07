@@ -20,22 +20,23 @@
     ]
   },
   "evidence": {
-    "floor": 4.131002206975154e-10,
+    "floor": 2.2820056955197288e-10,
     "floor_how": "measured by selfcheck on 2026-09-07: run.sh altbuild (-O0 instead of -O2, plus -DHAVE_BLAS -DHAVE_LAPACK (LAPACK zgeev in place of the in-tree eigensolver)) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
-    "self_validation_spread": 3.4789948699653905e-10,
-    "self_validation_bound_fraction": null,
+    "self_validation_spread": 3.4350033928376433e-10,
+    "self_validation_bound_fraction": 0.00034350033928376433,
     "altbuild": {
       "what": "-O0 instead of -O2, plus -DHAVE_BLAS -DHAVE_LAPACK (LAPACK zgeev in place of the in-tree eigensolver)",
-      "distance": 4.131002206975154e-10,
-      "bound_fraction": null,
+      "distance": 2.2820056955197288e-10,
+      "bound_fraction": 0.00022820056955197288,
       "identical": false,
       "passed": true,
       "reason": "all graded values within bound",
-      "at": "2026-09-07T03:28:17Z"
+      "at": "2026-09-07T23:21:47Z"
     },
     "runtime_how": "Run time inside the oracle container on the consented machine (arm64, 1 declared cpu), source build reported separately by run.sh and excluded because the budget counts run time only. Measured 1.1 s in the run recorded in comment/pipeline/self-validation.json, against 1 s measured natively on an unloaded machine. expected_runtime_s is declared at the TOP of that range: this machine has been under sustained load from unrelated processes throughout authoring, which stretches run times by up to 2x, so a reviewer on a quiet machine should come in at or below the declared figure.",
     "floor_host": "arm64 (MacBook-Air-2.local); see floor_how for the x86 scope",
-    "floor_x86_64": 2.282e-10
+    "floor_x86_64": 2.282e-10,
+    "floor_bound_fraction": 0.00022820056955197288
   },
-  "warrant": "Physical. A lamellar grating efficiency sweep, 300 graded values is produced by the Fourier factorization this module owns - the Toeplitz permittivity and inverse-permittivity matrices, Kottke subpixel averaging and the polarization-basis construction - and it is exactly the quantity Li's inverse rule was invented to get right. A port that applies the direct rule where the inverse rule is required, drops the subpixel average, rasterises the shape at the wrong offset or truncates the Fourier sum asymmetrically changes these values in the third or fourth significant figure, not the twelfth, so a bound of 1e-06 separates a correct port from each of those faults by many orders of magnitude. Achievable. The bound sits 4636x above the largest measured difference between two legitimate results of this same check (2.157e-09), which is the larger of the alternative-build floor and the two-initial-condition spread. That headroom covers a different BLAS, instruction set or summation order on another platform while staying far below any physically wrong answer. Provenance: Liu & Fan, Opt. Express 17, 21897 (2009), Fig. 2a. "
+  "warrant": "Physical. A lamellar grating efficiency sweep, 300 graded values is a diffraction efficiency or transmission -- a Poynting-flux ratio -- produced through the factorized permittivity this module builds (Li's inverse rule, or the normal-vector formulation where the deck selects it) and handed to the layer eigenproblem downstream. A port that applies the direct rule where the inverse rule is required, drops the subpixel average, rasterises the shape at the wrong offset, or truncates the Fourier sum asymmetrically changes these values in the third or fourth significant figure, not the twelfth, so a bound of 1e-06 separates a correct port from each of those faults by many orders of magnitude. Achievable. The bound sits 2911x above the larger of the two-initial-condition spread (3.435e-10) and the alternative-build floor (2.282e-10), measured on the x86 worker on 2026-09-07. That headroom covers a different BLAS, instruction set or summation order on another platform while staying far below any physically wrong answer. Provenance: Liu & Fan, Opt. Express 17, 21897 (2009), Fig. 2a."
 }
