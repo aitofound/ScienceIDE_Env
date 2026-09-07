@@ -1,0 +1,47 @@
+exclude: '(^docs/conf.py|^src/py21cmfast/_data/|changethelog.py)'
+
+ci:
+  autoupdate_schedule: 'monthly'
+
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v6.0.0
+  hooks:
+      - id: trailing-whitespace
+      - id: check-added-large-files
+        args: ['--maxkb=2000']
+      - id: check-ast
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-xml
+      - id: check-yaml
+      - id: debug-statements
+      - id: end-of-file-fixer
+      - id: requirements-txt-fixer
+      - id: mixed-line-ending
+        args: ['--fix=no']
+
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  # Ruff version.
+  rev: v0.15.15
+  hooks:
+    # Run the linter.
+    - id: ruff
+      args: [--fix]
+
+    # Run the formatter.
+    - id: ruff-format
+
+- repo: https://github.com/pocc/pre-commit-hooks
+  rev: v1.3.5
+  hooks:
+    - id: clang-format
+      args: [--style=file, -i, --fallback-style=none]
+      additional_dependencies:
+        - clang-format
+        # - clang-tidy
+    #TODO: we really want to use clang-tidy in CI eventually
+    # but there are a lot of warnings we should fix before
+    # including it here (even in the most basic calls)
+    # - id: clang-tidy
+    #   args: [--fix]

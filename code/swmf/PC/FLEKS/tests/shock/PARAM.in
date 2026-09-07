@@ -1,0 +1,150 @@
+#DESCRIPTION
+1D oblique shock test: flow along x into a reflecting left wall, open inflow
+right boundary.  The upstream magnetic field is inclined at 45 deg to the shock
+normal (the x axis).  Full PIC mode.
+
+
+#INITFROMSWMF
+F                       initFromSWMF
+
+#GEOMETRY
+0.0                     xMin
+64.0                    xMax
+-0.5                    yMin
+ 0.5                    yMax
+-0.5                    zMin
+ 0.5                    zMax
+
+#NCELL
+64                      nCellX
+1                       nCellY
+1                       nCellZ
+
+#MAXBLOCKSIZE
+16                      maxBlockSizeX
+1                       maxBlockSizeY
+1                       maxBlockSizeZ
+
+#PERIODICITY
+F                       isPeriodicX
+T                       isPeriodicY
+T                       isPeriodicZ
+
+#FIELDBOXBOUNDARY
+outflow                 fieldBoxBoundaryLo
+fixed                   fieldBoxBoundaryHi
+periodic                fieldBoxBoundaryLo
+periodic                fieldBoxBoundaryHi
+periodic                fieldBoxBoundaryLo
+periodic                fieldBoxBoundaryHi
+
+#PARTICLEBOXBOUNDARY
+0                       iSpecies
+reflect                 particleBoxBoundaryLo
+inflow                  particleBoxBoundaryHi
+periodic                particleBoxBoundaryLo
+periodic                particleBoxBoundaryHi
+periodic                particleBoxBoundaryLo
+periodic                particleBoxBoundaryHi
+
+#PARTICLEBOXBOUNDARY
+1                       iSpecies
+reflect                 particleBoxBoundaryLo
+inflow                  particleBoxBoundaryHi
+periodic                particleBoxBoundaryLo
+periodic                particleBoxBoundaryHi
+periodic                particleBoxBoundaryLo
+periodic                particleBoxBoundaryHi
+
+#SOLVEEM
+T                       solveEM
+
+#DISCRETIZATION
+0.5                     theta
+0.0                     coefDiff
+
+#COMOVING
+T                       solveFieldInCoMov
+5                       nSmoothBackGroundU
+
+Lax-Friedrichs upwind viscosity on the E equation (minmod limiter theta=1).
+#UPWINDE
+T                       useUpwindE
+1                       limiterThetaE
+
+Lax-Friedrichs upwind viscosity on the B equation + hyperbolic div-B cleaning.
+#UPWINDB
+T                       useUpwindB
+1                       limiterThetaB
+
+Digital-filter smoothing of the current density J.
+#SMOOTHJ
+T                       doSmoothJ
+1                       nSmoothJ
+0.5                     coefSmoothJ
+
+Two kinetic species: ions (q = 1, m = 1) and electrons (q = -1, m = 1/25)
+#PLASMA
+2                       nSpecies
+1.0                     mass           Species 0: ions
+1.0                     charge
+1.0/25.0                mass           Species 1: electrons
+-1.0                    charge
+
+#INFLOW
+5.0                     rho [amu/cc]   Species 0: ions
+-713.0                  ux [km/s]
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+0.0                     T [K]          ions, beta_i ~ 0.5
+
+#UNIFORMSTATE
+5.0                     rho [amu/cc]   Species 0: ions (n_code ~ nb = 0.2)
+-713.0                  ux [km/s]
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+0.0                     T [K]          ions, beta_i ~ 0.5
+0.2                     rho [amu/cc]   Species 1: electrons
+-713.0                  ux [km/s]
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+0.0                     T [K]          electrons
+7.382e-9                bx
+0.0                     by
+7.382e-9                bz
+0.0                     ex
+-5.263e-3               ey
+0.0                     ez
+
+#TIMESTEPPING
+T                       useFixedDt
+0.005                   dt
+
+#NORMALIZATION
+1.0e5                   lNormSI
+2.0e6                   uNormSI
+
+#MONITOR
+100                     dnReport
+
+#SAVELOG
+10                      dnSavePic
+10                      dnSavePT
+
+#PARTICLES
+100                     npcelx
+1                       npcely
+1                       npcelz
+
+#SAVEPLOT
+1                       nPlot
+z=0 fluid ascii planet     plotString
+-1                      dn
+5.0                     dt
+1                       dx
+
+#STOP
+-2                      MaxIter
+5.0                     TimeMax
+
+#RUN
