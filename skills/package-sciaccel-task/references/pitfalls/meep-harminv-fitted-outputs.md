@@ -22,7 +22,9 @@ and both step counts are graded as integers.
 **How to detect it.** Any upstream test whose asserted quantity comes from a
 post-processing fit, eigen-decomposition or root find over the simulation
 output. Perturb the inputs by two ulps and compare the response of the raw
-output and the fitted number.
+output and the fitted number. A response that does not scale with the
+perturbation at all is a different pitfall,
+[meep-mpb-eigensolver-two-state](meep-mpb-eigensolver-two-state.md).
 
 **What to do in the check.** Grade the raw history the module produces, at
 full precision, and grade the fitted numbers only where their response is
