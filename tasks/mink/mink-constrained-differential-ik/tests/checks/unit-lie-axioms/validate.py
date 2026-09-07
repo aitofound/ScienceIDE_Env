@@ -68,6 +68,10 @@ def load_output(directory, expected_schema, contract):
     mode = run.get("mode")
     if mode not in ("nominal", "variant"):
         raise ValueError("Invalid initial-condition mode")
+    if run.get("fixed_group_inputs_sha256") != contract["fixed_group_inputs_sha256"][mode]:
+        raise ValueError("Materialized group input identity differs")
+    if run.get("fixed_group_calls") != contract["fixed_group_calls"]:
+        raise ValueError("Incomplete or altered group-input inventory")
     inputs = run.get("active_inputs")
     if not isinstance(inputs, list) or len(inputs) != contract["active_input_count"]:
         raise ValueError("Declared active input was not exercised")
