@@ -16,8 +16,8 @@ Generated from the canonical JSON. Unknown values are visible; this report never
 | module | approval | purpose / difference | owned files | owned text lines | collected tests | shared components |
 |---|---|---|---:|---:|---:|---|
 | `g4cmp-phonon-transport` | approved | Massless anisotropic phonons whose group velocity is not parallel to the wavevector; no electric field, no carriers, no superconductor gap. | 77 | 5976 | unknown | `shared-infrastructure` |
-| `g4cmp-charge-carriers` | approved | Charged carriers in a valley effective-mass picture under an electric field; the only module with a field solver and with deterministic yield tables. | 115 | 1464219 | unknown | `shared-infrastructure` |
-| `g4cmp-quasiparticles` | approved | Quasiparticles in a superconducting film with an energy gap; diffusion rather than ballistic transport; the only module with an upstream analytic reference (Kaplan lifetimes, firs… | 128 | 22400 | unknown | `shared-infrastructure` |
+| `g4cmp-charge-carriers` | proposed-only | Charged carriers in a valley effective-mass picture under an electric field; the only module with a field solver and with deterministic yield tables. | 115 | 1464219 | unknown | `shared-infrastructure` |
+| `g4cmp-quasiparticles` | proposed-only | Quasiparticles in a superconducting film with an energy gap; diffusion rather than ballistic transport; the only module with an upstream analytic reference (Kaplan lifetimes, firs… | 128 | 22400 | unknown | `shared-infrastructure` |
 
 ### Shared code
 
