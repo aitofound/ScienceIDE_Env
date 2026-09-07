@@ -65,7 +65,8 @@ improve. Flagged for the curator rather than silently resolved.
 
 The bound of every check is the human's. The curator widened only
 `heom-public-interface`'s relative term from `1e-13` to `1e-12` after the
-cross-architecture review; the worker rerun will supply its resulting margin.
+cross-architecture review; the worker rerun of 2026-09-07 measures its margin at
+454x, against 46x under the old term.
 Two measured quantities sit under the bounds and they are different things,
 which earlier revisions of this file blurred into the single word "floor":
 
@@ -84,10 +85,9 @@ All seven `run.sh` scripts export `OMP_NUM_THREADS=2`,
 before importing NumPy, matching the declared two CPUs so the host's visible
 core count cannot silently change the pool or reduction order.
 
-The spreads and floors below come from the previous shipped record; the bounds
-show the revised contract. These fingerprinted edits deliberately make that
-record stale, and the x86-64 worker rerun will replace it before merge.
-Measurements were in-container under the declared 2 cpus:
+Measured in the shipped record (selfcheck 2026-09-07, 09:46Z to 11:39Z on the
+x86-64 worker, contract fingerprint `ab15849758d5`), in-container under the
+declared 2 cpus with the thread pool pinned to 2:
 
 | check | spread (x86-64) | spread (arm64) | altbuild floor | bound | margin |
 |---|---|---|---|---|---|
@@ -97,7 +97,7 @@ Measurements were in-container under the declared 2 cpus:
 | `bloch-redfield-eigenbasis-tools` | 1.066e-14 | 8.438e-15 | 0, bit-identical | `1e-11 + 1e-10|r|` | 1,602x |
 | `dysolve-driven-propagator` | 7.772e-16 | 7.772e-16 | 0, bit-identical | `1e-12 + 1e-10|r|` | 1,310x |
 | `counting-statistics-dqd-current` | 5.551e-16 | 6.661e-16 | 0, bit-identical | `1e-13 + 1e-11|r|` | 3,730x |
-| `heom-public-interface` | 7.772e-16 | 1.110e-16 | 0, bit-identical | `1e-16 + 1e-12|r|` | pending worker rerun |
+| `heom-public-interface` | 7.772e-16 | 1.110e-16 | 0, bit-identical | `1e-16 + 1e-12|r|` | 454x |
 
 The margin column is the bound over the worst graded value's error, from the
 validator's `bound_fraction` (skill 5.10.0); the validators in this leaf were
@@ -122,15 +122,16 @@ Linux host. Two of the seven spreads are identical to the arm64 ones to every
 digit and five are not, which is what one should expect: a spread is a property
 of the arithmetic on the host that measured it, not of the package. The pass
 result, the bounds and the graded configurations are untouched. Within the
-x86-64 host the numbers are exactly reproducible — the two earlier runs of this
-leaf on the same host (the calibration run and the run before this one) produced
-all seven distances and all seven bound fractions identical to the digit shown
-here.
+x86-64 host the numbers are exactly reproducible — the three earlier runs of
+this leaf on the same host produced all seven distances identical to the digit
+shown here, and the shipped run reproduced them again with the thread pool
+pinned to 2 where the earlier runs let OpenBLAS size it from 88 cores. The pool
+size never reached a graded bit; only the wall clock moved.
 
 **`heom-public-interface` is the one bound revised in this round.** The x86-64
 worker separated by several ulps where arm64 separated by one, so the curator
-widened its relative term by one decade. No margin is predicted here: the next
-worker record will measure it. The exactly-zero `path_difference.npy` remains
+widened its relative term by one decade. The record measures 454x, against 46x
+under the old term, from the same 7.772e-16 spread. The exactly-zero `path_difference.npy` remains
 gated by the unchanged `1e-16` absolute term because `HSolverDL` is a thin
 wrapper over `HEOMSolver`.
 
@@ -202,19 +203,28 @@ Run time per check with the source build excluded:
 
 | check | solve 1, nominal | solve 2, variant | solve 3, altbuild |
 |---|---|---|---|
-| `bloch-redfield-jaynes-cummings` | 313.5 s | 264.1 s | 807.1 s |
-| `heom-hierarchy-evolution` | 84.1 s | 86.9 s | 267.3 s |
-| `dysolve-driven-propagator` | 29.7 s | 32.3 s | 35.7 s |
-| `bloch-redfield-eigenbasis-tools` | 5.4 s | 3.9 s | 4.9 s |
-| `counting-statistics-dqd-current` | 4.8 s | 5.2 s | 6.3 s |
-| `heom-public-interface` | 0.7 s | 1.0 s | 0.7 s |
-| `heom-bath-decomposition` | 0.7 s | 1.2 s | 1.6 s |
-| **suite** | **439.0 s** | **394.5 s** | **1123.7 s** |
+| `bloch-redfield-jaynes-cummings` | 123.6 s | 125.8 s | 623.1 s |
+| `heom-hierarchy-evolution` | 95.7 s | 95.0 s | 270.0 s |
+| `dysolve-driven-propagator` | 67.8 s | 31.7 s | 30.7 s |
+| `bloch-redfield-eigenbasis-tools` | 1.2 s | 1.4 s | 1.2 s |
+| `counting-statistics-dqd-current` | 4.4 s | 4.2 s | 5.6 s |
+| `heom-public-interface` | 0.8 s | 1.3 s | 1.1 s |
+| `heom-bath-decomposition` | 1.5 s | 0.7 s | 1.5 s |
+| **suite** | **295.0 s** | **260.1 s** | **933.2 s** |
 
-The nominal suite, 439.0 s, is the figure the 900 s guidance is read against,
-and it is inside it. Builds were 2130 s, 2071 s and 795 s — 4996 s of the
-6968 s the three solves took, **72%** of the run, excluded from the budget by
-design and still the dominant cost of iterating on this leaf. The altbuild
+The nominal suite, 295.0 s, is the figure the 900 s guidance is read against,
+and it is inside it. Builds were 2289 s, 2191 s and 774 s — 5254 s of the
+6742 s the three solves took, **78%** of the run, excluded from the budget by
+design and still the dominant cost of iterating on this leaf.
+
+**Pinning the thread pool is what moved the acceleration check.** The previous
+record, with OpenBLAS sizing its pool from the host's 88 cores inside the
+2-cpu container, put `bloch-redfield-jaynes-cummings` at 313.5 s and 264.1 s
+in its two solves; with the four thread variables pinned to 2 the same check
+takes 123.6 s and 125.8 s, about 2.3x less, and the graded values did not
+move by a bit (all seven spreads reproduce the previous record to the digit).
+That is the measured cost of the unpinned pool on this leaf: real, far from the
+215x the PyAMG case saw, and gone. The altbuild
 solve's builds are a third of the others' because `-O0` compiles faster; its run
 seconds are the ones that go the other way.
 
@@ -226,14 +236,19 @@ Nothing in the leaf reads those rows as a measurement finer than that, and
 
 `expected_runtime_s` in each rubric is a **declared estimate**, not a
 description of the shipped run. The declarations were reset from a measured
-nominal solve on this host and rounded up; the shipped solve then landed at
-5.4 / 313.5 / 4.8 / 29.7 / 0.7 / 84.1 / 0.7 s against declarations of
-9 / 251 / 4 / 47 / 2 / 92 / 3 s (checks in alphabetical order). One landed above
-its declaration — the acceleration check, 313.5 s against 251 s, a quarter over
-— and the CLI raised no run-time flag on any of them; its flag is at twice the
-declaration. The run before this one, on the same host, put the same check at
-267.4 s and the variant solve here put it at 264.1 s, which is the wall-clock
-wander the caveat below is about. No number in a fingerprinted file claims to be
+nominal solve on this host and rounded up, before the pool was pinned; the
+shipped solve then landed at 1.2 / 123.6 / 4.4 / 67.8 / 1.5 / 95.7 / 0.8 s
+against declarations of 9 / 251 / 4 / 47 / 2 / 92 / 3 s (checks in alphabetical
+order). Three landed above their declaration — `dysolve-driven-propagator` at
+67.8 s against 47 s, `heom-hierarchy-evolution` at 95.7 s against 92 s and
+`counting-statistics-dqd-current` at 4.4 s against 4 s — and the CLI raised no
+run-time flag on any of them; its flag is at twice the declaration. The Dysolve
+figure is wall-clock wander rather than a change in the check: the variant and
+altbuild solves of the same run put it at 31.7 s and 30.7 s, in line with the
+29.7 s of the previous record, and other people's containers shared the host
+during this run. The acceleration check now sits at half its declaration
+because the pool is pinned; the declaration is left where it is, since it is
+an upper estimate and lowering it would be another fingerprint change. No number in a fingerprinted file claims to be
 from the shipped solve, because no rerun could ever make that true.
 
 The three HEOM checks were on their first container exposure in an earlier run
