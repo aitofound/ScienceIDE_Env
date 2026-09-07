@@ -123,5 +123,3 @@ fi
 
 grab test1_h_prs.000 IM/plots/hydrogen/test1_h_prs.000
 grab test1_h_prs.001 IM/plots/hydrogen/test1_h_prs.001
-grab test1_h_prs.002 IM/plots/hydrogen/test1_h_prs.002
-grab test1_h_prs.003 IM/plots/hydrogen/test1_h_prs.003

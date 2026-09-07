@@ -13,7 +13,7 @@ make -C IM/CIMI test_drift (test_compile + test_rundir_drift + test_run + test_c
 `run.sh nominal` copies the pinned source into a scratch tree, builds it there
 and runs one fixed configuration:
 
-IM/CIMI configured with ./Config.pl -EarthHO -GridDefault and built with make CIMI; the upstream test_rundir_drift run directory with input/testfiles/PARAM.in.test.drift as PARAM.in: 100 s of 22 July 2009 saving the drift velocity of all three species, on 2 MPI ranks
+IM/CIMI configured with ./Config.pl -EarthHO -GridDefault and built with make CIMI; the upstream test_rundir_drift run directory with input/testfiles/PARAM.in.test.drift as PARAM.in: 40 s of 22 July 2009 (a 100-to-40 s upstream-window reduction; plot period 60-to-24 s, log sampling 10-to-4 s, and restart period 100-to-40 s) saving the drift velocity of all three species, on 2 MPI ranks
 
 The graded files, under the names `rubric.json` lists:
 
