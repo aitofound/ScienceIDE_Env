@@ -5,9 +5,10 @@ self-validation record is fresh on the packager's machine and on the worker
 that produced it, and CI says the same record is stale on the pushed tree.
 `git status` is clean; `git status --ignored` shows the cause.
 
-**What breaks.** `contract_fingerprint` (`scripts/_vendor/sciaccel_pipeline/util.py`)
-hashes every file under `tests/`, `solution/`, `environment/` and `target/`,
-skipping only `__pycache__`:
+**What breaks.** Before skill 5.11.2, `contract_fingerprint`
+(`scripts/_vendor/sciaccel_pipeline/util.py`) hashed every file under
+`tests/`, `solution/`, `environment/` and `target/`, skipping only
+`__pycache__`:
 
     files += [p for p in (leaf / d).rglob("*") if p.is_file() and "__pycache__" not in p.parts]
 
@@ -45,12 +46,15 @@ about to push and compare it with `comment/pipeline/self-validation.json`'s
 record you will ship, and sync to the worker with `rsync -a --delete` from a
 cleaned tree so the worker cannot hold a stale copy. Do not hand-edit
 `contract_fingerprint`: `selfcheck` is its only writer, and a record edited to
-match a tree it was not taken on is a false statement about what ran. Do not
-expect the CLI to skip every dot-path: git tracks legitimate dotfiles, and a
-tracked dotfile under a contract directory is part of the contract and must
-move the fingerprint. A CLI-side fix, if one lands, rejects known cache paths
-at selfcheck preflight or skips only what git reports as ignored; the
-detached-commit fingerprint stays the authority either way.
+match a tree it was not taken on is a false statement about what ran. Since skill
+5.11.2 the fingerprint skips a fixed list of generated names
+(`.pytest_cache/`, `__pycache__/`, `.ruff_cache/`, `.mypy_cache/`,
+`.hypothesis/`, `.ipynb_checkpoints/`, `*.egg-info/`, `.DS_Store`),
+`selfcheck` refuses to run while one is present and `status` lists them. The
+list is fixed rather than "every dot-path" because git tracks legitimate
+dotfiles, and a tracked dotfile under a contract directory is contract and
+must move the fingerprint. Anything not on the list is still hashed, so the
+detached-commit fingerprint stays the authority.
 
 **Where measured.** aitofound/ScienceAccelBench issue #515, PR #437
 (`tasks/pyamg/relaxation-smoothing`), 2026-09-06.
