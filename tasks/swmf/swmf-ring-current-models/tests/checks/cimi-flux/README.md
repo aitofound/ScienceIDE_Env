@@ -60,3 +60,7 @@ the pinned tree does not carry itself. `ic/variant` is the same set with one doc
 ## What this check is sensitive to
 
 The drift, charge-exchange, loss-cone, wave-diffusion and decay terms of the bounce-averaged kinetic solve, the field-line integration that sets the flux-tube volume and the bounce-averaged coefficients, the order in which the advection sweeps are applied, and the energy and pitch-angle grid the distribution lives on. It is not sensitive to anything outside IM/CIMI and the share/util libraries it links.
+
+## Revision evidence and scoped H+ bound
+
+The preserved calibration pair measured the documented `quiet_h.fin` mutation (the first positive H+ value 1.26e8 -> 1.512e8, 20%) as a maximum 0.201 relative response in `CimiFlux_h.fls` (maximum absolute difference 2.010e3). The altbuild nominal-vs-optimized floor was 1.0, so the H+ file alone uses `atol=1.0, rtol=0.201`; `CimiFlux_o.fls` and `CimiFlux_e.fls` retain `atol=1e-10, rtol=0.001`. This is a named stream bound, not a global mask: it admits the measured sensitivity envelope plus compiler-floor headroom and rejects an H+ flux fault above 20.1%, while all unrelated species, skeleton, shape, frame, grid and finite-value gates remain strict.

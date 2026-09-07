@@ -5,7 +5,8 @@ Compares every graded PHYSICAL number of the candidate with the reference:
 
     |candidate - reference| <= atol + rtol * |reference|
 
-with atol/rtol read from rubric.json, per file group where a group sets its own.
+with atol/rtol read from rubric.json, per file group where a group sets its own. A named table may
+add field_bounds for measured, source-backed exceptions; all other columns keep the ordinary bound.
 
 SWMF writes its graded output as free-form ASCII: log, magnetometer, geoindex
 and ionosphere tables, formatted IDL `.out`/`.outs`/`.idl` plot files, and the
@@ -119,6 +120,8 @@ def _stream(path: Path, spec: dict):
     lines = text.split("\n")
     values: list[float] = []
     skeleton: list[str] = []
+    # One name per graded value; None marks an unlabelled free-form value.
+    column_names: list[str | None] = []
     table_cols: list[str] | None = None
     table_drop: set[int] = set()
     seen_out_header = False
@@ -128,13 +131,14 @@ def _stream(path: Path, spec: dict):
         if table_cols is not None and _is_data_row(toks, len(table_cols)):
             v, pieces = _extract_numbers(line, table_drop)
             values.extend(v)
+            column_names.extend(name for j, name in enumerate(table_cols) if j not in table_drop)
             skeleton.append(sep + "".join(pieces))
             continue
         table_cols = None
         if (_is_table_header(toks) and i + 1 < len(lines)
                 and _is_data_row(lines[i + 1].split(), len(toks))):
-            table_cols = [t.lower() for t in toks]
-            table_drop = {j for j, name in enumerate(table_cols) if name in _BOOKKEEPING_COLS}
+            table_cols = toks
+            table_drop = {j for j, name in enumerate(toks) if name.lower() in _BOOKKEEPING_COLS}
             skeleton.append(sep + line)  # a header of bare names carries no numbers
             continue
         if not seen_out_header and i < 6:
@@ -143,16 +147,20 @@ def _stream(path: Path, spec: dict):
                 seen_out_header = True
                 v, pieces = _extract_numbers(line, {0})  # drop nStep only
                 values.extend(v)
+                column_names.extend([None] * len(v))
                 skeleton.append(sep + "".join(pieces))
                 continue
         v, pieces = _extract_numbers(line)
         values.extend(v)
+        column_names.extend([None] * len(v))
         skeleton.append(sep + "".join(pieces))
     # Fortran writes these tables in fixed-width fields, so a value that gains
     # or loses a minus sign moves the surrounding blanks; the upstream
     # comparisons pass -b to diff for the same reason. Runs of whitespace are
     # therefore collapsed before the skeletons are compared.
-    return np.array(values, dtype=np.float64), re.sub(r"\s+", " ", "".join(skeleton)).strip()
+    return (np.array(values, dtype=np.float64),
+            re.sub(r"\s+", " ", "".join(skeleton)).strip(),
+            column_names)
 
 
 def load(path: Path, spec: dict):
@@ -182,8 +190,8 @@ def main() -> int:
             failures.append(f"{rel}: missing on {'reference' if not ref_path.is_file() else 'candidate'}")
             continue
         try:
-            r, r_text = load(ref_path, spec)
-            c, c_text = load(cand_path, spec)
+            r, r_text, r_columns = load(ref_path, spec)
+            c, c_text, c_columns = load(cand_path, spec)
         except (OSError, ValueError) as exc:
             failures.append(f"{rel}: cannot load: {exc}")
             continue
@@ -198,6 +206,22 @@ def main() -> int:
             continue
         err = np.abs(c - r)
         bound = atol + rtol * np.abs(r)
+        field_details = {}
+        field_bounds = spec.get("field_bounds", {})
+        if field_bounds:
+            if r_columns != c_columns or len(r_columns) != r.size or len(c_columns) != c.size:
+                failures.append(f"{rel}: named table columns do not align with graded values")
+                continue
+            for field, rule in field_bounds.items():
+                indices = np.array([i for i, name in enumerate(r_columns) if name == field], dtype=int)
+                if indices.size == 0:
+                    failures.append(f"{rel}: field bound names missing column {field!r}")
+                    continue
+                f_atol = float(rule["atol"])
+                f_rtol = float(rule.get("rtol", 0.0))
+                bound[indices] = f_atol + f_rtol * np.abs(r[indices])
+                field_details[field] = {"atol": f_atol, "rtol": f_rtol,
+                                        "values": int(indices.size)}
         scaled = err / bound
         over = int(np.count_nonzero(scaled > 1.0))
         max_err = float(err.max()) if err.size else 0.0
@@ -205,8 +229,13 @@ def main() -> int:
         details[rel] = {"values": int(r.size), "max_abs_error": max_err,
                         "max_scaled_error": max_scaled, "bound_fraction": max_scaled,
                         "atol": atol, "rtol": rtol, "values_over_bound": over}
+        if field_details:
+            details[rel]["field_bounds"] = field_details
         if over:
-            failures.append(f"{rel}: {over} of {r.size} values exceed atol={atol:g} + rtol={rtol:g}*|ref| "
+            named = sorted({r_columns[i] for i in np.flatnonzero(scaled > 1.0)
+                            if r_columns[i] is not None})
+            suffix = f" in fields {', '.join(named)}" if named else ""
+            failures.append(f"{rel}: {over} of {r.size} values exceed pointwise bounds{suffix} "
                             f"(max |err| {max_err:.3e}, worst {max_scaled:.3g} times the bound)")
         worst_abs = max(worst_abs, max_err)
         worst_scaled = max(worst_scaled, max_scaled)
