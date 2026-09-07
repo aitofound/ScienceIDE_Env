@@ -20,21 +20,22 @@
     ]
   },
   "evidence": {
-    "floor": 1.100008972798605e-12,
+    "floor": 5.399847236020605e-13,
     "floor_how": "measured by selfcheck on 2026-09-07: run.sh altbuild (-O0 instead of -O2, plus -DHAVE_BLAS -DHAVE_LAPACK (LAPACK zgeev in place of the in-tree eigensolver)) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
-    "self_validation_spread": 4.340083847864662e-12,
-    "self_validation_bound_fraction": null,
+    "self_validation_spread": 2.9799496203963827e-12,
+    "self_validation_bound_fraction": 0.00029799496203963827,
     "altbuild": {
       "what": "-O0 instead of -O2, plus -DHAVE_BLAS -DHAVE_LAPACK (LAPACK zgeev in place of the in-tree eigensolver)",
-      "distance": 1.100008972798605e-12,
-      "bound_fraction": null,
+      "distance": 5.399847236020605e-13,
+      "bound_fraction": 5.399847236020605e-05,
       "identical": false,
       "passed": true,
       "reason": "all graded values within bound",
-      "at": "2026-09-07T03:28:17Z"
+      "at": "2026-09-07T23:21:47Z"
     },
     "runtime_how": "Run time inside the oracle container on the consented machine (arm64, 1 declared cpu), source build reported separately by run.sh and excluded because the budget counts run time only. Measured 68.2 s in the run recorded in comment/pipeline/self-validation.json, against 29 s measured natively on an unloaded machine. expected_runtime_s is declared at the TOP of that range: this machine has been under sustained load from unrelated processes throughout authoring, which stretches run times by up to 2x, so a reviewer on a quiet machine should come in at or below the declared figure.",
-    "floor_host": "arm64 (MacBook-Air-2.local); see floor_how for the x86 scope"
+    "floor_host": "arm64 (MacBook-Air-2.local); see floor_how for the x86 scope",
+    "floor_bound_fraction": 5.399847236020605e-05
   },
-  "warrant": "Physical. The transmission spectrum of the displaced-slab configuration, 220 graded values is produced by the Fourier factorization this module owns - the Toeplitz permittivity and inverse-permittivity matrices, Kottke subpixel averaging and the polarization-basis construction - and it is exactly the quantity Li's inverse rule was invented to get right. A port that applies the direct rule where the inverse rule is required, drops the subpixel average, rasterises the shape at the wrong offset or truncates the Fourier sum asymmetrically changes these values in the third or fourth significant figure, not the twelfth, so a bound of 1e-08 separates a correct port from each of those faults by many orders of magnitude. Achievable. The bound sits 2882x above the largest measured difference between two legitimate results of this same check (3.470e-12), which is the larger of the alternative-build floor and the two-initial-condition spread. That headroom covers a different BLAS, instruction set or summation order on another platform while staying far below any physically wrong answer. Provenance: Suh, Yanik, Solgaard & Fan, APL 82, 1999 (2003), Fig. 2b. The departure from upstream is recorded in configuration above and justified in the check README."
+  "warrant": "Physical. The transmission spectrum of the displaced-slab configuration, 220 graded values is a diffraction efficiency or transmission -- a Poynting-flux ratio -- produced through the factorized permittivity this module builds (Li's inverse rule, or the normal-vector formulation where the deck selects it) and handed to the layer eigenproblem downstream. A port that applies the direct rule where the inverse rule is required, drops the subpixel average, rasterises the shape at the wrong offset, or truncates the Fourier sum asymmetrically changes these values in the third or fourth significant figure, not the twelfth, so a bound of 1e-08 separates a correct port from each of those faults by many orders of magnitude. Achievable. The bound sits 3356x above the larger of the two-initial-condition spread (2.980e-12) and the alternative-build floor (5.400e-13), measured on the x86 worker on 2026-09-07. That headroom covers a different BLAS, instruction set or summation order on another platform while staying far below any physically wrong answer. Provenance: Suh, Yanik, Solgaard & Fan, APL 82, 1999 (2003), Fig. 2b. The departure from upstream is recorded in configuration above and justified in the check README."
 }
