@@ -28,6 +28,7 @@ def main() -> int:
     rubric = json.loads(Path(a.rubric).read_text(encoding="utf-8"))
     comparison = rubric["comparison"]
     atol, rtol = float(comparison["atol"]), float(comparison.get("rtol", 0.0))
+    key_columns = int(comparison.get("key_columns", 0))
     roots = {"reference": Path(a.reference), "candidate": Path(a.candidate)}
     failures, details = [], {}
     worst = worst_frac = 0.0
@@ -49,8 +50,11 @@ def main() -> int:
             continue
         over = 0
         file_worst = file_frac = 0.0
-        for rrow, crow in zip(ref, cand):
-            for rv, cv in zip(rrow, crow):
+        for row_index, (rrow, crow) in enumerate(zip(ref, cand)):
+            if rrow[:key_columns] != crow[:key_columns]:
+                failures.append(f"{rel}: physical keys differ at sorted row {row_index}")
+                over += 1
+            for rv, cv in zip(rrow[key_columns:], crow[key_columns:]):
                 if not math.isfinite(cv):
                     failures.append(f"{rel}: candidate contains non-finite values")
                     over += 1
@@ -61,7 +65,7 @@ def main() -> int:
                 file_worst, file_frac = max(file_worst, err), max(file_frac, frac)
                 if err > bound:
                     over += 1
-        values = len(ref) * len(ref[0])
+        values = len(ref) * (len(ref[0]) - key_columns)
         details[rel] = {"values": values, "max_abs_error": file_worst, "values_over_bound": over, "bound_fraction": file_frac}
         if over:
             failures.append(f"{rel}: {over} of {values} values exceed atol={atol:g} rtol={rtol:g}")

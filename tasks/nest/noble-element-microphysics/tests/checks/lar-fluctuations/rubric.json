@@ -7,17 +7,77 @@
   "observable": "global means of LAr total, charge, and light yields and their sampled standard deviations",
   "expected_runtime_s": 2,
   "default_vs_upstream": "All interaction and electric-field families and the upstream 100 samples per point are retained; the energy grid is shortened from 50,000 to 512 points by SAB_ENERGY_STEPS.",
-  "variant": "Density changes from 1.39300 to 1.39301 g/mL at the same seed; this is the smallest proposed printed-input step expected to survive the benchmark's six-significant-digit CSV stream and probes numerical sensitivity without changing the physical case family.",
+  "variant": "The variant changes only the fixed random seed from 271828 to 271829 at the same density; independent streams measure the sampling spread of the aggregate yield and width surfaces without changing the physical case family.",
   "altbuild": "none: no second compiler is installed, and an optimization-level floor for this stochastic path would be confounded with branch-dependent random-stream changes.",
-  "comparison": {"invariants": [
-    {"name": "grid-point-count", "file": "summary.dat", "format": "text", "column": 0, "mode": "agreement", "statistic": "final", "rtol": 0.0, "atol": 0.0},
-    {"name": "mean-total-yield", "file": "summary.dat", "format": "text", "column": 1, "mode": "agreement", "statistic": "final", "rtol": 0.12, "atol": 0.0},
-    {"name": "mean-charge-yield", "file": "summary.dat", "format": "text", "column": 2, "mode": "agreement", "statistic": "final", "rtol": 0.12, "atol": 0.0},
-    {"name": "mean-light-yield", "file": "summary.dat", "format": "text", "column": 3, "mode": "agreement", "statistic": "final", "rtol": 0.12, "atol": 0.0},
-    {"name": "mean-total-width", "file": "summary.dat", "format": "text", "column": 4, "mode": "agreement", "statistic": "final", "rtol": 0.12, "atol": 0.0},
-    {"name": "mean-charge-width", "file": "summary.dat", "format": "text", "column": 5, "mode": "agreement", "statistic": "final", "rtol": 0.12, "atol": 0.0},
-    {"name": "mean-light-width", "file": "summary.dat", "format": "text", "column": 6, "mode": "agreement", "statistic": "final", "rtol": 0.12, "atol": 0.0}
-  ]},
-  "evidence": {"spread": null, "spread_how": "Pending first self-validation at fixed seed between the nominal and density-perturbed inputs.", "self_validation_spread": null, "self_validation_bound_fraction": null},
-  "warrant": "Each CSV row is itself a statistic of RandomGen-driven photon, electron, exciton, and ion samples, so rowwise equality would reject valid ports that schedule random draws differently. Global means of the yield and width surfaces preserve the official interaction, field, and energy coverage and should react strongly to missing fluctuation or recombination terms. The provisional 12% bound must be replaced or justified from calibration and realistic cross-implementation sampling headroom."
+  "comparison": {
+    "invariants": [
+      {
+        "name": "mean-total-yield",
+        "file": "summary.dat",
+        "format": "text",
+        "column": 1,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 0.12,
+        "atol": 0.0
+      },
+      {
+        "name": "mean-charge-yield",
+        "file": "summary.dat",
+        "format": "text",
+        "column": 2,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 0.12,
+        "atol": 0.0
+      },
+      {
+        "name": "mean-light-yield",
+        "file": "summary.dat",
+        "format": "text",
+        "column": 3,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 0.12,
+        "atol": 0.0
+      },
+      {
+        "name": "mean-total-width",
+        "file": "summary.dat",
+        "format": "text",
+        "column": 4,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 0.12,
+        "atol": 0.0
+      },
+      {
+        "name": "mean-charge-width",
+        "file": "summary.dat",
+        "format": "text",
+        "column": 5,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 0.12,
+        "atol": 0.0
+      },
+      {
+        "name": "mean-light-width",
+        "file": "summary.dat",
+        "format": "text",
+        "column": 6,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 0.12,
+        "atol": 0.0
+      }
+    ]
+  },
+  "evidence": {
+    "spread": null,
+    "spread_how": "Pending fresh self-validation between independent fixed seeds at the same density and declared sampling window.",
+    "self_validation_spread": 0.004930109424399079,
+    "self_validation_bound_fraction": 0.04108424520332565
+  },
+  "warrant": "Each CSV row is itself a statistic of RandomGen-driven photon, electron, exciton, and ion samples, so rowwise equality would reject valid ports that schedule random draws differently. Global means of the yield and width surfaces preserve the official interaction, field, and energy coverage and should react strongly to missing fluctuation or recombination terms. Independent fixed seeds measure finite-window sampling spread; the provisional 12% bound must be replaced or justified from calibration and realistic cross-implementation headroom."
 }
