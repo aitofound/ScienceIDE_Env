@@ -29,7 +29,9 @@ whether a correct port may permute it.
 output carries (`iorig`, a particle id) and apply it to every block with the
 same count. Ship a permuted-reference self-test that carries every block; a
 single-block self-test clears nothing. This is the "pointwise grades physics,
-never storage" rule of the skill applied to particle codes.
+never storage" rule of the skill applied to particle codes; the same rule
+applied to a Fourier basis, where the set itself can change, is
+[s4-gvector-selection-fma](s4-gvector-selection-fma.md).
 
 **Where measured.** aitofound/ScienceAccelBench PRs #457, #502 and #503,
 2026-09-06.
