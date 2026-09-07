@@ -3,6 +3,10 @@
 This directory is hidden at Harbor runtime and is not part of the contract.
 `comment/pipeline/` is written only by the CLI (module entry, test survey,
 self-validation and runtime records). This file is the human-readable story.
+The v5.11.3 contract fingerprint skips only the fixed cache names
+`.pytest_cache/`, `__pycache__/`, `.ruff_cache/`, `.mypy_cache/`, `.hypothesis/`,
+`.ipynb_checkpoints/`, `*.egg-info/` and `.DS_Store` under contract directories;
+every other file there remains contract, including dotfiles.
 
 The checked-in `comment/pipeline/test-survey.json` is a historical
 pre-retirement survey and still records the former STET proposal. It is not
@@ -118,6 +122,16 @@ Out of scope or not vendored:
   the tree, so packaging one would have meant writing a deck, which is a custom check and
   not an official test.
 
+## Solar forcing: FISM is active; F107 alternatives are rejected
+
+The active M-GITM decks use the FISM daily spectrum through `#EUV_DATA`; the
+F10.7 value in those decks is not an independent EUV perturbation once FISM has
+loaded. Candidate variants that changed F107 to 126, 130 or 150 were therefore
+rejected: active FISM overwrites the derived EUV forcing, so those numbers are
+parser/echo changes rather than a source-backed arithmetic rung. The retained
+PWOM Saturn variant instead uses the independently staged and consumed +1 K
+restart electron-temperature rung documented in its check README and rubric.
+
 ## Which MGITM srcData files the checks read
 
 The curator asked whether the 162 MB of `UA/MGITM/srcData` can be trimmed. `make rundir`
@@ -151,7 +165,11 @@ the current rubrics; no global widening or stale selector patch is used. All
 fifteen active validators reject nonfinite reference or candidate values
 before subtraction, and keep ALT floors JSON `null` because no successful
 measured A result is available. This retained calibration is not a fresh
-full-suite acceptance; no final freshness claim is made here.
+full-suite acceptance; no final freshness claim is made here. The policy audit
+also follows the merged pitfalls index entries
+`output-precision-floors-the-bound.md` (do not set a bound below the graded
+stream's precision) and `altbuild-floors-are-host-specific.md` (do not carry a
+floor from one host to another); both are reviewed again at calibration.
 
 ## Revision, 2026-09-06: run time cut to about 900 s per solve, skill 5.10.2
 
