@@ -10,7 +10,7 @@
   "variant": "the convolution impulse response is raised by two binary64 ulps, perturbing filtered samples without changing hit identities",
   "altbuild": "none: strax is a Python/Numba package and this check has no isolated alternative native build contract",
   "comparison": {
-    "atol": 1e-10,
+    "atol": 1e-12,
     "rtol": 0,
     "files": [
       {
@@ -22,9 +22,9 @@
   },
   "evidence": {
     "floor": null,
-    "floor_how": "not measured before STOP 3; the first consented task selfcheck will compare nominal and variant",
+    "floor_how": "two-binary64-ULP impulse-response variant measured in full-precision NPY output",
     "self_validation_spread": 4.440892098500626e-16,
-    "self_validation_bound_fraction": 4.440892098500626e-06
+    "self_validation_bound_fraction": 0.0004440892098500626
   },
-  "warrant": "The proposed 1e-10 bound grades physical sample positions and hit quantities; a wrong convolution neighbor, threshold crossing or charge sum creates an error far larger than this. strax/processing/pulse_processing.py applies the filter over linked records using floating-point convolution. The binary64 two-ULP variant will measure the actual spread, after which the human must confirm or revise this provisional bound."
+  "warrant": "The calibrated 1e-12 bound grades physical sample positions and hit quantities, with hits explicitly sorted by physical time and channel; a wrong convolution neighbor, threshold crossing or charge sum creates an error far larger than this. strax/processing/pulse_processing.py applies the binary64 filter over linked records. The first calibration measured a 4.440892098500626e-16 spread, leaving about 2252x headroom, and the human approved tightening the former overly loose 1e-10 hypothesis."
 }
