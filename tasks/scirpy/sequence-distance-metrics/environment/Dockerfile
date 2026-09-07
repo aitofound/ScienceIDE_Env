@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # edits take effect and nothing is fetched at run time. hatchling, hatch-vcs and editables are
 # here because that editable install needs the build backend already present.
 COPY environment/requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir --require-hashes=false -r /tmp/requirements.txt \
+RUN pip install --no-cache-dir -r /tmp/requirements.txt \
     && rm -f /tmp/requirements.txt
 
 COPY code/scirpy/ /workspace/code/
