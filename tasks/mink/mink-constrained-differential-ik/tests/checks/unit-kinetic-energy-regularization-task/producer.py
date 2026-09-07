@@ -74,7 +74,11 @@ class Recorder:
     def assertion(self, original, name, method=False):
         @functools.wraps(original)
         def wrapped(*args, **kwargs):
-            if self.current is None or self.depth:
+            caller = inspect.currentframe().f_back
+            trusted = {self.source / "trusted_test.py", self.source / "trusted_helpers.py"}
+            # An internal candidate self-check is not a scientific output of
+            # this official test, even when its stack has a trusted ancestor.
+            if self.current is None or self.depth or Path(caller.f_code.co_filename).resolve() not in trusted:
                 return original(*args, **kwargs)
             operands = args[1:] if method else args
             before = [self.snapshot(value) for value in operands[:2]]
