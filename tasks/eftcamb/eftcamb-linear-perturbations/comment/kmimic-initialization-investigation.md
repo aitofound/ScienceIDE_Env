@@ -7,7 +7,11 @@ the instrumentation control, both component margins and the next numerical lead.
 
 This is an authoring diagnostic, not a new calibration result. No official model,
 graded output, IC, bound, accuracy setting, source file or CLI-written record has
-been changed. The task remains at STOP 4 with a stale self-validation record.
+been changed. The public checks state, in `## The pinned source is the oracle as it
+is`, that `09_EFTCAMB_IC.f90:570` is graded as vendored and that a port must
+reproduce it rather than correct it; this file is the authoring record of the
+investigation and probe behind that statement, superseded by the 2026-09-06 x86
+selfcheck referenced in `comment/README.md`.
 
 ## Source evidence
 

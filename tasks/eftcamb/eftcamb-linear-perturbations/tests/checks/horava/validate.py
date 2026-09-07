@@ -176,6 +176,10 @@ def validate(reference: Path, candidate: Path, rubric: dict) -> dict:
         "comparison_mode": "absolute-plus-relative-per-file",
         "rtol": rtol,
         "distance": worst_fraction,
+        # bound_fraction: the largest fraction of any graded value's bound (atol + rtol*|reference|)
+        # used by error/allowed, over every graded value in this check; the CLI reads this exact key
+        # for the review presentation's margin column (margin = 1 / bound_fraction).
+        "bound_fraction": worst_fraction,
         "max_bound_fraction": worst_fraction,
         "combined_margin": finite_margin(1.0, worst_fraction),
         "values": total_values,
