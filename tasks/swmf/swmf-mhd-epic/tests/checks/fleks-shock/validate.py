@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The PASS POLICY half of check fleks-photoionization (pointwise).
+"""The PASS POLICY half of check fleks-shock (pointwise).
 
 Compares every graded number of the candidate with the reference:
 
