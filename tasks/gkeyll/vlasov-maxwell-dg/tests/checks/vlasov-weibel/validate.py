@@ -4,7 +4,9 @@
 are matched on their recorded physical time, never on their position: each reference sample is paired with the
 candidate sample whose time lies within time_tolerance_fraction of the reference window (default 1e-8) and the
 payload rows of the pairs are graded; candidate samples with no reference partner are ignored, a reference sample
-with no candidate partner fails. Neither the sample count nor the step sequence is graded. "gkyl-field-v1": one field
+with no candidate partner fails. Both time sequences must be finite and non-decreasing, or the file fails before any
+value is compared. Neither the sample count nor the step sequence is graded. Run with --self-test to exercise the
+matcher on synthetic histories (NaN times fail, an extra finite sample is ignored, a missing sample fails). "gkyl-field-v1": one field
 frame; every payload value plus the grid's lower/upper extents is graded, and the cell count, element width and sample
 count must match exactly. For both formats a file may declare components_per_sample (dynvec: values per sample;
 field: values per cell, checked against the header) together with skip_components (named components left ungraded)
@@ -60,9 +62,28 @@ def load_field(path: Path) -> tuple[tuple[object, ...], list[float], list[float]
     return (real_code, ndim, cells, esznc, size), list(lower) + list(upper), values, esznc // 8
 
 
+def time_axis_problem(times: list[float], who: str) -> str:
+    """The precondition of the one-pass matcher: every recorded time finite, the sequence non-decreasing."""
+    if not times:
+        return f"{who} history has no samples"
+    if not all(math.isfinite(t) for t in times):
+        return f"{who} history carries a non-finite timestamp"
+    if any(b < a for a, b in zip(times, times[1:])):
+        return f"{who} history timestamps are not in non-decreasing order"
+    return ""
+
+
 def match_by_time(tr: list[float], tc: list[float], tol: float) -> tuple[list[int] | None, int, float, str]:
     """For each reference sample the index of the candidate sample at the same physical time, walking both
-    monotone sequences once; a reference time without a partner within tol is a failure."""
+    monotone sequences once; a reference time without a partner within tol is a failure. Non-finite or
+    out-of-order times on either side are a failure before any pairing (NaN compares false against everything,
+    so it would otherwise pair with every sample)."""
+    for times, who in ((tr, "reference"), (tc, "candidate")):
+        problem = time_axis_problem(times, who)
+        if problem:
+            return None, 0, 0.0, problem
+    if not math.isfinite(tol) or tol < 0:
+        return None, 0, 0.0, f"time tolerance {tol!r} is not a finite non-negative number"
     pairs, j, unmatched_cand, worst_dt = [], 0, 0, 0.0
     for i, t in enumerate(tr):
         while j < len(tc) and tc[j] < t - tol:
@@ -74,7 +95,34 @@ def match_by_time(tr: list[float], tc: list[float], tol: float) -> tuple[list[in
     return pairs, unmatched_cand, worst_dt, ""
 
 
+def self_test() -> int:
+    """Synthetic histories exercising the matcher's contract; exit 1 on the first broken expectation."""
+    nan, inf = float("nan"), float("inf")
+    ref = [0.0, 1.0, 2.0, 3.0]
+    cases = [
+        ("identical times pair one to one", ref, list(ref), True, 0),
+        ("an extra finite candidate sample is ignored", ref, [0.0, 1.0, 2.0, 2.5, 3.0], True, 1),
+        ("a missing candidate sample fails on the reference time", ref, [0.0, 1.0, 3.0], False, 0),
+        ("NaN candidate times fail", ref, [nan, nan, nan, nan], False, 0),
+        ("NaN reference times fail", [nan, nan, nan, nan], list(ref), False, 0),
+        ("an infinite candidate time fails", ref, [0.0, 1.0, 2.0, inf], False, 0),
+        ("out-of-order candidate times fail", ref, [3.0, 2.0, 1.0, 0.0], False, 0),
+        ("a rounding-level time offset within tolerance pairs", ref, [t + 1e-12 for t in ref], True, 0),
+        ("a time offset beyond tolerance fails", ref, [t + 1e-6 for t in ref], False, 0),
+    ]
+    for name, r, c, expect_ok, expect_extra in cases:
+        pairs, extra, _worst, why = match_by_time(r, c, 1e-8 * (max(r) - min(r) if all(math.isfinite(t) for t in r) else 1.0))
+        ok = pairs is not None
+        if ok != expect_ok or (ok and extra != expect_extra):
+            print(f"SELF-TEST FAILED: {name}: pairs={pairs} extra={extra} why={why!r}", file=sys.stderr)
+            return 1
+        print(f"ok: {name}", file=sys.stderr)
+    return 0
+
+
 def main() -> int:
+    if len(sys.argv) == 2 and sys.argv[1] == "--self-test":
+        return self_test()
     ap = argparse.ArgumentParser()
     for flag in ("--reference", "--candidate", "--rubric", "--out"):
         ap.add_argument(flag, required=True)
