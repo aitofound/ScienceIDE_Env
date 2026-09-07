@@ -1,0 +1,73 @@
+# The radius at the top boundary of the model, in meters.
+R_TOP_BOUND = 1232100.0
+
+# Angular dimensions of the cubed-sphere grid in degrees:
+# - XI and ETA represent the grid coordinates.
+# - If GAMMA_ROTATION_AZIMUTH = 0.0, XI corresponds to longitude and ETA corresponds to latitude.
+ANGULAR_WIDTH_XI_IN_DEGREES   = 4.0
+ANGULAR_WIDTH_ETA_IN_DEGREES  = 4.0
+
+# Geographic center of the cubed-sphere chunk, specified in latitude and longitude (degrees).
+CENTER_LATITUDE_IN_DEGREES    = 0.0
+CENTER_LONGITUDE_IN_DEGREES   = 0.0
+
+# Rotation azimuth of the cubed-sphere chunk in degrees.
+# Specifies the orientation of the cubed-sphere grid relative to the geographic coordinate system.
+GAMMA_ROTATION_AZIMUTH        = 0.d0
+
+# Number of elements defining the width of different regions:
+# - NXI_TOPOGRAPHY_TAPER and NETA_TOPOGRAPHY_TAPER: Width of edge regions where topography tapers to zero.
+# - NXI_NO_TOPOGRAPHY and NETA_NO_TOPOGRAPHY: Width of edge regions with zero topography.
+NXI_TOPOGRAPHY_TAPER = 2
+NETA_TOPOGRAPHY_TAPER = 2
+NXI_NO_TOPOGRAPHY = 4
+NETA_NO_TOPOGRAPHY = 4
+
+# Grid positions for saving stress and displacement data for SEM-DSM coupling.
+# All coupling boundaries must fall within the zero-topography regions.
+# Units are element IDs.
+COUPLING_IXI_LOW = 2
+COUPLING_IXI_HIGH = 94
+COUPLING_IETA_LOW = 2
+COUPLING_IETA_HIGH = 94
+COUPLING_IR_TOP = 27
+COUPLING_IR_BOTTOM = 9
+
+# Tolerance for merging the depths in a depth table used for DSM computations of injected waves, in meters.
+# Any depths with differences smaller than this tolerance are combined into a single depth.
+# A value of 50 meters is suitable for most cases.
+COUPLING_DEPTH_TOLERENCE = 50.0
+
+# Tolerance for merging distances in the DSM coupling distance table, in degrees.
+# Any distances with differences smaller than this tolerance are combined into one table entry.
+# During xgenerate_databases, distances smaller than 2*COUPLING_DIST_TOLERENCE are also
+# clamped to 2*COUPLING_DIST_TOLERENCE before table IDs are assigned. This avoids
+# near-zero-distance DSM Green's functions while keeping dist_table and dist_id consistent.
+COUPLING_DIST_TOLERENCE = 0.005
+
+# The following parameters are only functional when COUPLING_TYPE = 2, enabling reciprocity-based SEM-DSM coupling.
+# Refer to Zang et al. (JGR, 2024) for details.
+# Center and radius of the strain-saved region, in latitude, longitude, and meters, respectively.
+# Define the depth range for strain data saving, in unit of meters.
+LAT_CENTER_STRAIN_SAVED = 0
+LON_CENTER_STRAIN_SAVED = 0
+RADIUS_STRAIN_SAVED = 0.0
+MIN_DEP_STRAIN_SAVED = 0.0
+MAX_DEP_STRAIN_SAVED = 0.0
+
+# Resolution setting for wavefield data saved at coupling boundaries:
+# - LOW_RESOLUTION = .true.: Save wavefield at center GLL points of each coupling face.
+# - LOW_RESOLUTION = .false.: Save wavefield at all GLL points (e.g., 25 points for NGLL=5).
+LOW_RESOLUTION = .false.
+
+# Number of time steps between saving wavefield data to disk at coupling boundaries (after down-sampling).
+NSTEP_BETWEEN_OUTPUTBOUND = 700
+
+# Decimation factor for down-sampling the wavefield to reduce storage requirements:
+# - Note: This is not anti-aliasing down-sampling; aliasing effects can occur if high-frequency components exist.
+# - High-frequency components may arise from short-duration CMTSOLUTION sources or high-frequency injected DSM wavefields.
+DECIMATE_COUPLING = 2
+
+# Number of GLL points per output file for wavefield data.
+# This strategy minimizes file size and facilitates parallel processing in subsequent coupling computations.
+NPOINTS_PER_PACK = 100
