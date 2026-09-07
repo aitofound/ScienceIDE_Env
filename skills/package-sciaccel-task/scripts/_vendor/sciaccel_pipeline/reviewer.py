@@ -2,7 +2,7 @@
 
     sab.py review codebase --codebase <id> [--root <checkout>] [--modules <modules.json>] [--base <ref>] [--upstream <checkout>]
     sab.py review task     --task <leaf>   [--root <checkout>] [--base <ref>] [--allow-custom-drivers]
-    sab.py review codebase|task ... --done --human-ref "<the human's words>" [--presented <file.md>]
+    sab.py review codebase|task ... --done --human-ref "<the human's words>" [--presented <file.md>] [--rerun-ref "<their words on the proposed rerun>"]
     sab.py review status
 
 One command per human stop (STOP 2, the source PR; STOP 6, the task PR).
@@ -137,9 +137,12 @@ def record_decision(a, path: Path, doc: dict) -> None:
             die(f"--presented file not found: {src}")
         presented = path.with_suffix(".presented.md")
         shutil.copyfile(src, presented)
-    rec["decision"] = {"human_ref": a.human_ref, "at": now(), "head": doc.get("head"), "presented": str(presented) if presented else None}
+    rerun_ref = (getattr(a, "rerun_ref", None) or "").strip() or None
+    rec["decision"] = {"human_ref": a.human_ref, "at": now(), "head": doc.get("head"), "presented": str(presented) if presented else None,
+                       "rerun": {"human_ref": rerun_ref, "at": now()} if rerun_ref else None}
     write_json(path, rec)
     print(f"decision recorded for {doc.get('review')} at head {(doc.get('head') or '?')[:12]}: \"{a.human_ref}\"" + (f"; presentation kept at {presented}" if presented else ""))
+    print(f"rerun: {'approved in the human\'s words: ' + chr(34) + rerun_ref + chr(34) if rerun_ref else 'none approved (no --rerun-ref); nothing runs'}")
     print(f"(record: {path}; the curator posts the words and the presentation on the PR, verbatim)")
     next_line("sab.py review status")
 
@@ -309,6 +312,7 @@ def cmd_review_codebase(a) -> None:
     up = upstream_diff(tree, Path(a.upstream).resolve()) if a.upstream else None
     page = codebase_page(cb_id, source, co, tree, cut, cut_from, up)
     text = "\n".join(page) + "\n"
+    print(brief_text("preamble", what=f"{cb_id}  (STOP 2, the source PR)", decisions="merge, send back, or change the cut"))
     print(text)
     print(brief_text("codebase", codebase=cb_id, source=source))
     rec = open_record(rec_path, doc)
@@ -351,6 +355,33 @@ def flagged_rows(ctx: dict) -> list[str]:
     return out
 
 
+def coverage_facts(leaf: Path, ctx: dict) -> list[str]:
+    """Provenance and coverage, from the rubrics and the survey copy in the leaf: never typed."""
+    infos = ctx["infos"]
+    names = {i["name"] for i in infos}
+    upstream, custom = [], []
+    for r in ctx["check_rows"]:
+        (custom if "custom" in r["labels"] or not r["upstream_test"] else upstream).append(r["name"])
+    ts = leaf / "comment" / "pipeline" / "test-survey.json"
+    rows = (read_json(ts).get("tests") or []) if ts.is_file() else None
+    L = [f"**Coverage.** {len(infos)} checks: {len(upstream)} from an official test or example, {len(custom)} custom"
+         + (f" ({', '.join(custom)})" if custom else "") + f"; the skill's aim is at least {config.THIN}, about 30, fewer than 50."]
+    if rows is None:
+        L.append("  survey: comment/pipeline/test-survey.json is absent; coverage against the official tests cannot be read here.")
+        return L
+    suitable = [t for t in rows if t.get("suitable")]
+    proposed = {t.get("proposed_check") for t in suitable if t.get("proposed_check")}
+    uncovered = [t for t in suitable if t.get("proposed_check") and t.get("proposed_check") not in names]
+    unnamed = [t for t in suitable if not t.get("proposed_check")]
+    extra = sorted(names - proposed)
+    L.append(f"  survey: {len(rows)} official tests recorded, {len(suitable)} suitable, {len(rows) - len(suitable)} not; "
+             f"{len(uncovered)} suitable test(s) whose proposed check is absent from the leaf"
+             + ("" if not uncovered else ": " + ", ".join(f"{t.get('id') or '?'} -> {t.get('proposed_check')}" for t in uncovered[:20]))
+             + (f"; {len(unnamed)} suitable test(s) with no proposed check" if unnamed else "")
+             + (f"; {len(extra)} check(s) the survey did not propose: {', '.join(extra[:20])}" if extra else "") + ".")
+    return L
+
+
 def task_page(leaf: Path, co: dict, present: list[str], ctx: dict, harbor: str) -> list[str]:
     sv = ctx["sv"]
     head12 = (co["head"] or "unknown")[:12]
@@ -369,6 +400,7 @@ def task_page(leaf: Path, co: dict, present: list[str], ctx: dict, harbor: str) 
         L.append("**Record.** none: comment/pipeline/self-validation.json is absent.")
     flags = flagged_rows(ctx)
     L += ["**Flagged rows.** " + ("" if flags else "none.")] + flags
+    L += coverage_facts(leaf, ctx)
     return L + [""]
 
 
@@ -386,6 +418,8 @@ def cmd_review_task(a) -> None:
     _, harbor = harbor_validate.validate_report(leaf)
     page = task_page(leaf, co, present, ctx, harbor)
     text = "\n".join(page) + "\n"
+    print(brief_text("preamble", what=f"{rel(leaf)}  (STOP 6, the task PR)",
+                     decisions="approve, request changes, or redesign the checks with the PR as a priori information"))
     print(text)
     print(brief_text("task", task=rel(leaf)))
     rec = open_record(rec_path, doc)
@@ -408,4 +442,6 @@ def cmd_review_status(a) -> None:
         d = r.get("decision")
         state = f"decided {d['at']}" if d else "open"
         words = (d or {}).get("human_ref") or ""
+        if d and (d.get("rerun") or {}).get("human_ref"):
+            words += f" | rerun: {d['rerun']['human_ref']}"
         print(f"| {r.get('review')} | {(r.get('head') or '?')[:12]} | {r.get('opened_at')} | {state} | {words[:80]} |")
