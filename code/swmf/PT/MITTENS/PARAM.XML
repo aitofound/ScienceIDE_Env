@@ -1,0 +1,500 @@
+<!-- The syntax is described by share/Scripts/CheckParam.pl and the manual -->
+
+<commandList name="MITTENS: PT Component">
+<set name="NameComp"          type="string" value="$PT"/>
+<set name="NamePlotDir"       type="string" value="$NameComp/IO2"/>
+
+List of commands used in the PARAM.in file for MITTENS configured as the PT
+component of the SWMF. MITTENS (Monte carlo Integration of Turbulent
+Transport and ENergization of SEPs) solves the stochastic differential
+equations equivalent to the isotropic Parker transport equation on a 1D
+Lagrangian grid along interplanetary magnetic field lines. This file was
+rewritten 2026-08-05 to match the actual command readers in src/; the
+previous version was inherited from MFLAMPA (SP) and documented many
+commands MITTENS does not read.
+
+<commandgroup name="STAND ALONE MODE">
+
+<command name="STARTTIME" alias="SETREALTIME" if="$_IsFirstSession">
+  <parameter name="iYear"   type="integer" default="2000" />
+  <parameter name="iMonth"  type="integer" min="1" max="12" default="3"/>
+  <parameter name="iDay"    type="integer" min="1" max="31" default="21"/>
+  <parameter name="iHour"   type="integer" min="0" max="23" default="10"/>
+  <parameter name="iMinute" type="integer" min="0" max="59" default="45"/>
+  <parameter name="iSecond" type="integer" min="0" max="59" default="0"/>
+
+#STARTTIME
+2013            iYear
+4               iMonth
+11              iDay
+0               iHour
+0               iMinute
+0               iSecond
+
+Sets the initial date and time of the simulation. Together with the
+simulation time this determines the real date and time of the modeled
+state, used e.g. to timestamp output. The default is 2000-3-21 10:45:00,
+the same as in the SWMF.
+</command>
+
+<command name="NSTEP" if="$_IsFirstSession">
+  <parameter name="nStep" type="integer" min="0" default="0" />
+
+#NSTEP
+0               nStep
+
+Sets the iteration counter. Useful for restarts. Default is 0.
+</command>
+
+<command name="TIMESIMULATION" if="$_IsFirstSession">
+  <parameter name="PTTime" type="real" min="0" default="0.0" />
+
+#TIMESIMULATION
+0.0             PTTime [s]
+
+Sets the simulation time in seconds. Useful for restarts. The data input
+time is initialized to the same value. Default is 0.
+</command>
+
+<command name="TIMEACCURATE" if="$_IsStandAlone">
+  <parameter name="DoTimeAccurate" type="logical" default="T" />
+
+#TIMEACCURATE
+T               DoTimeAccurate
+
+Accepted for compatibility with standard SWMF parameter files. MITTENS
+only supports time-accurate mode: the value must be true (the code stops
+with an explanatory message if false).
+</command>
+
+<command name="RUN" if="$_IsStandAlone">
+
+#RUN
+
+Executes the commands read so far as one session and continues reading the
+parameter file afterwards. Without #RUN the whole file forms one session.
+</command>
+
+<command name="END">
+
+#END
+
+Signals the end of the parameter file: reading stops here.
+</command>
+
+<command name="STOP" if="$_IsStandAlone" required="$_IsStandAlone">
+  <parameter name="nIterMax" type="integer" min="-1" default="-1" />
+  <parameter name="TimeMax"  type="real"    min="-1" default="-1" />
+
+#STOP
+5000            nIterMax
+3600.0          TimeMax [s]
+
+Sets the stopping conditions of the run: maximum number of iterations
+(MHD state advances) and maximum simulation time in seconds. A negative
+value disables the corresponding condition. In stand alone mode this
+command is required.
+</command>
+
+<command name="CHECKSTOPFILE" if="$_IsStandAlone">
+  <parameter name="UseStopFile" type="logical" default="T" />
+
+#CHECKSTOPFILE
+T               UseStopFile
+
+If true (default), the code checks for the existence of a MITTENS.STOP
+file in the run directory at the end of each iteration and stops
+gracefully when it is found.
+</command>
+
+<command name="CPUTIMEMAX" if="$_IsStandAlone">
+  <parameter name="CpuTimeMax" type="real" min="-1" default="-1" />
+
+#CPUTIMEMAX
+86000.0         CpuTimeMax [s]
+
+Maximum wall clock time of the run in seconds. When exceeded, the run
+stops gracefully. Useful for batch queues. Negative (default) disables
+the check.
+</command>
+
+<command name="DORUN">
+  <parameter name="DoRun" type="logical" default="T" />
+
+#DORUN
+T               DoRun
+
+If DoRun is false, the background state is read and processed but the
+particle distribution function is not solved. The default is true.
+</command>
+
+<command name="TEST">
+  <parameter name="DoRunTest" type="logical" default="F" />
+
+#TEST
+F               DoRunTest
+
+If true, run the analytic field line test: an analytic shock is set up
+(see PT_ModShock::get_test_shock) and the sampled distribution function
+is saved for comparison against the analytic steady state solution
+instead of the regular plot output. Default is false.
+</command>
+
+<command name="RESTART">
+  <parameter name="DoRestart" type="logical" default="F" />
+
+#RESTART
+T               DoRestart
+
+Signals that the run is restarted. NOTE: writing and reading of restart
+files is not yet implemented in MITTENS; this command only sets the flag.
+</command>
+
+</commandgroup>
+
+<commandgroup name="GRID">
+
+<command name="COORDSYSTEM" alias="COORDINATESYSTEM" if="$_IsFirstSession">
+  <parameter name="TypeCoordSystem" type="string" />
+
+#COORDSYSTEM
+HGR             TypeCoordSystem
+
+Sets the coordinate system of the field line data (converted to upper
+case on reading), e.g. HGR, HGI, GSM. Any string is accepted; the code
+does not currently transform between systems.
+</command>
+
+<command name="FIELDLINEGRID" if="$_IsFirstSession">
+  <parameter name="nLat" type="integer" min="1" default="1" />
+  <parameter name="nLon" type="integer" min="1" default="1" />
+
+#FIELDLINEGRID
+4               nLat
+4               nLon
+
+Sets the angular grid of field lines: nLat x nLon lines in total. The
+lines are distributed over the MPI processors in contiguous blocks.
+</command>
+
+<command name="ORIGIN">
+  <parameter name="ROrigin" type="real" min="1.0" default="2.5"/>
+  <parameter name="LonMin"  type="real" min="-359.0" max="359.0" default="0.0"/>
+  <parameter name="LatMin"  type="real" min="-90.0" max="89.0" default="-70.0"/>
+  <parameter name="LonMax"  type="real" min="1.0" max="360" default="360.0"/>
+  <parameter name="LatMax"  type="real" min="-89.0" max="90.0" default="70.0"/>
+
+#ORIGIN
+2.5             ROrigin [Rs]
+0.0             LonMin [deg]
+-70.0           LatMin [deg]
+360.0           LonMax [deg]
+70.0            LatMax [deg]
+
+Origin points of the traced field lines on the surface R=ROrigin, in the
+given longitude and latitude intervals. Only used in coupled (SWMF) mode;
+ignored in stand alone mode, where the field line geometry comes from the
+input data files.
+</command>
+
+</commandgroup>
+
+<commandgroup name="INPUT">
+
+<command name="READMHDATA" if="$_IsFirstSession">
+  <parameter name="DoReadMhData" type="logical" default="F" />
+  <if expr="$DoReadMhData">
+    <parameter name="NameInputDir" type="string" />
+    <parameter name="iLonFile" type="integer" min="1" />
+    <parameter name="iLatFile" type="integer" min="1" />
+  </if>
+
+#READMHDATA
+T               DoReadMhData
+MH_data         NameInputDir
+1               iLonFile
+1               iLatFile
+
+Read the field line background (MFLAMPA-format MH_data files) from
+NameInputDir. iLonFile and iLatFile select the longitude and latitude
+indices in the input file names, MH_data_iLon_iLat_tag.out (or .dat).
+The remaining parameters are read only if DoReadMhData is true.
+</command>
+
+<command name="MHDATA" if="$_IsFirstSession">
+  <parameter name="TypeFile" type="string" input="select">
+    <option name="ascii" default="T" />
+    <option name="idl" />
+    <option name="tec" />
+    <option name="real4" />
+    <option name="real8" />
+  </parameter>
+  <parameter name="NameTagFile" type="string" default=""/>
+
+#MHDATA
+ascii           TypeFile
+MH_data.lst     NameTagFile
+
+Sets the format of the MHD input files and the name of the file (inside
+NameInputDir) containing the list of time tags, one file per time level.
+Reading is tag file driven: each iteration consumes the next tag. If the
+tag file is temporarily exhausted the code waits for it to be appended
+(real time mode) and aborts if no new tag appears within 10 minutes.
+NameTagFile is only used when UseAppendedRead is false in #APPENDMHDATA.
+</command>
+
+<command name="APPENDMHDATA" if="$_IsFirstSession">
+  <parameter name="UseAppendedRead" type="logical" default="F"/>
+
+#APPENDMHDATA
+T		UseAppendedRead
+
+If UseAppendedRead is true, the field line background is read from a
+single file with all time levels appended (MH_data_iLon_iLat.out, as
+written by MFLAMPA with UseAppendedWrite): each iteration reads the next
+appended block instead of consuming a tag from NameTagFile, and the run
+stops when the end of the file is reached. The default is false, i.e.
+tag file driven reading of one file per time level.
+</command>
+
+</commandgroup>
+
+<commandgroup name="SHOCK">
+
+<command name="SHOCK">
+  <parameter name="DoSharpenShock" type="logical" default="F" />
+  <parameter name="nSearchMax" type="integer" min="1" default="50" />
+  <parameter name="dLogRhoThreshold" type="real" min="0.0" default="0.0001" />
+
+#SHOCK
+T               DoSharpenShock
+50              nSearchMax
+0.01            dLogRhoThreshold
+
+Controls shock tracking. The shock is located at the maximum of the
+density gradient (dLogRho) searched within nSearchMax cells of its
+previous position; the up/downstream extent of the shock zone is found by
+walking away from the maximum while dLogRho exceeds dLogRhoThreshold.
+If DoSharpenShock is true, the smeared compression across the detected
+zone is condensed onto two cells. WARNING: the analytic width scan
+(Doc/shock_grid_resolution_notes.md) shows a 1-2 cell discontinuity
+biases the DSA spectrum (slope -4.6 instead of -4.0 for r=4); a smooth
+profile at least 3 cells wide is required for unbiased acceleration, so
+sharpening onto 2 cells currently puts runs into the biased regime.
+</command>
+
+</commandgroup>
+
+<commandgroup name="PARTICLES">
+
+<command name="PARTICLE">
+  <parameter name="nInject" type="integer" min="0" />
+  <parameter name="UseSplit" type="logical" default="F" />
+  <parameter name="nSplit" type="integer" min="1" />
+  <parameter name="SplitEnergyMin" type="real" min="0.0" />
+  <parameter name="SplitEnergyMax" type="real" min="0.0" />
+
+#PARTICLE
+10              nInject
+T               UseSplit
+4               nSplit
+0.1             SplitEnergyMin [MeV]
+100.0           SplitEnergyMax [MeV]
+
+Particle injection and splitting. nInject particles are injected at the
+shock each time the shock advances one Lagrangian cell. If UseSplit is
+true, particles are split (weight conserving) as they cross nSplit
+logarithmically spaced energy levels between SplitEnergyMin and
+SplitEnergyMax, increasing high energy statistics.
+</command>
+
+<command name="INPUTSEED">
+  <parameter name="UseInputSeedFile" type="logical" default="F" />
+
+#INPUTSEED
+F               UseInputSeedFile
+
+If true, the pseudo random number generator state of each processor is
+set from the file seed.in in the run directory, making runs reproducible.
+Two formats are accepted: (1) a single integer, the master seed, from
+which every rank derives its own independent stream (Param/seed.in is an
+example; this is the form to use for frozen-seed runs and tests), or
+(2) one line per rank with 5 integers, "iProc State1 State2 State3 State4",
+exactly as written to PT/IO2/seed.out by a previous run (used to continue
+that run). A per-rank file must have exactly one record per rank; files
+in any other format, or giving all ranks the same state, stop the code.
+If false (default), seeds are drawn from /dev/urandom. In either case the
+states used are saved to PT/IO2/seed.out.
+</command>
+
+</commandgroup>
+
+<commandgroup name="SOLVER">
+
+<command name="SDE">
+  <parameter name="TimeStepFactor" type="real" min="0.0" />
+  <parameter name="MaxTimeStep" type="real" min="0.0" />
+
+#SDE
+1.0             TimeStepFactor
+0.01            MaxTimeStep [s]
+
+Controls the Euler-Maruyama particle time step. The locally computed
+adaptive time step candidate is multiplied by TimeStepFactor and capped
+at MaxTimeStep. There are no code defaults; this command is required.
+With #DISTANCETIMESTEP off, MaxTimeStep acts as the de facto uniform step
+and must resolve the shock kick (see Doc/timestep_notes.md for the
+measured cost of setting it too large). With #DISTANCETIMESTEP on, the
+distance ramp provides the near shock control and MaxTimeStep can be
+raised to the MHD coupling cadence.
+</command>
+
+<command name="DISTANCETIMESTEP">
+  <parameter name="UseDistanceTimestep" type="logical" default="F" />
+  <if expr="$UseDistanceTimestep">
+    <parameter name="AlphaDist" type="real" min="0.0" default="0.1" />
+  </if>
+
+#DISTANCETIMESTEP
+T               UseDistanceTimestep
+0.1             AlphaDist
+
+Distance aware adaptive particle time step. When enabled, each particle's
+time step is additionally limited by (i) a distance ramp
+dt = AlphaDist*d\^2/(2*KappaLagr), where d is the Lagrangian distance to
+the shock center or to either end of the line (floored at one cell), so
+that a single step's diffusive displacement never exceeds sqrt(AlphaDist)
+times the distance to the nearest structure; (ii) a shock motion guard
+dt = d/(2*VShock); and (iii) a compression rate guard
+dt = AlphaDist/|dLogRho/dt|. AlphaDist (read only when enabled) is the
+single safety factor: 0.1 gives converged spectra (validated for
+compression ratios 2, 3 and 4 on smooth analytic shocks at 6-12x
+speedup); larger values trade accuracy for speed (0.3 reproduces the
+uniform dt=0.01 s accuracy at 17x). Default is off. NOTE: enabling
+changes the random number consumption sequence, so results can only be
+compared to reference solutions statistically, not bit for bit.
+</command>
+
+<command name="DIFFUSION">
+  <parameter name="UpstreamDxxModel" type="string" input="select">
+    <option name="MHD" default="T" />
+    <option name="PSP" />
+    <option name="Analytical" />
+  </parameter>
+  <if expr="$UpstreamDxxModel eq 'Analytical'">
+    <parameter name="Lambda0" type="real" min="0.0" default="0.3" />
+  </if>
+  <parameter name="CorrelationLength" type="real" min="0.0" default="0.03" />
+  <parameter name="ScalingFactor" type="real" min="0.0" default="1.0" />
+  <parameter name="UseConstantDiffusion" type="logical" default="F" />
+  <if expr="$UseConstantDiffusion">
+    <parameter name="DxxConst" type="real" min="0.0" default="10.0" />
+  </if>
+
+#DIFFUSION
+MHD             UpstreamDxxModel
+0.03            CorrelationLength [AU]
+1.0             ScalingFactor
+F               UseConstantDiffusion
+
+Selects the spatial diffusion coefficient model. UpstreamDxxModel is one
+of: MHD (Dxx computed from the local MHD state and turbulence level), PSP
+(the analytic PSP-calibrated radial parameterization of Chen et al.
+2024), or
+Analytical (constant mean free path Lambda0 in AU, read only for this
+model). CorrelationLength is the turbulence correlation length at 1 AU
+and ScalingFactor multiplies the resulting Dxx. If UseConstantDiffusion
+is true, DxxConst is read and overrides the model with a spatially
+constant diffusion coefficient. There is no default model; this command
+is required.
+</command>
+
+<command name="BOUNDARY">
+  <parameter name="BoundaryInner" type="string" input="select">
+    <option name="reflect" default="T" />
+    <option name="absorb" />
+  </parameter>
+  <parameter name="BoundaryOuter" type="string" input="select">
+    <option name="reflect" />
+    <option name="absorb" default="T" />
+  </parameter>
+
+#BOUNDARY
+reflect         BoundaryInner
+absorb          BoundaryOuter
+
+Particle boundary conditions at the inner (first Lagrangian vertex) and
+outer (last vertex) end of each field line: reflect or absorb. There are
+no code defaults; this command is required.
+</command>
+
+<command name="ADVECTION">
+  <parameter name="UseLogScaling" type="logical" default="T" />
+
+#ADVECTION
+T               UseLogScaling
+
+If true (default), the adiabatic momentum kick from compression is
+applied in logarithmic (exact exponential) form; if false, the linearized
+update is used.
+</command>
+
+</commandgroup>
+
+<commandgroup name="OUTPUT">
+
+<command name="DISTRIBUTION">
+  <parameter name="nEnergyBins" type="integer" min="1" />
+  <parameter name="eBinMin" type="real" min="0.0" />
+  <parameter name="eBinMax" type="real" min="0.0" />
+  <parameter name="InjEnergy" type="real" min="0.0" />
+  <parameter name="InjCoeff" type="real" min="0.0" />
+
+#DISTRIBUTION
+200             nEnergyBins
+10.0            eBinMin [keV]
+1.0e6           eBinMax [keV]
+10.0            InjEnergy [keV]
+1.0             InjCoeff
+
+Phase space binning of the sampled distribution function: nEnergyBins
+logarithmic energy bins between eBinMin and eBinMax (in keV). Particles
+are injected at InjEnergy (keV); InjCoeff sets the injection amplitude
+used in the normalization of the distribution function. This command is
+required.
+</command>
+
+<command name="SDEBINNING">
+  <parameter name="DoBinEntireFieldline" type="logical" default="T" />
+  <if expr="$DoBinEntireFieldline">
+    <parameter name="nLagrBins" type="integer" min="1" />
+  </if>
+  <if expr="not $DoBinEntireFieldline">
+    <parameter name="BinCenterRs" type="real" min="0.0" />
+    <parameter name="BinWidthLagr" type="real" min="0.0" />
+  </if>
+  <parameter name="BinTimeWindow" type="real" min="0.0" />
+
+#SDEBINNING
+T               DoBinEntireFieldline
+400             nLagrBins
+10.0            BinTimeWindow [s]
+
+Spatial binning of the sampled distribution. If DoBinEntireFieldline is
+true, the whole field line is divided into nLagrBins Lagrangian bins;
+otherwise a single bin of width BinWidthLagr (Lagrangian cells) centered
+at radius BinCenterRs (Rs) is used. Samples are accumulated over
+BinTimeWindow seconds before each output (occupation time weighted, i.e.
+each particle contributes weight*dt per step).
+</command>
+
+<command name="SAVEOUTPUT">
+
+#SAVEOUTPUT
+
+Reserved for output control parameters; currently reads nothing.
+</command>
+
+</commandgroup>
+
+</commandList>
