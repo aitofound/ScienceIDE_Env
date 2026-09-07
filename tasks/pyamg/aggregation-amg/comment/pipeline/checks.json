@@ -1,5 +1,5 @@
 {
-  "written_at": "2026-09-06T20:12:42Z",
+  "written_at": "2026-09-07T07:29:18Z",
   "checks": [
     {
       "name": "adaptive-sa-complex",
@@ -10,7 +10,7 @@
         "SAB_ITERS=4  fixed V-cycle iteration count for the complex adaptive-SA probe solve"
       ],
       "variant": "variant_scale multiplies the seeded random vector v that builds the right-hand side b = A @ v by 1.000000000000001 (about five binary64 ulps applied uniformly); the seed, the operator, the hierarchy and the iteration count stay fixed.",
-      "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; falls back to CXXFLAGS=-O0 if the setup-arg is dropped)",
+      "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
       "bounds": [
         1e-12,
         1e-10
@@ -25,7 +25,7 @@
         "SAB_ITERS=4  fixed V-cycle iteration count for the adaptive-SA probe solve; runtime scales roughly linearly"
       ],
       "variant": "variant_scale multiplies the seeded random vector v that builds the right-hand side b = A @ v by 1.000000000000001 (about five binary64 ulps applied uniformly); the seed, the operator, the hierarchy and the iteration count stay fixed.",
-      "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; falls back to CXXFLAGS=-O0 if the setup-arg is dropped)",
+      "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
       "bounds": [
         1e-12,
         1e-10
@@ -38,7 +38,7 @@
       "labels": [],
       "knobs": [],
       "variant": "identical graded output, measured: A.data[0] (after the seeded imaginary perturbation is added) is multiplied by 1.000000000000001 and the graded aggregate map is unchanged, for the same discreteness reason as aggregate-real. The variant supplies no calibration evidence for this check; the altbuild floor is the sensitivity evidence a reviewer reads instead.",
-      "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; falls back to CXXFLAGS=-O0 if the setup-arg is dropped)",
+      "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
       "no_knobs": true,
       "bounds": [
         1e-12,
@@ -52,7 +52,7 @@
       "labels": [],
       "knobs": [],
       "variant": "identical graded output, measured: A.data[0] is multiplied by 1.000000000000001 and the graded aggregate map is unchanged -- pairwise matching decisions are threshold comparisons on classical strength values and are insensitive to a single few-ulp perturbation. The variant supplies no calibration evidence for this check; the altbuild floor is the sensitivity evidence a reviewer reads instead.",
-      "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; falls back to CXXFLAGS=-O0 if the setup-arg is dropped)",
+      "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
       "no_knobs": true,
       "bounds": [
         1e-12,
@@ -66,7 +66,7 @@
       "labels": [],
       "knobs": [],
       "variant": "identical graded output, measured: A.data[0] (the first stored matrix entry) is multiplied by 1.000000000000001, so the two input files differ byte-wise, but standard_aggregation and naive_aggregation return a discrete 0/1 aggregate map and that single few-ulp perturbation moves no row's relative-strength threshold on the airfoil mesh. The variant therefore supplies no calibration evidence for this check; the altbuild floor is the sensitivity evidence a reviewer reads instead.",
-      "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; falls back to CXXFLAGS=-O0 if the setup-arg is dropped)",
+      "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
       "no_knobs": true,
       "bounds": [
         1e-12,
@@ -80,7 +80,7 @@
       "labels": [],
       "knobs": [],
       "variant": "variant_scale multiplies the whole near-null-space candidate B by 1.000000000000001, the one input the energy-minimization fit is sensitive to at this scale",
-      "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; falls back to CXXFLAGS=-O0 if the setup-arg is dropped)",
+      "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
       "no_knobs": true,
       "bounds": [
         1e-12,
@@ -94,7 +94,7 @@
       "labels": [],
       "knobs": [],
       "variant": "variant_scale multiplies the whole near-null-space candidate B by 1.000000000000001",
-      "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; falls back to CXXFLAGS=-O0 if the setup-arg is dropped)",
+      "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
       "no_knobs": true,
       "bounds": [
         1e-12,
@@ -108,7 +108,7 @@
       "labels": [],
       "knobs": [],
       "variant": "B0[0, 0] (the first entry of the first candidate column) is multiplied by 1.000000000000001",
-      "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; falls back to CXXFLAGS=-O0 if the setup-arg is dropped)",
+      "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
       "no_knobs": true,
       "bounds": [
         1e-12,
@@ -124,7 +124,7 @@
         "SAB_GRID_SIZE=100  grid edge of the shipped demo's 2-D Poisson problem; work scales as the square"
       ],
       "variant": "variant_scale multiplies the whole seeded right-hand side by 1.000000000000001",
-      "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; falls back to CXXFLAGS=-O0 if the setup-arg is dropped)",
+      "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
       "bounds": [
         1e-12,
         1e-10
@@ -139,7 +139,7 @@
         "SAB_ITERS=6  fixed V-cycle iteration count"
       ],
       "variant": "variant_scale multiplies the seeded random vector v that builds the right-hand side b = A @ v by 1.000000000000001 (about five binary64 ulps applied uniformly); the seed, the operator, the hierarchy and the iteration count stay fixed.",
-      "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; falls back to CXXFLAGS=-O0 if the setup-arg is dropped)",
+      "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
       "bounds": [
         1e-12,
         1e-10
@@ -156,7 +156,7 @@
         "SAB_GRID_SIZE=1000  paper example grid edge; 1000 restores the upstream 1000x1000 problem"
       ],
       "variant": "variant_scale multiplies every value of the seeded initial guess x0 by 1.000000000000001; one active scalar input applying the same few-ulp relative perturbation to the example's x0 field, while the matrix, zero RHS, hierarchy, iteration count and assertion stay fixed",
-      "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; falls back to CXXFLAGS=-O0 if the setup-arg is dropped)",
+      "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
       "bounds": [
         1e-12,
         1e-10
@@ -171,7 +171,7 @@
         "SAB_ITERS=4  fixed V-cycle iteration count for the complex probe solve"
       ],
       "variant": "variant_scale multiplies the seeded random vector v that builds the right-hand side b = A @ v by 1.000000000000001 (about five binary64 ulps applied uniformly); the seed, the operator, the hierarchy and the iteration count stay fixed.",
-      "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; falls back to CXXFLAGS=-O0 if the setup-arg is dropped)",
+      "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
       "bounds": [
         1e-12,
         1e-10
@@ -186,7 +186,7 @@
         "SAB_ITERS=4  fixed V-cycle iteration count; runtime scales roughly linearly"
       ],
       "variant": "variant_scale multiplies the seeded random vector v that builds the right-hand side b = A @ v by 1.000000000000001 (about five binary64 ulps applied uniformly); the seed, the operator, the hierarchy and the iteration count stay fixed.",
-      "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; falls back to CXXFLAGS=-O0 if the setup-arg is dropped)",
+      "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
       "bounds": [
         1e-12,
         1e-10
@@ -201,7 +201,7 @@
         "SAB_ITERS=6  fixed V-cycle iteration count"
       ],
       "variant": "variant_scale multiplies the seeded random vector v that builds the right-hand side b = A @ v by 1.000000000000001 (about five binary64 ulps applied uniformly); the seed, the operator, the hierarchy and the iteration count stay fixed.",
-      "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; falls back to CXXFLAGS=-O0 if the setup-arg is dropped)",
+      "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
       "bounds": [
         1e-12,
         1e-10
@@ -216,7 +216,7 @@
         "SAB_ITERS=6  fixed iteration count for both the standalone and GMRES-accelerated solve"
       ],
       "variant": "variant_scale multiplies the seeded random vector v that builds the right-hand side b = A @ v by 1.000000000000001 (about five binary64 ulps applied uniformly); the seed, the operator, the hierarchy and the iteration count stay fixed.",
-      "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; falls back to CXXFLAGS=-O0 if the setup-arg is dropped)",
+      "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
       "bounds": [
         1e-12,
         1e-10
@@ -231,7 +231,7 @@
         "SAB_ITERS=6  fixed iteration count for both the standalone and GMRES-accelerated solve"
       ],
       "variant": "variant_scale multiplies the seeded random vector v that builds the right-hand side b = A @ v by 1.000000000000001 (about five binary64 ulps applied uniformly); the seed, the operator, the hierarchy and the iteration count stay fixed.",
-      "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; falls back to CXXFLAGS=-O0 if the setup-arg is dropped)",
+      "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
       "bounds": [
         1e-12,
         1e-10
@@ -246,7 +246,7 @@
         "SAB_ITERS=6  fixed V-cycle iteration count; runtime scales roughly linearly"
       ],
       "variant": "variant_scale multiplies the seeded random vector v that builds the right-hand side b = A @ v by 1.000000000000001 (about five binary64 ulps applied uniformly); the seed, the operator, the hierarchy and the iteration count stay fixed.",
-      "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; falls back to CXXFLAGS=-O0 if the setup-arg is dropped)",
+      "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
       "bounds": [
         1e-12,
         1e-10
@@ -261,7 +261,7 @@
         "SAB_ITERS=4  fixed V-cycle iteration count for the complex probe solve"
       ],
       "variant": "variant_scale multiplies the seeded random vector v that builds the right-hand side b = A @ v by 1.000000000000001 (about five binary64 ulps applied uniformly); the seed, the operator, the hierarchy and the iteration count stay fixed.",
-      "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; falls back to CXXFLAGS=-O0 if the setup-arg is dropped)",
+      "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
       "bounds": [
         1e-12,
         1e-10
@@ -276,7 +276,7 @@
         "SAB_ITERS=4  fixed V-cycle iteration count; runtime scales roughly linearly"
       ],
       "variant": "variant_scale multiplies the seeded random vector v that builds the right-hand side b = A @ v by 1.000000000000001 (about five binary64 ulps applied uniformly); the seed, the operator, the hierarchy and the iteration count stay fixed.",
-      "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; falls back to CXXFLAGS=-O0 if the setup-arg is dropped)",
+      "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
       "bounds": [
         1e-12,
         1e-10
@@ -291,7 +291,7 @@
         "SAB_ITERS=6  fixed V-cycle iteration count"
       ],
       "variant": "variant_scale multiplies the seeded random vector v that builds the right-hand side b = A @ v by 1.000000000000001 (about five binary64 ulps applied uniformly); the seed, the operator, the hierarchy and the iteration count stay fixed.",
-      "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; falls back to CXXFLAGS=-O0 if the setup-arg is dropped)",
+      "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
       "bounds": [
         1e-12,
         1e-10
@@ -306,7 +306,7 @@
         "SAB_ITERS=6  fixed iteration count for both the standalone and GMRES-accelerated solve"
       ],
       "variant": "variant_scale multiplies the seeded random vector v that builds the right-hand side b = A @ v by 1.000000000000001 (about five binary64 ulps applied uniformly); the seed, the operator, the hierarchy and the iteration count stay fixed.",
-      "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; falls back to CXXFLAGS=-O0 if the setup-arg is dropped)",
+      "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
       "bounds": [
         1e-12,
         1e-10
@@ -321,7 +321,7 @@
         "SAB_ITERS=6  fixed iteration count for both the standalone and GMRES-accelerated solve"
       ],
       "variant": "variant_scale multiplies the seeded random vector v that builds the right-hand side b = A @ v by 1.000000000000001 (about five binary64 ulps applied uniformly); the seed, the operator, the hierarchy and the iteration count stay fixed.",
-      "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; falls back to CXXFLAGS=-O0 if the setup-arg is dropped)",
+      "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
       "bounds": [
         1e-12,
         1e-10
@@ -336,7 +336,7 @@
         "SAB_ITERS=6  fixed V-cycle iteration count; runtime scales roughly linearly"
       ],
       "variant": "variant_scale multiplies the seeded random vector v that builds the right-hand side b = A @ v by 1.000000000000001 (about five binary64 ulps applied uniformly); the seed, the operator, the hierarchy and the iteration count stay fixed.",
-      "altbuild": "the same pinned source with the pybind11/C++ core built -Doptimization=0 -Dbuildtype=debug instead of the pinned release build (meson-python; falls back to CXXFLAGS=-O0 if the setup-arg is dropped)",
+      "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
       "bounds": [
         1e-12,
         1e-10
