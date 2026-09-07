@@ -10,7 +10,7 @@ self-validation and runtime records). This file is the human-readable story.
 
 ## Build
 
-<FILL: whether the source is compiled at solve time and, if so, whether the checks reuse a build made by another check of this task or each compiles its own; a sentence on why, with the record's build and run seconds.>
+<FILL: whether the source is compiled at solve time and, if so, how the checks of one run reuse the build an earlier check made, or why each compiles its own; with the record's build and run seconds.>
 
 ## Tolerances
 
