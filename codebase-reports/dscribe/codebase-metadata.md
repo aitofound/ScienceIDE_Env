@@ -16,9 +16,9 @@ Generated from the canonical JSON. Unknown values are visible; this report never
 | module | approval | purpose / difference | owned files | owned text lines | collected tests | shared components |
 |---|---|---|---:|---:|---:|---|
 | `soap` | approved | SOAP forms rotationally invariant power spectra from a neighbour-density basis expansion. Unlike structure matrices it is local to requested centers; unlike MBTR and ACSF its domi… | 8 | 7080 | 122 | `shared-infrastructure` |
-| `mbtr-family` | proposed-only | This family produces broadened many-body histograms on explicit grids and shares one principal C++ accumulator across MBTR and LMBTR; Valle-Oganov configures MBTR for a materials-… | 5 | 2977 | 160 | `shared-infrastructure` |
-| `acsf` | proposed-only | ACSF evaluates fixed radial and angular functions rather than a SOAP basis expansion or MBTR grid; its derivative path is numerical. | 3 | 745 | 35 | `shared-infrastructure` |
-| `structure-matrices` | proposed-only | These are global pair-interaction matrices rather than local or histogram representations. Ewald adds a distinct periodic summation workload while retaining the common matrix post… | 6 | 1254 | 78 | `shared-infrastructure` |
+| `mbtr-family` | approved | This family produces broadened many-body histograms on explicit grids and shares one principal C++ accumulator across MBTR and LMBTR; Valle-Oganov configures MBTR for a materials-… | 5 | 2977 | 160 | `shared-infrastructure` |
+| `acsf` | approved | ACSF evaluates fixed radial and angular functions rather than a SOAP basis expansion or MBTR grid; its derivative path is numerical. | 3 | 745 | 35 | `shared-infrastructure` |
+| `structure-matrices` | approved | These are global pair-interaction matrices rather than local or histogram representations. Ewald adds a distinct periodic summation workload while retaining the common matrix post… | 6 | 1254 | 78 | `shared-infrastructure` |
 
 ### Shared code
 
@@ -45,10 +45,10 @@ Generated from the canonical JSON. Unknown values are visible; this report never
 | `inner_cases` | unknown | inner cases |
 
 ### Gaps and warnings
-- Only SOAP has human approval.
+- All four proposed modules have human approval; task calibration beyond SOAP has not yet been performed.
 - This source report does not establish task check suitability, policies, tolerances, rewards, or speedups.
 - Cross-platform numerical variation remains unknown until task calibration.
-- Which official SOAP behaviours should become self-contained checks?
+- Which official behaviours in each module should become self-contained checks?
 - Which policies and tolerances will be approved after calibration?
 - CLI: 1420 regular file(s) are unclassified; this is visible but non-blocking
 
