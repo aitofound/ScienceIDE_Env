@@ -21,6 +21,11 @@ set -euo pipefail
 
 LEAF="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 TASK="$(basename "$LEAF")"
+SAB_HOST_PYTHON=python3
+if ! "$SAB_HOST_PYTHON" -c 'import tomllib' >/dev/null 2>&1; then
+  command -v python3.12 >/dev/null 2>&1 || { echo "solve.sh: Python 3.11+ (tomllib) is required" >&2; exit 2; }
+  SAB_HOST_PYTHON=python3.12
+fi
 
 if [ "${1:-}" = "--help" ]; then
   for d in "$LEAF"/tests/checks/*/; do
@@ -43,7 +48,7 @@ command -v docker >/dev/null 2>&1 || { echo "solve.sh: docker is required" >&2; 
 IC="${SAB_IC:-nominal}"
 case "$IC" in nominal|variant|altbuild) ;; *) echo "solve.sh: SAB_IC must be nominal, variant or altbuild" >&2; exit 2 ;; esac
 
-read -r SOURCE CPUS MEMORY_GB <<<"$(python3 - "$LEAF/task.toml" <<'PY'
+read -r SOURCE CPUS MEMORY_GB <<<"$("$SAB_HOST_PYTHON" - "$LEAF/task.toml" <<'PY'
 import sys, tomllib
 ns = tomllib.loads(open(sys.argv[1], encoding="utf-8").read())["metadata"]["sciaccel"]
 res = ns.get("resources", {})
@@ -65,7 +70,7 @@ IMAGE="$(printf '%s' "${SAB_DOCKER_IMAGE:-sciaccel-$TASK-oracle}" | tr -c '[:aln
 CONTAINER="$(printf '%s' "sciaccel-$TASK-$IC-$RUN_ID" | tr -c '[:alnum:]_.-' '-' | tr '[:upper:]' '[:lower:]')"
 
 echo "BUILD $IMAGE from $LEAF + code/$SOURCE"
-python3 "$REPO_ROOT/scripts/stage-task-source.py" --task "$LEAF" --source "$SOURCE" \
+"$SAB_HOST_PYTHON" "$REPO_ROOT/scripts/stage-task-source.py" --task "$LEAF" --source "$SOURCE" \
   --dockerfile tests/Dockerfile --tag "$IMAGE" -- --pull=false 2>&1 | tee "$ORACLE/docker-build.log"
 [ "${PIPESTATUS[0]}" -eq 0 ] || { echo "solve.sh: image build failed; see $ORACLE/docker-build.log" >&2; exit 1; }
 
@@ -98,7 +103,7 @@ for d in "$LEAF"/tests/checks/*/; do
 done
 [ "${#missing[@]}" -eq 0 ] || { echo "solve.sh: reference outputs missing for: ${missing[*]}" >&2; exit 1; }
 
-python3 - "$ORACLE/oracle-manifest.json" "$TASK" "$RUN_ID" "$IMAGE" "$IMAGE_ID" "$CONTAINER" "$CONTAINER_ID" "$SOURCE" "$IC" "${CPUS:-}" "${MEMORY_GB:-}" <<'PY'
+"$SAB_HOST_PYTHON" - "$ORACLE/oracle-manifest.json" "$TASK" "$RUN_ID" "$IMAGE" "$IMAGE_ID" "$CONTAINER" "$CONTAINER_ID" "$SOURCE" "$IC" "${CPUS:-}" "${MEMORY_GB:-}" <<'PY'
 import json, sys
 out, task, run_id, image, image_id, container, container_id, source, ic, cpus, mem = sys.argv[1:]
 json.dump({"task": task, "run_id": run_id, "image": image, "image_id": image_id, "container": container,
