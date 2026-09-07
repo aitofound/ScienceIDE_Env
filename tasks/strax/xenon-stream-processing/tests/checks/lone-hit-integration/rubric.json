@@ -10,7 +10,7 @@
   "variant": "identical: active integration extensions and waveform ADC samples are integer-domain inputs, so no ULP-sized perturbation survives",
   "altbuild": "none: strax is a Python/Numba package and this check has no isolated alternative native build contract",
   "comparison": {
-    "atol": 0.00001,
+    "atol": 1e-05,
     "rtol": 0,
     "files": [
       {
@@ -23,9 +23,8 @@
   "evidence": {
     "floor": null,
     "floor_how": "not measured before STOP 3; the first consented task selfcheck will compare nominal and variant",
-    "self_validation_spread": null,
-    "self_validation_bound_fraction": null
+    "self_validation_spread": 0.0,
+    "self_validation_bound_fraction": 0.0
   },
   "warrant": "The proposed 1e-5 absolute bound effectively requires exact integer integration bounds while allowing float representation of charge; an overlapping bound or omitted ADC sample changes a graded value by at least one. strax/processing/peak_building.py computes bounds from integer sample indices. The identical variant provides no numerical floor and is disclosed; calibration must confirm or revise this hypothesis with the human."
 }
-

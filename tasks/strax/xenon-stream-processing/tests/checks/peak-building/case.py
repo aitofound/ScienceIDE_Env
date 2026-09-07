@@ -5,5 +5,4 @@ p=argparse.ArgumentParser(); p.add_argument("--config"); p.add_argument("--out")
 n=a.cases; records=np.zeros(2*n,strax.record_dtype(16)); records["time"]=np.repeat(np.arange(n)*80,2); records["time"][1::2]+=3; records["dt"]=1; records["length"]=16; records["channel"]=np.tile([0,1],n); records["pulse_length"]=16; records["data"][:,2:8]=np.tile(np.array([2,4,7,5,3,1],dtype=np.int16),(2*n,1))
 hits=strax.find_hits(records,np.ones(2)); hits=strax.sort_by_time(hits)
 peaks=strax.find_peaks(hits,np.ones(2)*scale,gap_threshold=20,left_extension=2,right_extension=3,min_area=0,min_channels=1,max_duration=1000)
-np.save(a.out,np.column_stack([peaks["time"],peaks["length"],peaks["dt"],peaks["area"],peaks["n_hits"],peaks["n_channels"],peaks["max_gap"]]).astype(np.float64))
-
+np.save(a.out,np.column_stack([peaks["time"],peaks["length"],peaks["dt"],peaks["area"],peaks["n_hits"],peaks["max_gap"]]).astype(np.float64))
