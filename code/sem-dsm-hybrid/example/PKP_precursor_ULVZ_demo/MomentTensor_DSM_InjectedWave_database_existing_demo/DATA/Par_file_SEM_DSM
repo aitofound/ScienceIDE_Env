@@ -1,0 +1,191 @@
+# SEM-DSM case parameters for a SPECFEM3D-only rerun.
+# DSM Green's functions and InjectedWaves products are assumed to already exist.
+# Units are kilometers, degrees, and seconds unless noted otherwise.
+
+# -----------------------------------------------------------------------------
+# Shared settings
+# -----------------------------------------------------------------------------
+
+# Shared Slurm queue controls for all generated sbatch/cmd files.
+# Leave blank to use the cluster defaults.
+SLURM_PARTITION = scavenger
+SLURM_QOS = scavenger
+#SLURM_PARTITION = 
+#SLURM_QOS = 
+
+# Python command used only by optional helper logic.
+
+# Earth radius used by the cubed-sphere geometry and velocity polynomials.
+R_EARTH = 6371.0
+
+# Highest frequency to resolve in the SEM box, in Hz.
+# Note that implementing ULVZ decreases the velocity and thorefore
+# lowers the minimum resolved frequency. Thus, set ELEMENTS_PER_WAVELENGTH = 1.5.
+FREQ_RESOLVED = 0.5
+
+# Mesh resolution targets. Step 1 reads DATA/dsm_model_base, evaluates the
+# PREM-style velocity polynomials inside the SEM box, and sizes elements from
+# wavelength = velocity / FREQ_RESOLVED.
+ELEMENTS_PER_WAVELENGTH = 1.5
+OUTER_CORE_ELEMENTS_PER_WAVELENGTH = 2.0
+
+# Attenuation inside the SEM box.
+ATTENUATION_TARGET_DEPTHS = .False.
+
+# -----------------------------------------------------------------------------
+# SPECFEM3D run settings
+# -----------------------------------------------------------------------------
+
+# SPECFEM3D model selection.
+# DSM1D uses the 1-D DSM background model.
+# DSM3D uses the 3-D DSM model. PKP_ULVZ has no interface topography,
+# so both modes use the same flat SPECFEM interfaces.
+DSM1D_OR_3D = DSM3D
+
+# 1 = forward, 2 = adjoint, 3 = forward and adjoint.
+SIMULATION_TYPE = 1
+
+# 1 = source-side, 2 = station-side, 3 = deep-Earth, 4 = no coupling.
+COUPLING_TYPE = 3
+
+# Deep-Earth coupling source mode for SEM/DSM workflows.
+# -1: explosion source
+#  0: six moment-tensor Green-function components (Mzz,Mrr,Mtt,Mzr,Mzt,Mrt)
+#  1: single force in North component
+#  2: single force in East component
+#  3: single force in Vertical component
+SINGLE_FORCE_ENZ = 0
+
+# Upper limit on MPI ranks. Step 1 chooses NPROC_XI and NPROC_ETA unless set.
+NPROC = 400
+
+SAVE_MESH_FILES = .true.
+
+# SPECFEM3D solver time step, in seconds. If unset, step 8 reads the mesher
+# suggested time step, applies the safety factor, and caps it by the max DT.
+SPECFEM3D_SOLVER_DT =
+SPECFEM3D_SOLVER_DT_SAFETY_FACTOR = 0.6
+SPECFEM3D_SOLVER_MAX_DT = 0.4
+
+# SPECFEM3D number of time steps. If unset, step 8 uses the existing
+# INJECTED_WAVES_METADATA file below to infer a duration.
+# If START_TIME_CUT and END_TIME_CUT are set explicitly, step 8 auto-computes
+# NSTEP from the cut-window duration minus one DT. If SPECFEM3D_SOLVER_NSTEP is
+# also set explicitly, make sure DT * SPECFEM3D_SOLVER_NSTEP is smaller than
+# END_TIME_CUT - START_TIME_CUT so the injected wavefield covers the full solver
+# run.
+SPECFEM3D_SOLVER_NSTEP =
+SPECFEM3D_SOLVER_ADDITIONAL_TIME_BUFFER = 20.0
+
+SPECFEM3D_SOLVER_TIME_LIMIT = 02:00:00
+SPECFEM3D_SOLVER_MEM_PER_CPU = 4G
+
+# -----------------------------------------------------------------------------
+# Existing DSM database and InjectedWaves products
+# -----------------------------------------------------------------------------
+
+# These paths are read by this trimmed case instead of running the DSM and
+# InjectedWaves preparation steps. Relative paths are interpreted from this case
+# directory when the scripts run.
+DSM_DATABASE_DIR = ../MomentTensor_demo/WORK/DSM
+DSM_SRC_TO_BOX_DIR = ../MomentTensor_demo/WORK/DSM/src_to_box
+DSM_BOX_TO_RECV_DIR = ../MomentTensor_demo/WORK/DSM/box_to_recv
+INJECTED_WAVEFIELD_PATH = ../MomentTensor_demo/WORK/InjectedWaves/OUTPUT_FILES
+INJECTED_WAVES_METADATA = ../MomentTensor_demo/WORK/InjectedWaves/DATA/injected_waves_metadata.env
+
+# SEM box compatibility reference. Leave unset to infer the reference
+# SPECFEM3D/DATA directory from INJECTED_WAVEFIELD_PATH as:
+#   <case>/WORK/InjectedWaves/OUTPUT_FILES -> <case>/WORK/SPECFEM3D/DATA
+SEM_BOX_REFERENCE_DATA_DIR =
+
+# Optional checksum manifest saved with the existing InjectedWaves database.
+# Leave unset to infer:
+#   <case>/WORK/InjectedWaves/DATA/sem_box_manifest.sha256
+SEM_BOX_REFERENCE_MANIFEST =
+
+# -----------------------------------------------------------------------------
+# SEM box geometry
+# -----------------------------------------------------------------------------
+
+CENTER_LATITUDE_IN_DEGREES = 0.0
+CENTER_LONGITUDE_IN_DEGREES = 0.0
+CENTER_DEPTH_KM = 2858.5
+DEPTH_BLOCK_KM = 79.d0
+GAMMA_ROTATION_AZIMUTH = 0.d0
+ANGULAR_WIDTH_XI_IN_DEGREES = 4.0
+ANGULAR_WIDTH_ETA_IN_DEGREES = 4.0
+
+# Optional overrides for generated mesh size. Leave unset to compute from wavelength.
+# NEX_XI =
+# NEX_ETA =
+# NPROC_XI =
+# NPROC_ETA =
+# NZ_BOTTOM =
+# NZ_TOP =
+
+# -----------------------------------------------------------------------------
+# Mesh style
+# -----------------------------------------------------------------------------
+
+USE_REGULAR_MESH = .true.
+ILAYER_IRREGULAR_MESH = 2
+
+# -----------------------------------------------------------------------------
+# Station-side coupling options only used when COUPLING_TYPE = 2
+# -----------------------------------------------------------------------------
+
+LAT_CENTER_STRAIN_SAVED = 0
+LON_CENTER_STRAIN_SAVED = 0
+RADIUS_STRAIN_SAVED = 0.0
+MN_DEP_STRAIN_SAVED = 0.0
+MAX_DEP_STRAIN_SAVED = 0.0
+
+# -----------------------------------------------------------------------------
+# Coupling boundary output
+# -----------------------------------------------------------------------------
+
+LOW_RESOLUTION = .false.
+
+# Coupling distance-table tolerance is computed as this fraction of the local
+# resolved wavelength within the SEM box, converted to degrees at each sampled
+# radius; the smallest angular value is written to COUPLING_DIST_TOLERENCE.
+COUPLING_DIST_WAVELENGTH_FRACTION = 0.05
+
+# -----------------------------------------------------------------------------
+# SEM-DSM coupling integral settings
+# -----------------------------------------------------------------------------
+
+# Leave COUPLING_SEM_OUTPUT_DIR unset to use this case's
+# WORK/SPECFEM3D/OUTPUT_FILES. Leave COUPLING_DSM_BOX_TO_RECV_DIR unset to use
+# DSM_BOX_TO_RECV_DIR above.
+COUPLING_SEM_OUTPUT_DIR =
+COUPLING_DSM_BOX_TO_RECV_DIR =
+
+# If coupling_integral is not in a standard source/build location, set this to
+# the full path of the compiled executable.
+# COUPLING_INTEGRAL_BIN =
+
+TELESEISMIC_COMPONENT = Z
+COUPLING_NPOINTS_TAPER_SEM = 120
+COUPLING_NFIT_DEP = 4
+COUPLING_NFIT_DIST = 4
+
+# Components to compute. Leave unset to infer from TELESEISMIC_COMPONENT:
+# Z -> vertical, R -> radial, T -> transverse.
+# These COUPLING_* switches are lower-level Step 9 overrides. For normal
+# runs, leave them blank and use TELESEISMIC_COMPONENT as the main control.
+# Set them explicitly only when you intentionally want extra coupling
+# components for debugging or special runs.
+COUPLING_VERTICAL_COMPONENT =
+COUPLING_RADIAL_COMPONENT =
+COUPLING_TRANSVERSE_COMPONENT =
+
+COUPLING_NPROC = 512
+COUPLING_TIME_LIMIT = 06:50:00
+COUPLING_MEM_PER_CPU = 4G
+
+# Optional reusable DSM/InjectedWaves products. Leave blank to use this case local WORK outputs.
+DSM_SRC_TO_BOX_DIR =
+DSM_BOX_TO_RECV_DIR =
+INJECTED_WAVEFIELD_PATH =
+INJECTED_WAVES_METADATA =
