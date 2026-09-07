@@ -48,9 +48,11 @@ indifferent, and it makes the one-line variant diff readable.
 `validate.py` collects every float token in file order and compares
 positionally (standard library only, no numpy).
 
-Measured floor: `6.600e-13`.
+Measured floor: `1.100e-12` (arm64).
 
-Measured by run.sh altbuild: the same source rebuilt at -O0 with -DHAVE_BLAS -DHAVE_LAPACK, run on ic/nominal and compared with this check's own validator. Per stream - stdout: 220 values, spread 3.470e-12, altbuild floor 6.600e-13. Choosing the two build changes together was deliberate: tested separately, -DHAVE_LAPACK alone leaves the rasterization output bit-identical and -O0 alone leaves Li's crossed-grating output bit-identical, so either one on its own would have recorded a floor of zero on part of this suite.
+measured by selfcheck on 2026-09-06: run.sh altbuild (-O0 instead of -O2, plus -DHAVE_BLAS -DHAVE_LAPACK (LAPACK zgeev in place of the in-tree eigensolver)) against run.sh nominal, graded with the check's own validate.py: all graded values within bound
+
+HOST SCOPE. This floor was measured on arm64, and the alternative build does not measure the same thing on every host. The -O0 half of it works by removing FMA contraction: FMA is baseline on arm64 and gcc contracts at -O2, while on baseline x86_64 without -march there are no FMA instructions at either level and gcc does not reassociate, so -O0 is close to a no-op there. The -DHAVE_BLAS -DHAVE_LAPACK half is architecture-independent, because it swaps the eigensolver rather than relying on codegen. This check does call LAPACK, so the floor survives on x86. Measured under emulation on a linux/amd64 build of this image: not individually re-measured; the family members that were (crossed-grating-orders 3.0e-16 vs 3.0e-16, guided-resonance-fano 6.0e-14 vs 3.0e-14, lamellar-fig2a 2.3e-10 vs 4.1e-10) all hold their order of magnitude across the two architectures. See the packaging skill's known-pitfalls entries altbuild-floors-are-host-specific and s4-gvector-selection-fma (issue #505).
 
 ## Warrant
 
