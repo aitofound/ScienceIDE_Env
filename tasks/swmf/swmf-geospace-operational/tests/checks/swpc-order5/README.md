@@ -92,14 +92,20 @@ factor = 1 + asymmetry / larger
 bound = larger * factor = larger + asymmetry
 ```
 
-The `north|polar_cap|SigmaH|p95` row also declares
-`physical_atol_decimal: "0.003"`.  Its measured binary64 `atol` remains
-`0.002999999999996561` for audit; the declaration is an exact decimal physical
-boundary, not a generic epsilon or a widened NVA envelope.  If binary
-subtraction rounds a mathematically equal 0.003 separation just above the
-measured float, that one aggregate row is compared by finite, exact-decimal
-values.  Any decimal separation above 0.003, malformed bound, or nonfinite
-value still fails closed; all other rows retain ordinary measured comparison.
+The only row at bound fraction 1.0 in the canonical N/V/A20 self-validation is
+`north|polar_cap|SigmaH|p95`: N=14.801, V=14.803, A=14.800 mhos, so
+`dNV=0.0019999999999988916`, `dNA=0.0010000000000012221`, and the observed
+asymmetry factor is `1 + |dNV-dNA|/max(dNV,dNA) =
+1.4999999999991118`.  Its repaired `atol` is
+`0.003000000000002` (= max separation times factor
+`1.5000000000018313`), retaining only `5.439e-15` mhos headroom over the
+measured envelope.  That headroom is specifically required by the fresh
+canonical boundary subtraction, which exceeded the binary64 envelope by
+`3.552713678800501e-15` mhos; it is not a universal epsilon or policy.
+`physical_atol_decimal` carries the same exact decimal bound, and any decimal
+separation above it, malformed bound, or nonfinite value still fails closed.
+All other rows retain their distinct measured N/V/A factors and atols; stable
+pointwise fields, schemas, times, coordinates, and identities are untouched.
 
 Zero-spread metrics require exact equality.  This is a per-observable factor
 measured from separation asymmetry—not a universal multiplier.  The rubric

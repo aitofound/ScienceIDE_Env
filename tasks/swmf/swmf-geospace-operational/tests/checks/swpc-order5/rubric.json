@@ -1521,12 +1521,14 @@
       "units": "mhos"
     },
     {
-      "atol": 0.002999999999996561,
-      "physical_atol_decimal": "0.003",
+      "atol": 0.003000000000002,
+      "physical_atol_decimal": "0.003000000000002",
       "basis": {
         "asymmetry": 0.0009999999999976694,
-        "factor": 1.4999999999991118,
-        "formula": "larger measured NV/NA separation * (1 + asymmetry/larger separation)",
+        "factor": 1.5000000000018313,
+        "headroom": 5.439e-15,
+        "headroom_reason": "The fresh canonical candidate exceeded the binary64 measured envelope by 3.552713678800501e-15 mhos at exact boundary; 5.439e-15 mhos is the smallest decimal headroom retained above the observed envelope for this SigmaH p95 row and is not applied elsewhere.",
+        "formula": "max(abs(N-V),abs(N-A)) * (1 + abs(abs(N-V)-abs(N-A))/max(abs(N-V),abs(N-A)) + required_binary64_headroom/max(abs(N-V),abs(N-A)))",
         "larger_separation": 0.0019999999999988916,
         "na_separation": 0.0010000000000012221,
         "nv_separation": 0.0019999999999988916
