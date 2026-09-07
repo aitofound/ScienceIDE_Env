@@ -1,0 +1,121 @@
+name: "Pull Request"
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/pre-commit
+
+  build-linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    needs: pre-commit
+    name: Linux (MAX Python)
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/data-cache
+      - uses: ./.github/actions/build
+        with:
+          python-version: 3.14
+          conan-args: --opNav True --mujoco True
+      - name: Pytest
+        working-directory: src
+        run: |
+          pip install pytest-error-for-skips pytest-timeout
+          pytest -n auto -m "not ciSkip" -rs --error-for-skips --timeout=300 --timeout-method=thread -v
+      - name: CTest
+        if: ${{ always() && hashFiles('dist3/CTestTestfile.cmake') != '' }}
+        working-directory: dist3
+        run: ctest --output-on-failure
+
+  build-windows:
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 105
+    needs: pre-commit
+    name: Windows (MAX Python)
+    env:
+      MPLBACKEND: agg
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/data-cache
+      - uses: ./.github/actions/build
+        with:
+          python-version: 3.14
+          conan-args: --opNav True --mujoco True --generator Ninja
+      - name: Pytest
+        shell: pwsh
+        working-directory: src
+        run: |
+          pip install pytest-error-for-skips pytest-timeout
+          pytest -n auto -m "not ciSkip" -rs --error-for-skips --timeout=300 --timeout-method=thread -v
+          if(($LastExitCode -ne 0) -and ($LastExitCode -ne 5)) {exit 1}
+      - name: CTest
+        if: ${{ always() && hashFiles('dist3/CTestTestfile.cmake') != '' }}
+        shell: pwsh
+        working-directory: dist3
+        run: |
+          ctest --output-on-failure
+          if(($LastExitCode -ne 0) -and ($LastExitCode -ne 5)) { exit 1 }
+
+  build-macos:
+    runs-on: macos-26
+    timeout-minutes: 90
+    needs: pre-commit
+    strategy:
+      fail-fast: false
+      matrix:
+        job_suffix: [""]
+        python_label: ["MIN Python"]
+        python: ["3.9"]
+        pytest_flags:
+          [
+            '-n auto -m "not ciSkip" -rs --error-for-skips --timeout=300 --timeout-method=thread -v',
+          ]
+        conan_args: ["--opNav True --mujoco True"]
+        include:
+          # An extra Basilisk build to test building without visualization enabled
+          - python: "3.14"
+            python_label: "MAX Python"
+            pytest_flags: -n auto -m "not ciSkip" -rs --timeout=300 --timeout-method=thread -v
+            conan_args: --opNav True --mujoco True --vizInterface False
+            job_suffix: "--vizInterface False"
+
+    name: macOS (${{ matrix.python_label }}) ${{ matrix.job_suffix }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/data-cache
+      - uses: ./.github/actions/build
+        with:
+          python-version: ${{ matrix.python }}
+          conan-args: ${{ matrix.conan_args }}
+      - name: Pytest
+        working-directory: src
+        run: |
+          pip install pytest-error-for-skips pytest-timeout
+          pytest ${{ matrix.pytest_flags }}
+      - name: CTest
+        if: ${{ always() && hashFiles('dist3/CTestTestfile.cmake') != '' }}
+        working-directory: dist3
+        run: ctest -C Release --output-on-failure
+
+  docs:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/data-cache
+      - name: Build Basilisk
+        uses: ./.github/actions/build
+        with:
+          python-version: 3.14
+          conan-args: --opNav True --allOptPkg --mujoco True
+      - name: Build docs
+        uses: ./.github/actions/docs
