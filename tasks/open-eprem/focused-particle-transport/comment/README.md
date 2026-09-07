@@ -23,6 +23,10 @@ selfcheck. That finalized run and the original STOP 5 review used
 `a839341fb346c0b09a5bb4f976e8316637255bd5`. Submission preflight then fetched
 v5.11.5 at main `005c1159512f9330fdca2d5815cec2197b6ef3b2`, rebuilt the
 local merge on that head, and reproduced a byte-identical STOP 5 presentation.
+A final pre-push refresh then advanced main again to
+`b4908f4b3984c9da6d02a8f4dabbaf7482e97377`; its G4CMP/pymatgen additions did
+not touch the package Skill or open-EPREM, and were incorporated with a
+regenerated registry.
 Z.G subsequently authorized the local merge/task commit, push to the existing
 PR #518 branch, and exactly one reviewer reply; Ready and merge remain separate.
 
@@ -160,14 +164,16 @@ wrong-port margin. `DBL_MIN` cells showed no harmful active spread in the
 focusing calibration.
 
 Leaf lint/Harbor, source immutability, vendor sync, generated registry checks,
-and targeted diff checks passed locally. This is a sparse worktree: the whole
-repository `npm run check` cannot validate unrelated omitted archive/template
-and code trees, so full-checkout CI remains the authority after any authorized
-push.
+and targeted diff checks passed locally. Because the authoring worktree is
+sparse, the exact first local commit was also checked in a detached non-sparse
+checkout: `BASE_REF=origin/main npm run check` reported 46 tasks with no
+violations, 61 vendor files in sync, and every Harbor leaf passing. The same
+complete gate is repeated on the final main-integration commit before push, and
+remote CI remains authoritative after push.
 
 The current v5.11.5 lint, freshness, `task review`, presentation, vendor-sync,
 leaf Harbor, generated-registry, scoped-diff, and source-immutability gates all
 pass; the STOP 5 presentation is byte-identical to v5.11.3. The authorized next
-step is this local merge/task commit, its push to the existing PR #518 branch,
-and exactly one reviewer reply. Full-checkout CI and review follow; Ready and
+step is to commit the final main integration, push both local commits to the
+existing PR #518 branch, and post exactly one reviewer reply after CI. Ready and
 merge remain separate decisions.
