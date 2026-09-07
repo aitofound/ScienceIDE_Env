@@ -150,11 +150,34 @@ def contract_bytes(p: Path, leaf: Path) -> bytes:
     return body
 
 
+# Files a tool drops into a contract directory and a commit never carries: skipped by the
+# fingerprint, so a record taken on a working tree agrees with CI's checkout of the commit,
+# and refused by selfcheck, so the image built from tests/ holds the contract only. Fixed
+# names, never "every dot-path": git can track a dotfile under tests/, and a tracked file is
+# contract (pitfall ignored-cache-files-change-the-fingerprint).
+CONTRACT_DIRS = ("tests", "solution", "environment", "target")
+GENERATED_NAMES = frozenset({"__pycache__", ".pytest_cache", ".ruff_cache", ".mypy_cache", ".hypothesis",
+                             ".ipynb_checkpoints", ".DS_Store"})
+GENERATED_SUFFIXES = (".egg-info",)
+
+
+def is_generated(p: Path, leaf: Path) -> bool:
+    return any(part in GENERATED_NAMES or part.endswith(GENERATED_SUFFIXES) for part in p.relative_to(leaf).parts)
+
+
+def generated_paths(leaf: Path) -> list[Path]:
+    """Generated files under the contract directories, sorted; empty on a clean checkout."""
+    out: list[Path] = []
+    for d in CONTRACT_DIRS:
+        out += [p for p in (leaf / d).rglob("*") if p.is_file() and is_generated(p, leaf)]
+    return sorted(out)
+
+
 def contract_fingerprint(leaf: Path) -> str:
     h = hashlib.sha256()
     files: list[Path] = [leaf / "task.toml", leaf / "instruction.md"]
-    for d in ("tests", "solution", "environment", "target"):
-        files += [p for p in (leaf / d).rglob("*") if p.is_file() and "__pycache__" not in p.parts]
+    for d in CONTRACT_DIRS:
+        files += [p for p in (leaf / d).rglob("*") if p.is_file() and not is_generated(p, leaf)]
     for p in sorted(files):
         if p.is_file():
             h.update(str(p.relative_to(leaf)).encode())
