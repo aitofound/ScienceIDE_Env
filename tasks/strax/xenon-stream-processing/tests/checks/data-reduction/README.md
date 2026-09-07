@@ -12,9 +12,8 @@ identical: record samples and hit extensions are integer-domain inputs, so no tw
 
 ## The pass policy
 
-The proposed exact bound compares integer ADC samples at fixed record-time positions; retaining a sample outside a hit or dropping charge inside one changes at least one value by one count. The Numba loop in strax/processing/data_reduction.py writes those samples deterministically. The nominal and variant inputs are intentionally identical because all active inputs are discrete; this supplies no numerical-noise calibration evidence, so the exact policy remains a hypothesis for human review after the first self-validation.
+The exact bound compares integer ADC samples at fixed physical record-time positions; retaining a sample outside a hit or dropping charge inside one changes at least one value by one count. Both calibration solves were bit-identical, and the human approved exact comparison.
 
 ## Evidence
 
-No Docker build or calibration run has been performed before STOP 3. The policy type, 0 absolute tolerance, window and variant are hypotheses for the first consented self-validation.
-
+The first consented calibration found zero spread. The NPY stream stores integer ADC values exactly in float64; no storage order, offset or random draw is graded.

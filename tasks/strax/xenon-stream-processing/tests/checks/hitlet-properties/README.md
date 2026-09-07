@@ -12,9 +12,8 @@ the ADC-to-photoelectron scale is raised by two float32 ulps, perturbing hitlet 
 
 ## The pass policy
 
-The proposed 1e-5 absolute bound grades hitlets sorted by physical time and channel, including charge and amplitude; a dropped sample or wrong calibration factor moves these quantities by much more. strax/processing/hitlets.py accumulates float32 waveform-derived properties, so float32 rounding is the expected mechanism. The floor has not yet been measured; the two-ULP scale variant will measure it during calibration and the human will finalize the bound.
+The calibrated 2e-5 absolute bound grades hitlets sorted by physical time and channel, including charge and amplitude. strax stores the waveform-derived fields as float32; the measured two-ULP spread was 3.814697265625e-6, giving about 5.24x headroom without adopting a generic single-precision tolerance.
 
 ## Evidence
 
-No Docker build or calibration run has been performed before STOP 3. The policy type, 0.00001 absolute tolerance, window and variant are hypotheses for the first consented self-validation.
-
+The human approved atol 2e-5 after the first calibration. Physical time and channel form the sort key; storage order and random draws are not graded.

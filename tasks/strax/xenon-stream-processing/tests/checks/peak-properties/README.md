@@ -12,9 +12,8 @@ one waveform scale is raised by two float32 ulps, perturbing area while preservi
 
 ## The pass policy
 
-The proposed 1e-4 bound compares derived timing and width properties at fixed physical peak identities; omitting a waveform bin or using the wrong area fractions shifts widths or center time well beyond it. strax/processing/peak_properties.py derives these values from float32 waveform storage and cumulative sums. The floor is not yet measured, so the human must finalize this hypothesis after the two-ULP calibration.
+The calibrated 1e-4 bound compares derived timing and width properties after explicit sorting by physical peak time. The measured two-ULP spread from float32 waveform storage was 3.814697265625e-6, giving about 26.2x headroom; omitting a bin shifts the observables far more.
 
 ## Evidence
 
-No Docker build or calibration run has been performed before STOP 3. The policy type, 0.0001 absolute tolerance, window and variant are hypotheses for the first consented self-validation.
-
+The human approved retaining atol 1e-4 after the first calibration. Physical peak time is emitted as identity, so storage order is not graded.
