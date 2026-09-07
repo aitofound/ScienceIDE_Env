@@ -65,6 +65,7 @@ if [ "$IC" = altbuild ]; then
   echo "SAB_ALTBUILD_COMPILE_COMMANDS=$compiles"
 fi
 
+export OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 MKL_NUM_THREADS=2 NUMEXPR_NUM_THREADS=2
 PARAMS="$CHECK_DIR/ic/$INPUTS/params.json" OUT="$OUT_DIR" python3 - <<'PYEOF'
 import json, os
 import numpy as np
