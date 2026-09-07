@@ -117,6 +117,30 @@ residual curve graded: its arm64 `-O0` floor is 1.4e-3 of its bound, so no measu
 says that curve is unportable, and the rule is applied where it was measured to bite, not
 pre-emptively across the leaf.
 
+## Revision round 4 (5.11.5, 2026-09-07): convergence invariants and solution-only SA complex
+
+The steward's final review split `sa-performance-complex` by block across arm64
+and x86: the real and imaginary solution fields used 0.002 and 0.015 of the
+bound, while the residual history used 0.151; hierarchy depth was four on both.
+The probe now grades only the 1800 solution values. It retains the residuals only
+to assert the upstream 0.85 geometric convergence-factor limit, so failure to
+converge still produces no graded output.
+
+`adaptive-sa-real` and `adaptive-sa-complex` now use the `invariants` policy.
+They grade only final residual reduction and geometric convergence factor, the
+summary used by upstream `test_adaptive.py`; random draws, solution coordinates,
+individual residual slots, hierarchy depth and setup work are excluded. The
+NumPy global stream is still seeded immediately before every hierarchy build.
+That is the #513 mitigation for `approximate_spectral_radius` and it continues
+to stand for the other 18 seeded probes: it fixes an input of the pinned build,
+rather than widening a bound around a different spectral estimate. The adaptive
+pair differs only in no longer treating the random path and its bookkeeping as
+a pointwise physical array.
+
+These edits make the previous record stale. The x86 worker will write the two
+adaptive invariant margins and the 1800-value `sa-performance-complex` margin;
+no number is predicted here and no numeric bound moved.
+
 ## Tolerances
 
 The recommended pointwise policy of atol 1e-12 plus rtol 1e-10 is kept as the working
@@ -131,8 +155,8 @@ on this host, so it puts no lower bound on what a real port may move. Worst
 
 | check | graded values | spread | bound_fraction | margin |
 |---|---|---|---|---|
-| adaptive-sa-complex | 5767 | 5.684e-14 | 0.00873 | 115x |
-| adaptive-sa-real | 807 | 1.397e-09 | 3.865e-04 | 2588x |
+| adaptive-sa-complex | 2 invariants | pending fresh record | pending | pending |
+| adaptive-sa-real | 2 invariants | pending fresh record | pending | pending |
 | aggregate-complex | 480 | 0 | 0 (identical, as declared) | - |
 | aggregate-pairwise-real | 126 | 0 | 0 (identical, as declared) | - |
 | aggregate-real | 522 | 0 | 0 (identical, as declared) | - |
@@ -150,7 +174,7 @@ on this host, so it puts no lower bound on what a real port may move. Worst
 | rootnode-performance-real | 974 | 2.274e-13 | 0.008365 | 120x |
 | sa-parameters-complex | 5766 | 5.684e-14 | 0.01157 | 86x |
 | sa-parameters-real | 806 | 1.397e-09 | 6.090e-04 | 1642x |
-| sa-performance-complex | 1808 | 1.421e-14 | 3.907e-04 | 2560x |
+| sa-performance-complex | 1800 | pending fresh record | pending | pending |
 | sa-performance-nonhermitian-complex | 11535 | 2.274e-13 | 0.03085 | 32x |
 | sa-performance-nonsymmetric-real | 465 | 8.882e-15 | 0.002465 | 406x |
 | sa-performance-real | 3608 | 7.105e-14 | 0.002921 | 342x |
@@ -203,25 +227,20 @@ under Tolerances as an open call for the human. `gallery-demo`'s old 3.7x margin
 from the atol-dominated tail of a converged residual history and is gone with the
 histories themselves; see round 3.
 
-A second blind spot the arm64 run exposed and did not close: three checks not on the
-steward's list -- `fit-candidates`, `rootnode-performance-nonsymmetric-real` and
-`sa-performance-complex` -- have an arm64 `-O0` altbuild floor **above** their own
-nominal-versus-variant spread (1.78e-15 vs 3.89e-16; 1.23e-12 vs 3.20e-14; 3.25e-12 vs
-2.84e-14). All three still pass on both hosts and their cross-arch `bound_fraction` stays
-under 0.16, so nothing is broken; but on those three the variant is the weaker probe of
-the two and the recorded spread understates the check's real sensitivity. Flagged for the
-human, not acted on.
+Two arm64 findings now have explicit dispositions. `sa-performance-complex` no
+longer grades the residual block that produced its 0.151 cross-architecture fraction;
+its solution blocks used only 0.002 and 0.015 of the same bound. The adaptive pair no
+longer grades a random-path solution and its bookkeeping pointwise: it compares the two
+upstream convergence summaries as invariants. Their fresh margins are pending the worker
+record.
 
-`adaptive_sa_solver` draws its initial candidate from numpy's global random stream
-(`pyamg/aggregation/adaptive.py:443` and `:669`), so the hierarchy it builds, and with it
-the graded solution field and residual history of `adaptive-sa-real` and
-`adaptive-sa-complex`, depend on that stream. Upstream handles this by seeding and then
-asserting only a convergence *ratio* (`test_adaptive.py:14`), a statistic robust to the
-draw; these two checks seed the same global stream immediately before the call and then
-grade pointwise values, so an implementation that keeps numpy's legacy MT19937 for this
-one draw reproduces them exactly and one that replaces it with a device RNG does not.
-This is the shape the `athena-turbulence-rng-per-rank` pitfall entry describes. Pinning
-the stream is part of these two checks' contract as written; whether that is the right
-contract, or whether the two adaptive checks should move to `invariants` on the
-convergence factor, is a call for the human. It is unchanged from round 1 and was not
-altered here.
+The #513 mitigation still stands elsewhere. `approximate_spectral_radius` consumes the
+NumPy global stream inside hierarchy construction, so each of the other seeded probes
+continues to reset the same stream immediately before construction. That pins a hidden
+input of the reference build and prevents unrelated earlier draws from changing the
+spectral estimate; it does not make the random draw itself a graded observable.
+
+Two measured floor caveats remain for `fit-candidates` and
+`rootnode-performance-nonsymmetric-real`: their arm64 `-O0` floors exceed their variant
+spreads, but both pass on both hosts and their cross-architecture bound fractions remain
+under 0.16. They are disclosed evidence, not blockers.
