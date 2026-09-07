@@ -2,7 +2,6 @@
 set -euo pipefail
 CHECK_DIR="${CHECK_DIR:-$(cd "$(dirname "$0")" && pwd)}"
 if [ "${1:-}" = --help ]; then
-  echo "altbuild: same source and nominal inputs; native C extension rebuilt with CMake Debug and verified -O0"
   python3 - "$CHECK_DIR" <<'PY'
 import json, pathlib, sys
 p = pathlib.Path(sys.argv[1]) / "run_settings.json"
@@ -12,6 +11,7 @@ if p.exists():
 else:
     print("No runtime knob: preserve all cases of the original finite unit-test file.")
 PY
+  echo "altbuild: same source and nominal inputs; native C extension rebuilt with CMake Debug and verified -O0"
   exit 0
 fi
 IC="${1:?usage: run.sh nominal|variant | --help}"
