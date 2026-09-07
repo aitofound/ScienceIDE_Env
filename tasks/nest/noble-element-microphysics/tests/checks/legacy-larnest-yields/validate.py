@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Apply a pointwise text-table rubric using only the Python standard library."""
+"""Apply an invariant agreement rubric using only the Python standard library."""
 from __future__ import annotations
 import argparse
 import json
@@ -7,18 +7,26 @@ import math
 import sys
 from pathlib import Path
 
-def table(path: Path, skip: int) -> list[list[float]]:
-    rows = []
-    for raw in path.read_text(encoding="utf-8").splitlines()[skip:]:
+def column(path: Path, index: int) -> list[float]:
+    values = []
+    for raw in path.read_text(encoding="utf-8").splitlines():
         text = raw.strip()
-        if text and not text.startswith("#"):
-            rows.append([float(value) for value in text.split()])
-    if not rows:
+        if not text or text.startswith("#"):
+            continue
+        fields = text.split()
+        if index >= len(fields):
+            raise ValueError(f"column {index} absent from {path}")
+        values.append(float(fields[index]))
+    if not values:
         raise ValueError(f"no numeric rows in {path}")
-    width = len(rows[0])
-    if any(len(row) != width for row in rows):
-        raise ValueError(f"ragged numeric table in {path}")
-    return rows
+    return values
+
+def statistic(values: list[float], name: str) -> float:
+    if name == "final": return values[-1]
+    if name == "mean": return sum(values) / len(values)
+    if name == "max": return max(values)
+    if name == "min": return min(values)
+    raise ValueError(f"unknown statistic {name!r}")
 
 def main() -> int:
     ap = argparse.ArgumentParser()
@@ -26,49 +34,44 @@ def main() -> int:
         ap.add_argument(flag, required=True)
     a = ap.parse_args()
     rubric = json.loads(Path(a.rubric).read_text(encoding="utf-8"))
-    comparison = rubric["comparison"]
-    atol, rtol = float(comparison["atol"]), float(comparison.get("rtol", 0.0))
     roots = {"reference": Path(a.reference), "candidate": Path(a.candidate)}
     failures, details = [], {}
-    worst = worst_frac = 0.0
-    for spec in comparison["files"]:
-        rel = spec["path"]
-        paths = {name: root / rel for name, root in roots.items()}
-        missing = [name for name, path in paths.items() if not path.is_file()]
-        if missing:
-            failures.append(f"{rel}: missing on {', '.join(missing)}")
+    distance = bound_fraction = 0.0
+    for spec in rubric["comparison"]["invariants"]:
+        name, rel = spec["name"], spec["file"]
+        series = {}
+        for label, root in roots.items():
+            path = root / rel
+            if not path.is_file():
+                failures.append(f"{name}: {label} is missing {rel}")
+                continue
+            try:
+                series[label] = column(path, int(spec.get("column", 0)))
+            except (OSError, ValueError) as exc:
+                failures.append(f"{name}: {label}: cannot load {rel}: {exc}")
+        if len(series) != 2:
             continue
-        try:
-            ref = table(paths["reference"], int(spec.get("skip_rows", 0)))
-            cand = table(paths["candidate"], int(spec.get("skip_rows", 0)))
-        except (OSError, ValueError) as exc:
-            failures.append(f"{rel}: cannot load: {exc}")
+        if not all(math.isfinite(x) for values in series.values() for x in values):
+            failures.append(f"{name}: non-finite values")
             continue
-        if len(ref) != len(cand) or len(ref[0]) != len(cand[0]):
-            failures.append(f"{rel}: candidate shape differs from reference")
+        mode = spec.get("mode", "agreement")
+        if mode != "agreement":
+            failures.append(f"{name}: unsupported mode {mode!r}")
             continue
-        over = 0
-        file_worst = file_frac = 0.0
-        for rrow, crow in zip(ref, cand):
-            for rv, cv in zip(rrow, crow):
-                if not math.isfinite(cv):
-                    failures.append(f"{rel}: candidate contains non-finite values")
-                    over += 1
-                    continue
-                err = abs(cv - rv)
-                bound = atol + rtol * abs(rv)
-                frac = err / bound if bound > 0 else (0.0 if err == 0 else float("inf"))
-                file_worst, file_frac = max(file_worst, err), max(file_frac, frac)
-                if err > bound:
-                    over += 1
-        values = len(ref) * len(ref[0])
-        details[rel] = {"values": values, "max_abs_error": file_worst, "values_over_bound": over, "bound_fraction": file_frac}
-        if over:
-            failures.append(f"{rel}: {over} of {values} values exceed atol={atol:g} rtol={rtol:g}")
-        worst, worst_frac = max(worst, file_worst), max(worst_frac, file_frac)
-    result = {"passed": not failures, "policy": "pointwise", "atol": atol, "rtol": rtol,
-              "distance": worst, "bound_fraction": worst_frac, "files": details,
-              "reason": "all graded values within bound" if not failures else "; ".join(failures)}
+        stat = spec.get("statistic", "final")
+        ref = statistic(series["reference"], stat)
+        cand = statistic(series["candidate"], stat)
+        atol, rtol = float(spec.get("atol", 0.0)), float(spec.get("rtol", 0.0))
+        bound = atol + rtol * abs(ref)
+        err = abs(cand - ref)
+        relerr = err / abs(ref) if ref else err
+        frac = err / bound if bound > 0 else (0.0 if err == 0 else float("inf"))
+        distance, bound_fraction = max(distance, relerr), max(bound_fraction, frac)
+        details[name] = {"reference": ref, "candidate": cand, "abs_error": err, "bound": bound, "bound_fraction": frac}
+        if err > bound:
+            failures.append(f"{name}: error {err:.6g} exceeds bound {bound:.6g}")
+    result = {"passed": not failures, "policy": "invariants", "distance": distance, "bound_fraction": bound_fraction,
+              "invariants": details, "reason": "all invariants within bound" if not failures else "; ".join(failures)}
     Path(a.out).write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(result["reason"], file=sys.stderr)
     return 0
