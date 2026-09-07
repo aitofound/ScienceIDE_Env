@@ -1,0 +1,325 @@
+# SEM-DSM case parameters used by prepare_step1_specfem_mesh_database.sh.
+# Units are kilometers, degrees, and seconds unless noted otherwise.
+
+# -----------------------------------------------------------------------------
+# Shared settings
+# -----------------------------------------------------------------------------
+
+# Shared Slurm queue controls for all generated sbatch/cmd files.
+# Leave blank to use the cluster defaults.
+SLURM_PARTITION = scavenger
+SLURM_QOS = scavenger
+#SLURM_PARTITION = 
+#SLURM_QOS = 
+
+# Earth radius used by the cubed-sphere geometry and DSM velocity polynomials.
+R_EARTH = 6371.0
+
+# Highest frequency to resolve in the SEM box, in Hz.
+FREQ_RESOLVED = 0.7
+
+# Mesh resolution targets. The script reads DATA/dsm_model_input, evaluates the
+# PREM-style velocity polynomials inside the SEM box, and sizes elements from
+# wavelength = velocity / FREQ_RESOLVED.
+# Solid regions use S velocity. Fluid regions, such as the outer core, use P velocity.
+# PKiKP has small amplitude, so set small elements to reduce errors.
+ELEMENTS_PER_WAVELENGTH = 1.6
+OUTER_CORE_ELEMENTS_PER_WAVELENGTH = 3.0
+
+# Attenuation inside the SEM box. If .FALSE., later workflow steps may split DSM
+# layers around the SEM box and assign large Q values inside the non-attenuating
+# target region.
+ATTENUATION_TARGET_DEPTHS = .True.
+
+# -----------------------------------------------------------------------------
+# SPECFEM3D run settings
+# -----------------------------------------------------------------------------
+
+# SPECFEM3D simulation type. Currently only forward simulations are supported.
+# SPECFEM3D model selection.
+# DSM1D uses the 1-D DSM model and a flat ICB interface. 
+# DSM1D also helps evaluate SEM-DSM error:
+# the scattering wavefield should be zero for the 1-D background model.
+# DSM3D uses the 3-D DSM model and converts ICB topography with xcubedsphere_topo.
+DSM1D_OR_3D = DSM1D
+
+# 1 = forward, 2 = adjoint, 3 = forward and adjoint.
+SIMULATION_TYPE = 1
+
+# SEM-DSM coupling mode.
+# 1 = source-side, 2 = station-side, 3 = deep-Earth, 4 = no coupling.
+COUPLING_TYPE = 3
+
+# Source type or force direction.
+# -1 = explosion source.
+#  0 = six-component moment-tensor Green's functions.
+#  1 = single force in the North/radial direction.
+#  2 = single force in the East/transverse direction.
+#  3 = single force in the Vertical direction.
+SINGLE_FORCE_ENZ = -1
+
+# Upper limit on MPI ranks. The script chooses NPROC_XI and NPROC_ETA so that
+# NPROC_XI * NPROC_ETA does not exceed this value, unless they are set explicitly.
+NPROC = 500
+
+# Save mesh files for visualization and checking.
+SAVE_MESH_FILES = .false.
+
+# SPECFEM3D solver time step, in seconds.
+# If set, step 8 writes this value directly to WORK/SPECFEM3D/DATA/Par_file.
+# If left unset, step 8 reads the maximum suggested time step from the mesher
+# output, multiplies it by SPECFEM3D_SOLVER_DT_SAFETY_FACTOR, and caps it by
+# SPECFEM3D_SOLVER_MAX_DT when that cap is set.
+#
+# SPECFEM3D_SOLVER_MAX_DT is a conservative cap for this demo, not a universal
+# stability criterion. The mesher CFL suggestion can still be too aggressive for
+# some injected-wavefield simulations and may produce numerical overflow. Users
+# can set SPECFEM3D_SOLVER_DT directly for full control, adjust this cap, or
+# leave SPECFEM3D_SOLVER_MAX_DT unset to use only the mesher-derived value.
+SPECFEM3D_SOLVER_DT =
+SPECFEM3D_SOLVER_DT_SAFETY_FACTOR = 0.7
+SPECFEM3D_SOLVER_MAX_DT = 0.4
+
+# SPECFEM3D number of time steps.
+# If set, step 8 writes this value directly to WORK/SPECFEM3D/DATA/Par_file.
+# If left unset, step 8 computes:
+#   duration >= buffer_before + (max_corner_arrival - min_corner_arrival)
+#              + SPECFEM3D_SOLVER_ADDITIONAL_TIME_BUFFER
+# using WORK/InjectedWaves/DATA/injected_waves_metadata.env from step 7, then
+# sets NSTEP = ceil(duration / DT).
+# If START_TIME_CUT and END_TIME_CUT are set explicitly, step 8 auto-computes
+# NSTEP from the cut-window duration minus one DT. If SPECFEM3D_SOLVER_NSTEP is
+# also set explicitly, make sure DT * SPECFEM3D_SOLVER_NSTEP is smaller than
+# END_TIME_CUT - START_TIME_CUT so the injected wavefield covers the full solver
+# run.
+SPECFEM3D_SOLVER_NSTEP =
+SPECFEM3D_SOLVER_ADDITIONAL_TIME_BUFFER = 20.0
+
+# Slurm controls for step8_specfem_solver.sh.
+SPECFEM3D_SOLVER_TIME_LIMIT = 05:00:00
+SPECFEM3D_SOLVER_MEM_PER_CPU = 4G
+
+# -----------------------------------------------------------------------------
+# SEM box geometry
+# -----------------------------------------------------------------------------
+
+# Geographic center of the cubed-sphere SEM box.
+CENTER_LATITUDE_IN_DEGREES = -1.0
+CENTER_LONGITUDE_IN_DEGREES = 190.0
+
+# Center depth of the SEM box, in km.
+CENTER_DEPTH_KM = 5378.9
+
+# Radial thickness of the SEM box, in km.
+DEPTH_BLOCK_KM = 550.0
+
+# Rotation azimuth of the cubed-sphere grid. Use 0.d0 when XI follows longitude
+# and ETA follows latitude.
+GAMMA_ROTATION_AZIMUTH = 0.d0
+
+# Angular width of the SEM box. With zero rotation, XI is longitude and ETA is latitude.
+ANGULAR_WIDTH_XI_IN_DEGREES = 20.0
+ANGULAR_WIDTH_ETA_IN_DEGREES = 20.0
+
+# Optional overrides for generated mesh size. Leave unset to compute from wavelength.
+# NEX_XI =
+# NEX_ETA =
+# NPROC_XI =
+# NPROC_ETA =
+# NZ_BOTTOM =
+# NZ_TOP =
+# ICB_AUX_ELEMENTS_FROM_COUPLING = 1
+ICB_TOPOGRAPHY_FILE = DATA/topo_files/latlon_ICB_topo.txt
+# ICB_TOPOGRAPHY_TRUNCATION_MARGIN_M = 40000.0
+# Effective SEM grid spacing used to filter stochastic heterogeneity before the
+# mesh exists. After step1, update from OUTPUT_FILES/output_mesher.txt and
+# regenerate tiles if the actual maximum GLL spacing is significantly different.
+HETEROGENEITY_DX_EFF_M = 3000.0
+TOMOGRAPHY_PATH = DATA/heterogeneities/tiles
+# SPECFEM3D_DATABASE_BIN =
+
+# -----------------------------------------------------------------------------
+# Mesh style
+# -----------------------------------------------------------------------------
+
+# Regular mesh flag copied to DATA/meshfem3D_files/Mesh_Par_file.
+USE_REGULAR_MESH = .true.
+
+# Number or placement control for irregular mesh doubling layers. This is only
+# relevant when USE_REGULAR_MESH = .false.; set manually for complex cases.
+ILAYER_IRREGULAR_MESH = 2
+
+# -----------------------------------------------------------------------------
+# Station-side coupling options only used when COUPLING_TYPE = 2
+# -----------------------------------------------------------------------------
+
+# Region where strain fields are saved for reciprocity-based coupling.
+LAT_CENTER_STRAIN_SAVED = 0
+LON_CENTER_STRAIN_SAVED = 0
+RADIUS_STRAIN_SAVED = 0.0
+MN_DEP_STRAIN_SAVED = 0.0
+MAX_DEP_STRAIN_SAVED = 0.0
+
+# -----------------------------------------------------------------------------
+# Coupling boundary output
+# -----------------------------------------------------------------------------
+
+# .true. saves wavefields only at center GLL points on coupling faces.
+# .false. saves all GLL points and is more accurate but larger on disk.
+LOW_RESOLUTION = .false.
+
+# Coupling distance-table tolerance is computed as this fraction of the local
+# resolved wavelength within the SEM box, converted to degrees at each sampled
+# radius; the smallest angular value is written to COUPLING_DIST_TOLERENCE.
+COUPLING_DIST_WAVELENGTH_FRACTION = 0.05
+
+# -----------------------------------------------------------------------------
+# DSM and InjectedWaves settings
+# -----------------------------------------------------------------------------
+# Shared Slurm controls for all DSM Green's function computations.
+DSM_NPROC=512
+DSM_TIME_LIMIT = 23:59:00
+DSM_MEM_PER_CPU = 4G
+
+# Optional DSM source-to-box and box-to-receiver sampling controls.
+# If DSM_DISTANCE_SPACING_DEGREES is unset, the preparation scripts choose a
+# spacing from the resolved wavelength inside the SEM box.
+# DSM_BOX_DISTANCE_SAMPLES controls the sampled XI/ETA grid used to compute
+# receiver-to-SEM-box min/max distances for box-to-receiver DSM.
+# DSM_BOX_TO_RECEIVER_DISTANCE_BUFFER_DEGREES pads that sampled min/max range;
+# if unset, box-to-receiver uses 4 DSM distance spacings.
+# DSM_DISTANCE_MARGIN_DEGREES remains as a legacy explicit buffer override.
+# DSM_MIN_DISTANCE_DEGREES prevents zero-distance DSM Green's functions. If unset,
+# step4/step5 derive it from SPECFEM3D dist_table_*; if those tables are missing,
+# they use two DSM distance spacings.
+# DSM_DDEPTH_FOR_STRESS_KM and DSM_DEPTH_TOLERANCE_KM are written to the DSM depth
+# tables and used when matching depth samples around discontinuities.
+DSM_DISTANCE_SPACING_DEGREES =
+DSM_BOX_DISTANCE_SAMPLES = 11
+DSM_BOX_TO_RECEIVER_DISTANCE_BUFFER_DEGREES =
+DSM_DISTANCE_MARGIN_DEGREES =
+DSM_MIN_DISTANCE_DEGREES =
+# DSM_MAX_DISTANCE_DEGREES prevents exact antipodal DSM Green functions. Keep it
+# below 180 so distance interpolation never requests a DSM computation at 180 deg.
+DSM_MAX_DISTANCE_DEGREES =
+DSM_DDEPTH_FOR_STRESS_KM = 0.01
+DSM_DEPTH_TOLERANCE_KM = 0.0025
+
+# Target phases used by the DSM and InjectedWaves workflow.
+# Step 7 computes source-to-box corner arrivals with the DSM 1-D model so internal
+# core targets use partial P/K/I paths from the DSM model.
+PHASE_SOURCE_TO_BOX=PKI,PKIK
+PHASE_BOX_TO_RECEIVER=PKI,PKIK #(could be P or p)
+
+# Low-frequency PKIIKP runs are prone to DSM wrap-around artifacts.
+# Use long time lengths for source-to-box, box-to-receiver, and direct 1-D DSM
+# synthetics; lengths longer than about 4000 s are often critical for reducing
+# wrap-around artifacts in the DSM results.
+
+# User-specified source-to-box DSM time length, in seconds.
+# This overrides an automatically estimated length from the DSM 1-D model direct
+# P/K/I timing. Choose a value long enough to include the complete source-to-box
+# Green's functions for the target phase window.
+TIME_LENGTH_DSM_SOURCE_TO_BOX=4000.0
+
+####Green's functions for Receiver to the SEM box
+
+# Teleseismic component selection for step 5.
+# Z runs only Fz. R or T runs Fr and Ft because horizontal components are coupled.
+# Examples: Z, R, T, ZRT.
+TELESEISMIC_COMPONENT = Z
+
+# Box-to-receiver DSM time length, in seconds.
+# If set, this user value is used directly. Choose a value long enough to cover
+# the full box-to-receiver Green's functions for the target phase window.
+# If left unset, step 5 estimates the maximum box-to-receiver P/K/I arrival time
+# with the DSM 1-D model and station distances, then adds the default safety
+# padding in auxiliary/prepare_box_to_recv.py.
+TIME_LENGTH_DSM_BOX_TO_RECEIVER=4000.0
+
+# Direct 1-D DSM teleseismic synthetics time length for step 6, in seconds.
+# Leave unset to use TIME_LENGTH_DSM_SOURCE_TO_BOX + TIME_LENGTH_DSM_BOX_TO_RECEIVER
+# when both leg lengths are specified. If either leg length is unset, step 6 requires
+# this value and will stop instead of falling back to DATA/dsm_model_input.
+TIME_LENGTH_DSM_1D=8001
+
+
+
+####Injected Waves computation and cutting out
+# Optional user-specified cut window, in seconds, for the source-to-box injected
+# wavefield. If both START_TIME_CUT and END_TIME_CUT are set, step 7 uses these
+# values directly and skips automatic corner-arrival timing.
+# If both are unset, step 7 computes the min/max source-to-box arrivals at the
+# eight SEM-box corners and applies the before/after buffers below.
+START_TIME_CUT=
+END_TIME_CUT=
+
+# If START_TIME_CUT and END_TIME_CUT are unset, step 7 computes the min/max
+# source-to-box arrivals at the eight SEM-box corners with the DSM 1-D model and
+# applies these buffers.
+TIME_BUFFER_CUT_BEFORE=20.0
+TIME_BUFFER_CUT_AFTER=100.0
+# Backward-compatible fallback used only if the before/after values above are unset.
+TIME_BUFFER_CUT=50.0
+
+# Optional InjectedWaves controls used by step7_extract_injected_waves.sh.
+# If extract_Injectedwaves is not in a standard source/build location, set this
+# to the full path of the compiled executable.
+# EXTRACT_INJECTEDWAVES_BIN =
+# INJECTED_WAVES_NPROC is an upper request. Step 7 automatically caps it
+# by the larger SEM elastic/acoustic depth-table count, because
+# extract_Injectedwaves partitions work by depth-table index.
+INJECTED_WAVES_NPROC = 256
+INJECTED_WAVES_TIME_LIMIT = 02:00:00
+INJECTED_WAVES_MEM_PER_CPU = 10G
+NPT_ONE_PACKAGE = 600
+INJECTED_WAVES_FILTERING = 0
+INJECTED_WAVES_FREQ_LOW = 0.005
+INJECTED_WAVES_FREQ_HIGH = 1.0
+
+# -----------------------------------------------------------------------------
+# SEM-DSM coupling integral settings
+# -----------------------------------------------------------------------------
+
+# Paths used by the final coupling step. Leave unset to use the current demo
+# layout: WORK/SPECFEM3D/OUTPUT_FILES and WORK/DSM/box_to_recv.
+COUPLING_SEM_OUTPUT_DIR =
+COUPLING_DSM_BOX_TO_RECV_DIR =
+
+# If coupling_integral is not in a standard source/build location, set this to
+# the full path of the compiled executable.
+# COUPLING_INTEGRAL_BIN =
+
+# Number of SEM time samples tapered at the start/end of the displacement and
+# traction series before applying the coupling integral.
+# 120 data points are typically good and just keep in mind that this SEM-DSM method
+# is designed for high-freq synthetics and typically has large errors at low 
+# frequencies (i.e., <0.1 Hz).
+COUPLING_NPOINTS_TAPER_SEM = 120
+
+# Interpolation order used by the coupling integral when reading DSM Green's
+# functions. These should be even numbers; 4 is a typical default.
+COUPLING_NFIT_DEP = 4
+COUPLING_NFIT_DIST = 4
+
+# Components to compute. Leave unset to infer from TELESEISMIC_COMPONENT:
+# Z -> vertical, R -> radial, T -> transverse.
+# These COUPLING_* switches are lower-level Step 9 overrides. For normal
+# runs, leave them blank and use TELESEISMIC_COMPONENT as the main control.
+# Set them explicitly only when you intentionally want extra coupling
+# components for debugging or special runs.
+COUPLING_VERTICAL_COMPONENT =
+COUPLING_RADIAL_COMPONENT =
+COUPLING_TRANSVERSE_COMPONENT =
+
+# Slurm controls for the final coupling job.
+COUPLING_NPROC = 256
+COUPLING_TIME_LIMIT = 06:50:00
+# 4G is not sufficiently large.
+COUPLING_MEM_PER_CPU = 5G
+
+# Optional reusable DSM/InjectedWaves products. Leave blank to use this case local WORK outputs.
+DSM_SRC_TO_BOX_DIR =
+DSM_BOX_TO_RECV_DIR =
+INJECTED_WAVEFIELD_PATH =
+INJECTED_WAVES_METADATA =

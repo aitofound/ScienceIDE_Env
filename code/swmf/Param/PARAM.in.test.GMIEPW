@@ -1,0 +1,276 @@
+VERBOSE
+100			lVerbose
+
+#COMPONENTMAP
+GM 0 -1 1 2		CompMap
+IE 1  2 1 1		CompMap
+PW 3  3 1 1		CompMap
+
+TEST
+PW_get_for_gm GM_put_from_pw CON_couple_all::couple_two_comp
+
+#PROGRESS
+1			DnProgressShort
+100			DnProgressLong
+
+#DESCRIPTION
+Param/PARAM.in.test.GMIEPW: Run GM and IE and PW in time accurate mode		StringDescription
+
+#PLANET
+EARTH			NamePlanet
+
+#SAVERESTART
+F			DoSaveRestart
+
+#TIMEACCURATE
+T			IsTimeAccurate
+
+#STARTTIME
+2014			iYear
+4			iMonth
+10			iDay
+0			iHour
+1			iMinute
+0			iSecond
+0.0			FracSecond
+
+#IDEALAXES
+
+#ROTATION
+F			UseRotation
+
+#BEGIN_COMP GM ---------------------------------------------------------------
+
+#MAGNETOSPHERE
+T			UseBody
+2.5			rBody
+3.5			rCurrents
+10.0			BodyNDim
+25000.0			BodyTDim
+
+#GRID
+1			nRootBlock1
+1			nRootBlock2
+1			nRootBlock3
+-224.			xMin
+  32.			xMax
+-128.			yMin
+ 128.			yMax
+-128.			zMin
+ 128.			zMax
+
+#GRIDBLOCKALL
+700			MaxBlock
+
+#GRIDRESOLUTION
+2.0			Resolution
+initial			StringShape
+
+!refine inside 1.5*rcurrents, rcurrents = 3.5
+#GRIDRESOLUTION
+1/8			Resolution
+sphere0			StringShape
+ 5.25			Radius
+
+!refine inner magnetosphere
+#GRIDRESOLUTION
+1.0			Resolution
+sphere0			StringShape
+17.5			Radius
+
+!refine the magnetotail
+#GRIDRESOLUTION
+4.0			Resolution
+box			StringShape
+-224.0			xMinBox
+ -64.0			yMinBox
+ -64.0			zMinBox
+  32.0			xMaxBox
+  64.0			yMaxBox
+  64.0			zMaxBox
+
+#GRIDRESOLUTION
+2.0			Resolution
+box			StringShape
+ -96.0			xMinBox
+ -32.0			yMinBox
+ -32.0			zMinBox
+  32.0			xMaxBox
+  32.0			yMaxBox
+  32.0			zMaxBox
+
+#GRIDRESOLUTION
+1.0			Resolution
+box			StringShape
+ -48.0			xMinBox
+ -16.0			yMinBox
+ -16.0			zMinBox
+  32.0			xMaxBox
+  16.0			yMaxBox
+  16.0			zMaxBox
+
+#GRIDRESOLUTION
+1/2			Resolution
+box			StringShape
+ -32.0			xMinBox
+  -8.0			yMinBox
+  -8.0			zMinBox
+  32.0			xMaxBox
+   8.0			yMaxBox
+   8.0			zMaxBox
+
+#GRIDRESOLUTION
+1/4			Resolution
+box			StringShape
+ -32.0			xMinBox
+  -8.0			yMinBox
+  -4.0			zMinBox
+   8.0			xMaxBox
+   8.0			yMaxBox
+   4.0			zMaxBox
+
+
+#OUTERBOUNDARY
+outflow			TypeBc1
+vary			TypeBc2
+float			TypeBc3
+float			TypeBc4
+float			TypeBc5
+float			TypeBc6
+
+#INNERBOUNDARY
+ionosphere		TypeBcBody
+
+#MAGNETICINNERBOUNDARY
+1.0			B1rCoef
+
+#SAVELOGFILE
+T			DoSaveLogfile
+RAW			StringLog
+1			DnSaveLogfile
+-1.			DtSaveLogfile
+
+#TIMESTEPPING
+1			nStage
+0.6			CflExpl
+
+#SOLARWINDFILE
+T			UseSolarWindFile
+Param/SWPC/IMF.dat		NameSolarWindFile
+
+#SCHEME
+1			nOrder
+Rusanov			TypeFlux
+
+#NONCONSERVATIVE
+T			UseNonConservative
+
+#CONSERVATIVECRITERIA
+1			nConservCrit
+r			TypeConservCrit
+6.			rConserv
+
+#SAVEPLOT
+2			nPlotFile
+y=0 VAR idl		StringPlot
+-1			DnSavePlot
+10.			DtSavePlot
+-1.			DxSavePlot
+{MHD} ex ey ez expot eypot ezpot exind eyind ezind dive potE		NameVars
+{default}		NamePars
+y=0 VAR tec		StringPlot
+-1			DnSavePlot
+10.			DtSavePlot
+{MHD} ex ey ez expot eypot ezpot exind eyind ezind dive potE		NameVars
+{default}		NamePars
+
+#END_COMP GM -----------------------------------------------------------------
+
+#COUPLE2
+IE			NameComp1
+GM			NameComp2
+-1			DnCouple
+1.0			DtCouple
+
+! Allow GM to step through coupling time
+#COUPLETIME
+GM			NameComp
+F			DoCoupleOnTime
+
+#BEGIN_COMP IE ---------------------------------------------------------------
+
+#UNIFORMCONDUCTANCE
+5			SigmaPedConst
+0			SigmaHalConst
+
+#BACKGROUNDCOND
+0.00			StarLightCond
+0.00			PolarCapPedCond
+
+#AURORA
+F			DoUseAurora
+
+#SOLAREUV
+F			DoUseEuvCond
+
+#SAVEPLOT
+2			nPlotFile
+min idl			StringPlot
+2			DnSavePlot
+-1.0			DtSavePlot
+max tec			StringPlot
+2			DnSavePlot
+-1.0			DtSavePlot
+
+#END_COMP IE -----------------------------------------------------------------
+
+#STOP
+-1			MaxIter
+5.0			TimeMax
+
+#COUPLE1
+IE			NameSource
+PW			NameTarget
+-1			DnCouple
+1.0			DtCouple
+
+#COUPLE1
+PW			NameSource
+GM			NameTarget
+-1			DnCouple
+1.0			DtCouple
+
+#BEGIN_COMP PW ---------------------------------------------------------------
+
+#ROTATION
+F			UseCentrifugal
+
+#FIELDLINE
+4			nTotalLine
+
+#SAVEPLOT
+1.0			DtSavePlot
+-1			DnSavePlot
+T			DoSaveFirst
+F			DoAppendPlot
+
+#END_COMP PW -----------------------------------------------------------------
+
+#RUN ##########################################################################
+
+#STOP
+-1			MaxIter
+10.0			TimeMax
+
+#BEGIN_COMP GM ---------------------------------------------------------------
+
+#SCHEME
+2			nOrder
+Rusanov			TypeFlux
+minmod			TypeLimiter
+
+#TIMESTEPPING
+2			nStage
+0.8			CflExpl
+
+#END_COMP GM -----------------------------------------------------------------
