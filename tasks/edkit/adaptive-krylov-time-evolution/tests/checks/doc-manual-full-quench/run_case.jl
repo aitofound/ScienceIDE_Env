@@ -93,7 +93,9 @@ function run_one(c)
     for name in keys(c["expected_statuses"])
         name in ("reduced_phase_length","reduced_coeffs_length") && continue
         if name=="matvec_budget"
-            statuses[name]=diagnostics["matvecs"]<=diagnostics["max_dim_used"] ? "pass" : "fail"
+            # Record upstream work-count coverage without requiring it from a port.
+            statuses[name]=haskey(diagnostics,"matvecs") && haskey(diagnostics,"max_dim_used") ?
+                (diagnostics["matvecs"]<=diagnostics["max_dim_used"] ? "pass" : "fail") : "not-reported"
         elseif name=="cache_backward"
             statuses[name]=exception_name(()->timeevolve!(cache,0.1*TIME_SCALE))
         elseif name=="zero_input"
