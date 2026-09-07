@@ -1,37 +1,576 @@
 {
-  "check": "mgitm-mars-3d",
-  "policy": "pointwise",
-  "chaotic": false,
-  "upstream_test": "code/swmf/UA/MGITM/Makefile.test",
-  "configuration": "Config.pl -install=BATSRUS -compiler=gfortran, then in UA/MGITM ./Config.pl -Mars and ./Config.pl -g=8,4,120,4 and make GITM. Deck UA/MGITM/srcData/UAM.mars.in.3d unchanged: M-GITM standalone on Mars, 2x2 blocks of 8x4x120 cells covering the whole globe from the surface to 300 km, analytic initial thermosphere, F10.7 = 125, solar EUV heating with the FISM daily spectrum, O cooling, thermal conduction, eddy and molecular diffusion in the vertical solver, ion chemistry without ion advection, no crustal field and no MHD field imposed, from 2017-11-21 00:00:00 for 2 minutes (about 29 steps) on 2 MPI ranks. Graded, after PostProc.pl: the log of every step and the merged 3-D state of all 44 variables at the end of the window.",
-  "observable": "the per-step minimum, maximum and mean neutral temperature and vertical velocity of the whole globe, and the merged 3-D state of all 44 neutral and ion variables at every one of the 29760 cells at the end of the window",
-  "expected_runtime_s": 6,
-  "default_vs_upstream": "upstream, except that PostProc.pl is run after the graded run stage rather than after the restart stage that follows it upstream, so that the merged .bin state of this stage exists to be graded; the deck, the configuration, the rank count and the window are the upstream test's",
-  "variant": "f10.7, the solar radio flux index that sets the solar EUV heating and photo-ionisation rates the whole thermosphere-ionosphere advance is driven by, is 125 in ic/nominal and 125.0000002 in ic/variant - two units of the tenth significant digit, well below the last digit the graded log prints and far below the resolution of any measured F10.7. It is generic numerical-noise calibration: the two decks differ by one number, and the spread between the two runs is the floor this pass policy can be held to.",
   "altbuild": "run.sh altbuild rebuilds the same pinned source and deck with ./Config.pl -O0 (every OPTn line of Makefile.conf forced to -O0 where the shipped gfortran template builds at -O3); the measured floor is recorded in evidence below.",
+  "chaotic": false,
+  "check": "mgitm-mars-3d",
   "comparison": {
     "atol": 1e-06,
-    "rtol": 1e-05,
+    "field_overrides": {
+      "ua_state.bin": {
+        " Temperature": {
+          "alt_count": 1057,
+          "alt_max_abs": 0.01096296935094188,
+          "atol": 0.010962969350941881,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "K"
+        },
+        " V!Dn!N (east)": {
+          "alt_count": 3664,
+          "alt_max_abs": 0.0001528284690145293,
+          "atol": 0.00015282846901452932,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "m s^-1"
+        },
+        " V!Dn!N (north)": {
+          "alt_count": 1266,
+          "alt_max_abs": 6.14319848433742e-05,
+          "atol": 6.143198484337421e-05,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "m s^-1"
+        },
+        " V!Dn!N (up)": {
+          "alt_count": 5293,
+          "alt_max_abs": 0.004006284757806178,
+          "atol": 0.004006284757806179,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "m s^-1"
+        },
+        " V!Dn!N (up,Ar                  )": {
+          "alt_count": 5294,
+          "alt_max_abs": 0.00400628036505335,
+          "atol": 0.0040062803650533505,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "m s^-1"
+        },
+        " V!Dn!N (up,CO                  )": {
+          "alt_count": 5296,
+          "alt_max_abs": 0.004006269819841091,
+          "atol": 0.0040062698198410915,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "m s^-1"
+        },
+        " V!Dn!N (up,CO!D2!N             )": {
+          "alt_count": 5293,
+          "alt_max_abs": 0.004006285136024079,
+          "atol": 0.00400628513602408,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "m s^-1"
+        },
+        " V!Dn!N (up,He                  )": {
+          "alt_count": 5293,
+          "alt_max_abs": 0.004006282128190986,
+          "atol": 0.004006282128190987,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "m s^-1"
+        },
+        " V!Dn!N (up,N                   )": {
+          "alt_count": 5318,
+          "alt_max_abs": 0.004006569212577027,
+          "atol": 0.004006569212577028,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "m s^-1"
+        },
+        " V!Dn!N (up,N!D2!N              )": {
+          "alt_count": 5296,
+          "alt_max_abs": 0.004006270186662331,
+          "atol": 0.004006270186662332,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "m s^-1"
+        },
+        " V!Dn!N (up,O                   )": {
+          "alt_count": 5427,
+          "alt_max_abs": 0.004006259836930148,
+          "atol": 0.004006259836930149,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "m s^-1"
+        },
+        " V!Dn!N (up,O!D2!N              )": {
+          "alt_count": 5291,
+          "alt_max_abs": 0.004006264488916944,
+          "atol": 0.004006264488916945,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "m s^-1"
+        },
+        " [Ar                  ]": {
+          "alt_count": 1489,
+          "alt_max_abs": 449805957404672.0,
+          "atol": 449805957404672.06,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "m^-3"
+        },
+        " [CO!D2!N             ]": {
+          "alt_count": 1511,
+          "alt_max_abs": 2.811109422242202e+16,
+          "atol": 2.8111094222422024e+16,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "m^-3"
+        },
+        " [CO                  ]": {
+          "alt_count": 1434,
+          "alt_max_abs": 19687484176768.0,
+          "atol": 19687484176768.004,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "m^-3"
+        },
+        " [He                  ]": {
+          "alt_count": 1510,
+          "alt_max_abs": 59006601673.25,
+          "atol": 59006601673.25001,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "m^-3"
+        },
+        " [N!D2!N              ]": {
+          "alt_count": 1434,
+          "alt_max_abs": 759379403128832.0,
+          "atol": 759379403128832.1,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "m^-3"
+        },
+        " [NO!U+!N             ]": {
+          "alt_count": 16,
+          "alt_max_abs": 77.2487690038979,
+          "atol": 77.24876900389792,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "m^-3"
+        },
+        " [NO                  ]": {
+          "alt_count": 81,
+          "alt_max_abs": 508.226308695972,
+          "atol": 508.2263086959721,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "m^-3"
+        },
+        " [N                   ]": {
+          "alt_count": 1288,
+          "alt_max_abs": 58.266845703125,
+          "atol": 58.26684570312501,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "m^-3"
+        },
+        " [O!D2!U+!N           ]": {
+          "alt_count": 252,
+          "alt_max_abs": 41.5356201895047,
+          "atol": 41.535620189504705,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "m^-3"
+        },
+        " [O!D2!N              ]": {
+          "alt_count": 1484,
+          "alt_max_abs": 38416196510720.0,
+          "atol": 38416196510720.01,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "m^-3"
+        },
+        " [O                   ]": {
+          "alt_count": 1375,
+          "alt_max_abs": 122001857588736.0,
+          "atol": 122001857588736.02,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "m^-3"
+        },
+        " eTemperature": {
+          "alt_count": 1053,
+          "alt_max_abs": 0.010966443389690994,
+          "atol": 0.010966443389690996,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "K"
+        },
+        " iTemperature": {
+          "alt_count": 1053,
+          "alt_max_abs": 0.010966443389690994,
+          "atol": 0.010966443389690996,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "finite ALT max-absolute separation; independent nominal/variant selector retained",
+          "unit": "K"
+        }
+      }
+    },
     "files": [
       {
-        "path": "ua_log.dat",
-        "format": "swmf_table",
         "drop_columns": [
           0
         ],
-        "drop_columns_reason": "column 0 (`iStep`) is a step/iteration bookkeeping counter, not a physical quantity (skill 5.10.2)"
+        "drop_columns_reason": "column 0 (`iStep`) is a step/iteration bookkeeping counter, not a physical quantity (skill 5.10.2)",
+        "format": "swmf_table",
+        "path": "ua_log.dat"
       },
       {
-        "path": "ua_state.bin",
-        "format": "gitm_bin"
+        "field_groups": [
+          {
+            "field_index": 0,
+            "kind": "gitm_variable",
+            "name": " Longitude",
+            "ncell": 29760,
+            "unit": "rad"
+          },
+          {
+            "field_index": 1,
+            "kind": "gitm_variable",
+            "name": " Latitude",
+            "ncell": 29760,
+            "unit": "rad"
+          },
+          {
+            "field_index": 2,
+            "kind": "gitm_variable",
+            "name": " Altitude",
+            "ncell": 29760,
+            "unit": "m"
+          },
+          {
+            "field_index": 3,
+            "kind": "gitm_variable",
+            "name": " Rho",
+            "ncell": 29760,
+            "unit": "kg m^-3"
+          },
+          {
+            "field_index": 4,
+            "kind": "gitm_variable",
+            "name": " [CO!D2!N             ]",
+            "ncell": 29760,
+            "unit": "m^-3"
+          },
+          {
+            "field_index": 5,
+            "kind": "gitm_variable",
+            "name": " [CO                  ]",
+            "ncell": 29760,
+            "unit": "m^-3"
+          },
+          {
+            "field_index": 6,
+            "kind": "gitm_variable",
+            "name": " [O                   ]",
+            "ncell": 29760,
+            "unit": "m^-3"
+          },
+          {
+            "field_index": 7,
+            "kind": "gitm_variable",
+            "name": " [N!D2!N              ]",
+            "ncell": 29760,
+            "unit": "m^-3"
+          },
+          {
+            "field_index": 8,
+            "kind": "gitm_variable",
+            "name": " [O!D2!N              ]",
+            "ncell": 29760,
+            "unit": "m^-3"
+          },
+          {
+            "field_index": 9,
+            "kind": "gitm_variable",
+            "name": " [Ar                  ]",
+            "ncell": 29760,
+            "unit": "m^-3"
+          },
+          {
+            "field_index": 10,
+            "kind": "gitm_variable",
+            "name": " [He                  ]",
+            "ncell": 29760,
+            "unit": "m^-3"
+          },
+          {
+            "field_index": 11,
+            "kind": "gitm_variable",
+            "name": " [N                   ]",
+            "ncell": 29760,
+            "unit": "m^-3"
+          },
+          {
+            "field_index": 12,
+            "kind": "gitm_variable",
+            "name": " [H                   ]",
+            "ncell": 29760,
+            "unit": "m^-3"
+          },
+          {
+            "field_index": 13,
+            "kind": "gitm_variable",
+            "name": " [N(2D)               ]",
+            "ncell": 29760,
+            "unit": "m^-3"
+          },
+          {
+            "field_index": 14,
+            "kind": "gitm_variable",
+            "name": " [NO                  ]",
+            "ncell": 29760,
+            "unit": "m^-3"
+          },
+          {
+            "field_index": 15,
+            "kind": "gitm_variable",
+            "name": " [C                   ]",
+            "ncell": 29760,
+            "unit": "m^-3"
+          },
+          {
+            "field_index": 16,
+            "kind": "gitm_variable",
+            "name": " Temperature",
+            "ncell": 29760,
+            "unit": "K"
+          },
+          {
+            "field_index": 17,
+            "kind": "gitm_variable",
+            "name": " V!Dn!N (east)",
+            "ncell": 29760,
+            "unit": "m s^-1"
+          },
+          {
+            "field_index": 18,
+            "kind": "gitm_variable",
+            "name": " V!Dn!N (north)",
+            "ncell": 29760,
+            "unit": "m s^-1"
+          },
+          {
+            "field_index": 19,
+            "kind": "gitm_variable",
+            "name": " V!Dn!N (up)",
+            "ncell": 29760,
+            "unit": "m s^-1"
+          },
+          {
+            "field_index": 20,
+            "kind": "gitm_variable",
+            "name": " V!Dn!N (up,CO!D2!N             )",
+            "ncell": 29760,
+            "unit": "m s^-1"
+          },
+          {
+            "field_index": 21,
+            "kind": "gitm_variable",
+            "name": " V!Dn!N (up,CO                  )",
+            "ncell": 29760,
+            "unit": "m s^-1"
+          },
+          {
+            "field_index": 22,
+            "kind": "gitm_variable",
+            "name": " V!Dn!N (up,O                   )",
+            "ncell": 29760,
+            "unit": "m s^-1"
+          },
+          {
+            "field_index": 23,
+            "kind": "gitm_variable",
+            "name": " V!Dn!N (up,N!D2!N              )",
+            "ncell": 29760,
+            "unit": "m s^-1"
+          },
+          {
+            "field_index": 24,
+            "kind": "gitm_variable",
+            "name": " V!Dn!N (up,O!D2!N              )",
+            "ncell": 29760,
+            "unit": "m s^-1"
+          },
+          {
+            "field_index": 25,
+            "kind": "gitm_variable",
+            "name": " V!Dn!N (up,Ar                  )",
+            "ncell": 29760,
+            "unit": "m s^-1"
+          },
+          {
+            "field_index": 26,
+            "kind": "gitm_variable",
+            "name": " V!Dn!N (up,He                  )",
+            "ncell": 29760,
+            "unit": "m s^-1"
+          },
+          {
+            "field_index": 27,
+            "kind": "gitm_variable",
+            "name": " V!Dn!N (up,N                   )",
+            "ncell": 29760,
+            "unit": "m s^-1"
+          },
+          {
+            "field_index": 28,
+            "kind": "gitm_variable",
+            "name": " [O!U+!N              ]",
+            "ncell": 29760,
+            "unit": "m^-3"
+          },
+          {
+            "field_index": 29,
+            "kind": "gitm_variable",
+            "name": " [O!D2!U+!N           ]",
+            "ncell": 29760,
+            "unit": "m^-3"
+          },
+          {
+            "field_index": 30,
+            "kind": "gitm_variable",
+            "name": " [CO!D2!U+!N          ]",
+            "ncell": 29760,
+            "unit": "m^-3"
+          },
+          {
+            "field_index": 31,
+            "kind": "gitm_variable",
+            "name": " [N!D2!U+!N           ]",
+            "ncell": 29760,
+            "unit": "m^-3"
+          },
+          {
+            "field_index": 32,
+            "kind": "gitm_variable",
+            "name": " [NO!U+!N             ]",
+            "ncell": 29760,
+            "unit": "m^-3"
+          },
+          {
+            "field_index": 33,
+            "kind": "gitm_variable",
+            "name": " [CO!U+!N             ]",
+            "ncell": 29760,
+            "unit": "m^-3"
+          },
+          {
+            "field_index": 34,
+            "kind": "gitm_variable",
+            "name": " [C!U+!N              ]",
+            "ncell": 29760,
+            "unit": "m^-3"
+          },
+          {
+            "field_index": 35,
+            "kind": "gitm_variable",
+            "name": " [e-                  ]",
+            "ncell": 29760,
+            "unit": "m^-3"
+          },
+          {
+            "field_index": 36,
+            "kind": "gitm_variable",
+            "name": " eTemperature",
+            "ncell": 29760,
+            "unit": "K"
+          },
+          {
+            "field_index": 37,
+            "kind": "gitm_variable",
+            "name": " iTemperature",
+            "ncell": 29760,
+            "unit": "K"
+          },
+          {
+            "field_index": 38,
+            "kind": "gitm_variable",
+            "name": " V!Di!N (east)",
+            "ncell": 29760,
+            "unit": "m s^-1"
+          },
+          {
+            "field_index": 39,
+            "kind": "gitm_variable",
+            "name": " V!Di!N (north)",
+            "ncell": 29760,
+            "unit": "m s^-1"
+          },
+          {
+            "field_index": 40,
+            "kind": "gitm_variable",
+            "name": " V!Di!N (up)",
+            "ncell": 29760,
+            "unit": "m s^-1"
+          },
+          {
+            "field_index": 41,
+            "kind": "gitm_variable",
+            "name": " Solar Zenith Angle",
+            "ncell": 29760,
+            "unit": "deg"
+          },
+          {
+            "field_index": 42,
+            "kind": "gitm_variable",
+            "name": " Local Time (hr)",
+            "ncell": 29760,
+            "unit": "h"
+          },
+          {
+            "field_index": 43,
+            "kind": "gitm_variable",
+            "name": " NO Emissions (ph/cm^3/s)",
+            "ncell": 29760,
+            "unit": "ph cm^-3 s^-1"
+          }
+        ],
+        "format": "gitm_bin",
+        "path": "ua_state.bin"
       }
-    ]
+    ],
+    "rtol": 1e-05
   },
+  "configuration": "Config.pl -install=BATSRUS -compiler=gfortran, then in UA/MGITM ./Config.pl -Mars and ./Config.pl -g=8,4,120,4 and make GITM. Deck UA/MGITM/srcData/UAM.mars.in.3d unchanged: M-GITM standalone on Mars, 2x2 blocks of 8x4x120 cells covering the whole globe from the surface to 300 km, analytic initial thermosphere, F10.7 = 125, solar EUV heating with the FISM daily spectrum, O cooling, thermal conduction, eddy and molecular diffusion in the vertical solver, ion chemistry without ion advection, no crustal field and no MHD field imposed, from 2017-11-21 00:00:00 for 2 minutes (about 29 steps) on 2 MPI ranks. Graded, after PostProc.pl: the log of every step and the merged 3-D state of all 44 variables at the end of the window.",
+  "default_vs_upstream": "upstream, except that PostProc.pl is run after the graded run stage rather than after the restart stage that follows it upstream, so that the merged .bin state of this stage exists to be graded; the deck, the configuration, the rank count and the window are the upstream test's",
   "evidence": {
     "floor": null,
     "floor_how": "measured by selfcheck: run.sh altbuild against run.sh nominal, graded with this check's own validate.py",
-    "self_validation_spread": null,
-    "self_validation_bound_fraction": null
+    "self_validation_bound_fraction": null,
+    "self_validation_spread": null
   },
-  "warrant": "The graded observable is the per-step minimum, maximum and mean neutral temperature and vertical velocity of the whole globe, and the merged 3-D state of all 44 neutral and ion variables at every one of the 29760 cells at the end of the window, compared value by value under |candidate - reference| <= 1e-06 + 1e-05*|reference|. Physical: a wrong vertical solver, a dropped eddy or molecular diffusion term, a mis-scaled EUV heating or ionisation rate, a chemistry matrix solved with the wrong rates, or a horizontal advection step that loses the terminator gradient moves the graded numbers by orders of magnitude more than this bound. The log carries the global minimum, maximum and mean of the neutral temperature and of the vertical velocity at every step, which are reductions over the whole globe and move in their fourth significant digit as soon as any source term is wrong; the graded 3-D state carries all 44 variables at every cell, so a fault confined to one species, one altitude range or the polar cells is visible in the variable that carries it even when the global reductions hide it. The file version, grid dimensions, variable count and output time stamp are graded alongside the state, so a run that stops at a different time or writes a different grid fails on shape rather than on tolerance. Upstream compares only the log, and only at a relative 2e-2; this check grades the full state and holds it far tighter. Achievable: the bound of this calibration draft is provisional and is replaced by the measured one before the package is offered for review; the numbers of the alternative -O0 build and of the nominal-versus-variant pair are recorded under evidence."
+  "expected_runtime_s": 6,
+  "observable": "the per-step minimum, maximum and mean neutral temperature and vertical velocity of the whole globe, and the merged 3-D state of all 44 neutral and ion variables at every one of the 29760 cells at the end of the window",
+  "policy": "pointwise",
+  "upstream_test": "code/swmf/UA/MGITM/Makefile.test",
+  "variant": "f10.7, the solar radio flux index that sets the solar EUV heating and photo-ionisation rates the whole thermosphere-ionosphere advance is driven by, is 125 in ic/nominal and 125.0000000002 in ic/variant - two units of the tenth significant digit, well below the last digit the graded log prints and far below the resolution of any measured F10.7. It is generic numerical-noise calibration: the two decks differ by one number, and the spread between the two runs is the floor this pass policy can be held to.",
+  "warrant": "The graded observable is the per-step minimum, maximum and mean neutral temperature and vertical velocity of the whole globe, and the merged 3-D state of all 44 neutral and ion variables at every one of the 29760 cells at the end of the window, compared value by value under |candidate - reference| <= 1e-06 + 1e-05*|reference|. Physical: a wrong vertical solver, a dropped eddy or molecular diffusion term, a mis-scaled EUV heating or ionisation rate, a chemistry matrix solved with the wrong rates, or a horizontal advection step that loses the terminator gradient moves the graded numbers by orders of magnitude more than this bound. The log carries the global minimum, maximum and mean of the neutral temperature and of the vertical velocity at every step, which are reductions over the whole globe and move in their fourth significant digit as soon as any source term is wrong; the graded 3-D state carries all 44 variables at every cell, so a fault confined to one species, one altitude range or the polar cells is visible in the variable that carries it even when the global reductions hide it. The file version, grid dimensions, variable count and output time stamp are graded alongside the state, so a run that stops at a different time or writes a different grid fails on shape rather than on tolerance. Upstream compares only the log, and only at a relative 2e-2; this check grades the full state and holds it far tighter. Achievable: this is retained finite nominal/variant calibration, presently unvalidated by a fresh full 15-check suite. Named fields use the exact finite max-absolute separation plus one representation-safe nextafter step and retained rtol=1e-5; unlisted physical values retain the old scalar bound. ALT floor remains unavailable and null; no failed, skipped, timed-out or nonfinite A output justifies a floor."
 }

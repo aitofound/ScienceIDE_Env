@@ -316,6 +316,13 @@ def main() -> int:
         if r.shape != c.shape:
             failures.append(f"{rel}: {c.size} graded values, reference has {r.size}")
             continue
+        # Reject both sides before subtraction/bound arithmetic.  In particular,
+        # a non-finite reference must not be allowed to evade `>` through NaN
+        # arithmetic; retain every physical value and fail closed instead of
+        # filtering or masking it.
+        if not np.all(np.isfinite(r)):
+            failures.append(f"{rel}: reference contains non-finite values")
+            continue
         if not np.all(np.isfinite(c)):
             failures.append(f"{rel}: candidate contains non-finite values")
             continue

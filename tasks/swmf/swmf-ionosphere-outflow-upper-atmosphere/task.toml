@@ -34,10 +34,18 @@ The expensive path is the three-dimensional M-GITM advance: a lon-lat-alt grid o
 neutral and ion species advanced with a vertical implicit solver, horizontal
 advection, eddy and molecular diffusion, thermal conduction, solar EUV heating and
 ionisation and a chemistry matrix per cell, plus the hundreds of independent
-field-aligned polar-wind lines PWOM integrates. The five checks are the DGCPM
-plasmasphere test, the GM+UA coupled Mars test, the M-GITM component test in both of
-its stages, and the global Mars deck the component ships; PW/PWOM could not be
-packaged because its input data is not in the vendored tree (see comment/README.md).
+field-aligned polar-wind lines PWOM integrates. The fifteen checks cover six PWOM
+standalone configurations (plain, two-stream, Saturn, Saturn restart, the
+framework session loop, and the IE-PW-GM outflow coupling), four SWPC operational
+decks that run the polar wind through the full geospace model (single- and
+two-species, each with a restart), the DGCPM plasmasphere test, and four M-GITM
+configurations (the GM+UA coupled Mars test, the component's own 3-D test in both
+its run and restart stages, and the component's global Mars deck, the
+acceleration-labelled workload). PW/PWOM ships no input data in the vendored tree
+(share/Scripts/Config.pl's link_swmf_data would symlink it from SWMF_data/PW/PWOM/data,
+which code/swmf/SWMF_data/ does not carry), so every PWOM and SWPC-PWOM check ships
+the small slice of that data it reads under its own ic/<condition>/pwdata (see
+comment/README.md).
 """
 
 public_inputs = """
@@ -74,9 +82,6 @@ mgitm-mars-global: pointwise; the per-step global minimum, maximum and mean neut
 pwom-earth: pointwise; the full field-aligned state of all eight polar-wind lines at the end of the window and the plotted history of the first two; |d| <= 1e-06 + 1e-05*|reference|.
   The component's own Earth polar-wind test: the cheapest check that exercises the field-line solver end to end.
   Alternative build (./Config.pl -O0): not yet measured.
-pwom-earth-stet: pointwise; the full field-aligned state of all eight lines at the end of the window, with the superthermal-electron heating of the STET solver in it, and the plotted history of the first two; |d| <= 1e-06 + 1e-05*|reference|.
-  The only check that builds PWOMSTET and runs the kinetic superthermal-electron transport.
-  Alternative build (./Config.pl -O0): not yet measured.
 pwom-earth-twostream: pointwise; the full field-aligned state of all eight lines at the end of the window, with the photoelectron heating of the two-stream transport in it, and the plotted history of the first two; |d| <= 1e-06 + 1e-05*|reference|.
   The only check on the two-stream photoelectron transport and on a polar wind started from the analytic ionosphere.
   Alternative build (./Config.pl -O0): not yet measured.
@@ -89,16 +94,16 @@ pwom-saturn: pointwise; the full field-aligned state of all eight Saturn polar-w
 pwom-saturn-restart: pointwise; the full field-aligned state of all eight Saturn lines 100 s after the start, reached through a write-and-read-back of the whole state at 50 s, and the concatenated plotted history of the first line over both windows; |d| <= 1e-06 + 1e-05*|reference|.
   The only check on the polar-wind restart path: the state is written at 50 s, read back and advanced to 100 s.
   Alternative build (./Config.pl -O0): not yet measured.
-swpc-pwom: pointwise; the GM volume-average log, the ground magnetic perturbation at thirteen magnetometer stations, the 72x69 global magnetometer grid, the geomagnetic-index log and the IE ionospheric solution at the end of the two-minute time-accurate window; |d| <= 1e-06 + 1e-05*|reference|.
+swpc-pwom: pointwise; the GM volume-average log, the ground magnetic perturbation at thirteen magnetometer stations, the 72x69 global magnetometer grid, the geomagnetic-index log and the IE ionospheric solution at the end of the time-accurate window; |d| <= 1e-06 + 1e-05*|reference|.
   The operational SWPC geospace model with polar-wind outflow, run from the start.
   Alternative build (./Config.pl -O0): not yet measured.
-swpc-pwom-restart: pointwise; the GM volume-average log, the ground magnetic perturbation at thirteen stations, the 72x69 global magnetometer grid, the geomagnetic-index log and the IE ionospheric solution of the restarted minute; |d| <= 1e-06 + 1e-05*|reference|.
+swpc-pwom-restart: pointwise; the GM volume-average log, the ground magnetic perturbation at thirteen stations, the 72x69 global magnetometer grid, the geomagnetic-index log and the IE ionospheric solution of the restarted window; |d| <= 1e-06 + 1e-05*|reference|.
   The only check on the framework restart path across four coupled components.
   Alternative build (./Config.pl -O0): not yet measured.
-swpc-pwom-species: pointwise; the GM volume-average log of the two-species magnetosphere, the ground magnetic perturbation at thirteen stations, the 72x69 global magnetometer grid, the geomagnetic-index log and the IE ionospheric solution at the end of the two-minute time-accurate window; |d| <= 1e-06 + 1e-05*|reference|.
+swpc-pwom-species: pointwise; the GM volume-average log of the two-species magnetosphere, the ground magnetic perturbation at thirteen stations, the 72x69 global magnetometer grid, the geomagnetic-index log and the IE ionospheric solution at the end of the time-accurate window; |d| <= 1e-06 + 1e-05*|reference|.
   The only check on the two-species MhdHpOp magnetosphere, where H+ and O+ outflows are carried separately.
   Alternative build (./Config.pl -O0): not yet measured.
-swpc-pwom-species-restart: pointwise; the GM volume-average log of the two-species magnetosphere, the ground magnetic perturbation at thirteen stations, the 72x69 global magnetometer grid, the geomagnetic-index log and the IE ionospheric solution of the restarted minute; |d| <= 1e-06 + 1e-05*|reference|.
+swpc-pwom-species-restart: pointwise; the GM volume-average log of the two-species magnetosphere, the ground magnetic perturbation at thirteen stations, the 72x69 global magnetometer grid, the geomagnetic-index log and the IE ionospheric solution of the restarted window; |d| <= 1e-06 + 1e-05*|reference|.
   The two-species operational model restarted, so a multi-species restart is graded with three other components.
   Alternative build (./Config.pl -O0): not yet measured.
 """
