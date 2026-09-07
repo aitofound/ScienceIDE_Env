@@ -1,6 +1,6 @@
 # Controlled elastic energy
 
-This user-approved custom check isolates SubstrateMatch.from_zsl from lattice
+This custom check isolates SubstrateMatch.from_zsl from lattice
 matching. It uses an explicit (001) cubic two-site Si cell with lattice 5.431
 angstrom and a 1.02 stretch along x. Its illustrative isotropic material has
 Lamé constants lambda=100 GPa and mu=80 GPa; these are test parameters, not a

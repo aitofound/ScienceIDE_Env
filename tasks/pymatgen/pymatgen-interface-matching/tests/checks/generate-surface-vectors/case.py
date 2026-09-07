@@ -58,29 +58,17 @@ elif case == 'z-s-l-gen-bidirectional':
     for name, a, b, bidirectional in [('forward', film, substrate, False), ('reverse', substrate, film, False), ('bidirectional', substrate, film, True)]:
         gen.bidirectional = bidirectional
         summarize(name + '-area', [m.match_area for m in gen(a.lattice.matrix[:2], b.lattice.matrix[:2])])
-elif case in {'substrate-analyzer-init', 'generate-surface-vectors'}:
+elif case == 'generate-surface-vectors':
     film, substrate = structure('VO2'), structure('TiO2')
     analyzer = SubstrateAnalyzer(max_area=float(os.getenv('SAB_MAX_AREA', '400')))
-    if case == 'generate-surface-vectors':
-        sets = analyzer.generate_surface_vectors(film, substrate, [(1, 0, 0)], [(1, 1, 1)])
-        metrics['surface-pairs'] = len(sets)
-        for side in [0, 1]:
-            for idx, vectors in enumerate([s[side] for s in sets]):
-                a, b = vectors
-                summarize(f'side-{side}-pair-{idx}-length', [np.linalg.norm(a), np.linalg.norm(b)])
-                metrics[f'side-{side}-pair-{idx}-area'] = np.linalg.norm(np.cross(a, b))
-                metrics[f'side-{side}-pair-{idx}-dot'] = np.dot(a, b)
-    else:
-        elastic = ElasticTensor.from_voigt(config['elastic'])
-        matches = list(analyzer.calculate(film, substrate, elastic))
-        # Group by physical surface orientations, then compare scalar invariants within each group.
-        groups = {}
-        for match in matches:
-            key = 'film-' + ','.join(map(str, match.film_miller)) + '-substrate-' + ','.join(map(str, match.substrate_miller))
-            groups.setdefault(key, []).append(match)
-        for key, group in sorted(groups.items()):
-            for attr in ['match_area', 'von_mises_strain', 'elastic_energy']:
-                summarize(key + '-' + attr, [getattr(m, attr) for m in group])
+    sets = analyzer.generate_surface_vectors(film, substrate, [(1, 0, 0)], [(1, 1, 1)])
+    metrics['surface-pairs'] = len(sets)
+    for side in [0, 1]:
+        for idx, vectors in enumerate([s[side] for s in sets]):
+            a, b = vectors
+            summarize(f'side-{side}-pair-{idx}-length', [np.linalg.norm(a), np.linalg.norm(b)])
+            metrics[f'side-{side}-pair-{idx}-area'] = np.linalg.norm(np.cross(a, b))
+            metrics[f'side-{side}-pair-{idx}-dot'] = np.dot(a, b)
 elif case == 'interface-builder-coherent-interface-builder':
     film, substrate = structure('SiO2'), structure('Si')
     builder = CoherentInterfaceBuilder(film_structure=film, substrate_structure=substrate, film_miller=(1, 0, 0), substrate_miller=(1, 1, 1), zslgen=ZSLGenerator(bidirectional=True, max_area=float(os.getenv('SAB_MAX_AREA', '400'))))
