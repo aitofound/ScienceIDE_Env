@@ -232,11 +232,10 @@ STEP 3  Author the checks of {task}.
     rubric.json                policy, configuration, expected_runtime_s, variant, comparison, evidence, warrant
     validate.py                applies the rubric; standard library and numpy only
     README.md                  the narrative, public to the solver
-  Nothing is shared between checks. One advice, not a requirement: when the
-  module must be compiled at solve time, a run.sh should try to reuse a build
-  another check of this task already made in the solve, keep its own compile
-  as the fallback, and how the checks cooperate is this leaf's own design,
-  stated in comment/README.md. Compiling per check is slow, not wrong.
+  Nothing is shared between checks. Within a run, a run.sh should reuse
+  the build an earlier check made, to the best effort, and nevertheless
+  stays self-contained; how is this leaf's own business, stated in
+  comment/README.md. Compiling per check is slow, not wrong.
   The variant is generic numerical-noise
   calibration, not a physics-isolation experiment or validation of the
   upstream official test. Perturb the smallest sufficient set of one or more
