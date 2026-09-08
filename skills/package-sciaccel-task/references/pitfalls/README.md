@@ -16,6 +16,7 @@ were taken; none carries an estimate.
 | [altbuild-crashes-record-none](altbuild-crashes-record-none.md) | the alternative build compiles but traps in `MPI_Init`, segfaults on two ranks or NaNs at step 1 | EPOCH, Athena++, PLUTO |
 | [altbuild-floors-are-host-specific](altbuild-floors-are-host-specific.md) | `-O0` altbuild floors are zero on x86 and nonzero on arm64, or a bound set on one host fails on the other | any |
 | [s4-gvector-selection-fma](s4-gvector-selection-fma.md) | two builds retain a different number of Fourier basis vectors; rows keyed by G index permute | S4 |
+| [eprem-shock-front-node-tie](eprem-shock-front-node-tie.md) | two builds agree to 1e-15 on the bulk but differ by percent in a shock deck's tail; every shifted node index shares a divisor | EPREM |
 
 ### Unpinned randomness
 

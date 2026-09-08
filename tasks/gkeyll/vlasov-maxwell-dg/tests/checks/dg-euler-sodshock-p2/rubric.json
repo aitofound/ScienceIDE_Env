@@ -24,20 +24,20 @@
     ]
   },
   "evidence": {
-    "floor": 3.4351899103057804e-10,
-    "floor_how": "measured by selfcheck on 2026-09-07: run.sh altbuild (same source, gcc -O2 strict IEEE: no -ffast-math, -ffp-contract=off, no -march=native (build-ieee/)) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
-    "self_validation_spread": 8.164917630892887e-10,
-    "self_validation_bound_fraction": 0.003087533393659353,
+    "floor": 6.220594688938779e-10,
+    "floor_how": "measured by selfcheck on 2026-09-08: run.sh altbuild (same source, gcc -O2 strict IEEE: no -ffast-math, -ffp-contract=off, no -march=native (build-ieee/)) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
+    "self_validation_spread": 1.9863511901692775e-09,
+    "self_validation_bound_fraction": 0.019863511603885074,
     "altbuild": {
       "what": "same source, gcc -O2 strict IEEE: no -ffast-math, -ffp-contract=off, no -march=native (build-ieee/)",
-      "distance": 3.4351899103057804e-10,
-      "bound_fraction": 0.0010832640102129004,
+      "distance": 6.220594688938779e-10,
+      "bound_fraction": 0.0062205946850692,
       "identical": false,
       "passed": true,
       "reason": "all graded values within bound",
-      "at": "2026-09-07T04:31:49Z"
+      "at": "2026-09-08T08:28:22Z"
     },
-    "floor_bound_fraction": 0.0010832640102129004
+    "floor_bound_fraction": 0.0062205946850692
   },
   "warrant": "The graded histories and frames follow the DG fluid-species path of the vlasov app: the modal Euler flux, the primitive-variable recovery and the fluid time stepper (`gkyl_vlasov_fluid_species`), used by 24 drivers and by no other check. In `rt_dg_euler_sodshock_p2.c`, `rhol` (line 63) is the left-state density of the Riemann problem; the two-ULP variant therefore moves every graded value at the level of the arithmetic, while a wrong Euler flux, a wrong primitive-variable recovery or a wrong limiter changes them at order one. The bound atol=1e-07, rtol=1e-07 was set on 2026-09-06 from the calibration selfcheck on the x86 worker 136.114.2.6 (1 cpu, 4 GB, Docker): the two-ULP variant used at most 3.1e-3 of it and the strict-IEEE altbuild at most 1.1e-3 (worst files `euler.gkyl` and `euler.gkyl`), a headroom of about 324x over the larger legitimate perturbation, while the faults named above move the graded values at order one."
 }
