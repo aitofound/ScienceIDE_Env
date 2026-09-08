@@ -1,0 +1,34 @@
+{
+  "module": {
+    "slug": "xenon-stream-processing",
+    "title": "TPC streaming signal processing",
+    "paths": [
+      "strax"
+    ],
+    "entrypoints": [
+      "strax/context.py",
+      "strax/plugins/plugin.py",
+      "strax/processing"
+    ],
+    "expensive_path": "Numba-compiled passes over digitizer records, waveforms, hits, hitlets, and peaks perform baselining, hit finding, interval matching, waveform accumulation, peak construction, merging, splitting, and property calculation at streaming data rates.",
+    "rationale": "The 14,549-line implementation is below the curator's 50,000-line threshold, and the processing kernels rely on the Context, plugin, chunk, processor, and storage contracts to preserve time ranges and chunk-boundary correctness, so the generic strax framework is proposed as one semi-independent streaming-analysis module.",
+    "excluded": [
+      "The separate XENONnT/straxen repository contains experiment-specific reconstruction and is not vendored or owned by this module.",
+      "Documentation and release tooling are vendored for provenance but are not implementation paths to accelerate."
+    ],
+    "hazards": [
+      "Upstream CI obtains test-only dependencies and version pins from the external XENON base environment; an unconstrained pandas 3 environment fails otherwise valid run-selection tests.",
+      "Numba compilation warm-up must be excluded from steady-state performance measurements without hiding required source builds.",
+      "Threaded execution and chunk boundaries can change scheduling, but graded results must preserve physical time and identity rather than incidental storage order.",
+      "Many official tests verify orchestration, storage, and failure behavior rather than expensive numerical work, so suitability must be decided in the official-test survey."
+    ]
+  },
+  "approval": {
+    "modules": [
+      "xenon-stream-processing"
+    ],
+    "human_ref": "English translation of the user approval originally given in Chinese: Okay, then let us continue moving forward.",
+    "at": "2026-09-08T03:02:04Z"
+  },
+  "shared_infrastructure": []
+}
