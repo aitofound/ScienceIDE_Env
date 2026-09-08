@@ -15,19 +15,23 @@ knob SAB_ROWS_PER_FACE "2" "numRowsPerFace; together with columns sets the 6 x r
 knob SAB_COLUMNS_PER_FACE "2" "numColumnsPerFace; together with rows sets the 6 x rows x columns stream count"
 knob SAB_ENERGY_STEPS "20" "numEnergySteps; energetic-particle state and transport work scale with this axis"
 knob SAB_MU_STEPS "7" "numMuSteps; pitch-angle transport work scales with this axis"
-if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; exit 0; fi
+if [ "${1:-}" = "--help" ]; then
+  printf '%s' "$KNOB_HELP"
+  printf '%s\n' 'altbuild: the nominal deck on a -O1 build of the same pinned source (CFLAGS -O1 instead of -O3, same mpicc and libraries)'
+  exit 0
+fi
 
 set -euo pipefail
-IC="${1:?usage: run.sh <nominal|variant> | run.sh --help}"
+IC="${1:?usage: run.sh <nominal|variant|altbuild> | run.sh --help}"
 case "$IC" in
-  nominal|variant) ;;
-  altbuild) echo "run.sh: this check declares no alternative build" >&2; exit 2 ;;
-  *) echo "run.sh: initial condition must be nominal or variant" >&2; exit 2 ;;
+  nominal|variant) DECK_IC="$IC"; EPREM_OPT="-O3" ;;
+  altbuild) DECK_IC="nominal"; EPREM_OPT="-O1" ;;
+  *) echo "run.sh: initial condition must be nominal, variant, or altbuild" >&2; exit 2 ;;
 esac
 : "${SOURCE_DIR:?SOURCE_DIR must name the read-only source tree}"
 : "${OUT_DIR:?OUT_DIR must name the empty graded-output directory}"
 : "${CHECK_DIR:?CHECK_DIR must name this check directory}"
-[ -f "$CHECK_DIR/ic/$IC/shock.cfg" ] || { echo "run.sh: missing ic/$IC/shock.cfg" >&2; exit 2; }
+[ -f "$CHECK_DIR/ic/$DECK_IC/shock.cfg" ] || { echo "run.sh: missing ic/$DECK_IC/shock.cfg" >&2; exit 2; }
 case "$SAB_MPI_RANKS" in ''|*[!0-9]*) echo "run.sh: SAB_MPI_RANKS must be a positive integer" >&2; exit 2 ;; esac
 [ "$SAB_MPI_RANKS" -gt 0 ] || { echo "run.sh: SAB_MPI_RANKS must be positive" >&2; exit 2; }
 
@@ -35,7 +39,7 @@ WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 SRC="$WORK/src"; BUILD="$WORK/build"; RUN="$WORK/run"
 mkdir -p "$BUILD" "$RUN"
 cp -R "$SOURCE_DIR/." "$SRC"
-cp "$CHECK_DIR/ic/$IC/shock.cfg" "$RUN/shock.cfg"
+cp "$CHECK_DIR/ic/$DECK_IC/shock.cfg" "$RUN/shock.cfg"
 
 # Apply iteration-only runtime overrides to the private working copy. At graded
 # defaults every replacement writes the exact token already present, so the
@@ -85,7 +89,7 @@ if ! (
   HDF5_CFLAGS="$(pkg-config --cflags hdf5)"
   HDF5_LIBS="$(pkg-config --libs hdf5)"
   cd "$BUILD"
-  env CC=mpicc CXX=mpicxx CFLAGS="-O3" CXXFLAGS="-O3" \
+  env CC=mpicc CXX=mpicxx CFLAGS="$EPREM_OPT" CXXFLAGS="$EPREM_OPT" \
       CPPFLAGS="-include string.h -include stdlib.h $HDF5_CFLAGS" LIBS="$HDF5_LIBS" \
       "$SRC/configure" --disable-dependency-tracking >>"$WORK/build.log" 2>&1
   make -j2 >>"$WORK/build.log" 2>&1

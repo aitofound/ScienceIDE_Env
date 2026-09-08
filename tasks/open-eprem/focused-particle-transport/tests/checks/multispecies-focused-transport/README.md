@@ -16,10 +16,10 @@ The variant is generic numerical-sensitivity calibration, not a second physics c
 
 ## The pass policy
 
-The initial hypothesis compares exact species coordinates and species-resolved final mean-free-path and flux arrays point by point. Exact integer stream `(face,row,col)` keys and configured point-observer indices gate physical identity. Raw NetCDF bytes, attributes, record order, MPI layout, adaptive bookkeeping, logs and timings are excluded. Coordinates and parameters use atol=rtol=1e-12. Mean free path uses atol=1e-17 and rtol=1e-12; flux uses atol=1e-14 and rtol=1e-10.
+The finalized policy compares exact species coordinates and species-resolved final mean-free-path and flux arrays point by point. Exact integer stream `(face,row,col)` keys and configured point-observer indices gate physical identity. Raw NetCDF bytes, attributes, record order, MPI layout, adaptive bookkeeping, logs and timings are excluded. Coordinates and parameters use `atol=rtol=1e-12`. Mean free path uses `atol=1e-17` and `rtol=1e-12`. Each flux field uses `atol=1e-14`, plus `1e-9` times that reference field's peak, plus `rtol=1e-10` times the reference cell.
 
 ## Evidence
 
-Calibration run `20260907T164439Z` completed both solves and the verifier with exit 0. The two-ULP alpha-abundance variant changed stream flux by at most 5.002220859751105e-12 and consumed 3.294363145619905e-05 of the proposed bound. The alpha/proton MFP ratio was 1.259921049894873, matching 2^(1/3). An offline proton/alpha-order-swap artifact failed species coordinates, MFP and flux. Record SHA-256: `0170ccbf6103be4e26b95d51b1442c3af52a98fbce801a5d31a632f55d414002`.
+Calibration run `cal3` began on 2026-09-08 on arm64 macOS under Colima with gcc 14.2. The two-ULP alpha-abundance variant moved `stream_flux` by at most `5.002220859751105e-12` and used `2.8546031362721777e-07` of the worst finalized bound. The `-O1` build moved `stream_flux` by at most `1.8417949831928127e-08` and used `0.0012099207440976264` of the worst bound. An offline proton/alpha-order-swap artifact failed 83,320 stream-flux values and exact species coordinates.
 
-Evidence is same-host only: no repeat, legitimate alternative build, cross-platform run, or independent correct implementation has been measured. A valid GPU/compiler/parallel port may differ more than this calibration. The reference values remain hidden.
+Grading runs on x86, so this same-host compiler comparison does not establish a cross-architecture or GPU floor. A GPU or other port may differ more than this same-host calibration.
