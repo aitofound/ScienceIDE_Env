@@ -9,9 +9,7 @@ knob defaults are unchanged. See [the scope audit](scope-audit.json).
 
 These are author measurements and proposed scientific policies. Acceptance
 of the module and its tolerances remains the curator/domain reviewer's
-decision. The two-check preflight below is not a substitute for the complete
-official self-validation record. A fresh 52-check, three-solve CLI run is
-required after deploying the current official pipeline to the consented host.
+decision. Fresh official self-validation `review0908-netlib-behavior-v2` finished 2026-09-08T04:14:57Z: 52/52 nominal-versus-variant checks passed with reward 1.0, and all 52 alternate-build checks passed. The Netlib comparison has 32 nonzero graded distances and 19 byte-identical outputs. Nominal net suite time was 318.0 s with 5.3 s of reported build time. All three solves independently built once and reused that run's completed build for 51 later checks; all 156 native-extension presence checks passed. The official record fingerprint is `4ba858241d4673c9d88c6b7a9dd00b17dde7cc21819d417163ce23d3f4a357b9`. See [the full run audit](final-run-audit.json) and the CLI-owned records under `../pipeline/`. The two-check preflight remains separately labelled supporting evidence, not the full-run result.
 
 | Review item | Change and evidence | Remaining interpretation |
 |---|---|---|
@@ -106,8 +104,10 @@ No blanket 1e-10 analytic bound was widened. The independent checks passed
 both archived legitimate builds. [Twelve controls](behavior-controls.json)
 reject analytic faults, inconsistent integration, false directions,
 nonconverged traces and excess base speed; quaternion sign equivalence
-passes. The original failed run is retained and a fresh complete official
-three-solve run is required for the corrected contract. See each check's
+passes. The original failed run is retained and the fresh complete official three-solve run of the corrected contract passed, as recorded above. See each check's
 `behavior_guards.py`, `kinematics.py` and reproducible `behavior_model.npz`.
 
 Reproduce the controls with `python behavior_control_probe.py --reference-root <oracle-nominal/results> --out <new-empty-directory>`. Model generators reproduce all 47 input arrays exactly; see [the model-fact check](behavior-model-reproduction.json).
+
+
+Current-run runtime guidance: the official record reports one warning for `examples-arm-dual-iiwa`: measured net runtime 7 s versus declared approximately 3 s. This estimate remains understated; the complete workload ran and its scientific checks passed. The reviewer-requested dual-flying-UR5e declaration is now 12 s, with 9 s measured in this run. Lint also retains 21 documented no-knob warnings for fixed unit suites. These are disclosed reading items, not omitted checks.
