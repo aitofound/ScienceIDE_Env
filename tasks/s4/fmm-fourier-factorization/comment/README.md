@@ -158,7 +158,7 @@ eigensolver computes it cannot discriminate a correct port.
 ## The G-vector selection is not reproducible across builds
 
 The single most important thing found in this leaf, and it is a property of
-S4 rather than of any check. `S4/gsel.c:111` sorts the retained
+S4 rather than of any check. `S4/gsel.c` (`Gsel_circular`, sort at `:147`; tie test `G_same`, `:74-90`) sorts the retained
 reciprocal-lattice vectors with the quicksort in `S4/sort.c`, which is not
 stable, and the comparator ranks them by a floating-point |G| product. Vectors
 sharing a |G| shell are therefore ordered by how the comparison happens to
