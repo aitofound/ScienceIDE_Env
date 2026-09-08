@@ -3,6 +3,7 @@
 //
 
 #include <iostream>
+#include "numerical.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/utility/binary.hpp>
@@ -22,6 +23,7 @@ BOOST_AUTO_TEST_CASE(test_trajectory_se3) {
   using namespace pinocchio;
 
   SE3 M_ref = SE3::Identity();
+  M_ref.translation()(0) = sab::input(0.125);
   VectorXd M_vec(12);
   SE3ToVector(M_ref, M_vec);
   VectorXd zero = VectorXd::Zero(6);
@@ -36,6 +38,9 @@ BOOST_AUTO_TEST_CASE(test_trajectory_se3) {
   BOOST_CHECK(sample.getValue().isApprox(M_vec));
   BOOST_CHECK(sample.getDerivative().isApprox(zero));
   BOOST_CHECK(sample.getSecondDerivative().isApprox(zero));
+  sab::emit("value", sample.getValue());
+  sab::emit("velocity", sample.getDerivative());
+  sab::emit("acceleration", sample.getSecondDerivative());
 }
 
 BOOST_AUTO_TEST_CASE(test_trajectory_euclidian) {
@@ -46,6 +51,7 @@ BOOST_AUTO_TEST_CASE(test_trajectory_euclidian) {
 
   const unsigned int n = 5;
   VectorXd q_ref = VectorXd::Ones(n);
+  q_ref(0) = sab::input(q_ref(0));
   VectorXd zero = VectorXd::Zero(n);
   TrajectoryBase* traj = new TrajectoryEuclidianConstant("traj_eucl", q_ref);
 
@@ -58,6 +64,9 @@ BOOST_AUTO_TEST_CASE(test_trajectory_euclidian) {
   BOOST_CHECK(sample.getValue().isApprox(q_ref));
   BOOST_CHECK(sample.getDerivative().isApprox(zero));
   BOOST_CHECK(sample.getSecondDerivative().isApprox(zero));
+  sab::emit("value", sample.getValue());
+  sab::emit("velocity", sample.getDerivative());
+  sab::emit("acceleration", sample.getSecondDerivative());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

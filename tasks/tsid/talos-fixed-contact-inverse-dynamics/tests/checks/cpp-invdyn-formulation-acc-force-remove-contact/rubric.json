@@ -4,21 +4,130 @@
   "chaotic": false,
   "upstream_test": "tests/tsid-formulation.cpp",
   "configuration": "test_invdyn_formulation_acc_force_remove_contact",
-  "observable": "Completion and original assertions of one frozen official test stage",
+  "observable": "Fixed-time CoM, objective value and hard-constraint feasibility",
   "expected_runtime_s": 1.0,
-  "default_vs_upstream": "upstream",
-  "variant": "Identical fixed upstream assertion workload. There is no graded continuous output in this assertion harness, so this pair supplies no floating-point spread evidence; its exact assertion verdict is not presented as numerical tolerance calibration. The two TALOS checks provide continuous two-ULP calibration.",
+  "default_vs_upstream": "All selected upstream assertions and loop windows remain. Explicit numeric probes are added. C++ random matrices use the immutable SplitMix64 generator in numerical.hpp; the C++ robot state and SE3 target are fixed. Python check-local RNGs are seeded at 20260907 (the solver test retains its explicit seed 0). Trajectory SE3 translation is 0.125 m; gravity adds a nonzero request after the original zero request.",
+  "variant": "Two binary64 nextafter operations toward +infinity on the 0.1 m lateral CoM target displacement. The IC noise_ulps=0 or 2 is consumed by the runner. Numerical output change must be measured during calibration.",
   "altbuild": "none: the pinned source has been validated on one O2 compiler/dependency environment; no alternative build evidence is claimed.",
   "comparison": {
-    "required_completed_stages": 1,
-    "minimum_passed_assertions": 1,
-    "maximum_failed_assertions": 0
+    "fields": {
+      "sample_0_feasibility": {
+        "absolute_max": 1e-06
+      },
+      "sample_0_objective": {
+        "atol": 1e-05,
+        "rtol": 1e-05
+      },
+      "sample_0_com": {
+        "atol": 1e-06,
+        "rtol": 1e-06
+      },
+      "sample_1_feasibility": {
+        "absolute_max": 1e-06
+      },
+      "sample_1_objective": {
+        "atol": 1e-05,
+        "rtol": 1e-05
+      },
+      "sample_1_com": {
+        "atol": 1e-06,
+        "rtol": 1e-06
+      },
+      "sample_2_feasibility": {
+        "absolute_max": 1e-06
+      },
+      "sample_2_objective": {
+        "atol": 1e-05,
+        "rtol": 1e-05
+      },
+      "sample_2_com": {
+        "atol": 1e-06,
+        "rtol": 1e-06
+      },
+      "sample_3_feasibility": {
+        "absolute_max": 1e-06
+      },
+      "sample_3_objective": {
+        "atol": 1e-05,
+        "rtol": 1e-05
+      },
+      "sample_3_com": {
+        "atol": 1e-06,
+        "rtol": 1e-06
+      },
+      "sample_4_feasibility": {
+        "absolute_max": 1e-06
+      },
+      "sample_4_objective": {
+        "atol": 1e-05,
+        "rtol": 1e-05
+      },
+      "sample_4_com": {
+        "atol": 1e-06,
+        "rtol": 1e-06
+      },
+      "sample_5_feasibility": {
+        "absolute_max": 1e-06
+      },
+      "sample_5_objective": {
+        "atol": 1e-05,
+        "rtol": 1e-05
+      },
+      "sample_5_com": {
+        "atol": 1e-06,
+        "rtol": 1e-06
+      },
+      "sample_6_feasibility": {
+        "absolute_max": 1e-06
+      },
+      "sample_6_objective": {
+        "atol": 1e-05,
+        "rtol": 1e-05
+      },
+      "sample_6_com": {
+        "atol": 1e-06,
+        "rtol": 1e-06
+      },
+      "sample_7_feasibility": {
+        "absolute_max": 1e-06
+      },
+      "sample_7_objective": {
+        "atol": 1e-05,
+        "rtol": 1e-05
+      },
+      "sample_7_com": {
+        "atol": 1e-06,
+        "rtol": 1e-06
+      },
+      "sample_8_feasibility": {
+        "absolute_max": 1e-06
+      },
+      "sample_8_objective": {
+        "atol": 1e-05,
+        "rtol": 1e-05
+      },
+      "sample_8_com": {
+        "atol": 1e-06,
+        "rtol": 1e-06
+      },
+      "sample_9_feasibility": {
+        "absolute_max": 1e-06
+      },
+      "sample_9_objective": {
+        "atol": 1e-05,
+        "rtol": 1e-05
+      },
+      "sample_9_com": {
+        "atol": 1e-06,
+        "rtol": 1e-06
+      }
+    }
   },
   "evidence": {
     "spread": null,
-    "spread_how": "Both fixed assertion runs must pass. Their identical discrete verdict provides no numeric spread evidence.",
-    "self_validation_spread": 0.0,
-    "self_validation_bound_fraction": 0.0
+    "spread_how": "The CLI measured the maximum absolute nominal-versus-two-ULP-variant difference in the public numerical outputs. This mixed-unit maximum is a sensitivity diagnostic, not a global pass tolerance; each field has its own bound. Source-specific mechanisms and the measured source-fault discrimination are documented in comment/redesign-calibration.md.",
+    "self_validation_spread": 1.4779288903810084e-12,
+    "self_validation_bound_fraction": 2.006572685786523e-05
   },
-  "warrant": "The immutable upstream regression snapshot executes test_invdyn_formulation_acc_force_remove_contact. Its original assertions compare the library operations against independently computed expectations or explicit constraint properties; every selected stage must complete with at least one passed assertion and no failed assertion. A failed or skipped stage is rejected. Counts are not required to equal across runs because an iterative test can converge in a different number of valid steps. Numerical tolerances inside the frozen upstream assertions remain the upstream values; this discrete gate introduces no new numerical equivalence bound."
+  "warrant": "Fixed-time CoM, objective value and hard-constraint feasibility are produced by code/tsid/src/formulations/inverse-dynamics-formulation-acc-force.cpp and src/solvers/solver-HQP-eiquadprog.cpp. The acceleration/force formulation assembles floating-base dynamics, contacts and weighted motion objectives. C++ reports weighted least-squares residual cost; Python reports the canonical upstream regularized quadratic cost 0.5*x^T*H*x+g^T*x, with CE*x+ce0=0 and CI*x+ci0>=0. Different optimizer vectors remain acceptable at equivalent objective and feasibility; physical samples are keyed by their prescribed times. Every finite field and its physical shape is required. Per-field bounds in comparison distinguish copied coefficients, assembled robot/task quantities, terminal errors and absolute feasibility residuals; terminal error tolerance permits a different valid stopping iteration, which is never compared. The actual binary64 two-ULP calibration measured maximum absolute difference 1.4779288903810084e-12; this is evidence of rounding sensitivity, not the tolerance itself. An alternative-build floor has not been measured for this component check, and the separate TALOS floors are not transferred to it. The human finalized these policies, bounds, windows and variants after reviewing the calibration."
 }

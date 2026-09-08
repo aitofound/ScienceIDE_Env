@@ -3,6 +3,7 @@
 //
 
 #include <iostream>
+#include "numerical.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/utility/binary.hpp>
@@ -51,8 +52,8 @@ BOOST_AUTO_TEST_SUITE(BOOST_TEST_MODULE)
 //  "solver-eiquadprog"); solver->resize(n, neq, nin);
 
 //  HQPData HQPData(2);
-//  Matrix A = Matrix::Random(m, n);
-//  Vector b = Vector::Random(m);
+//  Matrix A = sab::random(m, n);
+//  Vector b = sab::random(m, 1);
 //  ConstraintEquality constraint1("c1", A, b);
 //  HQPData[1].push_back(make_pair<double, ConstraintBase*>(1.0, &constraint1));
 
@@ -89,14 +90,14 @@ BOOST_AUTO_TEST_SUITE(BOOST_TEST_MODULE)
 
 //  HQPData HQPData(2);
 
-//  Matrix A_eq = Matrix::Random(neq, n);
-//  Vector b_eq = Vector::Random(neq);
+//  Matrix A_eq = sab::random(neq, n);
+//  Vector b_eq = sab::random(neq, 1);
 //  ConstraintEquality eq_constraint("eq1", A_eq, b_eq);
 //  HQPData[0].push_back(make_pair<double, ConstraintBase*>(1.0,
 //  &eq_constraint));
 
-//  Matrix A = Matrix::Random(m, n);
-//  Vector b = Vector::Random(m);
+//  Matrix A = sab::random(m, n);
+//  Vector b = sab::random(m, 1);
 //  ConstraintEquality constraint1("c1", A, b);
 //  HQPData[1].push_back(make_pair<double, ConstraintBase*>(1.0, &constraint1));
 
@@ -130,8 +131,8 @@ BOOST_AUTO_TEST_SUITE(BOOST_TEST_MODULE)
 
 //  HQPData HQPData(2);
 
-//  Matrix A = Matrix::Random(m, n);
-//  Vector b = Vector::Random(m);
+//  Matrix A = sab::random(m, n);
+//  Vector b = sab::random(m, 1);
 //  ConstraintEquality constraint1("c1", A, b);
 //  HQPData[1].push_back(make_pair<double, ConstraintBase*>(1.0, &constraint1));
 
@@ -142,9 +143,9 @@ BOOST_AUTO_TEST_SUITE(BOOST_TEST_MODULE)
 //  Vector x(n);
 //  svdSolveWithDamping(A, b, x, damping);
 
-//  Matrix A_in = Matrix::Random(nin, n);
-//  Vector A_lb = A_in*x - Vector::Ones(nin) + Vector::Random(nin);
-//  Vector A_ub = A_in*x + Vector::Ones(nin) + Vector::Random(nin);
+//  Matrix A_in = sab::random(nin, n);
+//  Vector A_lb = A_in*x - Vector::Ones(nin) + sab::random(nin, 1);
+//  Vector A_ub = A_in*x + Vector::Ones(nin) + sab::random(nin, 1);
 //  ConstraintInequality in_constraint("in1", A_in, A_lb, A_ub);
 //  HQPData[0].push_back(make_pair<double, ConstraintBase*>(1.0,
 //  &in_constraint));
@@ -240,8 +241,9 @@ BOOST_AUTO_TEST_CASE(test_eiquadprog_classic_vs_rt_vs_fast_vs_proxqp) {
   // CREATE PROBLEM DATA
   HQPData HQPData(2);
 
-  Matrix A1 = Matrix::Random(n, n);
-  Vector b1 = Vector::Random(n);
+  Matrix A1 = sab::random(n, n);
+  Vector b1 = sab::random(n, 1);
+  b1(0) = sab::input(b1(0));
   auto cost = std::make_shared<ConstraintEquality>("c1", A1, b1);
   HQPData[1].push_back(
       solvers::make_pair<double, std::shared_ptr<ConstraintBase>>(1.0, cost));
@@ -249,9 +251,9 @@ BOOST_AUTO_TEST_CASE(test_eiquadprog_classic_vs_rt_vs_fast_vs_proxqp) {
   Vector x(n);
   svdSolveWithDamping(A1, b1, x, damping);
 
-  Matrix A_in = Matrix::Random(nin, n);
-  Vector A_lb = Vector::Random(nin) * NORMAL_DISTR_VAR;
-  Vector A_ub = Vector::Random(nin) * NORMAL_DISTR_VAR;
+  Matrix A_in = sab::random(nin, n);
+  Vector A_lb = sab::random(nin, 1) * NORMAL_DISTR_VAR;
+  Vector A_ub = sab::random(nin, 1) * NORMAL_DISTR_VAR;
   Vector constrVal = A_in * x;
   for (unsigned int i = 0; i < nin; i++) {
     if (constrVal[i] > A_ub[i]) {
@@ -271,7 +273,7 @@ BOOST_AUTO_TEST_CASE(test_eiquadprog_classic_vs_rt_vs_fast_vs_proxqp) {
       solvers::make_pair<double, std::shared_ptr<ConstraintBase>>(
           1.0, in_constraint));
 
-  Matrix A_eq = Matrix::Random(neq, n);
+  Matrix A_eq = sab::random(neq, n);
   Vector b_eq = A_eq * x;
   auto eq_constraint = std::make_shared<ConstraintEquality>("eq1", A_eq, b_eq);
   HQPData[0].push_back(
@@ -283,9 +285,9 @@ BOOST_AUTO_TEST_CASE(test_eiquadprog_classic_vs_rt_vs_fast_vs_proxqp) {
   std::vector<Matrix> hessianPerturbations(nTest);
   for (unsigned int i = 0; i < nTest; i++) {
     gradientPerturbations[i] =
-        Vector::Random(n) * GRADIENT_PERTURBATION_VARIANCE;
+        sab::random(n, 1) * GRADIENT_PERTURBATION_VARIANCE;
     hessianPerturbations[i] =
-        Matrix::Random(n, n) * HESSIAN_PERTURBATION_VARIANCE;
+        sab::random(n, n) * HESSIAN_PERTURBATION_VARIANCE;
   }
 
   // START COMPUTING
@@ -356,6 +358,19 @@ BOOST_AUTO_TEST_CASE(test_eiquadprog_classic_vs_rt_vs_fast_vs_proxqp) {
       getProfiler().stop(PROFILE_QPMAD);
 #endif
     }
+
+    if (output.status != HQP_STATUS_OPTIMAL) throw std::runtime_error("HQP not optimal");
+    sab::emit("problem_" + std::to_string(i) + "_classic_objective", (cost->matrix() * output.x - cost->vector()).squaredNorm());
+    sab::emit("problem_" + std::to_string(i) + "_classic_equality", (A_eq * output.x - b_eq).norm());
+    sab::emit("problem_" + std::to_string(i) + "_classic_inequality", std::max(0., std::max((A_lb - A_in * output.x).maxCoeff(), (A_in * output.x - A_ub).maxCoeff())));
+    if (output_rt.status != HQP_STATUS_OPTIMAL) throw std::runtime_error("HQP not optimal");
+    sab::emit("problem_" + std::to_string(i) + "_rt_objective", (cost->matrix() * output_rt.x - cost->vector()).squaredNorm());
+    sab::emit("problem_" + std::to_string(i) + "_rt_equality", (A_eq * output_rt.x - b_eq).norm());
+    sab::emit("problem_" + std::to_string(i) + "_rt_inequality", std::max(0., std::max((A_lb - A_in * output_rt.x).maxCoeff(), (A_in * output_rt.x - A_ub).maxCoeff())));
+    if (output_fast.status != HQP_STATUS_OPTIMAL) throw std::runtime_error("HQP not optimal");
+    sab::emit("problem_" + std::to_string(i) + "_fast_objective", (cost->matrix() * output_fast.x - cost->vector()).squaredNorm());
+    sab::emit("problem_" + std::to_string(i) + "_fast_equality", (A_eq * output_fast.x - b_eq).norm());
+    sab::emit("problem_" + std::to_string(i) + "_fast_inequality", std::max(0., std::max((A_lb - A_in * output_fast.x).maxCoeff(), (A_in * output_fast.x - A_ub).maxCoeff())));
 
     getStatistics().store("active inequalities",
                           (double)output_rt.activeSet.size());
