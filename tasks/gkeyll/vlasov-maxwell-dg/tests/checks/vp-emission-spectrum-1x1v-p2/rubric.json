@@ -51,19 +51,19 @@
   },
   "evidence": {
     "floor": 5497558138880.0,
-    "floor_how": "measured by selfcheck on 2026-09-07: run.sh altbuild (same source, gcc -O2 strict IEEE: no -ffast-math, -ffp-contract=off, no -march=native (build-ieee/)) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
-    "self_validation_spread": 3848290697216.0,
-    "self_validation_bound_fraction": 0.005959852574051132,
+    "floor_how": "measured by selfcheck on 2026-09-08: run.sh altbuild (same source, gcc -O2 strict IEEE: no -ffast-math, -ffp-contract=off, no -march=native (build-ieee/)) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
+    "self_validation_spread": 3298534883328.0,
+    "self_validation_bound_fraction": 0.007274718872229128,
     "altbuild": {
       "what": "same source, gcc -O2 strict IEEE: no -ffast-math, -ffp-contract=off, no -march=native (build-ieee/)",
       "distance": 5497558138880.0,
-      "bound_fraction": 0.0038786087152233254,
+      "bound_fraction": 0.0026432943637887288,
       "identical": false,
       "passed": true,
       "reason": "all graded values within bound",
-      "at": "2026-09-07T04:31:51Z"
+      "at": "2026-09-08T08:28:24Z"
     },
-    "floor_bound_fraction": 0.0038786087152233254
+    "floor_bound_fraction": 0.0026432943637887288
   },
   "warrant": "The graded histories and frames follow the emission boundary condition (`GKYL_SPECIES_EMISSION` with an emission spectrum model), the boundary-flux source and non-periodic Poisson boundary conditions. In `rt_vlasov_poisson_emission_spectrum_1x1v_p2.c`, `n0` (line 129) is the reference density of both species; the two-ULP variant therefore moves every graded value at the level of the arithmetic, while a wrong emission yield, a wrong boundary-flux accounting or a wrong Poisson boundary changes them at order one. The bound atol=1e-09, rtol=1e-09 was set on 2026-09-06 from the calibration selfcheck on the x86 worker 136.114.2.6 (1 cpu, 4 GB, Docker): the two-ULP variant used at most 6.0e-3 of it and the strict-IEEE altbuild at most 3.9e-3 (worst files `elc-imom.gkyl` and `ion-imom.gkyl`), a headroom of about 168x over the larger legitimate perturbation, while the faults named above move the graded values at order one. Component overrides: `elc-imom.gkyl` (3 values per sample) component 1 atol=1e+10, rtol=1e-09; `ion-imom.gkyl` (3 values per sample) component 1 atol=1e+06, rtol=1e-09. Those components are cancellation residuals or near-zero moments (here the parallel momenta of a sheath whose net flow starts at zero): their absolute spread under the two legitimate perturbations sits far above the file-level bound while their scale is orders of magnitude below the other components of the same history, so each keeps its own decade-rounded bound at the same 100x rule and stays fully graded."
 }
