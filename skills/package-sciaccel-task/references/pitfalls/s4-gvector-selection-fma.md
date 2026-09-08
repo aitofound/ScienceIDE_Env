@@ -31,7 +31,7 @@ trips it on every host.
 
 `-DHAVE_LAPACK` alone moved ex2 by 1.7e-13 and left nonorth bit-identical.
 
-**How to detect it in a new codebase.** Any code that sorts a discrete basis,
+**How to detect it.** Any code that sorts a discrete basis,
 mesh or particle set by a floating-point key and then truncates. Look for a
 `qsort` or hand-rolled sort over doubles followed by `N` kept. Test by
 building once with FMA on (`-O2` on arm64, or `-mfma -ffp-contract=fast` on
