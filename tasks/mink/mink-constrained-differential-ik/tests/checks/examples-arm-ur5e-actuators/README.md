@@ -26,4 +26,4 @@ The trusted source copy retains upstream's Apache-2.0 licensing; the pinned sour
 
 ## Alternative build revision
 
-`run.sh altbuild` builds the same source with CMake Debug and `CMAKE_C_FLAGS_DEBUG=-O0`, then executes the unchanged nominal deck and full window. The compile command and native-extension import are verified; silent fallback fails. This probes optimization-level sensitivity on the same compiler/architecture, not universal cross-platform equivalence. See the latest CLI record for the measured floor.
+The previous native-C Debug/-O0 comparison was identical on all 52 checks. The revised `altbuild` keeps Mink, NumPy 2.3.5 and the nominal inputs fixed, rebuilds NumPy against Netlib BLAS/LAPACK, and verifies the alternate interpreter and backend configuration before execution. SciPy/MuJoCo remain the same pinned builds. This tests one different linear-algebra backend; it is not universal platform evidence. The new CLI record is required after this review revision.

@@ -12,11 +12,11 @@ Nominal and variant are intentionally identical. There is no active numerical in
 
 The run interface remains `producer.py --ic <directory> --out <directory>`, supplied with the installed candidate by `run.sh`. The NumPy/stdlib-only validator uses `--reference`, `--candidate`, `--rubric`, and `--out`. It checks required file/schema identities, empty-array structure, duplicate JSON keys, complete original test results and both direct API observations.
 
-Native nominal and variant each passed both original cases. The revised validator's native negative/identity probes are recorded in `native_v511_evidence.json`. These are Windows native investigation results, not a Linux source build, Docker selfcheck, reward or floating-point calibration. Current formal calibration fields are written by the CLI; the earlier native observations remain separate evidence, and the new -O0 alternative build requires fresh formal calibration. The original two-case file has no shortening knob or advertised alternative build.
+Native nominal and variant each passed both original cases. The revised validator's native negative/identity probes are recorded in `native_v511_evidence.json`. These are Windows native investigation results, not a Linux source build, Docker selfcheck, reward or floating-point calibration. Current formal calibration fields are written by the CLI; the earlier native observations remain separate evidence, and the new NumPy Netlib alternative build requires fresh formal calibration. The original two-case file has no shortening knob or advertised alternative build.
 
 ## Alternative build revision
 
-`run.sh altbuild` builds the same source with CMake Debug and `CMAKE_C_FLAGS_DEBUG=-O0`, then executes the unchanged nominal deck and full window. The compile command and native-extension import are verified; silent fallback fails. This probes optimization-level sensitivity on the same compiler/architecture, not universal cross-platform equivalence. See the latest CLI record for the measured floor.
+The previous native-C Debug/-O0 comparison was identical on all 52 checks. The revised `altbuild` keeps Mink, NumPy 2.3.5 and the nominal inputs fixed, rebuilds NumPy against Netlib BLAS/LAPACK, and verifies the alternate interpreter and backend configuration before execution. SciPy/MuJoCo remain the same pinned builds. This tests one different linear-algebra backend; it is not universal platform evidence. The new CLI record is required after this review revision.
 
 ## Fixture and observation boundary revision
 
