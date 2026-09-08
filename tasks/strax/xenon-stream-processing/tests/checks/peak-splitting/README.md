@@ -12,7 +12,7 @@ The variant raises one peak height by two binary64 ulps. A third initial conditi
 
 ## The pass policy
 
-Pointwise generator storage and sentinels are not physical. The invariants are split count, the sum of physical split positions and total waveform area, with exact discrete bounds and atol/rtol 1e-12 for area.
+Pointwise generator storage and sentinels are not physical. For every deterministic input case, the invariants are split count, the sum of physical split positions and total waveform area, with exact discrete bounds and atol/rtol 1e-12 for area. Comparing each case independently prevents compensating errors in different cases from disappearing in a suite mean.
 
 ## Output contract
 
