@@ -11,6 +11,18 @@
   "altbuild": "run.sh altbuild rebuilds the same pinned source and deck with ./Config.pl -O0 (every OPTn line of Makefile.conf forced to -O0 where the shipped gfortran template builds at -O3); the measured floor is recorded in evidence below.",
   "comparison": {
     "atol": 1e-06,
+    "field_override_policy": "Only the named TH3 field with a retained finite old-bound violation uses the measured +1 K activation max-absolute separation plus one representation-safe nextafter step and retained rtol=1e-5; every other physical field and all headers, frame times, coordinates, dimensions and restart row shapes retain the existing scalar bound.",
+    "field_overrides": {
+      "plots_iline0001.out": {
+        "TH3": {
+          "atol": 1.0000000000000002,
+          "rtol": 1e-05,
+          "selection": "all flattened values of this named physical field only",
+          "source_metric": "measured finite source-backed +1 K first-rung activation max-absolute separation 1.0; one representation-safe nextafter step",
+          "unit": "K"
+        }
+      }
+    },
     "rtol": 1e-05,
     "files": [
       {
@@ -46,8 +58,19 @@
         "format": "swmf_numbers"
       },
       {
-        "path": "plots_iline0001.out",
-        "format": "swmf_idl"
+        "field_groups": [
+          {
+            "column": 11,
+            "frame_header": 7,
+            "kind": "idl_column",
+            "name": "TH3",
+            "nrow": 802,
+            "row_width": 21,
+            "unit": "K"
+          }
+        ],
+        "format": "swmf_idl",
+        "path": "plots_iline0001.out"
       }
     ]
   },

@@ -3,7 +3,7 @@
 This directory is hidden at Harbor runtime and is not part of the contract.
 `comment/pipeline/` is written only by the CLI (module entry, test survey,
 self-validation and runtime records). This file is the human-readable story.
-The v5.11.3 contract fingerprint skips only the fixed cache names
+The v5.11.8 contract fingerprint skips only the fixed cache names
 `.pytest_cache/`, `__pycache__/`, `.ruff_cache/`, `.mypy_cache/`, `.hypothesis/`,
 `.ipynb_checkpoints/`, `*.egg-info/` and `.DS_Store` under contract directories;
 every other file there remains contract, including dotfiles.
@@ -152,6 +152,14 @@ and the four PostScript files. That is roughly 110 MB of the 162 MB that no chec
 leaf touches; several of those files belong to the Earth GITM paths that this fork cannot
 build at all. Trimming them is a source-PR decision, and it would be safe for this leaf,
 but it would also make the vendored tree no longer a faithful copy of the pin.
+
+## MGITM Mars-3D active variant calibration (2026-09-07)
+
+The only remaining inactive/scorable official-check gap was `mgitm-mars-3d`: the prior F107 perturbation was parser/echo-only because active `#EUV_DATA` FISM overwrites the derived EUV forcing, while the supplied MaximumVerticalVelocity ladder failed the exact cadence/schema gate. The bounded source-backed ladder therefore used the prior finite `MaximumVerticalVelocity=0.0` control and tried `kEddyMin=550` first. It passed without any later rung: `kEddyMin` is parsed at `code/swmf/UA/MGITM/src/set_inputs.f90:532-548`, carried through `ModInputs.f90:210-215` and `Mars.f90:748-754,774-825`, used by `calc_rates.Mars.f90:323-336` and `calc_sources.f90:142-156`, then affects eddy conduction/neutral friction in `advance_vertical.f90:40-45`, `vertical_solver.f90:653-661`, and `calc_neutral_friction_new.f90:111-143,152-175`. The final tracked variant changes exactly one UAM scalar from nominal: `#EDDYDIFFUSION` minmax `kEddyMax=1500`, `kEddyMin=500 -> 550`; F107 is identical at 125.
+
+Strict remote evidence: `tests/checks/mgitm-mars-3d/calibration/kEddyMin550-strict-analysis.json`. The accepted control/candidate pair had identical ua_log header and 26 rows, exact timestamp/dt sequence (first 00:00:04.584; final timestamp fields 00:01:59.092), finite T/VV reductions, exact 44-name/version/dimension/time/29760-cell/payload/EOF state schema, and exact Longitude/Latitude/Altitude. Physical response was finite and named: ua_log Tmean first/max delta `1.0000000003174137e-05` over 10 rows; state Temperature max `0.007876604205733884 K` (22,740 cells), neutral north velocity max `0.008404675416700536 m s^-1` (28,092 cells), and Rho max `2.927773095143249e-09 kg m^-3` (20,005 cells). This rejects input-echo-only activation while rejecting cadence/time/schema weakening; the prior F107 and MaximumVerticalVelocity failures remain documented and no duplicate rung was run.
+
+The real integrated nominal/variant pair was then run on the same frozen host/image. The first validator run failed closed under the old retained floor (28 ua_log values and 30,945 ua_state values outside bound); after adding only the measured named finite physical-field bounds plus one `nextafter` step, `validate.py` passed with zero values over bound (ua_log max scaled 0.8923; ua_state max scaled 0.999953). The integrated official pair has 28 rows ending at 120.000 s because the untouched branch nominal uses `MaximumVerticalVelocity=25`; the strict 26-row/119.092-s cadence proof is the separate accepted ladder control at `MaximumVerticalVelocity=0.0`, and is not falsely claimed for the final branch pair. Focused nonfinite, truncated-schema, numeric timestamp, and coordinate mutants all reject; see `calibration/kEddyMin550-mutant-results.json`.
 
 ## Tolerances
 
@@ -462,3 +470,35 @@ fit them.
 `stet-cadence-control-20260906T2318Z/`, and
 `stet-three-period-probe-20260906T2330Z/failure-evidence-2344Z/`, with the
 pinned upstream deck under `code/swmf/PW/PWOM/input/Earth/PARAM.in.stet`.
+
+## Build (skill 5.11.8)
+
+Each `test.sh produce` solve now creates a fresh private build root, excludes a
+caller-supplied `SAB_SHARED_BUILD_ROOT`, and runs the fifteen checks serially.
+The runners derive ten exact build families from component selection, grid and
+physics options, compiler and release/`-O0` mode. Family owners configure and
+build directly at the final cache path; a completion marker is written only
+after the executable and a path-stable run-directory template exist. Hits
+validate the full marker and report `SAB_BUILD_SECONDS=0`; owners report the
+actual nonnegative compile duration. A direct runner invocation, without the
+private driver variable, retains the self-contained source-copy fallback.
+
+Configured source trees are never moved or copied after configuration. Framework
+and MGITM family owners run `make rundir` once, while paths still point at the
+final source, and checks copy only that run template into unique `mktemp` work
+directories. Standalone PWOM checks instead override `MYDIR` with a private
+per-check staging root containing the exact overlaid `pwdata`; this lets the
+Earth and Saturn binaries be shared even when runtime restart inputs differ.
+All runtime output, restart and post-processing paths remain private to a check.
+The solve loop is serial, and concurrent solve processes receive disjoint cache
+roots, so no configured tree or run output is concurrently writable.
+
+Projected compilation count is 10 per nominal, variant or alternative-build
+solve instead of 15: the Mars 3-D/run-restart pair, Earth/twostream pair,
+Saturn/run-restart pair, SWPC Mhd run/restart pair, and SWPC MhdHpOp
+run/restart pair each share one build. The remaining five configurations each
+own one build. Thus N/V/A would compile 30 families rather than 45. This is a
+local static revision only: no Docker, science solve, selfcheck, calibration or
+publication was run. The historical reward-0.6 six-row failure remains stale
+once the task fingerprint changes, and all six calibration rows remain on hold
+pending Zesen's ruling.

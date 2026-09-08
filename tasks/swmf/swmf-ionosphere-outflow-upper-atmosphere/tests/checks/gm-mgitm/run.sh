@@ -33,32 +33,50 @@ fi
 [ -d "$CHECK_DIR/ic/$INPUTS" ] || { echo "run.sh: no initial condition ic/$INPUTS" >&2; exit 2; }
 exec < /dev/null                 # mpiexec must not read the produce driver's stdin
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
-cp -R "$SOURCE_DIR/." "$WORK/src"
 export LC_ALL=C OMP_NUM_THREADS=1
 
+# One configured source is built directly at its final family path per solve.
+# The shared root is private to test.sh produce; direct run.sh calls fall back
+# to a fresh self-contained source copy.
+. "$CHECK_DIR/build-cache.sh"
+BUILD_FAMILY="gm-mgitm"
+BUILD_SPEC='install=BATSRUS;compiler=gfortran;framework=-default,-v=Empty,GM/BATSRUS,UA/MGITM,-o=GM:u=Mars,e=MhdMars,g=8,8,8,UA:Mars,g=8,4,120,4;pre=UA/MGITM/src:DEPEND;targets=SWMF,PIDL,PGITM'
+BUILD_INPUT_KEY="none"
+sab_prepare_build
+
 # Upstream test this check reproduces: make test12 (Makefile.test target test12).
-cd "$WORK/src"
-BUILD_START=$(date +%s)
-GIT_TERMINAL_PROMPT=0 ./Config.pl -install=BATSRUS -compiler=gfortran > "$WORK/install.log" 2>&1
-./Config.pl -default -v=Empty,GM/BATSRUS,UA/MGITM >> "$WORK/build.log" 2>&1
-./Config.pl -o=GM:u=Mars,e=MhdMars,g=8,8,8,UA:Mars,g=8,4,120,4 >> "$WORK/build.log" 2>&1
-if [ "$IC" = altbuild ]; then
-  ./Config.pl -O0 >> "$WORK/build.log" 2>&1
-  grep -q '^OPT3 = -O0' Makefile.conf || { echo "run.sh: Config.pl -O0 did not set OPT3 in Makefile.conf" >&2; exit 1; }
+if [ "$SAB_BUILD_CACHE_HIT" -eq 1 ]; then
+  sab_report_build_reuse
+else
+  cd "$SRC"
+  BUILD_START=$(date +%s)
+  GIT_TERMINAL_PROMPT=0 ./Config.pl -install=BATSRUS -compiler=gfortran > "$WORK/install.log" 2>&1
+  ./Config.pl -default -v=Empty,GM/BATSRUS,UA/MGITM >> "$WORK/build.log" 2>&1
+  ./Config.pl -o=GM:u=Mars,e=MhdMars,g=8,8,8,UA:Mars,g=8,4,120,4 >> "$WORK/build.log" 2>&1
+  if [ "$IC" = altbuild ]; then
+    ./Config.pl -O0 >> "$WORK/build.log" 2>&1
+    grep -q '^OPT3 = -O0' Makefile.conf || { echo "run.sh: Config.pl -O0 did not set OPT3 in Makefile.conf" >&2; exit 1; }
+  fi
+  # UA/MGITM's Makefile reaches its own src/libGITM.a target directly from its LIB
+  # rule and so never runs the DEPEND target that writes src/Makefile.DEPEND; without
+  # that file a parallel make has no module ordering inside the component and races on
+  # modsizegitm.mod. Run the component's own DEPEND target first, then build in parallel.
+  make -C UA/MGITM/src DEPEND >> "$WORK/build.log" 2>&1
+  [ -s UA/MGITM/src/Makefile.DEPEND ] || { echo "run.sh: UA/MGITM/src/Makefile.DEPEND was not written" >&2; exit 1; }
+  make -j"$SAB_MAKE_JOBS" SWMF >> "$WORK/build.log" 2>&1
+  make PIDL >> "$WORK/build.log" 2>&1
+  make PGITM >> "$WORK/build.log" 2>&1
+  BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))
+  test ! -e "$SRC/.sab-rundir-template"
+  make rundir RUNDIR="$SRC/.sab-rundir-template" > "$WORK/rundir.log" 2>&1
+  sab_finish_build "$BUILD_SECONDS"
 fi
-# UA/MGITM's Makefile reaches its own src/libGITM.a target directly from its LIB
-# rule and so never runs the DEPEND target that writes src/Makefile.DEPEND; without
-# that file a parallel make has no module ordering inside the component and races on
-# modsizegitm.mod. Run the component's own DEPEND target first, then build in parallel.
-make -C UA/MGITM/src DEPEND >> "$WORK/build.log" 2>&1
-[ -s UA/MGITM/src/Makefile.DEPEND ] || { echo "run.sh: UA/MGITM/src/Makefile.DEPEND was not written" >&2; exit 1; }
-make -j"$SAB_MAKE_JOBS" SWMF >> "$WORK/build.log" 2>&1
-make PIDL >> "$WORK/build.log" 2>&1
-make PGITM >> "$WORK/build.log" 2>&1
-echo "SAB_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))"   # the driver records it; the budget counts run time only
+cd "$SRC"
 
 # Run directory exactly as the upstream test builds it.
-make rundir RUNDIR="$WORK/run" > "$WORK/rundir.log" 2>&1
+[ -d "$SRC/.sab-rundir-template" ] || { echo "run.sh: family rundir template is missing" >&2; exit 1; }
+mkdir "$WORK/run"
+cp -R "$SRC/.sab-rundir-template/." "$WORK/run/"
 # The knob rescales every #STOP window of the deck; at the graded default of 1
 # the deck is copied through unchanged. Correction 2026-09-06: it now also
 # rescales the positive UA-GM #COUPLE1 DtCouple (0.2 s) by the same factor, so
@@ -100,7 +118,7 @@ PY
 # Upstream (Makefile.test test12_rundir) runs this cp from inside the just-built
 # RUNDIR, where make rundir's own GM/BATSRUS rundir target has already linked
 # RUNDIR/GM/Param -> GM/BATSRUS/Param; from there GM/Param/MARS/marsmgsp.txt
-# resolves to the same file. Naming it directly from the source tree (still $WORK/src
+# resolves to the same file. Naming it directly from the source tree (still $SRC
 # at this point in the script) copies the identical file without depending on that
 # symlink still being in scope.
 cp GM/BATSRUS/Param/MARS/marsmgsp.txt "$WORK/run/"

@@ -1,0 +1,159 @@
+/***********************************************************************\
+ * This software is licensed under the terms of the GNU General Public *
+ * License version 3 or later. See G4CMP/LICENSE for the full license. *
+\***********************************************************************/
+
+/// \file library/include/G4CMPUtils.hh
+/// \brief Namespace for general purpose or static utilities supporting
+///	G4CMP.  Functions not dependent on current track/step info will
+///     be moved here from G4CMPProcessUtils.
+//
+// $Id$
+//
+// 20170602  Provide call-by-reference versions of track identity functions
+// 20170802  Provide scale factor argument to ChooseWeight functions
+// 20170928  Replace "polarization" with "mode"
+// 20190906  Add function to get process associated with particle
+// 20220816  Move RandomIndex function from SecondaryProduction
+// 20220921  G4CMP-319 -- Add utilities for thermal (Maxwellian) distributions
+// 20241223  G4CMP-419 -- Add utility to create per-thread debugging file
+// 20250130  G4CMP-453 -- Add utilities for getting current track and touchable
+// 20250422  G4CMP-468 -- Add position argument to PhononVelocityIsInward
+// 20250423  G4CMP-468 -- Add function to get diffuse reflection vector
+// 20250510  G4CMP-483 -- Ensure backwards compatibility for vector utilities.
+// 20251116  G4CMP-522 -- For G4 11, use #include "G4VTouchable.hh"
+// 20251116  G4CMP-524 -- Remove G4CMP::RandomIndex function; use functor class.
+// 20251116  G4CMP-539 -- Add wrapper function for G4 11 AddConstProperty change
+
+#ifndef G4CMPUtils_hh
+#define G4CMPUtils_hh 1
+
+#include "G4ThreeVector.hh"
+#include "G4String.hh"
+#include "G4Types.hh"
+#include "G4VTouchable.hh"
+#include <limits.h>
+
+class G4CMPElectrodeHit;
+class G4LatticePhysical;
+class G4MaterialPropertiesTable;
+class G4ParticleDefinition;
+class G4Step;
+class G4Track;
+class G4VProcess;
+
+
+namespace G4CMP {
+  template <class T> G4int sign(T val) {
+    return (T(0) < val) - (val < T(0));
+  }
+
+  // Identify G4CMP particle categories
+  G4bool IsPhonon(const G4Track* track);
+  G4bool IsElectron(const G4Track* track);
+  G4bool IsHole(const G4Track* track);
+  G4bool IsChargeCarrier(const G4Track* track);
+  G4bool IsQP(const G4Track* track);
+  
+  G4bool IsPhonon(const G4Track& track);
+  G4bool IsElectron(const G4Track& track);
+  G4bool IsHole(const G4Track& track);
+  G4bool IsChargeCarrier(const G4Track& track);
+  G4bool IsQP(const G4Track& track);
+  
+  G4bool IsPhonon(const G4ParticleDefinition* pd);
+  G4bool IsElectron(const G4ParticleDefinition* pd);
+  G4bool IsHole(const G4ParticleDefinition* pd);
+  G4bool IsChargeCarrier(const G4ParticleDefinition* pd);
+  G4bool IsQP(const G4ParticleDefinition* pd);
+  
+  G4bool IsPhonon(const G4ParticleDefinition& pd);
+  G4bool IsElectron(const G4ParticleDefinition& pd);
+  G4bool IsHole(const G4ParticleDefinition& pd);
+  G4bool IsChargeCarrier(const G4ParticleDefinition& pd);
+  G4bool IsQP(const G4ParticleDefinition& pd);
+  
+  // Select phonon mode randomly from density of states
+  G4int ChoosePhononPolarization(const G4LatticePhysical* lattice);
+  G4int ChoosePhononPolarization(G4double Ldos, G4double STdos, G4double FTdos);
+
+  // Randomly choose valley for charge carrier
+  G4int ChooseValley(const G4LatticePhysical* lattice);
+
+  // Throw biasing decision for particle production and return weight
+  // NOTE:  biasScale < 0. means to use "primary generator" scaling
+  G4double ChooseWeight(const G4ParticleDefinition* pd, G4double biasScale=-1.);
+  G4double ChoosePhononWeight(G4double biasScale=-1.);
+  G4double ChooseChargeWeight(G4double biasScale=-1.);
+
+  // Get the current track from G4EventManager
+  G4Track* GetCurrentTrack();
+
+  // Get current touchable from track
+  const G4VTouchable* GetCurrentTouchable();
+
+  // Create a Hit from a G4Step. Less error prone to use this helper.
+  void FillHit(const G4Step*, G4CMPElectrodeHit*);
+
+  // Phonons reflect difusively from surfaces.
+  G4ThreeVector GetLambertianVector(const G4LatticePhysical* theLattice,
+                                    const G4ThreeVector& surfNorm, G4int mode);
+  G4ThreeVector GetLambertianVector(const G4LatticePhysical* theLattice,
+                                    const G4ThreeVector& surfNorm, G4int mode,
+                                    const G4ThreeVector& surfPoint);
+  G4ThreeVector LambertReflection(const G4ThreeVector& surfNorm);
+
+  // Test that a phonon's wave vector relates to an inward velocity.
+  // waveVector, surfNorm, and surfacePos need to be in global coordinates
+  G4bool PhononVelocityIsInward(const G4LatticePhysical* lattice, G4int mode,
+                                const G4ThreeVector& waveVector,
+                                const G4ThreeVector& surfNorm);
+  G4bool PhononVelocityIsInward(const G4LatticePhysical* lattice, G4int mode,
+                                const G4ThreeVector& waveVector,
+                                const G4ThreeVector& surfNorm,
+                                const G4ThreeVector& surfacePos);
+
+  G4bool PhononVelocityIsOutward(const G4LatticePhysical* lattice,
+				 G4int mode,
+				 const G4ThreeVector& waveVector,
+				 const G4ThreeVector& surfNorm,
+				 const G4VTouchable * nextVolTouchable);
+  G4bool PhononVelocityIsOutward(const G4LatticePhysical* lattice,
+				 G4int mode,
+				 const G4ThreeVector& waveVector,
+				 const G4ThreeVector& surfNorm,
+				 const G4VTouchable * nextVolTouchable,
+				 const G4ThreeVector& surfacePos);
+  
+  // Thermal distributions, useful for handling phonon thermalization
+  G4double MaxwellBoltzmannPDF(G4double temperature, G4double energy);
+  G4double ChooseThermalEnergy(G4double temperature);
+  G4double ChooseThermalEnergy(const G4LatticePhysical* lattice);
+
+  G4bool IsThermalized(G4double temperature, G4double energy);
+  G4bool IsThermalized(G4double energy);	// Use G4CMPConfigManager temp.
+  G4bool IsThermalized(const G4LatticePhysical* lattice, G4double energy);
+  G4bool IsThermalized(const G4Track* track);
+  inline G4bool IsThermalized(const G4Track& t) { return IsThermalized(&t); }
+
+  // Search particle's processes for specified name
+  G4VProcess* FindProcess(const G4ParticleDefinition* pd, const G4String& pname);
+
+  // Update MaterialPropertiesTable for either Geant4 v10 or v11
+  void UpdateMPT(G4MaterialPropertiesTable* mpt, const G4String& name,
+		 G4double value);
+
+  // Create debugging file with suffix or infix identifying worker thread
+  G4String DebuggingFileThread(const G4String& basefile);
+
+  // Functor class for use with std::shuffle; wraps Geant4 random engine
+  class RandomIndex {
+  public:
+    typedef unsigned int result_type;
+    result_type operator()();	// Uses G4UniformRand(); defined in .cc file
+    static constexpr result_type min() { return 0; }
+    static constexpr result_type max() { return UINT_MAX; }
+  };
+}
+
+#endif	/* G4CMPUtils_hh */

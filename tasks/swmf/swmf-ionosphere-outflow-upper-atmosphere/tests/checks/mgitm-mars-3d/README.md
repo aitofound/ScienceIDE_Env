@@ -15,7 +15,7 @@ Relative to the upstream test: upstream, except that PostProc.pl is run after th
 
 ## The two initial conditions
 
-`ic/nominal` is the initial condition described above, and grading always uses it. In `ic/variant`, f10.7, the solar radio flux index that sets the solar EUV heating and photo-ionisation rates the whole thermosphere-ionosphere advance is driven by, is 125 in ic/nominal and 125.0000000002 in ic/variant - two units of the tenth significant digit, well below the last digit the graded log prints and far below the resolution of any measured F10.7. It is generic numerical-noise calibration: the two decks differ by one number, and the spread between the two runs is the floor this pass policy can be held to.
+`ic/nominal` is the initial condition described above, and grading always uses it. In `ic/variant`, the active minmax eddy-diffusion floor `kEddyMin` is 550 m^2 s^-1 while `ic/nominal` retains 500; `kEddyMax=1500`, `EddyDiffusionMethod=minmax`, F10.7=125, FISM, the vertical-source controls, cadence, window, ranks and grid remain identical. The former 125.0000000002 F107 perturbation was removed because `#EUV_DATA` FISM overwrites the F107-derived EUV flux. The active variant is source-backed at `set_inputs.f90:532-548`, parsed by `Mars.f90:748-825`, carried through `calc_rates.Mars.f90:323-336` and `calc_sources.f90:142-156`, and consumed by the minmax floor in `advance_vertical.f90:40-45`, `vertical_solver.f90:653-661`, and `calc_neutral_friction_new.f90:111-143,152-175` (exact source filenames/line anchors are retained in the calibration evidence). A fresh bounded kEddyMin=550 run changed finite physical log/state observables while preserving header, 26 rows, exact cadence/timestamps, 44-field state schema, 29760-cell payloads and exact coordinates; measured first/max deltas and host receipts are recorded in the accepted-rung evidence.
 
 `run.sh altbuild` runs `ic/nominal` on the same pinned source and deck built with the SWMF's own
 `./Config.pl -O0` (every `OPTn` line of `Makefile.conf` forced to `-O0` where the shipped gfortran template
@@ -42,7 +42,7 @@ The graded observable is the per-step minimum, maximum and mean neutral temperat
 
 `ua_state.bin` stores each variable name in one exactly 40-byte record. The canonical rubric names are the decoded ASCII record with only trailing NUL and space padding removed; leading spaces, internal spaces, case, and GITM source markup (`!D2!N`, `!U+!N`, `!Dn!N`, and `!Di!N`) remain significant. The validator requires all 44 names in order, count, and exact spelling on both reference and candidate; malformed length, control/non-ASCII bytes, or any other substitution is rejected. Each field group also declares a positive `ncell` equal to the header-derived `nLon*nLat*nAlt` before any field slice is selected.
 
-For this Mars-3D calibration, `eTemperature` and `iTemperature` retain their measured finite maximum absolute separation `0.010966443389690994` and use the exact one-ULP upward `atol` `0.010966443389690996`; no multiplier or other headroom is added.
+For this Mars-3D calibration, named field overrides are measured only from the accepted MaxVV=0 control versus MaxVV=0, kEddyMin=550 variant in `calibration/kEddyMin550-strict-analysis.json`: each changed field uses its exact finite maximum absolute separation plus one `nextafter` step, with no multiplier or other headroom; unchanged fields retain the strict default scalar bound. The invalid MaxVV=25 integrated pair is diagnostic-only and supplies no floor.
 
 ## Evidence
 
