@@ -8,7 +8,7 @@ Upstream test: code/strax/tests/test_general_processing.py. Final policy: pointw
 
 ## The two initial conditions
 
-identical: interval times, lengths and window widths are integer nanoseconds, so a floating-point ULP perturbation is not an active input. No alternative build is declared.
+identical: interval times, lengths and window widths are integer nanoseconds, so a floating-point ULP perturbation is not an active input. A third initial condition, altbuild, is declared: NUMBA_DISABLE_JIT=1 runs the same case on the same pinned install with its @numba.njit kernels CPython-interpreted instead of LLVM-JIT-compiled.
 
 ## The pass policy
 

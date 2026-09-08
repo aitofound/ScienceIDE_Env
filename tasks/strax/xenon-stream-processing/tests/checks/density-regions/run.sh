@@ -3,11 +3,15 @@
 KNOB_HELP=""
 knob() { local name=$1 default=$2 desc=$3; [ -n "${!name:-}" ] || printf -v "$name" '%s' "$default"; export "$name"; KNOB_HELP+="$name=$default  $desc"$'\n'; }
 knob SAB_CASES "128" "number of deterministic input cases; runtime scales linearly"
-ALTBUILD=""
-if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; exit 0; fi
+ALTBUILD="NUMBA_DISABLE_JIT=1: the same pinned strax install with its @numba.njit kernels run CPython-interpreted instead of LLVM-JIT-compiled"
+if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; echo "altbuild: $ALTBUILD"; exit 0; fi
 set -euo pipefail
-IC="${1:?usage: run.sh <nominal|variant> | run.sh --help}"
-case "$IC" in nominal|variant) ;; altbuild) echo "run.sh: this check declares no alternative build" >&2; exit 2 ;; *) echo "run.sh: unknown initial condition $IC" >&2; exit 2 ;; esac
+IC="${1:?usage: run.sh <nominal|variant|altbuild> | run.sh --help}"
+case "$IC" in
+  nominal|variant) unset NUMBA_DISABLE_JIT ;;
+  altbuild) IC=nominal; export NUMBA_DISABLE_JIT=1 ;;
+  *) echo "run.sh: unknown initial condition $IC" >&2; exit 2 ;;
+esac
 : "${SOURCE_DIR:?}" "${OUT_DIR:?}" "${CHECK_DIR:?}"
 [ -f "$CHECK_DIR/ic/$IC/config.json" ] || { echo "run.sh: missing ic/$IC/config.json" >&2; exit 2; }
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT

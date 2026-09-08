@@ -8,7 +8,7 @@ Upstream test: code/strax/tests/test_data_reduction.py. Final policy: pointwise.
 
 ## The two initial conditions
 
-identical: record samples and hit extensions are integer-domain inputs, so no two-ULP perturbation survives without changing the discrete test case. No alternative build is declared.
+identical: record samples and hit extensions are integer-domain inputs, so no two-ULP perturbation survives without changing the discrete test case. A third initial condition, altbuild, is declared: NUMBA_DISABLE_JIT=1 runs the same case on the same pinned install with its @numba.njit kernels CPython-interpreted instead of LLVM-JIT-compiled.
 
 ## The pass policy
 

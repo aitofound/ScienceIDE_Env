@@ -8,7 +8,7 @@ Upstream test: code/strax/tests/test_lone_hit_integration.py. Final policy: poin
 
 ## The two initial conditions
 
-identical: active integration extensions and waveform ADC samples are integer-domain inputs, so no ULP-sized perturbation survives. No alternative build is declared.
+identical: active integration extensions and waveform ADC samples are integer-domain inputs, so no ULP-sized perturbation survives. A third initial condition, altbuild, is declared: NUMBA_DISABLE_JIT=1 runs the same case on the same pinned install with its @numba.njit kernels CPython-interpreted instead of LLVM-JIT-compiled.
 
 ## The pass policy
 
