@@ -46,7 +46,11 @@ STEP 1  Investigate the codebase, then propose the module cut.
 
   Read {code} as a scientist would: what it simulates, the build system, the
   production entry points, where the official test suites and the standard
-  example problems live and how they run, and the licence. Write that up as {state}/overview.md (one page).
+  example problems live and how they run, and the licence. Write that up as
+  {state}/overview.md (one page): what the code simulates and for whom, the
+  size (lines of code per language, files, and the tool that counted them),
+  the build system and measured build time, the test suites and example decks
+  with what the investigation runs showed, the licence and its pin.
 
   Then write {state}/modules.json: a proposal to decompose the codebase into
   modules. Modules are conceptually independent parts, cut for manageability
@@ -73,9 +77,29 @@ STEP 1  Investigate the codebase, then propose the module cut.
     "not_packaged": [{{"what": "...", "why": "..."}}]
   }}
 
-  Run `propose-modules` again to validate the file, show the human the table it
-  prints together with overview.md, and STOP. The human approves with
-  `approve-modules --human-ref "<their words>"`.
+  Run `propose-modules` again to validate the file; it prints the module table.
+
+  Then present STOP 1 as one brief the human reads in a minute, drawn from
+  overview.md and modules.json, never the two raw files:
+
+    Codebase   <name> at <pin>: what it simulates, in two sentences; language(s)
+               with lines of code (cloc, or `wc -l` over the source tree; say
+               which); licence; build system and the measured native build time.
+    Tests      the official test suites and example decks found: how many, how
+               they run, how many ran natively and reproduced the upstream
+               reference, and to how many digits.
+    Modules    one row per proposed module: slug | title | what it computes |
+               owned paths | lines of code | expensive path | official tests
+               that exercise it | hazards.
+    Shared     the shared infrastructure, listed once, with its lines of code.
+    Left out   every not_packaged entry with its reason.
+    Ask        approve all, approve a subset, or send it back; and any decision
+               the cut depends on (a data download, a duplicated codebase, a
+               licence, an external dependency).
+
+  Then STOP. The human approves with `approve-modules --human-ref "<their words>"`.
+  The same brief, updated with their approval, is the body of the source PR
+  (Step 1.5); write it once.
 """
 
 STEP15_BRIEF = """\
@@ -87,6 +111,32 @@ STEP 1.5  The source PR (outside this CLI). HARD STOP.
   patched dependencies), laid out as you see fit. The one rule: both task
   Dockerfiles must build from code/{source}/ and public, well-known packages
   only. Pin, URL and licence go in task.toml.
+
+  The PR body is written for a reader who has one minute: the facts first,
+  the generated report last. In this order, as headed Markdown with tables:
+
+    What it is     two sentences on what the code simulates and who uses it;
+                   upstream URL, pin (tag or commit), licence.
+    Size           a table: language | files | lines of code, with a total
+                   and the tool that counted (cloc, or `wc -l`); what is
+                   vendored beyond upstream (bundled libraries, data tables,
+                   patches) and its size.
+    Build, tests   build system and measured native build time; the official
+                   test suites and example decks (how many, how they run);
+                   how many ran natively in the investigation and reproduced
+                   the upstream reference, to how many digits.
+    Module cut     a table, one row per module: slug | title | what it
+                   computes | owned paths | lines of code | expensive path |
+                   official tests that exercise it | approved or proposed-only;
+                   below it the human's approving words and date.
+    Shared         the shared infrastructure, listed once, with lines of code.
+    Left out       every not_packaged entry with its reason.
+    Report         the bounded Markdown report (codebase-metadata.md) pasted
+                   under a rule, when it exists; a line saying so when it
+                   does not. Then the skill revision that produced the PR.
+
+  Reviewers read the body before the tree; a body that is only the report or
+  only a link sends the PR back.
 
   Then STOP. Report the PR link and wait for the human to review and merge it.
   Nothing downstream (the test survey, the task scaffold, the checks) is
@@ -126,6 +176,15 @@ STEP 2  Survey the official tests of every approved module.
   within the first few smallest steps (measure it in the Step 1 native runs).
   Mark tests known a priori to be chaotic. The proposal is a hypothesis; it is
   finalized with the human after the calibration run, with taste.
+
+  How many checks: at least four suitable official tests per module (below
+  that the module is THIN and needs the human's agreement); about thirty is
+  the ideal for a module of ordinary size; preferably fewer than fifty. The
+  count is set by coverage, never by run time. Beyond the test targets, every
+  graded stage of a multi-stage test, every standalone component-suite target
+  and every official example deck the tree ships is a check; never split one
+  run by output file to pad the count. A module that would pass fifty is a
+  module-cut question for the human, not a reason to drop a suitable test.
 
   The suite budget ({budget} s of RUN time by default, source builds excluded)
   is guidance, not a cap: never leave out or merge a suitable test to fit it.
@@ -173,7 +232,11 @@ STEP 3  Author the checks of {task}.
     rubric.json                policy, configuration, expected_runtime_s, variant, comparison, evidence, warrant
     validate.py                applies the rubric; standard library and numpy only
     README.md                  the narrative, public to the solver
-  Nothing is shared between checks. The variant is generic numerical-noise
+  Nothing is shared between checks. Within a run, a run.sh should reuse
+  the build an earlier check made, to the best effort, and nevertheless
+  stays self-contained; how is this leaf's own business, stated in
+  comment/README.md. Compiling per check is slow, not wrong.
+  The variant is generic numerical-noise
   calibration, not a physics-isolation experiment or validation of the
   upstream official test. Perturb the smallest sufficient set of one or more
   active initial-condition inputs; there is no fixed count. Normally perturb
