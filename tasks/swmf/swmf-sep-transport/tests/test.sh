@@ -35,8 +35,67 @@ if [ "${1:-}" = "produce" ]; then
   case "$IC" in nominal|variant|altbuild) ;; *) echo "initial condition must be nominal, variant or altbuild" >&2; exit 2 ;; esac
   mkdir -p "$OUT_ROOT"
   OUT_ROOT="$(cd "$OUT_ROOT" && pwd -P)"
+  # One fresh cache namespace per solve keeps nominal, variant and altbuild
+  # isolated while allowing sequential checks with equivalent configurations
+  # to reuse the first check's completed build.
+  SHARED_BUILD_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/sab-shared-builds.${IC}.XXXXXX")"
+  read -r SAB_BUILD_SOURCE_SHA256 SAB_BUILD_CONTEXT_SHA256 < <(python3 - "$SOURCE_DIR" <<'PYBUILD_ID'
+import hashlib, json, os, pathlib, platform, shutil, stat, subprocess, sys
+root = pathlib.Path(sys.argv[1]).resolve(strict=True)
+h = hashlib.sha256(); h.update(b"sab-source-tree-v1\0")
+def walk(path):
+    with os.scandir(path) as scan:
+        rows = sorted(scan, key=lambda e: os.fsencode(e.name))
+    for entry in rows:
+        p = pathlib.Path(entry.path); st = p.lstat()
+        yield p, st
+        if stat.S_ISDIR(st.st_mode): yield from walk(p)
+for p, st in walk(root):
+    rel = os.fsencode(str(p.relative_to(root)))
+    kind = b"d" if stat.S_ISDIR(st.st_mode) else b"f" if stat.S_ISREG(st.st_mode) else b"l" if stat.S_ISLNK(st.st_mode) else b"x"
+    if kind == b"x": raise SystemExit(f"unsupported source file type: {p}")
+    h.update(kind+b"\0"+rel+b"\0"+f"{stat.S_IMODE(st.st_mode):04o}".encode()+b"\0")
+    if kind == b"f":
+        h.update(str(st.st_size).encode()+b"\0")
+        with p.open("rb") as stream:
+            for chunk in iter(lambda: stream.read(1024*1024), b""): h.update(chunk)
+    elif kind == b"l": h.update(os.fsencode(os.readlink(p)))
+    h.update(b"\0")
+source_sha = h.hexdigest()
+names = ["bash", "sh", "make", "perl", "python3", "git", "gfortran", "gcc", "g++", "mpifort", "mpif90", "mpicc", "mpicxx", "ar", "ranlib", "ld", "cpp"]
+context = {"format":"sab-build-context-v1", "platform":platform.uname()._asdict(),
+           "environment":{"PATH":os.environ.get("PATH",""), "HOME":os.environ.get("HOME","/tmp"),
+                          "LANG":"C.UTF-8", "LC_ALL":"C", "OMP_NUM_THREADS":"1",
+                          "GIT_TERMINAL_PROMPT":"0", "CC":"", "CXX":"", "FC":"",
+                          "F77":"", "F90":"", "MPIFC":""}, "tools":{}}
+for name in names:
+    path = shutil.which(name); row = {"resolved":path or "<missing>"}
+    if path:
+        real=os.path.realpath(path); row["realpath"]=real
+        try: row["sha256"]=hashlib.sha256(pathlib.Path(real).read_bytes()).hexdigest()
+        except OSError as exc: row["sha256_error"]=type(exc).__name__
+        try:
+            proc=subprocess.run([path,"--version"],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=3,env={"PATH":os.environ.get("PATH",""),"LANG":"C"})
+            row["version_sha256"]=hashlib.sha256(proc.stdout).hexdigest(); row["version_status"]=proc.returncode
+        except (OSError,subprocess.TimeoutExpired) as exc: row["version_error"]=type(exc).__name__
+    context["tools"][name]=row
+for label, filename in (("os_release","/etc/os-release"),("cpuinfo","/proc/cpuinfo")):
+    try: context[label]=hashlib.sha256(pathlib.Path(filename).read_bytes()).hexdigest()
+    except OSError: context[label]="<unavailable>"
+try:
+    proc=subprocess.run(["dpkg-query","-W","-f=${Package}=${Version}\\n"],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=10,env={"PATH":os.environ.get("PATH",""),"LANG":"C"})
+    context["packages_sha256"]=hashlib.sha256(proc.stdout).hexdigest(); context["packages_status"]=proc.returncode
+except (OSError,subprocess.TimeoutExpired) as exc: context["packages_error"]=type(exc).__name__
+context_sha=hashlib.sha256(json.dumps(context,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+print(source_sha, context_sha)
+PYBUILD_ID
+  )
+  export SAB_BUILD_SOURCE_SHA256 SAB_BUILD_CONTEXT_SHA256
   passthrough=()
-  while IFS='=' read -r name _; do passthrough+=("$name=${!name}"); done < <(env | grep -E '^SAB_[A-Z0-9_]+=' || true)
+  while IFS='=' read -r name _; do
+    case "$name" in SAB_SHARED_BUILD_ROOT|SAB_BUILD_SOURCE_SHA256|SAB_BUILD_CONTEXT_SHA256) continue ;; esac
+    passthrough+=("$name=${!name}")
+  done < <(env | grep -E '^SAB_[A-Z0-9_]+=' || true)
   failed=(); total=0
   while IFS= read -r check; do
     total=$((total + 1))
@@ -52,7 +111,8 @@ if [ "${1:-}" = "produce" ]; then
     if (cd "$check_dir" && env -i PATH="$PATH" HOME="${HOME:-/tmp}" LANG=C.UTF-8 \
           SOURCE_DIR="$SOURCE_DIR" OUT_DIR="$out_dir" CHECK_DIR="$check_dir" SAB_IC="$IC" \
           OMPI_ALLOW_RUN_AS_ROOT=1 OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1 ${passthrough[@]+"${passthrough[@]}"} \
-          bash ./run.sh "$IC") >"$log" 2>&1; then
+          SAB_SHARED_BUILD_ROOT="$SHARED_BUILD_ROOT" SAB_BUILD_SOURCE_SHA256="$SAB_BUILD_SOURCE_SHA256" \
+          SAB_BUILD_CONTEXT_SHA256="$SAB_BUILD_CONTEXT_SHA256" bash ./run.sh "$IC") >"$log" 2>&1; then
       end=$(date +%s.%N)
       build="$(grep -o 'SAB_BUILD_SECONDS=[0-9.]*' "$log" | tail -1 | cut -d= -f2 || true)"  # no build line is legitimate; grep's 1 must not kill the driver
       printf 'check=%s\nic=%s\nelapsed_seconds=%s\nbuild_seconds=%s\n' "$check" "$IC" "$(awk "BEGIN{print $end - $start}")" "${build:-0}" >"$out_dir/run.ok"
