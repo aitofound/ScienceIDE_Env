@@ -8,7 +8,7 @@ The check runs LocalMinimumSplitter on 128 deterministic 13-sample double-peaked
 
 ## The two initial conditions
 
-The variant raises one peak height by two binary64 ulps. No alternative build is declared.
+The variant raises one peak height by two binary64 ulps. A third initial condition, altbuild, is declared: NUMBA_DISABLE_JIT=1 runs the same case on the same pinned install with its @numba.njit kernels CPython-interpreted instead of LLVM-JIT-compiled.
 
 ## The pass policy
 

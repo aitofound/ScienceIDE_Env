@@ -8,7 +8,7 @@ Upstream test: code/strax/tests/test_statistics.py. Final policy: pointwise.
 
 ## The two initial conditions
 
-the complete probability distribution is scaled by two float32 ulps, preserving region topology while moving every threshold-height stream at its stored precision. No alternative build is declared.
+the complete probability distribution is scaled by two float32 ulps, preserving region topology while moving every threshold-height stream at its stored precision. A third initial condition, altbuild, is declared: NUMBA_DISABLE_JIT=1 runs the same case on the same pinned install with its @numba.njit kernels CPython-interpreted instead of LLVM-JIT-compiled.
 
 ## The pass policy
 

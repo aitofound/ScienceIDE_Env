@@ -8,7 +8,7 @@ Upstream test: code/strax/tests/test_peak_merging.py. Final policy: pointwise.
 
 ## The two initial conditions
 
-identical: all interval inputs are integer nanoseconds and no meaningful ULP perturbation is representable. No alternative build is declared.
+identical: all interval inputs are integer nanoseconds and no meaningful ULP perturbation is representable. A third initial condition, altbuild, is declared: NUMBA_DISABLE_JIT=1 runs the same case on the same pinned install with its @numba.njit kernels CPython-interpreted instead of LLVM-JIT-compiled.
 
 ## The pass policy
 

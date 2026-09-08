@@ -8,7 +8,7 @@ Upstream test: code/strax/tests/test_pulse_processing.py. Final policy: pointwis
 
 ## The two initial conditions
 
-the convolution impulse response is raised by two binary64 ulps, perturbing filtered samples without changing hit identities. No alternative build is declared.
+the convolution impulse response is raised by two binary64 ulps, perturbing filtered samples without changing hit identities. A third initial condition, altbuild, is declared: NUMBA_DISABLE_JIT=1 runs the same case on the same pinned install with its @numba.njit kernels CPython-interpreted instead of LLVM-JIT-compiled.
 
 ## The pass policy
 

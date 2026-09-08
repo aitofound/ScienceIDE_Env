@@ -8,7 +8,7 @@ Upstream test: code/strax/tests/test_peak_processing.py. Final policy: pointwise
 
 ## The two initial conditions
 
-the ADC-to-photoelectron scale is raised by two float32 ulps, perturbing peak area without changing hit identities. No alternative build is declared.
+the ADC-to-photoelectron scale is raised by two float32 ulps, perturbing peak area without changing hit identities. A third initial condition, altbuild, is declared: NUMBA_DISABLE_JIT=1 runs the same case on the same pinned install with its @numba.njit kernels CPython-interpreted instead of LLVM-JIT-compiled.
 
 ## The pass policy
 

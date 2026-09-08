@@ -8,7 +8,7 @@ Upstream test: code/strax/tests/test_peak_properties.py. Final policy: pointwise
 
 ## The two initial conditions
 
-one waveform scale is raised by two float32 ulps, perturbing area while preserving the fixed peak identity and shape. No alternative build is declared.
+one waveform scale is raised by two float32 ulps, perturbing area while preserving the fixed peak identity and shape. A third initial condition, altbuild, is declared: NUMBA_DISABLE_JIT=1 runs the same case on the same pinned install with its @numba.njit kernels CPython-interpreted instead of LLVM-JIT-compiled.
 
 ## The pass policy
 
