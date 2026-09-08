@@ -44,9 +44,68 @@ decks that do not switch wave diffusion on, and HEIDI reads only the H+ and O+
 restart distributions of the four it ships. The upstream `cp` of the absent
 files is a no-op because it is not the last command of its recipe line.
 
+## Build
+
+The prior accepted fresh record built every check independently. It therefore
+recorded 19 compiles in each solve, with summed build times of 1029 s nominal,
+1006 s variant and 228 s alternative-build. Those are historical measured
+values from `comment/pipeline/self-validation.json`, not estimates for this
+revision.
+
+This revision follows skill 5.11.8's build-reuse advice without changing a
+scientific input or executable configuration. `tests/test.sh produce` creates
+one new cache root for exactly one solve and runs the checks sequentially. The
+root's marker binds the complete runner bundle, source-directory object,
+resolved toolchain identity, root-directory object and producing process. Each
+family key also binds its full `Config.pl`/build command descriptor,
+optimization flavor and make-job count. A `run.sh` either compiles the first
+immutable tree for that exact key or copies an already completed tree to its
+own private work directory; it always compiles for itself when run without the
+driver cache. The ready manifest is atomically published last only after
+configuration and compilation succeed and records a deterministic identity of
+every cached file, directory and symlink. A hit recomputes that identity before
+copying; any partial, malformed, incompatible or changed cache entry fails
+closed.
+
+Runtime `imdata` and `pwdata` are staged only into each check's private copy, so
+one check's deck data cannot enter another check. Because SWMF's `Config.pl`
+records absolute build roots in generated definitions, every runner invokes the
+upstream `./Config.pl -s` path-display mode in its private copy before `make
+rundir`. That mode refreshes root `DIR`, each selected component's include,
+component-local `MYDIR`, and configuration include without selecting a version
+or compiling. A post-refresh audit also rebases copied absolute symlinks whose
+target was inside the family tree and rejects any such old-root link left over.
+The explicit private `DIR` and `RUNDIR` make arguments then keep executable,
+library and runtime-data paths in the private copy. Both PWOM runners separately
+require an exact 45-file private `PW/PWOM/data` inventory before `make rundir`.
+
+`SAB_BUILD_SECONDS` measures only the family owner's configuration-plus-compile
+interval and is exactly zero for a reuse; it is not a whole-run speedup metric.
+`SAB_BUILD_KEY` and `SAB_BUILD_REUSED` in `run.log` make the choice auditable.
+There are eight exact build families per solve: standalone CIMI
+`EarthHO/GridDefault` (seven checks), `EarthHO/GridUniformL` (two), and
+`EarthHO/GridExpanded` (one); standalone HEIDI (two); coupled SWMF CIMI with
+`MhdAnisoP` (two), CIMI with `MhdHpOp` (two), CIMI+PWOM with `MhdHpOp` (two),
+and GM+IE+HEIDI (one). Optimized nominal and variant solves use separate fresh
+cache roots, and the `-O0` alternative-build solve uses a third fresh root.
+Static mapping therefore projects eight owners and eleven reuse hits, instead
+of nineteen independent source compiles, per solve while keeping nominal,
+variant and alternative-build artifacts separate. This corrected candidate has
+not been run; no fresh post-revision timing or dynamic success is claimed.
+
 ## Tolerances
 
-The completed full-window self-validation record passed 19/19 nominal-versus-variant checks and 18/18 declared alternative builds; `cimi-highorder` is explicitly `none:`. The measured per-check evidence (altbuild floors, nominal-versus-variant spreads and bound fractions) is restored from the exact preserved completed record under `completed-full-preserved-20260907T0222Z/run-records/` into each rubric's `evidence` object. These are measured historical evidence fields, not a new run or a tolerance change. The preserved record predates the final contract metadata, so `sab.py status --ci-freshness` remains truthfully stale and no rerun is claimed.
+The published pre-revision fresh self-validation record finished at
+2026-09-07T15:46:44Z with 19/19 nominal-versus-variant checks and all 19
+declared alternative builds passing. `cimi-highorder` declares the same O0
+alternative build as the other checks and passed with its existing selective
+measured H+/O+ floors (`0.01691681` and `0.00999043`); its electron and
+`CIMI.log` bounds remain unchanged. The measured per-check evidence (altbuild
+floors, nominal-versus-variant spreads and bound fractions) is recorded in
+`comment/pipeline/self-validation.json` and each rubric's `evidence` object.
+This build-reuse revision changes none of those policies or measurements; its
+new contract fingerprint requires a new successful selfcheck before the
+record can be called fresh again.
 
 ## Run-time revision (2026-09-06, before the first completed selfcheck)
 
@@ -401,13 +460,14 @@ compute, build, remote work or final selfcheck was performed in this segment.
   900-s O0/O1/O2 compiler probe was an optimization boundary, not a mandate
   for the final physical window. `expected_runtime_s=25` is the measured
   372.611-s RUN phase projected by 60/900; it is explicitly unmeasured.
-* The cimi-highorder runner exposes only `nominal` and `variant`. The
-  alternative-build lane is `none:` by measured evidence, not a green claim:
-  original 900-s O0/O1/O2 probes exceeded the unchanged
-  `1e-10 + 0.001*abs(reference)` bound at 866/866/868 of 15,897,906 finite
-  `CimiFlux_e.fls` values, maximum absolute error 6.230e6. The evidence and
-  cell map remain under the takeover artifact root. No bound, source, or
-  physical-field policy was changed.
+* That bounded candidate exposed only `nominal` and `variant`; it is superseded
+  by published b675. The current `cimi-highorder` runner declares an O0
+  alternative build on the unchanged 60-s deck and passed fresh finite,
+  schema, frame and manifest gates with the measured selective H+/O+ floors
+  `0.01691681` and `0.00999043`; electron and `CIMI.log` retain the original
+  bound. The historical 900-s O0/O1/O2 probe remains context only and is not
+  adopted as the current perturbation, window or policy. No bound, source, or
+  physical-field policy is changed by this build-reuse revision.
 * All six SWPC families' init and restart-stage decks now use 5.0-s
   time-stage `DtCouple` on every active IM/CIMI path (GM->IE was already 5.0;
   IM->GM and IE->IM are now 5.0; PWOM's IE->PW and PW->GM remain 5.0).
@@ -432,8 +492,8 @@ compute, build, remote work or final selfcheck was performed in this segment.
   `abs(flux)<1e-6` low-flux category. These are thresholds, not physical
   classifications and not a guessed mechanism. Known pitfall: a completed
   finite physical build divergence must not be relabelled numerical noise or
-  skipped without a `none:` rubric; preserve the failed evidence and unchanged
-  source/bound.
+  silently skipped; preserve the failed evidence and unchanged source/bound,
+  and require fresh measured evidence for any declared alternative lane.
 
 The focused measured-phase projection is in `REPORT.md` and `candidate.json`.
 It projects the five existing standalone reductions and the new 60/900
@@ -459,12 +519,13 @@ source or checks. The original run records remain preserved under
 
 The measured nominal run sum is 1194.579 s (the self-validation record rounds
 it to 1194.6 s); the declared suite budget is the measurement rounded up to
-1195 s, not the earlier 1600-s allowance. The completed comparison has 19/19
-nominal-versus-variant checks passing and 18/18 declared alternative builds
-passing. `cimi-highorder` has no declared alternative build (`none:`), and
-that is an explicit policy/evidence result, not a green claim. The source,
-fields, windows, variants, bounds and check membership remain those of the
-completed full-window record.
+1195 s, not the earlier 1600-s allowance. The later published b675 record,
+finished at 2026-09-07T15:46:44Z, is the current source of truth: it has 19/19
+nominal-versus-variant checks and 19/19 declared alternative builds passing.
+`cimi-highorder` declares its O0 lane and retains the selective measured H+/O+
+absolute floors `0.01691681` and `0.00999043`; electron and `CIMI.log` retain
+the unchanged pointwise bound. The source, fields, windows, variants, bounds
+and check membership remain those of that published record.
 
 For review only, the unapplied candidate projection from
 `runtime-candidate-finalprep-20260907T0118Z/REPORT.md` is 992.192 s versus the
@@ -473,7 +534,7 @@ measurement and was not run**. The affected rows are the six SWPC CIMI
 families (`swpc-cimi-{init,restart}`, `swpc-cimi-species-{init,restart}` and
 `swpc-cimi-pwom-species-{init,restart}`) and `gm-ie-heidi`; the shorter-window
 candidate remains a review follow-up only. In particular, do not infer a
-shortened high-order result or alter the `none:` alternative-build policy.
+shortened high-order result or alter its declared O0 lane or selective floors.
 
 The validator remains pointwise and excludes only documented adaptive
 iteration/step bookkeeping; no bound, physics field, source variant or grader
