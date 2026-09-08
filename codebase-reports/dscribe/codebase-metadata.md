@@ -15,7 +15,7 @@ Generated from the canonical JSON. Unknown values are visible; this report never
 
 | module | approval | purpose / difference | owned files | owned text lines | collected tests | shared components |
 |---|---|---|---:|---:|---:|---|
-| `descriptors` | approved | The families differ in representation and dominant kernel, but jointly constitute the public descriptor subsystem and share a larger common compiled/runtime foundation than any th… | 21 | 11636 | 395 | `descriptor-support` |
+| `descriptors` | proposed-only | The families differ in representation and dominant kernel, but jointly constitute the public descriptor subsystem and share a larger common compiled/runtime foundation than any th… | 21 | 11636 | 395 | `descriptor-support` |
 
 ### Shared code
 
@@ -42,9 +42,12 @@ Generated from the canonical JSON. Unknown values are visible; this report never
 | `inner_cases` | unknown | inner cases |
 
 ### Gaps and warnings
-- The module-cut approval does not by itself authorize task scaffolding, checks, rewards, tolerances, or runs before the source gate is lifted.
+- The revised one-module descriptor proposal is not yet approved by the curator.
+- This source report does not authorize task scaffolding, checks, rewards, tolerances, or runs.
 - Cross-platform numerical variation remains unknown at the source-proposal stage.
+- Does the curator approve the combined descriptors module, its 11,636 owned source-like lines, and the supporting/shared accounting?
 - CLI: 1421 regular file(s) are unclassified; this is visible but non-blocking
+- CLI: no approved module cut is available; report remains informational
 
 Artifacts: `codebase-metadata.json` (canonical) · `codebase-metadata.html` (self-contained detail)
 <!-- SCIACCEL_CODEBASE_METADATA_REPORT:END -->
