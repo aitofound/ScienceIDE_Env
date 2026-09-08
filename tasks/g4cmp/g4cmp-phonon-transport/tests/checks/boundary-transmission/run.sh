@@ -52,6 +52,19 @@ echo "SAB_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))"   # the driver records
 # --- run: the step file named by /g4cmp/StepFile is written in the cwd; it is hundreds of MB and is reduced, not copied
 cd "$WORK"; rm -f Validation_BoundaryTransmission.txt
 sed "s|^/run/beamOn .*|/run/beamOn $SAB_EVENTS|" "$CHECK_DIR/ic/$INPUTS/run.mac" > "$WORK/run.mac"
+# The pinned G4CMP can fault in a static destructor during exit() on Linux, after main() has
+# returned and every output file is closed (backtrace in README.md). The run is accepted only
+# when the log proves every event was processed and the output file is complete; the exit
+# status is then reported as a warning. Any other failure fails the check.
+set +e
 "$WORK/build-ex/g4cmpValidation" "$WORK/run.mac" > "$OUT_DIR/g4cmpValidation.log" 2>&1
+rc=$?
+set -e
+grep -q "Number of events processed : $SAB_EVENTS\$" "$OUT_DIR/g4cmpValidation.log" || { echo "run.sh: g4cmpValidation did not process all $SAB_EVENTS events (exit $rc)" >&2; exit 1; }
+[ -s "$WORK/Validation_BoundaryTransmission.txt" ] || { echo "run.sh: g4cmpValidation wrote no output" >&2; exit 1; }
+[ "$(tail -c1 "$WORK/Validation_BoundaryTransmission.txt" | od -An -c | tr -d ' ')" = "\\n" ] || { echo "run.sh: the output file does not end with a complete line" >&2; exit 1; }
+[ "$(tail -n1 "$WORK/Validation_BoundaryTransmission.txt" | awk -F' ' '{print NF}')" -eq 18 ] || { echo "run.sh: the output file's last line is incomplete" >&2; exit 1; }
+[ "$rc" -eq 0 ] || echo "WARNING: g4cmpValidation exited $rc after processing all $SAB_EVENTS events and closing its output: the pinned G4CMP faults in G4CMPPhononBoundaryProcess::~G4CMPPhononBoundaryProcess during exit() on Linux (see README.md); the graded output was verified complete above" >&2
+
 [ -s "$WORK/Validation_BoundaryTransmission.txt" ] || { echo "run.sh: no step file written" >&2; exit 1; }
 /usr/bin/python3 "$CHECK_DIR/reduce.py" "$WORK/Validation_BoundaryTransmission.txt" "$OUT_DIR/summary.txt"
