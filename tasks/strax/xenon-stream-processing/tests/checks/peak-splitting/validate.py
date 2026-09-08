@@ -3,7 +3,8 @@
 
 Two correct runs of a stochastic configuration differ pointwise, so the policy
 compares invariants. Each entry of rubric.json comparison.invariants is:
-  mode "agreement": a statistic of a column (final|mean|max|min) must agree:
+  mode "agreement": a statistic of a column (final|mean|max|min), or every
+                    case when statistic is "all", must agree:
                     |cand - ref| <= atol + rtol * |ref|
   mode "drift":     the column must be conserved within each run on its own:
                     max |x(t) - x(0)| / |x(0)| <= max_relative_drift
@@ -70,6 +71,55 @@ def main() -> int:
         mode = inv.get("mode", "agreement")
         if mode == "agreement":
             stat = inv.get("statistic", "final")
+            if stat == "all":
+                ref_values, cand_values = series["reference"], series["candidate"]
+                if ref_values.shape != cand_values.shape:
+                    failures.append(
+                        f"{name}: candidate shape {cand_values.shape} does not match "
+                        f"reference shape {ref_values.shape}"
+                    )
+                    continue
+                atol, rtol = float(inv.get("atol", 0.0)), float(inv["rtol"])
+                bounds = atol + rtol * np.abs(ref_values)
+                errors = np.abs(cand_values - ref_values)
+                fractions = np.divide(
+                    errors,
+                    bounds,
+                    out=np.where(errors == 0, 0.0, np.inf),
+                    where=bounds > 0,
+                )
+                relative = np.divide(
+                    errors,
+                    np.abs(ref_values),
+                    out=errors.copy(),
+                    where=ref_values != 0,
+                )
+                worst = int(np.argmax(fractions)) if len(fractions) else 0
+                max_error = float(errors.max(initial=0.0))
+                max_bound = float(bounds.max(initial=0.0))
+                frac = float(fractions.max(initial=0.0))
+                distance = max(distance, float(relative.max(initial=0.0)))
+                bound_fraction = max(bound_fraction, frac)
+                details[name] = {
+                    "mode": mode,
+                    "statistic": stat,
+                    "cases": int(len(ref_values)),
+                    "max_abs_error": max_error,
+                    "max_bound": max_bound,
+                    "bound_fraction": frac,
+                    "worst_case": worst,
+                }
+                failing = np.flatnonzero(errors > bounds)
+                if len(failing):
+                    i = int(failing[0])
+                    failures.append(
+                        f"{name}: case {i} |{cand_values[i]:.6e} - {ref_values[i]:.6e}| "
+                        f"= {errors[i]:.3e} exceeds bound {bounds[i]:.3e}"
+                    )
+                continue
+            if stat not in STATS:
+                failures.append(f"{name}: unknown agreement statistic {stat!r}")
+                continue
             ref_v, cand_v = STATS[stat](series["reference"]), STATS[stat](series["candidate"])
             bound = float(inv.get("atol", 0.0)) + float(inv["rtol"]) * abs(ref_v)
             err = abs(cand_v - ref_v)
