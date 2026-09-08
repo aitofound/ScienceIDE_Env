@@ -78,8 +78,11 @@ one command and is worth doing for every probe. A preconditioned probe whose
 `bound_fraction` does not fall as `maxiter` shrinks is this pitfall until a
 same-input control says otherwise; a BiCGStab-style irregular-convergence
 amplification does fall with the window. A stochastic driver that reseeds
-per rank is the other face of unpinned randomness, see
-[athena-turbulence-rng-per-rank](athena-turbulence-rng-per-rank.md); an
+per rank is another face of unpinned randomness, see
+[athena-turbulence-rng-per-rank](athena-turbulence-rng-per-rank.md), and a
+test that draws its inputs from the candidate's own sampler, which no seed
+fixes, is
+[mink-candidate-sampler-sets-the-inputs](mink-candidate-sampler-sets-the-inputs.md); an
 eigensolver whose distance does not scale with the perturbation even when
 seeded is
 [meep-mpb-eigensolver-two-state](meep-mpb-eigensolver-two-state.md).
