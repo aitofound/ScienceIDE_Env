@@ -95,8 +95,7 @@ def compare(reference: Path, candidate: Path, rubric: dict) -> dict:
         f = frac(r, c, atol, rtol)
         over = int(np.sum(f > 1.0))
         worst_frac = max(worst_frac, float(f.max()))
-        with np.errstate(divide="ignore", invalid="ignore"):
-            dist = float(np.nanmax(np.where(r != 0, np.abs(c - r) / np.abs(r), np.abs(c - r))))
+        dist = float(f.max() * rtol)   # relative to the row's vector length, the scale the bound uses
         worst_dist = max(worst_dist, dist)
         details[rel] = {"values": int(r.size), "rows_over_bound": over, "max_rel_error": dist, "bound_fraction": float(f.max())}
         if over:
