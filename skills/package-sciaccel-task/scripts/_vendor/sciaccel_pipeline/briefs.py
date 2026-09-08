@@ -232,7 +232,11 @@ STEP 3  Author the checks of {task}.
     rubric.json                policy, configuration, expected_runtime_s, variant, comparison, evidence, warrant
     validate.py                applies the rubric; standard library and numpy only
     README.md                  the narrative, public to the solver
-  Nothing is shared between checks. The variant is generic numerical-noise
+  Nothing is shared between checks. Within a run, a run.sh should reuse
+  the build an earlier check made, to the best effort, and nevertheless
+  stays self-contained; how is this leaf's own business, stated in
+  comment/README.md. Compiling per check is slow, not wrong.
+  The variant is generic numerical-noise
   calibration, not a physics-isolation experiment or validation of the
   upstream official test. Perturb the smallest sufficient set of one or more
   active initial-condition inputs; there is no fixed count. Normally perturb
