@@ -1,0 +1,48 @@
+name: Merge to master or develop
+
+on:
+  push:
+    branches: [master, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: merge-develop
+  cancel-in-progress: false
+
+jobs:
+  build_documentation:
+    name: macOS Docs Deployment
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+      - uses: ./.github/actions/data-cache
+      - name: Build Basilisk
+        uses: ./.github/actions/build
+        with:
+          python-version: 3.14
+          conan-args: --opNav True --allOptPkg --mujoco True
+      - name: Build docs
+        uses: ./.github/actions/docs
+      - name: Deploy non-develop branch merges to /
+        if: success() && github.ref_name != 'develop'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/build/html
+          destination_dir: .
+          force_orphan: true
+      - name: Deploy develop branch merges to /develop
+        if: success() && github.ref_name == 'develop'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/build/html
+          destination_dir: develop
+          keep_files: true
