@@ -26,20 +26,20 @@
     ]
   },
   "evidence": {
-    "floor": 1.8962609260597674e-13,
-    "floor_how": "measured by selfcheck on 2026-09-07: run.sh altbuild (same source, gcc -O2 strict IEEE: no -ffast-math, -ffp-contract=off, no -march=native (build-ieee/)) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
-    "self_validation_spread": 2.540190280342358e-13,
-    "self_validation_bound_fraction": 0.003674590987377819,
+    "floor": 1.8784973576657649e-13,
+    "floor_how": "measured by selfcheck on 2026-09-08: run.sh altbuild (same source, gcc -O2 strict IEEE: no -ffast-math, -ffp-contract=off, no -march=native (build-ieee/)) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
+    "self_validation_spread": 9.103828801926284e-14,
+    "self_validation_bound_fraction": 0.0023895952576879014,
     "altbuild": {
       "what": "same source, gcc -O2 strict IEEE: no -ffast-math, -ffp-contract=off, no -march=native (build-ieee/)",
-      "distance": 1.8962609260597674e-13,
-      "bound_fraction": 0.003968627909218985,
+      "distance": 1.8784973576657649e-13,
+      "bound_fraction": 0.003931451066978059,
       "identical": false,
       "passed": true,
       "reason": "all graded values within bound",
-      "at": "2026-09-07T04:31:49Z"
+      "at": "2026-09-08T08:28:23Z"
     },
-    "floor_bound_fraction": 0.003968627909218985
+    "floor_bound_fraction": 0.003931451066978059
   },
   "warrant": "The graded histories and frames follow the standalone DG Maxwell solver of the vlasov app in two dimensions, a blind spot the module's previous check set named. In `rt_dg_maxwell_wg_2d.c`, `epsilon0` (line 60) is the permittivity, which sets the wave speed; the two-ULP variant therefore moves every graded value at the level of the arithmetic, while a wrong Maxwell flux, a wrong divergence-cleaning potential or a wrong two-dimensional field update changes them at order one. The bound atol=1e-11, rtol=1e-11 was set on 2026-09-06 from the calibration selfcheck on the x86 worker 136.114.2.6 (1 cpu, 4 GB, Docker): the two-ULP variant used at most 3.7e-3 of it and the strict-IEEE altbuild at most 4.0e-3 (worst files `field-energy.gkyl` and `field-energy.gkyl`), a headroom of about 252x over the larger legitimate perturbation, while the faults named above move the graded values at order one."
 }
