@@ -1,0 +1,210 @@
+name: Publish Wheels
+
+on:
+  push:
+    tags:
+      - "v[0-9]*"
+      - "test*"
+  workflow_dispatch:
+    inputs:
+      destination:
+        description: "Publish destination"
+        required: true
+        default: testpypi
+        type: choice
+        options:
+          - testpypi
+          - pypi
+
+jobs:
+  build-wheels:
+    name: Build Basilisk Wheels (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-26 # ARM64
+          - ubuntu-24.04 # x86_64
+          - ubuntu-24.04-arm # ARM64
+          - windows-2025-vs2026 # x86_64
+        include:
+          - os: windows-2025-vs2026
+            extra-conan-args: --generator Ninja
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref }}
+      # Workaround for macos-13 (Intel). Ensures the conan build uses the right
+      # SSL cert.
+      - name: Set CA bundle (macos-13 only)
+        if: ${{ matrix.os == 'macos-13' }}
+        shell: bash
+        run: |
+          python -m pip install -U certifi
+          CA="$(python -c 'import certifi; print(certifi.where())')"
+          {
+          echo "REQUESTS_CA_BUNDLE=$CA"   # Python requests / Conan
+          echo "PIP_CERT=$CA"             # pip
+          echo "SSL_CERT_FILE=$CA"        # OpenSSL consumers
+          echo "CURL_CA_BUNDLE=$CA"       # curl / CMake file(DOWNLOAD)
+          echo "CMAKE_TLS_CAINFO=$CA"     # CMake
+          } >> "$GITHUB_ENV"
+          echo "Using CA: $CA"
+
+      - name: Setup system dependencies
+        uses: ./.github/actions/setup
+
+      - name: Build core bsk wheel
+        uses: pypa/cibuildwheel@v3.1.4
+        with:
+          output-dir: wheelhouse-core
+        env:
+          CONAN_ARGS: "--opNav False --mujoco True --clean ${{ matrix.extra-conan-args }}"
+          CIBW_TEST_SKIP: "*"
+
+      - name: Free runner disk before opNav Linux wheel
+        if: ${{ matrix.os == 'ubuntu-24.04' }}
+        shell: bash
+        run: |
+          echo "Disk space before cleanup:"
+          df -h
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          docker system prune -af || true
+          echo "Disk space after cleanup:"
+          df -h
+
+      - name: Build opNav-enabled bsk wheel
+        uses: pypa/cibuildwheel@v3.1.4
+        with:
+          output-dir: wheelhouse-opnav-full
+        env:
+          CONAN_ARGS: "--opNav True --mujoco True --clean ${{ matrix.extra-conan-args }}"
+          CIBW_TEST_SKIP: "*"
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: 3.14
+
+      - name: Generate and test optional wheel installs
+        shell: bash
+        run: >
+          python .github/scripts/run_optional_bsk_wheel_test.py
+          --component opnav
+          --base-wheel-dir wheelhouse-core
+          --component-wheel-dir wheelhouse-opnav-full
+          --optional-wheel-dir wheelhouse-optional
+          --test-wheelhouse wheelhouse-test
+
+      - name: Prepare publish wheels
+        shell: bash
+        run: |
+          mkdir -p wheelhouse-publish
+          cp wheelhouse-core/*.whl wheelhouse-publish/
+          cp wheelhouse-optional/*.whl wheelhouse-publish/
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v6
+        with:
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          path: ./wheelhouse-publish/*.whl
+
+  make_sdist:
+    name: Make SDist
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: 3.14
+
+      - name: Build SDist
+        run: pipx run build --sdist
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: cibw-sdist
+          path: dist/*.tar.gz
+
+  test-sdist:
+    name: Test SDist
+    needs: make_sdist
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: ./.github/actions/setup
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: 3.14
+
+      - name: Download sdist
+        uses: actions/download-artifact@v6
+        with:
+          name: cibw-sdist
+          path: dist
+
+      - name: Verify SDist Installation
+        run: pip install dist/*.tar.gz
+
+  publish:
+    name: Publish
+    needs: [build-wheels, test-sdist]
+    runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
+    steps:
+      - name: Download wheels
+        uses: actions/download-artifact@v6
+        with:
+          pattern: cibw-wheels-*
+          merge-multiple: true
+          path: dist
+
+      - name: Download sdist
+        uses: actions/download-artifact@v6
+        with:
+          name: cibw-sdist
+          path: dist
+
+      - name: Resolve publish config
+        id: config
+        run: |
+          ref="${{ github.ref_name }}"
+          # Guard: manual PyPI publish requires a non-RC version tag
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.destination }}" == "pypi" ]]; then
+            if [[ "${{ github.ref_type }}" != "tag" || "$ref" == *rc* || "$ref" != v* ]]; then
+              echo "::error::PyPI publish requires a non-RC version tag (e.g. vX.Y.Z). Got: $ref"
+              exit 1
+            fi
+          fi
+          # Route to TestPyPI for RC/test tags or manual testpypi dispatch
+          if [[ "$ref" == *rc* || "$ref" == test* || "${{ inputs.destination }}" == "testpypi" ]]; then
+            testpypi="true"
+          else
+            testpypi="false"
+          fi
+          if [[ "$testpypi" == "true" ]]; then
+            echo "repo-url=https://test.pypi.org/legacy/" >> "$GITHUB_OUTPUT"
+            echo "skip-existing=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "repo-url=https://upload.pypi.org/legacy/" >> "$GITHUB_OUTPUT"
+            echo "skip-existing=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: ${{ steps.config.outputs.repo-url }}
+          packages-dir: dist
+          skip-existing: ${{ steps.config.outputs.skip-existing }}
+          verbose: true
