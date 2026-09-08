@@ -18,7 +18,7 @@
     sab.py task review              --task <leaf>                                   # the review brief, the body of the task PR, STOP 5
     sab.py review codebase          --codebase <id> [--root <checkout>] [--modules <modules.json>] [--base <ref>] [--upstream <checkout>]
     sab.py review task              --task <leaf> [--root <checkout>] [--base <ref>]  # STOP 2 and STOP 6: what the CLI owns, then the brief
-    sab.py review codebase|task ... --done --human-ref "<the human's words>" [--presented <file.md>]
+    sab.py review codebase|task ... --done --human-ref "<the human's words>" [--presented <file.md>] [--rerun-ref "<their words on the rerun>"]
     sab.py review status
     sab.py brief                    [--codebase <id>]                               # the pipeline briefing, the first thing the human hears
     sab.py status                   [--codebase <id>] [--task <leaf>] [--ci-freshness]
@@ -161,6 +161,7 @@ def main() -> None:
         p.add_argument("--done", action="store_true", help="record the human's decision and close the review")
         p.add_argument("--human-ref", help="the human's words, verbatim (with --done)")
         p.add_argument("--presented", help="the presentation you gave the human, as a file, kept with the record (with --done)")
+        p.add_argument("--rerun-ref", help="the human's words approving the rerun you proposed, verbatim (with --done); absent means no rerun")
     rp.add_parser("status", help="every review under the local state, open or decided")
 
     p = sub.add_parser("brief", help="the pipeline briefing: what happens, where the human is needed, what runs where")
