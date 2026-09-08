@@ -97,7 +97,20 @@ def validate(reference, candidate, rubric, check):
     worst=max((d['bound_fraction'] for d in details.values()),default=0.)
     comparison_names={'candidate_vs_oracle','position_m','velocity_mps','rate_radps','inertial_attitude_rad','local_attitude_rad','environment','trim'}
     spread=max((d['max_abs_error'] for k,d in details.items() if k in comparison_names),default=0.)
-    return dict(passed=not failures,policy='pointwise',distance=spread,bound_fraction=worst,files=details,reason='all physical comparisons within approved bounds' if not failures else '; '.join(failures))
+    # Keep the overall gate conservative; expose the separate scientific roles.
+    groups = {
+        'port_equivalence': comparison_names,
+        'independent_physics': {'state_unit_norm','local_q_unit_norm','raw_quaternion_norm','rotational_energy_drift','inertial_momentum_drift'},
+        'published_anchor': {k for k in details if k.startswith('NESC_') or k == 'official_model'},
+    }
+    families = {}
+    for family, names in groups.items():
+        streams = {k:v for k,v in details.items() if k in names}
+        if streams:
+            worst_stream = max(streams, key=lambda k: streams[k]['bound_fraction'])
+            fraction = streams[worst_stream]['bound_fraction']
+            families[family] = dict(bound_fraction=fraction, worst_stream=worst_stream, margin=(1/fraction if fraction else None), streams=list(streams))
+    return dict(passed=not failures,policy='pointwise',distance=spread,bound_fraction=worst,comparison_families=families,files=details,reason='all physical comparisons within approved bounds' if not failures else '; '.join(failures))
 
 
 def main():
