@@ -189,10 +189,68 @@ def mbtr_supercell_similarity(value, repeats):
 
 
 def mbtr_periodic_images(value, repeats):
-    system = Atoms("HH", positions=[[0, 0, 0], [value, 0, 0]], cell=[2, 2, 2], pbc=True)
+    # Direct transcription of test_periodic_images_1 in the pinned upstream
+    # tests.  ``value`` is one at the nominal IC and only supplies the two-ULP
+    # cell perturbation required for Harbor calibration.
+    setups = (
+        {
+            "geometry": {"function": "atomic_number"},
+            "grid": {"min": 0, "max": 2, "sigma": 0.1, "n": 21},
+        },
+        {
+            "geometry": {"function": "inverse_distance"},
+            "grid": {"min": 0, "max": 1.0, "sigma": 0.02, "n": 21},
+            "weighting": {"function": "exp", "scale": 1, "threshold": 1e-4},
+        },
+        {
+            "geometry": {"function": "cosine"},
+            "grid": {"min": -1.0, "max": 1.0, "sigma": 0.02, "n": 21},
+            "weighting": {"function": "exp", "scale": 1, "threshold": 1e-4},
+        },
+    )
     outputs = []
-    for descriptor in (k2(species=["H"], periodic=True), k3(species=["H"], periodic=True)):
-        outputs.append(descriptor.create(system))
+    for setup in setups:
+        descriptor = MBTR(
+            species=[1],
+            periodic=True,
+            **setup,
+            normalization="l2",
+        )
+
+        system = Atoms(
+            cell=[[5.0, 0.0, 0.0], [0.0, 5.0, 0.0], [0.0, 0.0, 5.0]],
+            positions=[[0, 0, 0]],
+            symbols=["H"],
+        )
+        a = 1.5 * value
+        system.set_cell([[a, 0.0, 0.0], [0.0, a, 0.0], [0.0, 0.0, a]])
+        system.set_pbc(True)
+        cubic_cell = descriptor.create(system)
+        cubic_supercell = descriptor.create(system * (2, 1, 1))
+
+        system.set_cell(
+            value
+            * np.array([[0.0, 2.0, 1.0], [1.0, 0.0, 1.0], [1.0, 2.0, 0.0]])
+        )
+        triclinic_cell = descriptor.create(system)
+        triclinic_supercell = descriptor.create(system * (2, 1, 1))
+
+        fcc_primitive = descriptor.create(bulk("H", "fcc", a=2.0 * value))
+        fcc_orthorhombic = descriptor.create(
+            bulk("H", "fcc", a=2.0 * value, orthorhombic=True)
+        )
+        fcc_cubic = descriptor.create(bulk("H", "fcc", a=2.0 * value, cubic=True))
+        outputs.extend(
+            (
+                cubic_cell,
+                cubic_supercell,
+                triclinic_cell,
+                triclinic_supercell,
+                fcc_primitive,
+                fcc_orthorhombic,
+                fcc_cubic,
+            )
+        )
     return flat(*(outputs * repeats))
 
 

@@ -175,16 +175,42 @@ def mbtr_periodic_translation(value, repeats):
 
 
 def mbtr_supercell_similarity(value, repeats):
-    primitive = bulk("NaCl", "rocksalt", a=5.64 * value)
-    supercell = primitive * (2, 2, 2)
-    outputs = []
-    descriptors = (
-        MBTR(species=["Na", "Cl"], geometry={"function": "distance"}, grid={"min": 0, "max": 5, "sigma": 0.1, "n": 50}, weighting={"function": "inverse_square", "r_cut": 5}, periodic=True, normalization="l2"),
-        MBTR(species=["Na", "Cl"], geometry={"function": "angle"}, grid={"min": 0, "max": 180, "sigma": 2, "n": 50}, weighting={"function": "smooth_cutoff", "r_cut": 5}, periodic=True, normalization="l2"),
+    # Direct transcription of test_periodic_supercell_similarity in the pinned
+    # upstream tests.  ``value`` is one at the nominal IC and only supplies the
+    # two-ULP lattice perturbation required for Harbor calibration.
+    setups = (
+        {
+            "geometry": {"function": "atomic_number"},
+            "grid": {"min": 0, "max": 2, "sigma": 0.1, "n": 100},
+        },
+        {
+            "geometry": {"function": "inverse_distance"},
+            "grid": {"min": 0, "max": 1.0, "sigma": 0.02, "n": 200},
+            "weighting": {"function": "exp", "scale": 1, "threshold": 1e-3},
+        },
+        {
+            "geometry": {"function": "cosine"},
+            "grid": {"min": -1.0, "max": 1.0, "sigma": 0.02, "n": 200},
+            "weighting": {"function": "exp", "scale": 1, "threshold": 1e-3},
+        },
     )
-    for descriptor in descriptors:
-        a, b = descriptor.create(primitive), descriptor.create(supercell)
-        outputs.extend((a, b, b - a))
+    primitive = bulk("H", "fcc", a=2.0 * value)
+    systems = (
+        primitive,
+        primitive * (2, 2, 2),
+        bulk("H", "fcc", a=2.0 * value, orthorhombic=True),
+        bulk("H", "fcc", a=2.0 * value, cubic=True),
+    )
+    outputs = []
+    for setup in setups:
+        descriptor = MBTR(
+            species=["H"],
+            periodic=True,
+            **setup,
+            sparse=False,
+            normalization="l2",
+        )
+        outputs.append(descriptor.create(list(systems)))
     return flat(*(outputs * repeats))
 
 
