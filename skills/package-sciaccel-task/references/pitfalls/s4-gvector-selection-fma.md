@@ -35,7 +35,9 @@ trips it on every host.
 mesh or particle set by a floating-point key and then truncates. Look for a
 `qsort` or hand-rolled sort over doubles followed by `N` kept. Test by
 building once with FMA on (`-O2` on arm64, or `-mfma -ffp-contract=fast` on
-x86) and once off, and diff the count kept, not only the values.
+x86) and once off, and diff the count kept, not only the values. A moving front that meets nodes at exact
+ties is the same mechanism with a comparison instead of a sort:
+[eprem-shock-front-node-tie](eprem-shock-front-node-tie.md).
 
 **What to do in the check.** A check that prints G indices or whose lattice
 has a degenerate shell at the truncation boundary is not gradeable at this
