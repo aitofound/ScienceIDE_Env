@@ -15,25 +15,22 @@ Generated from the canonical JSON. Unknown values are visible; this report never
 
 | module | approval | purpose / difference | owned files | owned text lines | collected tests | shared components |
 |---|---|---|---:|---:|---:|---|
-| `soap` | approved | SOAP forms rotationally invariant power spectra from a neighbour-density basis expansion. Unlike structure matrices it is local to requested centers; unlike MBTR and ACSF its domi… | 8 | 7080 | 122 | `shared-infrastructure` |
-| `mbtr-family` | approved | This family produces broadened many-body histograms on explicit grids and shares one principal C++ accumulator across MBTR and LMBTR; Valle-Oganov configures MBTR for a materials-… | 5 | 2977 | 160 | `shared-infrastructure` |
-| `acsf` | approved | ACSF evaluates fixed radial and angular functions rather than a SOAP basis expansion or MBTR grid; its derivative path is numerical. | 3 | 745 | 35 | `shared-infrastructure` |
-| `structure-matrices` | approved | These are global pair-interaction matrices rather than local or histogram representations. Ewald adds a distinct periodic summation workload while retaining the common matrix post… | 6 | 1254 | 78 | `shared-infrastructure` |
+| `descriptors` | proposed-only | The families differ in representation and dominant kernel, but jointly constitute the public descriptor subsystem and share a larger common compiled/runtime foundation than any th… | 21 | 11636 | 395 | `descriptor-support` |
 
 ### Shared code
 
 | component | purpose | used by | files | text lines |
 |---|---|---|---:|---:|
-| `shared-infrastructure` | Provides descriptor base classes, atomic-system conversion, parallel execution, geometry and neighbour-list utilities, the pybind11 bridge, common C++ descriptor classes, weightin… | ["soap", "mbtr-family", "acsf", "structure-matrices"] | 1859 | 400691 |
+| `descriptor-support` | Provides descriptor base classes, atomic-system conversion, parallel execution, geometry and neighbour-list utilities, the pybind11 bridge, common C++ descriptor classes, weightin… | ["descriptors"] | 1859 | 400691 |
 
 ### Source accounting
 
 | bucket | files | bytes | text lines |
 |---|---:|---:|---:|
 | shared | 1859 | 15692514 | 400691 |
-| owned | 22 | 859924 | 12056 |
+| owned | 21 | 765186 | 11636 |
 | overlapping_owned | 0 | 0 | 0 |
-| unclassified | 1420 | 108924377 | 301390 |
+| unclassified | 1421 | 109019115 | 301810 |
 
 ### Total official-test counts (units are not interchangeable)
 
@@ -45,12 +42,12 @@ Generated from the canonical JSON. Unknown values are visible; this report never
 | `inner_cases` | unknown | inner cases |
 
 ### Gaps and warnings
-- All four proposed modules have human approval; task calibration beyond SOAP has not yet been performed.
-- This source report does not establish task check suitability, policies, tolerances, rewards, or speedups.
-- Cross-platform numerical variation remains unknown until task calibration.
-- Which official behaviours in each module should become self-contained checks?
-- Which policies and tolerances will be approved after calibration?
-- CLI: 1420 regular file(s) are unclassified; this is visible but non-blocking
+- The revised one-module descriptor proposal is not yet approved by the curator.
+- This source report does not authorize task scaffolding, checks, rewards, tolerances, or runs.
+- Cross-platform numerical variation remains unknown at the source-proposal stage.
+- Does the curator approve the combined descriptors module, its 11,636 owned source-like lines, and the supporting/shared accounting?
+- CLI: 1421 regular file(s) are unclassified; this is visible but non-blocking
+- CLI: no approved module cut is available; report remains informational
 
 Artifacts: `codebase-metadata.json` (canonical) · `codebase-metadata.html` (self-contained detail)
 <!-- SCIACCEL_CODEBASE_METADATA_REPORT:END -->
