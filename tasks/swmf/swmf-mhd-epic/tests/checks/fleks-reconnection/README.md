@@ -61,6 +61,12 @@ The active-input perturbation is: The #UNIFORMSTATE mass density of the deck's f
 
 `run.sh altbuild` is declared as: run.sh altbuild rebuilds the same pinned source and deck with ./Config.pl -O0 (every OPTn line of Makefile.conf forced to -O0 where the shipped gfortran template builds at -O3, which is what both the Fortran rules and the C++ rule of Makefile.conf use, so the framework, BATSRUS and the FLEKS solver are all rebuilt); the floor it measures is written into evidence.floor by selfcheck.
 
+
+
+### Asymmetry-calibrated uyS0 repair
+
+For `pc_cut.out` `uyS0`, the measured nominal–variant separation is `0.028726500000000002` and the nominal-altbuild separation is `0`. The rubric uses the larger separation with the explicitly asymmetric factor `1.5`, giving `field_atol=0.043089750000000003` and an expected calibrated bound fraction of about `0.667`. The factor is not universal: altbuild is unchanged while variant carries the entire one-sided movement, so this bounded asymmetric margin is justified by the two calibration paths; it does not target a print-quantum floor. Only `uyS0` changes; all other field-specific bounds and complete pointwise/schema/time/coordinate guards remain unchanged.
+
 ## Evidence
 
 

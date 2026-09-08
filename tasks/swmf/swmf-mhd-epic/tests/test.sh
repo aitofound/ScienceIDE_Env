@@ -40,6 +40,10 @@ if [ "${1:-}" = "produce" ]; then
   case "$CHECK_PARALLEL" in 1|2|3|4) ;; *) echo "SAB_CHECK_PARALLEL must be an integer from 1 through 4" >&2; exit 2 ;; esac
   mkdir -p "$OUT_ROOT"
   OUT_ROOT="$(cd "$OUT_ROOT" && pwd -P)"
+  BUILD_CACHE_ROOT="$OUT_ROOT/.sab-build-cache-$IC"
+  [ ! -e "$BUILD_CACHE_ROOT" ] || { echo "produce: build cache root already exists: $BUILD_CACHE_ROOT" >&2; exit 2; }
+  mkdir "$BUILD_CACHE_ROOT"
+  BUILD_CACHE_ROOT="$(cd "$BUILD_CACHE_ROOT" && pwd -P)"
   passthrough=()
   while IFS='=' read -r name _; do passthrough+=("$name=${!name}"); done < <(env | grep -E '^SAB_[A-Z0-9_]+=' || true)
   failed=(); total=0
@@ -61,7 +65,8 @@ if [ "${1:-}" = "produce" ]; then
     if (cd "$check_dir" && env -i PATH="$PATH" HOME="${HOME:-/tmp}" LANG=C.UTF-8 \
           SOURCE_DIR="$SOURCE_DIR" OUT_DIR="$out_dir" CHECK_DIR="$check_dir" SAB_IC="$IC" \
           OMPI_ALLOW_RUN_AS_ROOT=1 OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1 ${passthrough[@]+"${passthrough[@]}"} \
-          SAB_MAKE_JOBS="${SAB_MAKE_JOBS-8}" bash ./run.sh "$IC") >"$log" 2>&1; then
+          SAB_MAKE_JOBS="${SAB_MAKE_JOBS-8}" SAB_BUILD_CACHE_ROOT="$BUILD_CACHE_ROOT" \
+          bash ./run.sh "$IC") >"$log" 2>&1; then
       end=$(date +%s.%N)
       build="$(grep -o 'SAB_BUILD_SECONDS=[0-9.]*' "$log" | tail -1 | cut -d= -f2 || true)"  # no build line is legitimate; grep's 1 must not kill the driver
       printf 'check=%s\nic=%s\nelapsed_seconds=%s\nbuild_seconds=%s\n' "$check" "$IC" "$(awk "BEGIN{print $end - $start}")" "${build:-0}" >"$out_dir/run.ok"

@@ -33,38 +33,33 @@ exec < /dev/null
 WORK="$(mktemp -d)"
 cleanup() { local rc=$?; if [ "$rc" -ne 0 ]; then for f in "$WORK"/*.log; do [ -f "$f" ] || continue; echo "== $f" >&2; tail -30 "$f" >&2; done; fi; rm -rf "$WORK"; }
 trap cleanup EXIT
-cp -R "$SOURCE_DIR/." "$WORK/src"
 export LC_ALL=C OMP_NUM_THREADS=1 GIT_TERMINAL_PROMPT=0
+. "$CHECK_DIR/build-cache.sh"
 
-cd "$WORK/src"
-BUILD_START=$(date +%s)
-./Config.pl -install=BATSRUS -compiler=gfortran > "$WORK/install.log" 2>&1
-# AMReX, 3-dimensional, exactly the configure line share/Scripts/Config.pl would run (its own
-# build hard-codes make -j 4; SAB_MAKE_JOBS is used here instead). ./Config.pl -amrex3d then only
-# points util/AMREX/InstallDir at it and writes the AMREX definitions into Makefile.conf.
-( cd util/AMREX \
-  && ./configure --prefix InstallDir3D --comp gnu --enable-fortran-api no --debug no \
-       --enable-tiny-profile yes --dim 3 --allow-different-compiler yes \
-  && make -j"$SAB_MAKE_JOBS" && make install ) > "$WORK/amrex.log" 2>&1
-./Config.pl -amrex3d > "$WORK/build.log" 2>&1
-if [ "$IC" = altbuild ]; then
-  ./Config.pl -O0 >> "$WORK/build.log" 2>&1
-  grep -q '^OPT3 = -O0' Makefile.conf || { echo "run.sh: Config.pl -O0 did not set OPT3 in Makefile.conf" >&2; exit 1; }
-fi
-# The build PC/FLEKS/tests/README.md documents for the standalone suite: two grid levels (the AMR
-# decks need them) and the Exosphere user source (the ionization decks need it).
-cd "$WORK/src/PC/FLEKS"
-./Config.pl -amrex3d -lev=2 -u=Exo >> "$WORK/build.log" 2>&1
-make -j"$SAB_MAKE_JOBS" EXE >> "$WORK/build.log" 2>&1
-make PIDL >> "$WORK/build.log" 2>&1
-echo "SAB_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))"
-
-# The run directory PC/FLEKS/Makefile builds for the standalone executable, which is what
-# tests/validate_tests.py assembles by hand before every test.
-make rundir RUNDIR="$WORK/run" > "$WORK/rundir.log" 2>&1
-# PC/FLEKS/Makefile links FLEKS.exe from ${BINDIR}, which in the SWMF layout is the framework's
-# bin/; make EXE puts the standalone executable in PC/FLEKS/bin/, so link it here.
-ln -sf "$WORK/src/PC/FLEKS/bin/FLEKS.exe" "$WORK/run/FLEKS.exe"
+# Build once for the exact standalone FLEKS/AMReX/optimization family.
+sab_build_family() (
+  set -e
+  cd "$SAB_BUILD_SRC"
+  ./Config.pl -install=BATSRUS -compiler=gfortran > "$SAB_BUILD_FAMILY_ROOT/install.log" 2>&1
+  ( cd util/AMREX \
+    && ./configure --prefix InstallDir3D --comp gnu --enable-fortran-api no --debug no \
+         --enable-tiny-profile yes --dim 3 --allow-different-compiler yes \
+    && make -j"$SAB_MAKE_JOBS" && make install ) > "$SAB_BUILD_FAMILY_ROOT/amrex.log" 2>&1
+  ./Config.pl -amrex3d > "$SAB_BUILD_FAMILY_ROOT/build.log" 2>&1
+  if [ "$IC" = altbuild ]; then
+    ./Config.pl -O0 >> "$SAB_BUILD_FAMILY_ROOT/build.log" 2>&1
+    grep -q '^OPT3 = -O0' Makefile.conf || { echo "run.sh: Config.pl -O0 did not set OPT3 in Makefile.conf" >&2; exit 1; }
+  fi
+  cd "$SAB_BUILD_SRC/PC/FLEKS"
+  ./Config.pl -amrex3d -lev=2 -u=Exo >> "$SAB_BUILD_FAMILY_ROOT/build.log" 2>&1
+  make -j"$SAB_MAKE_JOBS" EXE >> "$SAB_BUILD_FAMILY_ROOT/build.log" 2>&1
+  make PIDL >> "$SAB_BUILD_FAMILY_ROOT/build.log" 2>&1
+  make rundir RUNDIR="$SAB_RUNTIME_TEMPLATE" > "$SAB_BUILD_FAMILY_ROOT/rundir.log" 2>&1
+  ln -sf "$SAB_BUILD_SRC/PC/FLEKS/bin/FLEKS.exe" "$SAB_RUNTIME_TEMPLATE/FLEKS.exe"
+)
+sab_acquire_build "standalone-fleks-3d-v1"
+BUILD_SECONDS="$SAB_ACQUIRE_SECONDS"
+echo "SAB_BUILD_SECONDS=$BUILD_SECONDS"   # zero on a family hit; actual nonnegative wall time on its owner
 python3 - "$CHECK_DIR/ic/$INPUTS/PARAM.in" "$WORK/run/PARAM.in" "$SAB_STOP_SCALE" <<'PY'
 import sys
 src, dst, scale = sys.argv[1], sys.argv[2], float(sys.argv[3])
