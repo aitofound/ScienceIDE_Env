@@ -17,7 +17,7 @@ knob SAB_STEADY_SCALE "0.1" "multiplies the MaxIter of every steady-state #STOP 
 knob SAB_STOP_SCALE "0.15" "multiplies the time-accurate window of both runs (120 s at the upstream value in the first run, and this check's own restart window, matched to the first run); the graded default gives an 18 s window in each run; SAB_COUPLE_MAX=5.0 caps every positive DtCouple in both copied decks, preserving the existing 5 s GM-IE period and giving every active GM-IM/IE-IM/GM-RB/RB path at least three coupling opportunities in each window; every output cadence this check grades is shortened to match so each window still carries several saved frames; run time scales with it"
 knob SAB_COUPLE_MAX "5.0" "caps every positive DtCouple in the copied deck at 5.0 s; this coordinated upstream-clock setting preserves the existing 5 s GM-IE period and gives every active GM-IM, IE-IM and GM-RB/RB path at least three coupling opportunities in the 18 s graded window; run time scales with it"
 knob SAB_RANKS "8" "MPI ranks for mpiexec; the deck's #COMPONENTMAP divides them between GM, IE and IM, so this changes the domain decomposition as well as the run time"
-knob SAB_MAKE_JOBS "$(cpus_allowed)" "parallel jobs for the build of the pinned source (default: the CPUs allowed to this container); it changes build time only, never the graded run"
+knob SAB_MAKE_JOBS "$(cpus_allowed)" "parallel jobs when this check builds its audited configuration (default: the CPUs allowed to this container; unused when a prior check in this solve supplied the shared build); it changes build time only, never the graded run"
 ALTBUILD="the same Config.pl configuration built with ./Config.pl -O0 before make SWMF, which sets every OPTn level of Makefile.conf to -O0 where the shipped gfortran template uses -O3; same pinned source, same deck"
 if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; [ -z "$ALTBUILD" ] || echo "altbuild: $ALTBUILD"; exit 0; fi
 
@@ -32,7 +32,35 @@ fi
 [ -d "$CHECK_DIR/ic/$INPUTS" ] || { echo "run.sh: no initial condition ic/$INPUTS" >&2; exit 2; }
 exec < /dev/null                 # mpiexec must not read the produce driver's stdin
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
-cp -R "$SOURCE_DIR/." "$WORK/src"
+BUILD_CONFIG="multiion-ng2-ie181-pidl"
+BUILD_MODE=default
+[ "$IC" = altbuild ] && BUILD_MODE=o0
+CACHE_KEY="$BUILD_CONFIG-$IC-$BUILD_MODE"  # IC keeps nominal, variant and altbuild solves mechanically separate.
+BUILD_REUSED=0
+BUILD_CACHE_STATUS=local
+if [ -n "${SAB_SHARED_BUILD_ROOT:-}" ]; then
+  mkdir -p "$SAB_SHARED_BUILD_ROOT"
+  CACHE_DIR="$SAB_SHARED_BUILD_ROOT/$CACHE_KEY"
+  if [ -f "$CACHE_DIR/.sab-build-complete" ]; then
+    grep -Fxq "config=$BUILD_CONFIG" "$CACHE_DIR/.sab-build-complete" || { echo "run.sh: shared-build marker has the wrong configuration: $CACHE_DIR" >&2; exit 1; }
+    grep -Fxq "ic=$IC" "$CACHE_DIR/.sab-build-complete" || { echo "run.sh: shared-build marker has the wrong initial condition: $CACHE_DIR" >&2; exit 1; }
+    grep -Fxq "mode=$BUILD_MODE" "$CACHE_DIR/.sab-build-complete" || { echo "run.sh: shared-build marker has the wrong build mode: $CACHE_DIR" >&2; exit 1; }
+    SRC="$CACHE_DIR"
+    BUILD_REUSED=1
+    BUILD_CACHE_STATUS=reused
+  elif [ -e "$CACHE_DIR" ]; then
+    echo "run.sh: refusing incomplete shared build: $CACHE_DIR" >&2
+    exit 1
+  else
+    mkdir "$CACHE_DIR"
+    cp -R "$SOURCE_DIR/." "$CACHE_DIR"
+    SRC="$CACHE_DIR"
+    BUILD_CACHE_STATUS=built
+  fi
+else
+  SRC="$WORK/src"
+  cp -R "$SOURCE_DIR/." "$SRC"
+fi
 export LC_ALL=C OMP_NUM_THREADS=1 GIT_TERMINAL_PROMPT=0
 export OMPI_ALLOW_RUN_AS_ROOT=1 OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
 
@@ -43,18 +71,27 @@ export OMPI_ALLOW_RUN_AS_ROOT=1 OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
 # own version and option lines select the components, the equation set, the
 # block size and the ionosphere grid, and make builds SWMF.exe and the
 # post-processing executables.
-cd "$WORK/src"
-BUILD_START=$(date +%s)
-./Config.pl -install=BATSRUS -compiler=gfortran > "$WORK/install.log" 2>&1
-./Config.pl -default -v=Empty,GM/BATSRUS,IE/Ridley_serial,IM/RCM2 >> "$WORK/build.log" 2>&1
-./Config.pl -o=GM:u=Default,e=MultiIon,ng=2,g=8,8,8,IE:g=181,361 >> "$WORK/build.log" 2>&1
-if [ "$IC" = altbuild ]; then
-  ./Config.pl -O0 >> "$WORK/build.log" 2>&1
-  grep -q '^OPT3 = -O0' Makefile.conf || { echo "run.sh: Config.pl -O0 did not set OPT3 in Makefile.conf" >&2; exit 1; }
+cd "$SRC"
+if [ "$BUILD_REUSED" -eq 1 ]; then
+  BUILD_SECONDS=0
+else
+  BUILD_START=$(date +%s)
+  ./Config.pl -install=BATSRUS -compiler=gfortran > "$WORK/install.log" 2>&1
+  ./Config.pl -default -v=Empty,GM/BATSRUS,IE/Ridley_serial,IM/RCM2 >> "$WORK/build.log" 2>&1
+  ./Config.pl -o=GM:u=Default,e=MultiIon,ng=2,g=8,8,8,IE:g=181,361 >> "$WORK/build.log" 2>&1
+  if [ "$IC" = altbuild ]; then
+    ./Config.pl -O0 >> "$WORK/build.log" 2>&1
+    grep -q '^OPT3 = -O0' Makefile.conf || { echo "run.sh: Config.pl -O0 did not set OPT3 in Makefile.conf" >&2; exit 1; }
+  fi
+  make -j"$SAB_MAKE_JOBS" SWMF >> "$WORK/build.log" 2>&1
+  make PIDL >> "$WORK/build.log" 2>&1
+  BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))
+  if [ -n "${SAB_SHARED_BUILD_ROOT:-}" ]; then
+    printf 'config=%s\nic=%s\nmode=%s\n' "$BUILD_CONFIG" "$IC" "$BUILD_MODE" > "$SRC/.sab-build-complete"
+  fi
 fi
-make -j"$SAB_MAKE_JOBS" SWMF >> "$WORK/build.log" 2>&1
-make PIDL >> "$WORK/build.log" 2>&1
-echo "SAB_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))"   # the driver records it; the budget counts run time only
+echo "SAB_BUILD_CACHE_STATUS=$BUILD_CACHE_STATUS config=$BUILD_CONFIG ic=$IC mode=$BUILD_MODE"
+echo "SAB_BUILD_SECONDS=$BUILD_SECONDS"   # actual compile time for this check; zero only when this solve reused its completed matching build
 
 # Run directory exactly as the upstream test builds it: make rundir, then the
 # deck and the inputs of ic/, then the recipe's own edits of the deck.
@@ -174,7 +211,7 @@ elif [ -f RESTART.out ]; then
 else
   echo "run.sh: the first run left no restart state to restart from" >&2; exit 1
 fi
-cd "$WORK/src"
+cd "$SRC"
 Scripts/TestParam.pl -F "$WORK/run/PARAM.in_multiion_restart" >> "$WORK/testparam.log" 2>&1 || true
 perl -pi -e 's/#BORIS/BORIS/' "$WORK/run/PARAM.in_multiion_restart"
 perl -pi -e 's/^1 min(\s+DtOutput)/3$1/; s/^1 min(\s+DtSaveMagGrid)/3$1/; s/^20(\s+DtSaveMagGrid)/3$1/; s/^20(\s+DtOutput)/3$1/' "$WORK/run/PARAM.in_multiion_restart"
