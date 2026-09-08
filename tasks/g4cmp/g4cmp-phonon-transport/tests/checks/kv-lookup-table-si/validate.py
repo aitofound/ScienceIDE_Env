@@ -103,15 +103,13 @@ def compare(reference: Path, candidate: Path, rubric: dict) -> dict:
     best = np.minimum(direct, swapped)
     overL, overT = int(np.sum(fL > 1.0)), int(np.sum(best > 1.0))
     worst = float(max(fL.max(), best.max()))
-    with np.errstate(divide="ignore", invalid="ignore"):
-        distL = float(np.nanmax(np.where(r[iL] != 0, np.abs(c[iL] - r[iL]) / np.abs(r[iL]), np.abs(c[iL] - r[iL]))))
     failures = []
     if overL:
         failures.append(f"longitudinal rows: {overL} of {int(iL.sum())} exceed atol={atol:g} rtol={rtol:g}")
     if overT:
         failures.append(f"transverse rows: {overT} of {int(iS.sum())} directions exceed the bound under either assignment")
     passed = not failures
-    return {"passed": passed, "policy": "pointwise", "atol": atol, "rtol": rtol, "distance": max(distL, float(best.max() * rtol)),
+    return {"passed": passed, "policy": "pointwise", "atol": atol, "rtol": rtol, "distance": worst * rtol,   # the worst deviation in units of the relative bound, i.e. relative to the row's vector length
             "bound_fraction": worst, "reason": "all graded values within the bound" if passed else "; ".join(failures),
             "details": {"longitudinal": {"rows": int(iL.sum()), "rows_over_bound": overL, "bound_fraction": float(fL.max())},
                         "transverse-pair": {"rows": int(iS.sum()), "rows_over_bound": overT, "rows_taken_swapped": int(np.sum((swapped < direct) & (direct > 1.0))), "bound_fraction": float(best.max())}}}
