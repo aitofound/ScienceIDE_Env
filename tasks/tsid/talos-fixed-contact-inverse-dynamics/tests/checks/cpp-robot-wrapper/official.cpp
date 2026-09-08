@@ -3,6 +3,7 @@
 //
 
 #include <iostream>
+#include "numerical.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/utility/binary.hpp>
@@ -40,7 +41,8 @@ BOOST_AUTO_TEST_CASE(test_robot_wrapper) {
   ub.head<3>().fill(10.);
   ub.segment<4>(3).fill(1.);
 
-  Vector q = pinocchio::randomConfiguration(model, lb, ub);
+  Vector q = pinocchio::neutral(model);
+  q(7) = sab::input(0.2);
   Vector v = Vector::Ones(robot.nv());
   Data data(robot.model());
   robot.computeAllTerms(data, q, v);
@@ -49,6 +51,9 @@ BOOST_AUTO_TEST_CASE(test_robot_wrapper) {
   std::cout << com << std::endl;
   BOOST_CHECK(robot.nq() == 38);
   BOOST_CHECK(robot.nv() == 37);
+  sab::emit("com", robot.com(data));
+  sab::emit("mass", robot.mass(data));
+  sab::emit("nonlinear", robot.nonLinearEffects(data));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

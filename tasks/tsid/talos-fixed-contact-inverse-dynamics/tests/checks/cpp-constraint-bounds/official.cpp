@@ -3,6 +3,7 @@
 //
 
 #include <iostream>
+#include "numerical.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/utility/binary.hpp>
@@ -21,6 +22,7 @@ BOOST_AUTO_TEST_CASE(test_constraint_bounds) {
 
   VectorXd lb = -1.0 * VectorXd::Ones(n);
   VectorXd ub = VectorXd::Ones(n);
+  ub(0) = sab::input(ub(0));
   ConstraintBound bounds("bounds", lb, ub);
 
   BOOST_CHECK(bounds.isBound());
@@ -42,6 +44,8 @@ BOOST_AUTO_TEST_CASE(test_constraint_bounds) {
   BOOST_CHECK(!ub.isApprox(bounds.upperBound()));
   bounds.setUpperBound(ub);
   BOOST_CHECK(ub.isApprox(bounds.upperBound()));
+  sab::emit("lower", bounds.lowerBound());
+  sab::emit("upper", bounds.upperBound());
 }
 
 BOOST_AUTO_TEST_CASE(test_constraint_equality) {
@@ -54,6 +58,7 @@ BOOST_AUTO_TEST_CASE(test_constraint_equality) {
 
   MatrixXd A = MatrixXd::Ones(m, n);
   VectorXd b = VectorXd::Ones(m);
+  b(0) = sab::input(b(0));
   ConstraintEquality equality("equality", A, b);
 
   BOOST_CHECK(!equality.isBound());
@@ -75,6 +80,8 @@ BOOST_AUTO_TEST_CASE(test_constraint_equality) {
   BOOST_CHECK(!A.isApprox(equality.matrix()));
   equality.setMatrix(A);
   BOOST_CHECK(A.isApprox(equality.matrix()));
+  sab::emit("matrix", equality.matrix());
+  sab::emit("vector", equality.vector());
 }
 
 BOOST_AUTO_TEST_CASE(test_constraint_inequality) {
@@ -88,6 +95,7 @@ BOOST_AUTO_TEST_CASE(test_constraint_inequality) {
   MatrixXd A = MatrixXd::Ones(m, n);
   VectorXd lb = -1.0 * VectorXd::Ones(m);
   VectorXd ub = VectorXd::Ones(m);
+  ub(0) = sab::input(ub(0));
   ConstraintInequality inequality("inequality", A, lb, ub);
 
   BOOST_CHECK(!inequality.isBound());
@@ -110,6 +118,9 @@ BOOST_AUTO_TEST_CASE(test_constraint_inequality) {
   BOOST_CHECK(!A.isApprox(inequality.matrix()));
   inequality.setMatrix(A);
   BOOST_CHECK(A.isApprox(inequality.matrix()));
+  sab::emit("matrix", inequality.matrix());
+  sab::emit("lower", inequality.lowerBound());
+  sab::emit("upper", inequality.upperBound());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

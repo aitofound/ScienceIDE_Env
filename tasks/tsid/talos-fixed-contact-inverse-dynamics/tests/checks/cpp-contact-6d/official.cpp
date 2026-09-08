@@ -3,6 +3,7 @@
 //
 
 #include <iostream>
+#include "numerical.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/utility/binary.hpp>
@@ -29,7 +30,7 @@ BOOST_AUTO_TEST_CASE(test_contact_6d) {
   const double lx = 0.07;
   const double ly = 0.12;
   const double lz = 0.105;
-  const double mu = 0.3;
+  const double mu = sab::input(0.3);
   const double fMin = 10.0;
   const double fMax = 1000.0;
   const std::string frameName = "r_sole_joint";
@@ -90,6 +91,12 @@ BOOST_AUTO_TEST_CASE(test_contact_6d) {
   BOOST_CHECK(forceGenMat.rows() == 6 && forceGenMat.cols() == 12);
 
   contact.computeForceRegularizationTask(t, q, v, data);
+  sab::emit("force_matrix", forceIneq.matrix());
+  sab::emit("normal_force_lower", forceIneq.lowerBound().tail(1));
+  sab::emit("force_upper", forceIneq.upperBound());
+  sab::emit("force_generator", forceGenMat);
+  sab::emit("motion_matrix", contact.getMotionConstraint().matrix());
+  sab::emit("motion_vector", contact.getMotionConstraint().vector());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -1,24 +1,39 @@
 {
   "check": "py-task-uncommon-joints",
-  "policy": "invariants",
+  "policy": "pointwise",
   "chaotic": false,
   "upstream_test": "tests/python/test_Tasks.py",
   "configuration": "py-task-uncommon-joints",
-  "observable": "Completion and original assertions of one frozen official test stage",
+  "observable": "CoM Jacobian, desired acceleration minus drift and terminal position/velocity errors",
   "expected_runtime_s": 2.44065654091537,
-  "default_vs_upstream": "upstream",
-  "variant": "Identical fixed upstream assertion workload. There is no graded continuous output in this assertion harness, so this pair supplies no floating-point spread evidence; its exact assertion verdict is not presented as numerical tolerance calibration. The two TALOS checks provide continuous two-ULP calibration.",
+  "default_vs_upstream": "All selected upstream assertions and loop windows remain. Explicit numeric probes are added. C++ random matrices use the immutable SplitMix64 generator in numerical.hpp; the C++ robot state and SE3 target are fixed. Python check-local RNGs are seeded at 20260907 (the solver test retains its explicit seed 0). Trajectory SE3 translation is 0.125 m; gravity adds a nonzero request after the original zero request.",
+  "variant": "Two binary64 nextafter operations toward +infinity on Kp[0], the first proportional task gain, nominal 1 in C++ or 100 in Python. The IC noise_ulps=0 or 2 is consumed by the runner. Numerical output change must be measured during calibration.",
   "altbuild": "none: the pinned source has been validated on one O2 compiler/dependency environment; no alternative build evidence is claimed.",
   "comparison": {
-    "required_completed_stages": 1,
-    "minimum_passed_assertions": 1,
-    "maximum_failed_assertions": 0
+    "fields": {
+      "initial_matrix": {
+        "atol": 1e-08,
+        "rtol": 1e-08
+      },
+      "initial_vector": {
+        "atol": 1e-07,
+        "rtol": 1e-08
+      },
+      "terminal_position_error": {
+        "atol": 1e-05,
+        "rtol": 1e-05
+      },
+      "terminal_velocity_error": {
+        "atol": 1e-05,
+        "rtol": 1e-05
+      }
+    }
   },
   "evidence": {
     "spread": null,
-    "spread_how": "Both fixed assertion runs must pass. Their identical discrete verdict provides no numeric spread evidence.",
-    "self_validation_spread": 0.0,
-    "self_validation_bound_fraction": 0.0
+    "spread_how": "The CLI measured the maximum absolute nominal-versus-two-ULP-variant difference in the public numerical outputs. This mixed-unit maximum is a sensitivity diagnostic, not a global pass tolerance; each field has its own bound. Source-specific mechanisms and the measured source-fault discrimination are documented in comment/redesign-calibration.md.",
+    "self_validation_spread": 1.4210854715202004e-14,
+    "self_validation_bound_fraction": 1.524774084073634e-08
   },
-  "warrant": "The immutable upstream regression snapshot executes py-task-uncommon-joints. Its original assertions compare the library operations against independently computed expectations or explicit constraint properties; every selected stage must complete with at least one passed assertion and no failed assertion. A failed or skipped stage is rejected. Counts are not required to equal across runs because an iterative test can converge in a different number of valid steps. Numerical tolerances inside the frozen upstream assertions remain the upstream values; this discrete gate introduces no new numerical equivalence bound."
+  "warrant": "CoM Jacobian, desired acceleration minus drift and terminal position/velocity errors are produced by code/tsid/src/tasks/task-com-equality.cpp: TaskComEquality::compute. The world-xyz Jacobian maps generalized accelerations to CoM acceleration. The right-hand side is -Kp*(com-com_ref)-Kd*(vcom-vref)+aref-drift. A lost feedback term or wrong Jacobian changes the initial operator or terminal tracking errors. Every finite field and its physical shape is required. Per-field bounds in comparison distinguish copied coefficients, assembled robot/task quantities, terminal errors and absolute feasibility residuals; terminal error tolerance permits a different valid stopping iteration, which is never compared. The actual binary64 two-ULP calibration measured maximum absolute difference 1.4210854715202004e-14; this is evidence of rounding sensitivity, not the tolerance itself. An alternative-build floor has not been measured for this component check, and the separate TALOS floors are not transferred to it. The human finalized these policies, bounds, windows and variants after reviewing the calibration."
 }

@@ -3,6 +3,7 @@
 //
 
 #include <iostream>
+#include "numerical.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/utility/binary.hpp>
@@ -36,6 +37,10 @@ BOOST_AUTO_TEST_CASE(test_set_gravity) {
   Motion no_gravity = robot.model().gravity;
 
   BOOST_CHECK(no_gravity != init_gravity);
+  sab::emit("zero_gravity", no_gravity.toVector());
+  g.linear()(2) = sab::input(-9.81);
+  robot.setGravity(g);
+  sab::emit("applied_gravity", robot.model().gravity.toVector());
 }
 
 BOOST_AUTO_TEST_SUITE_END()
