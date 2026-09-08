@@ -40,11 +40,20 @@ cp -R "$SOURCE_DIR/." "$WORK/src"
 # Upstream test this check reproduces: code/mitgcm/verification/shelfice_2d_remesh/input
 [ -x "$WORK/src/tools/genmake2" ] || { echo "run.sh: $SOURCE_DIR has no tools/genmake2" >&2; exit 2; }
 mkdir "$WORK/build"
+OPTFILE="$WORK/src/tools/build_options/linux_amd64_gfortran"
+case "$(uname -m)" in
+  aarch64|arm64)
+    # The upstream x86 optfile's medium code model is not a valid GCC option
+    # on arm64; removing only that target-specific flag preserves the recipe.
+    sed 's/-mcmodel=medium//g' "$OPTFILE" >"$WORK/build/linux_arm64_gfortran"
+    OPTFILE="$WORK/build/linux_arm64_gfortran"
+    ;;
+esac
 BUILD_START=$(date +%s)
 [ -f "$CHECK_DIR/mods/genmake_local" ] && cp "$CHECK_DIR/mods/genmake_local" "$WORK/build/"   # experiment build flags, read by genmake2 from the build dir
 ( cd "$WORK/build" \
   && "$WORK/src/tools/genmake2" -rootdir "$WORK/src" -mods "$CHECK_DIR/mods" \
-       -optfile "$WORK/src/tools/build_options/linux_amd64_gfortran" ${GENMAKE_EXTRA[@]+"${GENMAKE_EXTRA[@]}"} \
+       -optfile "$OPTFILE" ${GENMAKE_EXTRA[@]+"${GENMAKE_EXTRA[@]}"} \
   && make depend \
   && make -j "$SAB_BUILD_JOBS" ) >"$WORK/build.log" 2>&1 || { tail -n 60 "$WORK/build.log" >&2; echo "run.sh: build failed" >&2; exit 1; }
 [ -x "$WORK/build/mitgcmuv" ] || { echo "run.sh: build left no mitgcmuv" >&2; exit 1; }
