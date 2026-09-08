@@ -41,8 +41,59 @@ cp -R "$CHECK_DIR/ic/$INPUTS/." "$PROBLEM/"
 export PLUTO_DIR="$SOURCE_DIR"
 printf 'ARCH         = Linux.gcc.defs\n' >"$PROBLEM/makefile"
 printf 'CFLAGS += -D_DEFAULT_SOURCE\n' >"$PROBLEM/local_make"
-if ! (cd "$PROBLEM" && python3 "$PLUTO_DIR/setup.py" --auto-update  >setup.log 2>&1 && make -j"${SAB_BUILD_JOBS:-2}" ${MAKE_CFLAGS[@]+"${MAKE_CFLAGS[@]}"} >make.log 2>&1); then
-  echo "run.sh: build failed" >&2; tail -n 40 "$PROBLEM/setup.log" "$PROBLEM/make.log" >&2; exit 1
+# Only Taylor-Couette explicit-01 and subcritical-02 share this exact compiled
+# recipe.  The cache lives inside this solve's output root; altbuild has a
+# different fingerprint and can never reuse the nominal/variant binary.
+if [ "$IC" = altbuild ]; then
+  BUILD_FINGERPRINT="c4a330583a567d86c89a2abf695af64658f26c1bd995e1a4eb6b2a8d2bd7c82f"
+else
+  BUILD_FINGERPRINT="d500dbc235629bd63456a2cdd6251cabca2571658e37ed2b80659387c9dd839c"
+fi
+CACHE_ROOT="$(dirname "$OUT_DIR")/.sab-build-cache"
+CACHE_DIR="$CACHE_ROOT/$BUILD_FINGERPRINT"
+CACHE_LOCK="$CACHE_ROOT/$BUILD_FINGERPRINT.lock"
+mkdir -p "$CACHE_ROOT"
+
+reuse_build() {
+  [ -x "$CACHE_DIR/pluto" ] &&
+    [ "$(cat "$CACHE_DIR/ready" 2>/dev/null || true)" = "$BUILD_FINGERPRINT" ] || return 1
+  cp -p "$CACHE_DIR/pluto" "$PROBLEM/pluto"
+  echo "SAB_BUILD_SECONDS=0"
+}
+
+build_pluto() {
+  BUILD_START=$(date +%s)
+  if ! (cd "$PROBLEM" && python3 "$PLUTO_DIR/setup.py" --auto-update  >setup.log 2>&1 && make -j"${SAB_BUILD_JOBS:-2}" ${MAKE_CFLAGS[@]+"${MAKE_CFLAGS[@]}"} >make.log 2>&1); then
+    echo "run.sh: build failed" >&2; tail -n 40 "$PROBLEM/setup.log" "$PROBLEM/make.log" >&2; return 1
+  fi
+  BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))
+  [ "$BUILD_SECONDS" -gt 0 ] || BUILD_SECONDS=1
+  echo "SAB_BUILD_SECONDS=$BUILD_SECONDS"
+}
+
+if reuse_build; then
+  :
+elif mkdir "$CACHE_LOCK" 2>/dev/null; then
+  mkdir -p "$CACHE_DIR"
+  if build_pluto; then
+    cp -p "$PROBLEM/pluto" "$CACHE_DIR/pluto"
+    printf '%s\n' "$BUILD_FINGERPRINT" >"$CACHE_DIR/ready"
+  else
+    printf '%s\n' "build failed" >"$CACHE_DIR/failed"
+    exit 1
+  fi
+else
+  WAITED=0
+  while [ "$WAITED" -lt 120 ] && [ ! -f "$CACHE_DIR/ready" ] && [ ! -f "$CACHE_DIR/failed" ]; do
+    sleep 1
+    WAITED=$((WAITED + 1))
+  done
+  if reuse_build; then
+    :
+  else
+    echo "run.sh: shared exact-build cache unavailable after ${WAITED}s; building independently" >&2
+    build_pluto || exit 1
+  fi
 fi
 
 # The deck runs from a scratch directory; only the graded files are copied out.
