@@ -35,6 +35,10 @@ if [ "${1:-}" = "produce" ]; then
   case "$IC" in nominal|variant|altbuild) ;; *) echo "initial condition must be nominal, variant or altbuild" >&2; exit 2 ;; esac
   mkdir -p "$OUT_ROOT"
   OUT_ROOT="$(cd "$OUT_ROOT" && pwd -P)"
+  # One new build cache per produce invocation; never import caller caches.
+  SAB_MINK_BUILD_ROOT="$(mktemp -d)"
+  export SAB_MINK_BUILD_ROOT
+  trap 'rm -rf -- "$SAB_MINK_BUILD_ROOT"' EXIT
   passthrough=()
   while IFS='=' read -r name _; do passthrough+=("$name=${!name}"); done < <(env | grep -E '^SAB_[A-Z0-9_]+=' || true)
   failed=(); total=0
