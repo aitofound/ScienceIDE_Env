@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Run one EFTCAMB physics-family check from its self-contained public inputs.
 # SOURCE_DIR is copied before the serial Fortran build; the source is never changed.
+# Within one solve the checks reuse the camb binary through a private cache beside their
+# output directories (skill 5.11.8, see comment/README.md "Build"); each run.sh still
+# builds for itself when the cache holds nothing it can verify.
 
 KNOB_HELP=""
 knob() {
@@ -54,7 +57,9 @@ PARAMS="$FORTRAN/eftcamb_test/parameters"
 cp "$CHECK_DIR/ic/$INPUTS/"*.ini "$PARAMS/"
 
 mkdir -p "$FORTRAN/eftcamb_test/results/spectra_results"
+FLAVOR=nominal
 if [ "$IC" = altbuild ]; then
+  FLAVOR=altbuild
   # gfortran -O0 was tried first and measured to SIGSEGV on this x86 host inside
   # __results_MOD_cambdata_setparams (with ulimit -s unlimited and OMP_STACKSIZE=512M;
   # see comment/README.md); -O1 is the smallest optimization-level change that still runs.
@@ -63,11 +68,90 @@ if [ "$IC" = altbuild ]; then
   sed -i.bak 's/^CFLAGS = -lm -O3 -ffast-math -fPIC/CFLAGS = -lm -O1 -fPIC/' "$FORTRAN/eftcamb/eftcamb_build.make"
   grep -q '^CFLAGS = -lm -O1 -fPIC' "$FORTRAN/eftcamb/eftcamb_build.make" || { echo "run.sh: altbuild sed did not match CFLAGS line" >&2; exit 2; }
 fi
-make -C "$FORTRAN" clean
-build_started=$SECONDS
-make -C "$FORTRAN" -j "$SAB_MAKE_JOBS" camb CLUSTER_SAFE=1
-printf 'SAB_BUILD_SECONDS=%s\n' "$((SECONDS - build_started))"
-[ -x "$FORTRAN/camb" ] || { echo "run.sh: build left no fortran/camb" >&2; exit 1; }
+
+# Build reuse within one solve (skill 5.11.8). The checks of a solve share a private cache
+# beside their output directories, <out_root>/.eftcamb-build-cache/<flavor>/<fingerprint>/camb.
+# The output root starts empty for every solve, so nothing crosses from one solve to another
+# and the altbuild flavor lives under its own key. The fingerprint covers every byte of
+# SOURCE_DIR, the two build files as this flavor edits them, the gfortran, gcc and make
+# versions and the machine; the first check to miss builds serially and publishes the binary,
+# its digest, then the ready marker; a later check verifies marker and digest and copies the
+# binary, or builds for itself exactly as before.
+BUILD_FINGERPRINT="$(python3 - "$SOURCE_DIR" "$FLAVOR" "$FORTRAN/Makefile" "$FORTRAN/eftcamb/eftcamb_build.make" <<'PY'
+import hashlib, os, stat, subprocess, sys
+
+root, flavor, makefile, buildmake = sys.argv[1:]
+h = hashlib.sha256()
+
+
+def field(name, value):
+    data = value if isinstance(value, bytes) else os.fsencode(value)
+    h.update(os.fsencode(name) + b"\0" + str(len(data)).encode() + b"\0" + data)
+
+
+field("schema", "eftcamb-camb-build-v1")
+field("flavor", flavor)
+field("target", "make camb CLUSTER_SAFE=1 -j1")
+field("Makefile", open(makefile, "rb").read())
+field("eftcamb_build.make", open(buildmake, "rb").read())
+for name, cmd in (("gfortran", ["gfortran", "--version"]), ("gcc", ["gcc", "--version"]), ("make", ["make", "--version"])):
+    field(name, subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout)
+field("machine", os.uname().machine)
+
+
+def tree(directory, rel="."):
+    with os.scandir(directory) as it:
+        entries = sorted(it, key=lambda e: os.fsencode(e.name))
+    for e in entries:
+        path = e.name if rel == "." else os.path.join(rel, e.name)
+        st = e.stat(follow_symlinks=False)
+        field("path", path)
+        field("mode", format(stat.S_IMODE(st.st_mode), "04o"))
+        if stat.S_ISLNK(st.st_mode):
+            field("symlink", os.readlink(e.path))
+        elif stat.S_ISDIR(st.st_mode):
+            field("dir", "")
+            tree(e.path, path)
+        elif stat.S_ISREG(st.st_mode):
+            field("size", str(st.st_size))
+            with open(e.path, "rb") as f:
+                while block := f.read(1 << 20):
+                    h.update(block)
+        else:
+            raise SystemExit(f"run.sh: unsupported source entry: {path}")
+
+
+tree(os.path.realpath(root))
+print(h.hexdigest())
+PY
+)"
+CACHE_DIR="$(dirname "$OUT_DIR")/.eftcamb-build-cache/$FLAVOR/$BUILD_FINGERPRINT"
+CACHE_BINARY="$CACHE_DIR/camb"; CACHE_DIGEST="$CACHE_DIR/camb.sha256"; CACHE_READY="$CACHE_DIR/ready"
+cache_hit=0
+if [ -x "$CACHE_BINARY" ] && [ -f "$CACHE_DIGEST" ] && [ -f "$CACHE_READY" ] \
+   && [ "$(cat "$CACHE_READY")" = "$BUILD_FINGERPRINT" ] \
+   && [ "$(sha256sum "$CACHE_BINARY" | cut -d' ' -f1)" = "$(cat "$CACHE_DIGEST")" ]; then
+  cache_hit=1
+fi
+if [ "$cache_hit" = 1 ]; then
+  echo "SAB_BUILD_CACHE=hit flavor=$FLAVOR fingerprint=$BUILD_FINGERPRINT"
+  cp "$CACHE_BINARY" "$FORTRAN/camb"
+  chmod +x "$FORTRAN/camb"
+  build_seconds=0
+else
+  echo "SAB_BUILD_CACHE=miss flavor=$FLAVOR fingerprint=$BUILD_FINGERPRINT"
+  make -C "$FORTRAN" clean
+  build_started=$SECONDS
+  make -C "$FORTRAN" -j "$SAB_MAKE_JOBS" camb CLUSTER_SAFE=1
+  build_seconds=$((SECONDS - build_started))
+  [ -x "$FORTRAN/camb" ] || { echo "run.sh: build left no fortran/camb" >&2; exit 1; }
+  mkdir -p "$CACHE_DIR"
+  cp "$FORTRAN/camb" "$CACHE_BINARY"
+  sha256sum "$CACHE_BINARY" | cut -d' ' -f1 >"$CACHE_DIGEST"
+  printf '%s\n' "$BUILD_FINGERPRINT" >"$CACHE_READY"
+fi
+printf 'SAB_BUILD_SECONDS=%s\n' "$build_seconds"   # measured compile time on a miss, exactly 0 on a verified reuse hit
+[ -x "$FORTRAN/camb" ] || { echo "run.sh: no fortran/camb to run" >&2; exit 1; }
 
 export OMP_NUM_THREADS="${OMP_NUM_THREADS:-8}"
 for model in "${MODELS[@]}"; do
