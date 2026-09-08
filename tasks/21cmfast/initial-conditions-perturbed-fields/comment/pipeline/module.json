@@ -1,0 +1,65 @@
+{
+  "module": {
+    "slug": "initial-conditions-perturbed-fields",
+    "title": "Gaussian initial conditions and Zel'dovich/2LPT perturbed fields",
+    "paths": [
+      "src/py21cmfast/src/InitialConditions.c",
+      "src/py21cmfast/src/InitialConditions.h",
+      "src/py21cmfast/src/PerturbedField.c",
+      "src/py21cmfast/src/PerturbedField.h",
+      "src/py21cmfast/drivers/single_field.py"
+    ],
+    "entrypoints": [
+      "py21cmfast.drivers.single_field.compute_initial_conditions",
+      "py21cmfast.drivers.single_field.perturb_field",
+      "tests/test_singlefield.py",
+      "tests/test_initial_conditions.py",
+      "tests/test_perturb.py"
+    ],
+    "expensive_path": "Real-to-complex and complex-to-real FFTW3 transforms over the DIM^3 (hi-res) and HII_DIM^3 (lo-res) grids to generate the Gaussian random field and its Zel'dovich/2LPT displacement, plus the density/velocity filtering step; this is the classic FFT-bound kernel that a GPU port (cuFFT) targets directly.",
+    "rationale": "This is the only module proposed in the merged codebase phase (PR #508). It is the self-contained front end of the pipeline: Gaussian field generation through perturbed density/peculiar-velocity fields, stopping before halo finding and radiative transfer, which the prior module cut intentionally left for a later, separate task.",
+    "excluded": [
+      "Halo catalogue and box construction (HaloBox.c, HaloCatalog.c) - downstream consumer, separate physics/task",
+      "Ionization, spin temperature and brightness temperature (IonisationBox.c, SpinTemperatureBox.c, BrightnessTemperatureBox.c) - downstream radiative physics, separate task",
+      "Interpolation tables and halo mass function machinery (interp_tables.c, hmf.c) - shared by downstream modules, not exercised by the IC/perturbation path alone",
+      "Photon conservation, luminosity function, light-cone assembly - downstream of this module's output"
+    ],
+    "hazards": [
+      "FFTW plan creation and OpenMP-threaded transforms are the primary source of run-to-run floating-point non-associativity; check tolerances must be derived with this in mind, not treated as bit-reproducible.",
+      "test_perturb.py's high-resolution 2LPT case is skipped upstream itself (aliasing in downsampling); no check should rely on that configuration."
+    ]
+  },
+  "approval": {
+    "modules": [
+      "initial-conditions-perturbed-fields"
+    ],
+    "human_ref": "approved, proceed",
+    "at": "2026-09-08T04:38:15Z"
+  },
+  "shared_infrastructure": [
+    "src/py21cmfast/src/InputParameters.c",
+    "src/py21cmfast/src/InputParameters.h",
+    "src/py21cmfast/src/OutputStructs.h",
+    "src/py21cmfast/src/Constants.c",
+    "src/py21cmfast/src/Constants.h",
+    "src/py21cmfast/src/exceptions.h",
+    "src/py21cmfast/src/cexcept.h",
+    "src/py21cmfast/src/logger.h",
+    "src/py21cmfast/src/debugging.c",
+    "src/py21cmfast/src/debugging.h",
+    "src/py21cmfast/src/dft.c",
+    "src/py21cmfast/src/dft.h",
+    "src/py21cmfast/src/filtering.c",
+    "src/py21cmfast/src/filtering.h",
+    "src/py21cmfast/src/indexing.c",
+    "src/py21cmfast/src/indexing.h",
+    "src/py21cmfast/src/rng.c",
+    "src/py21cmfast/src/rng.h",
+    "src/py21cmfast/src/cosmology.c",
+    "src/py21cmfast/src/cosmology.h",
+    "src/py21cmfast/wrapper/",
+    "src/py21cmfast/drivers/_global_initialization.py",
+    "src/py21cmfast/io/",
+    "build_cffi.py"
+  ]
+}
