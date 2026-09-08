@@ -29,17 +29,18 @@
     ]
   },
   "evidence": {
-    "floor": 0.0,
-    "floor_how": "measured by selfcheck on 2026-09-05: run.sh altbuild (configure.py -debug: the same pinned source and configure switches built by the same compiler at -O0 -g instead of optimized) against run.sh nominal, graded with the check's own validate.py: bit-identical graded output",
-    "self_validation_spread": 5.218048215738236e-13,
+    "floor": 6.088463067044358e-13,
+    "floor_how": "measured by selfcheck on 2026-09-08: run.sh altbuild (configure.py -debug: the same pinned source and configure switches built by the same compiler at -O0 -g instead of optimized) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
+    "self_validation_spread": 8.819611707622244e-13,
     "variant_preview_spread": 5.218e-13,
     "altbuild": {
       "what": "configure.py -debug: the same pinned source and configure switches built by the same compiler at -O0 -g instead of optimized",
-      "distance": 0.0,
-      "identical": true,
+      "distance": 6.088463067044358e-13,
+      "bound_fraction": null,
+      "identical": false,
       "passed": true,
       "reason": "all graded values within bound",
-      "at": "2026-09-05T02:51:03Z"
+      "at": "2026-09-08T04:24:08Z"
     }
   },
   "warrant": "The graded observable is the conserved state (density, momentum, total energy and cell-centred magnetic field) of every cell of 3 relativistic Riemann problems (gr_mub_1, gr_mub_2, gr_mub_4) at the upstream end time, written by the pinned code at full double precision, compared value by value with an absolute bound of 1e-09 and no relative term. Physical: every one of these tubes has shocks, contact and rarefaction whose positions and plateaus are set by the HLLE solver (src/hydro/rsolvers/mhd/hlle_mhd_rel.cpp), the conserved-to-primitive inversion (src/eos/adiabatic_mhd_gr.cpp) and the frame transformation to and from the local orthonormal frame in src/coordinates/minkowski.cpp; a wrong wave-speed estimate, a dropped metric term in the flux or a cheaper inversion moves plateau values and shock positions by 1e-3 or more, which is at least seven orders of magnitude above this bound. Achievable: the inversion iterates only until successive pressures differ by less than 1e-12 (adiabatic_mhd_gr.cpp, ConservedToPrimitiveNormal, tol = 1.0e-12, max 15 iterations), so two legitimate builds already differ at that level and the differences grow through the run; the -O3 and -O2 builds of the pinned source are bit-identical on every deck (floor 0), while a 1e-15 relative perturbation of the left density grows through the shocks to a largest absolute difference of 5.2e-13 at the end time (the variant preview), so the bound of 1e-09 sits 1916 times above the largest legitimate round-off spread seen and five or more orders of magnitude below a wrong answer. Absolute rather than relative because the noise is absolute: it is largest where the state is near zero (momenta on plateaus at rest). Finalized with the curator on 2026-09-02 after the calibration selfcheck on the x86 worker recorded an in-container nominal-versus-variant spread of 5.2e-13, equal to the preview."
