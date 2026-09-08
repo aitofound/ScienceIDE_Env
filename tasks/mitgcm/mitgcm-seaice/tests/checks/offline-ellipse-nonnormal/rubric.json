@@ -27,7 +27,7 @@
     "floor": 1.7122414597281477e-13,
     "floor_bound_fraction": 0.00031559193255896077,
     "floor_field": "FV",
-    "floor_how": "measured by selfcheck on 2026-09-05: run.sh altbuild (genmake2 -ieee: the same source at -O0 -ffloat-store, strict IEEE arithmetic, instead of the optimised optfile) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
+    "floor_how": "measured by selfcheck on 2026-09-08: run.sh altbuild (genmake2 -ieee: the same source at -O0 -ffloat-store, strict IEEE arithmetic, instead of the optimised optfile) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
     "self_validation_spread": 3.7922442963633785e-13,
     "faults": {
       "cheaper_solver": {
@@ -47,10 +47,11 @@
     "altbuild": {
       "what": "genmake2 -ieee: the same source at -O0 -ffloat-store, strict IEEE arithmetic, instead of the optimised optfile",
       "distance": 1.7122414597281477e-13,
+      "bound_fraction": null,
       "identical": false,
       "passed": true,
       "reason": "all graded values within bound",
-      "at": "2026-09-05T01:00:52Z"
+      "at": "2026-09-08T05:40:12Z"
     }
   },
   "warrant": "The observable is every cell of every prognostic field in the final state dump, compared as |c - r| <= 1e-10 + 1e-08|r|; the relative part is the working bound because the graded fields span many orders of magnitude, the absolute part covers cells at or near zero. The observable is every cell of UICE, VICE, AREA, HEFF, HSNOW and the frozen ocean fields of the final dump under |c - r| <= 1e-10 + 1e-8|r|. The relative part of the bound is what is actually tested because the graded fields span ten orders of magnitude (ice area of order one, ice and ocean velocities of order 1e-2 to 1 m/s, ice enthalpies of order 1e5 J/kg, heat fluxes of order 1e2 W/m2), so a single absolute number would be either unreachable for the enthalpies or vacuous for the velocities; the absolute part only covers cells at or near zero. The bound is physical for the same reason as on the other LSR decks of this experiment: the viscosities are smooth regularised functions of the strain-rate invariants, the momentum balance is solved to a 1e-12 relative residual, and with no thermodynamics there is no discrete freeze or melt event; the round-off floor is set by the LSR sweeps and by the exponential in the ice-strength law, which on the primary deck of this experiment measured 7e-13 relative between two legitimate builds. One simulated day is not long enough for the channel to be chaotic. It is achievable because the run is one process with the tiles swept in a fixed order (GLOBAL_SUM_ORDER_TILES), so every reduction and every solver sweep is deterministic and two correct builds of the same source differ only by round-off amplified through the iterations of the solve; the nominal-versus-variant spread that selfcheck records is the measurement of that amplification under this exact rule, and the bound is finalised against it with the human. Faults: A port that hard-codes a single eccentricity, or that reuses the yield-curve eccentricity in the flow rule, reproduces the ellipse but not this deck: the shear viscosity is then wrong by the ratio of the two eccentricities and UICE moves by order one wherever the ice is plastic. Dropping the pressure correction that accompanies the non-normal rule shifts the divergent part of the flow by per cent. The generic dynamics faults apply as on the sibling decks: an early LSR exit at 1e-2 to 1e-1 relative, a five per cent air-ice drag error at order 1e-1. The expensive path under test is seaice_calc_viscosities.F with two eccentricities in play (the SEAICE_eccfr path, which changes the ratio of the shear to the bulk viscosity and the pressure correction), seaice_lsr.F, seaice_calc_stressdiv.F and seaice_advdiff.F. The nominal-versus-variant spread recorded by selfcheck is the measurement of the round-off amplification under this exact rule, and the bound is finalised against it with the human."
