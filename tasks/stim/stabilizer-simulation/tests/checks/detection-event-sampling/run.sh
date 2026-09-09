@@ -37,28 +37,105 @@ cp -R "$SOURCE_DIR/." "$WORK/src"
 # Upstream test this check reproduces:
 # code/stim/src/stim/simulators/frame_simulator_util.test.cc (DetectionSimulator
 # suite, 15 tests, 436 ms) plus measurements_to_detection_events.
-BUILD_START=$(date +%s)
-cmake -S "$WORK/src" -B "$WORK/b" -G Ninja -DCMAKE_BUILD_TYPE=Release "${CMAKE_EXTRA[@]}" >"$WORK/cmake.log" 2>&1
+# Solve-scoped build reuse. The driver runs checks sequentially in one fresh
+# container per solve. Two exact recipes exist in this leaf; BUILD_GROUP keeps
+# their artifacts separate, BUILD_MODE keeps the normal and altbuild recipes
+# separate, and SRCHASH forces a cache miss for any source-tree change. The
+# first check in a group performs the complete configure+build; later checks use
+# the completed artifact and report zero build seconds. If the shared location
+# is unavailable or an incomplete build does not publish BUILD_OK, this check
+# falls back to the same full recipe in its private $WORK directory.
+BUILD_GROUP=cli
+BUILD_TARGET=stim
+CMAKE_RECIPE=(-G Ninja -DCMAKE_BUILD_TYPE=Release)
+BUILD_MODE=release
+[ "$IC" != altbuild ] || BUILD_MODE=simd-width-128
+SRCHASH="$(python3 - "$WORK/src" <<'PYHASH'
+import hashlib, os, sys
+root = sys.argv[1]
+digest = hashlib.sha256()
+for dirpath, dirnames, filenames in os.walk(root):
+    dirnames.sort()
+    for filename in sorted(filenames):
+        path = os.path.join(dirpath, filename)
+        rel = os.path.relpath(path, root)
+        digest.update(rel.encode('utf-8') + b'\0')
+        with open(path, 'rb') as handle:
+            for chunk in iter(lambda: handle.read(1 << 20), b''):
+                digest.update(chunk)
+        digest.update(b'\0')
+print(digest.hexdigest())
+PYHASH
+)"
+SHARED_BASE=/tmp/sab-build-stim
+SHARED="$SHARED_BASE/$BUILD_GROUP-$BUILD_MODE-$SRCHASH"
+BUILD_DIR=""; BUILD_LOG=""; BUILD_SECONDS=0; MFLAG=""
 
-# The machine flag this configure resolved, read from the generated ninja file:
-# ninja prints targets and not command lines, so the flags never reach cmake.log.
-# `|| true`: grep exits 1 when it matches nothing, and under `set -o pipefail`
-# that failed the assignment and killed run.sh silently, before it printed
-# anything - on every host where stim resolves no machine flags, which is every
-# non-x86_64 host. The empty case is legitimate and the guard below handles it.
-MFLAG="$(grep -hoE -- '-march=native|-mno-avx2|-mavx2|-mno-sse2|-msse2' "$WORK/b/build.ninja" 2>/dev/null | sort -u | tr '\n' ' ' || true)"
-# An altbuild that did not actually change the build would report a floor of 0 for
-# every check and mean nothing, so it fails loudly instead. Stim guards its machine
-# flags on CMAKE_SYSTEM_PROCESSOR (CMakeLists.txt:25) and every one of them is x86,
-# so -DSIMD_WIDTH has no effect off x86_64.
-case "$IC:$MFLAG" in
-  altbuild:*-mno-avx2*) ;;
-  altbuild:*) echo "run.sh: altbuild asked for -DSIMD_WIDTH=128 but this configure resolved machine flags '${MFLAG:-none}', so the alternative build is identical to the nominal one and its floor would be meaningless. Run the altbuild on an x86_64 host (the curator's ruling puts this leaf's official run on x86_64 with AVX2), or declare altbuild as \"none: <reason>\" for this host." >&2; exit 1 ;;
-esac
-cmake --build "$WORK/b" --target stim -j "$SAB_BUILD_JOBS" >>"$WORK/cmake.log" 2>&1
-echo "SAB_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))"
-STIM="$(find "$WORK/b" -type f -perm -111 -name stim | head -1)"
-[ -x "$STIM" ] || { cp "$WORK/cmake.log" "$OUT_DIR/cmake-failed.log" 2>/dev/null; echo "run.sh: stim binary not built; see cmake-failed.log" >&2; exit 1; }
+artifact_path() { find "$1" -type f -perm -111 -name stim | head -1; }
+artifact_valid() { local p; p="$(artifact_path "$1")"; [ -n "$p" ] && [ -x "$p" ]; }
+
+verify_altbuild() {
+  case "$IC:$MFLAG" in
+    altbuild:*-mno-avx2*) ;;
+    altbuild:*)
+      echo "run.sh: altbuild asked for -DSIMD_WIDTH=128 but this configure resolved machine flags '${MFLAG:-none}', so the alternative build is identical to the nominal one and its floor would be meaningless. Run the altbuild on an x86_64 host (the curator's ruling puts this leaf's official run on x86_64 with AVX2), or declare altbuild as \"none: <reason>\" for this host." >&2
+      return 1 ;;
+  esac
+}
+
+configure_and_build() {  # $1 build directory, $2 log
+  local builddir="$1" log="$2"
+  if ! cmake -S "$WORK/src" -B "$builddir" "${CMAKE_RECIPE[@]}" "${CMAKE_EXTRA[@]}" >"$log" 2>&1; then
+    echo "run.sh: stim configure failed; tail of $log:" >&2; tail -50 "$log" >&2
+    return 1
+  fi
+  MFLAG="$(grep -hoE -- '-march=native|-mno-avx2|-mavx2|-mno-sse2|-msse2' "$builddir/build.ninja" 2>/dev/null | sort -u | tr '\n' ' ' || true)"
+  verify_altbuild || return 1
+  if ! cmake --build "$builddir" --target "$BUILD_TARGET" -j "$SAB_BUILD_JOBS" >>"$log" 2>&1; then
+    echo "run.sh: stim build failed; tail of $log:" >&2; tail -50 "$log" >&2
+    return 1
+  fi
+  if ! artifact_valid "$builddir"; then
+    echo "run.sh: build target $BUILD_TARGET produced no usable artifact" >&2
+    return 1
+  fi
+}
+
+cache_ready() {
+  [ -f "$SHARED/BUILD_OK" ] && [ -f "$SHARED/MFLAG" ] && artifact_valid "$SHARED/b"
+}
+
+if mkdir -p "$SHARED_BASE" 2>/dev/null; then
+  if cache_ready; then
+    BUILD_DIR="$SHARED/b"; BUILD_LOG="$SHARED/cmake.log"
+  elif mkdir "$SHARED" 2>/dev/null; then
+    BUILD_START=$(date +%s)
+    configure_and_build "$SHARED/b" "$SHARED/cmake.log" || exit 1
+    BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))
+    printf '%s\n' "$MFLAG" > "$SHARED/MFLAG"
+    : > "$SHARED/BUILD_OK"
+    BUILD_DIR="$SHARED/b"; BUILD_LOG="$SHARED/cmake.log"
+  else
+    waited=0
+    while [ "$waited" -lt 600 ] && ! cache_ready; do sleep 2; waited=$(( waited + 2 )); done
+    if cache_ready; then
+      BUILD_DIR="$SHARED/b"; BUILD_LOG="$SHARED/cmake.log"
+    else
+      echo "run.sh: shared build did not become ready in ${waited}s; building privately" >&2
+    fi
+  fi
+fi
+if [ -z "$BUILD_DIR" ]; then
+  BUILD_START=$(date +%s)
+  configure_and_build "$WORK/b" "$WORK/cmake.log" || exit 1
+  BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))
+  BUILD_DIR="$WORK/b"; BUILD_LOG="$WORK/cmake.log"
+fi
+if [ -f "$SHARED/MFLAG" ] && [ "$BUILD_DIR" = "$SHARED/b" ]; then MFLAG="$(cat "$SHARED/MFLAG")"; fi
+verify_altbuild || exit 1
+echo "SAB_BUILD_SECONDS=$BUILD_SECONDS"
+STIM="$(artifact_path "$BUILD_DIR")"
+[ -x "$STIM" ] || { cp "$BUILD_LOG" "$OUT_DIR/cmake-failed.log" 2>/dev/null; echo "run.sh: stim binary not built; see cmake-failed.log" >&2; exit 1; }
 # Which vector word backend this build actually compiled, resolved exactly the
 # way src/stim/mem/simd_word.h:28-34 resolves it: __AVX2__ -> bitword_256_avx,
 # __SSE2__ -> bitword_128_sse, otherwise bitword_64. Stim's machine flags are
