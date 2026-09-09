@@ -100,13 +100,37 @@ def radial_bases(value, repeats):
     return flat(*outputs)
 
 
+def periodic_cell(value, n=4, spacing=3.1):
+    """A periodic cell of n**3 copies of the four-atom molecule, each rotated about z by a
+    fixed angle, on a cubic grid; the value enters every copy through the base geometry."""
+    base = molecule(value)
+    symbols, positions = [], []
+    for k, (i, j, l) in enumerate((i, j, l) for i in range(n) for j in range(n) for l in range(n)):
+        theta = 0.37 * k
+        rotation = np.array([[np.cos(theta), -np.sin(theta), 0.0], [np.sin(theta), np.cos(theta), 0.0], [0.0, 0.0, 1.0]])
+        positions.append(base.positions @ rotation.T + np.array([spacing * i, spacing * j, spacing * l]) + 0.8)
+        symbols.extend(base.get_chemical_symbols())
+    return Atoms(symbols=symbols, positions=np.vstack(positions), cell=[spacing * n] * 3, pbc=True)
+
+
 def numerical_derivatives(value, repeats):
-    system = molecule(value)
+    """The acceleration workload. Two per-center configurations on the four-atom molecule
+    keep the upstream breadth; two averaged configurations run on a 256-atom periodic cell
+    with every atom as a center (r_cut 6, n_max 6, l_max 6), the force-like derivative of
+    a global descriptor, whose cost grows with the square of the atom count while the
+    graded tensor stays (1, 256, 3, features)."""
+    small = molecule(value)
+    large = periodic_cell(value)
     outputs = []
     for _ in range(repeats):
-        for average, compression in (("off", "off"), ("off", "mu1nu1"), ("inner", "off"), ("outer", "crossover")):
+        for average, compression in (("off", "off"), ("off", "mu1nu1")):
             soap = descriptor(average=average, compression={"mode": compression})
-            deriv, values = soap.derivatives(system, centers=[0, 1], method="numerical", attach=True)
+            deriv, values = soap.derivatives(small, centers=[0, 1], method="numerical", attach=True)
+            outputs.extend((deriv, values))
+        for average, compression in (("inner", "off"), ("outer", "crossover")):
+            soap = descriptor(r_cut=6.0, n_max=6, l_max=6, periodic=True, average=average,
+                              compression={"mode": compression})
+            deriv, values = soap.derivatives(large, method="numerical", attach=True)
             outputs.extend((deriv, values))
     return flat(*outputs)
 
