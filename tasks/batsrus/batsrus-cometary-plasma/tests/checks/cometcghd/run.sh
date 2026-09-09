@@ -109,7 +109,7 @@ if [ "$CACHE_ENABLED" -eq 1 ]; then
       "build-spec=$BUILD_SPEC" \
       "build-mode=$BUILD_MODE" \
       "initial-condition=$IC" \
-      "input-directory=$CHECK_DIR/ic/$INPUTS" \
+      "input-kind=$INPUTS" \
       "make-targets=BATSRUS,PIDL" \
       "make-jobs=$SAB_MAKE_JOBS" \
       "compiler=gfortran" \
