@@ -28,6 +28,14 @@ that the pair of resolutions converge at the expected order; this leaf grades th
 final profile of every run. The six-digit error file `compute_error` would write
 is switched off and unused.
 
+## Build
+
+Every check compiles its own distinct Athena++ configuration: the problem
+generator, physics switches, flux and equation-of-state choices differ across
+the ten recipes, and each explicit/super-time-stepped pair also differs by the
+`-sts` flag, which changes compiled `STS_ENABLED` behavior. No two checks share
+an exact build recipe, so safe within-solve build reuse does not apply.
+
 ## Tolerances
 
 The floor was measured on the x86 worker in the survey image by building the

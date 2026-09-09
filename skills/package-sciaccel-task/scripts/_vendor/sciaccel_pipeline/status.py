@@ -7,13 +7,14 @@ from pathlib import Path
 from . import config, harbor_validate
 from .lint import lint
 from .runplan import compute_plan, consent_matches, consent_path, review_dir
-from .util import approved_modules, contract_fingerprint, die, leaf_of, read_json, rel, task_codebase
+from .util import approved_modules, contract_fingerprint, die, generated_paths, leaf_of, read_json, rel, task_codebase
 
 
 def task_status(leaf: Path, allow_custom: bool) -> dict:
     errs, warns, infos = lint(leaf, allow_custom)
     sv = leaf / "comment" / "pipeline" / "self-validation.json"
     state = {"task": rel(leaf), "checks": len(infos), "lint_errors": len(errs), "lint_warnings": len(warns), "self_validation": None}
+    state["generated_files"] = [rel(p) for p in generated_paths(leaf)]
     fp = contract_fingerprint(leaf)
     if sv.is_file():
         doc = read_json(sv)
@@ -35,6 +36,8 @@ def task_status(leaf: Path, allow_custom: bool) -> dict:
         nxt = f"sab.py task add-check --task {rel(leaf)} ... (one per suitable test)"
     elif errs:
         nxt = f"sab.py task lint --task {rel(leaf)}  (fix the {len(errs)} error(s))"
+    elif state["generated_files"]:
+        nxt = f"remove the {len(state['generated_files'])} generated file(s) listed under generated_files (selfcheck refuses them; a commit never carries them)"
     elif state["self_validation"] is None or not state["self_validation"]["fresh"]:
         # A run is needed: consent comes first. A consent given here for another host reads as invalid on this
         # machine by design (the run happens there), so the stop is reported only when no run has been made under it.
