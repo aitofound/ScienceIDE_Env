@@ -191,7 +191,7 @@ if [ "$CACHE_ENABLED" -eq 1 ]; then
       "runner=linux-docker" \
       "make-targets=BATSRUS,PIDL" \
       "make-jobs=$SAB_MAKE_JOBS" \
-      "mpi-ranks=$SAB_MPI_RANKS" \
+      "mpi-ranks=2" \
       "mpi-include=$MPI_INC" \
       "compiler=gfortran" \
       "compiler-version=$COMPILER_VERSION" \
