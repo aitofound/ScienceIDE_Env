@@ -326,3 +326,29 @@ BATSRUS selfchecks and other tasks), so wall time rose 1.7x without any change t
 checks. The budget is guidance and the quiet-host measurement is within it; the declared
 times and `suite_budget_s` were left as they are, for the human to raise if wanted.
 `comment/pipeline/` and every `rubric.json` in this PR are now `run3`'s.
+
+## Build reuse and failure evidence (PR452 mechanical revision)
+
+The check run scripts now reuse only a verified, complete BATSRUS/PIDL build
+with the same full build identity: task and build group, declared source pin
+and copied-source digest, exact `Config.pl` command, normal versus `altbuild`
+optimization mode, BATSRUS/PIDL make targets, compiler/MPI versions and flags,
+and runner/machine identity. The nominal and `variant` initial conditions do
+not enter that identity because they use the same compiled image; `altbuild`
+has an independent cache namespace and is never allowed to borrow a normal
+build. A cache hit is accepted only when both configured executables are
+non-empty/executable, the ready fingerprint matches, and both stored SHA256
+digests match. The ready marker is published last, so an interrupted build is
+not presented as a hit. `SAB_BUILD_SECONDS=0` means a verified hit; a miss
+times configuration plus compilation separately from solver wall time.
+
+The scripts resolve `GMDIR` and `BINDIR` from the generated Makefile definitions
+and install restored binaries at that configured path (`src/` for this pinned
+BATSRUS tree). They do not assume `bin/BATSRUS.exe` or `bin/PostIDL.exe`. Cache
+entries contain only the two verified build executables and metadata; no
+scientific initial-condition, solver, graded-output, or reference file is
+cached. Each check copies configuration, make, configured-path, cache
+validation, run-directory and solver failure evidence to
+`$OUT_ROOT/.diagnostics/<check>/<initial-condition>` before its temporary build
+copy is removed, while preserving the existing graded output names and pass
+policy unchanged.
