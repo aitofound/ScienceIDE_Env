@@ -47,8 +47,8 @@ preserve_diagnostics() {
     printf 'check=%s\nic=%s\nexit_status=%s\nwork=%s\n' "$(basename "$OUT_DIR")" "$IC" "$status" "$WORK"
     printf 'source_dir=%s\nout_dir=%s\n' "$SOURCE_DIR" "$OUT_DIR"
   } > "$DIAGNOSTICS_DIR/controller.txt"
-  for artifact in install.log config.log make-batsrus.log make-pidl.log resolve-paths.log \
-      rundir.log solver.log postproc.log cache-validation.txt; do
+  for artifact in config-install.log config-user.log config-default.log config-altbuild.log \
+      make-batsrus.log make-pidl.log resolve-paths.log rundir.log solver.log postproc.log cache-validation.txt; do
     [ -f "$WORK/$artifact" ] && cp "$WORK/$artifact" "$DIAGNOSTICS_DIR/$artifact"
   done
   for artifact in "$WORK"/*.exit; do
