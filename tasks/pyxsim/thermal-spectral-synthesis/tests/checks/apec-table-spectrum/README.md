@@ -32,8 +32,8 @@ floor large enough to hide spurious emission.
 ## Evidence
 
 The official selector passed in 8.84 seconds at 10,000 bins. The full-scale
-selfcheck on 2026-09-07 measured a maximum spread of
-7.888609052210118e-31 and bound fraction 4.85388171363098e-11, about 2.06e10
-times inside the bound. No portable altbuild is declared, so the tiny two-ulp
-spread is calibration evidence rather than a measured cross-build floor. The
-human finalized atol 1e-20 and rtol 1e-6 on 2026-09-07.
+x86 selfcheck on 2026-09-09 measured a maximum spread of
+7.888609052210118e-31 and bound fraction 4.85388171363098e-11. No portable
+altbuild is declared, so the tiny two-ulp spread is calibration evidence
+rather than a measured cross-build floor. The human-finalized atol 1e-20 and
+rtol 1e-6 remain unchanged.

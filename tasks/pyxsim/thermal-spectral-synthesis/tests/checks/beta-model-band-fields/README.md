@@ -35,8 +35,8 @@ remaining tighter than the official analytic comparisons.
 The official selector passed in 116.81 seconds and itself requires agreement
 with SOXS within 0.1-0.12 percent, depending on the observable. This check's
 candidate-versus-reference bound is one hundredth to one twelfth of those
-official analytic allowances. The full-scale selfcheck on 2026-09-07 measured distance
-1.3027115315182864e-15 and bound fraction 1.3027115315182863e-10, about
-7.68e9 times inside the bound. No portable altbuild is declared, so this
-same-build perturbation is not treated as a cross-platform floor. The human
-finalized the invariants policy and rtol 1e-5 on 2026-09-07.
+official analytic allowances. The full-scale x86 selfcheck on 2026-09-09
+measured distance 1.0855929429319035e-15 and bound fraction
+1.0855929429319033e-10. No portable altbuild is declared, so this same-build
+perturbation is not treated as a cross-platform floor. The human-finalized
+invariants policy and rtol 1e-5 remain unchanged.
