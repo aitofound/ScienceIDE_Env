@@ -82,7 +82,7 @@ cd "$WORK/src"
 MPI_INC="$(mpif90 -showme:compile 2>/dev/null || true)"
 BUILD_GROUP="mhd-default-ng2-g10x10x10-opt"
 BUILD_SPEC="Config.pl -default; Config.pl -u=Default -e=Mhd -ng=2 -g=10,10,10; Config.pl -opt=Param/SAB/PARAM.in.opt"
-BUILD_TASK="batsrus-geospace-magnetosphere"
+BUILD_TASK="batsrus-ideal-mhd-solver"
 BUILD_TARGET="a100-sxm4-80gb"
 BUILD_TARGET_SHA256="fec36b64e17d0893720e55b74a78c61d4e0f5cfc796322ff92f1a3b04a53c132"
 BUILD_MODE=normal
