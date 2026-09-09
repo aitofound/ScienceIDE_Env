@@ -222,23 +222,36 @@ print(start.strftime("%Y%m%d-%H%M%S"), start.strftime("%y%m%d_%H%M%S"),
       int((end - start).total_seconds()))
 PY
 )
-CAP_OPEN_DATE="$CAP_END"
-CAP_OPEN_SHORT="$CAP_END_SHORT"
+# Persistent producers open once at the deck's actual start. Filter that
+# opening-period name before enforcing uniqueness so retained earlier products
+# cannot make a valid order-5 capture ambiguous.
+CAP_OPEN_DATE="$CAP_START"
+CAP_OPEN_SHORT="$CAP_START_SHORT"
 
 fail_capture() { echo "run.sh: producer-aligned capture: $*" >&2; exit 1; }
 
 pick_persistent() {
   local dest="$1" family="$2"; shift 2
-  local candidates=("$@")
-  [ "${#candidates[@]}" -eq 1 ] || fail_capture "expected one fresh $family file, found ${#candidates[@]}"
-  local source="${candidates[0]}"
+  local candidates=() source expected
+  case "$family" in
+    log) expected="log_e${CAP_OPEN_DATE}.log" ;;
+    magnetometers) expected="magnetometers_e${CAP_OPEN_DATE}.mag" ;;
+    geoindex) expected="geoindex_e${CAP_OPEN_DATE}.log" ;;
+    superindex) expected="superindex_e${CAP_OPEN_DATE}.log" ;;
+    ie) expected="IE_t${CAP_OPEN_SHORT}.log" ;;
+    *) fail_capture "unknown persistent family $family" ;;
+  esac
+  for source in "$@"; do
+    [[ "$(basename "$source")" == "$expected" ]] && candidates+=("$source")
+  done
+  [ "${#candidates[@]}" -eq 1 ] || fail_capture "expected one fresh $family file at opening period ${CAP_OPEN_DATE}, found ${#candidates[@]}"
+  source="${candidates[0]}"
   case "$family" in
     log) [[ "$(basename "$source")" =~ ^log_e[0-9]{8}-[0-9]{6}\.log$ ]] || fail_capture "wrong log producer name: $source" ;;
     magnetometers) [[ "$(basename "$source")" =~ ^magnetometers_e[0-9]{8}-[0-9]{6}\.mag$ ]] || fail_capture "wrong magnetometer producer name: $source" ;;
     geoindex) [[ "$(basename "$source")" =~ ^geoindex_e[0-9]{8}-[0-9]{6}\.log$ ]] || fail_capture "wrong geoindex producer name: $source" ;;
     superindex) [[ "$(basename "$source")" =~ ^superindex_e[0-9]{8}-[0-9]{6}\.log$ ]] || fail_capture "wrong superindex producer name: $source" ;;
     ie) [[ "$(basename "$source")" =~ ^IE_t[0-9]{6}_[0-9]{6}\.log$ ]] || fail_capture "unsupported IE producer name: $source" ;;
-    *) fail_capture "unknown persistent family $family" ;;
   esac
   case "$family" in
     log) [[ "$(basename "$source")" == "log_e${CAP_OPEN_DATE}.log" ]] || fail_capture "log open date does not match stage: $source" ;;
@@ -292,9 +305,14 @@ PY
 
 pick_grid() {
   local dest="$1"; shift
-  local candidates=("$@")
-  [ "${#candidates[@]}" -eq 1 ] || fail_capture "expected one endpoint grid, found ${#candidates[@]}"
-  local source="${candidates[0]}"
+  local candidates=() source
+  # Grid filenames carry absolute event time. Filter to this deck endpoint
+  # before enforcing uniqueness; earlier cadence frames are retained in WORK.
+  for source in "$@"; do
+    [[ "$(basename "$source")" == *"_e${CAP_END}.out" ]] && candidates+=("$source")
+  done
+  [ "${#candidates[@]}" -eq 1 ] || fail_capture "expected one endpoint grid at ${CAP_END}, found ${#candidates[@]}"
+  source="${candidates[0]}"
   [[ "$(basename "$source")" == *"_e${CAP_END}.out" ]] || fail_capture "grid date does not match deck endpoint: $source (expected $CAP_END)"
   python3 - "$source" "$CAP_STAGE_SECONDS" <<'PY'
 import math, sys
