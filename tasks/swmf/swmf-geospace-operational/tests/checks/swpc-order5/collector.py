@@ -6,7 +6,7 @@ retrieved nominal/variant/altbuild outputs and emits the measured NVA70/200
 (and, when present, NVA7/20) envelopes used to review rubric.json.  It never
 runs SWMF and never changes a source or shared script.
 
-The rich ionosphere endpoint is the 15-variable ``it...000018.idl`` schema.
+The rich ionosphere endpoint is the 15-variable ``it...000200.idl`` schema.
 The t=0 steady files are a six-variable schema and are reported separately;
 those files are never silently combined with the 15-variable endpoint.
 """
@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import datetime
 import json
 import math
 import re
@@ -25,7 +26,7 @@ import numpy as np
 NO_E = re.compile(r"^([+-]?(?:\d+\.?\d*|\.\d+))([+-]\d{2,3})$")
 BEGIN = re.compile(r"^BEGIN\s+(\S+)\s+HEMISPHERE\s*$")
 DATE0 = (2014, 4, 10, 0, 0, 0, 0)
-DATE18 = (2014, 4, 10, 0, 0, 18, 0)
+DATE120 = (2014, 4, 10, 0, 2, 0, 0)
 RADIUS_M = 6_378_000.0
 
 ION_FIELDS = [
@@ -44,12 +45,12 @@ ION_AGG_FIELDS = ["SigmaH", "SigmaP", "Jr", "Phi", "E-Flux", "Ave-E", "JouleHeat
 ION_STABLE_FIELDS = ["RT 1/B", "RT Rho", "RT P", "conjugate dLat", "conjugate dLon"]
 
 FILE_MAP = {
-    "log.log": ("GM_IO2", "IO2", "log_e20140410-000000.log"),
-    "magnetometers.mag": ("GM_IO2", "IO2", "magnetometers_e20140410-000000.mag"),
-    "geoindex.log": ("GM_IO2", "IO2", "geoindex_e20140410-000000.log"),
-    "mag_grid_global.out": ("GM_IO2", "IO2", "mag_grid_global_e20140410-000018.out"),
-    "ie.log": ("IE_ionosphere", "ionosphere", "IE_t140410_000000.log"),
-    "ionosphere.idl": ("IE_ionosphere", "ionosphere", "it140410_000018_000.idl"),
+    "log.log": ("GM_IO2", "IO2", "log_e20140410-000200.log"),
+    "magnetometers.mag": ("GM_IO2", "IO2", "magnetometers_e20140410-000200.mag"),
+    "geoindex.log": ("GM_IO2", "IO2", "geoindex_e20140410-000200.log"),
+    "mag_grid_global.out": ("GM_IO2", "IO2", "mag_grid_global_e20140410-000200.out"),
+    "ie.log": ("IE_ionosphere", "ionosphere", "IE_t140410_000200.log"),
+    "ionosphere.idl": ("IE_ionosphere", "ionosphere", "it140410_000200_000.idl"),
 }
 
 
@@ -106,7 +107,7 @@ def endpoint_rows(header: list[str], values: np.ndarray, when: tuple[int, ...]):
     if first == "t":
         # IE uses seconds as the physical key.  The last t=0 row is the final
         # steady-state solve record, not an intermediate row to intersect.
-        sec = float(when[5])
+        sec = (datetime.datetime(*when[:6]) - datetime.datetime(*DATE0[:6])).total_seconds()
         hit = values[np.isclose(values[:, 0], sec, rtol=0.0, atol=1e-10)]
         if hit.size == 0:
             raise ValueError(f"table has no exact t={sec:g} endpoint")
@@ -299,7 +300,7 @@ def ie_stats(case: dict, when):
 
 def grid_stats(case: dict, when):
     g=case["mag_grid_global.out"]
-    if not math.isclose(g["time"],18.0,abs_tol=1e-12): raise ValueError("grid endpoint is not t=18")
+    if not math.isclose(g["time"],120.0,abs_tol=1e-12): raise ValueError("grid endpoint is not t=120")
     out={}
     for j,name in enumerate(g["names"][g["ndim"]:],g["ndim"]): out[name]=endpoint_stat(g["data"][:,j])
     return out
@@ -316,7 +317,7 @@ def stable_screen(cases):
       hn,an=cases["nominal"][rel]["header"],cases["nominal"][rel]["data"]
       for c in ("variant","altbuild"):
        hc,ac=cases[c][rel]["header"],cases[c][rel]["data"]
-       for when in (DATE0,DATE18):
+       for when in (DATE120,):
         rn,rc=endpoint_rows(hn,an,when),endpoint_rows(hc,ac,when)
         for j,name in enumerate(hn[1:],1):
          if name not in wanted: continue
@@ -328,13 +329,13 @@ def stable_screen(cases):
       for f in ["Theta","Psi"]+ION_STABLE_FIELDS:
        j=ION_FIELDS.index(f); base=n["data"][:,:,:,j]; cur=d["data"][:,:,:,j]
        err=np.abs(cur-base); at,rt=(7e-5,4e-4)
-       out.append({"file":"ionosphere.idl","field":f,"case":c,"time":18,"max_abs":float(err.max()),"max_scaled":float((err/(at+rt*np.abs(base))).max()),"count":int(err.size)})
+       out.append({"file":"ionosphere.idl","field":f,"case":c,"time":120,"max_abs":float(err.max()),"max_scaled":float((err/(at+rt*np.abs(base))).max()),"count":int(err.size)})
     gn=cases["nominal"]["mag_grid_global.out"]
     for c in ("variant","altbuild"):
       gc=cases[c]["mag_grid_global.out"]
       for j,name in enumerate(gn["names"][:gn["ndim"]]):
        base=gn["data"][:,j]; cur=gc["data"][:,j]; err=np.abs(cur-base); at,rt=2e-4,2e-4
-       out.append({"file":"mag_grid_global.out","field":name,"case":c,"time":18,"max_abs":float(err.max()),"max_scaled":float((err/(at+rt*np.abs(base))).max()),"count":int(err.size)})
+       out.append({"file":"mag_grid_global.out","field":name,"case":c,"time":120,"max_abs":float(err.max()),"max_scaled":float((err/(at+rt*np.abs(base))).max()),"count":int(err.size)})
     return out
 
 
@@ -372,7 +373,7 @@ def main():
       for rel in ("log.log","magnetometers.mag","geoindex.log","ie.log"):
        h,x=d[rel]["header"],d[rel]["data"]
        endpoints={}
-       for label,when in (("0",DATE0),("18",DATE18)):
+       for label,when in (("0",DATE0),("18",DATE120)):
         try: endpoints[label]=int(len(endpoint_rows(h,x,when)))
         except ValueError: endpoints[label]=0
        coverage[c][rel]={"rows":int(len(x)),"finite":bool(np.all(np.isfinite(x))),"endpoints":endpoints}
@@ -385,18 +386,18 @@ def main():
     ep={}
     for c,d in runs.items():
       ep[c]={}
-      for when,label in ((DATE0,"0"),(DATE18,"18")):
+      for when,label in ((DATE0,"0"),(DATE120,"18")):
        for k,v in failed_table_stats(d,when).items(): ep[c][f"{k}|t={label}"] = v
        # IE_t... is an integrated summary written through 15 s in the
        # retrieved run.  Keep its exact available t=0 endpoint; do not
-       # relabel its t=15 row as the rich ionosphere's exact t=18 frame.
+       # relabel its t=15 row as the rich ionosphere's exact t=120 frame.
        try:
         for k,v in ie_stats(d,when).items(): ep[c][f"ie.log|{k}|t={label}"] = v
        except ValueError:
         pass
-      for k,v in grid_stats(d,DATE18).items(): ep[c][f"mag_grid_global.out|{k}|t=18"] = v
+      for k,v in grid_stats(d,DATE120).items(): ep[c][f"mag_grid_global.out|{k}|t=120"] = v
     endpoint_bounds=stat_envelope(ep)
-    result={"schema":"swpc-order5-physical-invariants-v1","radius_m":RADIUS_M,"area_definition":"dA=R^2*|cos(theta_left)-cos(theta_right)|*(2*pi/360), midpoint theta edges, unique Psi=0..359; source integrals retain source-unit*m^2","source_units":ION_UNITS,"coverage":coverage,"stable_screen":stable_screen(runs),"aggregate_envelopes":aggregate,"endpoint_envelopes":endpoint_bounds,"aggregate_nominal_t18":{r["key"]:r["nominal"] for r in aggregate},"note":"NVA means nominal/variant/altbuild; bounds use larger measured separation times factor=1+abs(NV-NA)/larger, independently per observable, not a universal multiplier. Rich ionosphere is exact 18 s 15-variable schema; t=0 steady schema is six-variable and is not conflated."}
+    result={"schema":"swpc-order5-physical-invariants-v1","radius_m":RADIUS_M,"area_definition":"dA=R^2*|cos(theta_left)-cos(theta_right)|*(2*pi/360), midpoint theta edges, unique Psi=0..359; source integrals retain source-unit*m^2","source_units":ION_UNITS,"coverage":coverage,"stable_screen":stable_screen(runs),"aggregate_envelopes":aggregate,"endpoint_envelopes":endpoint_bounds,"aggregate_nominal_t18":{r["key"]:r["nominal"] for r in aggregate},"note":"NVA means nominal/variant/altbuild; bounds use larger measured separation times factor=1+abs(NV-NA)/larger, independently per observable, not a universal multiplier. Rich ionosphere is exact 120 s 15-variable schema; non-endpoint steady schema is six-variable and is not conflated."}
     out.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n",encoding="utf-8")
     # Compact CSV is useful for review and avoids asking a reader to inspect JSON.
     with out.with_suffix(".csv").open("w",newline="",encoding="utf-8") as f:
