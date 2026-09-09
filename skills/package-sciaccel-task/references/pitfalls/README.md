@@ -16,6 +16,7 @@ were taken; none carries an estimate.
 | [altbuild-crashes-record-none](altbuild-crashes-record-none.md) | the alternative build compiles but traps in `MPI_Init`, segfaults on two ranks or NaNs at step 1 | EPOCH, Athena++, PLUTO |
 | [altbuild-floors-are-host-specific](altbuild-floors-are-host-specific.md) | `-O0` altbuild floors are zero on x86 and nonzero on arm64, or a bound set on one host fails on the other | any |
 | [s4-gvector-selection-fma](s4-gvector-selection-fma.md) | two builds retain a different number of Fourier basis vectors; rows keyed by G index permute | S4 |
+| [eprem-shock-front-node-tie](eprem-shock-front-node-tie.md) | two builds agree to 1e-15 on the bulk but differ by percent in a shock deck's tail; every shifted node index shares a divisor | EPREM |
 
 ### Unpinned randomness
 
@@ -46,6 +47,8 @@ were taken; none carries an estimate.
 | entry | symptom | codebase |
 |---|---|---|
 | [assertion-recorder-grades-candidate-internals](assertion-recorder-grades-candidate-internals.md) | a producer that wraps `numpy.testing` globally records the candidate's private assertions; a correct port with a different assertion changes the schema | any |
+| [ungraded-sidecars-mask-identical-graded-output](ungraded-sidecars-mask-identical-graded-output.md) | the altbuild reads `0 bit-identical` while every floor is zero; an ungraded diagnostics file with a timestamp differs, the graded arrays do not | any |
+| [simupy-flight-derived-output-interpolation](simupy-flight-derived-output-interpolation.md) | the state passes but a derived output fails across platforms; the check interpolated the nonlinear output at adaptive step times instead of evaluating it on the interpolated state | SimuPy Flight |
 
 ### Environment and process
 
