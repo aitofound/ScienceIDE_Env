@@ -1,0 +1,162 @@
+/*
+ ISC License
+
+ Copyright (c) 2016, Autonomous Vehicle Systems Lab, University of Colorado at Boulder
+
+ Permission to use, copy, modify, and/or distribute this software for any
+ purpose with or without fee is hereby granted, provided that the above
+ copyright notice and this permission notice appear in all copies.
+
+ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+ */
+
+
+
+#ifndef _BSK_LOG_
+#define _BSK_LOG_
+
+
+//maximum length of info to log in a reference to BSKLogging in C, not relevant in C++
+#define MAX_LOGGING_LENGTH 255
+
+typedef enum {
+    BSK_DEBUG,
+    BSK_INFORMATION,
+    BSK_WARNING,
+    BSK_ERROR,
+    BSK_SILENT          // the coder should never use this flag when using bskLog().  It is used to turn off all output
+} logLevel_t;
+
+extern logLevel_t LogLevel;
+void printDefaultLogLevel();
+
+/// \cond DO_NOT_DOCUMENT
+
+#ifndef BSK_NORETURN
+// SWIG parses this shared header through %include; keep C++ attributes out of that pass.
+#ifdef SWIG
+#define BSK_NORETURN
+#elif defined(__cplusplus)
+#define BSK_NORETURN [[noreturn]]
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+#define BSK_NORETURN _Noreturn
+#elif defined(__GNUC__) || defined(__clang__)
+#define BSK_NORETURN __attribute__((noreturn))
+#elif defined(_MSC_VER)
+#define BSK_NORETURN __declspec(noreturn)
+#else
+#define BSK_NORETURN
+#endif
+#endif
+
+#ifdef __cplusplus
+#include <map>
+#include <string>
+#include <stdexcept>
+
+#ifdef SWIG
+%include "std_except.i"
+#endif
+
+void setDefaultLogLevel(logLevel_t logLevel);
+logLevel_t getDefaultLogLevel();
+
+/*! Custom Basilisk runtime error class */
+class BasiliskError : public std::runtime_error {
+public:
+    explicit BasiliskError(const std::string& message)
+        : std::runtime_error(message) {}
+
+    explicit BasiliskError(const char* message)
+        : std::runtime_error(message) {}
+};
+
+
+/*! BSK logging class */
+class BSKLogger
+{
+    public:
+        BSKLogger();
+        BSKLogger(logLevel_t logLevel);
+        virtual ~BSKLogger() = default;
+        void setLogLevel(logLevel_t logLevel);
+        void printLogLevel();
+        int getLogLevel();
+        void bskLog(logLevel_t targetLevel, const char* info, ...);
+#ifndef SWIG
+        BSK_NORETURN void bskError(const char* info, ...);
+#endif
+
+    //Provides a mapping from log level enum to str
+    public:
+        std::map<int, const char*> logLevelMap
+        {
+            {0, "BSK_DEBUG"},
+            {1, "\033[92mBSK_INFORMATION\033[0m"},
+            {2, "\033[93mBSK_WARNING\033[0m"},
+            {3, "\033[91mBSK_ERROR\033[0m"},
+            {4, "BSK_SILENT"}
+        };
+
+    private:
+        logLevel_t _logLevel;
+};
+
+#ifdef SWIG
+%extend BSKLogger {
+    void bskError(const char* info) {
+        $self->bskLog(BSK_ERROR, "%s", info);
+        throw BasiliskError(info);
+    }
+
+    /* Convenience methods that mirror the Python logging.Logger API. These are
+       defined here in the SWIG %extend block (rather than as Python monkey-patches
+       in bskLogging.i) so that every module which %includes this header gets them
+       on its own BSKLogger proxy class. A pure-Python patch attaches only to
+       bskLogging.BSKLogger; depending on import order the bskLogger handed back by
+       SysModel-derived modules can be wrapped by a different proxy class, which
+       would leave the patched methods unreachable. error() raises BasiliskError to
+       match bskError(). */
+    void debug(const char* info)   { $self->bskLog(BSK_DEBUG,       "%s", info); }
+    void info(const char* info)    { $self->bskLog(BSK_INFORMATION, "%s", info); }
+    void warning(const char* info) { $self->bskLog(BSK_WARNING,     "%s", info); }
+    void error(const char* info) {
+        $self->bskLog(BSK_ERROR, "%s", info);
+        throw BasiliskError(info);
+    }
+    void setLevel(logLevel_t logLevel) { $self->setLogLevel(logLevel); }
+}
+#endif
+
+#else
+typedef struct BSKLogger BSKLogger;
+#endif
+
+#ifdef __cplusplus
+    #define EXTERN extern "C"
+    // C++ callers should use BSKLogger::bskError(), which is marked non-returning.
+    // Keep the C wrapper unannotated in C++ so BasiliskError unwinds consistently on MSVC.
+    #define EXTERN_NORETURN extern "C"
+#else
+    #define EXTERN
+    #define EXTERN_NORETURN BSK_NORETURN
+#endif
+
+EXTERN BSKLogger* _BSKLogger(void);
+EXTERN void _BSKLogger_d(BSKLogger*);
+EXTERN void _printLogLevel(BSKLogger*);
+EXTERN void _setLogLevel(BSKLogger*, logLevel_t);
+EXTERN void _bskLog(BSKLogger*, logLevel_t, const char*);
+EXTERN_NORETURN void _bskError(BSKLogger*, const char*);
+
+
+/// \endcond
+
+#endif
