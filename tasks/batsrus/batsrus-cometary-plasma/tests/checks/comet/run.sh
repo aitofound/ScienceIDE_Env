@@ -70,25 +70,112 @@ fi
 
 # Upstream test this check reproduces: code/batsrus/Param/COMET/PARAM.in  (Makefile.test target test_comet)
 # Build: Config.pl -install -compiler=gfortran, then ./Config.pl -default -u=Comet6Sp -e=MhdComet -ng=2 -g=8,8,8, then make BATSRUS and make PIDL.
-# Every check of this task carries its own build because every official BATSRUS
-# test sets its own compile-time equation set, user module and block size.
-BUILD_START=$(date +%s)
-./Config.pl -install -compiler=gfortran > "$WORK/install.log" 2>&1
-./Config.pl -default -u=Comet6Sp -e=MhdComet -ng=2 -g=8,8,8 > "$WORK/config.log" 2>&1
-if [ "$IC" = altbuild ]; then
-  ./Config.pl -O0 >> "$WORK/config.log" 2>&1
-  grep -q '^OPT3 = -O0' Makefile.conf || { echo "run.sh: Config.pl -O0 did not set OPT3 in Makefile.conf" >&2; exit 1; }
+# Build reuse is scoped to one test.sh produce invocation. The source fingerprint,
+# exact configuration recipe, compiler/tool versions, make target/options, architecture,
+# task identity, initial-condition variant and altbuild mode all enter the cache key. A
+# missing/incomplete/digest-mismatched entry falls back to this check's complete build.
+BUILD_GROUP="comet6sp-mhdcomet-ng2-g8x8x8"
+BUILD_SPEC="Config.pl -default -u=Comet6Sp -e=MhdComet -ng=2 -g=8,8,8"
+BUILD_MODE=normal
+[ "$IC" = altbuild ] && BUILD_MODE=altbuild
+CACHE_ENABLED=0
+if [ -n "${SAB_BUILD_CACHE_ROOT:-}" ] && [ -n "${SAB_SOURCE_FINGERPRINT:-}" ]; then
+  CACHE_ENABLED=1
 fi
-make -j"$SAB_MAKE_JOBS" BATSRUS > "$WORK/make.log" 2>&1
-make PIDL >> "$WORK/make.log" 2>&1
-echo "SAB_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))"   # the driver records it; the budget counts run time only
 
-make rundir RUNDIR=run_test STANDALONE=YES GMDIR="$WORK/src" > "$WORK/rundir.log" 2>&1
-cp Param/SAB/PARAM.in run_test/PARAM.in
+configure_source() {
+  ./Config.pl -install -compiler=gfortran > "$WORK/install.log" 2>&1
+  ./Config.pl -default -u=Comet6Sp -e=MhdComet -ng=2 -g=8,8,8 > "$WORK/config.log" 2>&1
+  if [ "$IC" = altbuild ]; then
+    ./Config.pl -O0 >> "$WORK/config.log" 2>&1
+    grep -q '^OPT3 = -O0' Makefile.conf || { echo "run.sh: Config.pl -O0 did not set OPT3 in Makefile.conf" >&2; exit 1; }
+  fi
+}
 
-( cd run_test && mpiexec --oversubscribe --bind-to none -n "$SAB_MPI_RANKS" ./BATSRUS.exe < /dev/null > runlog 2>&1 ) || { echo "run.sh: BATSRUS.exe failed on PARAM.in" >&2; tail -40 run_test/runlog >&2; exit 1; }
-grep -q "Finished Numerical Simulation" run_test/runlog || { echo "run.sh: BATSRUS.exe did not finish the run" >&2; tail -40 run_test/runlog >&2; exit 1; }
-( cd run_test && ./PostProc.pl -m -replace RESULTS < /dev/null >> "$WORK/postproc.log" 2>&1 )
+build_source() {
+  make -j"$SAB_MAKE_JOBS" BATSRUS > "$WORK/make.log" 2>&1
+  make PIDL >> "$WORK/make.log" 2>&1
+}
+
+if [ "$CACHE_ENABLED" -eq 1 ]; then
+  COMPILER_VERSION="$(gfortran --version)"
+  MAKE_VERSION="$(make --version)"
+  BUILD_FINGERPRINT="$(printf '%s\0' \
+      "cache-schema=batsrus-build-v1" \
+      "task=batsrus-cometary-plasma" \
+      "source-fingerprint=$SAB_SOURCE_FINGERPRINT" \
+      "source-root=$SOURCE_DIR" \
+      "build-group=$BUILD_GROUP" \
+      "build-spec=$BUILD_SPEC" \
+      "build-mode=$BUILD_MODE" \
+      "initial-condition=$IC" \
+      "input-directory=$CHECK_DIR/ic/$INPUTS" \
+      "make-targets=BATSRUS,PIDL" \
+      "make-jobs=$SAB_MAKE_JOBS" \
+      "compiler=gfortran" \
+      "compiler-version=$COMPILER_VERSION" \
+      "make-version=$MAKE_VERSION" \
+      "machine=$(uname -m)" | sha256sum | cut -d' ' -f1)"
+  CACHE_DIR="$SAB_BUILD_CACHE_ROOT/batsrus-cometary-plasma/$IC/$BUILD_GROUP/$BUILD_FINGERPRINT"
+  CACHE_BINARY="$CACHE_DIR/BATSRUS.exe"
+  CACHE_POSTIDL="$CACHE_DIR/PostIDL.exe"
+  CACHE_DIGEST_FILE="$CACHE_DIR/binaries.sha256"
+  CACHE_READY="$CACHE_DIR/ready.sha256"
+  CACHE_HIT=0
+  if [ -x "$CACHE_BINARY" ] && [ -x "$CACHE_POSTIDL" ] \
+      && [ -f "$CACHE_DIGEST_FILE" ] && [ -f "$CACHE_READY" ]; then
+    READY_FINGERPRINT="$(cat "$CACHE_READY" 2>/dev/null || true)"
+    EXPECTED_BINARY_DIGEST="$(cat "$CACHE_DIGEST_FILE" 2>/dev/null || true)"
+    ACTUAL_BINARY_DIGEST="$(sha256sum "$CACHE_BINARY" "$CACHE_POSTIDL" 2>/dev/null | awk '{printf "%s%s", sep, $1; sep=" "} END {print ""}' || true)"
+    if [ "$READY_FINGERPRINT" = "$BUILD_FINGERPRINT" ] \
+        && [ -n "$EXPECTED_BINARY_DIGEST" ] \
+        && [ "$EXPECTED_BINARY_DIGEST" = "$ACTUAL_BINARY_DIGEST" ]; then
+      CACHE_HIT=1
+    fi
+  fi
+  if [ "$CACHE_HIT" -eq 1 ]; then
+    configure_source
+    if mkdir -p "$WORK/src/bin" \
+        && cp "$CACHE_BINARY" "$WORK/src/bin/BATSRUS.exe" \
+        && cp "$CACHE_POSTIDL" "$WORK/src/bin/PostIDL.exe" \
+        && [ -x "$WORK/src/bin/BATSRUS.exe" ] \
+        && [ -x "$WORK/src/bin/PostIDL.exe" ]; then
+      echo "SAB_BUILD_CACHE=hit group=$BUILD_GROUP fingerprint=$BUILD_FINGERPRINT variant=$IC altbuild=$BUILD_MODE"
+      BUILD_SECONDS=0
+    else
+      echo "run.sh: cached BATSRUS/PostIDL binaries could not be copied; rebuilding group $BUILD_GROUP" >&2
+      CACHE_HIT=0
+    fi
+  fi
+  if [ "$CACHE_HIT" -eq 0 ]; then
+    echo "SAB_BUILD_CACHE=miss group=$BUILD_GROUP fingerprint=$BUILD_FINGERPRINT variant=$IC altbuild=$BUILD_MODE"
+    BUILD_START=$(date +%s)
+    configure_source
+    build_source
+    BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))
+    [ -x "$WORK/src/bin/BATSRUS.exe" ] || { echo "run.sh: build did not produce bin/BATSRUS.exe" >&2; exit 1; }
+    [ -x "$WORK/src/bin/PostIDL.exe" ] || { echo "run.sh: build did not produce bin/PostIDL.exe" >&2; exit 1; }
+    # Publish the digest and ready marker last. An interrupted or partial entry
+    # therefore cannot be mistaken for a valid binary on a later check.
+    if mkdir -p "$CACHE_DIR" \
+        && printf '%s\n' building > "$CACHE_READY" \
+        && cp "$WORK/src/bin/BATSRUS.exe" "$CACHE_BINARY" \
+        && cp "$WORK/src/bin/PostIDL.exe" "$CACHE_POSTIDL" \
+        && sha256sum "$CACHE_BINARY" "$CACHE_POSTIDL" | awk '{printf "%s%s", sep, $1; sep=" "} END {print ""}' > "$CACHE_DIGEST_FILE" \
+        && printf '%s\n' "$BUILD_FINGERPRINT" > "$CACHE_READY"; then
+      echo "SAB_BUILD_CACHE=published group=$BUILD_GROUP fingerprint=$BUILD_FINGERPRINT variant=$IC altbuild=$BUILD_MODE"
+    else
+      echo "run.sh: warning: could not publish BATSRUS build cache for group $BUILD_GROUP; using local build" >&2
+    fi
+  fi
+else
+  echo "SAB_BUILD_CACHE=disabled reason=missing solve-scoped source fingerprint or cache root"
+  BUILD_START=$(date +%s)
+  configure_source
+  build_source
+  BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))
+fi
+echo "SAB_BUILD_SECONDS=$BUILD_SECONDS"   # nonzero on a compile; exactly zero on a verified cache hit
 
 # Copy the last frame of one plot series (or the log) into OUT_DIR under a fixed
 # name, so the graded file list does not depend on the knobs above.

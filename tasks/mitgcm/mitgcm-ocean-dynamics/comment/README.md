@@ -8,16 +8,45 @@ self-validation and runtime records). This file is the human-readable story.
 
 The ocean dynamical core of MITgcm: the hydrostatic and non-hydrostatic Boussinesq momentum and continuity equations on the staggered Arakawa C grid, stepped in model/src (dynamics.F, timestep.F, calc_gw.F, calc_phi_hyd.F, integr_continuity.F, correction_step.F) with the momentum tendencies assembled either in flux form (pkg/mom_fluxform) or in vector-invariant form (pkg/mom_vecinv) over the shared viscosity and drag machinery of pkg/mom_common, optionally with the C-D grid velocity scheme of pkg/cd_code, the moving cell heights of the non-linear free surface (update_surf_dr.F, calc_surf_dr.F, rStar) and the pressure-coordinate form of the equations (buoyancyRelation='OCEANICP'). The elliptic part is the module's signature cost: solve_for_pressure.F builds the two-dimensional implicit free-surface (or rigid-lid) equation and solves it with the preconditioned conjugate-gradient cg2d.F, and in non-hydrostatic mode pre_cg3d.F/cg3d.F/post_cg3d.F solve the full three-dimensional pressure equation. The forty-one checks drive that core through the paths a real ocean run takes: two wind-driven gyre spin-ups (a single-layer implicit free surface and a three-dimensional baroclinic one); the four-degree global C-D-grid ocean with asynchronous momentum and tracer steps, under a free surface and under a rigid lid; the same four-degree global ocean restarted on rStar coordinates with GM/Redi, and its down-slope and GGL90/IDEMIX overlays; a vector-invariant dense overflow with Leith biharmonic viscosity and open boundaries; five non-hydrostatic cg3d configurations (a rigid-lid rotating tank, a deep-convection box with constant and with three-dimensional Smagorinsky viscosity, and a slope plume with law-of-the-wall and with no-slip bottom drag); an open-boundary internal wave on the non-linear free surface, with and without KL10 overturn mixing; and four cubed-sphere configurations (solid-body tracer advection, the 32x32x6 global ocean in height coordinates, the same ocean in pressure coordinates with TEOS-10, and its non-hydrostatic biharmonic variant) that exercise the exch2 face exchanges.
 
-Each check builds its own `mitgcmuv` from the candidate tree with the
-experiment's own `SIZE.h`, `packages.conf` and option headers, because
-MITgcm has no library form: the configuration is compile-time. Decks
-considered and left out:
+Decks considered and left out:
 
 - `global_ocean.90x40x15/input_ad, input_ad.bottomdrag, input_ad.kapgm, input_ad.kapredi`: Adjoint decks: they run the reverse mode built by TAF from code_ad/ rather than a forward integration, produce cost-function gradients rather than a state dump, and cannot be graded by the forward-state contract of this suite.
 - `global_ocean.cs32x15/input_ad, input_ad.seaice, input_ad.seaice_dynmix, input_ad.thsice, input_tap`: Adjoint and TAF tangent-linear decks, excluded for the same reason: no forward final-state dump to grade, and they need an adjoint build.
 - `global_ocean.cs32x15/input.seaice, input.icedyn, input.thsice`: Forward decks, and genuinely suitable, but they belong to the sea-ice task of this codebase, which already ships input.seaice as its cs32-seaice check and owns the sea-ice physics under test in all three. They are excluded here only to avoid two tasks grading the same deck; the cubed-sphere ocean paths they share with this module (exch2, vector-invariant momentum, rStar) are covered here by cs32-global-ocean, cs32-ocean-in-pressure and cs32-nonhydrostatic-biharmonic. The forcing files of input.icedyn and the data.exf/data.seaice of input.seaice are still linked into cs32-ocean-in-pressure, as that deck's own prepare_run does.
 - `every code/SIZE.h_mpi (tutorial_barotropic_gyre, internal_wave, tutorial_plume_on_slope, global_ocean.90x40x15, global_ocean.cs32x15 and the rest) and the data.exch2.mpi of global_ocean.90x40x15`: Multi-process tilings and the matching exch2 topology file. The checks run one process with tiles only, so these are not decks at all and are never selected; data.exch2.mpi is dropped from the four-degree global checks so that it cannot be mistaken for an active topology (the model reads data.exch2, which the decks do not ship).
 - `global_oce_latlon/input`: The primary forward deck of global_oce_latlon (the pkg/exf monthly-climatology set-up moved here from verification/global_with_exf by upstream PR #830) cannot be assembled by the generator, because its prepare_run does not only place files, it BUILDS one: it runs `dd if=lev_sst.bin bs=14400 count=1 skip=11 of=lev_sst_dec.tmp` and then `cat lev_sst_dec.tmp lev_sst.bin > lev_sst_startdec.tmp`, that is, it extracts the twelfth (December) record of the monthly SST climatology and prepends it to the file to produce a thirteen-record lev_sst_startdec.tmp, which data.exf names as climsstfile with climsststartdate1=19911216 so that the climatology is anchored on a mid-December start. The generator's preparation vocabulary is links, gunzip and rename; none of the three can extract and concatenate a binary record, and substituting the plain twelve-record lev_sst.bin would make pkg/exf ask for a record past the end of the file, so the deck cannot be run faithfully and must not be run unfaithfully. Nothing is lost in coverage: the pkg/exf path this deck would have exercised is covered by global_oce_latlon/input.yearly, whose prepare_run is pure linking-with-rename and which additionally brings useEXFYearlyFields, pkg/bbl, pkg/frazil and the module's only useSRCGSolver solve, and the ebm forcing path is covered by global_oce_latlon/input.ebm. (Its usePROFILES=.TRUE. would also have needed an extra edit, since tools/genmake2 removes pkg/profiles from the build when NetCDF is absent and packages_check then stops on the switch; that alone would not have been a reason to exclude it.) If the generator ever gains a way to run a deck's own prepare_run, this deck should be added back.
+
+## Build
+
+MITgcm has no library form and its configuration is compile-time, so the
+forty-one checks must not share one executable indiscriminately. The scripts
+hash every filename and byte under the check's effective `mods/` recipe. This
+produces twenty-four exact configuration fingerprints: the first check for
+each fingerprint builds `mitgcmuv`, and only later checks with that same
+fingerprint reuse it and report `SAB_BUILD_SECONDS=0`. Reuse is limited to
+these twelve identical-recipe groups:
+
+- `exp4-floats`, `exp4-obcs-nonhydrostatic`, `exp4-obcs-rstar-vecinv`, `exp4-obcs-stevens`;
+- `advect-xz-ppm-som`, `advect-xz-pqm`, `advect-xz-rstar-nonlinear-free-surface`;
+- `cs32-global-ocean`, `cs32-nonhydrostatic-biharmonic`, `cs32-ocean-in-pressure`;
+- `global-ocean-4deg`, `global-ocean-4deg-downslope`, `global-ocean-4deg-idemix`;
+- `advect-xy-ab3-centered4`, `advect-xy-som-prather`;
+- `deep-anelastic-fluxform`, `deep-anelastic-vecinv`;
+- `deep-convection`, `deep-convection-smag3d`;
+- `exp2-cd-code`, `exp2-rigid-lid`;
+- `global-oce-latlon-ebm`, `global-oce-latlon-yearly-exf`;
+- `internal-wave`, `internal-wave-kl10`;
+- `lab-sea-longstep`, `lab-sea-natl-box`; and
+- `plume-on-slope`, `plume-on-slope-rough-bottom`.
+
+The other twelve checks have distinct `SIZE.h`, `packages.conf`, option-header,
+source-override, or `genmake_local` bytes and therefore compile independently.
+Every script retains the complete build as its cache-miss fallback. On Linux
+ARM64 that fallback selects MITgcm's vendored `linux_arm64_gfortran` optfile;
+on other hosts it retains the established `linux_amd64_gfortran` optfile. The
+cache exists only inside one solve container, where the architecture is fixed.
+`altbuild` uses a separate fingerprint namespace and never reuses a normal
+executable.
 
 ## Tolerances
 

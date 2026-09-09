@@ -24,9 +24,10 @@ user modules and their own decks.
 
 The four checks are the four suitable official tests of the module: three `Makefile.test`
 targets (`test_comet`, `test_cometCGhd`, `test_cometCGfluids`) and one upstream example with no
-target (`Param/ROSETTA/PARAM.in.hd`). Each carries its own `Config.pl` line, so each check
-rebuilds BATSRUS from the pinned source inside its own `run.sh`; the build seconds are printed
-as `SAB_BUILD_SECONDS` and kept out of the graded run time.
+target (`Param/ROSETTA/PARAM.in.hd`). Each carries its own `Config.pl` line. The self-contained `run.sh` fallback still rebuilds
+BATSRUS from the pinned source, while the official `tests/test.sh produce` driver may reuse a
+verified BATSRUS/PostIDL pair between checks with the exact same build recipe. Build seconds are
+printed as `SAB_BUILD_SECONDS` (zero only on a verified cache hit) and kept out of graded run time.
 
 **This module sits exactly at the THIN threshold, and the reviewer should know why there is no
 fifth check.** The pipeline's rule is "THIN" below four suitable official tests; this module has
@@ -48,6 +49,21 @@ protons, water ions" in its header but declares three fluids with `IsMhd = .fals
 it run would mean guessing what upstream intended, not porting what upstream ships. Both halves
 were therefore left out rather than added as custom checks on a run that is not sound. The task
 has no custom checks at all.
+
+## Build
+
+The latest skill form's within-run reuse rule is implemented mechanically and only for the
+reference-side build. Each `test.sh produce` invocation creates a fresh cache root outside its
+output root and computes one digest over the complete pinned source tree. A `run.sh` cache key
+includes the task identity, exact `Config.pl` recipe and make targets, source digest, compiler and
+make versions, architecture, `SAB_MAKE_JOBS`, the `nominal`/`variant`/`altbuild` value and the
+altbuild mode. The two hydrodynamic checks share only their identical `CometCG/Hd/ng=2/g=8,8,8`
+recipe; every other recipe, variant and altbuild mode has a distinct key. Both `BATSRUS.exe` and
+`PostIDL.exe` are copied only after a two-file SHA-256 check, with a ready marker written last;
+partial or mismatched entries rebuild through the unchanged commands. Inputs, windows, solver
+execution, post-processing, graded filenames, validators, tolerances, resource declarations and
+altbuild definition are otherwise unchanged. This is a preparation change, not a speedup claim:
+a fresh official remote rerun and runtime measurement remain pending.
 
 ## Tolerances
 
