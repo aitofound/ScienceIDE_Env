@@ -35,7 +35,7 @@ FILL = re.compile(r"<FILL\b")
 TOKEN = re.compile(r"\{\{[A-Z_]+\}\}")
 KNOB_LINE = re.compile(r"^[A-Z][A-Z0-9_]*=\S+")
 THIN = 4
-REVISION = "5.11.0"  # the SPEC/skill revision this CLI implements; must equal SKILL.md version
+REVISION = "5.11.10"  # the SPEC/skill revision this CLI implements; must equal SKILL.md version
 DEFAULT_BUDGET_S = 900
 SHARED_CODE_PATTERNS = (
     (re.compile(r"sys\.path"), "manipulates sys.path"),
