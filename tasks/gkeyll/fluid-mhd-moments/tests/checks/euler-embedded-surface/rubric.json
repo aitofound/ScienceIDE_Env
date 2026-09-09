@@ -21,20 +21,35 @@
     ]
   },
   "evidence": {
-    "floor": 4.529709940470639e-14,
-    "floor_how": "measured by selfcheck on 2026-09-06: run.sh altbuild (same source, gcc -O2 strict IEEE: no -ffast-math, -ffp-contract=off, no -march=native (build-ieee/)) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
-    "self_validation_spread": 4.263256414560601e-14,
-    "self_validation_bound_fraction": 0.0007887815325278205,
+    "floor": {
+      "value": 2.398081733190338e-14,
+      "knob_overrides": {
+        "SAB_SLOT_CLASS": "instruction"
+      }
+    },
+    "floor_how": "measured by selfcheck on 2026-09-08: run.sh altbuild (same source, gcc -O2 strict IEEE: no -ffast-math, -ffp-contract=off, no -march=native (build-ieee/)) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
+    "self_validation_spread": {
+      "value": 5.3290705182007514e-14,
+      "knob_overrides": {
+        "SAB_SLOT_CLASS": "instruction"
+      }
+    },
+    "self_validation_bound_fraction": {
+      "value": 0.0014562552703480944,
+      "knob_overrides": {
+        "SAB_SLOT_CLASS": "instruction"
+      }
+    },
     "altbuild": {
       "what": "same source, gcc -O2 strict IEEE: no -ffast-math, -ffp-contract=off, no -march=native (build-ieee/)",
-      "distance": 4.529709940470639e-14,
-      "bound_fraction": 0.00072959054531158,
+      "distance": 2.398081733190338e-14,
+      "bound_fraction": 0.0010511316237099028,
       "identical": false,
       "passed": true,
       "reason": "all graded values within bound",
-      "at": "2026-09-06T02:04:47Z"
+      "at": "2026-09-08T08:23:36Z"
     },
-    "floor_bound_fraction": 0.00072959054531158
+    "floor_bound_fraction": 0.0010511316237099028
   },
   "warrant": "Every payload value of the integrated Euler diagnostic history with the embedded body (1416 values) is compared pointwise after ignoring timestamps with exact length required. Measured on x86 on one core (2026-09-05): the two-ULP variant moves the history by at most 4.3e-14 absolute (2.5e-14, 1.2e-14 relative, on the value of order 2.2 that uses the largest fraction of the bound); the strict-IEEE build differs by 4.5e-14 absolute (8.7e-15 relative on a value of order 5.2). The largest fraction of the bound used is 7.9e-04, so atol=rtol=1e-11 is 1266x over the floor. A wrong embedded-boundary flux, ghost-state reflection or geometry lookup (moments/zero/wv_embed_geo.c) moves the history at the 1e-6 level or more."
 }
