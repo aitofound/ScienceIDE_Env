@@ -37,7 +37,9 @@ if [ "${1:-}" = "produce" ]; then
   OUT_ROOT="$(cd "$OUT_ROOT" && pwd -P)"
   # One fresh cache namespace per solve keeps nominal, variant and altbuild
   # isolated while allowing sequential checks with equivalent configurations
-  # to reuse the first check's completed build.
+  # to reuse the first check's completed build. Each cached run.sh performs
+  # one full immutable-tree verification per published artifact, then uses its
+  # hard-link stamp for later checks instead of re-hashing the same tree.
   SHARED_BUILD_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/sab-shared-builds.${IC}.XXXXXX")"
   read -r SAB_BUILD_SOURCE_SHA256 SAB_BUILD_CONTEXT_SHA256 < <(python3 - "$SOURCE_DIR" <<'PYBUILD_ID'
 import hashlib, json, os, pathlib, platform, shutil, stat, subprocess, sys
