@@ -178,6 +178,7 @@ CACHE_DIGEST_FILE="$CACHE_DIR/binaries.sha256"
 CACHE_READY="$CACHE_DIR/ready.sha256"
 
 configure_source() {
+  cd "$SRC"
   ./Config.pl -install -compiler=gfortran > "$WORK/install.log" 2>&1 \
     || { tail -40 "$WORK/install.log" >&2; echo "run.sh: Config.pl -install failed" >&2; return 1; }
   ./Config.pl -default -u=MoonImpact -e=MhdHyp -ng=2 -g=6,6,6 > "$WORK/config.log" 2>&1 \
