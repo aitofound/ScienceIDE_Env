@@ -411,6 +411,40 @@ altbuild result is near its bound; none required escalation to the curator.
 
 Run narrative: run 1 (calibration, 2026-09-05T06:32:40Z to T07:02:40Z) and run 2 (final, 2026-09-05T07:21:18Z to T07:52:27Z) both ran on `ale-worker.us-central1-c.c.light-result-467615-p0.internal` (x86_64, Docker 29.1.3, 88 host cores, 8 declared task CPUs) under the standing consent recorded at 2026-09-02T13:31:55Z (where=136.114.2.6). Both runs passed with reward 1.0, 9/9 checks, no check byte-identical between nominal and variant, and altbuild measured on 9/9 checks (9 bit-identical). Run 2's numbers (self_validation_spread, self_validation_bound_fraction, floor, per-check run seconds) match run 1's to full precision: nominal suite run time 74.7s (run 1) and 75.9s (run 2), nominal source builds 522.0s (run 1) and 520.0s (run 2), against the 900s guidance budget (within, both runs). No prose number changed between the two runs, so no run 3 was needed. The shipped `comment/pipeline/self-validation.json` is run 2, at contract fingerprint `4cc921802b3c00508ee019cd03a2ad058f3bfc1fde416ef3407444edeed8e677`.
 
+
+## Build
+
+This mechanical revision adds best-effort build reuse within one
+`tests/test.sh produce` invocation. The driver hashes the read-only source once
+and gives that invocation a private `SAB_BUILD_CACHE` sibling of its graded
+output root. A direct `run.sh` invocation without those variables remains cold
+and independently builds, so the checks stay self-contained and do not depend
+on another check having run first.
+
+Each `run.sh` cache key includes the source identity, build configuration,
+dimensional executable, compiler name and version, precision, compile-time
+`DEFINE`, alternative-build description and effective flags. A cache entry holds
+only the compiled source tree and build metadata; no input deck, scientific
+output, extractor result or verifier record is cached. A hit is accepted only
+when its completion marker and identity match, the expected dimensional
+executable is present and executable, and its recorded SHA-256 digest matches
+the artifact. A miss copies the source afresh, applies the existing altbuild
+edit only to that scratch copy when requested, compiles with the existing
+command, checks the expected executable, and publishes the cache only after
+those checks. `SAB_BUILD_SECONDS=0` is emitted only on that validated reuse;
+a miss reports the measured compile interval.
+
+Deck rewriting, MPI execution and extraction still run separately for every
+check and every initial condition. No scientific input, default, window,
+resolution, variant, altbuild definition, output schema, validator, rubric
+field or tolerance changed. The nine-check denominator is unchanged. This
+revision has **not** run Docker, SSH, a build, a science run, or selfcheck;
+actual runtime and selfcheck are **NOT YET RUN**. The shipped
+`comment/pipeline/self-validation.json`, runtime/source records, historical
+fingerprints, raw evidence and failed artifacts remain preserved; changing the
+runtime drivers makes the existing self-validation stale until the approved
+real x86 rerun is performed.
+
 ## Revision history of this file
 
 Under revision 5.4.1 the two review-presentation fields `observable` and
