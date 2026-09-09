@@ -1,0 +1,45 @@
+# input file for binary setup routines
+
+# units
+           mass_unit =      solarm    ! mass unit (e.g. solarm,jupiterm,1e6*solarm)
+           dist_unit =      solarr    ! distance unit (e.g. au,pc,kpc,0.1pc)
+
+# options for body 1
+           iprofile1 =           5    ! 0=Sink,1=Unif,2=Poly,3=Dens,4=KEPL,5=MESA,6=Piec
+          isoftcore1 =           2    ! 0=no core softening, 1=cubic, 2=const. entropy
+      input_profile1 =  profile9donor.data   ! Path to input profile
+     outputfilename1 =  mysoftenedstar.dat   ! Output path for softened star profile
+              rcore1 =         10.0    ! Radius of core softening
+              mcore1 =         9.5    ! Initial guess for mass of sink particle stellar core
+              lcore1 =     0.*lsun    ! Luminosity of point mass stellar core
+                 np1 =       1000    ! number of particles
+
+# options for body 2
+           iprofile2 =           5    ! 0=Sink,1=Unif,2=Poly,3=Dens,4=KEPL,5=MESA,6=Piec
+      input_profile2 =  profile9accretor.data   ! Path to input profile
+          isoftcore2 =           0    ! 0=no core softening, 1=cubic, 2=const. entropy
+          isinkcore2 =           F    ! Add a sink particle stellar core
+              lcore2 =     0.*lsun    ! Luminosity of sink core particle
+
+
+# equation of state used to set the thermal energy profile
+                ieos =          12    ! 1=isothermal,2=adiabatic,10=MESA,12=idealplusrad,23=Tillotson
+        use_var_comp =           F    ! Use variable composition (X, Z, mu)
+               gamma =  1.66666667    ! Adiabatic index
+                  mu =      0.5988    ! mean molecular weight
+
+# relaxation options
+               relax =           T    ! relax bodies into equilibrium
+            tol_ekin =   1.000E-07    ! tolerance on ekin/epot to stop relaxation
+              maxits =        1000    ! maximum number of relaxation iterations
+   write_rho_to_file =           F    ! write density profile(s) to file
+            corotate =           F    ! set stars in corotation
+
+# orbit 
+               itype =           0    ! type of orbital elements (0=aeiOwf,1=flyby,2=obs,3=posvel)
+                   a =  18.26 days    ! semi-major axis (e.g. 1 au), period (e.g. 10*days) or rp if e>=1
+                   e =       0.000    ! eccentricity
+                   i =       0.000    ! inclination (deg)
+                   O =       0.000    ! position angle of ascending node (deg)
+                   w =        270.    ! argument of periapsis (deg)
+                   f =        180.    ! initial true anomaly (180=apoastron)
