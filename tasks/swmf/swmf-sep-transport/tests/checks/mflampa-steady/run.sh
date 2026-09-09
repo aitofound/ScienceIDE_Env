@@ -34,7 +34,7 @@ WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 BUILD_MODE=o3
 [ "$IC" != altbuild ] || BUILD_MODE=o0
 BUILD_FAMILY="mflampa-g20000"
-EXPECTED_REL="SP/MFLAMPA/bin/MFLAMPA.exe"
+EXPECTED_REL="bin/MFLAMPA.exe"
 BUILD_RECIPE="format=sab-build-recipe-v1\n./Config.pl -install=BATSRUS -compiler=gfortran
 optimization_mode=${BUILD_MODE}; o3=no additional command; o0=./Config.pl -O0
 (cd SP/MFLAMPA && ./Config.pl -g=20000)

@@ -57,6 +57,8 @@ not write the cache, and the scientific commands and inputs are unchanged. Compi
 or variant and five per alternative solve: 17 rather than 41 across self-validation. Full-tree validation and
 small private rundir staging add I/O overhead; that overhead has not been dynamically measured.
 
+A 2026-09-09 genuine remote selfcheck exposed a fail-closed cache-path typo before the MFLAMPA runs: the successful fixed-source build created `${DIR}/bin/MFLAMPA.exe`, exactly as the configured root `Makefile.def` declares, while the seven wrappers required the nonexistent `SP/MFLAMPA/bin/MFLAMPA.exe`. The seven identical `EXPECTED_REL` declarations now use `bin/MFLAMPA.exe`; no build command, source, deck, run window, output, or tolerance changed. The failed first-attempt logs are retained rather than relabeled.
+
 ## Where the input data comes from
 
 Nine of the sixteen checks need input files that live in the 2 GB `SWMF_data` repository under
