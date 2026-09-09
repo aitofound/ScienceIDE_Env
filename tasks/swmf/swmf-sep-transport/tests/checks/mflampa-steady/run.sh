@@ -345,10 +345,10 @@ private_mflampa_rundir() {
   cp -R "$BUILD_SRC/share/JobScripts/." "$RUNDIR_SUPPORT/share/JobScripts/"
   if [ "$log_mode" = append ]; then
     make -C "$BUILD_SRC/SP/MFLAMPA" rundir DIR="$RUNDIR_SUPPORT" RUNDIR="$run_dir" \
-      STANDALONE=YES SPDIR="$BUILD_SRC/SP/MFLAMPA" >> "$WORK/rundir.log" 2>&1
+      STANDALONE=YES SPDIR="$BUILD_SRC/SP/MFLAMPA" BINDIR="$BUILD_SRC/bin" >> "$WORK/rundir.log" 2>&1
   else
     make -C "$BUILD_SRC/SP/MFLAMPA" rundir DIR="$RUNDIR_SUPPORT" RUNDIR="$run_dir" \
-      STANDALONE=YES SPDIR="$BUILD_SRC/SP/MFLAMPA" > "$WORK/rundir.log" 2>&1
+      STANDALONE=YES SPDIR="$BUILD_SRC/SP/MFLAMPA" BINDIR="$BUILD_SRC/bin" > "$WORK/rundir.log" 2>&1
   fi
 }
 
