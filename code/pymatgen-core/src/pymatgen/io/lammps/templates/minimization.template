@@ -1,0 +1,32 @@
+# 1) Initialization
+units $units
+atom_style $atom_style
+dimension $dimension
+boundary $boundary
+
+# 2) System definition
+read_data input.data
+neigh_modify every 1 delay 0 check yes
+
+# 3) Simulation settings
+$pair_style_flag     $pair_style
+$bond_style_flag     $bond_style
+$angle_style_flag     $angle_style
+$dihedral_style_flag     $dihedral_style
+$improper_style_flag     $improper_style
+
+include forcefield.lammps
+$extra_data_flag    extra.data
+
+# 4) Energy minimization
+thermo 5
+thermo_style custom step lx ly lz press pxx pyy pzz pe
+dump dmp all atom 5 run.dump
+
+min_style $min_style
+fix 1 all box/relax $psymm $start_pressure vmax 0.001
+minimize $tol $tol $nsteps 10000000
+
+# 5) Write output data
+write_data output.data
+write_restart run.restart
