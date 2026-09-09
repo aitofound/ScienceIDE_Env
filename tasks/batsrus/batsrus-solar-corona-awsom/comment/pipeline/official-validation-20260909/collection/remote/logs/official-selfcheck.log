@@ -1,0 +1,34 @@
+OFFICIAL_WRAPPER_START=2026-09-09T19:52:37Z
+HOST=ale-worker.us-central1-c.c.light-result-467615-p0.internal
+RUNROOT=/mnt/ssd/huangzesen/sab-runs/pr463-validation-20260909-em7353/runroot-selfcheck-20260909-em7353 (verified absent before CLI)
+COMMAND=/usr/bin/python3 skills/package-sciaccel-task/scripts/sab.py task selfcheck --task tasks/batsrus/batsrus-solar-corona-awsom --run-root /mnt/ssd/huangzesen/sab-runs/pr463-validation-20260909-em7353/runroot-selfcheck-20260909-em7353
+2158554 2158549       00:01 S    /usr/bin/python3 skills/package-sciaccel-task/scripts/sab.py task selfcheck --task tasks/batsrus/batsrus-solar-corona-awsom --run-root /mnt/ssd/huangzesen/sab-runs/pr463-validation-20260909-em7353/runroot-selfcheck-20260909-em7353
+RUN under consent of 2026-09-09T19:45:24Z (where=local): 8 cpus, 16.0 GB, 13 checks, 1121 s declared per solve; "6874: should also rerun; unchanged original plan authorized; parallelism authorized; run on approved remote huangzesen@136.114.2.6"
+run root: /mnt/ssd/huangzesen/sab-runs/pr463-validation-20260909-em7353/runroot-selfcheck-20260909-em7353
+SOLVE nominal: ./solution/solve.sh -> /mnt/ssd/huangzesen/sab-runs/pr463-validation-20260909-em7353/runroot-selfcheck-20260909-em7353/oracle-nominal
+  ok in 2673.0s
+SOLVE variant: ./solution/solve.sh -> /mnt/ssd/huangzesen/sab-runs/pr463-validation-20260909-em7353/runroot-selfcheck-20260909-em7353/oracle-variant
+  ok in 2277.0s
+VERIFY: ./tests/test.sh (reference = nominal, candidate = variant)
+SOLVE altbuild: ./solution/solve.sh -> /mnt/ssd/huangzesen/sab-runs/pr463-validation-20260909-em7353/runroot-selfcheck-20260909-em7353/oracle-altbuild  (13 of 13 checks declare an alternative build)
+  ok in 2946.0s
+  PASS [awsom] altbuild: all graded values within bound
+  PASS [awsom-bvector] altbuild: all graded values within bound
+  PASS [awsom-gpu] altbuild: all graded values within bound
+  PASS [awsom-large-gpu] altbuild: all graded values within bound
+  PASS [awsom-signb] altbuild: all graded values within bound
+  PASS [awsomr] altbuild: all graded values within bound
+  PASS [ex-corona-1dwedge] altbuild: all graded values within bound
+  PASS [ex-corona-2dwedge] altbuild: all graded values within bound
+  PASS [magnetogram-fdips] altbuild: all graded values within bound
+  PASS [magnetogram-fdips-wedge] altbuild: all graded values within bound
+  PASS GRADED-IDENTICAL [magnetogram-harmonics] altbuild: all graded values within bound
+  PASS [magnetogram-potential] altbuild: all graded values within bound
+  PASS [stitch] altbuild: all graded values within bound
+AUTHOR SELF-CHECK: verify each written variant description matches the generic numerical-noise calibration role—not physics isolation or upstream-test validation.
+warn  suite run time 1737s on the nominal solve (builds 924s excluded), above the 1500s budget with 88 cores; the budget is guidance: agree the strategy with the human (raise suite_budget_s, shorten windows, more cores), never drop checks
+SELF-VALIDATION PASSED: 13 checks, reward 1.0, nominal versus variant; altbuild measured on 13 of 13 checks (0 bit-identical, 1 identical in every graded value while an ungraded file differs), floors written into their rubrics
+wrote comment/pipeline/self-validation.json and comment/pipeline/runtime-metadata.json; spreads recorded in each rubric
+
+next: finalize each check's policy and tolerance with the human if this was the calibration run (STOP 4); otherwise write comment/README.md and sab.py task review --task tasks/batsrus/batsrus-solar-corona-awsom
+OFFICIAL_WRAPPER_END=2026-09-09T22:04:24Z EXIT=0

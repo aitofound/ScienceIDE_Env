@@ -1,0 +1,175 @@
++ KNOB_HELP=
++ knob SAB_MAX_ITERATION 50 'MaxIteration of the first (steady-state) session of PARAM.in; the graded default is 50; run time scales linearly with it'
++ local name=SAB_MAX_ITERATION default=50 'desc=MaxIteration of the first (steady-state) session of PARAM.in; the graded default is 50; run time scales linearly with it'
++ '[' -n 0 ']'
++ export SAB_MAX_ITERATION
++ KNOB_HELP+='SAB_MAX_ITERATION=50  MaxIteration of the first (steady-state) session of PARAM.in; the graded default is 50; run time scales linearly with it
+'
++ knob SAB_SESSIONS 4 'how many of the PARAM.in sessions to run; the graded default 4 is every session of the upstream file'
++ local name=SAB_SESSIONS default=4 'desc=how many of the PARAM.in sessions to run; the graded default 4 is every session of the upstream file'
++ '[' -n 0 ']'
++ export SAB_SESSIONS
++ KNOB_HELP+='SAB_SESSIONS=4  how many of the PARAM.in sessions to run; the graded default 4 is every session of the upstream file
+'
++ knob SAB_TIME_SCALE 1.0 'multiplies every positive tSimulationMax, so it shortens the time-accurate sessions; 1.0 is the graded value'
++ local name=SAB_TIME_SCALE default=1.0 'desc=multiplies every positive tSimulationMax, so it shortens the time-accurate sessions; 1.0 is the graded value'
++ '[' -n '' ']'
++ printf -v SAB_TIME_SCALE %s 1.0
++ export SAB_TIME_SCALE
++ KNOB_HELP+='SAB_TIME_SCALE=1.0  multiplies every positive tSimulationMax, so it shortens the time-accurate sessions; 1.0 is the graded value
+'
++ knob SAB_MPI_RANKS 2 'MPI ranks of the graded run; the graded reference is produced with 2 (BATSRUS is rank-count independent only to round-off, so changing this changes the graded numbers)'
++ local name=SAB_MPI_RANKS default=2 'desc=MPI ranks of the graded run; the graded reference is produced with 2 (BATSRUS is rank-count independent only to round-off, so changing this changes the graded numbers)'
++ '[' -n '' ']'
++ printf -v SAB_MPI_RANKS %s 2
++ export SAB_MPI_RANKS
++ KNOB_HELP+='SAB_MPI_RANKS=2  MPI ranks of the graded run; the graded reference is produced with 2 (BATSRUS is rank-count independent only to round-off, so changing this changes the graded numbers)
+'
++ knob SAB_MPI_EXTRA '' 'extra arguments passed to mpiexec (for example --oversubscribe on a host with fewer slots than ranks); empty is the graded value and does not change the result'
++ local name=SAB_MPI_EXTRA default= 'desc=extra arguments passed to mpiexec (for example --oversubscribe on a host with fewer slots than ranks); empty is the graded value and does not change the result'
++ '[' -n '' ']'
++ printf -v SAB_MPI_EXTRA %s ''
++ export SAB_MPI_EXTRA
++ KNOB_HELP+='SAB_MPI_EXTRA=  extra arguments passed to mpiexec (for example --oversubscribe on a host with fewer slots than ranks); empty is the graded value and does not change the result
+'
++ knob SAB_BUILD_JOBS 4 'make -j for the BATSRUS build; affects build time only, never the graded values'
++ local name=SAB_BUILD_JOBS default=4 'desc=make -j for the BATSRUS build; affects build time only, never the graded values'
++ '[' -n 8 ']'
++ export SAB_BUILD_JOBS
++ KNOB_HELP+='SAB_BUILD_JOBS=4  make -j for the BATSRUS build; affects build time only, never the graded values
+'
++ ALTBUILD='the same Config.pl configuration built with ./Config.pl -O0 before make BATSRUS, which sets every OPTn level of Makefile.conf to -O0 where the shipped gfortran template uses -O3; same pinned source, same deck'
++ '[' nominal = --help ']'
++ set -euo pipefail
++ exec
++ IC=nominal
++ : /workspace/code /probe/out-cold /workspace/tests/checks/awsom
++ INPUTS=nominal
++ '[' nominal = altbuild ']'
++ '[' -d /workspace/tests/checks/awsom/ic/nominal ']'
+++ mktemp -d
++ WORK=/tmp/tmp.aIXKrtoUUs
++ trap 'rm -rf "$WORK"' EXIT
++ export LC_ALL=C
++ LC_ALL=C
++ cp -R /workspace/code/. /tmp/tmp.aIXKrtoUUs/src
++ cd /tmp/tmp.aIXKrtoUUs/src
++ SRC=/tmp/tmp.aIXKrtoUUs/src
++ export LC_ALL=C
++ LC_ALL=C
++ BUILD_TASK=batsrus-solar-corona-awsom
++ BUILD_STAGE=main
++ BUILD_SPEC='Config.pl -install -compiler=gfortran; Config.pl -default -u=Awsom -e=Awsom -ng=2 -g=6,4,4; make BATSRUS; make PIDL'
++ BUILD_GROUP=awsom-ng2-g6x4x4
++ BUILD_TARGETS=BATSRUS,PIDL
++ BUILD_TARGET=a100-sxm4-80gb
++ BUILD_TARGET_SHA256=fec36b64e17d0893720e55b74a78c61d4e0f5cfc796322ff92f1a3b04a53c132
++ BUILD_MODE=normal
++ '[' nominal = altbuild ']'
++ CACHE_FILES=(BATSRUS.exe PostIDL.exe)
++ '[' BATSRUS,PIDL = BATSRUS,PIDL,INTERPOLATE ']'
++ CACHE_ENABLED=0
++ '[' -n /probe/cache ']'
++ '[' -n 452b3eb778286cd87a7fd100eeee3ccf46975c5dd52304c52d23145107837347 ']'
++ CACHE_ENABLED=1
++ run_cached_build
++ local compiler_version make_version mpi_version mpi_include name
++ STAGE_BUILD_SECONDS=0
++ '[' 1 -eq 1 ']'
+++ gfortran --version
++ compiler_version='GNU Fortran (Debian 14.2.0-19) 14.2.0
+Copyright (C) 2024 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.'
+++ make --version
++ make_version='GNU Make 4.4.1
+Built for x86_64-pc-linux-gnu
+Copyright (C) 1988-2023 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.'
+++ mpif90 --version
++ mpi_version='GNU Fortran (Debian 14.2.0-19) 14.2.0
+Copyright (C) 2024 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.'
+++ mpif90 -showme:compile
++ mpi_include='-I/usr/lib/x86_64-linux-gnu/openmpi/lib/../../fortran/gfortran-mod-15/openmpi -I/usr/lib/x86_64-linux-gnu/openmpi/include'
+++ sha256sum
+++ cut '-d ' -f1
++++ uname -m
+++ printf '%s\0' cache-schema=batsrus-build-v1 task=batsrus-solar-corona-awsom stage=main source-fingerprint=452b3eb778286cd87a7fd100eeee3ccf46975c5dd52304c52d23145107837347 source-root=/workspace/code build-group=awsom-ng2-g6x4x4 'build-spec=Config.pl -install -compiler=gfortran; Config.pl -default -u=Awsom -e=Awsom -ng=2 -g=6,4,4; make BATSRUS; make PIDL' build-mode=normal 'altbuild-spec=the same Config.pl configuration built with ./Config.pl -O0 before make BATSRUS, which sets every OPTn level of Makefile.conf to -O0 where the shipped gfortran template uses -O3; same pinned source, same deck' initial-condition=nominal input-kind=nominal target=a100-sxm4-80gb target-descriptor-sha256=fec36b64e17d0893720e55b74a78c61d4e0f5cfc796322ff92f1a3b04a53c132 runner=linux-docker make-targets=BATSRUS,PIDL make-jobs=8 mpi-ranks=2 'mpi-include=-I/usr/lib/x86_64-linux-gnu/openmpi/lib/../../fortran/gfortran-mod-15/openmpi -I/usr/lib/x86_64-linux-gnu/openmpi/include' compiler=gfortran 'compiler-version=GNU Fortran (Debian 14.2.0-19) 14.2.0
+Copyright (C) 2024 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.' 'make-version=GNU Make 4.4.1
+Built for x86_64-pc-linux-gnu
+Copyright (C) 1988-2023 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.' 'mpi-version=GNU Fortran (Debian 14.2.0-19) 14.2.0
+Copyright (C) 2024 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.' machine=x86_64
++ BUILD_FINGERPRINT=c3cea949e8572cd7fd1b2b17914e50c75d77310e0df02703612b3c683c917eb6
++ CACHE_DIR=/probe/cache/batsrus-solar-corona-awsom/nominal/awsom-ng2-g6x4x4/c3cea949e8572cd7fd1b2b17914e50c75d77310e0df02703612b3c683c917eb6
++ CACHE_BINARY=/probe/cache/batsrus-solar-corona-awsom/nominal/awsom-ng2-g6x4x4/c3cea949e8572cd7fd1b2b17914e50c75d77310e0df02703612b3c683c917eb6/BATSRUS.exe
++ CACHE_POSTIDL=/probe/cache/batsrus-solar-corona-awsom/nominal/awsom-ng2-g6x4x4/c3cea949e8572cd7fd1b2b17914e50c75d77310e0df02703612b3c683c917eb6/PostIDL.exe
++ CACHE_DIGEST_FILE=/probe/cache/batsrus-solar-corona-awsom/nominal/awsom-ng2-g6x4x4/c3cea949e8572cd7fd1b2b17914e50c75d77310e0df02703612b3c683c917eb6/binaries.sha256
++ CACHE_READY=/probe/cache/batsrus-solar-corona-awsom/nominal/awsom-ng2-g6x4x4/c3cea949e8572cd7fd1b2b17914e50c75d77310e0df02703612b3c683c917eb6/ready.sha256
++ CACHE_HIT=0
++ cache_entry_valid
++ local expected actual name
++ '[' -f /probe/cache/batsrus-solar-corona-awsom/nominal/awsom-ng2-g6x4x4/c3cea949e8572cd7fd1b2b17914e50c75d77310e0df02703612b3c683c917eb6/ready.sha256 ']'
++ return 1
++ '[' 0 -eq 0 ']'
++ echo 'SAB_BUILD_CACHE=miss group=awsom-ng2-g6x4x4 stage=main fingerprint=c3cea949e8572cd7fd1b2b17914e50c75d77310e0df02703612b3c683c917eb6 variant=nominal altbuild=normal'
+SAB_BUILD_CACHE=miss group=awsom-ng2-g6x4x4 stage=main fingerprint=c3cea949e8572cd7fd1b2b17914e50c75d77310e0df02703612b3c683c917eb6 variant=nominal altbuild=normal
+++ date +%s
++ BUILD_START=1788983422
++ configure_source
++ resolve_bindir
+++ python3 - /tmp/tmp.aIXKrtoUUs/src/Makefile.def /tmp/tmp.aIXKrtoUUs/src
++ BINDIR=/tmp/tmp.aIXKrtoUUs/src/src
++ '[' -n /tmp/tmp.aIXKrtoUUs/src/src ']'
++ '[' -d /tmp/tmp.aIXKrtoUUs/src/src ']'
+SAB_BUILD_BINDIR=/tmp/tmp.aIXKrtoUUs/src/src
++ echo SAB_BUILD_BINDIR=/tmp/tmp.aIXKrtoUUs/src/src
++ build_source
++ for name in "${CACHE_FILES[@]}"
++ '[' -x /tmp/tmp.aIXKrtoUUs/src/src/BATSRUS.exe ']'
++ '[' -s /tmp/tmp.aIXKrtoUUs/src/src/BATSRUS.exe ']'
++ for name in "${CACHE_FILES[@]}"
++ '[' -x /tmp/tmp.aIXKrtoUUs/src/src/PostIDL.exe ']'
++ '[' -s /tmp/tmp.aIXKrtoUUs/src/src/PostIDL.exe ']'
+++ date +%s
++ STAGE_BUILD_SECONDS=73
++ publish_cache
++ local name
++ mkdir -p /probe/cache/batsrus-solar-corona-awsom/nominal/awsom-ng2-g6x4x4/c3cea949e8572cd7fd1b2b17914e50c75d77310e0df02703612b3c683c917eb6
++ printf '%s\n' building
++ for name in "${CACHE_FILES[@]}"
++ cp /tmp/tmp.aIXKrtoUUs/src/src/BATSRUS.exe /probe/cache/batsrus-solar-corona-awsom/nominal/awsom-ng2-g6x4x4/c3cea949e8572cd7fd1b2b17914e50c75d77310e0df02703612b3c683c917eb6/BATSRUS.exe
++ for name in "${CACHE_FILES[@]}"
++ cp /tmp/tmp.aIXKrtoUUs/src/src/PostIDL.exe /probe/cache/batsrus-solar-corona-awsom/nominal/awsom-ng2-g6x4x4/c3cea949e8572cd7fd1b2b17914e50c75d77310e0df02703612b3c683c917eb6/PostIDL.exe
++ binary_digest /probe/cache/batsrus-solar-corona-awsom/nominal/awsom-ng2-g6x4x4/c3cea949e8572cd7fd1b2b17914e50c75d77310e0df02703612b3c683c917eb6
++ local base=/probe/cache/batsrus-solar-corona-awsom/nominal/awsom-ng2-g6x4x4/c3cea949e8572cd7fd1b2b17914e50c75d77310e0df02703612b3c683c917eb6 name
++ for name in "${CACHE_FILES[@]}"
++ '[' -s /probe/cache/batsrus-solar-corona-awsom/nominal/awsom-ng2-g6x4x4/c3cea949e8572cd7fd1b2b17914e50c75d77310e0df02703612b3c683c917eb6/BATSRUS.exe ']'
++ '[' -x /probe/cache/batsrus-solar-corona-awsom/nominal/awsom-ng2-g6x4x4/c3cea949e8572cd7fd1b2b17914e50c75d77310e0df02703612b3c683c917eb6/BATSRUS.exe ']'
++ for name in "${CACHE_FILES[@]}"
++ '[' -s /probe/cache/batsrus-solar-corona-awsom/nominal/awsom-ng2-g6x4x4/c3cea949e8572cd7fd1b2b17914e50c75d77310e0df02703612b3c683c917eb6/PostIDL.exe ']'
++ '[' -x /probe/cache/batsrus-solar-corona-awsom/nominal/awsom-ng2-g6x4x4/c3cea949e8572cd7fd1b2b17914e50c75d77310e0df02703612b3c683c917eb6/PostIDL.exe ']'
++ cd /probe/cache/batsrus-solar-corona-awsom/nominal/awsom-ng2-g6x4x4/c3cea949e8572cd7fd1b2b17914e50c75d77310e0df02703612b3c683c917eb6
++ sha256sum BATSRUS.exe PostIDL.exe
++ awk '{printf "%s%s", sep, $1; sep=" ";} END {print ""}'
++ printf '%s\n' c3cea949e8572cd7fd1b2b17914e50c75d77310e0df02703612b3c683c917eb6
++ echo 'SAB_BUILD_CACHE=published group=awsom-ng2-g6x4x4 stage=main fingerprint=c3cea949e8572cd7fd1b2b17914e50c75d77310e0df02703612b3c683c917eb6 variant=nominal altbuild=normal'
++ BUILD_SECONDS=73
+SAB_BUILD_CACHE=published group=awsom-ng2-g6x4x4 stage=main fingerprint=c3cea949e8572cd7fd1b2b17914e50c75d77310e0df02703612b3c683c917eb6 variant=nominal altbuild=normal
++ echo SAB_BUILD_SECONDS=73
++ make rundir RUNDIR=/tmp/tmp.aIXKrtoUUs/src/run COMPONENT=SC STANDALONE=YES GMDIR=/tmp/tmp.aIXKrtoUUs/src
+SAB_BUILD_SECONDS=73
++ cp /workspace/tests/checks/awsom/ic/nominal/PARAM.in /tmp/tmp.aIXKrtoUUs/src/run/PARAM.in
++ python3 - /tmp/tmp.aIXKrtoUUs/src/run/PARAM.in 0 0 1.0
+run.sh: SAB_SESSIONS=0 but the file has 4 sessions
++ rm -rf /tmp/tmp.aIXKrtoUUs
