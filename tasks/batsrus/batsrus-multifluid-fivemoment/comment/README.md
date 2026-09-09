@@ -360,3 +360,43 @@ build --task tasks/batsrus/batsrus-multifluid-fivemoment`, then
 then `sab.py task review --task tasks/batsrus/batsrus-multifluid-fivemoment`
 under fresh consent and a new absent run root. This PR remains preparation-only
 until that real run and review.
+
+## 2026-09-09 official validation evidence (published, not rerun here)
+
+The previously completed official run now has its exact compact evidence under
+[`comment/pipeline/official-validation-20260909/`](pipeline/official-validation-20260909/).
+It executed against PR450 head `9ada1287b9608b5402dafb01d37b7556f3b08df3`, with
+source commit `9dfe746d48aa650b5209c3039f1a8676bc624899`, source-tree fingerprint
+`2b7ceffe897cc21572847d7aed65d46eeddb4c40`, `origin_main` pin
+`25823f1add2a1fbd9e14bab4550a1a2428095721`, packaging skill v5.11.10, and the
+actual CLI/skill hashes recorded in that evidence directory. The immutable
+receipt records one build and one selfcheck, both exit 0, from
+2026-09-09T19:49:14Z to 2026-09-09T20:46:59Z; its literal executed consent
+remains `human_ref=exact6874ref`, with the parent-message explanation kept in
+`provenance/authority-mapping.json`.
+
+This is **FULL_SCIENCE_PASS**, not a new computation: the actual staged
+14-check denominator is 14/14, reward is 1.0, verifier exit is 0, all 14
+altbuild rows pass, and the 42 raw final outputs remain remote with 223 copied
+SHA-256 matches. The canonical `comment/pipeline/self-validation.json` and
+`runtime-metadata.json` now carry the exact 2026-09-09 generated records. The
+pre-publication 2026-09-05 records are preserved additively under
+`comment/pipeline/history/pre-2026-09-09/`; no source, deck, input/default,
+window, resolution, tolerance, rubric, validator, resource, target, check,
+solution, environment, or acceptance rule changed in this publication.
+
+This science result is separate from CI/review readiness: the publication does
+not claim a CI pass or a human review decision.
+
+**CI/review readiness observation (2026-09-09).** The static Harbor check passed
+(rc `0`, one active target), but `sab.py status --ci-freshness` returned rc `1`
+with `fresh=false`. The current contract fingerprint is
+`0867917ad3c42eb3db45d0942a107183ef4b39135ad129b5c09e8ef4fdc4d3eb`, while the
+immutable official record contains `c37174f562ffa629358fc2fcbd978310448eb6105d453407997167916d2b6e5c`.
+The mapped Dockerfile inputs are equivalent; the remaining 14 differences are
+selfcheck-generated rubric evidence/timestamps. No rubric or tolerance change and
+no rerun was authorized. Therefore the truthful readiness state is
+**HOLD — STALE_INPUT_MISMATCH**, not a CI pass; this does not alter the
+FULL_SCIENCE_PASS result above. Telegram: N/A | Nickname: N/A
+
+Powered by LingTai AI: https://github.com/Lingtai-AI/lingtai
