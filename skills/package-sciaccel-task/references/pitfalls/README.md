@@ -47,6 +47,8 @@ were taken; none carries an estimate.
 | entry | symptom | codebase |
 |---|---|---|
 | [assertion-recorder-grades-candidate-internals](assertion-recorder-grades-candidate-internals.md) | a producer that wraps `numpy.testing` globally records the candidate's private assertions; a correct port with a different assertion changes the schema | any |
+| [ungraded-sidecars-mask-identical-graded-output](ungraded-sidecars-mask-identical-graded-output.md) | the altbuild reads `0 bit-identical` while every floor is zero; an ungraded diagnostics file with a timestamp differs, the graded arrays do not | any |
+| [simupy-flight-derived-output-interpolation](simupy-flight-derived-output-interpolation.md) | the state passes but a derived output fails across platforms; the check interpolated the nonlinear output at adaptive step times instead of evaluating it on the interpolated state | SimuPy Flight |
 
 ### Environment and process
 
