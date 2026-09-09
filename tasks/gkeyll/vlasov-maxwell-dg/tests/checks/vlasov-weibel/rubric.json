@@ -32,20 +32,20 @@
     ]
   },
   "evidence": {
-    "floor": 3.623767952376511e-13,
-    "floor_how": "measured by selfcheck on 2026-09-07: run.sh altbuild (same source, gcc -O2 strict IEEE: no -ffast-math, -ffp-contract=off, no -march=native (build-ieee/)) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
-    "self_validation_spread": 3.126388037344441e-13,
-    "self_validation_bound_fraction": 5.668347897665451e-05,
+    "floor": 6.181721801112872e-13,
+    "floor_how": "measured by selfcheck on 2026-09-08: run.sh altbuild (same source, gcc -O2 strict IEEE: no -ffast-math, -ffp-contract=off, no -march=native (build-ieee/)) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
+    "self_validation_spread": 3.979039320256561e-13,
+    "self_validation_bound_fraction": 7.365565135897561e-05,
     "altbuild": {
       "what": "same source, gcc -O2 strict IEEE: no -ffast-math, -ffp-contract=off, no -march=native (build-ieee/)",
-      "distance": 3.623767952376511e-13,
-      "bound_fraction": 0.00011440864981551678,
+      "distance": 6.181721801112872e-13,
+      "bound_fraction": 0.00011410420699154042,
       "identical": false,
       "passed": true,
       "reason": "all graded values within bound",
-      "at": "2026-09-07T04:31:51Z"
+      "at": "2026-09-08T08:28:24Z"
     },
-    "floor_bound_fraction": 0.00011440864981551678
+    "floor_bound_fraction": 0.00011410420699154042
   },
   "warrant": "The histories follow anisotropic-electron Weibel growth and the self-consistent Maxwell response. In rt_vlasov_weibel_1x2v_p2.c, alpha (line 89) sets the transverse magnetic seed Bz = alpha sin(kx x) (line 195), while vlasov/apps accumulates the current and advances the Maxwell field. A wrong Vlasov flux, current reduction, field sign or Maxwell update changes the field-energy history at order one. The two-ULP change of alpha is a relative 2.2e-16 change of the seed; the linear stage multiplies seed and perturbation alike, so the relative spread stays at that level until saturation, and the record shows the nonlinear stage lifting it to 3.1e-13 on the electron L2 history by t=80 on the x86 worker (3.98e-13 on the author's arm64): three orders and no more within the window. The strict-IEEE altbuild (same source, gcc -O2, no -ffast-math, -ffp-contract=off, no -march=native) differs by 3.6e-13. The bound atol=rtol=1e-10, set at review on 2026-09-04, is about 275 times the larger floor, leaving room for a genuinely different arithmetic on the target on a check the survey flags as chaotic."
 }
