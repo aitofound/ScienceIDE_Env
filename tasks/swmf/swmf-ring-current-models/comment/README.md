@@ -546,3 +546,26 @@ metadata rounded half-up from the completed record; they sum to 1195 s against
 `suite_budget_s = 1195` (the unrounded measured sum is 1194.579 s). This is a
 metadata correction from the completed record, not a new scientific run or a
 window change; the earlier calibration estimates above are retained as history.
+
+
+## Official-window restoration and ALL-listed reconciliation (2026-09-09)
+
+Jason's Telegram replies 6942 and 6944 supersede the earlier hold: every listed
+root/component item was re-audited against fixed vendor commit
+`90df6bc2bb6f7550e82d9ba9d9e4882702db4fb9`. The source-defined PARAM contents
+and full windows/stages/cadences were restored from this task's original authored
+commit `6effe67db05a71f3298a8ecc30125cf5c1dcd392` for the 17 checks that had later
+been shortened. The current calibrated variant values remain the same physical
+perturbations, and `cimi-highorder` retains its approved all-species output while
+running the restored 900 s window at the source 60 s plot cadence and 10 s log
+cadence. No check, comparison file, tolerance, invariant, resource declaration,
+or historical raw evidence was removed.
+
+All calibration and self-validation records above that were produced on a
+shortened deck are retained for provenance but are **historical/stale**, not
+full-window evidence. `expected_runtime_s` and the task resource/suite budget are
+also retained as prior estimates until a full-window run measures replacements.
+A fresh official-window remote selfcheck is required and is pending explicit
+release of a parent-managed heavy-execution slot. The complete source-to-check
+and blocker crosswalk is recorded in the parent run's
+`workspace/swmf-expand-sol-20260909/inner/case-crosswalk.csv`.
