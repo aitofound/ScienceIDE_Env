@@ -39,6 +39,7 @@ fi
 [ -d "$CHECK_DIR/ic/$INPUTS" ] || { echo "run.sh: no initial condition ic/$INPUTS" >&2; exit 2; }
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 cp -R "$SOURCE_DIR/." "$WORK/src"
+chmod -R u+w "$WORK/src"
 cd "$WORK/src"
 
 # The decks this run executes, taken from ic/<IC>/ and staged under Param/SAB/
@@ -76,20 +77,224 @@ fi
 
 # Upstream test this check reproduces: code/batsrus/Param/SHOCKTUBE/PARAM.in.fast_wave_2d  (Makefile.test target test_fastwave_2d)
 # Build: Config.pl -install -compiler=gfortran, then ./Config.pl -default ; ./Config.pl -u=Default -e=Mhd -ng=2 -g=6,6,1 ; ./Config.pl -opt=<the deck of ic/nominal>, then make BATSRUS and make PIDL. Every check of this task carries its own build because every official BATSRUS test sets its own compile-time equation set, user module and block size.
-BUILD_START=$(date +%s)
-./Config.pl -install -compiler=gfortran > "$WORK/install.log" 2>&1
-./Config.pl -default >> "$WORK/config.log" 2>&1
-./Config.pl -u=Default -e=Mhd -ng=2 -g=6,6,1 >> "$WORK/config.log" 2>&1
-./Config.pl -opt=Param/SAB/PARAM.in.opt >> "$WORK/config.log" 2>&1
-if [ "$IC" = altbuild ]; then
-  ./Config.pl -O0 >> "$WORK/config.log" 2>&1
-  grep -q '^OPT3 = -O0' Makefile.conf || { echo "run.sh: altbuild Config.pl -O0 did not set OPT3 in Makefile.conf" >&2; exit 1; }
+# ---- build (run-scoped verified binary reuse; seconds exclude scientific run time)
+cd "$WORK/src"
+MPI_INC="$(mpif90 -showme:compile 2>/dev/null || true)"
+BUILD_GROUP="mhd-default-ng2-g6x6x1-opt"
+BUILD_SPEC="Config.pl -default; Config.pl -u=Default -e=Mhd -ng=2 -g=6,6,1; Config.pl -opt=Param/SAB/PARAM.in.opt"
+BUILD_TASK="batsrus-geospace-magnetosphere"
+BUILD_TARGET="a100-sxm4-80gb"
+BUILD_TARGET_SHA256="fec36b64e17d0893720e55b74a78c61d4e0f5cfc796322ff92f1a3b04a53c132"
+BUILD_MODE=normal
+if [ "$IC" = altbuild ]; then BUILD_MODE=altbuild; fi
+CACHE_ENABLED=0
+if [ -n "${SAB_BUILD_CACHE_ROOT:-}" ] && [ -n "${SAB_SOURCE_FINGERPRINT:-}" ]; then
+  CACHE_ENABLED=1
 fi
-make -j"$SAB_MAKE_JOBS" BATSRUS > "$WORK/make.log" 2>&1
-make PIDL >> "$WORK/make.log" 2>&1
-echo "SAB_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))"   # the driver records it; the budget counts run time only
 
-make rundir RUNDIR=run_test STANDALONE=YES GMDIR="$WORK/src" > "$WORK/rundir.log" 2>&1
+resolve_build_paths() {
+  local path_record
+  path_record="$(python3 - "$PWD" <<'PY_BUILD_PATHS'
+import os, re, sys
+
+root = os.path.abspath(sys.argv[1])
+candidates = [os.path.join(root, "Makefile.def"),
+              os.path.join(root, "src", "Makefile.def"),
+              os.path.join(root, "srcBATL", "Makefile.def")]
+
+def read_vars(path):
+    out = {}
+    try:
+        stream = open(path, encoding="utf-8")
+    except OSError:
+        return out
+    with stream:
+        for raw in stream:
+            line = raw.split("#", 1)[0].strip()
+            match = re.match(r"^(?:export\s+)?([A-Za-z_]\w*)\s*(?:\?|\+)?=\s*(.*?)\s*$", line)
+            if match:
+                value = match.group(2).strip()
+                if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+                    value = value[1:-1]
+                out[match.group(1)] = value
+    return out
+
+defs = [(path, read_vars(path)) for path in candidates]
+selected = next(((path, values) for path, values in defs if "BINDIR" in values), None)
+if selected is None:
+    raise SystemExit("generated/source Makefile.def has no configured BINDIR")
+selected_path, selected_vars = selected
+all_vars = {}
+for _, values in defs:
+    all_vars.update(values)
+# Config.pl may retain a self-reference such as GMDIR=${GMDIR} in src/Makefile.def;
+# in the copied tree the configured root is the only safe expansion for that cycle.
+defaults = {"GMDIR": root, "DIR": root, "CURDIR": root, "PWD": root}
+pattern = re.compile(r"\$\{([A-Za-z_]\w*)\}|\$\(([A-Za-z_]\w*)\)|\$([A-Za-z_]\w*)")
+resolving = set()
+def resolve_var(name):
+    if name in resolving:
+        return defaults.get(name, "")
+    raw = all_vars.get(name, defaults.get(name, ""))
+    resolving.add(name)
+    try:
+        for _ in range(20):
+            changed = False
+            def replace(match):
+                nonlocal changed
+                other = next(group for group in match.groups() if group is not None)
+                replacement = resolve_var(other)
+                if replacement != match.group(0):
+                    changed = True
+                return replacement
+            expanded = pattern.sub(replace, raw)
+            raw = expanded
+            if not changed:
+                break
+        return raw.strip().strip("\"'")
+    finally:
+        resolving.remove(name)
+
+def resolve_path(value):
+    value = resolve_var(value) if re.fullmatch(r"[A-Za-z_]\w*", value) else value
+    value = pattern.sub(lambda m: resolve_var(next(group for group in m.groups() if group is not None)), value)
+    if pattern.search(value):
+        raise SystemExit("unresolved configured path: " + value)
+    return os.path.normpath(value if os.path.isabs(value) else os.path.join(root, value))
+
+bindir = resolve_path(selected_vars["BINDIR"])
+gmdir = resolve_path("GMDIR")
+print(gmdir + "\t" + bindir + "\t" + os.path.basename(selected_path))
+PY_BUILD_PATHS
+)" || { echo "run.sh: could not resolve configured GMDIR/BINDIR" >&2; exit 3; }
+  IFS=$'\t' read -r CONFIG_GMDIR CONFIG_BINDIR CONFIG_DEF <<EOF_PATHS
+$path_record
+EOF_PATHS
+  [ -n "$CONFIG_GMDIR" ] && [ -n "$CONFIG_BINDIR" ] || { echo "run.sh: empty configured GMDIR/BINDIR" >&2; exit 3; }
+  BINARY_DIR="$CONFIG_BINDIR"
+  BATSRUS_BINARY="$BINARY_DIR/BATSRUS.exe"
+  POSTIDL_BINARY="$BINARY_DIR/PostIDL.exe"
+  printf 'GMDIR=%s\nBINDIR=%s\nsource=%s\n' \
+    "$CONFIG_GMDIR" "$CONFIG_BINDIR" "$CONFIG_DEF" > "$WORK/configured-paths.txt"
+}
+
+configure_source() {
+  ./Config.pl -install -compiler=gfortran > "$WORK/install.log" 2>&1 \
+    || { tail -40 "$WORK/install.log" >&2; echo "run.sh: Config.pl -install failed" >&2; exit 3; }
+  # The shipped gfortran template compiles with plain gfortran and links with
+  # mpif90. INCL_EXTRA is the template hook for the MPI include flags.
+  MPI_INC="$(mpif90 -showme:compile 2>/dev/null || true)"
+  printf 'INCL_EXTRA = %s\n' "$MPI_INC" >> Makefile.conf
+  ./Config.pl -default >> "$WORK/config.log" 2>&1 \
+    || { tail -40 "$WORK/config.log" >&2; echo "run.sh: Config.pl -default failed" >&2; exit 3; }
+  ./Config.pl -u=Default -e=Mhd -ng=2 -g=6,6,1 >> "$WORK/config.log" 2>&1 \
+    || { tail -40 "$WORK/config.log" >&2; echo "run.sh: Config.pl -u=Default -e=Mhd -ng=2 -g=6,6,1 failed" >&2; exit 3; }
+  ./Config.pl -opt=Param/SAB/PARAM.in.opt >> "$WORK/config.log" 2>&1 \
+    || { tail -40 "$WORK/config.log" >&2; echo "run.sh: Config.pl -opt=Param/SAB/PARAM.in.opt failed" >&2; exit 3; }
+  if [ "$IC" = altbuild ]; then
+    ./Config.pl -O0 >> "$WORK/config.log" 2>&1 \
+      || { tail -40 "$WORK/config.log" >&2; echo "run.sh: Config.pl -O0 failed" >&2; exit 3; }
+    grep -q '^OPT3 = -O0' Makefile.conf \
+      || { echo "run.sh: Config.pl -O0 did not set OPT3 in Makefile.conf" >&2; exit 3; }
+  fi
+  resolve_build_paths
+}
+
+build_source() {
+  make -j"$SAB_MAKE_JOBS" BATSRUS > "$WORK/build.log" 2>&1 \
+    || { tail -60 "$WORK/build.log" >&2; echo "run.sh: BATSRUS build failed" >&2; exit 3; }
+  make PIDL >> "$WORK/build.log" 2>&1 \
+    || { tail -40 "$WORK/build.log" >&2; echo "run.sh: PostIDL build failed" >&2; exit 3; }
+}
+
+if [ "$CACHE_ENABLED" -eq 1 ]; then
+  COMPILER_VERSION="$(gfortran --version 2>&1 || true)"
+  MAKE_VERSION="$(make --version 2>&1 || true)"
+  MPI_VERSION="$(mpif90 --version 2>&1 || true)"
+  BUILD_FINGERPRINT="$(printf '%s\0' \
+      "cache-schema=batsrus-build-v3" \
+      "task=$BUILD_TASK" \
+      "source-fingerprint=$SAB_SOURCE_FINGERPRINT" \
+      "source-root=$SOURCE_DIR" \
+      "build-group=$BUILD_GROUP" \
+      "build-spec=$BUILD_SPEC" \
+      "build-mode=$BUILD_MODE" \
+      "initial-condition=$IC" \
+      "input-kind=$INPUTS" \
+      "target=$BUILD_TARGET" \
+      "target-descriptor-sha256=$BUILD_TARGET_SHA256" \
+      "runner=linux-docker" \
+      "make-targets=BATSRUS,PIDL" \
+      "make-jobs=$SAB_MAKE_JOBS" \
+      "mpi-ranks=$SAB_MPI_RANKS" \
+      "mpi-include=$MPI_INC" \
+      "compiler=gfortran" \
+      "compiler-version=$COMPILER_VERSION" \
+      "make-version=$MAKE_VERSION" \
+      "mpi-version=$MPI_VERSION" \
+      "machine=$(uname -m)" | sha256sum | cut -d' ' -f1)"
+  CACHE_DIR="$SAB_BUILD_CACHE_ROOT/$BUILD_TASK/$IC/$BUILD_GROUP/$BUILD_FINGERPRINT"
+  CACHE_BINARY="$CACHE_DIR/BATSRUS.exe"
+  CACHE_POSTIDL="$CACHE_DIR/PostIDL.exe"
+  CACHE_DIGEST_FILE="$CACHE_DIR/binaries.sha256"
+  CACHE_READY="$CACHE_DIR/ready.sha256"
+  CACHE_HIT=0
+  if [ -x "$CACHE_BINARY" ] && [ -x "$CACHE_POSTIDL" ] \
+      && [ -f "$CACHE_DIGEST_FILE" ] && [ -f "$CACHE_READY" ]; then
+    READY_FINGERPRINT="$(cat "$CACHE_READY" 2>/dev/null || true)"
+    EXPECTED_BINARY_DIGEST="$(cat "$CACHE_DIGEST_FILE" 2>/dev/null || true)"
+    ACTUAL_BINARY_DIGEST="$(sha256sum "$CACHE_BINARY" "$CACHE_POSTIDL" 2>/dev/null | awk '{printf "%s%s", sep, $1; sep=" ";} END {print ""}' || true)"
+    if [ "$READY_FINGERPRINT" = "$BUILD_FINGERPRINT" ] \
+        && [ -n "$EXPECTED_BINARY_DIGEST" ] \
+        && [ "$EXPECTED_BINARY_DIGEST" = "$ACTUAL_BINARY_DIGEST" ]; then
+      CACHE_HIT=1
+    fi
+  fi
+  if [ "$CACHE_HIT" -eq 1 ]; then
+    configure_source
+    if mkdir -p "$BINARY_DIR" \
+        && cp "$CACHE_BINARY" "$BATSRUS_BINARY" \
+        && cp "$CACHE_POSTIDL" "$POSTIDL_BINARY" \
+        && [ -x "$BATSRUS_BINARY" ] \
+        && [ -x "$POSTIDL_BINARY" ]; then
+      echo "SAB_BUILD_CACHE=hit group=$BUILD_GROUP fingerprint=$BUILD_FINGERPRINT variant=$IC altbuild=$BUILD_MODE bindir=$CONFIG_BINDIR"
+      BUILD_SECONDS=0
+    else
+      echo "run.sh: cached BATSRUS/PostIDL binaries could not be copied to configured BINDIR=$CONFIG_BINDIR; rebuilding" >&2
+      CACHE_HIT=0
+    fi
+  fi
+  if [ "$CACHE_HIT" -eq 0 ]; then
+    echo "SAB_BUILD_CACHE=miss group=$BUILD_GROUP fingerprint=$BUILD_FINGERPRINT variant=$IC altbuild=$BUILD_MODE"
+    BUILD_START=$(date +%s)
+    configure_source
+    build_source
+    BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))
+    [ -x "$BATSRUS_BINARY" ] || { echo "run.sh: build did not produce configured BATSRUS.exe at $BATSRUS_BINARY" >&2; exit 3; }
+    [ -x "$POSTIDL_BINARY" ] || { echo "run.sh: build did not produce configured PostIDL.exe at $POSTIDL_BINARY" >&2; exit 3; }
+    # Publish binaries only after both are built and their combined digest is
+    # written; the ready fingerprint is the final marker of a valid entry.
+    if mkdir -p "$CACHE_DIR" \
+        && printf '%s\n' building > "$CACHE_READY" \
+        && cp "$BATSRUS_BINARY" "$CACHE_BINARY" \
+        && cp "$POSTIDL_BINARY" "$CACHE_POSTIDL" \
+        && sha256sum "$CACHE_BINARY" "$CACHE_POSTIDL" | awk '{printf "%s%s", sep, $1; sep=" ";} END {print ""}' > "$CACHE_DIGEST_FILE" \
+        && printf '%s\n' "$BUILD_FINGERPRINT" > "$CACHE_READY"; then
+      echo "SAB_BUILD_CACHE=published group=$BUILD_GROUP fingerprint=$BUILD_FINGERPRINT variant=$IC altbuild=$BUILD_MODE bindir=$CONFIG_BINDIR"
+    else
+      echo "run.sh: warning: could not publish build cache for group $BUILD_GROUP; using local build" >&2
+    fi
+  fi
+else
+  echo "SAB_BUILD_CACHE=disabled reason=missing solve-scoped source fingerprint or cache root"
+  BUILD_START=$(date +%s)
+  configure_source
+  build_source
+  BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))
+fi
+echo "SAB_BUILD_SECONDS=$BUILD_SECONDS"   # zero means no compile on a verified cache hit
+
+make rundir RUNDIR=run_test STANDALONE=YES GMDIR="$CONFIG_GMDIR" > "$WORK/rundir.log" 2>&1
 
 # Copy the last frame of one plot series (or the log) into OUT_DIR under a fixed
 # name, so the graded file list does not depend on the knobs above.

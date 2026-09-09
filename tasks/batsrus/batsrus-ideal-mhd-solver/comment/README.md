@@ -140,6 +140,12 @@ window is deterministic; the flag records that a long enough run of any shear or
 instability eventually amplifies round-off, and every one of them exposes `SAB_TIME_SCALE` so a
 reviewer can shorten the window.
 
+## Mechanical build reuse (skill 5.11.10)
+
+The produce driver computes one immutable path/mode/content source fingerprint and creates a fresh solve-scoped cache root outside the graded output tree. Checks with an identical `Config.pl` recipe share only a verified `BATSRUS.exe`/`PostIDL.exe` pair; the cache key includes the task, pinned source identity, recipe/group, initial-condition mode, target descriptor, compiler/MPI/make versions, and machine. A hit requires the matching ready fingerprint and combined binary digest and reports `SAB_BUILD_SECONDS=0`; missing or invalid cache state follows the complete cold-build path. `altbuild` is a separate cache mode.
+
+After each configuration, the runner reads the generated/configured `Makefile.def` (including source `src/` and `srcBATL/` definitions when needed) and uses its resolved `GMDIR`/`BINDIR` literally. It does not assume a `bin` directory: a configured `BINDIR` under `src` is supported and is where cached binaries are copied before `make rundir`. This update is preparation-only; no scientific run, speedup, or pass result is claimed here.
+
 ## Altbuild
 
 Every check declares the same alternative build: `./Config.pl -O0` run immediately before
