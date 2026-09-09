@@ -388,6 +388,9 @@ else
   echo "run.sh: make rundir failed (exit $status); diagnostics are preserved under $DIAGNOSTICS_DIR" >&2
   exit "$status"
 fi
+# Stage the official CG/ROSETTA shape file as in code/batsrus/Makefile.test.
+cp Param/ROSETTA/CG_MOC.bdf.gz run_test/
+gunzip run_test/CG_MOC.bdf.gz
 cp Param/SAB/PARAM.in run_test/PARAM.in
 run_solver() {
   ( cd run_test && mpiexec --oversubscribe --bind-to none -n "$SAB_MPI_RANKS" ./BATSRUS.exe < /dev/null > runlog 2>&1 )
