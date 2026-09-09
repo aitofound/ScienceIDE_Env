@@ -1,0 +1,152 @@
+{
+  "kind": "native_investigation_not_cli_selfcheck",
+  "source_pin": "14625beca2ce0918f88d1fc84a3c0cdb591e0729",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "build": "pinned native Windows wheel installed in investigation environment; no candidate acceleration or Linux build claim",
+  "numerical_threads": 1,
+  "timeout_per_process_s": 180,
+  "source_build_included": false,
+  "commands": {
+    "nominal": "SOURCE_DIR=<pinned-source> OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 python producer.py --ic ic/nominal --out <nominal-output> --author-manifests",
+    "variant": "SOURCE_DIR=<pinned-source> OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 python producer.py --ic ic/variant --out <variant-output>",
+    "repeat": "SOURCE_DIR=<pinned-source> OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 python producer.py --ic ic/nominal --out <repeat-output>"
+  },
+  "runs": {
+    "nominal": {
+      "check": "benchmarks-bench-ik-ur5e",
+      "mode": "author",
+      "exit_code": 0,
+      "timeout": false,
+      "wall_s": 1.9385954000172205
+    },
+    "variant": {
+      "check": "benchmarks-bench-ik-ur5e",
+      "mode": "variant",
+      "exit_code": 0,
+      "timeout": false,
+      "wall_s": 2.21312669996405
+    },
+    "repeat": {
+      "check": "benchmarks-bench-ik-ur5e",
+      "mode": "repeat",
+      "exit_code": 0,
+      "timeout": false,
+      "wall_s": 2.166305300022941
+    }
+  },
+  "input_change": {
+    "nominal": {
+      "kind": "scalar_q0",
+      "index": 0,
+      "value_hex": "-0x1.921ff2e48e8a7p+0"
+    },
+    "variant": {
+      "kind": "scalar_q0",
+      "index": 0,
+      "value_hex": "-0x1.921ff2e48e8a5p+0"
+    },
+    "ulp_steps": 2,
+    "direction": "positive infinity",
+    "applied_once": true
+  },
+  "selected_pose_spreads": {
+    "check": "benchmarks-bench-ik-ur5e",
+    "groups": [
+      {
+        "prefix": "g0_",
+        "trace_shape_nominal": [
+          2500,
+          1,
+          4,
+          4
+        ],
+        "trace_shape_variant": [
+          2500,
+          1,
+          4,
+          4
+        ],
+        "steps_nominal": 2500,
+        "steps_variant": 2500,
+        "steps_repeat": 2500,
+        "variant_selected_pose_abs": 1.758593271006248e-13,
+        "repeat_selected_pose_abs": 0.0,
+        "variant_identical": false
+      }
+    ],
+    "max_variant_selected_pose_abs": 1.758593271006248e-13,
+    "max_repeat_selected_pose_abs": 0.0,
+    "selected_pose_variant_identical": false,
+    "trace_shapes_equal": true
+  },
+  "output_contract": {
+    "format": "mink_official_kinematic_trace_v1",
+    "groups": [
+      {
+        "prefix": "g0_",
+        "manifest": "model_manifest_g0.npz",
+        "nq": 6,
+        "nv": 6,
+        "nframes": 1,
+        "trace_count": 2500,
+        "trace_mode": "fixed_source_loop_steps",
+        "task_types": [
+          "FrameTask"
+        ],
+        "pose_selection": [
+          {
+            "translation": true,
+            "rotation": true
+          }
+        ],
+        "external_transition_at_outer_boundary": false,
+        "target_width": 16,
+        "nominal_step_count": 2500,
+        "min_steps": 1,
+        "max_steps": 80000,
+        "preloop_settle_steps": 0
+      }
+    ]
+  },
+  "files_sha256": {
+    "producer.py": "5d5cc1218595df1b5313187c608200130a178ca3fd826362ce014ef7f9bf55a9",
+    "upstream_example.py": "3b1d38948fd461c01ed0dbf5fa1ee6fa6f0ab4d9b3a85d09c6241092061af541",
+    "kinematics.py": "c9e9bd0a62dd5876aa270832642f60a1ba109e07589fcdf2084a25df2bda2f7b",
+    "ic/nominal/input.json": "9579e054c0a9b945ca5a890cbf7b1608918d041a93b4e9f48c8fe55d1d137b37",
+    "ic/variant/input.json": "de5a166dcc6a73e433a14aee2e1b7a7bb8a70b2a723d789c30dd125c69ca08b3",
+    "schema.json": "5d6157bf9e4e0b378cf3b74e51b642b2980336bd3cf1f18341aabfd71a23da29",
+    "model_manifest_g0.npz": "e86d8cc4145cbb9bd463d57e99150246a9016a23624215435e133075f36d4740",
+    "upstream_common.py": "a4077f36bce43c57c7e63f3b1a4c953be9c7e19ccb96c10895a8b211d8718d62",
+    "upstream_scenes.py": "fb42f1b65e3bd5355056fd7baa5f70047efdb67c6929b5272fbd3ebd9765544a"
+  },
+  "formal_selfcheck": "not run; CLI-owned evidence fields remain untouched",
+  "curator_finalized": false,
+  "python_version": "3.12.14",
+  "installed_packages": {
+    "mink": "1.3.0",
+    "numpy": "2.3.5",
+    "mujoco": "3.11.0",
+    "qpsolvers": "4.12.0",
+    "daqp": "0.8.5",
+    "loop-rate-limiters": "1.2.0"
+  },
+  "daqp_solve_signature": "(H, f, A, bupper, blower=None, sense=None, break_points=<MemoryView of 'ndarray' at 0x24968fd7780>, is_avi=False, primal_tol=1e-06, dual_tol=1e-12, zero_tol=1e-11, pivot_tol=1e-06, progress_tol=1e-14, cycle_tol=10, iter_limit=10000, fval_bound=1e+30, eps_prox=1e-06, eta_prox=1e-06, rho_soft=1e-06, rel_subopt=0.0, abs_subopt=0.0, sing_tol=3.7e-11, refactor_tol=1e-09, time_limit=0, primal_start=None, dual_start=None)",
+  "baseline_velocity_cap_excess_rad_s": 8.377964507477742e-06,
+  "baseline_displacement_cap_excess_rad": 1.6755929014955484e-08,
+  "real_negative_control": {
+    "mutation": "Remove only VelocityLimit from the actual solver limit list; retain ConfigurationLimit and CollisionAvoidanceLimit",
+    "exit_code": 0,
+    "wall_s": 1.959714399999939,
+    "velocity_cap_excess_rad_s": 90.97500503096971,
+    "verifier_result": {
+      "passed": false,
+      "reason": "candidate joint velocity cap exceeds its bound (90.975 > 0.0001)",
+      "distance": 0.0,
+      "bound_fraction": 0.0,
+      "validity_bound_fraction": 909750.050309697
+    }
+  },
+  "knob_probe_runs": [],
+  "nominal_timing_includes_trusted_model_fact_export": true,
+  "repeat_timing_excludes_trusted_model_fact_export": true
+}
