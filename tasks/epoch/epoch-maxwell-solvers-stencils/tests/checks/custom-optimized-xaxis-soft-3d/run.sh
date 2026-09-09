@@ -39,20 +39,130 @@ if [ "$IC" = altbuild ]; then
 fi
 [ -d "$CHECK_DIR/ic/$INPUTS" ] || { echo "run.sh: no initial condition ic/$INPUTS" >&2; exit 2; }
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
-cp -R "$SOURCE_DIR/." "$WORK/src"
 
-# Upstream test this check reproduces: code/epoch/epoch3d/tests/test_custom_stencils.py
-# Build: only the dimension this check needs; the makefile builds SDF/FORTRAN first.
-BUILD_START=$(date +%s)
+# A cache is scoped to this produce invocation, outside OUT_ROOT so its
+# bookkeeping can never become graded output.  The complete source tree and
+# all build/tool inputs are part of the key; a missing or partially published
+# entry always falls back to this check's independent cold build.
+DIMENSION="epoch3d"
+BUILD_GROUP="${DIMENSION}-gfortran-normal-double"
 if [ "$IC" = altbuild ]; then
+  # Alternative builds intentionally bypass and never populate the normal
+  # cache: their changed flags must not be mistaken for the nominal binary.
+  echo "SAB_BUILD_CACHE=bypass reason=altbuild group=$BUILD_GROUP"
+  cp -R "$SOURCE_DIR/." "$WORK/src"
+  BUILD_START=$(date +%s.%N)
   n="$(grep -c '^  FFLAGS = -O3 -g -std=f2003$' "$WORK/src/epoch3d/Makefile" || true)"
   [ "$n" = 1 ] || { echo "run.sh: expected exactly one gfortran FFLAGS line in epoch3d/Makefile, found $n" >&2; exit 2; }
   sed -i 's/^  FFLAGS = -O3 -g -std=f2003$/  FFLAGS = -O0 -g -std=f2003/' "$WORK/src/epoch3d/Makefile"
   make -C "$WORK/src/epoch3d" COMPILER=gfortran -j"$SAB_MAKE_JOBS" > "$WORK/make.log" 2>&1
+  BUILD_SECONDS="$(awk -v start="$BUILD_START" -v end="$(date +%s.%N)" 'BEGIN { print end - start }')"
 else
-  make -C "$WORK/src/epoch3d" COMPILER=gfortran -j"$SAB_MAKE_JOBS" > "$WORK/make.log" 2>&1
+BUILD_FINGERPRINT="$(python3 - "$SOURCE_DIR" "$BUILD_GROUP" "$SAB_MAKE_JOBS" <<'PYFINGERPRINT'
+import hashlib
+import os
+import stat
+import subprocess
+import sys
+
+root, group, make_jobs = sys.argv[1:]
+root = os.path.realpath(root)
+hash_ = hashlib.sha256()
+
+def field(name, value):
+    data = os.fsencode(str(value))
+    hash_.update(os.fsencode(name) + b"\0" + str(len(data)).encode("ascii") + b"\0" + data)
+
+field("cache-schema", "epoch-normal-build-v1")
+field("source-root", root)
+field("build-group", group)
+field("dimension", "epoch3d")
+field("precision", "double-default")
+field("compiler-argument", "COMPILER=gfortran")
+field("make-target", "default")
+field("make-jobs", make_jobs)
+field("compiler-flags", "-O3 -g -std=f2003")
+for name, command in (("compiler-version", ["gfortran", "--version"]),
+                     ("make-version", ["make", "--version"])):
+    result = subprocess.run(command, check=True, stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT)
+    field(name, result.stdout.decode(errors="replace"))
+field("machine", os.uname().machine)
+
+def tree(directory, relative="."):
+    entries = sorted(os.scandir(directory), key=lambda entry: os.fsencode(entry.name))
+    for entry in entries:
+        rel = entry.name if relative == "." else os.path.join(relative, entry.name)
+        info = entry.stat(follow_symlinks=False)
+        field("path", rel)
+        field("mode", format(stat.S_IMODE(info.st_mode), "04o"))
+        if stat.S_ISLNK(info.st_mode):
+            field("kind", "symlink")
+            field("target", os.readlink(entry.path))
+        elif stat.S_ISDIR(info.st_mode):
+            field("kind", "directory")
+            tree(entry.path, rel)
+        elif stat.S_ISREG(info.st_mode):
+            field("kind", "file")
+            field("size", info.st_size)
+            with open(entry.path, "rb") as stream:
+                while chunk := stream.read(1024 * 1024):
+                    hash_.update(chunk)
+        else:
+            raise SystemExit(f"run.sh: unsupported source entry for build cache: {rel}")
+
+tree(root)
+print(hash_.hexdigest())
+PYFINGERPRINT
+)"
+CACHE_ROOT="$(dirname "$OUT_DIR").sab-build-cache"
+CACHE_DIR="$CACHE_ROOT/$BUILD_GROUP/$BUILD_FINGERPRINT"
+CACHE_BINARY="$CACHE_DIR/epoch3d"
+CACHE_DIGEST_FILE="$CACHE_DIR/epoch3d.sha256"
+CACHE_READY="$CACHE_DIR/ready.sha256"
+CACHE_HIT=0
+if [ -x "$CACHE_BINARY" ] && [ -f "$CACHE_DIGEST_FILE" ] && [ -f "$CACHE_READY" ]; then
+  READY_FINGERPRINT="$(cat "$CACHE_READY" 2>/dev/null || true)"
+  EXPECTED_BINARY_DIGEST="$(cat "$CACHE_DIGEST_FILE" 2>/dev/null || true)"
+  ACTUAL_BINARY_DIGEST="$(sha256sum "$CACHE_BINARY" 2>/dev/null | cut -d' ' -f1 || true)"
+  if [ "$READY_FINGERPRINT" = "$BUILD_FINGERPRINT" ] \
+      && [ -n "$EXPECTED_BINARY_DIGEST" ] \
+      && [ "$EXPECTED_BINARY_DIGEST" = "$ACTUAL_BINARY_DIGEST" ]; then
+    CACHE_HIT=1
+  fi
 fi
-echo "SAB_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))"   # reported to the driver; the budget counts run time only
+  if [ "$CACHE_HIT" -eq 1 ]; then
+    if mkdir -p "$WORK/src/epoch3d/bin" \
+        && cp "$CACHE_BINARY" "$WORK/src/epoch3d/bin/epoch3d" \
+        && [ -x "$WORK/src/epoch3d/bin/epoch3d" ]; then
+      echo "SAB_BUILD_CACHE=hit group=$BUILD_GROUP fingerprint=$BUILD_FINGERPRINT"
+      BUILD_SECONDS=0
+    else
+      echo "run.sh: cached binary could not be copied; rebuilding group $BUILD_GROUP" >&2
+      CACHE_HIT=0
+    fi
+  fi
+  if [ "$CACHE_HIT" -eq 0 ]; then
+    echo "SAB_BUILD_CACHE=miss group=$BUILD_GROUP fingerprint=$BUILD_FINGERPRINT"
+    cp -R "$SOURCE_DIR/." "$WORK/src"
+    BUILD_START=$(date +%s.%N)
+    make -C "$WORK/src/epoch3d" COMPILER=gfortran -j"$SAB_MAKE_JOBS" > "$WORK/make.log" 2>&1
+    BUILD_SECONDS="$(awk -v start="$BUILD_START" -v end="$(date +%s.%N)" 'BEGIN { print end - start }')"
+    [ -x "$WORK/src/epoch3d/bin/epoch3d" ] || { echo "run.sh: build did not produce epoch3d/bin/epoch3d" >&2; exit 1; }
+    # Publish only after the binary and its digest exist.  A ready marker
+    # containing `building` makes an interrupted publication unusable.
+    if mkdir -p "$CACHE_DIR" \
+        && printf '%s\n' building > "$CACHE_READY" \
+        && cp "$WORK/src/epoch3d/bin/epoch3d" "$CACHE_BINARY" \
+        && sha256sum "$CACHE_BINARY" | cut -d' ' -f1 > "$CACHE_DIGEST_FILE" \
+        && printf '%s\n' "$BUILD_FINGERPRINT" > "$CACHE_READY"; then
+      echo "SAB_BUILD_CACHE=published group=$BUILD_GROUP fingerprint=$BUILD_FINGERPRINT"
+    else
+      echo "run.sh: warning: could not publish build cache for group $BUILD_GROUP; using local build" >&2
+    fi
+  fi
+fi
+echo "SAB_BUILD_SECONDS=$BUILD_SECONDS"   # nonzero on a compile; exactly zero only on a verified normal-cache hit
 
 RANKS=$(( $SAB_NPROCX * $SAB_NPROCY * $SAB_NPROCZ ))
 SNAP_FS="$(awk -v t="$SAB_TEND_FS" 'BEGIN{printf "%.17g", t * 25 / 75}')"
