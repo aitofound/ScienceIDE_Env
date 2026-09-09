@@ -21,6 +21,16 @@ reports the compile time actually spent by the check: zero when the initial
 build is fully reused, or the locally incurred stage-rebuild time where a GPU
 check still must reconfigure for a later deck.
 
+A 2026-09-09 genuine remote selfcheck exposed one missing relocation step in
+that cache contract. `Config.pl` records the configured source tree's absolute
+`DIR`, so a private cache copy initially failed root `ENV_CHECK` and attempted a
+relative `share/Scripts/FixMakefileDef.pl` from the wrong directory. Every cache
+hit now runs the upstream-prescribed `./Config.pl -s` in its private copy before
+`make rundir`. A private-copy probe changed `DIR` from the owner work tree to the
+consumer work tree and then produced the correct `SWMF.exe` run-directory link;
+no source, build profile, deck, window, output, or tolerance changed. The failed
+first-attempt logs remain retained and are not relabeled.
+
 The compatible groups are the three EE+SC checks, the four SC+IH+GM/FDIPS
 checks, the three GPU-compatible checks, the two real-time checks (including
 their magnetogram utilities), and the two threaded-boundary checks. The five

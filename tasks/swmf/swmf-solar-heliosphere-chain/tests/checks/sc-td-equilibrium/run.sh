@@ -130,6 +130,10 @@ grab() {           # grab <name in OUT_DIR> <glob> [<glob> ...]
 cd "$WORK/src"
 BUILD_EXTRA=0          # extra build seconds of the stages that reconfigure and rebuild
 if [ "$BUILD_CACHE_HIT" -eq 1 ]; then
+  # Config.pl records the configured tree's absolute DIR. The cache is copied
+  # privately, so refresh only those path definitions before make/rundir use.
+  ./Config.pl -s > "$WORK/cache-relocate.log" 2>&1 \
+    || { echo "run.sh: Config.pl -s failed after private cache copy" >&2; tail -n 60 "$WORK/cache-relocate.log" >&2; exit 1; }
   BUILD_SECONDS=0
 else
   BUILD_START=$(date +%s)
