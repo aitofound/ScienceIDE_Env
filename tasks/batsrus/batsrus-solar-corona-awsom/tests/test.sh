@@ -35,6 +35,35 @@ if [ "${1:-}" = "produce" ]; then
   case "$IC" in nominal|variant|altbuild) ;; *) echo "initial condition must be nominal, variant or altbuild" >&2; exit 2 ;; esac
   mkdir -p "$OUT_ROOT"
   OUT_ROOT="$(cd "$OUT_ROOT" && pwd -P)"
+  # One immutable digest of the actual source tree and one fresh, solve-scoped
+  # cache root outside OUT_ROOT. The digest covers paths, modes, symlinks and bytes.
+  SAB_SOURCE_FINGERPRINT="$(python3 - "$SOURCE_DIR" <<'PY_SOURCE_FINGERPRINT'
+import hashlib, os, stat, sys
+root = os.path.realpath(sys.argv[1])
+h = hashlib.sha256()
+def field(name, value):
+    data = os.fsencode(str(value))
+    h.update(os.fsencode(name) + b"\0" + str(len(data)).encode("ascii") + b"\0" + data)
+def tree(directory, relative="."):
+    entries = sorted(os.scandir(directory), key=lambda entry: os.fsencode(entry.name))
+    for entry in entries:
+        rel = entry.name if relative == "." else os.path.join(relative, entry.name)
+        info = entry.stat(follow_symlinks=False)
+        field("path", rel); field("mode", format(stat.S_IMODE(info.st_mode), "04o"))
+        if stat.S_ISLNK(info.st_mode):
+            field("kind", "symlink"); field("target", os.readlink(entry.path))
+        elif stat.S_ISDIR(info.st_mode):
+            field("kind", "directory"); tree(entry.path, rel)
+        elif stat.S_ISREG(info.st_mode):
+            field("kind", "file"); field("size", info.st_size)
+            with open(entry.path, "rb") as stream:
+                while chunk := stream.read(1024 * 1024): h.update(chunk)
+        else: raise SystemExit(f"unsupported source entry for build cache: {rel}")
+tree(root)
+print(h.hexdigest())
+PY_SOURCE_FINGERPRINT
+)"
+  BUILD_CACHE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/sciaccel-batsrus-solar-corona-awsom-${IC}-build.XXXXXX")"
   passthrough=()
   while IFS='=' read -r name _; do passthrough+=("$name=${!name}"); done < <(env | grep -E '^SAB_[A-Z0-9_]+=' || true)
   failed=(); total=0

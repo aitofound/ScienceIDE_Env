@@ -51,20 +51,183 @@ export LC_ALL=C          # silences the perl locale warnings of Config.pl and Po
 cp -R "$SOURCE_DIR/." "$WORK/src"
 cd "$WORK/src"
 
-# ---- build ------------------------------------------------------------------
-BUILD_START=$(date +%s)
-{
+SRC="$WORK/src"
+# Mechanical build reuse is deliberately outside the scientific run boundary.
+# Original upstream recipe: code/batsrus/Makefile.test target test_awsom_signb; only the configure/build stage below is cache-wrapped.
+export LC_ALL=C
+fail() { echo "run.sh: $1" >&2; shift; tail -n 40 "$@" >&2 || true; exit 1; }
+BUILD_TASK="batsrus-solar-corona-awsom"
+BUILD_STAGE="main"
+BUILD_SPEC='Config.pl -install -compiler=gfortran; Config.pl -default -u=Awsom -e=AwsomSA -ng=2 -g=6,4,4; make BATSRUS; make PIDL'
+BUILD_GROUP="awsom-signb-ng2-g6x4x4"
+BUILD_TARGETS="BATSRUS,PIDL"
+BUILD_TARGET="a100-sxm4-80gb"
+BUILD_TARGET_SHA256="fec36b64e17d0893720e55b74a78c61d4e0f5cfc796322ff92f1a3b04a53c132"
+BUILD_MODE=normal
+if [ "$IC" = altbuild ]; then BUILD_MODE=altbuild; fi
+CACHE_FILES=(BATSRUS.exe PostIDL.exe)
+if [ "$BUILD_TARGETS" = "BATSRUS,PIDL,INTERPOLATE" ]; then CACHE_FILES+=(INTERPOLATE.exe); fi
+CACHE_ENABLED=0
+if [ -n "${SAB_BUILD_CACHE_ROOT:-}" ] && [ -n "${SAB_SOURCE_FINGERPRINT:-}" ]; then CACHE_ENABLED=1; fi
+
+configure_source() {
+  {
   ./Config.pl -install -compiler=gfortran
   ./Config.pl -default -u=Awsom -e=AwsomSA -ng=2 -g=6,4,4
   if [ "$IC" = altbuild ]; then
     ./Config.pl -O0 >> "$WORK/config.log" 2>&1
     grep -q '^OPT3 = -O0' Makefile.conf || { echo "run.sh: Config.pl -O0 did not set OPT3" >&2; exit 1; }
   fi
+  } > "$WORK/config.log" 2>&1 || fail "configuration failed" "$WORK/config.log"
+}
+
+build_source() {
+  {
   make -j"$SAB_BUILD_JOBS" BATSRUS
   make PIDL
-} > "$WORK/build.log" 2>&1 || { echo "run.sh: build failed" >&2; tail -n 60 "$WORK/build.log" >&2; exit 1; }
-echo "SAB_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))"   # the driver records it; the budget counts run time only
+  } > "$WORK/build.log" 2>&1 || fail "build failed" "$WORK/build.log"
+}
 
+# Read BINDIR from the generated Makefile.def. The BATSRUS pin uses <root>/src,
+# not a hard-coded <root>/bin; this remains configuration-derived for variants.
+resolve_bindir() {
+  BINDIR="$(python3 - "$SRC/Makefile.def" "$SRC" <<'PY_BINDIR'
+import os, re, sys
+path, root = sys.argv[1:]
+for line in open(path, encoding="utf-8"):
+    m = re.match(r"^\s*BINDIR\s*=\s*(.*?)\s*$", line)
+    if m:
+        value = m.group(1)
+        for token in ("${GMDIR}", "$(GMDIR)", "${DIR}", "$(DIR)"):
+            value = value.replace(token, root)
+        if not os.path.isabs(value):
+            raise SystemExit("run.sh: generated BINDIR is not absolute: %s" % value)
+        print(os.path.normpath(value))
+        break
+else:
+    raise SystemExit("run.sh: generated Makefile.def has no BINDIR")
+PY_BINDIR
+)"
+  [ -n "$BINDIR" ] && [ -d "$BINDIR" ] || fail "configured BINDIR is unavailable" "$WORK/config.log"
+  echo "SAB_BUILD_BINDIR=$BINDIR"
+}
+
+binary_digest() {
+  local base=$1 name
+  for name in "${CACHE_FILES[@]}"; do
+    [ -s "$base/$name" ] || return 1
+    [ -x "$base/$name" ] || return 1
+  done
+  (cd "$base" && sha256sum "${CACHE_FILES[@]}" | awk '{printf "%s%s", sep, $1; sep=" ";} END {print ""}')
+}
+
+cache_entry_valid() {
+  local expected actual name
+  [ -f "$CACHE_READY" ] && [ -f "$CACHE_DIGEST_FILE" ] || return 1
+  [ "$(cat "$CACHE_READY" 2>/dev/null || true)" = "$BUILD_FINGERPRINT" ] || return 1
+  expected="$(cat "$CACHE_DIGEST_FILE" 2>/dev/null || true)"
+  actual="$(binary_digest "$CACHE_DIR" 2>/dev/null || true)"
+  [ -n "$expected" ] && [ "$expected" = "$actual" ] || return 1
+  for name in "${CACHE_FILES[@]}"; do [ -x "$CACHE_DIR/$name" ] && [ -s "$CACHE_DIR/$name" ] || return 1; done
+}
+
+restore_cache() {
+  local name
+  for name in "${CACHE_FILES[@]}"; do
+    cp "$CACHE_DIR/$name" "$BINDIR/$name" || return 1
+    [ -x "$BINDIR/$name" ] && [ -s "$BINDIR/$name" ] || return 1
+  done
+}
+
+publish_cache() {
+  local name
+  mkdir -p "$CACHE_DIR" || return 1
+  # Write binaries and digest before the ready marker; a partial entry cannot hit.
+  printf '%s\n' building > "$CACHE_READY" || return 1
+  for name in "${CACHE_FILES[@]}"; do cp "$BINDIR/$name" "$CACHE_DIR/$name" || return 1; done
+  binary_digest "$CACHE_DIR" > "$CACHE_DIGEST_FILE" || return 1
+  printf '%s\n' "$BUILD_FINGERPRINT" > "$CACHE_READY" || return 1
+}
+
+run_cached_build() {
+  local compiler_version make_version mpi_version mpi_include name
+  STAGE_BUILD_SECONDS=0
+  if [ "$CACHE_ENABLED" -eq 1 ]; then
+    compiler_version="$(gfortran --version 2>&1 || true)"
+    make_version="$(make --version 2>&1 || true)"
+    mpi_version="$(mpif90 --version 2>&1 || true)"
+    mpi_include="$(mpif90 -showme:compile 2>/dev/null || true)"
+    BUILD_FINGERPRINT="$(printf '%s\0' \
+        "cache-schema=batsrus-build-v1" \
+        "task=$BUILD_TASK" \
+        "stage=$BUILD_STAGE" \
+        "source-fingerprint=$SAB_SOURCE_FINGERPRINT" \
+        "source-root=$SOURCE_DIR" \
+        "build-group=$BUILD_GROUP" \
+        "build-spec=$BUILD_SPEC" \
+        "build-mode=$BUILD_MODE" \
+        "altbuild-spec=$ALTBUILD" \
+        "initial-condition=$IC" \
+        "input-kind=$INPUTS" \
+        "target=$BUILD_TARGET" \
+        "target-descriptor-sha256=$BUILD_TARGET_SHA256" \
+        "runner=linux-docker" \
+        "make-targets=$BUILD_TARGETS" \
+        "make-jobs=$SAB_BUILD_JOBS" \
+        "mpi-ranks=$SAB_MPI_RANKS" \
+        "mpi-include=$mpi_include" \
+        "compiler=gfortran" \
+        "compiler-version=$compiler_version" \
+        "make-version=$make_version" \
+        "mpi-version=$mpi_version" \
+        "machine=$(uname -m)" | sha256sum | cut -d' ' -f1)"
+    CACHE_DIR="$SAB_BUILD_CACHE_ROOT/$BUILD_TASK/$IC/$BUILD_GROUP/$BUILD_FINGERPRINT"
+    CACHE_BINARY="$CACHE_DIR/BATSRUS.exe"
+    CACHE_POSTIDL="$CACHE_DIR/PostIDL.exe"
+    CACHE_DIGEST_FILE="$CACHE_DIR/binaries.sha256"
+    CACHE_READY="$CACHE_DIR/ready.sha256"
+    CACHE_HIT=0
+    if cache_entry_valid; then
+      if (configure_source && resolve_bindir && restore_cache); then
+        echo "SAB_BUILD_CACHE=hit group=$BUILD_GROUP stage=$BUILD_STAGE fingerprint=$BUILD_FINGERPRINT variant=$IC altbuild=$BUILD_MODE"
+        STAGE_BUILD_SECONDS=0
+        CACHE_HIT=1
+      else
+        echo "run.sh: cached binaries could not be configured/restored; using complete cold build for $BUILD_GROUP/$BUILD_STAGE" >&2
+      fi
+    fi
+    if [ "$CACHE_HIT" -eq 0 ]; then
+      echo "SAB_BUILD_CACHE=miss group=$BUILD_GROUP stage=$BUILD_STAGE fingerprint=$BUILD_FINGERPRINT variant=$IC altbuild=$BUILD_MODE"
+      BUILD_START=$(date +%s)
+      configure_source
+      resolve_bindir
+      build_source
+      for name in "${CACHE_FILES[@]}"; do
+        [ -x "$BINDIR/$name" ] && [ -s "$BINDIR/$name" ] || fail "build did not produce configured $name at $BINDIR" "$WORK/build.log"
+      done
+      STAGE_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))
+      if publish_cache; then
+        echo "SAB_BUILD_CACHE=published group=$BUILD_GROUP stage=$BUILD_STAGE fingerprint=$BUILD_FINGERPRINT variant=$IC altbuild=$BUILD_MODE"
+      else
+        echo "run.sh: warning: could not publish build cache for $BUILD_GROUP/$BUILD_STAGE; retaining local build" >&2
+      fi
+    fi
+  else
+    echo "SAB_BUILD_CACHE=disabled reason=missing solve-scoped source fingerprint or cache root"
+    BUILD_START=$(date +%s)
+    configure_source
+    resolve_bindir
+    build_source
+    for name in "${CACHE_FILES[@]}"; do
+      [ -x "$BINDIR/$name" ] && [ -s "$BINDIR/$name" ] || fail "build did not produce configured $name at $BINDIR" "$WORK/build.log"
+    done
+    STAGE_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))
+  fi
+}
+
+run_cached_build
+BUILD_SECONDS=$STAGE_BUILD_SECONDS
+echo "SAB_BUILD_SECONDS=$BUILD_SECONDS"   # zero means no compile on a verified cache hit
 # ---- run directory and initial condition ------------------------------------
 make rundir RUNDIR="$WORK/src/run" COMPONENT=SC STANDALONE=YES GMDIR="$WORK/src" > "$WORK/rundir.log" 2>&1 \
   || { echo "run.sh: make rundir failed" >&2; tail -n 40 "$WORK/rundir.log" >&2; exit 1; }
