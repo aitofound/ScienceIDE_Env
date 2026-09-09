@@ -77,7 +77,7 @@ fi
 BUILD_GROUP="comet6sp-mhdcomet-ng2-g8x8x8"
 BUILD_SPEC="Config.pl -default -u=Comet6Sp -e=MhdComet -ng=2 -g=8,8,8"
 BUILD_MODE=normal
-[ "$IC" = altbuild ] && BUILD_MODE=altbuild
+if [ "$IC" = altbuild ]; then BUILD_MODE=altbuild; fi
 CACHE_ENABLED=0
 if [ -n "${SAB_BUILD_CACHE_ROOT:-}" ] && [ -n "${SAB_SOURCE_FINGERPRINT:-}" ]; then
   CACHE_ENABLED=1

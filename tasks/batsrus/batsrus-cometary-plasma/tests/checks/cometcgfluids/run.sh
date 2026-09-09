@@ -77,7 +77,7 @@ fi
 BUILD_GROUP="cometcgfluids-cometcg3fluidspe-ng2-g4x4x4"
 BUILD_SPEC="Config.pl -u=CometCGfluids -e=CometCG3FluidsPe -ng=2 -g=4,4,4; Config.pl -default"
 BUILD_MODE=normal
-[ "$IC" = altbuild ] && BUILD_MODE=altbuild
+if [ "$IC" = altbuild ]; then BUILD_MODE=altbuild; fi
 CACHE_ENABLED=0
 if [ -n "${SAB_BUILD_CACHE_ROOT:-}" ] && [ -n "${SAB_SOURCE_FINGERPRINT:-}" ]; then
   CACHE_ENABLED=1
