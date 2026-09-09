@@ -72,6 +72,41 @@ if [ "$IC" = altbuild ]; then
 fi
 }
 
+resolve_build_paths() {
+  local configured_bindir
+  configured_bindir="$(awk -F= '
+    $1 ~ /^[[:space:]]*BINDIR[[:space:]]*$/ {
+      value=$2
+      sub(/^[[:space:]]*/, "", value)
+      sub(/[[:space:]]*$/, "", value)
+      print value
+      exit
+    }
+  ' Makefile.def)"
+  [ -n "$configured_bindir" ] || {
+    echo "run.sh: generated Makefile.def has no BINDIR" >&2
+    exit 3
+  }
+  case "$configured_bindir" in
+    '${GMDIR}') configured_bindir="$SRC" ;;
+    '${GMDIR}'/*) configured_bindir="$SRC/${configured_bindir#'${GMDIR}'/}" ;;
+    '${DIR}') configured_bindir="$SRC" ;;
+    '${DIR}'/*) configured_bindir="$SRC/${configured_bindir#'${DIR}'/}" ;;
+    '$GMDIR') configured_bindir="$SRC" ;;
+    '$GMDIR'/*) configured_bindir="$SRC/${configured_bindir#'$GMDIR'/}" ;;
+    '$DIR') configured_bindir="$SRC" ;;
+    '$DIR'/*) configured_bindir="$SRC/${configured_bindir#'$DIR'/}" ;;
+    /*) ;;
+    *)
+      echo "run.sh: unsupported configured BINDIR=$configured_bindir" >&2
+      exit 3
+      ;;
+  esac
+  BINARY_DIR="$configured_bindir"
+  BATSRUS_BINARY="$BINARY_DIR/BATSRUS.exe"
+  POSTIDL_BINARY="$BINARY_DIR/PostIDL.exe"
+}
+
 build_source() {
 make -j"$SAB_BUILD_JOBS" BATSRUS >"$WORK/make.log" 2>&1 || fail "make BATSRUS failed" "$WORK/make.log"
 make PIDL >>"$WORK/make.log" 2>&1 || fail "make PIDL failed" "$WORK/make.log"
@@ -125,10 +160,10 @@ if [ "$CACHE_ENABLED" -eq 1 ]; then
     # A cache hit still configures this check's actual source tree, so make rundir
     # and its scripts resolve exactly as in the cold path. If that setup or copy
     # fails, fall through to a complete configure/build rather than skipping work.
-    if (configure_source) && mkdir -p "$SRC/bin" \
-        && cp "$CACHE_BINARY" "$SRC/bin/BATSRUS.exe" \
-        && cp "$CACHE_POSTIDL" "$SRC/bin/PostIDL.exe" \
-        && [ -x "$SRC/bin/BATSRUS.exe" ] && [ -x "$SRC/bin/PostIDL.exe" ]; then
+    if (configure_source) && resolve_build_paths && mkdir -p "$BINARY_DIR" \
+        && cp "$CACHE_BINARY" "$BATSRUS_BINARY" \
+        && cp "$CACHE_POSTIDL" "$POSTIDL_BINARY" \
+        && [ -x "$BATSRUS_BINARY" ] && [ -x "$POSTIDL_BINARY" ]; then
       echo "SAB_BUILD_CACHE=hit group=$BUILD_GROUP fingerprint=$BUILD_FINGERPRINT variant=$IC altbuild=$BUILD_MODE"
       BUILD_SECONDS=0
     else
@@ -140,16 +175,17 @@ if [ "$CACHE_ENABLED" -eq 1 ]; then
     echo "SAB_BUILD_CACHE=miss group=$BUILD_GROUP fingerprint=$BUILD_FINGERPRINT variant=$IC altbuild=$BUILD_MODE"
     BUILD_START=$(date +%s)
     configure_source
+    resolve_build_paths
     build_source
     BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))
-    [ -x "$SRC/bin/BATSRUS.exe" ] && [ -s "$SRC/bin/BATSRUS.exe" ] || { echo "run.sh: build did not produce bin/BATSRUS.exe" >&2; exit 3; }
-    [ -x "$SRC/bin/PostIDL.exe" ] && [ -s "$SRC/bin/PostIDL.exe" ] || { echo "run.sh: build did not produce bin/PostIDL.exe" >&2; exit 3; }
+    [ -x "$BATSRUS_BINARY" ] && [ -s "$BATSRUS_BINARY" ] || { echo "run.sh: build did not produce configured BATSRUS.exe" >&2; exit 3; }
+    [ -x "$POSTIDL_BINARY" ] && [ -s "$POSTIDL_BINARY" ] || { echo "run.sh: build did not produce configured PostIDL.exe" >&2; exit 3; }
     # Publish binaries first and the matching digest/ready marker last; incomplete
     # cache entries cannot be accepted as hits and a cold build remains complete.
     if mkdir -p "$CACHE_DIR" \
         && printf '%s\n' building > "$CACHE_READY" \
-        && cp "$SRC/bin/BATSRUS.exe" "$CACHE_BINARY" \
-        && cp "$SRC/bin/PostIDL.exe" "$CACHE_POSTIDL" \
+        && cp "$BATSRUS_BINARY" "$CACHE_BINARY" \
+        && cp "$POSTIDL_BINARY" "$CACHE_POSTIDL" \
         && sha256sum "$CACHE_BINARY" "$CACHE_POSTIDL" | awk '{printf "%s%s", sep, $1; sep=" ";} END {print ""}' > "$CACHE_DIGEST_FILE" \
         && printf '%s\n' "$BUILD_FINGERPRINT" > "$CACHE_READY"; then
       echo "SAB_BUILD_CACHE=published group=$BUILD_GROUP fingerprint=$BUILD_FINGERPRINT variant=$IC altbuild=$BUILD_MODE"
@@ -161,6 +197,7 @@ else
   echo "SAB_BUILD_CACHE=disabled reason=missing solve-scoped source fingerprint or cache root"
   BUILD_START=$(date +%s)
   configure_source
+  resolve_build_paths
   build_source
   BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))
 fi
