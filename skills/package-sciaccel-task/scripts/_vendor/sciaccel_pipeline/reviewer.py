@@ -340,8 +340,9 @@ def flagged_rows(ctx: dict) -> list[str]:
             why.append("chaotic")
         for lab in r["labels"]:
             why.append(lab)
-        if r["identical"]:
-            why.append("identical: variant inactive" if not r["variant"].strip().lower().startswith("identical") else "identical, as the rubric declares")
+        if r["identical"] or r.get("graded_identical"):
+            how = "byte-identical" if r["identical"] else "every graded value identical while an ungraded file differs"
+            why.append(f"{how}: variant inactive" if not r["variant"].strip().lower().startswith("identical") else f"{how}, as the rubric declares")
         exp, got = r["expected_runtime_s"], r["run_s"]
         # selfcheck's own rule (measured above twice the declared value), and its mirror for a stale
         # over-declaration, which is read only when the measured run time is at least a second.
