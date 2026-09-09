@@ -321,3 +321,34 @@ measurement. `comment/pipeline/` and every `rubric.json` in this PR are now `run
 This 2026-09-09 revision aligns the wrappers with `skills/package-sciaccel-task/SKILL.md` v5.11.10's best-effort build-reuse rule. `tests/test.sh produce` computes one digest of the actual pinned source tree and creates a fresh cache root outside the graded output root for that invocation. A cache entry is keyed by the task, exact configuration and make-target recipe, stage, source digest/root, compiler/MPI/make identity, ranks/jobs, initial-condition and altbuild mode, target descriptor and Linux runner architecture. It contains only the configured executables (`BATSRUS.exe`, `PostIDL.exe`, and `INTERPOLATE.exe` for `outerhelio2d`); binaries and their digests are written before a final ready marker, and incomplete or mismatched entries fall back to the complete original configure/build path. The configured `BINDIR` is read from generated `Makefile.def` (this BATSRUS source uses `src/`, not a hard-coded `bin/`). A hit reports `SAB_BUILD_SECONDS=0`; no scientific output, initial condition, window, validator or historical pipeline record is reused.
 
 Only exact build recipes share entries: `outerhelio` and `outerhelio-1d` share one group, and the AWSoM start build is shared by `outerhelioawsom` and the first stage of `outerhelioawsom-restart`; the 2-D interpolation, PUI, PUI-electron and restart ten-bin builds remain isolated. The cache changes build overhead only: all original run-directory setup, MPI commands, post-processing and fixed graded-file copies remain in place. No fresh compile, solve, selfcheck, calibration or speedup measurement was performed in this mechanical revision, and the existing historical records retain their original timings and identities.
+
+## 2026-09-09 official validation evidence (published, not rerun here)
+
+The completed official PR453 run has exact compact evidence under
+[`comment/pipeline/official-validation-20260909/`](pipeline/official-validation-20260909/).
+It executed against PR453 head `b7b53c64af6666f9548ff76bc075114b221c50d6`, with
+BATSRUS source commit `9dfe746d48aa650b5209c3039f1a8676bc624899`, immutable CLI
+execution-origin main `25823f1add2a1fbd9e14bab4550a1a2428095721`, and captured-main
+scripts-tree provenance `ec1606a4`. The run used package-sciaccel-task v5.11.10
+from the actual remote main object recorded in the evidence manifest, not the
+stale shared working file. Build and self-check both exited zero from
+2026-09-09T20:13:30Z through 2026-09-09T21:02:59Z; the generated canonical
+self-validation result is `passed`.
+
+This is **FULL_SCIENCE_PASS**, not a new computation: 7/7 actual checks passed,
+reward is `1.0`, verifier exit is `0`, all 7 altbuild rows passed, and 54 raw
+nominal/variant/altbuild graded outputs remain remote with exact paths and
+SHA-256 hashes. The publication retains 76 copied-evidence comparisons, the
+seven actual `check.json` files, and all 21 mode/check `run.ok`/`run.log` marker
+pairs without copying raw science outputs. The prior canonical runtime and
+self-validation files were preserved byte-for-byte under
+`comment/pipeline/history/pre-2026-09-09/` before replacement; no source, deck,
+rubric, check, scientific knob, target, resource, window, validator, solution,
+environment, or acceptance rule changed in this evidence publication.
+
+CI/review state is separate and was not claimed from the science result. No CI
+retry, merge, or human review decision is included.
+
+Telegram: N/A | Nickname: N/A
+
+Powered by LingTai AI: https://github.com/Lingtai-AI/lingtai
