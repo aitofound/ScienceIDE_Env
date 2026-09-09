@@ -1,0 +1,108 @@
+#DESCRIPTION
+Conducting-field wall boundary-condition test: a tophat EM pulse (Ey/Bz step) seeded in the interior reflects off the conducting (PEC) x-faces, conserving total electromagnetic energy.
+
+#INITFROMSWMF
+F                       initFromSWMF
+
+#GEOMETRY
+-10.0                   xMin
+ 10.0                   xMax
+-0.5                    yMin
+ 0.5                    yMax
+-0.5                    zMin
+ 0.5                    zMax
+
+#NCELL
+40                      nCellX
+1                       nCellY
+1                       nCellZ
+
+#MAXBLOCKSIZE
+20                      maxBlockSizeX
+1                       maxBlockSizeY
+1                       maxBlockSizeZ
+
+#PERIODICITY
+F                       isPeriodicX
+T                       isPeriodicY
+T                       isPeriodicZ
+
+#SOLVEEM
+T                       solveEM
+
+#PLASMA
+1                       nSpecies
+0.01                    mass
+-1.0                    charge
+
+#UNIFORMSTATE
+1.0                     rho
+0.0                     ux
+0.0                     uy
+0.0                     uz
+1.0e4                   T
+0.0                     bx
+0.0                     by
+0.0                     bz
+0.0                     ex
+0.0                     ey
+0.0                     ez
+
+#NORMALIZATION
+1.0                     lNormSI
+1.0                     uNormSI
+
+#TESTCASE
+tophat                  testCase
+
+#FIELDBOXBOUNDARY
+conducting              fieldBoxBoundaryLo
+conducting              fieldBoxBoundaryHi
+periodic                fieldBoxBoundaryLo
+periodic                fieldBoxBoundaryHi
+periodic                fieldBoxBoundaryLo
+periodic                fieldBoxBoundaryHi
+
+#PARTICLEBOXBOUNDARY
+0                       iSpecies
+reflect                 particleBoxBoundaryLo
+reflect                 particleBoxBoundaryHi
+periodic                particleBoxBoundaryLo
+periodic                particleBoxBoundaryHi
+periodic                particleBoxBoundaryLo
+periodic                particleBoxBoundaryHi
+
+#TIMESTEPPING
+T                       useFixedDt
+0.4                     dt
+
+#DISCRETIZATION
+0.50                    theta
+0.0                     ratioDivC2C
+
+#MONITOR
+10                      dnReport
+
+#SAVELOG
+1                       dnSavePic
+1                       dnSavePT
+
+#DIVE
+F                       doCorrectDivE
+
+#RESAMPLING
+F                       doReSampling
+
+#SAVEPLOT
+1                       nPlot
+z=0 var ascii pic       plotString
+-1                      dnSavePlot
+10.0                    dtSavePlot
+-1                      dxSavePlot
+Ey Bz Ex Ez Bx By       plotVar
+
+#STOP
+-1                      MaxIter
+40.0                    TimeMax
+
+#RUN

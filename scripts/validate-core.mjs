@@ -778,7 +778,7 @@ export function run(config) {
       const baseline = new Set();
       const baselineLines = execFileSync(
         'git', ['ls-tree', '-r', '--name-only', process.env.BASE_REF, '--', 'tasks/'],
-        { cwd: root, encoding: 'utf8' },
+        { cwd: root, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 },
       ).split('\n').map((line) => line.trim()).filter(Boolean);
       for (const line of baselineLines) {
         const parts = line.split('/');
