@@ -1,0 +1,134 @@
+{
+  "kind": "native_investigation_not_cli_selfcheck",
+  "source_pin": "14625beca2ce0918f88d1fc84a3c0cdb591e0729",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "build": "pinned native Windows wheel installed in investigation environment; no candidate acceleration or Linux build claim",
+  "numerical_threads": 1,
+  "timeout_per_process_s": 180,
+  "source_build_included": false,
+  "commands": {
+    "nominal": "SOURCE_DIR=<pinned-source> OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 python producer.py --ic ic/nominal --out <nominal-output> --author-manifests",
+    "variant": "SOURCE_DIR=<pinned-source> OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 python producer.py --ic ic/variant --out <variant-output>",
+    "repeat": "SOURCE_DIR=<pinned-source> OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 python producer.py --ic ic/nominal --out <repeat-output>"
+  },
+  "runs": {
+    "nominal": {
+      "check": "examples-docs-quickstart",
+      "mode": "author",
+      "exit_code": 0,
+      "timeout": false,
+      "wall_s": 1.3194662999594584
+    },
+    "variant": {
+      "check": "examples-docs-quickstart",
+      "mode": "variant",
+      "exit_code": 0,
+      "timeout": false,
+      "wall_s": 1.3942604000330903
+    },
+    "repeat": {
+      "check": "examples-docs-quickstart",
+      "mode": "repeat",
+      "exit_code": 0,
+      "timeout": false,
+      "wall_s": 1.3977913000271656
+    }
+  },
+  "input_change": {
+    "nominal": {
+      "kind": "scalar_q0",
+      "index": 3,
+      "value_hex": "-0x1.921f4b1ee2435p+0"
+    },
+    "variant": {
+      "kind": "scalar_q0",
+      "index": 3,
+      "value_hex": "-0x1.921f4b1ee2433p+0"
+    },
+    "ulp_steps": 2,
+    "direction": "positive infinity",
+    "applied_once": true
+  },
+  "selected_pose_spreads": {
+    "check": "examples-docs-quickstart",
+    "groups": [
+      {
+        "prefix": "g0_",
+        "trace_shape_nominal": [
+          120,
+          1,
+          4,
+          4
+        ],
+        "trace_shape_variant": [
+          120,
+          1,
+          4,
+          4
+        ],
+        "steps_nominal": 120,
+        "steps_variant": 120,
+        "steps_repeat": 120,
+        "variant_selected_pose_abs": 9.464898087507834e-08,
+        "repeat_selected_pose_abs": 0.0,
+        "variant_identical": false
+      }
+    ],
+    "max_variant_selected_pose_abs": 9.464898087507834e-08,
+    "max_repeat_selected_pose_abs": 0.0,
+    "selected_pose_variant_identical": false,
+    "trace_shapes_equal": true
+  },
+  "output_contract": {
+    "format": "mink_official_kinematic_trace_v1",
+    "groups": [
+      {
+        "prefix": "g0_",
+        "manifest": "model_manifest_g0.npz",
+        "nq": 9,
+        "nv": 9,
+        "nframes": 1,
+        "trace_count": 120,
+        "trace_mode": "fixed_source_loop_steps",
+        "task_types": [
+          "FrameTask"
+        ],
+        "pose_selection": [
+          {
+            "translation": true,
+            "rotation": true
+          }
+        ],
+        "external_transition_at_outer_boundary": false,
+        "target_width": 16,
+        "nominal_step_count": 120,
+        "min_steps": 1,
+        "max_steps": 10000,
+        "preloop_settle_steps": 0
+      }
+    ]
+  },
+  "files_sha256": {
+    "producer.py": "5d5cc1218595df1b5313187c608200130a178ca3fd826362ce014ef7f9bf55a9",
+    "upstream_example.py": "0da5acd6597c5fd615f780a8430137e795d37c518537dfc387b51f054f10acee",
+    "kinematics.py": "c9e9bd0a62dd5876aa270832642f60a1ba109e07589fcdf2084a25df2bda2f7b",
+    "ic/nominal/input.json": "048f871defde163915cfff934f37c2ca54c459335d3d30d1fd2d876ab584f5d8",
+    "ic/variant/input.json": "c0cf57b8a93bc618428be4087541cce435bcc2813ae22652a3f3ea0376908d29",
+    "schema.json": "cf59d3f68a4402a67d6de9fd118edb0b5946ddcd1fb14810cf61094d1cbbd3b0",
+    "model_manifest_g0.npz": "0e1ec2777a3a72052640d163a30a3b42c018ff9010d87e0a5e7a22ea9c5fe6bf"
+  },
+  "formal_selfcheck": "not run; CLI-owned evidence fields remain untouched",
+  "curator_finalized": false,
+  "python_version": "3.12.14",
+  "installed_packages": {
+    "mink": "1.3.0",
+    "numpy": "2.3.5",
+    "mujoco": "3.11.0",
+    "qpsolvers": "4.12.0",
+    "daqp": "0.8.5",
+    "loop-rate-limiters": "1.2.0"
+  },
+  "knob_probe_runs": [],
+  "nominal_timing_includes_trusted_model_fact_export": true,
+  "repeat_timing_excludes_trusted_model_fact_export": true
+}
