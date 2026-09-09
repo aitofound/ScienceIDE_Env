@@ -21,15 +21,20 @@ sink block and takes comparison.sink, while every other block is graded by the
 precision its arrays were written in; these configurations have no sink particles, so
 block 2 is empty in practice. The header gates: the dump must be a
 full dump with the same array inventory, particle counts and sink count, and its
-time must agree under the binary64 bound. Particle order is not part of the contract. Every block that carries the identity array
-(comparison.identity_tag, default "iorig": written unconditionally as integer(kind=8) by
+time must agree under the binary64 bound. Particle order is not part of the contract. The identity
+permutation (comparison.identity_tag, default "iorig": written unconditionally as integer(kind=8) by
 src/main/readwrite_dumps.f90:269, initialised iorig(i) = i at src/main/part.F90:741, and a clean
-permutation key here because none of these configurations injects or accretes particles) is sorted
-by it on both sides before anything is compared, the two identity sets must be equal as sets and
-must carry no duplicates, and every physical array is then compared in that order. A candidate that
-reorders the particles - for memory coalescing on an accelerator, say - passes; one that changes a
-particle's state beyond the bound fails, whatever order it writes. Blocks with no identity array
-(the sink block) are compared in the order written. Standard library and numpy only; reads
+permutation key here because none of these configurations injects or accretes particles) is derived
+from the one block that carries it (block 1, the hydro block: both sides are sorted by it, the two
+identity sets must be equal as sets and must carry no duplicates), and is then applied to every
+block of the same particle count, not only the block iorig itself lives in: an MHD dump's block 4
+(Bxyz, psi, divB, curlB and the non-ideal coefficient arrays, src/main/readwrite_dumps.f90:304-320)
+is written for every particle in the same storage order as block 1 but carries no identity array of
+its own, so without this a candidate that legitimately reorders particles would fail on block 4
+alone. A candidate that reorders the particles - for memory coalescing on an accelerator, say -
+passes; one that changes a particle's state beyond the bound fails, whatever order it writes. A
+block with its own particle count (the sink block) or with no particles at all is compared in the
+order written. Standard library and numpy only; reads
 only this check directory. Writes a result with "passed", "reason", "distance"
 (the largest absolute error over every graded binary64 value), which selfcheck
 records as the spread, and "bound_fraction" (the largest fraction of the bound
@@ -191,6 +196,37 @@ def main() -> int:
         if len(R["blocks"]) != len(C["blocks"]):
             failures.append(f"{rel}: {len(C['blocks'])} blocks, reference has {len(R['blocks'])}")
             continue
+        # Particle identity, not particle position. The identity permutation is derived once, from
+        # the one block that carries it (comparison.identity_tag: both sides are put in that order,
+        # the two sets of identities must be equal and carry no duplicates), and is then applied to
+        # every block of the same particle count -- not only the block the identity array itself
+        # lives in. An MHD full dump's block 4 (Bxyz, psi, divB, curlB and the non-ideal coefficient
+        # arrays, src/main/readwrite_dumps.f90:304-320) is written for every particle in the same
+        # storage order as block 1 but carries no identity array of its own, so without this a
+        # candidate that reorders particles consistently across every particle-sized block - for
+        # memory coalescing on an accelerator, say - would fail on block 4 alone even though it
+        # changed no particle's state. A block with its own particle count (the sink block) or with
+        # no particles at all is compared in the order written.
+        id_perm_ref = id_perm_cand = None
+        n_ident = 0
+        identity_failed = False
+        for rb, cb in zip(R["blocks"], C["blocks"]):
+            if identity_tag in rb["arrays"] and identity_tag in cb["arrays"]:
+                rid, cid = rb["arrays"][identity_tag][1], cb["arrays"][identity_tag][1]
+                id_perm_ref, id_perm_cand = np.argsort(rid, kind="stable"), np.argsort(cid, kind="stable")
+                rsorted, csorted = rid[id_perm_ref], cid[id_perm_cand]
+                if rsorted.size and np.any(rsorted[1:] == rsorted[:-1]):
+                    failures.append(f"{rel}: block holding {identity_tag} has duplicate reference ids")
+                    identity_failed = True
+                elif not np.array_equal(rsorted, csorted):
+                    nmiss = int(np.setdiff1d(rsorted, csorted).size)
+                    nextra = int(np.setdiff1d(csorted, rsorted).size)
+                    failures.append(f"{rel}: {identity_tag} sets differ "
+                                    f"({nmiss} reference ids missing, {nextra} unknown ids)")
+                    identity_failed = True
+                else:
+                    n_ident = rb["number"]
+                break
         for ib, (rb, cb) in enumerate(zip(R["blocks"], C["blocks"])):
             if rb["number"] != cb["number"]:
                 failures.append(f"{rel}: block {ib + 1} holds {cb['number']} entries, reference {rb['number']}")
@@ -200,24 +236,17 @@ def main() -> int:
                 extra = sorted(set(cb["arrays"]) - set(rb["arrays"]))
                 failures.append(f"{rel}: block {ib + 1} array inventory differs (missing {missing}, extra {extra})")
                 continue
-            # Particle identity, not particle position. Where the block carries the identity array the
-            # dump writes for every particle, both sides are put in that order first and the two sets of
-            # identities must be equal; the physical arrays are then compared identity by identity, so a
-            # candidate that reorders the particles is not penalised for it.
-            rperm = cperm = None
-            if identity_tag in rb["arrays"] and identity_tag in cb["arrays"]:
-                rid, cid = rb["arrays"][identity_tag][1], cb["arrays"][identity_tag][1]
-                rperm, cperm = np.argsort(rid, kind="stable"), np.argsort(cid, kind="stable")
-                rsorted, csorted = rid[rperm], cid[cperm]
-                if rsorted.size and np.any(rsorted[1:] == rsorted[:-1]):
-                    failures.append(f"{rel}: block {ib + 1} reference {identity_tag} has duplicate ids")
-                    continue
-                if not np.array_equal(rsorted, csorted):
-                    nmiss = int(np.setdiff1d(rsorted, csorted).size)
-                    nextra = int(np.setdiff1d(csorted, rsorted).size)
-                    failures.append(f"{rel}: block {ib + 1} {identity_tag} sets differ "
-                                    f"({nmiss} reference ids missing, {nextra} unknown ids)")
-                    continue
+            has_identity = identity_tag in rb["arrays"] and identity_tag in cb["arrays"]
+            if identity_failed:
+                rperm = cperm = None
+                if has_identity:
+                    continue  # already reported once, in the pre-pass above
+            elif has_identity:
+                rperm, cperm = id_perm_ref, id_perm_cand
+            elif n_ident > 0 and rb["number"] == n_ident:
+                rperm, cperm = id_perm_ref, id_perm_cand
+            else:
+                rperm = cperm = None
             for tag, (slot, r) in rb["arrays"].items():
                 cslot, c = cb["arrays"][tag]
                 key = f"{rel}:block{ib + 1}:{tag}"

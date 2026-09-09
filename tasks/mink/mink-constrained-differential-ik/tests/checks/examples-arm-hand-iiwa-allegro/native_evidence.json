@@ -1,0 +1,163 @@
+{
+  "kind": "native_investigation_not_cli_selfcheck",
+  "source_pin": "14625beca2ce0918f88d1fc84a3c0cdb591e0729",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "build": "pinned native Windows wheel installed in investigation environment; no candidate acceleration or Linux build claim",
+  "numerical_threads": 1,
+  "timeout_per_process_s": 180,
+  "source_build_included": false,
+  "commands": {
+    "nominal": "SOURCE_DIR=<pinned-source> OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 python producer.py --ic ic/nominal --out <nominal-output> --author-manifests",
+    "variant": "SOURCE_DIR=<pinned-source> OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 python producer.py --ic ic/variant --out <variant-output>",
+    "repeat": "SOURCE_DIR=<pinned-source> OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 python producer.py --ic ic/nominal --out <repeat-output>"
+  },
+  "runs": {
+    "nominal": {
+      "check": "examples-arm-hand-iiwa-allegro",
+      "mode": "author",
+      "exit_code": 0,
+      "timeout": false,
+      "wall_s": 1.3706995000247844
+    },
+    "variant": {
+      "check": "examples-arm-hand-iiwa-allegro",
+      "mode": "variant",
+      "exit_code": 0,
+      "timeout": false,
+      "wall_s": 1.3832285000244156
+    },
+    "repeat": {
+      "check": "examples-arm-hand-iiwa-allegro",
+      "mode": "repeat",
+      "exit_code": 0,
+      "timeout": false,
+      "wall_s": 1.3722286999691278
+    }
+  },
+  "input_change": {
+    "nominal": {
+      "kind": "scalar_q0",
+      "index": 0,
+      "value_hex": "-0x1.37056aa30c092p-4"
+    },
+    "variant": {
+      "kind": "scalar_q0",
+      "index": 0,
+      "value_hex": "-0x1.37056aa30c090p-4"
+    },
+    "ulp_steps": 2,
+    "direction": "positive infinity",
+    "applied_once": true
+  },
+  "selected_pose_spreads": {
+    "check": "examples-arm-hand-iiwa-allegro",
+    "groups": [
+      {
+        "prefix": "g0_",
+        "trace_shape_nominal": [
+          200,
+          6,
+          4,
+          4
+        ],
+        "trace_shape_variant": [
+          200,
+          6,
+          4,
+          4
+        ],
+        "steps_nominal": 200,
+        "steps_variant": 200,
+        "steps_repeat": 200,
+        "variant_selected_pose_abs": 9.844902670863576e-14,
+        "repeat_selected_pose_abs": 0.0,
+        "variant_identical": false
+      }
+    ],
+    "max_variant_selected_pose_abs": 9.844902670863576e-14,
+    "max_repeat_selected_pose_abs": 0.0,
+    "selected_pose_variant_identical": false,
+    "trace_shapes_equal": true
+  },
+  "output_contract": {
+    "format": "mink_official_kinematic_trace_v1",
+    "groups": [
+      {
+        "prefix": "g0_",
+        "manifest": "model_manifest_g0.npz",
+        "nq": 23,
+        "nv": 23,
+        "nframes": 6,
+        "trace_count": 200,
+        "trace_mode": "fixed_viewer_sync_prefix",
+        "task_types": [
+          "FrameTask",
+          "PostureTask",
+          "RelativeFrameTask",
+          "RelativeFrameTask",
+          "RelativeFrameTask",
+          "RelativeFrameTask"
+        ],
+        "pose_selection": [
+          {
+            "translation": true,
+            "rotation": true
+          },
+          {
+            "translation": true,
+            "rotation": false,
+            "relative_to": 5
+          },
+          {
+            "translation": true,
+            "rotation": false,
+            "relative_to": 5
+          },
+          {
+            "translation": true,
+            "rotation": false,
+            "relative_to": 5
+          },
+          {
+            "translation": true,
+            "rotation": false,
+            "relative_to": 5
+          },
+          {
+            "translation": false,
+            "rotation": false
+          }
+        ],
+        "external_transition_at_outer_boundary": false,
+        "target_width": 16,
+        "nominal_step_count": 200,
+        "min_steps": 1,
+        "max_steps": 10000,
+        "preloop_settle_steps": 0
+      }
+    ]
+  },
+  "files_sha256": {
+    "producer.py": "5d5cc1218595df1b5313187c608200130a178ca3fd826362ce014ef7f9bf55a9",
+    "upstream_example.py": "f65426b8b4c13fbf96ef95e6de42ad6a93489f6c94743c526364cbe61a1a8229",
+    "kinematics.py": "c9e9bd0a62dd5876aa270832642f60a1ba109e07589fcdf2084a25df2bda2f7b",
+    "ic/nominal/input.json": "a2d3c25f19ef1ff2e52212dcc9948ab75ffda90a41dec67c3cbd91e2b227583d",
+    "ic/variant/input.json": "6fffa14fa5709a87d5fcc812e1fff769c9dcd155133933784d4c054852b71084",
+    "schema.json": "90f52fb5712d15a391f5d9efd51736e95f4f971898e8f042ada539f3089eafb4",
+    "model_manifest_g0.npz": "a8c125736d84272c2f4cdaacf72d3d2ae87f1c3f03c8473c9e27c592ede865c6"
+  },
+  "formal_selfcheck": "not run; CLI-owned evidence fields remain untouched",
+  "curator_finalized": false,
+  "python_version": "3.12.14",
+  "installed_packages": {
+    "mink": "1.3.0",
+    "numpy": "2.3.5",
+    "mujoco": "3.11.0",
+    "qpsolvers": "4.12.0",
+    "daqp": "0.8.5",
+    "loop-rate-limiters": "1.2.0"
+  },
+  "knob_probe_runs": [],
+  "nominal_timing_includes_trusted_model_fact_export": true,
+  "repeat_timing_excludes_trusted_model_fact_export": true
+}
