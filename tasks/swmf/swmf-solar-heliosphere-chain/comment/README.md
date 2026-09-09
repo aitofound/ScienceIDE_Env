@@ -52,6 +52,10 @@ graded stage of a multi-stage upstream test is its own check, and a check that
 grades a later stage runs the earlier ones inside its own `run.sh` as ungraded
 prerequisites.
 
+## 2026-09-09 ALL-listed-tests expansion
+
+Jason's Telegram 6942/6944 instruction supersedes the earlier budget-driven shortening. The active `test8` start/restart and `test10` restart checks now grade with `SAB_STOP_SCALE=1`, and `test_tdequil` now carries its complete official 6000 s deck in both initial conditions. Older calibration discussions below remain historical evidence and are not relabelled as measurements of this revision. Missing listed targets are handled individually in the additive source crosswalk rather than by a global hold.
+
 ## Decks considered and left out
 
 - `test_eegtd` (`util/DATAREAD/srcMagnetogram/TDSETUP.py`): **left out.** It was
