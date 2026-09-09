@@ -170,6 +170,10 @@ production quantities only, never bookkeeping, and never an unordered collection
   identical against the unpermuted original, and a single injected value fault is still caught (1 of 291895
   values over bound) after permutation, so the sort does not hide a real difference either.
 
+## 2026-09-09 ALL-listed-tests expansion
+
+Jason's Telegram 6942/6944 instruction supersedes the earlier suite-budget shortening. Both active `test19` checks now default to `SAB_STOP_SCALE=1`, preserving the complete official initial and restart windows. The older measured timings below remain historical records and are not relabelled as measurements of this revision. The source-driven crosswalk and current run receipt are recorded in the additive expansion report.
+
 ## Decks considered and left out
 
 * `Param/PARAM.in.test.SCIHPT` (upstream `make test14`, SC+IH+PT/MITTENS) - **cannot be built from the pinned
