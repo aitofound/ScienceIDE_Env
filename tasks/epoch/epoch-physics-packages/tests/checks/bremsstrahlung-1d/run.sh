@@ -51,9 +51,136 @@ fi
 # Build: bremsstrahlung is behind -DBREMSSTRAHLUNG; -DPHOTONS is also required so the
 # photon species this check tracks carries a QED optical depth field (bremsstrahlung.F90
 # guards that assignment with #ifdef PHOTONS) even though QED itself (use_qed) stays off.
-BUILD_START=$(date +%s)
-make -C "$WORK/src/epoch1d" COMPILER=gfortran DEFINE="-DBREMSSTRAHLUNG -DPHOTONS" -j"$SAB_MAKE_JOBS" > "$WORK/make.log" 2>&1
-echo "SAB_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))"   # reported to the driver; the budget counts run time only
+DIM="1"
+# Reuse only a matching executable made earlier in this produce invocation.
+# The cache is private to this output root, never SOURCE_DIR and never a graded
+# output. Normal and altbuild recipes have separate namespaces.
+BUILD_GROUP="epoch${DIM}d"
+BUILD_BINARY="$BUILD_GROUP/bin/$BUILD_GROUP"
+BUILD_COMPILER="gfortran"
+BUILD_PRECISION="default REAL kind with IEEE compiler flags from $BUILD_GROUP/Makefile"
+BUILD_DEFINE="-DBREMSSTRAHLUNG -DPHOTONS"
+BUILD_KIND=normal
+[ "$IC" = altbuild ] && BUILD_KIND=altbuild
+
+# Fingerprint the complete effective build input: source bytes and metadata,
+# dimension, exact preprocessor configuration, compiler and numerical precision,
+# tool versions, architecture, and build parallelism. The source copy is used
+# so the altbuild Makefile edit is part of its key.
+build_fingerprint() {
+  python3 - "$1" "$BUILD_GROUP" "$BUILD_KIND" "$BUILD_DEFINE" "$BUILD_COMPILER" "$BUILD_PRECISION" "$SAB_MAKE_JOBS" <<'PYFINGERPRINT'
+import hashlib
+import os
+import stat
+import subprocess
+import sys
+
+root, group, kind, define, compiler, precision, make_jobs = sys.argv[1:]
+h = hashlib.sha256()
+
+def add_field(name, value):
+    data = os.fsencode(value)
+    h.update(os.fsencode(name) + b"\0" + str(len(data)).encode("ascii") + b"\0" + data)
+
+add_field("cache-schema", "epoch-build-v1")
+for name, value in (("group", group), ("kind", kind), ("define", define),
+                    ("compiler", compiler), ("precision", precision),
+                    ("make-jobs", make_jobs), ("architecture", os.uname().machine)):
+    add_field(name, value)
+for name, command in (("compiler-version", [compiler, "--version"]),
+                     ("mpi-compiler-version", ["mpif90", "--version"]),
+                     ("make-version", ["make", "--version"])):
+    proc = subprocess.run(command, check=True, stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT)
+    add_field(name, os.fsdecode(proc.stdout))
+
+root = os.path.realpath(root)
+def add_tree(directory, relative="."):
+    with os.scandir(directory) as entries:
+        ordered = sorted(entries, key=lambda entry: os.fsencode(entry.name))
+    for entry in ordered:
+        rel = entry.name if relative == "." else os.path.join(relative, entry.name)
+        st = entry.stat(follow_symlinks=False)
+        add_field("path", rel)
+        add_field("mode", format(stat.S_IMODE(st.st_mode), "04o"))
+        if stat.S_ISLNK(st.st_mode):
+            add_field("kind", "symlink")
+            add_field("target", os.readlink(entry.path))
+        elif stat.S_ISDIR(st.st_mode):
+            add_field("kind", "directory")
+            add_tree(entry.path, rel)
+        elif stat.S_ISREG(st.st_mode):
+            add_field("kind", "file")
+            h.update(str(st.st_size).encode("ascii") + b"\0")
+            with open(entry.path, "rb") as stream:
+                while block := stream.read(1024 * 1024):
+                    h.update(block)
+        else:
+            raise SystemExit(f"run.sh: unsupported source entry for build cache: {rel}")
+add_tree(root)
+print(h.hexdigest())
+PYFINGERPRINT
+}
+
+SOURCE_TREE="$WORK/src"
+BUILD_FINGERPRINT="$(build_fingerprint "$SOURCE_TREE")"
+CACHE_ROOT="$(dirname "$OUT_DIR")/.epoch-build-cache"
+CACHE_DIR="$CACHE_ROOT/$BUILD_GROUP/$BUILD_KIND/$BUILD_FINGERPRINT"
+CACHE_BINARY="$CACHE_DIR/$BUILD_GROUP"
+CACHE_DIGEST_FILE="$CACHE_DIR/binary.sha256"
+CACHE_READY="$CACHE_DIR/ready.sha256"
+CACHE_HIT=0
+BUILD_SECONDS=0
+if [ -x "$CACHE_BINARY" ] && [ -f "$CACHE_DIGEST_FILE" ] && [ -f "$CACHE_READY" ]; then
+  READY_FINGERPRINT="$(cat "$CACHE_READY" 2>/dev/null || true)"
+  EXPECTED_BINARY_DIGEST="$(cat "$CACHE_DIGEST_FILE" 2>/dev/null || true)"
+  ACTUAL_BINARY_DIGEST="$(sha256sum "$CACHE_BINARY" 2>/dev/null | cut -d' ' -f1 || true)"
+  if [ "$READY_FINGERPRINT" = "$BUILD_FINGERPRINT" ] \
+     && [ -n "$EXPECTED_BINARY_DIGEST" ] \
+     && [ "$EXPECTED_BINARY_DIGEST" = "$ACTUAL_BINARY_DIGEST" ]; then
+    CACHE_HIT=1
+  fi
+fi
+if [ "$CACHE_HIT" -eq 1 ]; then
+  if mkdir -p "$(dirname "$WORK/src/$BUILD_BINARY")" \
+     && cp "$CACHE_BINARY" "$WORK/src/$BUILD_BINARY"; then
+    echo "SAB_BUILD_CACHE=hit group=$BUILD_GROUP kind=$BUILD_KIND fingerprint=$BUILD_FINGERPRINT"
+    BUILD_SECONDS=0
+  else
+    echo "run.sh: cached executable could not be copied; rebuilding group $BUILD_GROUP" >&2
+    CACHE_HIT=0
+  fi
+fi
+if [ "$CACHE_HIT" -eq 0 ]; then
+  echo "SAB_BUILD_CACHE=miss group=$BUILD_GROUP kind=$BUILD_KIND fingerprint=$BUILD_FINGERPRINT"
+  BUILD_START=$(python3 -c 'import time; print(time.monotonic())')
+  if [ -n "$BUILD_DEFINE" ]; then
+    make -C "$WORK/src/$BUILD_GROUP" COMPILER="$BUILD_COMPILER" DEFINE="$BUILD_DEFINE" -j"$SAB_MAKE_JOBS" > "$WORK/make.log" 2>&1
+  else
+    make -C "$WORK/src/$BUILD_GROUP" COMPILER="$BUILD_COMPILER" -j"$SAB_MAKE_JOBS" > "$WORK/make.log" 2>&1
+  fi
+  BUILD_SECONDS=$(python3 - "$BUILD_START" <<'PYELAPSED'
+import sys
+import time
+elapsed = time.monotonic() - float(sys.argv[1])
+print(f"{elapsed:.3f}")
+PYELAPSED
+  )
+  [ -x "$WORK/src/$BUILD_BINARY" ] || { echo "run.sh: build left no $BUILD_BINARY" >&2; exit 1; }
+  # Publish only after a complete executable and digest are present. A stale or
+  # interrupted entry therefore remains a miss and falls back to a cold build.
+  if mkdir -p "$CACHE_DIR" \
+     && printf '%s\n' building > "$CACHE_READY" \
+     && cp "$WORK/src/$BUILD_BINARY" "$CACHE_BINARY" \
+     && sha256sum "$CACHE_BINARY" | cut -d' ' -f1 > "$CACHE_DIGEST_FILE" \
+     && printf '%s\n' "$BUILD_FINGERPRINT" > "$CACHE_READY"; then
+    echo "SAB_BUILD_CACHE=published group=$BUILD_GROUP kind=$BUILD_KIND fingerprint=$BUILD_FINGERPRINT"
+  else
+    echo "run.sh: warning: could not publish build cache; using local executable" >&2
+  fi
+fi
+echo "SAB_BUILD_SECONDS=$BUILD_SECONDS"   # nonzero on a compile; exactly zero only on a verified cache hit
+
 
 # The deck of this initial condition, with the runtime knobs written into the
 # lines they own (each is tagged with its knob name in the deck).
