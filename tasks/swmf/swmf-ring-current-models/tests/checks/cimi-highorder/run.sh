@@ -369,13 +369,16 @@ grab CIMI.log 'IM/plots/CIMI_n*.log'
 python3 - "$OUT_DIR/run-manifest.json" "$IC" "$OUT_DIR" <<'PY'
 import hashlib, json, pathlib, sys, time
 out, ic, root = pathlib.Path(sys.argv[1]), sys.argv[2], pathlib.Path(sys.argv[3])
-expected = ["CimiFlux_h.fls", "CimiFlux_o.fls", "CimiFlux_e.fls", "CIMI.log"]
+scored = ["CimiFlux_h.fls", "CimiFlux_o.fls", "CimiFlux_e.fls"]
+diagnostics = ["CIMI.log"]
+expected = scored + diagnostics
 files = {}
 for name in expected:
     p = root / name; st = p.stat()
     files[name] = {"bytes": st.st_size, "mtime_ns": st.st_mtime_ns,
                    "sha256": hashlib.sha256(p.read_bytes()).hexdigest()}
-json.dump({"schema": "cimi-highorder-run-manifest-v1", "initial_condition": ic,
-           "created_ns": time.time_ns(), "expected_files": expected, "files": files},
+json.dump({"schema": "cimi-highorder-run-manifest-v2", "initial_condition": ic,
+           "created_ns": time.time_ns(), "scored_files": scored,
+           "diagnostic_files": diagnostics, "expected_files": expected, "files": files},
           out.open("w", encoding="utf-8"), indent=2, sort_keys=True)
 PY
