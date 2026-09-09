@@ -79,3 +79,62 @@ no source, tolerance, or rubric edit is made here.
 Accordingly, `FULL_SCIENCE_PASS` is preserved as the official science result,
 while CI/review readiness is **HOLD — STALE_INPUT_MISMATCH**. No fresh CI pass,
 merge, or human review decision is claimed, and no rerun was authorized.
+
+
+## Follow-up generated-evidence reconciliation (2026-09-09)
+
+A read-only audit corrected the earlier conservative freshness HOLD. The original
+comparison's 16 observations were: one false Dockerfile mismatch caused by mapping
+collection `task-tests/Dockerfile` to public `tests/Dockerfile`, one staging alias
+(`tests-Dockerfile`) not mapped by that comparison, and 14 rubric-file deltas.
+The role-correct mapping is byte-identical: collection `Dockerfile` and
+`environment-Dockerfile` -> public `environment/Dockerfile` (SHA-256
+`4e57f0fb692cc5a16579d2239d112f357240f79276570d78882802a91cde7e5a`), and
+collection `tests-Dockerfile` -> public `tests/Dockerfile` (SHA-256
+`1897b9ede9be85e67e601b2d3c9bcfd6949264d64b9b6d7523e7bc0a2593744b`). All 84
+other copied non-rubric task-input files and `task.toml` are also byte-identical.
+
+The exact 14 rubric files (42 scalar leaves total) differ only at these JSON
+paths, with no change to any value outside them:
+
+- `evidence.altbuild.at`: generated `now()` timestamp (official 2026-09-09 time
+  versus historical 2026-09-05 time).
+- `evidence.altbuild.graded_identical`: generated boolean from the official
+  altbuild graded-output comparison (`false` in all 14 official rows; absent in
+  the historical records).
+- `evidence.floor_how`: generated measurement/provenance sentence, whose date
+  and bit-identical wording reflect the official run.
+
+Thus `comparison.atol`, `comparison.rtol`, `comparison.files[*]` (paths and
+formats), all rubric policy/observable/activation fields, all acceptance bounds,
+all runtime knobs, and the numeric evidence fields (`floor`,
+`floor_bound_fraction`, `self_validation_spread`, and
+`self_validation_bound_fraction`) are unchanged. The 14 historical rubric files
+are preserved under `pipeline/history/pre-2026-09-09/rubrics/`; canonical files
+now contain the exact official emitted bytes only.
+
+Pinned writer proof: `skills/package-sciaccel-task/scripts/_vendor/sciaccel_pipeline/taskcmds.py`
+SHA-256 `8061a66664382215ad42069487284cc49082a3c81d708a3944b15fbdd699a4b2`. It
+records the initial fingerprint at line 235; writes
+`self_validation_spread`/`self_validation_bound_fraction` at lines 295-307;
+grades altbuild through the check's validator and writes `floor`, `floor_how`,
+`altbuild` (including `graded_identical`) and `floor_bound_fraction` at lines
+339-364; then recomputes the final fingerprint at lines 377-381 and writes the
+canonical self-validation at lines 382-384. Runtime metadata follows at lines
+396-405.
+
+Pinned reader proof: all 14 `tests/checks/*/validate.py` implementations have
+the same normalized reader tail SHA-256
+`6f74b07b07aee825959a9100378ec3b27ae9dd40f06039c96c54e5a921830f42`; each reads
+only `rubric["comparison"]`, `comparison["atol"]`,
+`comparison.get("rtol")`, and `comparison["files"]` (lines 112-116), then
+computes `bound = atol + rtol * abs(reference)` (line 140). No validator reads
+`evidence.*`. The pinned pipeline grader invokes that validator with
+`--rubric rubric.json` (writer lines 190-210) and consumes only its generated
+result fields; `evidence.floor` and the other evidence fields are written after
+grading and are not grading criteria.
+
+After copying only these exact emitted generated-evidence bytes, the non-scientific
+status gate returned exit `0`, `fresh=true`, `checks=14`, `lint_errors=0`, and
+`generated_files=[]`; this is an input-freshness result, not a CI pass, scientific
+rerun, or human review decision.

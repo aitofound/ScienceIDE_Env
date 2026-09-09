@@ -400,3 +400,26 @@ no rerun was authorized. Therefore the truthful readiness state is
 FULL_SCIENCE_PASS result above. Telegram: N/A | Nickname: N/A
 
 Powered by LingTai AI: https://github.com/Lingtai-AI/lingtai
+
+
+## Follow-up generated-evidence reconciliation (2026-09-09)
+
+The exact-diff audit found no acceptance-criteria change. After correcting the
+collection Dockerfile role mapping, all non-rubric inputs were byte-identical;
+all 14 rubric files differed only at `evidence.altbuild.at`,
+`evidence.altbuild.graded_identical`, and `evidence.floor_how` (42 generated
+measurement/provenance leaves total). `comparison.atol`, `comparison.rtol`,
+`comparison.files[*]`, policy, observable/activation fields, bounds, numeric
+evidence, and runtime knobs were unchanged. The old 14 rubric files are preserved
+under `comment/pipeline/history/pre-2026-09-09/rubrics/`; canonical rubrics now
+carry exact official emitted bytes.
+
+The pinned writer computes its initial fingerprint before solves, writes measured
+spread and altbuild evidence, then recomputes the final fingerprint after those
+writes (`taskcmds.py` lines 235, 295-307, 339-364, 377-384). All 14 pinned
+validators read only `comparison.atol`, `comparison.rtol`, and
+`comparison.files[*]`; none reads `evidence.*`. The freshness gate now reports
+`fresh=true` and exit `0`. This is separate from science acceptance and does not
+claim a GitHub CI pass or human review decision. Telegram: N/A | Nickname: N/A
+
+Powered by LingTai AI: https://github.com/Lingtai-AI/lingtai

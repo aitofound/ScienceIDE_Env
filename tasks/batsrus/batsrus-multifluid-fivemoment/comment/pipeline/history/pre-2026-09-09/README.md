@@ -6,3 +6,11 @@ These files are the canonical pipeline records present at PR450 head
 contract fingerprint is `7b63fef388f12edd00819d53acbc2d992081c3a932799d6359df482a10b1914a`
 and their run was recorded on 2026-09-05. The current canonical files are
 replaced only after these exact bytes were preserved.
+
+
+## Preserved pre-2026-09-09 rubric records
+
+The 14 pre-publication rubric JSON files are preserved byte-for-byte under
+`rubrics/`. The current canonical rubrics may carry only the exact generated
+selfcheck measurement/provenance fields documented by the follow-up audit; no
+comparison, tolerance, observable, activation, or runtime knob field changed.
