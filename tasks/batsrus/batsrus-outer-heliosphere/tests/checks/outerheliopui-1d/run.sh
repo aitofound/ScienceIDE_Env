@@ -35,6 +35,8 @@ exec < /dev/null
 export LC_ALL=C
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 cp -R "$SOURCE_DIR/." "$WORK/src"
+SRC="$WORK/src"
+cd "$SRC"
 MPIRUN="mpiexec --oversubscribe -n $SAB_MPI_RANKS"
 
 # Copy one deck out of ic/ into the run directory, multiplying every #STOP
