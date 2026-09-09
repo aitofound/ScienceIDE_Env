@@ -50,9 +50,22 @@ cp "$CHECK_DIR/ic/$INPUTS"/* "$WORK/param/"
 awk -v s="$SAB_TMAX_SCALE" '{ if ($2 == "tSimulationMax" && $1 + 0 > 0) sub(/^[^ \t]+/, sprintf("%.12g", $1 * s)); print }' \
   "$WORK/param/PARAM.in" > "$WORK/param/PARAM.tmp" && mv "$WORK/param/PARAM.tmp" "$WORK/param/PARAM.in"
 
-# ---- build (the upstream example Param/ANISOPRESSURE/PARAM.in.fastwave (no Makefile.test target)); the seconds are reported and excluded from the graded run time
-BUILD_START=$(date +%s)
+# ---- build (run-scoped verified binary reuse; the seconds exclude scientific run time)
 cd "$WORK/src"
+MPI_INC="$(mpif90 -showme:compile 2>/dev/null || true)"
+BUILD_GROUP="mdanisope-ng2-g100x2x2"
+BUILD_SPEC="Config.pl -default -noopenmp -noacc -u=Default -e=MhdAnisoP -f -ng=2 -g=100,2,2"
+BUILD_TASK="batsrus-nonideal-closures"
+BUILD_TARGET="a100-sxm4-80gb"
+BUILD_TARGET_SHA256="fec36b64e17d0893720e55b74a78c61d4e0f5cfc796322ff92f1a3b04a53c132"
+BUILD_MODE=normal
+if [ "$IC" = altbuild ]; then BUILD_MODE=altbuild; fi
+CACHE_ENABLED=0
+if [ -n "${SAB_BUILD_CACHE_ROOT:-}" ] && [ -n "${SAB_SOURCE_FINGERPRINT:-}" ]; then
+  CACHE_ENABLED=1
+fi
+
+configure_source() {
 ./Config.pl -install -compiler=gfortran > "$WORK/install.log" 2>&1 \
   || { tail -40 "$WORK/install.log" >&2; echo "run.sh: Config.pl -install failed" >&2; exit 3; }
 # The gfortran build template compiles with plain gfortran and only links with
@@ -69,11 +82,101 @@ if [ "$IC" = altbuild ]; then
   grep -q '^OPT3 = -O0' Makefile.conf \
     || { echo "run.sh: Config.pl -O0 did not set OPT3 in Makefile.conf" >&2; exit 3; }
 fi
+}
+
+build_source() {
 make -j"$SAB_BUILD_JOBS" BATSRUS > "$WORK/build.log" 2>&1 \
   || { tail -60 "$WORK/build.log" >&2; echo "run.sh: BATSRUS build failed" >&2; exit 3; }
 make PIDL >> "$WORK/build.log" 2>&1 \
   || { tail -40 "$WORK/build.log" >&2; echo "run.sh: PostIDL build failed" >&2; exit 3; }
-echo "SAB_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))"   # the driver records it; the budget counts run time only
+}
+
+if [ "$CACHE_ENABLED" -eq 1 ]; then
+  COMPILER_VERSION="$(gfortran --version 2>&1 || true)"
+  MAKE_VERSION="$(make --version 2>&1 || true)"
+  MPI_VERSION="$(mpif90 --version 2>&1 || true)"
+  BUILD_FINGERPRINT="$(printf '%s\0' \
+      "cache-schema=batsrus-build-v2" \
+      "task=$BUILD_TASK" \
+      "source-fingerprint=$SAB_SOURCE_FINGERPRINT" \
+      "source-root=$SOURCE_DIR" \
+      "build-group=$BUILD_GROUP" \
+      "build-spec=$BUILD_SPEC" \
+      "build-mode=$BUILD_MODE" \
+      "initial-condition=$IC" \
+      "input-kind=$INPUTS" \
+      "target=$BUILD_TARGET" \
+      "target-descriptor-sha256=$BUILD_TARGET_SHA256" \
+      "runner=linux-docker" \
+      "make-targets=BATSRUS,PIDL" \
+      "make-jobs=$SAB_BUILD_JOBS" \
+      "mpi-ranks=$SAB_MPI_RANKS" \
+      "mpi-include=$MPI_INC" \
+      "compiler=gfortran" \
+      "compiler-version=$COMPILER_VERSION" \
+      "make-version=$MAKE_VERSION" \
+      "mpi-version=$MPI_VERSION" \
+      "machine=$(uname -m)" | sha256sum | cut -d' ' -f1)"
+  CACHE_DIR="$SAB_BUILD_CACHE_ROOT/$BUILD_TASK/$IC/$BUILD_GROUP/$BUILD_FINGERPRINT"
+  CACHE_BINARY="$CACHE_DIR/BATSRUS.exe"
+  CACHE_POSTIDL="$CACHE_DIR/PostIDL.exe"
+  CACHE_DIGEST_FILE="$CACHE_DIR/binaries.sha256"
+  CACHE_READY="$CACHE_DIR/ready.sha256"
+  CACHE_HIT=0
+  if [ -x "$CACHE_BINARY" ] && [ -x "$CACHE_POSTIDL" ] \
+      && [ -f "$CACHE_DIGEST_FILE" ] && [ -f "$CACHE_READY" ]; then
+    READY_FINGERPRINT="$(cat "$CACHE_READY" 2>/dev/null || true)"
+    EXPECTED_BINARY_DIGEST="$(cat "$CACHE_DIGEST_FILE" 2>/dev/null || true)"
+    ACTUAL_BINARY_DIGEST="$(sha256sum "$CACHE_BINARY" "$CACHE_POSTIDL" 2>/dev/null | awk '{printf "%s%s", sep, $1; sep=" ";} END {print ""}' || true)"
+    if [ "$READY_FINGERPRINT" = "$BUILD_FINGERPRINT" ] \
+        && [ -n "$EXPECTED_BINARY_DIGEST" ] \
+        && [ "$EXPECTED_BINARY_DIGEST" = "$ACTUAL_BINARY_DIGEST" ]; then
+      CACHE_HIT=1
+    fi
+  fi
+  if [ "$CACHE_HIT" -eq 1 ]; then
+    configure_source
+    if mkdir -p "$WORK/src/bin" \
+        && cp "$CACHE_BINARY" "$WORK/src/bin/BATSRUS.exe" \
+        && cp "$CACHE_POSTIDL" "$WORK/src/bin/PostIDL.exe" \
+        && [ -x "$WORK/src/bin/BATSRUS.exe" ] \
+        && [ -x "$WORK/src/bin/PostIDL.exe" ]; then
+      echo "SAB_BUILD_CACHE=hit group=$BUILD_GROUP fingerprint=$BUILD_FINGERPRINT variant=$IC altbuild=$BUILD_MODE"
+      BUILD_SECONDS=0
+    else
+      echo "run.sh: cached BATSRUS/PostIDL binaries could not be copied; rebuilding group $BUILD_GROUP" >&2
+      CACHE_HIT=0
+    fi
+  fi
+  if [ "$CACHE_HIT" -eq 0 ]; then
+    echo "SAB_BUILD_CACHE=miss group=$BUILD_GROUP fingerprint=$BUILD_FINGERPRINT variant=$IC altbuild=$BUILD_MODE"
+    BUILD_START=$(date +%s)
+    configure_source
+    build_source
+    BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))
+    [ -x "$WORK/src/bin/BATSRUS.exe" ] || { echo "run.sh: build did not produce bin/BATSRUS.exe" >&2; exit 3; }
+    [ -x "$WORK/src/bin/PostIDL.exe" ] || { echo "run.sh: build did not produce bin/PostIDL.exe" >&2; exit 3; }
+    # Write binaries first and publish the matching digest/ready marker last;
+    # incomplete cache entries therefore cannot be accepted as hits.
+    if mkdir -p "$CACHE_DIR" \
+        && printf '%s\n' building > "$CACHE_READY" \
+        && cp "$WORK/src/bin/BATSRUS.exe" "$CACHE_BINARY" \
+        && cp "$WORK/src/bin/PostIDL.exe" "$CACHE_POSTIDL" \
+        && sha256sum "$CACHE_BINARY" "$CACHE_POSTIDL" | awk '{printf "%s%s", sep, $1; sep=" ";} END {print ""}' > "$CACHE_DIGEST_FILE" \
+        && printf '%s\n' "$BUILD_FINGERPRINT" > "$CACHE_READY"; then
+      echo "SAB_BUILD_CACHE=published group=$BUILD_GROUP fingerprint=$BUILD_FINGERPRINT variant=$IC altbuild=$BUILD_MODE"
+    else
+      echo "run.sh: warning: could not publish BATSRUS build cache for group $BUILD_GROUP; using local build" >&2
+    fi
+  fi
+else
+  echo "SAB_BUILD_CACHE=disabled reason=missing solve-scoped source fingerprint or cache root"
+  BUILD_START=$(date +%s)
+  configure_source
+  build_source
+  BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))
+fi
+echo "SAB_BUILD_SECONDS=$BUILD_SECONDS"   # zero means no compile on a verified cache hit
 
 # ---- run directory and run
 make rundir RUNDIR="$WORK/run" STANDALONE=YES GMDIR="$WORK/src" > "$WORK/rundir.log" 2>&1 \
