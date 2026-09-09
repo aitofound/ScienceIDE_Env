@@ -1,0 +1,21 @@
+save_depth_id.f90:                       table_global,n_table_global,max_ntable_global,NPROC,myrank)
+save_depth_id.f90:integer,intent(out) ::n_table_global
+save_depth_id.f90:integer,dimension(1) ::ntable_buffer,n_table_global_buffer
+save_depth_id.f90:n_table_global=0
+save_depth_id.f90:      do while(itable_test.le.n_table_global.and.&
+save_depth_id.f90:         do itable_temp=n_table_global,itable_test,-1
+save_depth_id.f90:         n_table_global=n_table_global+1
+save_depth_id.f90:         if(n_table_global.gt.max_ntable_global) &
+save_depth_id.f90:             call exit_MPI(myrank,'Error,n_table_global>max_ntable_global')
+save_depth_id.f90:             itable_test,n_table_global
+save_depth_id.f90:        else if(itable_test.gt.1.and.itable_test.le.n_table_global+1.and. &
+save_depth_id.f90:         do itable_temp=n_table_global,itable_test,-1
+save_depth_id.f90:         n_table_global=n_table_global+1
+save_depth_id.f90:         if(n_table_global.gt.max_ntable_global) &
+save_depth_id.f90:             call exit_MPI(myrank,'Error,n_table_global>max_ntable_global')
+save_depth_id.f90:             itable_test,n_table_global
+save_depth_id.f90:!call bcast_all_i((/n_table_global/),1)
+save_depth_id.f90:!call bcast_all_i(n_table_global,1)
+save_depth_id.f90:n_table_global_buffer(1)=n_table_global
+save_depth_id.f90:call bcast_all_i(n_table_global_buffer,1)
+save_depth_id.f90:n_table_global=n_table_global_buffer(1)

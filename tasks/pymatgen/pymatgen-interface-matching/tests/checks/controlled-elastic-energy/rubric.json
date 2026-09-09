@@ -1,0 +1,30 @@
+{
+  "check": "controlled-elastic-energy",
+  "policy": "pointwise",
+  "chaotic": false,
+  "upstream_test": "custom: User approved decoupling crystal matching and elastic energy tests. A fixed-frame isotropic elastic example isolates energy from enumeration-dependent orientations.",
+  "configuration": "Single fixed (001) cubic Si geometry, two sites, lattice 5.431 angstrom; isotropic Lamé constants lambda=100 GPa and mu=80 GPa; in-plane x stretch 1.02. Calls SubstrateMatch.from_zsl with explicit vectors, without lattice enumeration.",
+  "observable": "Elastic energy in eV/atom and dimensionless von Mises strain, in that fixed order",
+  "expected_runtime_s": 3.0,
+  "default_vs_upstream": "custom: user-approved isolated energy test; no upstream default is claimed",
+  "variant": "stretch_x is replaced by its second binary64 successor: 1.02 to 1.0200000000000005; the geometry frame and isotropic stiffness remain fixed.",
+  "altbuild": "none: the owned SubstrateMatch Python is interpreted; external compiled support remains pinned. Cross-platform evidence is not yet measured.",
+  "comparison": {
+    "atol": 1e-10,
+    "rtol": 1e-07,
+    "files": [
+      {
+        "path": "energy-strain.npy",
+        "format": "npy"
+      }
+    ]
+  },
+  "evidence": {
+    "floor": null,
+    "floor_how": "No alternative build measured. Preliminary native two-ULP sensitivity is recorded in comment/native-investigation.json; it is not a platform floor.",
+    "self_validation_spread": 1.1657341758564144e-15,
+    "self_validation_bound_fraction": 4.236219709680731e-07
+  },
+  "warrant": "SubstrateMatch.from_zsl forms a Green-Lagrange strain, converts its frame and multiplies elastic energy density by film volume per atom (analysis/interfaces/substrate_analyzer.py, lines 51-60). Isotropic stiffness makes the energy independent of rigid frame rotations, while explicit lattice vectors remove enumeration choices. Dropping the quadratic strain term, stiffness contraction, unit conversion or per-atom normalization changes the energy beyond the approved 1e-10 absolute plus 1e-7 relative bound. A two-ULP stretch perturbation in the native prototype changed energy by about 1.17e-15 eV/atom. This is local sensitivity evidence, not a cross-platform floor, and the user approved this bound after container calibration.",
+  "knobs": "none: one fixed deformation; shortening removes the only scientific operation."
+}
