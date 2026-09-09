@@ -1,0 +1,49 @@
+{
+  "module": {
+    "slug": "epoch-maxwell-solvers-stencils",
+    "title": "Maxwell field solvers and finite-difference stencils (Yee, Lehe, Pukhov, Cowan, custom)",
+    "paths": [
+      "epoch1d/src/fields.f90",
+      "epoch2d/src/fields.f90",
+      "epoch3d/src/fields.f90",
+      "epoch1d/src/deck/deck_stencil_block.f90",
+      "epoch2d/src/deck/deck_stencil_block.f90",
+      "epoch3d/src/deck/deck_stencil_block.f90"
+    ],
+    "entrypoints": [
+      "epoch{1,2,3}d/tests/maxwell_solvers/{yee,lehe_x,pukhov,cowan}/input.deck (test_maxwell_solvers.py)",
+      "epoch{1,2,3}d/tests/custom_stencils/{optimized,optimized_symm,optimized_xaxis,optimized_xaxis_soft,lehe_x,lehe_custom}/input.deck (test_custom_stencils.py)"
+    ],
+    "expensive_path": "update_e_field and update_b_field in fields.f90: the half-step leapfrog sweeps over every cell of E and B with the stencil coefficients set by set_field_order and set_maxwell_solver (second, fourth and sixth order; Yee, Lehe, Pukhov, Cowan and user-supplied custom coefficients read from the stencil block). In a vacuum laser-propagation deck this is the whole run.",
+    "rationale": "The interior field advance is a closed numerical scheme: given E, B and J it advances the fields with no dependence on particles or physics packages, and its numerical dispersion (group velocity of a laser pulse) is exactly what the official maxwell_solvers and custom_stencils tests measure in every dimension.",
+    "excluded": [
+      "field boundary conditions (boundary.F90: efield_bcs, bfield_bcs, CPML) -> epoch-laser-boundaries-injectors-window",
+      "current deposition and current smoothing (particles.F90, current_smooth.F90) -> epoch-particle-kinetic-core",
+      "halo exchange of the field arrays (mpi_subtype_control.f90, boundary.F90 field_mpi) -> epoch-multidimensional-parallel-core"
+    ],
+    "hazards": [
+      "Runs are fully deterministic (no particles); the floor is rounding only, so a 1e-15 relative perturbation of one deck value is the variant.",
+      "SDF dumps are binary64; the first block of every file carries a run date and the machine name, which the graded comparison must skip."
+    ]
+  },
+  "approval": {
+    "modules": [
+      "epoch-maxwell-solvers-stencils",
+      "epoch-particle-kinetic-core",
+      "epoch-laser-boundaries-injectors-window",
+      "epoch-physics-packages",
+      "epoch-multidimensional-parallel-core"
+    ],
+    "human_ref": "load the latest skill and process all epoch pr (2026-09-02); the five modules are the five-leaf EPOCH cut the human approved on 2026-08-31 15:41 PDT (PR #354 manifests; task PRs #337-#341), unchanged",
+    "at": "2026-09-02T09:30:50Z"
+  },
+  "shared_infrastructure": [
+    "SDF/ (the Self-Describing Format I/O library, C and Fortran; every dump the checks grade is an SDF file)",
+    "epoch{1,2,3}d/Makefile, src/epoch{1,2,3}d.F90 (main loop), src/shared_data.F90, src/constants.F90",
+    "epoch{1,2,3}d/src/deck/ (input-deck blocks), src/parser/ (expression evaluator), src/housekeeping/setup.F90, utilities.f90, timer.f90, version_data.F90, welcome.F90, finish.f90",
+    "epoch{1,2,3}d/src/housekeeping/partlist.F90, particle_pointer_advance.f90, secondary_list.F90, redblack_module.f90, random_generator.f90 (fixed seed 7842432 + rank unless use_random_seed = T)",
+    "epoch{1,2,3}d/src/io/ (diagnostics.F90, calc_df.F90, dist_fn.F90, iterators.F90, probes.F90, simple_io.F90)",
+    "epoch{1,2,3}d/src/user_interaction/ (custom deck, laser, parser hooks, deltaf_loader.F90, particle_temperature.F90)",
+    "epoch{1,2,3}d/tests/ (official pytest suite: makefile.inc, per-test decks, test_*.py), epoch{1,2,3}d/example_decks/ (official standard decks)"
+  ]
+}
