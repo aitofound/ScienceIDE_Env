@@ -1,8 +1,8 @@
-# Check swpc-pe-restart
+# Check swpc-pe-restart — full-window migration (numeric acceptance HOLD)
 
 ## What this check runs
 
-This check is make test_swpc_pe (Makefile.test target test_swpc_pe, restart stage): the SWPC Geospace configuration with a separate electron pressure (MhdPe), restarted from the 18 s state and advanced a further 18 s time-accurately.
+This check is make test_swpc_pe (Makefile.test target test_swpc_pe, restart stage): the SWPC Geospace configuration with a separate electron pressure (MhdPe), advanced through the approved full window to t=120 s and restarted to the absolute t=180 s endpoint.
 
 `run.sh nominal` copies the pinned SWMF source into a scratch tree, configures
 it with
@@ -14,7 +14,11 @@ it with
 
 builds `SWMF.exe` (and `PIDL INTERPOLATE`), makes a run directory with `make rundir`,
 copies this check's `ic/nominal/` into it, applies the upstream recipe's own
-edits of the deck, and runs it with `mpiexec -n 8`. The deck runs two steady-state sessions stopping at iteration 7 and iteration 20 (MaxIter is cumulative) and then an 18 s time-accurate window, then a restart run of a further 18 s which is the graded one.
+edits of the deck, and runs it with `mpiexec -n 8`. The deck runs two steady-state sessions stopping at iteration 7 and iteration 20 (MaxIter is cumulative) and then the full 120 s time-accurate window, then a restart continuation of 60 s to absolute t=180 s, which is the graded endpoint.
+
+## Approved migration and acceptance status
+
+The approved runtime contract is initial physical `t=120 s`, followed by restart continuation to absolute `t=180 s` (60 s additional). The full source cadence and outputs are retained. Existing t=18 numeric thresholds, the rCurrents one-ULP variant, and invariant measurements below are historical audit material only and are **not** active acceptance for this migration. No new numerical bounds, extra calculation, or variant was approved; validation is fail-closed with `status=hold` pending reviewed t=120/t=180 observables and bounds. The full check row remains in the denominator.
 
 The first run is an ungraded prerequisite: it produces the restart tree. `run.sh` then
 reruns `SWMF.exe` from that tree with `PARAM.in_pe_restart`, and the graded files are the
@@ -30,7 +34,7 @@ GM-IM, IE-IM and, where enabled, GM-RB/RB. The explicit `SAB_COUPLE_MAX`
 runtime knob defaults to `5.0`; `run.sh` caps every positive `DtCouple` in the
 **scratch copy** of the deck at that value. This coordinated upstream-deck
 clock setting preserves the existing 5 s GM-IE period while giving every active
-10 s path at least three coupling events in the standard 18 s window, without
+10 s path at least three coupling events in the full initial 120 s window, without
 increasing the task's 1000 s suite budget or changing the component topology,
 physics switches, steady-state counts, or graded output cadence edits. Restart
 checks apply the cap to both the pre-restart and post-restart decks. The
@@ -38,7 +42,7 @@ checks apply the cap to both the pre-restart and post-restart decks. The
 at 5 s). The script prints the before/after active `DtCouple` values so a
 final selfcheck can verify the effective clocks.
 
-## What is graded
+## Structural output contract (numeric HOLD)
 
 - `log.log` - the GM log file: one row per output step with the volume averages of every state variable, the pressure extrema and the Dst estimates.
 - `magnetometers.mag` - the magnetometer station file: one row per station and output step with the north, east and down perturbation and its magnetospheric, field-aligned-current, Hall and Pedersen contributions.
@@ -54,7 +58,7 @@ The reference these files are compared against is produced at grading time by
 running this same script against the untouched source, so nothing in this
 directory depends on a stored upstream output.
 
-## The pass policy (corrected ruling, branch B)
+## Historical pass policy (HOLD; corrected ruling, branch B)
 
 `validate.py` keeps the upstream pointwise rule
 
@@ -73,8 +77,8 @@ for **all eight non-ionosphere streams**, with their unchanged per-file bounds:
 - `mag_grid_us.out`: rtol 0.0002, atol 0.0002
 - `station_abk.txt`: rtol 0.0002, atol 1e-05
 
-The direct ruling selects branch B for `ionosphere.idl`, and only for that
-stream. At exact physical `t=18`, the validator requires the exact rich
+The historical direct ruling selected branch B for `ionosphere.idl`, and only for that
+stream. At historical physical `t=18`, the validator requires the exact rich
 `2x181x361x15` schema, units, hemisphere identities, finite coverage, and
 exact `Theta`/`Psi` coordinates. `RT 1/B`, `RT Rho`, and `RT P` remain
 pointwise under the existing ionosphere `atol=7e-05`, `rtol=0.001` bound.
@@ -106,7 +110,7 @@ physical invariant inputs remain hard gates.
 
 ### Active rCurrents proof and unchanged streams
 
-The accepted active calibration is `rCurrents=3.000000238418579`, exactly
+The prior historical calibration used `rCurrents=3.000000238418579`, exactly
 one binary32 ULP above 3.0. It changes graded output at round-off scale: in the
 preserved rung-1 comparison, `magnetometers.mag` changed 7 graded values,
 `ionosphere.idl` changed 132, `mag_grid_global.out` changed 23,209, and
