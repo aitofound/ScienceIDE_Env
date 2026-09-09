@@ -273,8 +273,17 @@ if not math.isclose(actual, expected, rel_tol=0.0, abs_tol=1e-9):
     raise SystemExit(f"{path}: TimeIn={actual:g}, expected restart-relative {expected:g}")
 PY
 }
-GRID_FILES=(GM/IO2/mag_grid_global_e*.out)
-[ "${#GRID_FILES[@]}" -eq 1 ] || fail_capture "expected one global endpoint grid, found ${#GRID_FILES[@]}"
+filter_endpoint_grids() {
+  local source
+  GRID_FILES=()
+  # Filter by the deck-derived absolute endpoint before enforcing uniqueness;
+  # earlier cadence frames are valid retained products, not ambiguity.
+  for source in "$@"; do
+    [[ "$(basename "$source")" == *"_e${CAP_END}.out" ]] && GRID_FILES+=("$source")
+  done
+}
+filter_endpoint_grids GM/IO2/mag_grid_global_e*.out
+[ "${#GRID_FILES[@]}" -eq 1 ] || fail_capture "expected one global endpoint grid at ${CAP_END}, found ${#GRID_FILES[@]}"
 GRIDFILE="${GRID_FILES[0]}"
 check_grid_header "$GRIDFILE"
 # INTERPOLATE.exe interpolates the magnetometer grid onto the stations of
@@ -285,16 +294,28 @@ check_grid_header "$GRIDFILE"
 
 pick_persistent() {
   local dest="$1" family="$2"; shift 2
-  local candidates=("$@")
-  [ "${#candidates[@]}" -eq 1 ] || fail_capture "expected one fresh $family file, found ${#candidates[@]}"
-  local source="${candidates[0]}"
+  local candidates=() source expected
+  case "$family" in
+    log) expected="log_e${CAP_OPEN_DATE}.log" ;;
+    magnetometers) expected="magnetometers_e${CAP_OPEN_DATE}.mag" ;;
+    geoindex) expected="geoindex_e${CAP_OPEN_DATE}.log" ;;
+    superindex) expected="superindex_e${CAP_OPEN_DATE}.log" ;;
+    ie) expected="IE_t${CAP_OPEN_SHORT}.log" ;;
+    *) fail_capture "unknown persistent family $family" ;;
+  esac
+  # Filter by the producer's opening period before enforcing uniqueness. The
+  # initial-stage files remain in this shared WORK and must not be deleted.
+  for source in "$@"; do
+    [[ "$(basename "$source")" == "$expected" ]] && candidates+=("$source")
+  done
+  [ "${#candidates[@]}" -eq 1 ] || fail_capture "expected one fresh $family file at opening period ${CAP_OPEN_DATE}, found ${#candidates[@]}"
+  source="${candidates[0]}"
   case "$family" in
     log) [[ "$(basename "$source")" =~ ^log_e[0-9]{8}-[0-9]{6}\.log$ ]] || fail_capture "wrong log producer name: $source" ;;
     magnetometers) [[ "$(basename "$source")" =~ ^magnetometers_e[0-9]{8}-[0-9]{6}\.mag$ ]] || fail_capture "wrong magnetometer producer name: $source" ;;
     geoindex) [[ "$(basename "$source")" =~ ^geoindex_e[0-9]{8}-[0-9]{6}\.log$ ]] || fail_capture "wrong geoindex producer name: $source" ;;
     superindex) [[ "$(basename "$source")" =~ ^superindex_e[0-9]{8}-[0-9]{6}\.log$ ]] || fail_capture "wrong superindex producer name: $source" ;;
     ie) [[ "$(basename "$source")" =~ ^IE_t[0-9]{6}_[0-9]{6}\.log$ ]] || fail_capture "unsupported IE producer name: $source" ;;
-    *) fail_capture "unknown persistent family $family" ;;
   esac
   case "$family" in
     log) [[ "$(basename "$source")" == "log_e${CAP_OPEN_DATE}.log" ]] || fail_capture "log open date does not match restart: $source" ;;
@@ -376,10 +397,13 @@ PY
   cp "$source" "$OUT_DIR/ionosphere.idl"
 }
 pick_merged_idl
-GRID_FILES=(GM/IO2/mag_grid_global_e*.out)
-[ "${#GRID_FILES[@]}" -eq 1 ] || fail_capture "global grid became ambiguous after PostProc"
-pick_grid_us=(GM/IO2/mag_grid_us_e*.out)
-[ "${#pick_grid_us[@]}" -eq 1 ] || fail_capture "expected one US endpoint grid, found ${#pick_grid_us[@]}"
+filter_endpoint_grids GM/IO2/mag_grid_global_e*.out
+[ "${#GRID_FILES[@]}" -eq 1 ] || fail_capture "global endpoint grid became ambiguous after PostProc"
+pick_grid_us=()
+for source in GM/IO2/mag_grid_us_e*.out; do
+  [[ "$(basename "$source")" == *"_e${CAP_END}.out" ]] && pick_grid_us+=("$source")
+done
+[ "${#pick_grid_us[@]}" -eq 1 ] || fail_capture "expected one US endpoint grid at ${CAP_END}, found ${#pick_grid_us[@]}"
 check_grid_header "${pick_grid_us[0]}"
 cp "${pick_grid_us[0]}" "$OUT_DIR/mag_grid_us.out"
 cp "$GRIDFILE" "$OUT_DIR/mag_grid_global.out"
