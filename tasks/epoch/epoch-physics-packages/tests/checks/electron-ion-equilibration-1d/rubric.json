@@ -12,7 +12,7 @@
     "units": "s",
     "time_column": 0,
     "tolerance_s": 1e-27,
-    "semantics": "nstep_snapshot=3300 physical step grid from pinned EPOCH CFL timestep; final dump is t_end",
+    "semantics": "nstep_snapshot=3300 physical step grid from pinned EPOCH CFL timestep; final dump is t_end; current values are retained as known-NO_GO placeholders until actual nominal/variant/altbuild SDF grids are calibrated",
     "files": {
       "series.txt": {
         "count": 21,
@@ -40,28 +40,36 @@
           3e-12
         ],
         "tolerance_s": 1e-27
+      }
+    },
+    "canonical_series": "series.txt",
+    "calibration_status": "known_NO_GO_placeholder_pending_actual_grid_calibration",
+    "header": [
+      "time_s",
+      "electron_energy_J",
+      "proton_energy_J",
+      "field_energy_J",
+      "total_energy_J",
+      "electron_energy_ratio",
+      "proton_energy_ratio",
+      "electron_temperature_eV",
+      "proton_temperature_eV"
+    ],
+    "windows": {
+      "series": {
+        "start_index": 0,
+        "end_index": 20,
+        "count": 21
       },
-      "mid.txt": {
-        "count": 5,
-        "values_s": [
-          1.2381365511203085e-12,
-          1.3929036200103471e-12,
-          1.5476706889003859e-12,
-          1.7024377577904244e-12,
-          1.857204826680463e-12
-        ],
-        "tolerance_s": 1e-27
+      "mid": {
+        "start_index": 8,
+        "end_index": 12,
+        "count": 5
       },
-      "tail.txt": {
-        "count": 5,
-        "values_s": [
-          2.476273102240617e-12,
-          2.6310401711306557e-12,
-          2.7858072400206942e-12,
-          2.9405743089107328e-12,
-          3e-12
-        ],
-        "tolerance_s": 1e-27
+      "tail": {
+        "start_index": 16,
+        "end_index": 20,
+        "count": 5
       }
     }
   },
@@ -77,18 +85,22 @@
         "mode": "agreement",
         "statistic": "final",
         "atol": 0.05,
-        "rtol": 0.0
+        "rtol": 0.0,
+        "canonical_series": "series.txt",
+        "window": "series"
       },
       {
         "name": "electron-energy-ratio-mid-mean",
-        "file": "mid.txt",
+        "file": "series.txt",
         "format": "text",
         "comments": "#",
         "column": 5,
         "mode": "agreement",
         "statistic": "mean",
         "atol": 0.03,
-        "rtol": 0.0
+        "rtol": 0.0,
+        "canonical_series": "series.txt",
+        "window": "mid"
       },
       {
         "name": "proton-energy-ratio-final",
@@ -99,18 +111,22 @@
         "mode": "agreement",
         "statistic": "final",
         "atol": 0.08,
-        "rtol": 0.0
+        "rtol": 0.0,
+        "canonical_series": "series.txt",
+        "window": "series"
       },
       {
         "name": "proton-energy-ratio-mid-mean",
-        "file": "mid.txt",
+        "file": "series.txt",
         "format": "text",
         "comments": "#",
         "column": 6,
         "mode": "agreement",
         "statistic": "mean",
         "atol": 0.06,
-        "rtol": 0.0
+        "rtol": 0.0,
+        "canonical_series": "series.txt",
+        "window": "mid"
       },
       {
         "name": "electron-temperature-final",
@@ -121,7 +137,9 @@
         "mode": "agreement",
         "statistic": "final",
         "atol": 0.0,
-        "rtol": 0.06
+        "rtol": 0.06,
+        "canonical_series": "series.txt",
+        "window": "series"
       },
       {
         "name": "proton-temperature-final",
@@ -132,7 +150,9 @@
         "mode": "agreement",
         "statistic": "final",
         "atol": 0.0,
-        "rtol": 0.06
+        "rtol": 0.06,
+        "canonical_series": "series.txt",
+        "window": "series"
       },
       {
         "name": "total-energy-drift",
@@ -141,7 +161,9 @@
         "comments": "#",
         "column": 4,
         "mode": "drift",
-        "max_relative_drift": 0.04
+        "max_relative_drift": 0.04,
+        "canonical_series": "series.txt",
+        "window": "series"
       }
     ]
   },

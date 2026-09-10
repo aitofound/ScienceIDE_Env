@@ -46,8 +46,53 @@ def _require(buf, offset, size, path):
         raise ValueError("%s: truncated SDF data" % path)
 
 
+def _expected_bytes(blocktype, datatype, ndims, info_length, meta, buf, path):
+    if blocktype in (3, _POINT_VARIABLE, 5) and datatype not in _DTYPE:
+        raise ValueError("%s: unsupported datatype for decoded block" % path)
+    if blocktype in (3, _POINT_VARIABLE, 5):
+        itemsize = np.dtype(_DTYPE[datatype]).itemsize
+    if blocktype == 3:
+        if ndims <= 0 or ndims > 8:
+            raise ValueError("%s: plain variable has invalid dimensions" % path)
+        _require(buf, meta + 72, 4 * ndims, path)
+        dims = struct.unpack_from("<%di" % ndims, buf, meta + 72)
+        if any(dimension <= 0 for dimension in dims):
+            raise ValueError("%s: plain variable has non-positive dimensions" % path)
+        count = 1
+        for dimension in dims:
+            count *= dimension
+        if count > (1 << 62):
+            raise ValueError("%s: plain variable dimensions are too large" % path)
+        expected_info = 72 + 4 * ndims
+        expected_data = count * itemsize
+    elif blocktype == _POINT_VARIABLE:
+        if ndims != 1:
+            raise ValueError("%s: point variable must have one dimension" % path)
+        _require(buf, meta + 72, 8, path)
+        npoints = struct.unpack_from("<q", buf, meta + 72)[0]
+        if npoints < 0 or npoints > (1 << 62):
+            raise ValueError("%s: point variable has invalid point count" % path)
+        expected_info = 80
+        expected_data = npoints * itemsize
+    elif blocktype == 5:
+        if ndims != 1:
+            raise ValueError("%s: scalar has invalid dimensions" % path)
+        expected_info = itemsize
+        expected_data = 0
+    else:
+        return None
+    if info_length != expected_info:
+        raise ValueError("%s: block metadata length is inconsistent" % path)
+    return expected_data
+
+
 def read_sdf(path):
-    """Return (time, {block name: scalar or numpy array}) for one .sdf file."""
+    """Return (time, {block name: scalar or numpy array}) for one .sdf file.
+
+    The parser accepts only the SDF block forms emitted by the EPOCH diagnostics
+    used by this check.  Header-declared metadata and data lengths are checked
+    before decoding, and malformed chain or duplicate-name records fail closed.
+    """
     with open(path, "rb") as fh:
         buf = fh.read()
     _require(buf, 0, 100, path)
@@ -64,53 +109,89 @@ def read_sdf(path):
     strlen = struct.unpack_from("<i", buf, 96)[0]
     if not np.isfinite(time):
         raise ValueError("%s: non-finite SDF time" % path)
-    if first < 0 or nblocks <= 0 or header_len <= 0 or strlen < 0:
+    if first < 100 or nblocks <= 0 or nblocks > len(buf) // 72 or header_len <= 0:
         raise ValueError("%s: invalid SDF header" % path)
+    if strlen <= 0 or header_len != 72 + strlen:
+        raise ValueError("%s: invalid SDF block header length" % path)
     blocks = {}
+    names = set()
+    ids = set()
+    chain = []
+    data_spans = []
     loc = first
+    previous = -1
     for index in range(nblocks):
-        _require(buf, loc, 68, path)
+        if loc <= previous or loc in {entry[0] for entry in chain}:
+            raise ValueError("%s: invalid SDF block chain" % path)
+        _require(buf, loc, header_len, path)
         nxt, data_loc = struct.unpack_from("<qq", buf, loc)
+        block_id = buf[loc + 16:loc + 48].split(b"\x00", 1)[0].decode("ascii", "replace").strip()
+        data_length = struct.unpack_from("<q", buf, loc + 48)[0]
         blocktype, datatype, ndims = struct.unpack_from("<iii", buf, loc + 56)
-        _require(buf, loc + 68, strlen, path)
-        name = buf[loc + 68:loc + 68 + strlen].split(b"\x00", 1)[0].decode("ascii", "replace").strip()
+        raw_name = buf[loc + 68:loc + 68 + strlen]
+        name = raw_name.split(b"\x00", 1)[0].decode("ascii", "replace").strip()
+        if not block_id or not name or block_id in ids or name in names:
+            raise ValueError("%s: duplicate or missing SDF block name" % path)
+        ids.add(block_id)
+        names.add(name)
+        _require(buf, loc + 68 + strlen, 4, path)
+        info_length = struct.unpack_from("<i", buf, loc + 68 + strlen)[0]
+        if info_length < 0:
+            raise ValueError("%s: invalid SDF block metadata length" % path)
         meta = loc + header_len
-        if blocktype == 5 and datatype in _SCALAR_FMT:          # CONSTANT scalar
+        _require(buf, meta, info_length, path)
+        expected_data = _expected_bytes(blocktype, datatype, ndims, info_length, meta, buf, path)
+        if expected_data is not None and data_length != expected_data:
+            raise ValueError("%s: SDF data_length does not match decoded block" % path)
+        if data_length < 0:
+            raise ValueError("%s: negative SDF data length" % path)
+        if data_length:
+            if data_loc < 0 or data_loc + data_length > len(buf):
+                raise ValueError("%s: SDF data location is out of bounds" % path)
+            data_spans.append((data_loc, data_loc + data_length))
+        info_end = meta + info_length
+        if index + 1 < nblocks:
+            if nxt <= loc or nxt < info_end or nxt >= len(buf):
+                raise ValueError("%s: invalid SDF block chain" % path)
+        elif nxt != 0:
+            raise ValueError("%s: final SDF block has a next block" % path)
+        chain.append((loc, info_end))
+        if blocktype == 5 and datatype in _SCALAR_FMT:
             _require(buf, meta, struct.calcsize(_SCALAR_FMT[datatype]), path)
-            blocks[name] = struct.unpack_from(_SCALAR_FMT[datatype], buf, meta)[0]
-        elif blocktype == 3 and datatype in _DTYPE:             # PLAIN_VARIABLE grid
-            if ndims <= 0:
-                raise ValueError("%s: plain variable has no dimensions" % path)
+            value = struct.unpack_from(_SCALAR_FMT[datatype], buf, meta)[0]
+            blocks[name] = value
+        elif blocktype == 3 and datatype in _DTYPE:
             common = meta + 72
-            _require(buf, common, 4 * ndims, path)
             dims = struct.unpack_from("<%di" % ndims, buf, common)
             count = 1
             for dimension in dims:
-                if dimension < 0:
-                    raise ValueError("%s: negative grid dimension" % path)
                 count *= dimension
-            itemsize = np.dtype(_DTYPE[datatype]).itemsize
-            _require(buf, data_loc, count * itemsize, path)
             arr = np.frombuffer(buf, dtype=_DTYPE[datatype], count=count, offset=data_loc)
             blocks[name] = np.array(arr, dtype=np.float64)
-        elif blocktype == _POINT_VARIABLE and datatype in _DTYPE:  # POINT_VARIABLE particle list
-            if ndims != 1:
-                raise ValueError("%s: point variable must have one dimension" % path)
-            common = meta + 72
-            _require(buf, common, 8, path)
-            npoints = struct.unpack_from("<q", buf, common)[0]
-            if npoints < 0:
-                raise ValueError("%s: negative point count" % path)
-            itemsize = np.dtype(_DTYPE[datatype]).itemsize
-            _require(buf, data_loc, npoints * itemsize, path)
+        elif blocktype == _POINT_VARIABLE and datatype in _DTYPE:
+            npoints = struct.unpack_from("<q", buf, meta + 72)[0]
             arr = np.frombuffer(buf, dtype=_DTYPE[datatype], count=npoints, offset=data_loc)
             blocks[name] = np.array(arr, dtype=np.float64)
-        if index + 1 < nblocks:
-            if nxt <= loc:
-                raise ValueError("%s: invalid SDF block chain" % path)
-            loc = nxt
+        previous = loc
+        loc = nxt if index + 1 < nblocks else 0
+    for start, stop in data_spans:
+        for chain_start, chain_stop in chain:
+            if start < chain_stop and chain_start < stop:
+                raise ValueError("%s: SDF data overlaps block metadata" % path)
+    for index, (start, stop) in enumerate(data_spans):
+        for other_start, other_stop in data_spans[index + 1:]:
+            if start < other_stop and other_start < stop:
+                raise ValueError("%s: SDF data blocks overlap" % path)
     return time, blocks
 
+
+def scalar(blocks, name):
+    if name not in blocks:
+        raise ValueError("required scalar block is missing: %s" % name)
+    value = float(blocks[name])
+    if not np.isfinite(value):
+        raise ValueError("required scalar block is non-finite: %s" % name)
+    return value
 
 def dumps(run_dir):
     paths = sorted(glob.glob(os.path.join(run_dir, "[0-9][0-9][0-9][0-9].sdf")))
@@ -130,40 +211,39 @@ HEADER = ["time_s", "photon_number", "photon_energy_J", "electron_energy_J",
 
 
 def photon_number(blocks):
-    """Return physical photon number by summing EPOCH's point weights.
+    """Return the direct physical photon-number observable from point weights.
 
-    ``Particles/Weight/Photon`` is a one-dimensional POINT_VARIABLE whose
-    entries are dimensionless physical-particle multiplicities.  The required
-    ppc grid is used only to identify a valid empty Photon species: EPOCH omits
-    the point block when the species is empty and emits an all-zero ppc grid.
-    Missing ppc, malformed ppc, nonfinite/negative ppc, or a nonempty ppc
-    without weights fails closed rather than becoming a false zero.  Particle
-    count is deliberately never substituted for the weighted observable.
+    The ppc grid validates the number of point records, while the returned
+    observable remains the direct sum of ``Particles/Weight/Photon``.
     """
     if "Derived/Particles_Per_Cell/Photon" not in blocks:
         raise ValueError("required Photon particles-per-cell grid is missing")
     ppc = np.asarray(blocks["Derived/Particles_Per_Cell/Photon"], dtype=np.float64)
-    if ppc.ndim == 0 or not np.all(np.isfinite(ppc)) or np.any(ppc < 0.0):
+    if ppc.ndim == 0 or ppc.size == 0 or not np.all(np.isfinite(ppc)) or np.any(ppc < 0.0):
         raise ValueError("Photon particles-per-cell grid is malformed")
+    rounded = np.rint(ppc)
+    if not np.all(ppc == rounded) or np.any(rounded > np.iinfo(np.int64).max):
+        raise ValueError("Photon particles-per-cell grid is not safely integer-valued")
+    ppc_counts = [int(value) for value in rounded]
+    expected_points = sum(ppc_counts)
     weights = blocks.get("Particles/Weight/Photon")
     if weights is None:
-        if np.all(ppc == 0.0):
+        if expected_points == 0:
             return 0.0
         raise ValueError("Photon ppc is nonzero but Particles/Weight/Photon is missing")
     weights = np.asarray(weights, dtype=np.float64)
     if weights.ndim != 1:
         raise ValueError("Particles/Weight/Photon must be a one-dimensional point variable")
+    if weights.size != expected_points:
+        raise ValueError("Photon ppc count does not match Particles/Weight/Photon size")
     if weights.size == 0:
-        if np.all(ppc == 0.0):
-            return 0.0
-        raise ValueError("Photon ppc is nonzero but the point weight list is empty")
+        return 0.0
     if not np.all(np.isfinite(weights)) or np.any(weights < 0.0):
         raise ValueError("Particles/Weight/Photon contains invalid weights")
     total = float(weights.sum())
     if not np.isfinite(total):
         raise ValueError("Particles/Weight/Photon sum is non-finite")
     return total
-
 
 def build_rows(paths):
     rows = []
@@ -172,10 +252,10 @@ def build_rows(paths):
         rows.append([
             time,
             photon_number(b),
-            float(b["Total Particle Energy/Photon (J)"]),
-            float(b["Total Particle Energy/Electron (J)"]),
-            float(b["Total Field Energy in Simulation (J)"]),
-            float(b["Absorption/Total Laser Energy Injected (J)"]),
+            scalar(b, "Total Particle Energy/Photon (J)"),
+            scalar(b, "Total Particle Energy/Electron (J)"),
+            scalar(b, "Total Field Energy in Simulation (J)"),
+            scalar(b, "Absorption/Total Laser Energy Injected (J)"),
         ])
     return rows
 

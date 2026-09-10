@@ -12,7 +12,7 @@
     "units": "s",
     "time_column": 0,
     "tolerance_s": 1e-29,
-    "semantics": "requested physical output times; EPOCH dt_snapshot records the first simulation step at or after each target",
+    "semantics": "requested physical output times; EPOCH dt_snapshot records the first simulation step at or after each target; current values are retained as known-NO_GO placeholders until actual nominal/variant/altbuild SDF grids are calibrated",
     "files": {
       "series.txt": {
         "count": 11,
@@ -30,17 +30,28 @@
           3e-14
         ],
         "tolerance_s": 1e-29
+      }
+    },
+    "canonical_series": "series.txt",
+    "calibration_status": "known_NO_GO_placeholder_pending_actual_grid_calibration",
+    "header": [
+      "time_s",
+      "photon_number",
+      "photon_energy_J",
+      "electron_energy_J",
+      "field_energy_J",
+      "laser_energy_injected_J"
+    ],
+    "windows": {
+      "series": {
+        "start_index": 0,
+        "end_index": 10,
+        "count": 11
       },
-      "tail.txt": {
-        "count": 5,
-        "values_s": [
-          1.8e-14,
-          2.1e-14,
-          2.4e-14,
-          2.7e-14,
-          3e-14
-        ],
-        "tolerance_s": 1e-29
+      "tail": {
+        "start_index": 6,
+        "end_index": 10,
+        "count": 5
       }
     }
   },
@@ -56,18 +67,22 @@
         "mode": "agreement",
         "statistic": "final",
         "rtol": 0.04,
-        "atol": 0.0
+        "atol": 0.0,
+        "canonical_series": "series.txt",
+        "window": "series"
       },
       {
         "name": "photon-number-tail-mean",
-        "file": "tail.txt",
+        "file": "series.txt",
         "format": "text",
         "comments": "#",
         "column": 1,
         "mode": "agreement",
         "statistic": "mean",
         "rtol": 0.04,
-        "atol": 0.0
+        "atol": 0.0,
+        "canonical_series": "series.txt",
+        "window": "tail"
       },
       {
         "name": "photon-energy-final",
@@ -78,18 +93,22 @@
         "mode": "agreement",
         "statistic": "final",
         "rtol": 0.12,
-        "atol": 0.0
+        "atol": 0.0,
+        "canonical_series": "series.txt",
+        "window": "series"
       },
       {
         "name": "photon-energy-tail-mean",
-        "file": "tail.txt",
+        "file": "series.txt",
         "format": "text",
         "comments": "#",
         "column": 2,
         "mode": "agreement",
         "statistic": "mean",
         "rtol": 0.05,
-        "atol": 0.0
+        "atol": 0.0,
+        "canonical_series": "series.txt",
+        "window": "tail"
       },
       {
         "name": "electron-kinetic-energy-final",
@@ -100,18 +119,22 @@
         "mode": "agreement",
         "statistic": "final",
         "rtol": 0.07,
-        "atol": 0.0
+        "atol": 0.0,
+        "canonical_series": "series.txt",
+        "window": "series"
       },
       {
         "name": "electron-kinetic-energy-tail-mean",
-        "file": "tail.txt",
+        "file": "series.txt",
         "format": "text",
         "comments": "#",
         "column": 3,
         "mode": "agreement",
         "statistic": "mean",
         "rtol": 0.07,
-        "atol": 0.0
+        "atol": 0.0,
+        "canonical_series": "series.txt",
+        "window": "tail"
       },
       {
         "name": "field-energy-final",
@@ -122,7 +145,9 @@
         "mode": "agreement",
         "statistic": "final",
         "rtol": 0.02,
-        "atol": 0.0
+        "atol": 0.0,
+        "canonical_series": "series.txt",
+        "window": "series"
       },
       {
         "name": "laser-energy-injected-final",
@@ -133,7 +158,9 @@
         "mode": "agreement",
         "statistic": "final",
         "rtol": 1e-09,
-        "atol": 0.0
+        "atol": 0.0,
+        "canonical_series": "series.txt",
+        "window": "series"
       }
     ]
   },

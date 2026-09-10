@@ -12,7 +12,7 @@
     "units": "s",
     "time_column": 0,
     "tolerance_s": 1e-29,
-    "semantics": "nstep_snapshot=100 physical step grid from pinned EPOCH CFL timestep; final dump is t_end",
+    "semantics": "nstep_snapshot=100 physical step grid from pinned EPOCH CFL timestep; final dump is t_end; current values are retained as known-NO_GO placeholders until actual nominal/variant/altbuild SDF grids are calibrated",
     "files": {
       "series.txt": {
         "count": 22,
@@ -41,40 +41,41 @@
           5e-14
         ],
         "tolerance_s": 1e-29
+      }
+    },
+    "canonical_series": "series.txt",
+    "calibration_status": "known_NO_GO_placeholder_pending_actual_grid_calibration",
+    "header": [
+      "time_s",
+      "electron_energy_J",
+      "field_energy_J",
+      "total_energy_J",
+      "temperature_x_eV",
+      "temperature_y_eV",
+      "temperature_z_eV",
+      "anisotropy",
+      "anisotropy_relaxed_fraction"
+    ],
+    "windows": {
+      "series": {
+        "start_index": 0,
+        "end_index": 21,
+        "count": 22
       },
-      "mid.txt": {
-        "count": 5,
-        "values_s": [
-          2.1104600303187078e-14,
-          2.344955589243009e-14,
-          2.5794511481673097e-14,
-          2.8139467070916104e-14,
-          3.048442266015911e-14
-        ],
-        "tolerance_s": 1e-29
+      "early": {
+        "start_index": 1,
+        "end_index": 6,
+        "count": 6
       },
-      "tail.txt": {
-        "count": 5,
-        "values_s": [
-          3.986424501713115e-14,
-          4.2209200606374157e-14,
-          4.4554156195617164e-14,
-          4.689911178486018e-14,
-          5e-14
-        ],
-        "tolerance_s": 1e-29
+      "mid": {
+        "start_index": 9,
+        "end_index": 13,
+        "count": 5
       },
-      "early.txt": {
-        "count": 6,
-        "values_s": [
-          2.344955589243009e-15,
-          4.689911178486018e-15,
-          7.034866767729026e-15,
-          9.379822356972035e-15,
-          1.1724777946215045e-14,
-          1.4069733535458052e-14
-        ],
-        "tolerance_s": 1e-29
+      "tail": {
+        "start_index": 17,
+        "end_index": 21,
+        "count": 5
       }
     }
   },
@@ -83,14 +84,16 @@
     "invariants": [
       {
         "name": "anisotropy-relaxed-fraction-early-mean",
-        "file": "early.txt",
+        "file": "series.txt",
         "format": "text",
         "comments": "#",
         "column": 8,
         "mode": "agreement",
         "statistic": "mean",
         "atol": 0.03,
-        "rtol": 0.0
+        "rtol": 0.0,
+        "canonical_series": "series.txt",
+        "window": "early"
       },
       {
         "name": "anisotropy-relaxed-fraction-final",
@@ -101,40 +104,48 @@
         "mode": "agreement",
         "statistic": "final",
         "atol": 0.03,
-        "rtol": 0.0
+        "rtol": 0.0,
+        "canonical_series": "series.txt",
+        "window": "series"
       },
       {
         "name": "anisotropy-relaxed-fraction-tail-mean",
-        "file": "tail.txt",
+        "file": "series.txt",
         "format": "text",
         "comments": "#",
         "column": 8,
         "mode": "agreement",
         "statistic": "mean",
         "atol": 0.02,
-        "rtol": 0.0
+        "rtol": 0.0,
+        "canonical_series": "series.txt",
+        "window": "tail"
       },
       {
         "name": "temperature-x-tail-mean",
-        "file": "tail.txt",
+        "file": "series.txt",
         "format": "text",
         "comments": "#",
         "column": 4,
         "mode": "agreement",
         "statistic": "mean",
         "atol": 0.0,
-        "rtol": 0.04
+        "rtol": 0.04,
+        "canonical_series": "series.txt",
+        "window": "tail"
       },
       {
         "name": "temperature-y-tail-mean",
-        "file": "tail.txt",
+        "file": "series.txt",
         "format": "text",
         "comments": "#",
         "column": 5,
         "mode": "agreement",
         "statistic": "mean",
         "atol": 0.0,
-        "rtol": 0.04
+        "rtol": 0.04,
+        "canonical_series": "series.txt",
+        "window": "tail"
       },
       {
         "name": "electron-kinetic-energy-final",
@@ -145,7 +156,9 @@
         "mode": "agreement",
         "statistic": "final",
         "atol": 0.0,
-        "rtol": 0.03
+        "rtol": 0.03,
+        "canonical_series": "series.txt",
+        "window": "series"
       },
       {
         "name": "total-energy-drift",
@@ -154,7 +167,9 @@
         "comments": "#",
         "column": 3,
         "mode": "drift",
-        "max_relative_drift": 0.0005
+        "max_relative_drift": 0.0005,
+        "canonical_series": "series.txt",
+        "window": "series"
       }
     ]
   },
