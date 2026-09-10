@@ -1,0 +1,329 @@
+{
+  "module": "swmf-sep",
+  "source_private_cli_state": "coordination/cli-state/swmf/tests.json",
+  "skill_revision": "5.11.10",
+  "base_commit": "d8e45fa06f3aad6a010d3524f28d3150af90f040",
+  "source_commit": "127a73cb13951351d60e7936583f69f39bd0272e",
+  "tests": [
+    {
+      "id": "sc-ih-mittens",
+      "module": "swmf-sep",
+      "path": "Param/PARAM.in.test.SCIHPT",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "SC+IH with PT/MITTENS Monte Carlo SEP transport from a stored restart",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 300,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "MH_data.ref.gz at 1e-6; Monte Carlo, so the check passes only with a fixed seed; verify the seed in the calibration run, otherwise invariants Foundation mapping is graded-physics ownership; no fresh runtime is claimed.",
+      "proposed_check": "sc-ih-mittens",
+      "previous_module": "swmf-sep-transport"
+    },
+    {
+      "id": "sc-ih-mflampa",
+      "module": "swmf-sep",
+      "path": "Param/PARAM.in.test.SCIHSP",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "SC+IH with SP/MFLAMPA field-line SEP transport from a stored restart, restart",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 300,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "MH_data.ref.gz at 1e-6; deterministic Poisson-bracket advection along lines Foundation mapping is graded-physics ownership; no fresh runtime is claimed.",
+      "proposed_check": "sc-ih-mflampa",
+      "previous_module": "swmf-sep-transport"
+    },
+    {
+      "id": "sc-ih-oh-mflampa",
+      "module": "swmf-sep",
+      "path": "Param/PARAM.in.test.SCIHOHSP",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "SC+IH+OH+SP: four-component chain with SEP lines extended through the outer heliosphere, restart",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 600,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "SC and IH logs at 1e-5, MH_data at 3e-6 relative; needs the test19 LOS reference from SWMF_data Foundation mapping is graded-physics ownership; no fresh runtime is claimed.",
+      "proposed_check": "sc-ih-oh-mflampa",
+      "previous_module": "swmf-sep-transport"
+    },
+    {
+      "id": "mflampa-alone",
+      "module": "swmf-sep",
+      "path": "Param/PARAM.in.test.SP",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "SP/MFLAMPA alone in the framework reading the MH_data.tgz line archive",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 120,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "MH_data.ref.gz at 1e-6 Foundation mapping is graded-physics ownership; no fresh runtime is claimed.",
+      "proposed_check": "mflampa-alone",
+      "previous_module": "swmf-sep-transport"
+    },
+    {
+      "id": "mflampa-mflampa",
+      "module": "swmf-sep",
+      "path": "SP/MFLAMPA/Makefile",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "MFLAMPA standalone basic run",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 90,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "component make test target with DiffNum reference; runtime not measured Foundation mapping is graded-physics ownership; no fresh runtime is claimed.",
+      "proposed_check": "mflampa-mflampa",
+      "previous_module": "swmf-sep-transport"
+    },
+    {
+      "id": "mflampa-poisson",
+      "module": "swmf-sep",
+      "path": "SP/MFLAMPA/Makefile",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "MFLAMPA Poisson solver unit test",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 90,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "component make test target with DiffNum reference; runtime not measured Foundation mapping is graded-physics ownership; no fresh runtime is claimed.",
+      "proposed_check": "mflampa-poisson",
+      "previous_module": "swmf-sep-transport"
+    },
+    {
+      "id": "mflampa-poisson-bracket",
+      "module": "swmf-sep",
+      "path": "SP/MFLAMPA/Makefile",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "MFLAMPA Poisson-bracket advection scheme test",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 90,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "component make test target with DiffNum reference; runtime not measured Foundation mapping is graded-physics ownership; no fresh runtime is claimed.",
+      "proposed_check": "mflampa-poisson-bracket",
+      "previous_module": "swmf-sep-transport"
+    },
+    {
+      "id": "mflampa-spectra",
+      "module": "swmf-sep",
+      "path": "SP/MFLAMPA/Makefile",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "MFLAMPA spectra output",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 90,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "component make test target with DiffNum reference; runtime not measured Foundation mapping is graded-physics ownership; no fresh runtime is claimed.",
+      "proposed_check": "mflampa-spectra",
+      "previous_module": "swmf-sep-transport"
+    },
+    {
+      "id": "mflampa-steady",
+      "module": "swmf-sep",
+      "path": "SP/MFLAMPA/Makefile",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "MFLAMPA steady-state solution",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 90,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "component make test target with DiffNum reference; runtime not measured Foundation mapping is graded-physics ownership; no fresh runtime is claimed.",
+      "proposed_check": "mflampa-steady",
+      "previous_module": "swmf-sep-transport"
+    },
+    {
+      "id": "mflampa-mpi",
+      "module": "swmf-sep",
+      "path": "SP/MFLAMPA/Makefile",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "MFLAMPA MPI decomposition test with prerun",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 90,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "component make test target with DiffNum reference; runtime not measured Foundation mapping is graded-physics ownership; no fresh runtime is claimed.",
+      "proposed_check": "mflampa-mpi",
+      "previous_module": "swmf-sep-transport"
+    },
+    {
+      "id": "mittens-shock",
+      "module": "swmf-sep",
+      "path": "PT/MITTENS/Makefile",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "MITTENS standalone shock acceleration test",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 120,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "component make test with a DiffNum reference; Monte Carlo, seed to be verified Foundation mapping is graded-physics ownership; no fresh runtime is claimed.",
+      "proposed_check": "mittens-shock",
+      "previous_module": "swmf-sep-transport"
+    },
+    {
+      "id": "gm-amps-europa",
+      "module": "swmf-sep",
+      "path": "Param/PARAM.in.test.GMPT.Europa",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "GM+PT/AMPS Europa exosphere (test13)",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 600,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "Out of scope for this foundation: AMPS non-SEP suitability is not guessed; peer AMPS worker must decide. Foundation mapping is graded-physics ownership; no fresh runtime is claimed.",
+      "previous_module": "swmf-mhd-epic"
+    },
+    {
+      "id": "deck-test14-swmf-sep-1",
+      "module": "swmf-sep",
+      "path": "Makefile.test",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "MITTENS/MFLAMPA transport or bracket observables; coupled deck components: SC/BATSRUS, IH/BATSRUS, PT/MITTENS",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 600,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "Foundation candidate only; no fresh runtime proof in this mission. Distinct deck assignments grade distinct physics; source build excluded from suite runtime.",
+      "proposed_check": "deck-test14-swmf-sep-1",
+      "coverage_kind": "coupled-deck-graded-stage"
+    },
+    {
+      "id": "deck-test15-swmf-sep-1",
+      "module": "swmf-sep",
+      "path": "Makefile.test",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "MITTENS/MFLAMPA transport or bracket observables; coupled deck components: SC/BATSRUS, IH/BATSRUS, SP/MFLAMPA",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 600,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "Foundation candidate only; no fresh runtime proof in this mission. Distinct deck assignments grade distinct physics; source build excluded from suite runtime.",
+      "proposed_check": "deck-test15-swmf-sep-1",
+      "coverage_kind": "coupled-deck-graded-stage"
+    },
+    {
+      "id": "deck-test19-swmf-sep-1",
+      "module": "swmf-sep",
+      "path": "Makefile.test",
+      "policy": "invariants",
+      "chaotic": true,
+      "exercises": "MITTENS/MFLAMPA transport or bracket observables; coupled deck components: SC/BATSRUS, IH/BATSRUS, OH/BATSRUS, SP/MFLAMPA",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 600,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "Foundation candidate only; no fresh runtime proof in this mission. Distinct deck assignments grade distinct physics; source build excluded from suite runtime.",
+      "proposed_check": "deck-test19-swmf-sep-1",
+      "coverage_kind": "coupled-deck-graded-stage"
+    },
+    {
+      "id": "deck-test-sp-swmf-sep-1",
+      "module": "swmf-sep",
+      "path": "Makefile.test",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "MITTENS/MFLAMPA transport or bracket observables; coupled deck components: SP/MFLAMPA",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 600,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "Foundation candidate only; no fresh runtime proof in this mission. Distinct deck assignments grade distinct physics; source build excluded from suite runtime.",
+      "proposed_check": "deck-test-sp-swmf-sep-1",
+      "coverage_kind": "coupled-deck-graded-stage"
+    }
+  ],
+  "amps_survey": {
+    "inventory_source": "coordination/amps-survey/inventory.json",
+    "ready_source": "coordination/amps-survey/ready.json",
+    "report_source": "coordination/amps-survey/REPORT.md",
+    "official_sep_entries": 30,
+    "adapters_in_candidate": [
+      "SEP--Parker_spiral--ParkerEq",
+      "SEP--Parker3D--ParkerIMF"
+    ],
+    "remaining_entries": 28,
+    "remaining_status": "unmeasured_pending_survey_and_calibration_not_automatically_unsuitable",
+    "corrected_batch_ended_utc": "2026-09-10T09:35:05Z",
+    "latest_human_instructions_rechecked_utc": "2026-09-10T09:30:58Z",
+    "collection_owner": "separate AMPS collection worker",
+    "collection_performed_by_this_candidate": false,
+    "current_validation_claim": false
+  }
+}
