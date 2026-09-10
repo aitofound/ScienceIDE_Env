@@ -1,0 +1,52 @@
+{
+  "module": {
+    "slug": "swmf-fleks",
+    "title": "FLEKS embedded particle-in-cell physics in PC and PT slots",
+    "paths": [
+      "PC/FLEKS",
+      "PT/FLEKS"
+    ],
+    "entrypoints": [
+      "PC/FLEKS/tests: 17 cases and 37 PARAM.in variants",
+      "test16_2d, test16_3d, test17, test18, test20, test21_4neu, test21_oh_pt, test22_4neu, test22_oh_pt, test23_2d, test23_3d, test25",
+      "PC/FLEKS/Config.pl -lev=2 -u=Exo and -amrex2d; the #556 fleks, alfven, fastwave-amr, gmpc, ohpt and swpc-aepic checks"
+    ],
+    "expensive_path": "The AMReX-based kinetic particle and field update in the FLEKS 2-D/3-D PIC domain, including particle push, collisions/chemistry, AMR and particle-fluid coupling; the 3-D reconnection/performance path is the acceleration candidate.",
+    "rationale": "PC/FLEKS and PT/FLEKS are the same FLEKS source used in two SWMF slots. They are one code family with separate slot configurations and variants, while GM/OH BATSRUS remains a dependency whose MHD physics is not owned here.",
+    "excluded": [
+      "FLEKS-free BATSRUS runs (swmf-batsrus)",
+      "PT/AMPS and the SEP transport codes (swmf-sep)",
+      "PC/ALTOR legacy PIC because it does not compile against the pinned share library"
+    ],
+    "hazards": [
+      "AMReX dimension and level are compile-time configuration; 2-D and 3-D are distinct builds.",
+      "The hybrid and boundary variants must be counted as variants of tests, not fabricated independent physics checks.",
+      "Coupled FLEKS decks have a BATSRUS run-up; grade the FLEKS observables and keep the MHD dependency explicit."
+    ]
+  },
+  "approval": {
+    "modules": [
+      "swmf-batsrus",
+      "swmf-fleks",
+      "swmf-sep",
+      "swmf-cimi-heidi",
+      "swmf-pwom",
+      "swmf-gitm-mgitm",
+      "swmf-mit-coupling"
+    ],
+    "human_ref": "非常好！开做吧！我允许你remote 跑docker，但是最多一次两个，本地也跑一次，一次两个，但是写代码并行去吧！",
+    "at": "2026-09-10T09:03:32Z"
+  },
+  "shared_infrastructure": [
+    "share",
+    "util",
+    "Config.pl",
+    "Makefile",
+    "Makefile.def",
+    "Makefile.test",
+    "PARAM.XML",
+    "Scripts",
+    "CON/Control",
+    "CON/Library"
+  ]
+}
