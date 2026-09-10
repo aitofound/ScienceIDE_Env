@@ -19,6 +19,14 @@ decks are vendored here (~93 MB):
   (`Param/PARAM.in.test.GMIEIMUA` reads `UA/DataIn/power.test.rcmr_quick`,
   which GITM's `make rundir` symlinks from `srcData/Rcmr/`). Confirmed by
   reading the deck, not assumed from the directory name.
+- `srcData/Earth/` (5.1 MB) — added in a follow-up commit after native
+  verification found it was actually required: `Config.pl -earth` (the
+  default planet, selected when SWMF's own `Config.pl -v=...,UA/GITM`
+  runs) invokes `set_planet`, which does
+  `cd srcData; cp Earth/UAM.in.Earth UAM.in`. Without this directory the
+  install dies right after creating the `ModPlanet.f90`/`planet.f90`/
+  `ModChemistry.f90` symlinks. Not obvious from grepping the SWMF Param
+  decks; found by actually running the install.
 
 Left out (no shipped deck reads them):
 
@@ -27,9 +35,8 @@ Left out (no shipped deck reads them):
 - `srcData/Hme/` (1.3 MB)
 - `srcData/HIME/` (1.7 MB)
 - `srcData/Purgatory/` (5.3 MB)
-- `srcData/Earth/` (5.1 MB), `srcData/Eclipses/` (208 KB),
-  `srcData/LowerBCs/` (728 KB), `srcData/Titan/` (60 KB),
-  `srcData/Venus/` (28 KB)
+- `srcData/Eclipses/` (208 KB), `srcData/LowerBCs/` (728 KB),
+  `srcData/Titan/` (60 KB), `srcData/Venus/` (28 KB)
 
 To restore any of these, clone the full repo at the pinned commit above and
 copy the missing `srcData/<name>` directory into place; nothing else needs
