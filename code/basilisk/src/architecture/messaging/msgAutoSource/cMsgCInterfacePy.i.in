@@ -1,0 +1,63 @@
+%{{
+#include "cMsgCInterface/{type}_C.h"
+#include "architecture/messaging/messaging.h"
+%}}
+%include "cMsgCInterface/{type}_C.h"
+%include "architecture/messaging/msgHeader.h"
+typedef struct {type};
+%extend {type}_C {{
+    Recorder<{type}Payload> recorder(uint64_t timeDiff = 0) {{
+        self->header.isLinked = 1;
+        return Recorder<{type}Payload>{{static_cast<void*>(self), timeDiff}};
+    }}
+
+    %pythoncode %{{
+
+    def subscribeTo(self, source):
+        """subscribe to another message source"""
+        if type(source) == type(self):
+            {type}_C_subscribe(self, source)
+        elif type(source) == {type}:
+            {type}_cpp_subscribe(self, source)
+        elif type(source) == int: #Note that is assumes it is a uint64_t address in memory
+            {type}_addr_subscribe(self, source)
+        else:
+            raise Exception('tried to subscribe {type} to another message type')
+
+    def unsubscribe(self):
+        """Unsubscribe to the connected message, noop if no message was connected"""
+        {type}_unsubscribe(self)
+
+    def isSubscribedTo(self, source):
+        """check if self is subscribed to another message source"""
+        if type(source) == type(self):
+            return ({type}_C_isSubscribedTo(self, source))
+        elif type(source) == {type}:
+            return ({type}_cpp_isSubscribedTo(self, source))
+        elif type(source) == int: #Note that this assumes it is a uint64_t address location in memory
+            return ({type}_cpp_isSubscribedToAddr(self, source))
+        else:
+            return 0
+
+
+    def init(self, data=None):
+        """returns a Msg copy connected to itself"""
+        {type}_C_addAuthor(self, self)
+        if data:
+            {type}_C_write(data, self, -1, 0)
+        return self
+
+    def write(self, payload, time=0, moduleID=0):
+        """write the message payload.
+        The 2nd argument is time in nanoseconds.  It is optional and defaults to 0.
+        The 3rd argument is the module ID which defaults to 0.
+        """
+        {type}_C_addAuthor(self, self)
+        {type}_C_write(payload, self, moduleID, time)  # msgs written in Python have 0 module ID
+        return self
+
+    def read(self):
+        """read the message payload."""
+        return {type}_C_read(self)
+    %}}
+}};

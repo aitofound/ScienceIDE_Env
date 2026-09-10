@@ -1,0 +1,33 @@
+#Number of interfaces in the model
+4
+#
+# !!!!!!!!!!!Each interface in the DSM model covered in the SEM box must be described here!!!!!!!!!!!!!
+# Description of each interface:
+# Each interface is represented as a structured 2D grid defined by the following parameters:
+# - NXI, NETA: Number of grid points along the XI and ETA directions.
+# - XI_MIN, ETA_MIN: Minimal XI and ETA coordinates (cubed-sphere or Cartesian system).
+# - SPACING_XI, SPACING_ETA: Constant grid spacing in the XI and ETA directions.
+# - Z coordinates: Grid heights/depths specified in a separate data file containing NXI x NETA points.
+#
+# Notes:
+# - For SEM-DSM coupling (COUPLING_TYPE=1, 2, or 3), the coordinates (XI, ETA) are in the cubed-sphere system.
+# - Use the tool `src/cubedsphere_topo/` to convert topography from (longitude, latitude) to (XI, ETA) format (see ../../step1_mesh_gen.sh).
+# Interface 1: Represents the 410-km discontinuity
+# SUPPRESS_UTM_PROJECTION  NXI  NETA  XI_MIN   ETA_MIN    SPACING_XI SPACING_ETA
+# Data file containing Z coordinates for this interface
+.true.                   110   110   -0.5       -0.5       0.5d0      0.5d0
+topo_500km.dat
+.true.                   550   550   -0.1       -0.1       0.005d0      0.005d0
+topo_410km.dat 
+.true.                   110   110   -0.5       -0.5       0.5d0      0.5d0
+topo_330km.dat
+.true.                   110   110   -0.5       -0.5       0.5d0      0.5d0
+topo_310km.dat 
+# Number of elements in the third layer
+10
+# Number of elements in the third layer
+24
+# Number of elements in the second layer
+25
+# Number of elements in the top layer
+6
