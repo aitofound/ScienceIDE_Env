@@ -1,0 +1,248 @@
+{
+  "check": "initial-class-transfer",
+  "policy": "invariants",
+  "chaotic": false,
+  "upstream_test": "code/21cmfast/tests/test_initial_conditions.py::test_transfer_function",
+  "configuration": "Seed 12, HII_DIM=35, DIM=70, BOX_LEN=50 Mpc, two threads, POWER_SPECTRUM=CLASS and all production 1LPT/2LPT displacement components exposed.",
+  "observable": "Mode-weighted density and total-vector displacement power in low/mid/high k; displacement-magnitude summaries; density--1LPT-divergence coherence and transfer; longitudinal dominance; 2LPT/1LPT RMS ratio; and production CLASS matter power on fixed k.",
+  "expected_runtime_s": 6,
+  "default_vs_upstream": "upstream, with KEEP_3D_VELOCITIES enabled only to expose all already-computed production components",
+  "knobs": "SAB_DIM, SAB_HII_DIM and SAB_THREADS expose the two grid sides and OpenMP worker count; defaults are the graded values.",
+  "variant": "BOX_LEN and all Fourier bands remain fixed. SIGMA_8 moves upward by exactly two float32 ulps, changing physical amplitude without injecting a grid-scale impulse or changing spectral geometry.",
+  "altbuild": "none: an alternative compiler build is deferred because this single arm64 host cannot establish a portable cross-build floor.",
+  "comparison": {
+    "files": [
+      {
+        "path": "spectrum-hires_density-bands.npy",
+        "format": "npy",
+        "rtol": 0.0,
+        "atol": 0.0
+      },
+      {
+        "path": "power-hires_density-low.npy",
+        "format": "npy",
+        "rtol": 0.1,
+        "atol": 1e-08
+      },
+      {
+        "path": "power-hires_density-mid.npy",
+        "format": "npy",
+        "rtol": 0.05,
+        "atol": 1e-08
+      },
+      {
+        "path": "power-hires_density-high.npy",
+        "format": "npy",
+        "rtol": 0.05,
+        "atol": 1e-08
+      },
+      {
+        "path": "moments-hires_density.npy",
+        "format": "npy",
+        "rtol": 0.1,
+        "atol": 0.01
+      },
+      {
+        "path": "spectrum-lowres_density-bands.npy",
+        "format": "npy",
+        "rtol": 0.0,
+        "atol": 0.0
+      },
+      {
+        "path": "power-lowres_density-low.npy",
+        "format": "npy",
+        "rtol": 0.2,
+        "atol": 1e-08
+      },
+      {
+        "path": "power-lowres_density-mid.npy",
+        "format": "npy",
+        "rtol": 0.1,
+        "atol": 1e-08
+      },
+      {
+        "path": "power-lowres_density-high.npy",
+        "format": "npy",
+        "rtol": 0.05,
+        "atol": 1e-08
+      },
+      {
+        "path": "moments-lowres_density.npy",
+        "format": "npy",
+        "rtol": 0.1,
+        "atol": 0.01
+      },
+      {
+        "path": "spectrum-lowres-1lpt-total-bands.npy",
+        "format": "npy",
+        "rtol": 0.0,
+        "atol": 0.0
+      },
+      {
+        "path": "power-lowres-1lpt-total-low.npy",
+        "format": "npy",
+        "rtol": 0.25,
+        "atol": 1e-08
+      },
+      {
+        "path": "power-lowres-1lpt-total-mid.npy",
+        "format": "npy",
+        "rtol": 0.1,
+        "atol": 1e-08
+      },
+      {
+        "path": "power-lowres-1lpt-total-high.npy",
+        "format": "npy",
+        "rtol": 0.1,
+        "atol": 1e-08
+      },
+      {
+        "path": "moments-lowres-1lpt-magnitude.npy",
+        "format": "npy",
+        "rtol": 0.3,
+        "atol": 0.001
+      },
+      {
+        "path": "spectrum-lowres-2lpt-total-bands.npy",
+        "format": "npy",
+        "rtol": 0.0,
+        "atol": 0.0
+      },
+      {
+        "path": "power-lowres-2lpt-total-low.npy",
+        "format": "npy",
+        "rtol": 0.3,
+        "atol": 1e-08
+      },
+      {
+        "path": "power-lowres-2lpt-total-mid.npy",
+        "format": "npy",
+        "rtol": 0.1,
+        "atol": 1e-08
+      },
+      {
+        "path": "power-lowres-2lpt-total-high.npy",
+        "format": "npy",
+        "rtol": 0.1,
+        "atol": 1e-08
+      },
+      {
+        "path": "moments-lowres-2lpt-magnitude.npy",
+        "format": "npy",
+        "rtol": 0.35,
+        "atol": 0.001
+      },
+      {
+        "path": "density-1lpt-coherence-low.npy",
+        "format": "npy",
+        "rtol": 0.0,
+        "atol": 0.001
+      },
+      {
+        "path": "density-1lpt-coherence-mid.npy",
+        "format": "npy",
+        "rtol": 0.0,
+        "atol": 0.001
+      },
+      {
+        "path": "density-1lpt-transfer-low.npy",
+        "format": "npy",
+        "rtol": 0.02,
+        "atol": 0.001
+      },
+      {
+        "path": "density-1lpt-transfer-mid.npy",
+        "format": "npy",
+        "rtol": 0.02,
+        "atol": 0.001
+      },
+      {
+        "path": "density-1lpt-physics-summary.npy",
+        "format": "npy",
+        "rtol": 0.5,
+        "atol": 0.01
+      },
+      {
+        "path": "lpt-longitudinal-ratio.npy",
+        "format": "npy",
+        "rtol": 0.1,
+        "atol": 0.005
+      },
+      {
+        "path": "lpt-rms.npy",
+        "format": "npy",
+        "rtol": 0.3,
+        "atol": 1e-08
+      },
+      {
+        "path": "theory-matter-k.npy",
+        "format": "npy",
+        "rtol": 0.0,
+        "atol": 0.0
+      },
+      {
+        "path": "theory-matter-power.npy",
+        "format": "npy",
+        "rtol": 0.0001,
+        "atol": 1e-10
+      }
+    ]
+  },
+  "physics_bounds": [
+    {
+      "path": "moments-hires_density.npy",
+      "index": 0,
+      "label": "mean high-resolution initial overdensity",
+      "abs_maximum": 1e-05
+    },
+    {
+      "path": "moments-lowres_density.npy",
+      "index": 0,
+      "label": "mean low-resolution initial overdensity",
+      "abs_maximum": 0.02
+    },
+    {
+      "path": "density-1lpt-physics-summary.npy",
+      "index": 0,
+      "label": "minimum low-k anti-coherence",
+      "minimum": 0.98
+    },
+    {
+      "path": "density-1lpt-physics-summary.npy",
+      "index": 1,
+      "label": "minimum mid-k anti-coherence",
+      "minimum": 0.95
+    },
+    {
+      "path": "density-1lpt-physics-summary.npy",
+      "index": 2,
+      "label": "maximum low-k |transfer+1|",
+      "maximum": 0.02
+    },
+    {
+      "path": "density-1lpt-physics-summary.npy",
+      "index": 3,
+      "label": "maximum mid-k |transfer+1|",
+      "maximum": 0.05
+    },
+    {
+      "path": "lpt-longitudinal-ratio.npy",
+      "index": 0,
+      "label": "1LPT curl/divergence amplitude ratio",
+      "maximum": 0.35
+    },
+    {
+      "path": "lpt-longitudinal-ratio.npy",
+      "index": 1,
+      "label": "2LPT curl/divergence amplitude ratio",
+      "maximum": 0.4
+    }
+  ],
+  "evidence": {
+    "spread": null,
+    "spread_how": "The two-ulp SIGMA_8 selfcheck changed powers by below 7e-7. A one-thread run changes the random realization: mode-weighted low-k density, 1LPT and 2LPT power changed by 3.3--20.2%, while density--1LPT coherence changed below 4.9e-4, transfer below 0.73%, and longitudinal ratios below 1.1%. Flipping the x 1LPT sign failed at 646x the bound; zeroing all 2LPT components failed at 10x and also produced an undefined longitudinal ratio.",
+    "self_validation_spread": 2.500019036233425e-05,
+    "self_validation_bound_fraction": 0.0029427129618654793
+  },
+  "warrant": "All x/y/z production components enter total vector power, magnitude, divergence and curl diagnostics. Density--div(Psi_1) anti-coherence and near-minus-one transfer test phase, sign, axis and k normalisation inside each realization, while curl/divergence ratios test longitudinal dominance for both LPT orders. These are stable under the legal RNG change and therefore carry tighter limits than realization-dependent band powers. Zeroing 2LPT, changing the power model, swapping/sign-flipping axes and breaking density--displacement alignment are targeted fault probes; the fixed-k production matter power independently distinguishes CLASS input physics."
+}
