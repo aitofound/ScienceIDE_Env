@@ -116,6 +116,21 @@ for marker in markers:
         raise SystemExit("run.sh: deck marker %s matched %d lines, expected 1" % (marker, n))
 open(path, "w", encoding="utf-8").write(text)
 PY
+MPI_RANKS=$(python3 - "$WORK/cone/input.deck" <<'PYMPI'
+import re, sys
+text = open(sys.argv[1], encoding="utf-8").read()
+vals = {}
+for key in ("nprocx", "nprocy"):
+    m = re.search(r"(?m)^\s*" + key + r"\s*=\s*(\d+)\s*$", text)
+    if not m:
+        raise SystemExit("run.sh: missing " + key + " in input.deck")
+    vals[key] = int(m.group(1))
+if any(v < 1 for v in vals.values()):
+    raise SystemExit("run.sh: MPI dimensions must be positive")
+print(vals["nprocx"] * vals["nprocy"])
+PYMPI
+)
+[ "$MPI_RANKS" -gt 0 ] || { echo "run.sh: invalid MPI rank count" >&2; exit 2; }
 ( cd "$WORK/src/epoch2d" && echo "$WORK/cone" \
-    | mpirun -n 4 --oversubscribe --bind-to none ./bin/epoch2d > "$WORK/cone/epoch.log" 2>&1 )
+    | mpirun -n "$MPI_RANKS" --oversubscribe --bind-to none ./bin/epoch2d > "$WORK/cone/epoch.log" 2>&1 )
 python3 "$CHECK_DIR/extract.py" "$WORK/cone" "$OUT_DIR"

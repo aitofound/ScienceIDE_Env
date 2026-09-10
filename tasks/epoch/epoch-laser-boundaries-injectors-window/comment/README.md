@@ -279,7 +279,8 @@ instead of "about five". The laser decks were also described as "multiplied by
 5.6.0 prefers pointwise wherever a bound contains measured sensitivity over the
 graded window and still rejects a real fault; invariants are for cases where a
 seed/stream, first-step amplifier, sampling statistic or discrete output makes
-that impossible. All sixteen checks remain **pointwise** after direct evidence:
+that impossible. **Historical pre-review statement; the exact three reviewed
+checks below are superseded by the 2026-09-10 stochastic-contract revision.**
 
 - Vacuum `laser-*` and `cpml-*` checks have no particles or random stream. CPML's
   O3/O2 and variant maxima are below 7.37e-4 V/m against 1 V/m; existing laser
@@ -303,8 +304,9 @@ that impossible. All sixteen checks remain **pointwise** after direct evidence:
   O3/O2 and variant tails plus cross-platform arithmetic warrant the room while
   a percent-scale plasma-response fault remains many orders away.
 
-Thus none of the four invariants triggers applies. No check, observable, window
-or bound was dropped or weakened to obtain the result. No claim of bit identity
+Historical pre-review conclusion; it does not apply to the exact three revised
+cone/ramp checks. No check, observable, window or bound was dropped or weakened
+by the current contract revision. No claim of bit identity
 across rank/thread counts is made except the separately measured laser-3d layout
 case; all stochastic decks pin their decomposition.
 
@@ -548,8 +550,8 @@ SHA-256 hashes are
 
 This section supersedes, for the six redesigned checks only, the statements above
 that "all six retain pointwise policy" and the per-array pointwise bound
-discussion of the injector and moving-window checks. The ten laser/CPML/cone/ramp
-checks are unchanged in policy, bounds and graded window.
+discussion of the injector and moving-window checks. The ten laser/CPML checks and deterministic laser checks are unchanged; the
+three stochastic cone/ramp checks are superseded by the current review revision.
 
 Under the EPOCH steward's 2026-09-05 review (item 4) and the curator's decision
 "i think your decision are good", `injector-1d/2d/3d` and
@@ -804,10 +806,46 @@ Bound fraction and variant spread are the validator's own numbers from the run-5
 | laser-1d | pointwise | atol 1 | 0.000267 | 0.000267 | bit-identical | 3745x | 0.5 | 50.0 |
 | laser-2d | pointwise | atol 1 | 0.0007477 | 0.000748 | 0.0006924 | 1337x | 0.8 | 56.0 |
 | laser-3d | pointwise | atol 1 | 0.0004272 | 0.000427 | 0.0003967 | 2341x | 13.3 | 64.0 |
-| laser-cone-2d | pointwise; chaotic | atol 100 | 1.045e+13 | 0.000743 | 5.498e+12 | 1347x | 2.8 | 58.0 |
-| laser-cone-3d | pointwise; chaotic | atol 100 | 3.628e+13 | 0.00382 | 1.484e+13 | 262x | 3.1 | 66.0 |
+| laser-cone-2d | invariants; chaotic (historical pre-review row) | provisional weighted scalars | pending | pending | pending | pending | pending | pending |
+| laser-cone-3d | invariants; chaotic (historical pre-review row) | provisional weighted scalars | pending | pending | pending | pending | pending | pending |
 | laser-focus-2d | pointwise | atol 1 | 0.001221 | 0.00122 | 0.001282 | 819x | 2.0 | 62.0 |
-| laser-ramp-2d | pointwise; chaotic | atol 1000 | 3.383e+14 | 0.000348 | 3.982e+14 | 2873x | 2.1 | 62.0 |
+| laser-ramp-2d | invariants; chaotic (historical pre-review row) | provisional weighted scalars | pending | pending | pending | pending | pending | pending |
 | moving-window-1d | invariants | rtol 1e-12; atol 0.002 (18 statistics) | 0.126 | 0.236 | bit-identical | 4.2x | 1.1 | 49.0 |
 | moving-window-2d | invariants | rtol 1e-12; atol 0.00015 (24 statistics) | 0.001313 | 0.245 | bit-identical | 4.1x | 11.1 | 57.0 |
 | moving-window-3d | invariants | rtol 1e-12; atol 7e-05 (30 statistics) | 0.00612 | 0.245 | bit-identical | 4.1x | 23.3 | 68.0 |
+
+
+## PR #385 review supersession: stochastic laser checks (2026-09-10)
+
+This addendum supersedes every earlier statement in this authoring note about
+`laser-cone-2d`, `laser-cone-3d`, and `laser-ramp-2d` being pointwise or using
+an amplitude/intensity-only variant. The exact review finding was that random PIC
+particles can change cellwise realization across GPU/rank layouts while retaining
+physical results. Those three checks now use policy `invariants`, retain both
+physical dumps in their shortened windows, and grade the minimum nonredundant
+weighted set: a density integral, electron kinetic energy, electromagnetic
+energy from E/B fields, density centroids/RMS spreads on every spatial axis,
+and an absolute-Jx integral (per depth in 2-D). In the two 2-D checks, EPOCH's `dA=dx*dy`
+convention makes these global quantities explicit per unit unmodelled
+out-of-plane depth (m^-1, J/m, and A); cone-3d uses true volume totals (count,
+J, and A m). Signed charge or charge per depth is algebraically `-e` times the
+density integral, so it is not serialized or comparison-graded as a redundant
+second metric.
+
+The variants preserve laser amplitude/intensity and all deck physics while
+changing MPI ownership and rank-seeded random-stream consumption: cone-2d is
+`2x2` (4 ranks) to valid `1x2` (2 ranks) for its 250x250 grid; cone-3d is
+`2x2x1` to `1x1x4` (4 ranks); and ramp-2d is `2x2` to `1x4` (4 ranks). EPOCH's
+KISS stream is initialized from `7842432 + rank` in the pinned random-generator
+and setup sources. The extractors use exact adjacent `Grid/Grid` node widths:
+`dA=dx*dy` for the two 2-D per-depth contracts and `dV=dx*dy*dz` for cone-3d,
+with dimensionally correct SI outputs, exact array shapes, finite/positivity
+guards, both dumps, and fail-closed scalar output. The variant's layout divisibility is documented in each check README
+and rubric.
+
+The vacuum `laser-*` and `cpml-*` checks remain deterministic and pointwise.
+The new scalar bounds are explicitly provisional pending calibration across at
+least three valid independent layouts and fresh nominal/variant/altbuild
+selfcheck; the historical runtime and spread tables above are not evidence for
+the new contract. See the additive revision evidence under
+`workspace/epoch-pr385-revision-20260910/luna-stochastic-contract-fix/`.
