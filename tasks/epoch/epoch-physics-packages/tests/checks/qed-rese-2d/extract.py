@@ -40,9 +40,19 @@ _LE = 16911887
 _POINT_MESH = 2
 _POINT_VARIABLE = 4
 _ID_LENGTH = 32
+_PHOTON_MESH_ID = b"grid/Photon"
 _MAX_DIMS = 4  # SDF c_maxdims from the pinned EPOCH SDF source.
 _DTYPE = {1: "<i4", 2: "<i8", 3: "<f4", 4: "<f8", 7: "<u1"}
 _SCALAR_FMT = {1: "<i", 2: "<q", 3: "<f", 4: "<d", 7: "<B"}
+
+
+class _SDFBlocks(dict):
+    """Decoded block values plus serialized point-variable metadata."""
+
+    def __init__(self):
+        super().__init__()
+        self.point_variables = {}
+        self.point_meshes = {}
 
 
 def _require(buf, offset, size, path):
@@ -151,7 +161,7 @@ def read_sdf(path):
         raise ValueError("%s: invalid SDF header" % path)
     if strlen <= 0 or header_len != 72 + strlen:
         raise ValueError("%s: invalid SDF block header length" % path)
-    blocks = {}
+    blocks = _SDFBlocks()
     names = set()
     ids = set()
     chain = []
@@ -209,10 +219,32 @@ def read_sdf(path):
         elif blocktype == _POINT_MESH:
             npoints, _ = _point_mesh_metadata(ndims, meta, buf, path)
             blocks[name] = int(npoints)
+            blocks.point_meshes[block_id] = {
+                "block_id": block_id,
+                "name": name,
+                "declared_npoints": int(npoints),
+            }
         elif blocktype == _POINT_VARIABLE and datatype in _DTYPE:
             npoints = struct.unpack_from("<q", buf, meta + 72)[0]
+            raw_mesh_id = bytes(buf[meta + 8 + _ID_LENGTH:meta + 8 + 2 * _ID_LENGTH])
+            mesh_id = raw_mesh_id.split(b"\x00", 1)[0]
             arr = np.frombuffer(buf, dtype=_DTYPE[datatype], count=npoints, offset=data_loc)
-            blocks[name] = np.array(arr, dtype=np.float64)
+            arr = np.array(arr, dtype=np.float64)
+            if arr.size != npoints:
+                raise ValueError("%s: point variable decoded size does not match declared point count" % path)
+            blocks[name] = arr
+            blocks.point_variables[block_id] = {
+                "block_id": block_id,
+                "name": name,
+                "blocktype": blocktype,
+                "datatype": datatype,
+                "mesh_id_raw": raw_mesh_id,
+                "mesh_id": mesh_id,
+                "declared_npoints": int(npoints),
+                "data_length": int(data_length),
+                "decoded_size": int(arr.size),
+                "values": arr,
+            }
         previous = loc
         loc = nxt if index + 1 < nblocks else 0
     for start, stop in data_spans:
@@ -251,15 +283,47 @@ HEADER = ["time_s", "photon_number", "photon_energy_J", "electron_energy_J",
           "field_energy_J", "laser_energy_injected_J"]
 
 
+def _validated_photon_point_variable(blocks, expected_name):
+    """Return one point variable selected by exact name and serialized metadata.
+
+    The parser records each POINT_VARIABLE under its serialized block ID after
+    validating the block type, datatype, metadata length, data length, and
+    decoded array size.  Names and IDs are globally unique in ``read_sdf``;
+    this lookup therefore cannot depend on block order or a point-mesh label.
+    """
+    records = getattr(blocks, "point_variables", None)
+    if not isinstance(records, dict):
+        raise ValueError("Photon point-variable metadata is unavailable")
+    matches = [record for record in records.values()
+               if record["name"] == expected_name]
+    if len(matches) != 1:
+        raise ValueError("required Photon point variable is missing or ambiguous")
+    record = matches[0]
+    if record["blocktype"] != _POINT_VARIABLE or record["datatype"] not in _DTYPE:
+        raise ValueError("Photon point variable has invalid serialized type")
+    if record["mesh_id"] != _PHOTON_MESH_ID:
+        raise ValueError("Photon point variable has wrong serialized mesh_id")
+    declared = record["declared_npoints"]
+    decoded = record["decoded_size"]
+    if declared < 0 or declared > (1 << 62):
+        raise ValueError("Photon point variable count is out of safe range")
+    expected_data = declared * np.dtype(_DTYPE[record["datatype"]]).itemsize
+    if record["data_length"] != expected_data or decoded != declared:
+        raise ValueError("Photon point variable metadata does not match decoded array")
+    values = np.asarray(record["values"], dtype=np.float64)
+    if values.ndim != 1 or values.size != declared:
+        raise ValueError("Photon point variable decoded array size is inconsistent")
+    return record, values
+
+
 def photon_number(blocks):
     """Return the direct physical photon-number observable from point weights.
 
-    PPC is a required independent grid diagnostic only.  Point cardinality is
-    taken from the explicit Photon POINT_MESH metadata and never from PPC.
+    PPC remains an independent grid diagnostic and is never used as a point
+    count.  The serialized Photon weight metadata supplies the count; an actual
+    ``grid/Photon`` POINT_MESH is an optional additional count cross-check.
     """
     ppc_name = "Derived/Particles_Per_Cell/Photon"
-    mesh_name = "Grid/Particles/Photon"
-    weights_name = "Particles/Weight/Photon"
     if ppc_name not in blocks:
         raise ValueError("required Photon particles-per-cell grid is missing")
     ppc = np.asarray(blocks[ppc_name], dtype=np.float64)
@@ -269,33 +333,33 @@ def photon_number(blocks):
     if not np.all(ppc == rounded) or np.any(rounded >= (1 << 63)):
         raise ValueError("Photon particles-per-cell grid is not safely integer-valued")
 
-    mesh_present = mesh_name in blocks
-    if mesh_present:
-        mesh_array = np.asarray(blocks[mesh_name])
-        if mesh_array.ndim != 0:
-            raise ValueError("Photon point mesh count is not a scalar")
-        mesh_value = mesh_array.item()
-        if isinstance(mesh_value, (bool, np.bool_)) or not isinstance(mesh_value, (int, np.integer)):
-            raise ValueError("Photon point mesh count is not an integer")
-        mesh_count = int(mesh_value)
-        if mesh_count < 0 or mesh_count > (1 << 62):
-            raise ValueError("Photon point mesh count is out of safe range")
-
-    if weights_name not in blocks:
-        if mesh_present:
-            raise ValueError("Photon point mesh is present but Particles/Weight/Photon is missing")
+    records = getattr(blocks, "point_variables", None)
+    if not isinstance(records, dict):
+        raise ValueError("Photon point-variable metadata is unavailable")
+    weights_matches = [record for record in records.values()
+                       if record["name"] == "Particles/Weight/Photon"]
+    if not weights_matches:
+        if "Particles/Weight/Photon" in blocks:
+            raise ValueError("Photon weight block is not a serialized point variable")
+        mesh_records = getattr(blocks, "point_meshes", {})
+        if _PHOTON_MESH_ID.decode("ascii") in mesh_records:
+            raise ValueError("Photon point mesh is present but Photon weight variable is missing")
         # EPOCH omits both Photon point blocks when the species has zero points.
         return 0.0
-
-    weights = np.asarray(blocks[weights_name], dtype=np.float64)
-    if weights.ndim != 1:
-        raise ValueError("Particles/Weight/Photon must be a one-dimensional point variable")
-    if not mesh_present:
-        raise ValueError("Particles/Weight/Photon is present but Photon point mesh is missing")
-    if weights.size != mesh_count:
-        raise ValueError("Photon point mesh count does not match Particles/Weight/Photon size")
+    record, weights = _validated_photon_point_variable(
+        blocks, "Particles/Weight/Photon")
     if not np.all(np.isfinite(weights)) or np.any(weights < 0.0):
         raise ValueError("Particles/Weight/Photon contains invalid weights")
+
+    mesh_records = getattr(blocks, "point_meshes", {})
+    mesh_record = mesh_records.get(_PHOTON_MESH_ID.decode("ascii"))
+    if mesh_record is not None:
+        mesh_count = mesh_record["declared_npoints"]
+        if mesh_count < 0 or mesh_count > (1 << 62):
+            raise ValueError("Photon point mesh count is out of safe range")
+        if mesh_count != record["decoded_size"]:
+            raise ValueError("Photon point mesh count does not match Photon weight size")
+
     total = float(weights.sum())
     if not np.isfinite(total):
         raise ValueError("Particles/Weight/Photon sum is non-finite")
