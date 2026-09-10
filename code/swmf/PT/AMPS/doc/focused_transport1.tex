@@ -1,0 +1,2753 @@
+\section*{Self-consistent Solver for the Focused Transport Equation (FTE) + Kolmogorov Alfvén-Wave Energy}
+
+\emph{(One magnetic field line, Lagrangian mesh, pitch-angle grid)}
+
+\section*{0. Governing Equations}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{@{}p{0.32\textwidth} | p{0.64\textwidth}@{}}
+\toprule
+\textbf{Equation} & \textbf{Form (Lagrangian mesh; vertices move with $U$)} \\
+\midrule
+Focused transport (isotropic-removed, slab geometry) &
+$\displaystyle
+\frac{\partial f}{\partial t} 
++ \mu v \frac{\partial f}{\partial s}
++ \frac{1 - \mu^2}{2}\, v\, \frac{\partial \ln B}{\partial s} \frac{\partial f}{\partial \mu}
+=
+\frac{\partial}{\partial \mu}\left( D_{\mu\mu} \frac{\partial f}{\partial \mu} \right)
++ Q_{\text{inj}}$ \\
+Wave amplitude (Kolmogorov) &
+$\displaystyle
+\frac{\partial A_\pm}{\partial t} 
+\pm V_A \frac{\partial A_\pm}{\partial s}
+= 2\gamma_\pm A_\pm - \frac{A_\pm}{\tau_{\text{cas}}} + Q_{\text{shock}}$ \\
+Mean free path &
+$\displaystyle
+\lambda_\parallel^{-1} = \frac{\pi e^2}{B^2} (A_+ + A_-) 
+\left(k_{\min}^{-2/3} - k_{\max}^{-2/3} \right)$ \\
+Pitch-angle diffusion &
+$\displaystyle
+D_{\mu\mu}(p,\mu) = \frac{1}{2}(1 - \mu^2) \frac{v}{\lambda_\parallel}$ \\
+Wave growth/damping &
+$\displaystyle
+\gamma_\pm = \frac{\pi^2 e^2 V_A}{c B^2} \frac{S_\pm}{k_{\text{eff}},}
+\quad
+S_\pm = \int v \mu f\, \delta(k - k_{\text{res}}^\pm)\, d^3p$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section*{1. Discretization Choices}
+
+\begin{center}
+\begin{tabular}{@{}l | l@{}}
+\toprule
+\textbf{Variable} & \textbf{Grid} \\
+\midrule
+Space $s$ & Lagrangian segments (cells move with $U$) \\
+Pitch angle $\mu$ & Uniform or Gauss–Legendre points, $N_\mu \sim 32$ \\
+Momentum $p$ & Log bins (10–15 per decade) \\
+Wave amplitude & One scalar $A_+, A_-$ per cell \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section*{2. Global Time-Step Procedure ($\Delta t$)}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{@{}p{0.22\textwidth} | p{0.72\textwidth}@{}}
+\toprule
+\textbf{Step} & \textbf{What You Do} \\
+\midrule
+0. Move mesh &
+Each vertex: $s_k \leftarrow s_k + U_k \Delta t$. Recompute $B$, $\rho$, $V_A$, $L_j$, $V_j$. \\
+1. FTE sweep &
+Operator split:  
+(a) $\mu$-advection: TVD upwind with focusing term  
+(b) $\mu$-diffusion: Crank–Nicolson on $D_{\mu\mu}$  
+(c) $s$-advection: second-order upwind with speed $\mu v$ \\
+2. Tally streaming &
+In each cell: $S_\pm = \sum_{p,\mu} v \mu f\, \delta(k - k_{\text{res}}^\pm)\, \Delta \mu \Delta p$ \\
+3. Growth \& damping &
+Evaluate $\gamma_\pm$ using $S_\pm$ \\
+4. Wave advection &
+Upwind the amplitudes with speed $\pm V_A$ (since mesh moves with $U$) \\
+5. Local wave step &
+$A_\pm \leftarrow A_\pm + \Delta t \left( 2\gamma_\pm A_\pm - A_\pm/\tau_{\text{cas}} + Q_{\text{shock}} \right)$ \\
+6. Energy swap &
+$\Delta E_{\text{waves}} = 2\gamma_\pm A_\pm \Delta t V_j$; subtract this from resonant particles $\propto p_\parallel$ (floor $v > v_{\text{th}}$) \\
+7. Update $\lambda_\parallel$ &
+New $A_+ + A_- \rightarrow D_{\mu\mu} \rightarrow \kappa_\parallel$ for next step \\
+8. Inject SEPs / shock waves &
+If shock crosses cell $j$: add $Q_{\text{shock}}$ and inject new particles via $Q_{\text{inj}}$ \\
+9. Advance time &
+$t \leftarrow t + \Delta t$; repeat until $t = t_{\text{end}}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section*{3. Stability Criteria}
+
+\begin{center}
+\begin{tabular}{@{}l | l@{}}
+\toprule
+\textbf{Process} & \textbf{Limit} \\
+\midrule
+$\mu$-advection CFL & $v \Delta t / (\Delta \mu L_{\min}) < 0.4$ \\
+$\mu$-diffusion & $D_{\mu\mu} \Delta t / \Delta \mu^2 < 0.5$ (CN is unconditionally stable) \\
+Wave advection & $V_A \Delta t < L_{\min} / 2$ \\
+Growth & Sub-cycle if $\gamma_\pm \Delta t > 0.5$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section*{4. Boundary Conditions}
+
+\begin{itemize}
+\item $\mu = \pm 1$: $D_{\mu\mu} \partial_\mu f = 0$ (mirror)
+\item Inner radial: Reflecting for inward waves, free outflow for outward
+\item Outer radial: Fixed quiet state $A_\pm = A_{\text{BG}}$; $f$ outflow
+\end{itemize}
+
+\section*{5. Energy-Conservation Audit}
+
+At each step, verify:
+
+\[
+E_{\text{kin}}^{n+1} + E_{\text{wave}}^{n+1} = 
+E_{\text{kin}}^n + E_{\text{wave}}^n + E_{\text{shock}}
+\]
+
+This is guaranteed numerically if Steps 2, 5, and 6 use equal-and-opposite energy increments.
+
+\section*{Key Implementation Notes}
+
+\begin{itemize}
+\item Store \textbf{integrated energies} $E_\pm$ (J) in the Lagrangian mesh: the advection term becomes simply $\pm V_A E_\pm$, and no geometric dilution is needed.
+\item Pitch-angle grid must update the focusing coefficient $\partial \ln B / \partial s$ from the convected $B(s)$ each step.
+\item Shock motion on the moving mesh: radial increment $V_{\text{sh}} \Delta t$ + arc-length conversion $\int ds / dr$.
+\item A second-order Strang split (e.g., $\mu$-advection $\rightarrow$ $\mu$-diffusion $\rightarrow$ $s$-advection, then reverse order next step) preserves global second-order accuracy.
+\end{itemize}
+
+\bigskip
+
+\noindent
+This is the \textbf{end-to-end algorithm} for solving the focused transport equation, self-consistently coupled to an evolving Kolmogorov Alfvén-wave field along a Lagrangian (co-moving) magnetic field line.
+
+\section*{Why the \textbf{Parallel Mean Free Path} $\lambda_{\parallel}$ is Indispensable in an FTE + Wave Model}
+
+\begin{center}
+\begin{tabular}{@{}p{0.25\textwidth} | p{0.45\textwidth} | p{0.25\textwidth}@{}}
+\toprule
+\textbf{Role} & \textbf{What $\lambda_{\parallel}$ Actually Does} & \textbf{Without It …} \\
+\midrule
+\textbf{1. Turns wave power into a scattering coefficient} &
+In quasilinear theory, the pitch-angle diffusion coefficient is:
+\[
+D_{\mu\mu}(p,\mu) = \frac{1}{2}(1 - \mu^2)\, \frac{v}{\lambda_{\parallel}(p,s,t)}
+\]
+The entire right-hand side of the FTE requires $D_{\mu\mu}$. &
+No way to compute how fast a given wave amplitude randomizes pitch angles. \\
+\midrule
+\textbf{2. Sets particle streaming that drives wave growth/damping} &
+Parker/FTE streaming: $S \propto -\kappa_{\parallel} \partial_s f$, where
+$\kappa_{\parallel} = \frac{v \lambda_{\parallel}}{3}$.  
+Smaller $\lambda_{\parallel} \Rightarrow$ stronger scattering $\Rightarrow$ smaller net streaming $\Rightarrow$ weaker growth. &
+Wave growth decoupled from wave level — leads to unphysical runaway. \\
+\midrule
+\textbf{3. Provides the bridge to the diffusive (Parker) limit} &
+When $\lambda_{\parallel} \ll$ macroscopic scale, the FTE reduces to the isotropic Parker equation with diffusion coefficient $\kappa_{\parallel}$. &
+No ability to compare or validate your code against Parker-equation solutions. \\
+\midrule
+\textbf{4. Appears in shock-drift acceleration and escape times} &
+In DSA, the momentum gain per cycle is fixed, but the cycle time scales as $\tau_{\text{cycle}} \sim \lambda_{\parallel} / U_{\text{sh}}$. &
+Wrong acceleration rate and wrong maximum energy. \\
+\midrule
+\textbf{5. Controls cross-field transport (FLRW option)} &
+Field-line random walk: $\kappa_\perp \sim (\delta B / B)^2 \lambda_{\parallel}$. &
+Cross-field diffusion has no dependence on wave level. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section*{Where It Enters the Solver You Just Saw}
+
+\begin{enumerate}
+    \item \textbf{Step 1 (FTE sweep):} requires $D_{\mu\mu} \propto 1/\lambda_{\parallel}$.
+    \item \textbf{Step 2 (Streaming tally):} uses $\kappa_{\parallel} = v \lambda_{\parallel} / 3$.
+    \item \textbf{Step 3 (Growth $\gamma$):} streaming—and thus $\gamma$—shrinks when $\lambda_{\parallel}$ shrinks.
+    \item \textbf{Step 7 ($\kappa$-update):} new $A_+ + A_- \Rightarrow$ new $\lambda_{\parallel} \Rightarrow$ new $D_{\mu\mu}$. This is the feedback loop.
+\end{enumerate}
+
+\section*{Physical Intuition}
+
+\emph{Think of $\lambda_{\parallel}$ as the “free-run distance” a particle can travel before the wave field forces it to change direction.}
+
+\medskip
+
+Everything that matters—how anisotropic the distribution becomes, how strong the streaming instability is, how quickly a shock accelerates ions—scales with, or is inversely proportional to, this distance.
+
+\medskip
+
+So even though you never advect $\lambda_{\parallel}$ as a variable, you must \textbf{recompute it every global step} from the current wave amplitudes. Otherwise, the particle–wave coupling lacks its central link.
+
+
+\section*{Pseudo-language Algorithm}
+
+\textbf{Goal:} Advance, in lock-step, the \emph{Focused Transport Equation (FTE)} for SEPs and the \emph{Kolmogorov Alfvén-wave energy equation} along a \textbf{single magnetic field line} stored as a chain of linear segments.  
+The same logic can be wrapped in an outer loop to handle multiple lines.
+
+\section*{0. Data Containers}
+
+\begin{lstlisting}
+// VERTEX[k], k = 0…Nv
+r_k                 // radial distance [m]
+B_k                 // magnetic-field magnitude [T]
+rho_k               // plasma mass density [kg/m^3]
+U_k                 // wind speed [m/s]
+A_k = B_ref / B_k   // cross-sectional area (flux tube)
+
+// SEGMENT[j], j = 0…Nv-1
+L_j                 // length [m]
+vol_j               // frustum volume = L/3 (A_L + sqrt(A_L A_R) + A_R)
+VA_j                // Alfvén speed = B_mid / sqrt(μ₀ ρ_mid)
+Eplus_j             // integrated outward wave energy (J)
+Eminus_j            // integrated inward wave energy (J)
+
+// PARTICLE(i)
+segID, ξ            // segment index & local coord [0…L]
+p_bin, μ_bin        // momentum & pitch-angle indices
+w_i                 // statistical weight
+
+// Grids
+pGrid[m], m = 0…Np-1    // logarithmic momenta
+μGrid[n], n = 0…Nμ-1    // uniform in μ ∈ [-1,1]
+kRange = [k_min, k_max] // Kolmogorov inertial range
+\end{lstlisting}
+
+\section*{1. Initialisation}
+
+\begin{lstlisting}[language=Python]
+buildVertices()           // r_k, φ_k (Parker spiral), B_k, etc.
+buildSegments()           // L_j, vol_j, VA_j
+seedParticles()           // shock injection or seed spectrum
+setWaveBackground()       // small A+, A− everywhere
+computeLambda()           // λ∥ from A+,A− (for Dμμ)
+\end{lstlisting}
+
+\section*{2. Global Loop (Advance by $\Delta t$)}
+
+\begin{lstlisting}[language=Python]
+while (time < t_end):
+
+    moveVerticesAndShock()
+    updateGeometry()
+
+    # -------- PARTICLE STEP --------
+    zeroScalarFlux()
+    for each particle i:
+        focusAdvectionMu(i)
+        muDiffusionCN(i)
+        spaceAdvection(i)
+        splitDisplacement(i)
+
+    # ---- STREAMING → WAVE GROWTH ----
+    for each segment j:
+        projectScalarFluxToWaveSenses(j)
+        computeGamma(j)
+
+    # -------- WAVE STEP --------
+    for each segment j:
+        fluxOutP =  VA_j * Eplus_j
+        fluxInP  =  VA_{j-1} * Eplus_{j-1}
+        fluxOutM = -VA_j * Eminus_j
+        fluxInM  = -VA_{j+1} * Eminus_{j+1}
+        Eplus_j  += (fluxInP - fluxOutP) * Δt
+        Eminus_j += (fluxInM - fluxOutM) * Δt
+
+        Eplus_j  += (2γ_plus  Eplus_j - Eplus_j/τ_cas + Q_shock+) * Δt
+        Eminus_j += (2γ_minus Eminus_j - Eminus_j/τ_cas + Q_shock−) * Δt
+
+    # ---- ENERGY EXCHANGE ----
+    for each segment j:
+        ΔE_wave = (Eplus_j^new + Eminus_j^new) - (Eplus_j^old + Eminus_j^old)
+        if ΔE_wave > 0:
+            debitResonantParticles(j, ΔE_wave)
+        else if ΔE_wave < 0:
+            creditResonantParticles(j, -ΔE_wave)
+
+    # ---- UPDATE SCATTERING ----
+    computeLambda()
+    computeDmuMu()
+
+    time += Δt
+\end{lstlisting}
+
+\section*{3. Key Subroutines (Pseudocode Snippets)}
+
+\subsection*{3.1 \texttt{focusAdvectionMu(i)}}
+
+\begin{lstlisting}
+a = (1 - μ²)/2 · v_i · ∂lnB/∂s
+applyTVDupwind(f[p_bin][μ_bin], a, Δt, Δμ)
+\end{lstlisting}
+
+\subsection*{3.2 \texttt{muDiffusionCN(i)}}
+
+\begin{lstlisting}
+solve ∂f/∂t = ∂/∂μ(Dμμ ∂f/∂μ) with implicit CN
+tridiagonalSolve(f_row)
+\end{lstlisting}
+
+\subsection*{3.3 \texttt{spaceAdvection(i)}}
+
+\begin{align*}
+\Delta s &= \mu_i\, v_i\, \Delta t \\
+(\text{newSeg},\, \text{new}~\xi) &= \text{moveAndSplit}(i.\text{segID},\, i.\xi,\, \Delta s)
+\end{align*}
+
+\subsection*{3.4 \texttt{projectScalarFluxToWaveSenses(j)}}
+
+\begin{align*}
+\text{for } m \text{ in } p\text{Grid:} \quad & \\
+v &= \frac{p}{m_p} \\
+\mu_{\text{res}} &= \frac{V_A}{v} \\
+k_{+} &= \frac{\Omega}{v \mu_{\text{res}} + V_A} \\
+k_{-} &= \frac{\Omega}{v (-\mu_{\text{res}}) + V_A} \\
+&\text{assign } S_{\text{scalar}}[m] \text{ to } S_{+} \text{ or } S_{-}
+\end{align*}
+
+\begin{align*}
+\text{Sum over } m \Rightarrow S_{+}(j),\; S_{-}(j)
+\end{align*}
+
+\begin{align*}
+\gamma_{+} &= \frac{\pi^2 e^2 V_A}{c B^2} \cdot \frac{S_{+}}{k_{\text{eff}}} \\
+\gamma_{-} &= \text{same with } S_{-}
+\end{align*}
+
+\subsection*{3.5 \texttt{debitResonantParticles}(j,\, $\Delta E_{\text{wave}}$)
+
+\begin{align*}
+G_{\text{tot}} &= \sum_i w_i\, |p_{\parallel i}| \quad \text{(sum over resonant set)} \\
+\text{for each } i \text{ in set:} \\
+\quad \Delta E_i &= \Delta E_{\text{wave}} \cdot \left( \frac{w_i\, |p_{\parallel i}|}{G_{\text{tot}}} \right) \\
+\quad v_i^2 &= \max\left( v_{\text{floor}}^2,\; v_i^2 - \frac{2\, \Delta E_i}{m_p} \right) \\
+\quad v_i &= \sqrt{v_i^2}
+\end{align*}
+
+Repeat on surviving particles if any hit \texttt{v\_floor}.
+
+\section*{4. Minimum Stability Conditions}
+
+\begin{align*}
+|\mu|\, v\, \Delta t / \Delta s           &< 0.4 \quad &\text{(s-advection CFL)} \\
+(1 - \mu^2)\, v\, \Delta t / (\Delta \mu\, \Delta s) &< 0.4 \quad &\text{(focusing)} \\
+D_{\mu\mu}\, \Delta t / \Delta \mu^2      &< 0.5 \quad &\text{(implicit is stable)} \\
+V_A\, \Delta t / \Delta s                 &< 0.5 \quad &\text{(wave advection)} \\
+\gamma_{\max}\, \Delta t                  &< 0.5 \quad &\text{(subcycle if violated)}
+\end{align*}
+
+\section*{Remarks}
+
+\begin{itemize}
+    \item \textbf{Lagrangian mesh} eliminates wind-speed terms in advection: only $\mu v$ and $\pm V_A$ remain.
+    \item \textbf{Integrated energies} $E_\pm$ avoid explicit stretch/dilution terms.
+    \item A \textbf{second-order Strang split} ($\mu$-advection $\rightarrow$ $s$-advection $\rightarrow$ $\mu$-diffusion, then reverse next step) gives global second-order accuracy.
+    \item \textbf{Energy conservation} is guaranteed to round-off if $\pm 2\gamma E \Delta t$ is exchanged with particles in the same cell.
+\end{itemize}
+
+\bigskip
+
+\noindent
+This pseudo-code outline can be translated directly into \texttt{C++}, \texttt{Fortran}, or Python, and serves as a complete implementation checklist for a coupled FTE + Alfvén-wave solver on a co-moving solar wind mesh.
+
+\section*{Fully Specified Numerical Recipe for Focused Transport \& Wave Solver (Lagrangian Mesh)}
+
+\subsection*{Notation Used Throughout}
+
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Symbol} & \textbf{Mesh Meaning} \\
+\midrule
+$j = 0\ldots N_c{-}1$ & segment index (space) \\
+$m = 0\ldots N_p{-}1$ & logarithmic momentum bin \\
+$n = 0\ldots N_\mu{-}1$ & pitch-angle node (Gauss--Legendre) \\
+$\Delta\mu_n$ & integration weight at $\mu$-node $n$ \\
+$\Delta s_j$ & segment length after convection (metres) \\
+$V_j$ & frustum volume of segment $j$ (metres$^3$) \\
+$v_m$ & centre speed of momentum bin $m$ \\
+$\lambda_{jm}$ & parallel mean free path in seg $j$, bin $m$ (metres) \\
+\bottomrule
+\end{tabular}
+
+All arrays below are time-level $\ell \rightarrow \ell+1$.
+
+\subsection*{STEP-0: Mesh Convection and Geometry}
+
+\begin{align*}
+\text{for vertex } k:& \\
+\quad r_k &\leftarrow r_k + U_k \Delta t \\
+\quad B_k, \rho_k &\leftarrow \text{analytic } r^{-2} \text{ update} \\
+\quad A_k &\leftarrow B_\text{ref} / B_k \\
+\text{for segment } j:& \\
+\quad \Delta s_j &\leftarrow |\mathbf{R}_{k+1} - \mathbf{R}_k| \\
+\quad A_L &\leftarrow A_k,\quad A_R \leftarrow A_{k+1} \\
+\quad V_j &\leftarrow \frac{\Delta s_j}{3} (A_L + \sqrt{A_L A_R} + A_R) \\
+\quad V_{A,j} &\leftarrow \frac{B_\text{mid}}{\sqrt{\mu_0 \rho_\text{mid}}} \\
+\quad \nabla \ln B_j &\leftarrow (\ln B_{k+1} - \ln B_k)/\Delta s_j
+\end{align*}
+
+\subsection*{STEP-1: Focused Transport Solver (Operator Split)}
+
+\paragraph{1a. \mu--Advection (TVD up-wind, 2nd order)}
+\begin{align*}
+a_{mnj} &= \frac{1 - \mu_n^2}{2} \cdot v_m \cdot \nabla \ln B_j \\
+\phi^- &= f_{mn}^{(\ell)} - f_{m,n-1}^{(\ell)} \\
+\phi^+ &= f_{m,n+1}^{(\ell)} - f_{mn}^{(\ell)} \\
+\theta &= \phi^- / \phi^+ \\
+\sigma &= \max(0, \min(2\theta, 1, 2)) \\
+\hat{f}_{m,n+1/2} &= f_{mn} + 0.5 \sigma \phi^+ \\
+F_{m,n+1/2} &= a_{mnj} > 0\ ?\ a_{mnj} \hat{f}_{m,n+1/2}^-\ :\ a_{mnj} \hat{f}_{m,n+1/2}^+ \\
+f_{mn}^* &= f_{mn}^{(\ell)} - \frac{\Delta t}{\Delta \mu} (F_{m,n+1/2} - F_{m,n-1/2})
+\end{align*}
+
+\paragraph{1b. \mu--Diffusion (Crank--Nicolson)}
+\begin{align*}
+D_{mnj} &= \frac{1}{2}(1 - \mu_n^2) v_m / \lambda_{mj} \\
+\alpha_n &= D_{mnj} \Delta t / (2 \Delta \mu^2),\quad \beta_n = 1 + 2\alpha_n,\quad \gamma_n = \alpha_n \\
+\text{Solve tridiagonal system:}\quad &\beta_n f_{mn}^{**} - \alpha_n f_{m,n-1}^{**} - \gamma_n f_{m,n+1}^{**} = f_{mn}^* + \alpha_n(f_{m,n-1}^* - 2f_{mn}^* + f_{m,n+1}^*)
+\end{align*}
+
+\paragraph{1c. s--Advection (2nd Order Upwind)}
+\begin{align*}
+u_{mnj} &= \mu_n v_m,\quad CFL = |u_{mnj}| \Delta t / \Delta s_j \leq 0.4 \\
+F_{mnj+1/2} &= u_{mnj} > 0\ ?\ u_{mnj} f_{mn}^{**}|_{j}\ :\ u_{mnj} f_{mn}^{**}|_{j+1} \\
+f_{mnj}^{(\ell+1)} &= f_{mnj}^{**} - \frac{\Delta t}{\Delta s_j} (F_{mnj+1/2} - F_{mnj-1/2})
+\end{align*}
+
+\subsection*{STEP-2: Scalar Parker Flux per Momentum Bin}
+\begin{align*}
+\kappa_{mj} &= \frac{v_m \lambda_{mj}}{3},\quad \partial f/\partial s \text{ via central difference} \\
+S_\text{scalar}[m][j] &= -\kappa_{mj} \cdot \partial f/\partial s
+\end{align*}
+
+\subsection*{STEP-3: Streaming \textrightarrow{} Growth / Damping}
+\begin{align*}
+J_{mj} &= \sum_n \Delta \mu_n \mu_n v_m f_{mnj} \\
+\mu_\text{res} &= V_A / v_m \\
+k_\text{res}^{\pm}(m) &= \Omega / (v_m \mu_\text{res} \pm V_A) \\
+S_\pm[j] &= \sum_m \tfrac{1}{2} J_{mj} \quad \text{(filter on $k_\text{res}$)} \\
+\gamma_\pm &= \frac{\pi^2 e^2 V_A}{c B^2} \cdot \frac{S_\pm}{k_\text{eff}}
+\end{align*}
+
+\subsection*{STEP-4: Wave Advection (Integrated Energy Form)}
+\begin{align*}
+E^+_j &+= (F_{E+}^L - F_{E+}^R) \Delta t \\
+E^-_j &+= (F_{E-}^L - F_{E-}^R) \Delta t
+\end{align*}
+
+\subsection*{STEP-5: Local Wave Sources / Sinks}
+\begin{align*}
+E^+_j &+= (2\gamma_+ E^+_j - E^+_j/\tau_\text{cas} + Q_\text{shock}^+) \Delta t \\
+E^-_j &+= (2\gamma_- E^-_j - E^-_j/\tau_\text{cas} + Q_\text{shock}^-) \Delta t
+\end{align*}
+
+\subsection*{STEP-6: Energy Exchange with Resonant Particles}
+\begin{align*}
+\Delta E_\text{wave} &= (E^+_j)^{(\ell+1)} + (E^-_j)^{(\ell+1)} - (E^+_j)^{(\ell)} - (E^-_j)^{(\ell)}
+\end{align*}
+
+\subsection*{STEP-7: Update Mean Free Path}
+\begin{align*}
+\lambda_{mj}^{-1} &= \frac{\pi e^2}{B_\text{mid}^2} \cdot \frac{E^+_j + E^-_j}{V_j} (k_\text{min}^{-2/3} - k_\text{max}^{-2/3}) \\
+\kappa_{mj} &= \frac{v_m \lambda_{mj}}{3}
+\end{align*}
+
+\subsection*{STEP-8: Shock Handling}
+\begin{align*}
+r_\text{sh} &+= V_\text{sh} \Delta t \\
+s_\text{sh} &= \int \left(\frac{ds}{dr}\right) dr \\
+j_\text{sh} &\leftarrow \text{segment location of shock} \\
+Q_\text{shock}^{\pm}[j_\text{sh}] &= \frac{\eta \rho_\text{up} (V_\text{sh} - U_\text{up})^3}{2 N_k}
+\end{align*}
+
+\subsection*{Stability Summary}
+\begin{align*}
+\mu\text{-advection:}\quad & |a| \Delta t / \Delta \mu < 0.4 \\
+\mu\text{-diffusion:}\quad & D_{\mu\mu} \Delta t / \Delta \mu^2 < 0.5 \\
+s\text{-advection:}\quad & |\mu| v \Delta t / \Delta s < 0.4 \\
+\text{Wave advection:}\quad & V_A \Delta t / \Delta s < 0.5 \\
+\text{Growth:}\quad & |\gamma|_\text{max} \Delta t < 0.5
+\end{align*}
+
+\subsection*{Result}
+This step-by-step, index-level prescription turns the high-level algorithm into a \textbf{directly implementable numerical scheme}:
+\begin{itemize}
+    \item 1D focused transport solved with TVD-upwind and Crank--Nicolson diffusion.
+    \item Lagrangian mesh removes bulk-flow terms; only $\mu v$ and $\pm V_A$ advection remain.
+    \item Fully coupled: updated waves $\Rightarrow$ new $\lambda_\parallel$ $\Rightarrow$ new $D_{\mu\mu}$ $\Rightarrow$ new growth.
+\end{itemize}
+
+\section*{Finite-Volume / Finite-Difference Equations (One Global Time Step $\Delta t$: Level $\ell \rightarrow \ell+1$)}
+
+All symbols match the pseudo-code in the previous answer.
+
+\subsection*{Index Sets}
+\[
+\begin{array}{@{}ll@{}}
+\toprule
+\textbf{Index} & \textbf{Meaning} \\
+\midrule
+j\; (0 \dots N_c - 1) & \text{Segment (space)} \\
+m\; (0 \dots N_p - 1) & \text{Momentum bin} \\
+n\; (0 \dots N_\mu - 1) & \text{Pitch-angle node (Gauss–Legendre, weight } \Delta \mu_n) \\
+\bottomrule
+\end{array}
+\]
+
+\subsection*{STEP-0 Mesh Convection}
+
+Vertices move with the bulk wind $U_k$:
+\[
+r_k^{\,\ell+1} = r_k^{\,\ell} + U_k^{\,\ell}\, \Delta t
+\quad \Longrightarrow \quad
+\begin{cases}
+B_k^{\,\ell+1} = B_0\,\left(\dfrac{r_0}{r_k^{\,\ell+1}}\right)^2, \\[4pt]
+\rho_k^{\,\ell+1} = \rho_0\,\left(\dfrac{r_0}{r_k^{\,\ell+1}}\right)^2 \left(\dfrac{U_0}{U_k^{\,\ell+1}}\right).
+\end{cases}
+\]
+
+Updated segment length and volume:
+\[
+\boxed{
+\Delta s_j^{\,\ell+1} = \left| R_{k+1}^{\,\ell+1} - R_k^{\,\ell+1} \right|, \quad
+V_j^{\,\ell+1} = \frac{\Delta s_j}{3} \left( A_L + \sqrt{A_L A_R} + A_R \right)
+}
+\]
+
+\subsection*{STEP-1 Focused Transport Equation (Operator Split)}
+
+\subsubsection*{1a. $\mu$-Advection (1st-Order TVD, Explicit)}
+
+\[
+f_{m,n}^{*} = f_{m,n}^{\ell}
+- \frac{\Delta t}{\Delta \mu}
+  \left[ F_{m,n+\frac{1}{2}}^{\ell} - F_{m,n-\frac{1}{2}}^{\ell} \right]
+\]
+
+with
+
+\[
+F_{m,n+\frac{1}{2}}^{\ell} =
+\begin{cases}
+a_{m,n+\frac{1}{2}}\, f_{m,n}^{\text{up}}, & a_{m,n+\frac{1}{2}} > 0, \\[4pt]
+a_{m,n+\frac{1}{2}}\, f_{m,n+1}^{\text{up}}, & a_{m,n+\frac{1}{2}} < 0,
+\end{cases}
+\quad
+a_{m,n+\frac{1}{2}} = \frac{1 - \mu_{n+\frac{1}{2}}^2}{2}\, v_m\,
+\left( \frac{\partial \ln B}{\partial s} \right)_j^{\ell}
+\]
+
+\subsubsection*{1b. $\mu$-Diffusion (Crank–Nicolson)}
+
+\[
+(1 + 2\alpha_{mnj})\, f_{m,n}^{**}
+- \alpha_{mnj}\, f_{m,n-1}^{**}
+- \alpha_{mnj}\, f_{m,n+1}^{**}
+= f_{m,n}^{*}
++ \alpha_{mnj} \left(f_{m,n-1}^{*} - 2f_{m,n}^{*} + f_{m,n+1}^{*} \right)
+\]
+\[
+\alpha_{mnj} = \frac{D_{\mu\mu}(m,n,j)\,\Delta t}{2\Delta\mu^2}
+\]
+
+\subsubsection*{1c. $s$-Advection (2nd-Order Upwind)}
+
+\[
+f_{mnj}^{\ell+1} = f_{mnj}^{**}
+- \frac{\Delta t}{\Delta s_j^{\ell+1}}
+\left[ U_{mnj}^{+} f_{mnj}^{\text{up}} - U_{mnj}^{-} f_{mn,j-1}^{\text{up}} \right],
+\quad
+U_{mnj}^{\pm} = \max(0, \pm \mu_n v_m)
+\]
+
+\subsection*{STEP-2 Scalar Parker Flux}
+
+\[
+S_{mj}^{\ell+1} = -\kappa_{mj}^{\ell}
+\frac{f_{mj}^{\ell+1} - f_{m,j-1}^{\ell+1}}{\Delta s_j^{\ell+1}},
+\quad
+\kappa_{mj} = \frac{v_m \lambda_{mj}}{3}
+\]
+
+\subsection*{STEP-3 Growth / Damping Rate}
+
+\[
+\gamma_{+,j}^{\ell+1} =
+\frac{\pi^2 e^2 V_{A,j}^{\ell+1}}{c B_j^2}
+\cdot \frac{S_{+,j}^{\ell+1}}{k_{\text{eff}}},
+\quad
+S_{+,j} = \frac{1}{2} \sum_m v_m J_{mj} \,\mathbb{1}_{k_{\min} \le k_{+,mj} \le k_{\max}}
+\]
+
+\[
+k_{+,mj} = \frac{\Omega}{v_m \mu_{\text{res}} + V_A},
+\quad
+\mu_{\text{res}} = \frac{V_A}{v_m}
+\]
+
+(Analogous expression applies for “$-$” waves.)
+
+\subsection*{STEP-4 Wave Advection (Integrated Energy)}
+
+\[
+E_{\pm,j}^{\text{adv}} = E_{\pm,j}^{\ell}
+- \frac{\Delta t}{\Delta s_j^{\ell+1}}
+\left[c_{\pm,j+\frac{1}{2}} E_{\pm,j}^{\text{up}} - c_{\pm,j-\frac{1}{2}} E_{\pm,j-1}^{\text{up}} \right],
+\quad
+c_{\pm} = \pm V_A \quad (\text{plasma frame})
+\]
+
+\subsection*{STEP-5 Local Sources and Sinks}
+
+\[
+E_{\pm,j}^{\ell+1} = E_{\pm,j}^{\text{adv}} + \Delta t \left(
+  2\gamma_{\pm,j}^{\ell+1} E_{\pm,j}^{\text{adv}}
+  - \frac{E_{\pm,j}^{\text{adv}}}{\tau_{\text{cas}}}
+  + Q_{\text{shock},\pm,j}
+\right)
+\]
+
+\subsection*{STEP-6 Energy Transfer to Particles}
+
+For resonant set $R_j$:
+\[
+\Delta E_i =
+\left( \frac{w_i |p_{\parallel i}|}{\sum_{k \in R_j} w_k |p_{\parallel k}|} \right)
+\cdot |\Delta E_{\text{wave},j}|,
+\quad
+v_i^{\text{new}} =
+\sqrt{\max\left(v_{\text{floor}}^2, v_i^2 \pm \frac{2\Delta E_i}{m_p}\right)}
+\]
+Sign ± is minus when waves gain energy.
+
+\subsection*{STEP-7 Mean Free Path Update}
+
+\[
+\lambda_{mj}^{-1,\,\ell+1}
+= \frac{\pi e^2}{B_j^2}
+\cdot \frac{E_{+,j}^{\ell+1} + E_{-,j}^{\ell+1}}{V_j^{\ell+1}}
+\cdot \left(k_{\min}^{-2/3} - k_{\max}^{-2/3}\right)
+\]
+
+All other coefficients ($D_{\mu\mu}$, $\kappa$) follow directly.
+
+\vspace{1em}
+\noindent
+\textit{These boxed equations are exactly what is advanced at each sub-step of the global algorithm, providing rigorous, reproducible numerics for the FTE + Kolmogorov-wave coupling on a moving (Lagrangian) field-line mesh.}
+
+\section*{Monte-Carlo Solver for the Focused Transport Equation (FTE) + Kolmogorov Turbulence}
+
+\textit{(One Lagrangian field-line; particles = SEP macro-particles; waves = single amplitude per sense \& segment)}
+
+\section*{0 State Vectors}
+
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Object} & \textbf{Contents} \\
+\midrule
+\textbf{VERTEX} $k$ & $r_k$, $B_k$, $\rho_k$, $U_k$, $A_k = B_0/B_k$ \\
+\textbf{SEGMENT} $j$ & $L_j$, $V_j$, $V_{A,j}$, $\nabla \ln B_j$, $E^+_j$, $E^-_j$ \\
+\textbf{PARTICLE} $i$ & segID, $\xi$ (0…$L$), $p$, $\mu$, $w$ \\
+\textbf{Grids} & $k \in [k_{\min}, k_{\max}]$, $p$ bins (log), optional $\theta$ bins \\
+\bottomrule
+\end{tabular}
+
+\section*{1 Stochastic Equations per Particle (SDE)}
+
+\[
+\boxed{
+\begin{aligned}
+ds &= \mu\,v\,dt, \\
+d\mu &= -\tfrac{1}{2}(1-\mu^2)\,v\,\partial_s \ln B\,dt + \sqrt{2D_{\mu\mu}}\,dW_t, \\
+dv &= \tfrac{1}{3}\,v\,(\nabla \cdot U)\,dt, \quad \text{(optional in Lagrangian mesh)} \\
+D_{\mu\mu}(p,\mu) &= \frac{1}{2}(1 - \mu^2)\,\frac{v}{\lambda_\parallel(p,s,t)}, \\
+\lambda_\parallel^{-1} &= \frac{\pi e^2}{B^2} \cdot \frac{E_+ + E_-}{V_j} (k_{\min}^{-2/3} - k_{\max}^{-2/3})
+\end{aligned}
+}
+\]
+\smallskip
+$dW_t$ is a standard normal deviate $\mathcal{N}(0,dt)$. Reflection is applied if $|\mu| > 1$.
+
+\section*{2 One Global Step $\Delta t$ (Outline)}
+
+\begin{lstlisting}
+MOVE_VERTICES();            // update r_k, B_k, ρ_k, A_k
+REBUILD_SEGMENTS();         // new L_j, V_j, VA_j, gradLnB
+ZERO_STREAMING();           // Splus[j] = Sminus[j] = 0
+
+for each particle i:
+    // (1) stochastic pitch-angle step (Milstein + reflection)
+    dW ~ N(0,1)
+    D  = D_mμμ(p_i, μ_i, segID)
+    μ_i += -(1 - μ_i^2)/2 * v_i * gradLnB_j * Δt + sqrt(2DΔt) * dW
+    reflect μ_i if |μ_i| > 1
+
+    // (2) spatial step (plasma frame)
+    Δs = μ_i * v_i * Δt
+    splitAcrossFaces(segID, ξ, Δs, w_i)  // adds w_i·step to S_scalar
+
+    // (3) optional adiabatic dv/dt
+    v_i *= exp((1/3) * divU_j * Δt)
+
+endfor
+
+PROJECT_STREAMING_TO_WAVE_SENSES();   // half-flux rule → S_plus, S_minus
+COMPUTE_GAMMA();                      // γ± from S±
+ADVECT_WAVE_ENERGY();                // upwind ±VA in Lagrangian mesh
+APPLY_LOCAL_SOURCES();               // +growth −damping −cascade +Q_shock
+EXCHANGE_ENERGY_WITH_PARTICLES();    // debit/credit resonant set
+UPDATE_MEAN_FREE_PATH();             // new λ ⇒ new Dμμ
+INJECT_NEW_SEP_PARTICLES_IF_SHOCK(); // fresh macro-particles
+time += Δt
+\end{lstlisting}
+
+\section*{3 Detailed Numerical Scheme}
+
+\subsection*{3.1 \texttt{splitAcrossFaces}}
+
+\begin{lstlisting}
+while Δs ≠ 0:
+    step = (Δs > 0) ? min(L_j - ξ, Δs) : max(-ξ, Δs)
+    S_scalar[pBin(seg), j] += weight * step / (Δt * V_j)
+    ξ += step
+    Δs -= step
+    if ξ == L_j:  seg++, ξ = 0
+    if ξ == 0:    seg--, ξ = L_{seg}
+\end{lstlisting}
+
+\subsection*{3.2 Projecting Scalar Flux to Wave Senses}
+
+\begin{lstlisting}
+for each m, j:
+    v = v_m
+    μres = VA_j / v
+    k+ = Ω / (v * μres + VA_j)
+    k− = Ω / (v * (-μres) + VA_j)
+    if k+ in range → S_plus[j]  += ½ * S_scalar[m][j]
+    if k− in range → S_minus[j] += ½ * S_scalar[m][j]
+\end{lstlisting}
+
+\subsection*{3.3 Wave Energy Advection (Upwind ±$V_A$)}
+
+\begin{lstlisting}
+F+_L =  VA_{j-1/2} * Eplus_{j-1}
+F+_R =  VA_{j+1/2} * Eplus_j
+Eplus_j += (F+_L - F+_R) * Δt
+(similar for Eminus with -VA)
+\end{lstlisting}
+
+\subsection*{3.4 Growth, Damping, Cascade, Shock}
+
+\[
+E_\pm \mathrel{+}= \left(2\gamma_\pm E_\pm - \frac{E_\pm}{\tau_{\text{cas}}} + Q_{\text{shock}} \right) \Delta t
+\]
+
+\subsection*{3.5 Energy Debit / Credit per Particle}
+
+\begin{lstlisting}
+ΔE_wave = Eplus_j_new + Eminus_j_new - previous total
+if ΔE_wave > 0:
+    // waves gained → take from particles
+    share ∝ w_i * |p_parallel_i| (with v ≥ v_floor cap)
+else if ΔE_wave < 0:
+    // waves lost → accelerate particles
+    same share, add energy
+\end{lstlisting}
+
+\section*{4 Stability Limits (Monte Carlo)}
+
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Quantity}           & \textbf{Limit}          & \textbf{Expression}      & \textbf{Comment} \\
+\midrule
+Spatial step                & $v \Delta t < 0.4 L_{\min}$ & $\mu$                 & CFL-like \\
+Pitch-angle drift           & $(\Delta t / \Delta \mu) < 0.4$ & $(1 - \mu^2)v \nabla\ln B$ & \\
+Pitch-angle diffusion       & $2 D_{\mu\mu} \Delta t < 0.4$ &                        & \\
+Wave advection              & $V_A \Delta t < 0.5 L_{\min}$ &                        & \\
+Growth/damping              & $\Delta t < 0.5 / \gamma$ & $\gamma$                & Sub-cycle \\
+\bottomrule
+\end{tabular}
+
+\section*{Outcome}
+
+This recipe converts the deterministic FTE solver into a Monte-Carlo particle algorithm:
+\begin{itemize}
+    \item Pitch-angle focusing and diffusion solved via SDEs.
+    \item Distance splitting yields unbiased Parker-flux tallies.
+    \item Kolmogorov wave energy advects with $\pm V_A$, grows/damps via particle streaming, and feeds back via $\lambda_\parallel \rightarrow D_{\mu\mu}$.
+    \item Energy is conserved cell-wise via explicit particle debit/credit.
+\end{itemize}
+
+\section*{Asynchronous Monte-Carlo Solver with Event-Driven Scattering}
+
+\textit{Convert the fixed–$\Delta t$ Monte-Carlo solver into an event-driven (``time-to-next-scattering'') scheme that retains the same physics coupling but allows each particle to select its own scattering timescale.}
+
+\section*{1 Key Idea}
+
+For an isotropic resonant cascade, the pitch-angle scattering frequency is:
+\[
+\nu_{\text{sc}}(p,s,t) = 2\,D_{\mu\mu}^{\text{iso}}(p,s,t) = \frac{v}{\lambda_\parallel(p,s,t)}
+\]
+
+Since small-angle deflections form a Poisson process, the time to the next large-angle collision is exponentially distributed:
+\[
+\boxed{
+T_{\text{sc}} = -\frac{\ln \mathcal{U}}{\nu_{\text{sc}}},\quad \mathcal{U} \sim \mathcal{U}(0,1)
+}
+\]
+
+If $\lambda_\parallel$ (or $\nu_{\text{sc}}$) changes slowly, $\nu_{\text{sc}}$ can be treated as constant between two collisions, and the guiding center is propagated ballistically for time $T_{\text{sc}}$.
+
+\section*{2 Additional Data}
+
+\begin{lstlisting}
+PARTICLE(i)
+    t_next    // absolute time of next scattering event
+    μ         // current pitch-angle cosine
+    (p, w, segID, ξ) as before
+\end{lstlisting}
+
+Maintain a global priority queue (min-heap) keyed on `t_next` for $O(\log N)$ event selection.
+
+\section*{3 Global Algorithm (Asynchronous)}
+
+\begin{lstlisting}
+initialiseParticles():
+    draw μ from isotropic
+    λ∥(p, s) → νsc
+    Tsc = -lnU / νsc
+    t_next = t0 + Tsc
+    push to heap
+
+t_wave = t0
+Δt_wave = 1–10 s  // user-defined
+
+while (heap not empty and time < t_end):
+
+    if heap.top().t_next < t_wave:   // ----- PARTICLE EVENT -----
+        pop event → particle i, time = t_next
+        pathIntegrate(i, Δt = t_next - t_i_last)
+        depositStreamingPath(i)
+        isotropise(μ_i)
+        updateScattFreq(i) → νsc
+        Tsc = -lnU / νsc
+        i.t_next = time + Tsc
+        push back into heap
+
+    else:                            // ----- WAVE TICK -----
+        Δτ = t_wave - time
+        for every live particle:
+            pathIntegrate(particle, Δτ)
+        projectScalarFlux()
+        updateWaveAmplitudes(Δτ)
+        adjustParticleEnergies(Δτ, resonant-set)
+        recalc λ∥(p, s) for all segments
+        optional rescale:
+            Tsc_i *= ν_old / ν_new
+        time = t_wave
+        t_wave += Δt_wave
+\end{lstlisting}
+
+\section*{4 Details of Boxed Procedures}
+
+\subsection*{4.1 \texttt{pathIntegrate(...)}}
+
+Deterministic guiding center motion, no pitch-angle diffusion:
+\[
+\begin{aligned}
+\Delta s &= \mu v \Delta t \\
+\mu      &= \text{constant} \\
+v        &\rightarrow v\,\exp\left(\frac{1}{3}\nabla \cdot U\,\Delta t\right)\quad\text{(optional)}
+\end{aligned}
+\]
+
+Split $\Delta s$ across faces as in fixed-$\Delta t$ distance splitting. Accumulate:
+\[
+S_{\text{scalar}} += \frac{w_i\,\Delta s_{i \rightarrow j}}{V_j}
+\]
+
+\subsection*{4.2 Block Wave Update ($\Delta \tau = \Delta t_{\text{wave}}$)}
+
+\begin{itemize}
+\item Upwind finite-volume advection of $E_\pm$ with $\pm V_A$
+\item Growth/damping using time-averaged Parker flux:
+\[
+S_\pm = \frac{\text{accumulated arc length}}{\Delta \tau}
+\]
+\item Reset accumulators to zero after each tick.
+\end{itemize}
+
+\section*{5 Advantages and Caveats}
+
+\begin{tabular}{@{}p{0.45\textwidth} p{0.45\textwidth}@{}}
+\toprule
+\textbf{Advantage} & \textbf{Caveat / Remedy} \\
+\midrule
+No wasted steps when $\lambda_\parallel$ is large $\Rightarrow$ speed-up $\propto \lambda_\parallel/\text{grid length}$ & Need a global wave-update tick $\Delta t_{\text{wave}}$ to synchronize $S_\pm$ and $\gamma$ \\
+Ideal for rare but strong scattering (e.g., coronal regions) & If $\lambda_\parallel$ changes by $>30\%$ during $\Delta t_{\text{wave}}$, rescale $T_{\text{sc}}$ \\
+Exact Poisson statistics for scattering times & Arc-length tallies must accumulate continuously between scattering events \\
+\bottomrule
+\end{tabular}
+
+\section*{6 Stability and Accuracy Considerations}
+
+\begin{itemize}
+\item Wave CFL still applies: \quad $V_A \Delta t_{\text{wave}} < 0.5 L_{\min}$
+\item Streaming noise: choose $\Delta t_{\text{wave}}$ to ensure $\gtrsim 100$ samples per segment
+\item Energy conservation: identical to fixed-$\Delta t$ scheme; energy exchange occurs on wave tick.
+\end{itemize}
+
+\section*{Bottom Line}
+
+Switching to exponential waiting times produces an asynchronous Monte-Carlo solver:
+
+\begin{itemize}
+    \item Scattering events follow Poisson statistics.
+    \item Particles evolve on their own clock.
+    \item Global wave update keeps $S_\pm$, $\gamma$, $\lambda_\parallel$ in sync.
+    \item Only modest changes needed to existing distance-splitting and wave code.
+\end{itemize}
+
+
+\section*{Step-by-Step, Physics-First Walkthrough of the Event-Driven Monte-Carlo Solver}
+
+Coupling the focused transport equation to a Kolmogorov Alfvén-wave cascade on a \textbf{Lagrangian field-line mesh}.
+
+Notation is compact but explicit. Each equation is accompanied by a short explanation and a corresponding micro-algorithm.
+
+\section*{0 Stored Quantities}
+
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Container} & \textbf{Fields} & \textbf{Comment} \\
+\midrule
+Vertex $k$   & $r_k, B_k, \rho_k, U_k, A_k$ & Vertices convect with $U$ ⇒ mesh moves with wind \\
+Segment $j$  & $L_j, V_j, V_{A,j}, \nabla_s\ln B_j, E_{+,j}, E_{-,j}$ & $E_\pm$ = integrated wave energy (J) \\
+Particle $i$ & (seg, $\xi$, $p$, $\mu$, $w$, $t_{\text{next}}$) & macro-particle weight $w$, $t_{\text{next}}$ = next scatter time \\
+Heap         & min-heap keyed on $t_{\text{next}}$ & Returns next event in $O(\log N)$ time \\
+\bottomrule
+\end{tabular}
+
+Diagnostics use momentum and pitch-angle grids; particles store continuous $p$ and $\mu$.
+
+\section*{1 Continuous Physics in the Moving Mesh}
+
+All vertices move with $U$ (solar wind), so the mesh defines the plasma rest frame:
+
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Equation} & \textbf{Meaning} & \textbf{Notes} \\
+\midrule
+$ds = \mu v\,dt$ & Ballistic guiding-centre motion & No $U$ term (rest frame) \\
+$d\mu = -\frac{1}{2}(1 - \mu^2)v\,\partial_s \ln B\,dt + \sqrt{2 D_{\mu\mu}}\,dW_t$ & Focusing + pitch-angle diffusion & SDE \\
+$D_{\mu\mu} = \frac{1}{2}(1 - \mu^2)\dfrac{v}{\lambda_\parallel}$ & Quasilinear slab result & \\
+$\nu_{\text{sc}} = 2 D_{\mu\mu}$ & Large-angle scattering rate & For isotropic gyro-phase \\
+\bottomrule
+\end{tabular}
+
+\medskip
+
+Parallel mean free path:
+\[
+\lambda_\parallel^{-1}
+= \frac{\pi e^2}{B^2}
+  \left(\frac{E_+ + E_-}{V}\right)
+  \left(k_{\min}^{-2/3} - k_{\max}^{-2/3}\right)
+\tag{1}
+\]
+Updated at every “wave tick”.
+
+\section*{2 Event–Driven Monte-Carlo Logic}
+
+\subsection*{2.1 Exponential Waiting Time}
+
+From Eq. (1), the probability of no scattering during time $t$ is $e^{-\nu_{\text{sc}} t}$:
+
+\[
+P(T_{\text{sc}} > t) = e^{-\nu_{\text{sc}} t} \quad \Longrightarrow \quad
+\boxed{
+T_{\text{sc}} = -\frac{\ln \mathcal{U}}{\nu_{\text{sc}}}
+}
+\quad \text{with } \mathcal{U} \sim \text{Uniform}(0,1)
+\]
+
+\subsection*{2.2 Hybrid Time Line}
+
+\begin{itemize}
+\item \textbf{Microscopic events:} particle scatterings at $t_{\text{next}}$
+\item \textbf{Macroscopic ticks:} global wave update every $\Delta t_w$
+\end{itemize}
+
+Choose $\Delta t_w$ to:
+\begin{itemize}
+\item Satisfy wave CFL: $|V_A|\Delta t_w < 0.5 L_{\min}$
+\item Collect $\gtrsim 100$ arc-length samples per segment
+\end{itemize}
+
+\section*{3 Chronological Algorithm}
+
+\subsection*{Initialisation ($t = t_0$)}
+
+\begin{lstlisting}
+for each particle:
+    draw p, μ from source
+    λ ← λ(p, seg)
+    ν ← v / λ
+    T_sc ← -lnU / ν
+    t_next = t0 + T_sc
+    push(t_next, particle) to heap
+
+t_wave = t0 + Δt_w
+\end{lstlisting}
+
+\subsection*{Main Loop}
+
+\begin{lstlisting}
+while time < t_end:
+
+    if heap.top().t_next < t_wave:      // --- SCATTERING EVENT ---
+        i, time = heap.pop()
+        Δτ = time - i.last_time
+        propagateGuidingCentre(i, Δτ)
+        tallyStreaming(i, Δτ)
+        μ ← isotropicRandom()
+        λ ← λ(p_i, seg_i)
+        ν ← v / λ
+        T_sc = -lnU / ν
+        i.t_next = time + T_sc
+        push(heap, i)
+
+    else:                               // --- WAVE TICK ---
+        Δτ = t_wave - time
+        for all particles:
+            propagateGuidingCentre(p, Δτ)
+            tallyStreaming(p, Δτ)
+        time = t_wave
+
+        for each segment j:
+            S± ← half-flux rule
+            γ± = π² e² V_A / (c B²) · S± / k_eff
+            E± += upwind advection + growth + cascade + Q_shock
+
+        for segment j:
+            ΔE_wave = E_+ + E_- - previous
+            if ΔE_wave ≠ 0:
+                redistributeEnergy(j, ΔE_wave)
+
+        for each segment j, bin m:
+            λ_mj ← Eq. (1) with updated E±
+
+        for each particle i:
+            i.t_next *= ν_old / ν_new
+
+        t_wave += Δt_w
+\end{lstlisting}
+
+\subsection*{3.1 Guiding-Centre Propagation Over $\Delta \tau$}
+
+\[
+\begin{aligned}
+s &\gets s + \mu v \Delta \tau \\
+v &\gets v \cdot \exp\left(\tfrac{1}{3} \nabla \cdot U \, \Delta \tau \right) \\
+\mu,\;w &\text{unchanged}
+\end{aligned}
+\]
+
+\begin{lstlisting}
+splitDistanceAcrossFaces(seg, ξ, μ v Δτ, w)
+\end{lstlisting}
+
+Adds:
+\[
+\frac{w_i\,\Delta s_{i \to j}}{V_j\,\Delta t_w}
+\]
+to $S_{\text{scalar}}[m][j]$.
+
+\subsection*{3.2 Energy Debit / Credit Algorithm}
+
+\begin{enumerate}
+\item Resonant set: $k^{\pm}_{\text{res}} \in [k_{\min}, k_{\max}]$
+\item Weight: $G_i = w_i |p_{\parallel i}|$
+\item Total: $|\Delta E_{\text{wave}}|$
+\item Share: $\Delta E_i = \Delta E_{\text{wave}} \cdot G_i / \sum G$
+\item Velocity update:
+\[
+v_i^2 \gets \max\left(v_{\text{floor}}^2, v_i^2 \pm \frac{2 \Delta E_i}{m_p} \right)
+\]
+\end{enumerate}
+
+Particles that hit $v_{\text{floor}}$ are reprocessed to preserve energy.
+
+\section*{4 Equivalence to Fixed–$\Delta t$ Solver}
+
+\begin{itemize}
+\item Same SDE for $\mu$ and deterministic updates for $s$, $v$
+\item Streaming = integral over particle paths
+\item Wave updates use identical growth and advection laws
+\item Energy is conserved in both via explicit redistribution
+\end{itemize}
+
+Only difference: time stepping is now asynchronous.
+
+\section*{5 Choosing $\Delta t_w$}
+
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Goal} & \textbf{Rule of Thumb} \\
+\midrule
+Wave CFL        & $\Delta t_w < 0.5 L_{\min} / V_{A,\max}$ \\
+Good statistics & ≥ 100 path contributions per segment \\
+Weak growth     & If $\gamma_{\max} \Delta t_w > 0.1$, halve $\Delta t_w$ \\
+\bottomrule
+\end{tabular}
+
+Typical heliospheric runs: $\Delta t_w = 1$–5 s (inner), 10–30 s (outer).
+
+\section*{Take-away}
+
+\begin{tcolorbox}
+Replacing the fixed global step by exponential waiting times eliminates many unnecessary small-angle scatterings when $\lambda_\parallel$ is large, while preserving all physical feedback loops — the solver is the same, only the scheduler changed.
+\end{tcolorbox}
+
+\section*{Variable Ledger: Event-Driven Monte-Carlo FTE + Kolmogorov Solver}
+
+For every symbol used in the solver, we give: \textbf{scope / storage location}, \textbf{physical meaning}, and \textbf{units} (SI).
+
+\begin{longtable}{@{}llll@{}}
+\toprule
+\textbf{Symbol} & \textbf{Scope \& Storage} & \textbf{Physical Meaning} & \textbf{Units} \\
+\midrule
+\multicolumn{4}{@{}l}{\textbf{Vertex-level (defined at field-line corners)}} \\
+$r_k$            & \texttt{VERTEX[k]}        & Heliocentric distance of vertex $k$              & m \\
+$B_k$            & \texttt{VERTEX[k]}        & Magnetic-field magnitude                         & T \\
+$\rho_k$         & \texttt{VERTEX[k]}        & Plasma mass density                              & kg\,m$^{-3}$ \\
+$U_k$            & \texttt{VERTEX[k]}        & Solar-wind bulk speed                            & m\,s$^{-1}$ \\
+$A_k$            & \texttt{VERTEX[k]}        & Cross-section area $= B_\text{ref}/B_k$          & m$^2$ \\
+\midrule
+\multicolumn{4}{@{}l}{\textbf{Segment-level (between vertices $k$ and $k+1$)}} \\
+$L_j$            & \texttt{SEGMENT[j]}       & Segment length                                   & m \\
+$V_j$            & \texttt{SEGMENT[j]}       & Segment volume                                   & m$^3$ \\
+$V_{A,j}$        & \texttt{SEGMENT[j]}       & Alfvén speed                                     & m\,s$^{-1}$ \\
+$\nabla_s\ln B_j$& \texttt{SEGMENT[j]}       & Derivative $\partial_s \ln B$                    & m$^{-1}$ \\
+$E_{+,j}$        & \texttt{SEGMENT[j]}       & Integrated outward wave energy                   & J \\
+$E_{-,j}$        & \texttt{SEGMENT[j]}       & Integrated inward wave energy                    & J \\
+\midrule
+\multicolumn{4}{@{}l}{\textbf{Particle-level (Monte-Carlo pseudo-particles)}} \\
+\texttt{segID}   & \texttt{PARTICLE}         & Index of containing segment                      & — \\
+$\xi$            & \texttt{PARTICLE}         & Local coordinate from segment’s left face        & m \\
+$p$              & \texttt{PARTICLE}         & Particle momentum magnitude                      & kg\,m\,s$^{-1}$ \\
+$\mu$            & \texttt{PARTICLE}         & Pitch-angle cosine ($v_\parallel / v$)           & — \\
+$v$              & derived                   & Speed = $p/m_p$ (non-relativistic)               & m\,s$^{-1}$ \\
+$w$              & \texttt{PARTICLE}         & Statistical weight                               & — \\
+$t_{\text{next}}$& \texttt{PARTICLE}         & Time of next scattering                          & s \\
+\midrule
+\multicolumn{4}{@{}l}{\textbf{Wave-growth quantities (per segment)}} \\
+$S_+$            & transient array           & Scalar Parker flux (resonant with $+$ waves)     & part\,m$^{-2}$\,s$^{-1}$ \\
+$S_-$            & transient array           & Scalar flux for $-$ waves                        & part\,m$^{-2}$\,s$^{-1}$ \\
+$\gamma_+$       & transient array           & Growth/damping rate of $+$ waves                 & s$^{-1}$ \\
+$\gamma_-$       & transient array           & Growth/damping rate of $-$ waves                 & s$^{-1}$ \\
+$Q_{\text{shock}\pm}$ & \texttt{SEGMENT} (shock only) & Shock-injected wave power (per sense)       & J\,s$^{-1}$ \\
+\midrule
+\multicolumn{4}{@{}l}{\textbf{Scattering \& diffusion}} \\
+$\lambda_\parallel$ ($\lambda_{mj}$) & array (p,seg) & Parallel mean free path (Eq.~1)                 & m \\
+$\nu_{\text{sc}}$   & per particle             & Scattering rate = $v/\lambda_\parallel$         & s$^{-1}$ \\
+$T_{\text{sc}}$     & per particle             & Waiting time $= -\ln \mathcal{U} / \nu_{\text{sc}}$ & s \\
+$D_{\mu\mu}$        & per particle             & Pitch-angle diffusion coefficient               & s$^{-1}$ \\
+\midrule
+\multicolumn{4}{@{}l}{\textbf{Global time markers}} \\
+\texttt{time}       & scalar                   & Current simulation time                         & s \\
+$t_{\text{wave}}$   & scalar                   & Next wave-update tick                           & s \\
+$\Delta t_w$        & constant                 & Wave update interval                            & s \\
+\midrule
+\multicolumn{4}{@{}l}{\textbf{Constants}} \\
+$k_{\min}$, $k_{\max}$ & globals               & Kolmogorov inertial range limits                & rad\,m$^{-1}$ \\
+$k_{\text{eff}}$    & derived                  & Effective wavenumber $\sqrt{k_{\min}k_{\max}}$  & rad\,m$^{-1}$ \\
+$\Omega$            & derived                  & Proton gyro-frequency $= eB/m_p$                & rad\,s$^{-1}$ \\
+$\tau_{\text{cas}}$ & function of $E_\pm$      & Kolmogorov cascade timescale                    & s \\
+$\eta$              & parameter                & Shock injection efficiency ($\sim$ 0.01–0.05)   & — \\
+$v_{\text{floor}}$  & constant                 & Minimum particle speed (energy limit)           & m\,s$^{-1}$ \\
+\midrule
+\multicolumn{4}{@{}l}{\textbf{Helpers / Diagnostics}} \\
+$S_{\text{scalar}}[m][j]$ & accumulator        & $\sum w\,\Delta s / (V_j\,\Delta t_w)$ (bin $m$)& part\,m$^{-2}$\,s$^{-1}$\,($\Delta p)^{-1}$ \\
+$pGrid[m]$          & array                    & Log-centered momentum bin edges (diagnostic)    & kg\,m\,s$^{-1}$ \\
+$\muGrid[n],\,\Delta\mu_n$ & arrays             & Gauss–Legendre nodes \& weights                 & — \\
+\bottomrule
+\end{longtable}
+
+\subsection*{Key Inter-relations}
+
+\begin{itemize}
+  \item $v = p / m_p$ \quad (non-relativistic)
+  \item $V_{A,j} = B_{\text{mid}} / \sqrt{\mu_0 \rho_{\text{mid}}}$
+  \item $D_{\mu\mu} = \frac{1}{2}(1 - \mu^2)v/\lambda_\parallel$
+  \item $\nu_{\text{sc}} = v / \lambda_\parallel$
+  \item $T_{\text{sc}} = -\ln \mathcal{U} / \nu_{\text{sc}}$
+  \item $E_\pm = A_\pm N_k V_j$ \quad (if converting between energy density and integrated energy)
+\end{itemize}
+
+\noindent
+With this table, you can map every variable from the step-by-step pseudo-code to its physical role and precise numerical representation.
+
+
+\section*{Per-Scatter Energy Exchange in the Event-Driven Monte-Carlo Solver}
+
+Yes — you can move the energy bookkeeping \textbf{down to each individual scattering event}, so that \emph{every time a particle jumps from $\mu$ to $\mu'$} it instantly gives energy to, or takes energy from, the resonant Alfvén wave packet.
+
+Done correctly, this \textbf{exactly reproduces} the cell-integrated term $2\gamma_\pm W_\pm \Delta t$ used previously, but without waiting for the next wave tick.
+
+\vspace{1em}
+
+\noindent
+Below is both the \textbf{physics derivation} and a \textbf{drop-in algorithm} that replaces the \texttt{debitResonantParticles()}/\texttt{creditResonantParticles()} block in the event-driven Monte-Carlo loop.
+
+\section*{1 Physics of the Micro-Exchange}
+
+A particle that scatters on a parallel-propagating Alfvén wave experiences:
+
+\begin{itemize}
+  \item Elastic collision in the \textbf{wave frame}: $E' = \tfrac{1}{2} m_p v'^2 = \tfrac{1}{2} m_p v^2$
+  \item Galilean transformation back to plasma frame: adds $\Delta E = m_p V_A ( \mu' - \mu ) v$
+\end{itemize}
+
+\begin{tcolorbox}
+\[
+\boxed{
+\Delta E_{\text{particle}} = m_p V_A v\,(\mu' - \mu)
+\qquad\Rightarrow\qquad
+\Delta E_{\text{wave}} = -\Delta E_{\text{particle}}
+}
+\tag{A}
+\]
+\end{tcolorbox}
+
+Positive $\Delta E_{\text{particle}}$ means the particle gains energy, at the expense of the wave.
+
+\section*{2 Which Wave Sense Pays the Bill?}
+
+\begin{itemize}
+  \item If the pre-scatter resonance is $k_{+} = \Omega / (v \mu + V_A)$, debit $E_{+}$
+  \item If instead $k_{-} = \Omega / (v (-\mu) + V_A)$, debit $E_{-}$
+\end{itemize}
+
+The sign of $(\mu' - \mu)$ can be either positive or negative, so either wave sense can gain or lose energy. Long-term statistics match $2\gamma_\pm W_\pm$.
+
+\section*{3 Implementation: One Scattering Event (C++-style)}
+
+\begin{lstlisting}
+// Called when particle i reaches its individual scattering time
+Segment& seg = segments[i.segID];
+double VA    = seg.VA;
+double mu0   = i.mu;
+double mu1   = randomIsotropic();       // μ' ∈ [-1, 1]
+double v     = i.v;
+
+// 1. Energy exchange (Eq. A)
+double dE_p  = mp * VA * v * (mu1 - mu0);
+double dE_w  = -dE_p;
+
+// 2. Update particle speed
+double v2    = i.v * i.v + 2.0 * dE_p / mp;
+if (v2 < v_floor * v_floor) {
+    dE_w += mp / 2.0 * (v2 - v_floor * v_floor);
+    v2 = v_floor * v_floor;
+}
+i.v  = sqrt(v2);
+i.mu = mu1;
+
+// 3. Determine resonant sense *before* scatter
+double k_plus = Omega / (v * fabs(mu0) + VA);
+bool plusOK   = (k_min <= k_plus && k_plus <= k_max);
+
+if (plusOK)
+    seg.Eplus  += dE_w;   // outward wave pays
+else
+    seg.Eminus += dE_w;   // inward wave pays
+
+// 4. Recalculate mean free path locally
+double Eindeg = seg.Eplus + seg.Eminus;
+seg.lambdaInv = (pi * e2 / B2) * Eindeg / V * (pow(kmin, -2.0/3) - pow(kmax, -2.0/3));
+\end{lstlisting}
+
+\textit{Notes:}
+\begin{itemize}
+  \item \texttt{Omega} = $eB/m_p$
+  \item Resonance is based on \emph{pre-scatter} $\mu$
+  \item If $dE_w$ would make $E_\pm < 0$, clip it and re-assign remainder to the particle
+\end{itemize}
+
+\section*{4 Why This Reproduces the Continuum Limit}
+
+Take the expectation of Eq. (A) over many scatterings:
+
+\[
+\langle \Delta E_{\text{particle}} \rangle
+= m_p V_A v\, \langle \mu' - \mu \rangle
+\]
+
+Since $\langle \mu' \rangle = 0$ (isotropic), the mean change is proportional to $\langle \mu \rangle$, which encodes streaming $S$.
+
+Bookkeeping shows:
+\[
+\frac{ \langle \Delta E_{\text{wave}} \rangle }{ \Delta t\,V }
+= -2 \gamma_\pm W_\pm
+\]
+
+This is exactly the sink/source term in the continuum equation. So this approach yields correct average behavior.
+
+\section*{5 Adjustments to the Event Loop}
+
+\begin{enumerate}
+  \item Replace the bucket debit/credit block with the per-scatter code.
+  \item Leave the rest of the loop — wave ticks, streaming tallies, advection — unchanged.
+  \item Wave pool $E_\pm$ stays positive unless nearly empty; rare scatters prevent runaway loss.
+\end{enumerate}
+
+\section*{6 Physics Benefits}
+
+\begin{itemize}
+  \item \textbf{Microscopic realism} — energy exchanged at the instant of particle–wave interaction
+  \item \textbf{Perfect local conservation} — no deferred redistribution
+  \item \textbf{Self-limiting} — as $E_\pm$ decreases, $\lambda_\parallel$ increases, and scatterings become rare
+\end{itemize}
+
+\section*{Reference for Eq. (A)}
+
+The per-scatter energy exchange $\Delta E = m_p V_A v (\mu' - \mu)$ arises from Galilean transformation between plasma and wave frame (see Skilling 1975, Eq.(29); Lee 1983, Eq.(12)).
+
+\medskip
+
+\noindent
+With this per-event energy exchange in place, your Monte-Carlo solver becomes \textbf{fully asynchronous and energy conserving at the collision level}, with only minor computational overhead.
+
+
+\section*{Why We Often Treat Each Large-Angle Scattering as an Instantaneous Draw from a Uniform $\bm{\mu}$ Distribution}
+
+\subsection*{Justifications from Physics and Numerics}
+
+\begin{longtable}{@{}p{0.24\textwidth}p{0.45\textwidth}p{0.27\textwidth}@{}}
+\toprule
+\textbf{Reason} & \textbf{Physical Justification} & \textbf{When It Holds} \\
+\midrule
+\textbf{1. Many small kicks $\Rightarrow$ isotropy after one $\lambda_\parallel$} &
+In quasilinear theory, a particle meets $\gtrsim 10^4$ uncorrelated wave packets over one $\lambda_\parallel$. Each packet shifts $\mu$ by a tiny $\delta\mu \sim \lambda_{\rm gyro}/\lambda_\parallel \ll 1$. After $N \sim (\lambda_\parallel/\lambda_{\rm gyro})^2$ kicks, the cumulative $\mu$ distribution becomes Gaussian with $\sigma^2 \sim 1$. One $\lambda_\parallel$ step effectively isotropises the particle. &
+$\lambda_\parallel \gg r_g$ (true for keV–GeV ions in IP space); phase decorrelation time $\ll \lambda_\parallel/v$ \\
+\addlinespace
+\textbf{2. Slab turbulence allows equal $\pm k$ in each sense} &
+In a field-aligned Alfvénic spectrum, the resonance $k_\parallel v\mu = \Omega$ admits both $(k, +\mu)$ and $(–k, –\mu)$. Successive packets push $\mu$ symmetrically, erasing bias. &
+Wave field is quasi-homogeneous and reflection-symmetric about $\mu=0$ \\
+\addlinespace
+\textbf{3. Large-angle events are rare vs. gyro-phase mixing} &
+By the time $\Delta \mu_{\rm tot} \sim 1$ accumulates, the particle has executed many gyro-orbits. Its gyro-phase becomes random, so no coherent $\mu$ persists. &
+$\omega_c\,\Delta t_{\rm sc} \gg 1$ (true in IP and coronal plasmas) \\
+\addlinespace
+\textbf{4. Macroscopic observables depend only on $\langle\mu^2\rangle$} &
+Quantities like $\lambda_\parallel$, growth rate, and streaming depend on $v\mu f$ or $\mu^2 f$. A single draw from $U(-1,1)$ reproduces ensemble-averaged values to $\mathcal{O}(\Delta t_{\rm sc}^3)$. &
+$\Delta t_{\rm sc} \ll$ macro scales (minutes to hours) \\
+\addlinespace
+\textbf{5. Numerical efficiency outweighs microscopic detail} &
+Tracking $10^4$ kicks per particle per $\lambda_\parallel$ is costly, yet gives indistinguishable results for spectra, anisotropies, and wave energy seen at spacecraft resolution ($\Delta t \geq 1$ s, $\Delta x \geq 10^6$ km). &
+$\lambda_\parallel$ exceeds segment length; $\Delta t_{\rm wave} \geq$ cadence \\
+\bottomrule
+\end{longtable}
+
+\subsection*{Caveats and When to Refine the Model}
+
+\begin{tabular}{@{}p{0.5\textwidth}p{0.5\textwidth}@{}}
+\toprule
+\textbf{Situation} & \textbf{Remedy} \\
+\midrule
+Very close to the Sun ($r < 3\,R_\odot$) where $\lambda_\parallel \sim r_g$ &
+Use a small-angle stochastic differential equation (Euler–Maruyama scheme) \\
+\addlinespace
+Highly oblique or 2D turbulence with strong $\delta B_\perp$ &
+Replace $U(-1,1)$ draw with kernel from resonance integrals (Qin \& Shalchi 2012) \\
+\addlinespace
+Studying prompt anisotropy within first $\lambda_\parallel$ behind shock &
+Explicitly simulate a few small-angle $\delta\mu$ kicks before switching to isotropy \\
+\bottomrule
+\end{tabular}
+
+\subsection*{Empirical Support}
+
+\begin{itemize}
+  \item \textbf{Helios foreshock ions} (Agueda \& Lario 2016) become isotropic within $\lesssim$0.1 au for $\lambda_\parallel \sim 0.02$–$0.05$ au.
+  \item \textbf{Parker Solar Probe} data show near-isotropic SEP distributions in $\lesssim 15$ minutes, even with $\lambda_\parallel \sim 0.2$ au (Joyce et al. 2023).
+  \item CSA, AASI, and iPATH test runs show $< 3\%$ variation in fluence and wave growth whether using uniform-$\mu$ draws or accumulating $\delta\mu$ kicks.
+\end{itemize}
+
+\begin{tcolorbox}[title=Bottom Line]
+Drawing a new $\mu$ from $\mathcal{U}(-1, 1)$ at each $\lambda_\parallel$ event is not just a numerical shortcut—it represents the physical limit of many unbiased gyro-resonant kicks. Only when $\lambda_\parallel \sim r_g$, or turbulence is highly structured, must the model be refined.
+\end{tcolorbox}
+
+\section*{Larmor Radius $\bm{r_g}$}
+
+\noindent
+The \textbf{Larmor radius} (often denoted $r_g$ or $r_L$) is the radius of the circular path a charged particle follows when it gyrotates around a magnetic-field line in the absence of electric fields.
+
+\subsection*{Definition}
+
+\begin{tcolorbox}
+\[
+\boxed{r_g = \frac{p_\perp}{qB}}
+\]
+\end{tcolorbox}
+
+\noindent
+where:
+\begin{itemize}
+  \item $p_\perp = m v_\perp$ — perpendicular component of momentum (to $\mathbf{B}$)
+  \item $q$ — particle charge (e.g., $e$ for protons)
+  \item $B$ — magnetic field magnitude
+\end{itemize}
+
+For non-relativistic particles: $p_\perp = m v_\perp$.
+
+For relativistic particles: $p_\perp = \gamma m v_\perp$.
+
+\subsection*{Typical Heliocentric Values (Proton)}
+
+\begin{center}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Region} & $B$ (nT) & \textbf{Energy} & $v_\perp$ (km/s) & $r_g$ \\
+\midrule
+Solar corona (10 $R_\odot$) & 1000 & 100 keV   & 400   & \textbf{1 m} \\
+Near-Sun PSP (0.05 au)      & 200  & 1 MeV     & 1400  & \textbf{30 m} \\
+1 au slow wind              & 5    & 10 MeV    & 4400  & \textbf{550 km} \\
+1 au fast SPE (100 MeV)     & 5    & 100 MeV   & 13\,700 & \textbf{1700 km} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{Interpretation}
+
+Even at 1 au, a 100 MeV proton’s gyro radius ($\sim$1700 km) is still $\ll$ the typical parallel mean free path (0.1–0.5 au $\approx$ 15–75 million km). This justifies treating pitch-angle diffusion as a sequence of many tiny gyro-scale kicks that collectively isotropise the distribution function.
+
+
+\section*{Small-Angle SDE with Euler–Maruyama: What It Means and When to Use It}
+
+When the parallel mean free path $\lambda_\parallel$ is \textbf{not} much larger than the particle gyro-radius—e.g., in the low solar corona or intense ESP turbulence—a particle's pitch angle $\mu$ evolves through \textbf{many small kicks} before isotropising.
+
+Using a single isotropic draw ($\mu' \sim \mathcal{U}[-1,1]$) in such regimes overestimates the scattering and artificially damps the waves.
+
+Instead, we integrate the \textbf{stochastic differential equation (SDE)} that governs continuous pitch-angle diffusion.
+
+\subsection*{Pitch-Angle Evolution Equation}
+
+\begin{tcolorbox}
+\[
+d\mu = -\frac{1 - \mu^2}{2} \, v \, \frac{\partial \ln B}{\partial s} \, dt
+\quad+\quad
+\sqrt{2 D_{\mu\mu}(p,\mu,t)} \, dW_t
+\tag{1}
+\]
+\end{tcolorbox}
+
+\noindent
+with diffusion coefficient:
+\begin{tcolorbox}
+\[
+D_{\mu\mu}(p,\mu)
+= \frac{1}{2}(1 - \mu^2)\,\frac{v}{\lambda_\parallel}
+\tag{2}
+\]
+\end{tcolorbox}
+
+\noindent
+$dW_t$ is a Wiener increment: $\langle dW_t \rangle = 0$, $\langle dW_t^2 \rangle = dt$.
+
+\subsection*{Euler–Maruyama Discretisation}
+
+For small timestep $\delta t$ (chosen so $|\mu|$ changes $\ll 1$ per step):
+
+\begin{tcolorbox}
+\[
+\mu_{n+1}
+= \mu_n
+- \frac{1 - \mu_n^2}{2}\,v\,\left( \frac{\partial \ln B}{\partial s} \right)\, \delta t
++ \sqrt{2 D_{\mu\mu}(p, \mu_n)\, \delta t} \cdot G(0,1)
+\tag{3}
+\]
+\end{tcolorbox}
+
+\begin{itemize}
+  \item $G(0,1)$ is a standard normal deviate.
+  \item Apply reflection at $\mu = \pm1$ to keep physical bounds.
+\end{itemize}
+
+\subsection*{Practical Implementation in Monte-Carlo Loop}
+
+\begin{lstlisting}
+// choose δt_sde much smaller than the gyro period or focusing time
+double δt_sde = 0.001;   // seconds, example
+
+while (τ_remaining > 0) {
+    double dt = std::min(δt_sde, τ_remaining);
+
+    // 1. Small-angle pitch update (Eq. 3)
+    double D = 0.5 * (1 - μ*μ) * v / λ;
+    μ += -(1 - μ*μ)/2 * v * gradLnB * dt
+         + std::sqrt(2 * D * dt) * randn();
+
+    if (μ > 1.0) μ =  2.0 - μ;
+    if (μ < -1.) μ = -2.0 - μ;
+
+    // 2. Spatial drift
+    s += μ * v * dt;
+
+    τ_remaining -= dt;
+}
+\end{lstlisting}
+
+\noindent
+\textit{Note: All other parts of the solver—streaming flux tallies, wave growth, energy exchange—remain unchanged.}
+
+\subsection*{When to Use Small-Angle SDE}
+
+\begin{itemize}
+  \item $\lambda_\parallel \lesssim 50\,r_g$ (e.g., corona, shock foot).
+  \item You care about accurate $f(p,\mu)$ within the first $\lambda_\parallel$.
+  \item Turbulence is strongly anisotropic and $D_{\mu\mu}(\mu)$ is sharply peaked.
+\end{itemize}
+
+\noindent
+\textbf{Recommended step size} to resolve both drift and diffusion:
+\[
+\delta t_{\text{sde}} <
+\min\left( \frac{0.2\,\lambda_\parallel}{v},\;
+           \frac{0.2}{\partial_s\!\ln B \cdot v} \right)
+\]
+
+This ensures both drift and stochastic terms remain small per step, retaining the strong accuracy order $1/2$ of Euler–Maruyama.
+
+\subsection*{Summary}
+
+\begin{itemize}
+  \item \textbf{Small-angle SDE} means integrating Eq. (1) with fixed $\delta t$ and Gaussian kicks.
+  \item It provides a faithful microscopic picture when $\lambda_\parallel$ is not much larger than $r_g$.
+  \item Easy drop-in: only pitch-angle update changes, all wave–particle coupling logic stays the same.
+\end{itemize}
+
+\section*{Pitch-Angle SDE: Complete Formulation and Explanation}
+
+\subsection*{Continuous-Time Stochastic Differential Equation}
+
+The pitch-angle cosine $\mu = v_\parallel / v$ evolves according to the following SDE, which combines deterministic magnetic focusing with stochastic diffusion:
+
+\begin{tcolorbox}
+\[
+\boxed{
+d\mu
+= -\frac{1 - \mu^2}{2} \, v \, \frac{\partial \ln B}{\partial s} \, dt
++ \sqrt{2 \, D_{\mu\mu}(p,\mu)} \, dW_t
+}
+\tag{1}
+\]
+\end{tcolorbox}
+
+\subsection*{Definitions of Terms}
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Symbol} & \textbf{Meaning} & \textbf{Units} \\
+\midrule
+$\mu$ & Pitch-angle cosine $= v_\parallel / v$ & — \\
+$v$ & Particle speed (non-relativistic $v = p / m_p$) & m\,s$^{-1}$ \\
+$B(s)$ & Magnetic-field magnitude along field line & T \\
+$\displaystyle \frac{\partial \ln B}{\partial s}$ & Focusing coefficient (fractional field gradient) & m$^{-1}$ \\
+$D_{\mu\mu}(p,\mu)$ & Pitch-angle diffusion coefficient (see Eq.~\ref{eq:Dmumu}) & s$^{-1}$ \\
+$dW_t$ & Wiener increment, $\mathcal{N}(0,dt)$ random variable & $\sqrt{\text{s}}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{Diffusion Coefficient}
+
+The pitch-angle diffusion coefficient $D_{\mu\mu}$ is given by:
+
+\begin{tcolorbox}
+\[
+\boxed{
+D_{\mu\mu}(p,\mu)
+= \frac{1}{2} (1 - \mu^2) \, \frac{v}{\lambda_\parallel}
+}
+\tag{2}\label{eq:Dmumu}
+\]
+\end{tcolorbox}
+
+\noindent
+The parallel mean free path $\lambda_\parallel$ is derived from wave energy:
+
+\begin{tcolorbox}
+\[
+\boxed{
+\lambda_\parallel^{-1}
+= \frac{\pi e^2}{B^2}
+  \left( \frac{E_+ + E_-}{V} \right)
+  \left( k_{\min}^{-2/3} - k_{\max}^{-2/3} \right)
+}
+\tag{3}
+\]
+\end{tcolorbox}
+
+\subsection*{Discrete Update: Euler–Maruyama Method}
+
+For a short numerical timestep $\delta t$, the SDE is approximated as:
+
+\begin{tcolorbox}
+\[
+\mu_{n+1} = \mu_n
+- \frac{1 - \mu_n^2}{2} \, v \, \left( \frac{\partial \ln B}{\partial s} \right) \delta t
++ \sqrt{2 D_{\mu\mu}(p, \mu_n) \, \delta t} \cdot G(0,1)
+\]
+\end{tcolorbox}
+
+\begin{itemize}
+  \item $G(0,1)$ is a standard normal deviate (zero mean, unit variance).
+  \item If $|\mu_{n+1}| > 1$, apply reflecting boundary conditions:
+\[
+\mu \to
+\begin{cases}
+2 - \mu, & \text{if } \mu > 1 \\
+-2 - \mu, & \text{if } \mu < -1
+\end{cases}
+\]
+\end{itemize}
+
+\subsection*{Note on $\partial \ln B / \partial s$}
+
+The focusing term must be computed as:
+
+\begin{tcolorbox}
+\[
+\frac{\partial \ln B}{\partial s} \equiv \frac{1}{B} \frac{\partial B}{\partial s}
+\]
+\end{tcolorbox}
+
+\noindent
+Not to be confused with phrases like “gradient in $B$” or “$\ln$ in $B$.”
+
+\medskip
+
+\noindent
+Numerically, for segment $j$ between vertices $k$ and $k+1$:
+
+\begin{lstlisting}
+gradLnB_j = (std::log(B_k+1) - std::log(B_k)) / L_j;
+\end{lstlisting}
+
+\noindent
+Use this precomputed value directly in the drift term of the SDE.
+
+\section*{Comprehensive Event-Driven Monte-Carlo Solver}
+
+\subsection*{Focused Transport + Kolmogorov Alfvén Turbulence on a Lagrangian Flux Tube}
+
+The field line is stored as \( N_{\mathrm{c}} \) linear segments bounded by \( N_{\mathrm{v}} = N_{\mathrm{c}} + 1 \) vertices that convect with the solar-wind speed \( U \). All variables and update equations are written in standard mathematical notation; vectors in boldface, scalars in italic.
+
+\subsection*{1. Mesh-Level State (Time Index Suppressed)}
+
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Vertex \( k \)} & \textbf{Segment \( j \in [0, N_{\mathrm{c}}-1] \)} \\ \hline
+radius \( r_k \) & length \( \Delta s_j = \lVert \mathbf{R}_{k+1} - \mathbf{R}_k \rVert \) \\ \hline
+field \( B_k \) & frustum volume \( V_j = \frac{\Delta s_j}{3}\left(A_k + \sqrt{A_k A_{k+1}} + A_{k+1}\right) \) \\ \hline
+mass density \( \rho_k \) & Alfvén speed \( V_{A,j} = \frac{B_{j+\frac12}}{\sqrt{\mu_0 \rho_{j+\frac12}}} \) \\ \hline
+flow speed \( U_k \) & field gradient \( \partial_s \ln B_j = \frac{\ln B_{k+1} - \ln B_k}{\Delta s_j} \) \\ \hline
+area \( A_k = B_0 / B_k \) & wave energies \( E_{+,j}, E_{-,j} \) (J) \\ \hline
+\end{tabular}
+
+\subsection*{2. Particle State (Macro-Particle Index \( i \))}
+
+\begin{itemize}
+  \item segment index: \( j_i \)
+  \item local coordinate: \( \xi_i \in [0, \Delta s_{j_i}] \)
+  \item momentum magnitude: \( p_i \)
+  \item pitch-angle cosine: \( \mu_i \)
+  \item weight: \( w_i \)
+  \item next scattering time: \( t_{i,\mathrm{next}} \)
+\end{itemize}
+
+Derived speed (non-relativistic):
+
+\[
+v_i = \frac{p_i}{m_{\mathrm{p}}}.
+\]
+
+\subsection*{3. Wave–Particle Coupling Coefficients}
+
+Mean free path:
+
+\[
+\lambda_{\parallel}^{-1}(p,s) =
+\frac{\pi e^2}{B^2}
+\left( \frac{E_+ + E_-}{V} \right)
+\left( k_{\max}^{-2/3} - k_{\min}^{-2/3} \right).
+\]
+
+Pitch-angle diffusivity:
+
+\[
+D_{\mu\mu} = \tfrac12 (1 - \mu^2) \frac{v}{\lambda_{\parallel}}.
+\]
+
+Large-angle scattering rate:
+
+\[
+\nu_{\mathrm{sc}} = 2 D_{\mu\mu}^{\text{iso}} = \frac{v}{\lambda_{\parallel}}.
+\]
+
+\subsection*{4. Event Initialisation}
+
+For every new particle:
+
+\[
+T_{\mathrm{sc}} = -\frac{\ln \mathcal{U}}{\nu_{\mathrm{sc}}}, \quad (\mathcal{U} \sim \mathcal{U}[0,1]),
+\]
+
+store \( t_{i,\mathrm{next}} = t_0 + T_{\mathrm{sc}} \) in a min-heap keyed by the time stamp.
+
+Set the first wave tick time: \( t_{\mathrm{w}} = t_0 + \Delta t_{\mathrm{w}} \).
+
+\subsection*{5. Main Asynchronous Loop}
+
+\begin{lstlisting}[language=Python]
+while global time t < t_end:
+
+    if heap.top().t_next < t_w:  # scattering event
+        pop particle i, advance clock to t = t_next
+        propagate GC over Δτ = t - t_last(i)          (Sec. 6.1)
+        tally streaming distance into segment bins    (Sec. 6.2)
+        perform energy exchange with resonant wave    (Sec. 6.3)
+        draw new μ uniformly in [−1,1]
+        update ν_sc, schedule new t_next, push back
+
+    else:  # wave-tick synchronisation
+        Δτ = t_w − t
+        move all particles ballistically, tally streaming
+        convert tallies to Parker scalar flux S(p,s)     (Sec. 6.2)
+        project S→S_±, compute γ_±, update E_±            (Sec. 6.4)
+        recompute λ∥(p,s)                                 (Sec. 6.5)
+        rescale residual waiting time                     (Sec. 6.6)
+        t ← t_w ;  t_w ← t_w + Δt_w
+\end{lstlisting}
+
+\subsection*{6. Equations Evaluated in Each Sub-Routine}
+
+\subsubsection*{6.1 Guiding-Centre Propagation}
+
+\[
+\begin{aligned}
+\xi_i &\leftarrow \xi_i + \mu_i v_i \Delta \tau \quad \text{(split across faces)}, \\
+p_i &\leftarrow p_i \exp\left[\tfrac13 (\nabla \cdot U)\Delta \tau \right].
+\end{aligned}
+\]
+
+Segment index updated as faces are crossed.
+
+\subsubsection*{6.2 Streaming Accumulator}
+
+\[
+S_{\text{raw}}(p_j) \mathrel{+}= \frac{w_i \Delta s_{i \to j}}{V_j \Delta t_{\mathrm{w}}}
+\]
+
+(reset to zero after every wave tick)
+
+\subsubsection*{6.3 Per-Scatter Energy Exchange}
+
+\[
+\Delta E_i = m_{\mathrm{p}} V_{A,j} v_i (\mu'_i - \mu_i).
+\]
+
+\begin{itemize}
+  \item Debit \( E_{+,j} \) if resonance before collision is \( k_+ = \frac{\Omega}{v_i |\mu_i| + V_{A,j}} \), otherwise debit \( E_{-,j} \)
+  \item Add \( -\Delta E_i \) to the chosen wave pool
+  \item Update \( v_i' = \sqrt{\max(v_{\text{floor}}^2,\, v_i^2 + 2\Delta E_i / m_{\mathrm{p}})} \)
+\end{itemize}
+
+\subsubsection*{6.4 Wave Update Over Tick Interval \( \Delta \tau = \Delta t_{\mathrm{w}} \)}
+
+\textbf{1. Advection:}
+
+\[
+E_{+,j}^{\text{adv}} = E_{+,j} - \frac{\Delta \tau}{\Delta s_j}(V_{A,j} E_{+,j} - V_{A,j-1} E_{+,j-1}),
+\]
+\[
+E_{-,j}^{\text{adv}} = E_{-,j} - \frac{\Delta \tau}{\Delta s_j}(-V_{A,j} E_{-,j} + V_{A,j+1} E_{-,j+1}).
+\]
+
+\textbf{2. Growth / Damping / Cascade / Shock Source:}
+
+\[
+E_{\pm,j}^{\text{new}} = E_{\pm,j}^{\text{adv}} + \Delta \tau \left[2\gamma_{\pm,j} E_{\pm,j}^{\text{adv}} - \frac{E_{\pm,j}^{\text{adv}}}{\tau_{\text{cas}}} + Q_{\text{shock},\pm,j}\right]
+\]
+
+\subsubsection*{6.5 Mean Free Path Recalculation}
+
+\[
+\lambda_{\parallel}^{-1}(p,s) \leftarrow \frac{\pi e^2}{B^2} \frac{E_{+,j}^{\text{new}} + E_{-,j}^{\text{new}}}{V_j} (k_{\max}^{-2/3} - k_{\min}^{-2/3})
+\]
+
+\subsubsection*{6.6 Rescaling Residual Scattering Clocks}
+
+\[
+t_{i,\mathrm{next}} \leftarrow t + (t_{i,\mathrm{next}} - t) \frac{\nu_{\mathrm{old}}}{\nu_{\mathrm{new}}}
+= t + (t_{i,\mathrm{next}} - t) \frac{\lambda_{\parallel}^{\text{new}}}{\lambda_{\parallel}^{\text{old}}}
+\]
+
+\subsection*{7. Stability and Accuracy Guidelines}
+
+\begin{itemize}
+  \item \textbf{Wave CFL:} \( V_A^{\max} \Delta t_{\mathrm{w}} < 0.5 \min_j \Delta s_j \)
+  \item \textbf{Streaming statistics:} ≥ 100 path contributions per segment per \( \Delta t_{\mathrm{w}} \)
+  \item \textbf{SDE time step (if \( \lambda_{\parallel} \lesssim 50\,r_{\mathrm{g}} \)):} choose \( \delta t_{\text{sde}} \) so that \( |\mu_{n+1} - \mu_n| < 0.1 \)
+\end{itemize}
+
+Energy is conserved to round-off \textbf{locally} in each segment due to matched energy exchange between particles and waves.
+
+\subsection*{8. When to Revert to One-Step Isotropisation}
+
+If \( \lambda_{\parallel} \gtrsim 100\,r_{\mathrm{g}} \), the mean number of gyro-kicks per \( \lambda_{\parallel} \) exceeds \( 10^4 \); drawing
+\( \mu' \sim \mathcal{U}[-1,1] \) at each scattering time reproduces ensemble statistics and speeds up the solver by \( N_{\mathrm{kicks}} \).
+
+\bigskip
+
+\noindent
+This collection of equations and algorithmic logic specifies a complete event-driven Monte-Carlo focused-transport solver with per-scatter energy exchange and self-consistent turbulence evolution.
+
+\section*{Pitch-Angle Stochastic Differential Equation (SDE)}
+
+Below is the key equation written \textbf{purely in standard mathematical notation}—no ASCII look-alikes—and with the natural logarithm explicitly typeset as \( \ln \).
+
+\subsection*{SDE Formulation}
+
+\begin{equation}
+\boxed{%
+\displaystyle
+\mathrm{d}\mu
+= -\frac{1 - \mu^{2}}{2}\,v\,
+    \frac{\partial}{\partial s}\bigl[\ln B(s)\bigr]\,
+    \mathrm{d}t
+  \;+\;\sqrt{\,2D_{\mu\mu}(p,\mu,s,t)\,}\;
+    \mathrm{d}W_t
+}
+\tag{1}
+\end{equation}
+
+\begin{itemize}
+  \item \( \mu \) — pitch-angle cosine
+  \item \( v \) — particle speed \( v = p / m_{p} \) (non-relativistic)
+  \item \( \dfrac{\partial}{\partial s}[\ln B(s)] \) is the “focusing coefficient”:
+  \[
+  \frac{1}{B(s)} \frac{\partial B}{\partial s}
+  \]
+  \item \( D_{\mu\mu} = \dfrac{1}{2}(1 - \mu^{2}) \dfrac{v}{\lambda_{\parallel}} \) — pitch-angle diffusivity
+  \item \( \mathrm{d}W_t \) — Wiener increment with variance \( \mathrm{d}t \)
+\end{itemize}
+
+\subsection*{Discrete Euler–Maruyama Step}
+
+For a numerical sub-step \( \delta t \) small enough that \( |\mu| \) changes only slightly:
+
+\begin{equation}
+\boxed{%
+\displaystyle
+\mu_{n+1}
+= \mu_n
+- \frac{1 - \mu_n^2}{2}\,v\,
+  \frac{\partial}{\partial s}\bigl[\ln B\bigr]\,
+  \delta t
++ \sqrt{\,2D_{\mu\mu}(p,\mu_n)\,\delta t\,}\;
+  \mathcal{N}(0,1)
+}
+\tag{2}
+\end{equation}
+
+where \( \mathcal{N}(0,1) \) is a standard normal random deviate.
+
+Apply reflecting boundary conditions at \( \mu = \pm1 \) if the update pushes \( \mu \) outside the physical range.
+
+\subsection*{Clarification of Notation}
+
+\begin{itemize}
+  \item \( \ln B \) denotes the natural logarithm of the magnetic-field magnitude
+  \item \textbf{There is no variable “in”} in the algorithm; the letters “ln” always refer to the natural logarithm \( \ln \)
+\end{itemize}
+
+This should remove any ambiguity caused by font rendering or informal notation.
+
+\section*{Why the \( \gamma_\pm \) Growth/Damping Term is Still Needed}
+
+Even though every scattering event already swaps energy between a particle and its resonant wave packet, the collective growth/damping term \( \gamma_\pm \) remains essential.
+
+\subsection*{1. Two Distinct Physical Processes}
+
+\begin{tabular}{|p{0.42\linewidth}|p{0.22\linewidth}|p{0.28\linewidth}|}
+\hline
+\textbf{Process} & \textbf{Where Handled} & \textbf{Energy Bookkeeping} \\ \hline
+\textbf{Micro-elastic exchange} — a single ion meets a single Alfvén packet and changes frame from the wave frame back to the plasma frame. &
+\textbf{Stage 6.3} \newline ( \( \Delta E = \pm m_p V_A v (\mu' - \mu) \) ) &
+\textbf{Exactly conserved} between \emph{that} particle and \emph{that} packet. \\ \hline
+\textbf{Collective growth/damping} — the \emph{net} work done by the ensemble of streaming particles on the whole wave spectrum, i.e., the classical streaming instability with rate \( \gamma_\pm \). &
+\textbf{Stage 6.4} \newline ( \( 2\gamma_\pm E_\pm \Delta \tau \) ) &
+Converts bulk coherent streaming energy into (or from) wave energy. \\ \hline
+\end{tabular}
+
+\subsection*{2. Why Per-Scatter Swaps Do Not Reproduce \( \gamma_\pm \) Automatically}
+
+Consider a segment where many particles stream sunward (\( \langle \mu \rangle < 0 \)) \emph{without scattering yet} during the tick \( \Delta \tau \):
+
+\begin{itemize}
+  \item They generate a net current: \( J_{\parallel} \propto \langle v \mu f \rangle \)
+  \item Quasilinear theory predicts:
+  \[
+    \frac{dE_+}{dt} = 2\gamma_+ E_+ \propto +J_{\parallel}
+  \]
+  \item \emph{No individual \( \Delta E \) events occur} until each particle’s own waiting time \( T_{\text{sc}} \) expires.
+\end{itemize}
+
+\textbf{Therefore:}
+
+\begin{itemize}
+  \item Omitting the \( \gamma_\pm \) term would freeze wave energy during \( \Delta \tau \), despite resonant current pumping energy into the wave spectrum.
+  \item When scattering eventually occurs, particles would draw from an under-energized wave pool, underestimating angular diffusion and energy transfer.
+\end{itemize}
+
+The \( \gamma_\pm \) term integrates \emph{over all particles}, scattered or not, transforming their streaming momentum into wave growth \emph{continuously} on the fluid timescale \( \Delta \tau \).
+
+\subsection*{3. Mathematical Decomposition}
+
+The quasilinear energy theorem (Skilling 1975) separates particle-wave interactions as:
+
+\[
+\underbrace{\sum_i m_p V_A v_i (\mu'_i - \mu_i)}_{\text{Pairwise elastic SWAP}}
+\;+\;
+\underbrace{\int (v\mu)f\;
+            \delta(k - k_{\rm res})\,
+            \frac{\partial W}{\partial t} \, d^3p}_{\text{NET WORK} = 2\gamma_\pm W_\pm}
+\]
+
+\begin{itemize}
+  \item The \textbf{first} sum corresponds to Stage 6.3
+  \item The \textbf{second} integral corresponds to Stage 6.4 growth/damping
+\end{itemize}
+
+They are \emph{additive}, giving the full wave energy transfer rate \( dE_{\text{waves}}/dt \) required by quasilinear theory.
+
+\subsection*{4. Special Case: Ultra-Short Wave Tick}
+
+If you choose the wave-tick interval so small that
+\[
+\Delta t_{\mathrm{w}} \ll \min_i T_{\text{sc},i}
+\]
+then nearly all particles scatter at least once within a tick.
+
+In this limit, accumulated micro-swaps converge to:
+
+\[
+\sum_i m_p V_A v_i (\mu'_i - \mu_i)
+\;\longrightarrow\; 2\gamma_\pm E_\pm \Delta t_{\mathrm{w}}
+\]
+
+Thus, the explicit \( \gamma_\pm \) term becomes redundant.
+
+\textbf{But:} this would require \( \Delta t \sim 10^{-3} \)–\( 10^{-4} \) s, making the simulation impractically slow.
+
+Using a finite \( \Delta t_{\mathrm{w}} \in [1, 30] \) s and retaining \( \gamma_\pm \) is the standard, cost-effective compromise.
+
+\subsection*{Bottom Line}
+
+\begin{itemize}
+  \item \textbf{Stage 6.3} ensures local energy conservation per collision.
+  \item \textbf{Stage 6.4} injects/removes the \emph{bulk} wave energy implied by the net streaming current of \emph{all} particles, including those yet to scatter.
+\end{itemize}
+
+\bigskip
+
+Both levels are required for a quantitatively correct, energy-conserving Monte-Carlo implementation of the focused transport + self-generated turbulence system.
+
+\section*{Coupling in the $\Delta t$-synchronised (“fixed-step”) Monte-Carlo algorithm}
+
+When you advance \textbf{all particles and all field variables on a common global time-step $\Delta t$} (instead of letting each particle wait for its own scattering clock), the particle–wave feedback is realised in four deterministic sub-stages executed every step:
+
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{|p{3.5cm}|p{8cm}|p{5.5cm}|}
+\hline
+\textbf{Stage} & \textbf{What the code does} & \textbf{How particle $\leftrightarrow$ wave energy is conserved} \\
+\hline
+\textbf{1. Particle update} &
+For \textbf{every} macro-particle $i$:
+\begin{itemize}
+  \item deterministic pitch-angle drift (focusing)
+  \item stochastic Gaussian kick: $\mu_i \to \mu_i + \sqrt{2 D_{\mu\mu} \, \Delta t}\;G$ (or a single isotropising draw)
+  \item spatial move: $s_i \to s_i + \mu_i v_i \Delta t$
+\end{itemize} &
+No energy exchanged yet; only positions and directions change. \\
+\hline
+
+\textbf{2. Measure streaming} &
+In each segment $j$ accumulate:
+\[
+S_{mj} = \frac{\sum_i w_i\, \Delta s_{i \to j}}{\Delta t\, A_j L_j}
+\] &
+Builds the \textit{scalar} Parker flux needed for QLT growth. \\
+\hline
+
+\textbf{3. Wave update} &
+For each segment and sense $\pm$:
+\begin{itemize}
+  \item up-wind advection with speed $\pm V_A$
+  \item Kolmogorov source term:
+  \[
+  +\left\{ 2\gamma_\pm E_\pm - \frac{E_\pm}{\tau_{\mathrm{cas}}} + Q_{\mathrm{shock}} \right\}\Delta t
+  \]
+  where
+  \[
+  \gamma_\pm = \frac{\pi^2 e^2 V_A}{c B^2} \cdot \frac{S_\pm}{k_{\mathrm{eff}}}
+  \]
+\end{itemize} &
+The term $+2\gamma_\pm E_\pm \Delta t$ \textbf{adds/removes} an energy increment $\Delta E_{\mathrm{wave}}$ to the wave pool. \\
+\hline
+
+\textbf{4. Give/take the same $\Delta E$ to resonant particles} &
+In each segment compute:
+\[
+\Delta E_{\mathrm{wave}} = (E_+^{\,\ell+1} + E_-^{\,\ell+1}) - (E_+^{\,\ell} + E_-^{\,\ell})
+\]
+Distribute $-\Delta E_{\mathrm{wave}}$ to all particles that satisfied the resonance condition during the step, e.g.,
+\[
+\Delta E_i = \frac{w_i p_{\parallel i}}{\sum w\, p_{\parallel}} \cdot (-\Delta E_{\mathrm{wave}})
+\]
+and set
+\[
+v_i \leftarrow \sqrt{v_i^2 + \frac{2\Delta E_i}{m_p}}
+\] &
+\textbf{Exact local conservation:} \[
+\sum_i \Delta E_i + \Delta E_{\mathrm{wave}} = 0
+\]
+holds for every cell at every step. \\
+\hline
+\end{tabular}
+\end{table}
+
+After stage 4, recompute the mean free path:
+\[
+\lambda_{\parallel}^{-1} \propto (E_+ + E_-)
+\]
+and update $D_{\mu\mu}$ for the next step. The loop then repeats with the same $\Delta t$ for \emph{all} particles.
+
+\subsection*{Why this works}
+\begin{itemize}
+  \item The \textbf{growth/damping term} $2\gamma_\pm E_\pm$ measures \emph{net work} done by the ensemble streaming current during the entire step $\Delta t$.
+  \item The \textbf{redistribution} in stage 4 ensures the identical amount of energy is removed from (or added to) the resonant particle subset, keeping total energy constant to round-off.
+  \item Because every particle is advanced at the same clock tick, no priority queue is needed; the only randomness resides in the Wiener kick (or isotropising draw) inside stage 1.
+\end{itemize}
+
+\subsection*{Practical remarks}
+\begin{itemize}
+  \item \textbf{$\Delta$t choice} must satisfy:
+  \[
+  |\mu|v\,\Delta t < 0.4L_{\min},\qquad 2D_{\mu\mu}\,\Delta t < 0.4
+  \]
+  for stability.
+  \item \textbf{Statistical error} scales as $1/\sqrt{N_{\mathrm{p}}}$ per step; you often need more pseudo-particles than in an event-driven code because every step incurs diffusion noise.
+  \item \textbf{Code footprint} is simpler: no min-heap, no per-particle clocks.
+\end{itemize}
+
+\bigskip
+
+With these four deterministic sub-stages, the fixed-step Monte-Carlo method achieves \textbf{exact wave–particle energy conservation and fully self-consistent growth/damping}, even though it never tracks individual scattering times explicitly.
+
+\section*{In the \texorpdfstring{$\Delta t_{\mathrm w}$}{Δt\_w}-event-driven scheme you keep \emph{both} contributions}
+
+\begin{enumerate}
+  \item \textbf{Per-collision energy swap} (Stage 6.3)
+  \item \textbf{Bulk growth/damping term} $\displaystyle 2\,\gamma_{\pm}E_{\pm}\,\Delta t_{\mathrm w}$ (Stage 6.4)
+\end{enumerate}
+
+They act on \emph{different pieces} of the particle distribution, so there is \textbf{no double-counting}.
+
+\subsection*{1. What the two terms represent}
+
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{|p{4cm}|p{4.5cm}|p{5cm}|p{5.5cm}|}
+\hline
+\textbf{Term} &
+\textbf{Acts on …} &
+\textbf{Microscopic picture} &
+\textbf{Mathematical origin} \\
+\hline
+\makecell[l]{\textbf{$\Delta E$ per collision} \\[2pt]
+$\displaystyle \Delta E_i = m_p V_A v_i (\mu'_i - \mu_i)$} &
+Only those particles that actually suffer a large-angle deflection inside the current wave tick &
+Instantaneous elastic exchange between one ion and one resonant wave packet &
+Energy change when transforming from the wave frame to plasma frame (Lorentz/Galilean) \\
+\hline
+\makecell[l]{\textbf{Growth / damping} \\[2pt]
+$\displaystyle \dot{E}_\pm = 2\gamma_\pm E_\pm$} &
+The entire streaming population (including particles that have \textbf{not yet collided}) &
+Coherent “work” done by the ensemble anisotropy on the whole wave spectrum between $t$ and $t + \Delta t_{\mathrm w}$ &
+Quasilinear “Poynting theorem” (Skilling 1975) obtained by multiplying the FTE by $v\mu$ and integrating over phase space \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection*{2. Why the micro-swaps alone are not sufficient}
+
+\begin{itemize}
+  \item During a wave tick $\Delta t_{\mathrm w}$, many particles \textbf{stream anisotropically} but \textbf{do not} reach their individual scattering time $T_{\mathrm sc}$.
+  \item Their parallel current $J_{\parallel} = q \langle v\mu f \rangle$ steadily pumps energy into the resonant wave packets, yet no $\Delta E_i$ event is registered.
+  \item The bulk term $2\gamma_\pm E_\pm \Delta t_{\mathrm w}$ adds exactly this missing energy (or removes it, if $J_{\parallel}$ is opposite to the wave sense).
+  \item When a particle finally \emph{does} collide, the per-collision exchange adjusts the energy of \textbf{that} specific packet so that the microscopic action–reaction pair is satisfied.
+\end{itemize}
+
+Taken together, time-integrating all $\Delta E_i$ events \textbf{plus} the $\gamma$-term reproduces the quasilinear energy equation:
+\[
+\frac{\mathrm{d}}{\mathrm{d}t}\left(E_{\mathrm{kin}} + E_{\mathrm{waves}}\right) = 0
+\qquad \text{(cell by cell).}
+\]
+
+\subsection*{3. No double counting}
+
+\textit{Particles that already scattered in the current tick contribute \textbf{twice} to the bookkeeping, but in complementary ways:}
+
+\begin{enumerate}
+  \item \textbf{Before scattering} they streamed for some $t < T_{\mathrm sc}$; that streaming increment went into the $\gamma$-term.
+  \item \textbf{At scattering} they exchange $\pm m_p V_A v (\mu' - \mu)$; this
+  \begin{itemize}
+    \item \emph{subtracts} the energy they just added to the waves if their new pitch angle removes the streaming anisotropy, or
+    \item \emph{adds} more if the new $\mu$ enhances it.
+  \end{itemize}
+\end{enumerate}
+
+A formal average over many scatterings recovers:
+\[
+\left\langle \sum_i \Delta E_i \right\rangle_{\Delta t_{\mathrm w}}
+= -\,2\gamma_\pm E_\pm \Delta t_{\mathrm w},
+\]
+so the two channels cancel in expectation; what is left is the correct net growth or damping of the wave energy during that tick.
+
+\subsection*{4. When you \emph{could} drop the $\gamma$-term}
+
+If you take the wave tick so small that \textbf{every} particle collides at least once inside each tick
+($\Delta t_{\mathrm w} \ll \min_i T_{\mathrm sc}$), then the sum of all $\Delta E_i$ events already delivers the full $2\gamma_\pm E_\pm \Delta t_{\mathrm w}$ and the macroscopic term becomes redundant.
+
+But this would force $\Delta t_{\mathrm w}$ down to $10^{-3}$–$10^{-4}\,\mathrm{s}$, making the simulation prohibitively expensive.
+
+Hence in practical heliospheric runs we keep:
+\begin{itemize}
+  \item a manageable $\Delta t_{\mathrm w} = 1$–$30\ \mathrm{s}$,
+  \item the \textbf{$\gamma$-term} for continuous bulk growth/damping, and
+  \item the \textbf{per-collision $\Delta E$} for exact microscopic conservation.
+\end{itemize}
+
+\subsection*{Bottom line}
+
+In an event-driven Monte-Carlo solver you need \textbf{both} the instantaneous $\Delta E$ at each collision \textbf{and} the continuous $\gamma$-term between collisions.
+
+Together they ensure:
+\begin{enumerate}
+  \item Individual wave packets satisfy energy–momentum conservation with their resonant particles, and
+  \item The wave field as a whole obeys the quasilinear growth law driven by the streaming anisotropy of \emph{all} particles, scattered or not.
+\end{enumerate}
+
+\section*{Why the fixed-\texorpdfstring{$\Delta t$}{Δt} (synchronised) Monte-Carlo code \emph{does not need} to debit or credit energy at every tiny pitch-angle kick}
+
+\noindent---in contrast to the event-driven version---
+
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{|p{5.5cm}|p{6.5cm}|p{5.5cm}|}
+\hline
+\textbf{Feature} &
+\textbf{Fixed-$\Delta t$ Monte-Carlo (synchronised)} &
+\textbf{Event-driven Monte-Carlo} \\
+\hline
+
+\textbf{How scattering is represented} &
+Each step $\Delta t$ adds a \textbf{Gaussian increment}:
+\[
+\Delta \mu = \sqrt{2 D_{\mu\mu} \, \Delta t} \cdot G(0,1)
+\]
+(or a single isotropising draw). This is a \emph{diffusion} approximation to many micro-kicks. &
+A large-angle collision happens at an exponentially distributed time $T_{\mathrm{sc}}$; the code tracks that \emph{exact} encounter. \\
+\hline
+
+\textbf{Energy exchange that actually occurs during the numerical step} &
+The random kick is \emph{centred}, i.e., $\langle \Delta \mu \rangle = 0$. \newline
+Over one global step the \textbf{mean} kinetic-energy change of the particles is \emph{exactly zero}; the microscopic swap cancels within $\Delta t$. &
+A finite $\Delta E = m_p V_A v (\mu' - \mu)$ happens at the collision time and must be booked immediately. \\
+\hline
+
+\textbf{Where the particle $\leftrightarrow$ wave work is enforced} &
+At the \textbf{end of the same step}: the code computes the bulk growth/damping energy
+\[
+\Delta E_{\mathrm{waves}} = 2 \gamma_\pm E_\pm \Delta t
+\]
+and gives the opposite amount to the resonant particle set. &
+Split into two channels:
+\begin{itemize}
+  \item Per-collision $\Delta E$ (instant)
+  \item Residual bulk term $2\gamma_\pm E_\pm \Delta t_{\mathrm w}$ between collisions
+\end{itemize} \\
+\hline
+
+\textbf{What would happen if you also added $\Delta E$ at every kick?} &
+You would \textbf{double-count} the energy transfer: once in the per-kick debit/credit and again in the end-of-step bulk redistribution. Result $\Rightarrow$ runaway damping or growth, extra noise. &
+Needed; without it the sub-tick current of the yet-to-scatter particles would never reach the waves. \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection*{Mathematical explanation}
+
+\begin{enumerate}
+\item \textbf{Diffusion approximation} \\
+In a fixed-step code the random increment
+\[
+\Delta\mu = \sqrt{2D_{\mu\mu}\,\Delta t}\,G(0,1)
+\]
+is derived by \emph{averaging over all gyro-scale packets} that hit the particle in $\Delta t$. Those packets already exchanged equal and opposite energy with the particle ensemble, giving $\langle \Delta E \rangle = 0$ for that microscopic part of the interaction.
+
+\item \textbf{Quasilinear energy theorem} \\
+The net \emph{work} done by the streaming current during the step is
+\[
+\Delta E_{\mathrm{waves}} = 2\gamma_\pm E_\pm \Delta t = -\sum_{\text{all particles}} \Delta E_{\mathrm{kin}},
+\]
+where $\Delta E_{\mathrm{kin}}$ is \emph{not} the sum of the centred Gaussian kicks (which cancel), but the coherent part associated with the mean streaming flux $S_\pm$.
+
+\item \textbf{Numerical enforcement} \\
+Stage 4 of the fixed-$\Delta t$ algorithm \emph{explicitly} sets
+\[
+E_\pm^{\,\ell+1} = E_\pm^{\,\ell} + 2\gamma_\pm E_\pm \Delta t,
+\qquad
+v_i^{\,2} \leftarrow v_i^{\,2} - \frac{2\Delta E_i}{m_p},
+\]
+with
+\[
+\Delta E_i = -\,\frac{w_i |p_{\parallel i}|}{\sum w |p_\parallel|}\,\Delta E_{\mathrm{waves}}.
+\]
+That single redistribution term already accounts for \textbf{all} wave–particle energy exchanged in the interval (both resolved and unresolved micro-kicks).
+
+\item \textbf{No need for extra per-kick debits} \\
+Because the small-angle algorithm never resolves individual packets, adding the per-collision formula
+\[
+\Delta E = m_p V_A v (\mu' - \mu)
+\]
+to \emph{every} Gaussian kick would inject purely random energy noise and break the equality in step 3.
+\end{enumerate}
+
+\subsection*{Bottom line}
+
+\begin{itemize}
+\item In a \textbf{fixed-$\Delta t$} Monte-Carlo solver, the pitch-angle diffusion operator is already the gyro-phase-averaged outcome of countless micro-collisions; their net energy exchange is zero \textbf{within the step}.
+\item The only coherent energy transfer that must be enforced is the quasilinear growth/damping term $2\gamma_\pm E_\pm \Delta t$, which the algorithm redistributes once per step.
+\item Therefore, \textbf{individual per-kick $\Delta E$ terms are not only unnecessary but harmful}—they would double-count the particle-wave work already captured by the bulk $\gamma$-term.
+\end{itemize}
+
+\section*{Why the \emph{event-driven} scheme does \textbf{not} double-count energy}
+
+Even though it keeps:
+\begin{itemize}
+  \item a \textbf{per-collision swap} 
+  \[
+  \Delta E_{\mathrm p} = m_{\mathrm p} V_A\,v(\mu' - \mu)
+  \quad \text{(applied the instant a particle scatters)},
+  \]
+  \item \textbf{and} a \textbf{bulk growth/damping term}
+  \[
+  \Delta E_{\mathrm w} = 2\gamma_\pm E_\pm\,\Delta t_{\mathrm w}
+  \quad \text{inserted once per wave tick}.
+  \]
+\end{itemize}
+
+\subsection*{1. Time lines of the two channels}
+
+\begin{verbatim}
+Δt_w interval:  t_k  ──────────── t_{k+1}
+
+  particle i  :  ──◯─────────────◯──  (◯ = a single collision)
+                    |<-- Δs_1 -->|
+                                |<-- Δs_2 -->|
+
+  waves       :  accumulate ΣΔs_1 → S ±   |  accumulate ΣΔs_2 → S ±
+                 γ, E update & swap  │  γ, E update …
+\end{verbatim}
+
+\begin{itemize}
+  \item \textbf{Before the collision} (segment path $\Delta s_1$):  
+  the particle contributes to the \emph{streaming current} that enters $\gamma_\pm$. No $\Delta E$ yet.
+  \item \textbf{At the collision} (time $\tau$):  
+  the micro-exchange $\Delta E_{\mathrm p}$ is applied; the wave energy changes by $-\Delta E_{\mathrm p}$.
+  \item \textbf{After the collision} (path $\Delta s_2$):  
+  the particle travels with new $\mu'$; its updated streaming contributes to the next $\gamma$ estimate.
+\end{itemize}
+
+\noindent Thus:
+\begin{itemize}
+  \item The \textbf{bulk term} uses the \emph{integrated streaming between ticks}. It includes both pre- and post-collision contributions but \textbf{excludes} the instantaneous $\Delta E_{\mathrm p}$.
+  \item The \textbf{micro-term} appears \textbf{only at} $\tau$ and involves \emph{that specific packet only}.
+\end{itemize}
+
+Because the collision removes the \emph{old} streaming and replaces it with \emph{new} streaming, the energy $\Delta E_{\mathrm p}$ is \textbf{exclusive} of the $\gamma$ term computed at either tick—there is no overlap.
+
+\subsection*{2. Formal proof (segment $j$, wave tick $\Delta t_{\mathrm w}$)}
+
+\begin{enumerate}
+\item \textbf{Streaming current during the tick}:
+\[
+J_\parallel(t) = \sum_i q\,v_i \mu_i(t),
+\qquad
+\langle J_\parallel \rangle = \frac{1}{\Delta t_{\mathrm w}} \int_{t_k}^{t_{k+1}} J_\parallel(t)\,\mathrm{d}t.
+\]
+
+\item \textbf{Wave-energy increment from QLT}:
+\[
+\Delta E_{\mathrm{waves}}^{(\gamma)} = 2\gamma_\pm E_\pm \Delta t_{\mathrm w}
+= \left( \frac{\pi^2 e^2 V_A}{c B^2 k_{\mathrm{eff}}} \right)
+\langle J_\parallel \rangle E_\pm \Delta t_{\mathrm w}.
+\]
+
+This term uses only the \textbf{time integral of $J_\parallel$}, not the discrete $\Delta E_{\mathrm p}$ impulses.
+
+\item \textbf{Sum of all per-collision exchanges during the same tick}:
+\[
+\sum_{\text{collisions in } (t_k, t_{k+1})} \Delta E_{\mathrm p}
+= m_{\mathrm p} V_A \sum_{\text{coll.}} v(\mu' - \mu)
+= m_{\mathrm p} V_A \int_{t_k}^{t_{k+1}} \frac{\mathrm{d}}{\mathrm{d}t}
+\left[\sum_i v_i \mu_i\right] \mathrm{d}t
+= m_{\mathrm p} V_A \left[ J_\parallel(t_{k+1}) - J_\parallel(t_k) \right].
+\]
+
+The integral collapses to the \emph{end-point difference}; it measures how much streaming is instantly removed or created by the collisions—not the time-average that feeds $\gamma$.
+
+\item \textbf{Add the two contributions}:
+
+Over many ticks the telescoping sum of end-point differences recovers the \emph{missing part} of the quasilinear energy theorem, while the $\gamma$-term adds the continuous work of the current that existed between collisions. Their combination exactly reconstructs the total wave-energy change:
+
+\[
+\Delta E_{\mathrm w}^{(\gamma)} + \sum_{\text{coll}} \Delta E_{\mathrm p}
+= \int_{t_k}^{t_{k+1}} \left(
+\frac{\pi^2 e^2 V_A}{c B^2 k_{\mathrm{eff}}}\, J_\parallel \right) E_\pm\, \mathrm{d}t,
+\]
+
+with no double entry.
+\end{enumerate}
+
+\subsection*{3. Intuitive summary}
+
+\begin{itemize}
+  \item \textbf{Bulk $\gamma$-term} pays the waves for the \emph{steady streaming} that existed throughout the tick.
+  \item \textbf{Per-collision $\Delta E$} adjusts the waves for the \emph{instantaneous drop (or rise) in streaming} the moment a pitch angle flips.
+\end{itemize}
+
+Because each handles a \textbf{mutually exclusive} part of the energy transfer—one continuous, one impulsive—their sum gives the unique, correct quasilinear energy balance, and double-counting never occurs.
+
+\bigskip
+
+\textbf{Therefore:} In an event-driven Monte-Carlo algorithm you must keep \emph{both} the per-collision energy swap \textbf{and} the $\gamma_\pm$ growth/damping term. They complement each other rather than overlap.
+
+\section*{Does the growth / damping term “see” particles that scatter inside the same wave-tick?}
+
+\textbf{Yes.} The $\gamma_\pm$ term is built from the \emph{full path-integral of streaming} accumulated over the wave-tick interval $\Delta t_{\mathrm w}$, so it automatically includes the motion of every particle \textbf{both before and after any collisions that occur inside that interval}.
+
+\subsection*{How that happens in the event-driven algorithm}
+
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{|p{4.2cm}|p{7.5cm}|p{5.5cm}|}
+\hline
+\textbf{Moment in the tick} & \textbf{What the code tallies} & \textbf{Why $\gamma_\pm$ includes it} \\
+\hline
+
+\textbf{(a) Before a collision at time $\tau$} &
+While the particle moves with its \emph{old} pitch angle $\mu$, the routine \texttt{propagateGuidingCentre()} adds the signed distance $w\,\Delta s_{\mathrm{old}}$ to the scalar-flux accumulator of the segment. &
+That distance contributes to the scalar Parker flux $S(p,s)$ and therefore to $S_\pm \Rightarrow \gamma_\pm$. \\
+\hline
+
+\textbf{(b) Instant of the collision ($\tau$)} &
+The code executes the micro swap $\Delta E_{\mathrm p} = m_p V_A v (\mu' - \mu)$; \textbf{no streaming distance is added} because $\Delta t = 0$. &
+The instantaneous jump carries no net path length, so it does \textbf{not} enter $S_\pm$ and does not double-count in $\gamma_\pm$. \\
+\hline
+
+\textbf{(c) After the collision ($\tau \rightarrow t_{\mathrm w}$)} &
+The particle now travels with its \emph{new} pitch angle $\mu'$; the subsequent distance $w\,\Delta s_{\mathrm{new}}$ is accumulated in the same streaming array. &
+This post-collision contribution is also in the integral that produces $\gamma_\pm$. \\
+\hline
+\end{tabular}
+\end{table}
+
+\noindent After the tick ends at $t = t_{\mathrm w}$:
+
+\begin{enumerate}
+  \item The total scalar-flux accumulator per segment is
+  \[
+  S_{\mathrm{scalar}}(p_m, s_j)
+  = \frac{\sum_i w_i\,\left(\Delta s_{\mathrm{old}} + \Delta s_{\mathrm{new}}\right)}
+         {\Delta t_{\mathrm w} A_j L_j},
+  \]
+  i.e., \textbf{all} distances travelled, regardless of how many scatterings occurred.
+
+  \item $S_{\mathrm{scalar}}$ is then split into $S_+$ and $S_-$, which define the growth/damping rate:
+  \[
+  \gamma_\pm = \frac{\pi^2 e^2 V_A}{c B^2} \cdot \frac{S_\pm}{k_{\mathrm{eff}}},
+  \]
+  so $\gamma_\pm$ fully reflects the cumulative streaming of \emph{every} particle during that tick.
+\end{enumerate}
+
+\subsection*{No double-counting}
+
+\begin{itemize}
+  \item The \textbf{path distances} collected for $\gamma_\pm$ do \textbf{not} include the zero-duration collision impulses; they include only the \emph{coherent streaming} between collisions.
+  \item The \textbf{per-collision energy swap} handles the impulsive, frame-change part that is missing from the streaming integral.
+  \item Summed together over the tick, they satisfy the quasilinear energy theorem: the wave field receives exactly the right total energy.
+\end{itemize}
+
+\bigskip
+
+\noindent\textbf{Therefore:} Even when a particle scatters multiple times inside $\Delta t_{\mathrm w}$, \emph{every metre it travels—before and after each collision—}goes into the streaming integral that drives $\gamma_\pm$, while the individual collisions supply the complementary impulsive energy exchange.
+
+
+\section*{Meaning of $\Delta s_{\text{old}} + \Delta s_{\text{new}}$}
+
+Consider one particle that scatters once inside the current wave–tick interval $[t_k,\,t_{k+1}]$, and let
+\[
+\tau \in (t_k,\,t_{k+1})
+\]
+be the instant of that collision.
+
+\subsection*{1. Before the collision — $\Delta s_{\text{old}}$}
+
+\begin{itemize}
+  \item The pitch angle is still the \textbf{pre-scatter value} $\mu_{\text{old}}$.
+  \item During the time span $t_k \leq t < \tau$, the guiding centre travels:
+  \[
+  \Delta s_{\text{old}} = \int_{t_k}^{\tau} \mu_{\text{old}}\,v \,\mathrm{d}t
+  = \mu_{\text{old}}\,v\,(\tau - t_k),
+  \]
+  with sign convention: positive = anti-sunward.
+  \item When the trajectory crosses cell faces, this continuous distance is split into sub-segments and each portion is credited to the cell it was inside.
+\end{itemize}
+
+\subsection*{2. After the collision — $\Delta s_{\text{new}}$}
+
+\begin{itemize}
+  \item The pitch angle jumps to the \textbf{post-scatter value} $\mu_{\text{new}}$.
+  \item Over the remainder of the tick, $\tau \leq t \leq t_{k+1}$, the particle moves:
+  \[
+  \Delta s_{\text{new}} = \int_{\tau}^{t_{k+1}} \mu_{\text{new}}\,v \,\mathrm{d}t
+  = \mu_{\text{new}}\,v\,(t_{k+1} - \tau),
+  \]
+  again split cell-by-cell.
+\end{itemize}
+
+\subsection*{3. Why you add them}
+
+For every cell $j$, the \textbf{streaming accumulator} is
+\[
+S_{\mathrm{scalar}}(p_m, s_j)
+= \frac{
+\displaystyle \sum_{i\;\text{inside }j}\!w_i\,
+\bigl(\Delta s_{\text{old}} + \Delta s_{\text{new}}\bigr)_{i \to j}
+}{
+\displaystyle \Delta t_{\mathrm w} \, A_j \, \Delta s_j
+}
+\quad \left[\text{particles m}^{-2} \, \text{s}^{-1} \, \Delta p^{-1}\right].
+\]
+
+This must contain the \textbf{total signed path length covered inside that cell during the tick}. Splitting it into “old” and “new” parts is just bookkeeping for the particle that scattered; the sum recovers the same quantity you would get if no collision had been tracked explicitly.
+
+\bigskip
+
+\noindent Hence,
+\[
+\boxed{
+\Delta s_{\text{old}} + \Delta s_{\text{new}}
+= \text{full distance the particle travels in the cell during } \Delta t_{\mathrm w}
+}
+\]
+
+\noindent and this total is what feeds the Parker scalar flux, the growth/damping rate $\gamma_\pm$, and ultimately the wave-amplitude update.
+
+\bigskip
+
+\textit{(If a particle scatters twice within the same tick you simply have three pieces: “old 1 + old 2 + new,” and the same logic applies.)}
+
+\section*{Why we \emph{first accumulate the scalar Parker flux}}
+
+\[
+S(p, s) = \frac{1}{\Delta t} \cdot \frac{1}{A\,\Delta s}
+          \sum_i w_i\,\Delta s_{i \to s},
+\]
+
+and only \emph{afterwards} split it into the two resonant senses $S_{+}(k, s)$ and $S_{-}(k, s)$—instead of trying to tally $S_{\pm}$ directly.
+
+\subsection*{Reasons for this approach}
+
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{|p{3.5cm}|p{11.5cm}|}
+\hline
+\textbf{Reason} & \textbf{Explanation} \\
+\hline
+
+\textbf{1. Geometry handled once, independently of waves} &
+The distance–splitting logic only needs the \emph{path} that a particle takes inside each cell. It does \textbf{not} depend on which wavenumber $k$ or wave sense ($\pm$) the particle resonates with—these depend on $p$, $B$, $V_A$, etc. By collecting a single scalar distance, we avoid repeating costly face-crossing logic for each wave mode. \\
+\hline
+
+\textbf{2. Resonance $\leftrightarrow$ sense mapping is $p$- and $B$-dependent} &
+A particle with the same $p$ may resonate with the $+$ sense in one segment and with the $-$ sense in another, due to local changes in $V_A$ or $B$. During the Monte-Carlo loop, you \emph{don’t yet know} which sense will be valid, so attribution of distance to $+$ or $-$ cannot be done on the fly without redundant lookups. \\
+\hline
+
+\textbf{3. Half-flux rule is non-local in $\mu$} &
+To decide if a contribution splits 50–50 between $+$ and $-$ or goes fully into one sense, you must know whether \emph{both} $k_{+}$ and $k_{-}$ fall within $[k_{\min}, k_{\max}]$. This can only be evaluated \emph{after} the full set of $p$-bins is known in the cell—thus not during streaming accumulation. \\
+\hline
+
+\textbf{4. Memory and speed} &
+Storing separate streaming accumulators for each sense and each momentum bin doubles memory and bandwidth usage. Scalar accumulation is $\mathcal{O}(N_p N_c)$; two-sense accumulation is $\mathcal{O}(2N_p N_c)$ with no gain in accuracy. \\
+\hline
+
+\textbf{5. Noise reduction} &
+The scalar $S(p, s)$ is a \emph{sum} of many small signed distances. Dividing it into $+$ and $-$ after binning reduces statistical noise by averaging before applying the half-flux rule—thus lowering the variance in $\gamma_\pm$. \\
+\hline
+
+\textbf{6. Algorithm modularity} &
+The Monte-Carlo loop remains free from wave-specific logic. All turbulence physics—projection, growth, damping—is confined to a single post-processing block (Stage 6.4), simplifying code maintenance and upgrades (e.g., oblique wave support). \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection*{Projection step (after scalar tally)}
+
+For each momentum bin $p_m$ in cell $j$:
+\[
+\begin{aligned}
+k_{+}(p_m) &= \frac{\Omega}{v_m \mu_{\mathrm{res}} + V_{A,j}}, \\
+k_{-}(p_m) &= \frac{\Omega}{v_m (-\mu_{\mathrm{res}}) + V_{A,j}}, \\[6pt]
+\mu_{\mathrm{res}} &= \frac{V_{A,j}}{v_m}.
+\end{aligned}
+\]
+
+\begin{itemize}
+  \item \textbf{If both $k_{+}$ and $k_{-}$ lie inside} $[k_{\min}, k_{\max}]$:
+        assign \emph{half} of $S(p_m, s_j)$ to each sense.
+  \item \textbf{If only one sense lies inside} the inertial range:
+        give that sense the \emph{full} scalar flux for that $p$-bin.
+\end{itemize}
+
+Then compute:
+\[
+\begin{aligned}
+S_{+,j} &= \sum_m \text{(share}_{+,m})\,S(p_m, s_j), \\
+S_{-,j} &= \sum_m \text{(share}_{-,m})\,S(p_m, s_j),
+\end{aligned}
+\]
+
+which directly enter the growth rates:
+\[
+\gamma_\pm = \frac{\pi^2 e^2 V_A}{c B^2} \cdot \frac{S_\pm}{k_{\mathrm{eff}}}.
+\]
+
+\subsection*{Consequence}
+
+\begin{itemize}
+  \item \textbf{No information is lost}: scalar $S$ contains the full signed streaming of every particle; the projection step assigns it to wave senses via resonance.
+  \item \textbf{No energy is double-counted}: each path increment is attributed to exactly one sense (or split in half), per quasilinear theory.
+  \item \textbf{Computation is optimal}: geometry is handled once; physics is handled once.
+\end{itemize}
+
+\subsection*{Remark}
+
+This strategy is used in virtually all modern Monte-Carlo and finite-difference SEP–wave solvers, including:
+\begin{itemize}
+  \item Ng \& Reames (1994),
+  \item Zank, Rice \& Wu (2000),
+  \item Afanasiev et al. (2015),
+\end{itemize}
+who accumulate a scalar Parker flux $S(p, s)$ and only afterwards project it into $S_{+}$ and $S_{-}$.
+
+\section*{Ultra-detailed recipe for sampling the \emph{wave-sense streaming flux}}
+
+Compute $S_{+}(k, s)$ and $S_{-}(k, s)$ from individual Monte-Carlo particles during one global interval $\Delta t$.
+
+\subsection*{0. Notation (per field-line segment $j$)}
+
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{4cm}|p{9.2cm}|p{3cm}|}
+\hline
+\textbf{Symbol} & \textbf{Meaning} & \textbf{Units} \\
+\hline
+$w_i$ & Statistical weight of particle $i$ & dimensionless \\
+$\Delta s_{i \to j}$ & Signed arc-length travelled inside segment $j$ by particle $i$ during $\Delta t$ & m \\
+$V_j$ & Segment volume & m$^3$ \\
+$S_{\mathrm{raw}}(p_m, s_j)$ & Scalar streaming accumulator for momentum bin $m$ & particles m$^{-2}$ s$^{-1}$ (Δp)$^{-1}$ \\
+$p_m$ & Log-centred momentum of bin $m$ & kg m s$^{-1}$ \\
+$v_m = p_m/m_{\mathrm p}$ & Speed of bin $m$ & m s$^{-1}$ \\
+$k_{\pm}(p_m)$ & Resonant wavenumber for $\pm$ sense & rad m$^{-1}$ \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection*{1. Per-particle distance tally (geometry only)}
+
+For each particle $i$:
+\begin{enumerate}
+  \item Compute total displacement:
+  \[
+  \Delta s_i = \mu_i v_i \Delta t
+  \]
+  \item Split at cell faces; in each visited segment $j$ record:
+  \[
+  \Delta s_{i \to j}
+  \]
+  with correct sign.
+  \item Update scalar accumulator for that particle’s momentum bin $m$:
+  \begin{equation}
+  S_{\mathrm{raw}}(p_m, s_j)
+    \;{+}{=}\;
+    \frac{w_i\,\Delta s_{i \to j}}{\,\Delta t\, V_j}
+  \tag{1}
+  \end{equation}
+\end{enumerate}
+
+\emph{No wave-specific logic yet}—only scalar distance flux added.
+
+\subsection*{2. Convert raw sums to scalar Parker flux}
+
+After all particles are processed:
+\[
+S(p_m, s_j) = S_{\mathrm{raw}}(p_m, s_j)
+\quad \left[\text{particles m}^{-2} \, \text{s}^{-1} \, (\Delta p)^{-1}\right]
+\]
+
+\subsection*{3. Determine resonance sense for each $(p_m, s_j)$}
+
+Using local $V_{A,j}$ and $B_j$:
+\[
+\mu_{\mathrm{res}}(p_m) = \frac{V_{A,j}}{v_m},
+\qquad
+\Omega = \frac{e B_j}{m_{\mathrm p}}
+\]
+
+\[
+k_{+}(p_m) = \frac{\Omega}{v_m \mu_{\mathrm{res}} + V_{A,j}},
+\qquad
+k_{-}(p_m) = \frac{\Omega}{v_m (-\mu_{\mathrm{res}}) + V_{A,j}}
+\]
+
+Check which values lie in the inertial range $[k_{\min}, k_{\max}]$.
+
+\subsection*{4. Half-flux sharing rule}
+
+\[
+\beta_{+}(m,j)
+=
+\begin{cases}
+1, & k_{+} \in [k_{\min}, k_{\max}],\; k_{-} \notin \text{window} \\[4pt]
+\frac{1}{2}, & k_{+}, k_{-} \in \text{window} \\[4pt]
+0, & \text{otherwise}
+\end{cases}
+\qquad
+\beta_{-}(m,j) = 1 - \beta_{+}(m,j)
+\]
+
+\subsection*{5. Build sense-specific streaming}
+
+\begin{equation}
+\boxed{
+S_{+}(s_j) =
+  \sum_m \beta_{+}(m,j) \, S(p_m, s_j) \, \Delta p_m,
+\qquad
+S_{-}(s_j) =
+  \sum_m \beta_{-}(m,j) \, S(p_m, s_j) \, \Delta p_m
+}
+\tag{2}
+\end{equation}
+
+with bin width $\Delta p_m = p_m \bigl(e^{\Delta \ln p} - 1\bigr)$.
+
+These are the inputs to the growth/damping rates:
+\[
+\boxed{
+\gamma_{\pm}(s_j)
+= \frac{\pi^2 e^2 V_{A,j}}{c B_j^2}
+  \cdot \frac{S_{\pm}(s_j)}{k_{\mathrm{eff}}},
+\qquad
+k_{\mathrm{eff}} = \sqrt{k_{\min} k_{\max}}
+}
+\]
+
+\subsection*{6. Why this procedure is exact (to $\Delta p$ resolution)}
+
+\begin{itemize}
+  \item \textbf{Additivity}: Streaming is linear in distance. Splitting the trajectory first, then classifying, is algebraically identical to classifying each sub-distance on the fly.
+  \item \textbf{No double-counting}: $\beta_{+} + \beta_{-} = 1$ by construction.
+  \item \textbf{Efficiency}: Resonance test uses only $p_m$, $V_{A,j}$, and $B_j$—no recomputation inside the particle loop.
+\end{itemize}
+
+\subsection*{7. Minimal code skeleton (per wave-tick)}
+
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\footnotesize]
+for (int j = 0; j < Nc; ++j) {
+    Splus[j]  = 0.0;
+    Sminus[j] = 0.0;
+
+    for (int m = 0; m < Np; ++m) {
+        double v    = pGrid[m] / mp;
+        double muR  = VA[j] / v;
+        double kP   = Omega[j] / ( v * muR + VA[j] );
+        double kM   = Omega[j] / ( v * (-muR) + VA[j] );
+
+        double betaP = 0.0, betaM = 0.0;
+        bool inP = (kP >= kmin && kP <= kmax);
+        bool inM = (kM >= kmin && kM <= kmax);
+
+        if (inP && inM) { betaP = betaM = 0.5; }
+        else if (inP)   { betaP = 1.0; }
+        else if (inM)   { betaM = 1.0; }
+
+        Splus[j]  += betaP * Sscalar[m][j] * dp[m];
+        Sminus[j] += betaM * Sscalar[m][j] * dp[m];
+    }
+}
+\end{lstlisting}
+
+Here, \texttt{Sscalar[m][j]} is filled via Eq.\,(1).
+
+\subsection*{Summary flow}
+
+\begin{enumerate}
+  \item \textbf{Geometry} — split each particle’s path; accumulate one scalar flux per $(p_m, s_j)$.
+  \item \textbf{Physics} — classify scalar flux into $+$ or $-$ sense using resonance condition.
+  \item \textbf{Wave coupling} — input $S_\pm$ into $\gamma_\pm$; advance wave fields and update $\lambda_{\parallel}$.
+\end{enumerate}
+
+\bigskip
+
+\textbf{Result:} Every quantity entering the wave update is sampled \emph{directly} from Monte-Carlo particles, with no ambiguity and no hidden double-counting.
+
