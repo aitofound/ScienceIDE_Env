@@ -1,0 +1,94 @@
+#==============================================================================
+# AMPS_PARAM_F1_gridless.in
+# F1 — zero-field density/flux normalization
+#
+# PURPOSE
+#   In a zero magnetic field with no inner absorbing sphere, every backtraced
+#   direction from every point exits the outer box.  Therefore T(E)=1 exactly,
+#   J_local(E)=J_boundary(E), the omnidirectional flux is 4*pi*int J(E)dE, and
+#   the density is 4*pi*int J(E)/v(E)dE.
+#==============================================================================
+
+#RUN_INFO
+  RUN_ID F1_zero_field_density_flux
+
+#CALCULATION_MODE
+  CALC_TARGET        DENSITY_SPECTRUM
+  FIELD_EVAL_METHOD  GRIDLESS
+
+#BACKGROUND_FIELD
+  FIELD_MODEL        NONE
+  EPOCH              2026-07-10T00:00:00
+
+#ELECTRIC_FIELD
+  EFIELD_MODEL       NONE
+
+#DOMAIN_BOUNDARY
+  DOMAIN_X_MIN      -10000.0   ! km
+  DOMAIN_X_MAX       10000.0   ! km
+  DOMAIN_Y_MIN      -10000.0   ! km
+  DOMAIN_Y_MAX       10000.0   ! km
+  DOMAIN_Z_MIN      -10000.0   ! km
+  DOMAIN_Z_MAX       10000.0   ! km
+  R_INNER                0.0   ! km; disable geometric loss for the normalization test
+
+#PARTICLE_SPECIES
+  SPECIES            PROTON
+  CHARGE             1
+  MASS_AMU           1.007276466621
+
+#DENSITY_SPECTRUM
+  DS_EMIN            1.0
+  DS_EMAX            1000.0
+  DS_NINTERVALS      80
+  DS_ENERGY_SPACING  LOG
+  DS_BOUNDARY_MODE   ISOTROPIC
+  DS_TRANSMISSION_MODE DIRECT
+  DS_MAX_PARTICLES   0
+  DS_MAX_TRAJ_TIME   5.0
+  MODE3D_PARALLEL    THREADS
+  MODE3D_THREADS     8
+  GRIDLESS_MPI_SCHEDULER DYNAMIC
+  GRIDLESS_MPI_DYNAMIC_CHUNK 0
+
+#ENERGY_CHANNELS
+  CH_BEGIN
+    LOW       1.0     10.0
+    MID      10.0    100.0
+    HIGH    100.0   1000.0
+    FULL      1.0   1000.0
+  CH_END
+
+#SPECTRUM
+  SPECTRUM_TYPE      POWER_LAW
+  SPEC_J0            1.0
+  SPEC_E0            10.0
+  SPEC_GAMMA         3.5
+  SPEC_EMIN          1.0
+  SPEC_EMAX          1000.0
+
+#NUMERICAL
+  DT_TRACE           0.05
+  ADAPTIVE_DT        T
+  MAX_STEPS          20000
+  MAX_TRACE_TIME     5.0
+  MAX_TRACE_DISTANCE 0.0
+  MODE3D_PARALLEL    THREADS
+  MODE3D_THREADS     8
+  GRIDLESS_MPI_SCHEDULER DYNAMIC
+  GRIDLESS_MPI_DYNAMIC_CHUNK 0
+
+#OUTPUT_DOMAIN
+  OUTPUT_MODE POINTS
+  POINTS_BEGIN
+    POINT  1000.0     0.0     0.0
+    POINT -1000.0     0.0     0.0
+    POINT     0.0  1000.0     0.0
+    POINT     0.0 -1000.0     0.0
+    POINT     0.0     0.0  1000.0
+    POINT     0.0     0.0 -1000.0
+    POINT   500.0   500.0   500.0
+    POINT  -500.0   500.0  -500.0
+    POINT  1250.0  -750.0   250.0
+    POINT -1250.0  -250.0   750.0
+  POINTS_END

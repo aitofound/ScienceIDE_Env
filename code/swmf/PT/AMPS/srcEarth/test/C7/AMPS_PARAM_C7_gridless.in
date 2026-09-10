@@ -1,0 +1,110 @@
+! ============================================================================
+! AMPS Earth validation test C7: global effective vertical cutoff rigidity
+!
+! This file is a complete, directly runnable numerical input for the default
+! C7 IZMIRAN T96 case (bundled IZMIRAN T96 benchmark).  It intentionally contains no
+! placeholder tokens, shell variables, or arithmetic expressions.
+!
+! run_C7.py copies this file into each case directory and updates only the
+! explicitly named directives whose numerical values differ by subtest, epoch,
+! shell resolution, or CLI option.  The runner does not perform free-form text
+! substitution.  Consequently, every generated AMPS_PARAM_C7.in remains a
+! valid, human-readable AMPS input containing the exact values used in the run.
+!
+! C7 uses IGRF plus the T96 external field and traces vertically incident protons
+! from a geodetic 500-km shell.  PENUMBRA_SCAN evaluates one complete rigidity
+! sequence and writes Rc_lower, Rc_effective, and Rc_upper.  The published
+! GeoMagSphere/IZMIRAN reference tables may report lower, upper, and effective
+! cutoffs. run_C7.py preserves all three definitions and applies the source-specific
+! effective-cutoff convention declared in the reference CSV.
+!
+! Do not replace PENUMBRA_SCAN with UPPER_SCAN for this test: Rc_upper is not
+! the published effective cutoff when allowed and forbidden bands alternate in
+! the geomagnetic penumbra.
+! ============================================================================
+
+#CALCULATION_MODE
+CALC_TARGET             CUTOFF_RIGIDITY
+FIELD_EVAL_METHOD       GRIDLESS
+
+#CUTOFF_RIGIDITY
+! The numerical energy limits below correspond to proton rigidities of
+! 0.01 GV and 20.0 GV for MASS_AMU=1.007276466621.
+CUTOFF_EMIN             0.0532879330303331
+CUTOFF_EMAX             19083.7246781813
+CUTOFF_MAX_PARTICLES    1
+CUTOFF_NENERGY          50
+CUTOFF_SAMPLING         VERTICAL
+CUTOFF_SEARCH_ALGORITHM PENUMBRA_SCAN
+CUTOFF_UPPER_SCAN_N     2000
+CUTOFF_SCAN_SPACING     LINEAR
+CUTOFF_TRACE_POLICY     ACCURATE
+! Independent geomagnetic cutoff codes reverse both velocity and charge for backtracing.
+! The bundled IZMIRAN runs used a 20-s maximum flight time. A trajectory
+! that reaches the selected limit follows the FORBIDDEN policy in this subtest.
+CUTOFF_BACKTRACE_CHARGE REVERSED
+CUTOFF_TRACE_LIMIT_POLICY FORBIDDEN
+CUTOFF_MAX_TRAJ_TIME    20.0
+
+#PARTICLE_SPECIES
+SPECIES                 PROTON
+CHARGE                  1
+MASS_AMU                1.007276466621
+
+#BACKGROUND_FIELD
+FIELD_MODEL             T96
+EPOCH                   2012-03-08T00:00:00
+DST                     -50.0
+PDYN                    2.0
+IMF_BX                  0.0
+IMF_BY                  0.0
+IMF_BZ                  -5.0
+SW_VX                   -450.0
+SW_N                    5.0
+T05_W1                  0.0
+T05_W2                  0.0
+T05_W3                  0.0
+T05_W4                  0.0
+T05_W5                  0.0
+T05_W6                  0.0
+
+#DOMAIN_BOUNDARY
+! All bare length values in this section are kilometers.  The outer box below
+! is +/-25 Earth radii using Re=6371.2 km; R_INNER is one Earth radius.
+DOMAIN_X_MIN            -159280.0
+DOMAIN_X_MAX             159280.0
+DOMAIN_Y_MIN            -159280.0
+DOMAIN_Y_MAX             159280.0
+DOMAIN_Z_MIN            -159280.0
+DOMAIN_Z_MAX             159280.0
+R_INNER                  6371.2
+
+#SPECTRUM
+! A spectrum is required by the common parser but is not used by cutoff tracing.
+SPECTRUM_TYPE           POWER_LAW
+SPEC_J0                 1.0
+SPEC_GAMMA              2.0
+SPEC_E0                 1000.0
+SPEC_EMIN               1.0
+SPEC_EMAX               20000.0
+
+#OUTPUT_DOMAIN
+OUTPUT_MODE             SHELLS
+SHELL_COUNT             1
+SHELL_ALTS_KM           500.0
+SHELL_LON_RES_DEG       90.0
+SHELL_LAT_RES_DEG       15.0
+SHELL_GEOMETRY          GEODETIC
+
+#OUTPUT_OPTIONS
+OUTPUT_COORDS           GEO
+
+#NUMERICAL
+DT_TRACE                0.2
+ADAPTIVE_DT             T
+MAX_STEPS               500000
+MAX_TRACE_TIME          20.0
+MAX_TRACE_DISTANCE      400.0
+TRAP_DETECTION          T
+
+!#END
