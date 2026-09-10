@@ -52,7 +52,7 @@ if [ "${1:-}" = "produce" ]; then
     if (cd "$check_dir" && env -i PATH="$PATH" HOME="${HOME:-/tmp}" LANG=C.UTF-8 \
           SOURCE_DIR="$SOURCE_DIR" OUT_DIR="$out_dir" CHECK_DIR="$check_dir" SAB_IC="$IC" \
           OMPI_ALLOW_RUN_AS_ROOT=1 OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1 ${passthrough[@]+"${passthrough[@]}"} \
-          bash ./run.sh "$IC") >"$log" 2>&1; then
+          bash ./run.sh "$IC" </dev/null) >"$log" 2>&1; then
       end=$(date +%s.%N)
       build="$(grep -o 'SAB_BUILD_SECONDS=[0-9.]*' "$log" | tail -1 | cut -d= -f2 || true)"  # no build line is legitimate; grep's 1 must not kill the driver
       printf 'check=%s\nic=%s\nelapsed_seconds=%s\nbuild_seconds=%s\n' "$check" "$IC" "$(awk "BEGIN{print $end - $start}")" "${build:-0}" >"$out_dir/run.ok"
