@@ -160,8 +160,8 @@ def read_sdf(path):
         if index + 1 < nblocks:
             if nxt <= loc or nxt < info_end or nxt >= len(buf):
                 raise ValueError("%s: invalid SDF block chain" % path)
-        elif nxt != 0:
-            raise ValueError("%s: final SDF block has a next block" % path)
+        elif nxt != 0 and (nxt <= loc or nxt < info_end or nxt > len(buf)):
+            raise ValueError("%s: invalid SDF terminal block pointer" % path)
         chain.append((loc, info_end))
         if blocktype == 5 and datatype in _SCALAR_FMT:
             _require(buf, meta, struct.calcsize(_SCALAR_FMT[datatype]), path)
