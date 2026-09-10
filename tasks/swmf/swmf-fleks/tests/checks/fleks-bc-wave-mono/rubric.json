@@ -1,0 +1,30 @@
+{
+  "check": "fleks-bc-wave-mono",
+  "policy": "pointwise",
+  "chaotic": false,
+  "upstream_test": "code/swmf: PC/FLEKS/tests/bc_wave/PARAM.in.mono; upstream tests/validate_tests.py --test=bc_wave.mono",
+  "configuration": "./Config.pl -install=BATSRUS -compiler=gfortran; build pinned 3-D AMReX; PC/FLEKS/Config.pl -amrex3d -lev=2 -u=Exo; make EXE/PIDL and rundir; run FLEKS.exe on ic/<case>/PARAM.in with the source #STOP window and PostProc.pl where applicable.",
+  "observable": "the final structured-grid pure-EM field frame containing the injected interior Bz wave",
+  "expected_runtime_s": 4.0,
+  "default_vs_upstream": "exact pinned upstream #STOP defaults (SAB_STOP_SCALE=1.0); runtime is an unmeasured estimate excluding build time",
+  "variant": "the WAVEBC amplitude from 1.0e-4 to 1.0000000002e-4 (2e-10 relative); all other source inputs and output selection remain unchanged.",
+  "altbuild": "same pinned source, dimension, user and deck with Config.pl -O0; proposed only, no floor claimed until parent calibration",
+  "status": "calibration-pending",
+  "comparison": {
+    "atol": 1e-12,
+    "rtol": 0.001,
+    "files": [
+      {
+        "path": "pc_cut.out",
+        "format": "swmf_idl"
+      }
+    ]
+  },
+  "evidence": {
+    "floor": null,
+    "floor_how": "unmeasured: no solver/reference/self-validation/benchmark run authorized in implementation pass",
+    "self_validation_spread": null,
+    "self_validation_bound_fraction": null
+  },
+  "warrant": "Provisional draft policy. The listed field/log values are produced by the pinned source writer and a real fault in the source-backed boundary, wave injection, hyper-resistive term, particle mover, or field advance should cross the proposed bound. The achievable floor, output fingerprint, and suitable window require parent calibration and owner decision; no PASS is claimed."
+}
