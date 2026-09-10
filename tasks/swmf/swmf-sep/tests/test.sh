@@ -114,7 +114,7 @@ PYBUILD_ID
           SOURCE_DIR="$SOURCE_DIR" OUT_DIR="$out_dir" CHECK_DIR="$check_dir" SAB_IC="$IC" \
           OMPI_ALLOW_RUN_AS_ROOT=1 OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1 ${passthrough[@]+"${passthrough[@]}"} \
           SAB_SHARED_BUILD_ROOT="$SHARED_BUILD_ROOT" SAB_BUILD_SOURCE_SHA256="$SAB_BUILD_SOURCE_SHA256" \
-          SAB_BUILD_CONTEXT_SHA256="$SAB_BUILD_CONTEXT_SHA256" bash ./run.sh "$IC") >"$log" 2>&1; then
+          SAB_BUILD_CONTEXT_SHA256="$SAB_BUILD_CONTEXT_SHA256" bash ./run.sh "$IC" </dev/null) >"$log" 2>&1; then
       end=$(date +%s.%N)
       build="$(grep -o 'SAB_BUILD_SECONDS=[0-9.]*' "$log" | tail -1 | cut -d= -f2 || true)"  # no build line is legitimate; grep's 1 must not kill the driver
       printf 'check=%s\nic=%s\nelapsed_seconds=%s\nbuild_seconds=%s\n' "$check" "$IC" "$(awk "BEGIN{print $end - $start}")" "${build:-0}" >"$out_dir/run.ok"
