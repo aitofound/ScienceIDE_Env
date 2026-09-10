@@ -21,6 +21,29 @@ if [ -z "$MAKE_JOBS" ]; then
   fi
 fi
 WORK=$(mktemp -d)
+
+# Keep failures actionable without retaining the full WORK/source tree in output.
+diagnose_failure() {
+  local status="$1" log
+  printf 'run.sh: failed with status %s; bounded diagnostics follow\n' "$status" >&2
+  for log in \
+    "$WORK/config.log" \
+    "$WORK/install.log" \
+    "$WORK/build.log" \
+    "$WORK/rundir.log" \
+    "$WORK/producer.log" \
+    "$WORK/runlog" \
+    "$WORK/run/runlog" \
+    "$WORK/run/runlog_start" \
+    "$WORK/run/runlog_restart"
+  do
+    if [ -f "$log" ]; then
+      printf '%s\n' "--- tail -40 $log ---" >&2
+      tail -40 "$log" >&2 || :
+    fi
+  done
+}
+trap 'status=$?; diagnose_failure "$status"; exit "$status"' ERR
 cp -R "$SOURCE_DIR/." "$WORK/src"
 export LC_ALL=C OMP_NUM_THREADS=1
 SRC="$WORK/src"

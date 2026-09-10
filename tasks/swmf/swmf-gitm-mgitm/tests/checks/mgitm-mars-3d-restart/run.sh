@@ -35,6 +35,34 @@ fi
 [ -d "$CHECK_DIR/ic/$INPUTS" ] || { echo "run.sh: no initial condition ic/$INPUTS" >&2; exit 2; }
 exec < /dev/null                 # mpiexec must not read the produce driver's stdin
 export LC_ALL=C OMP_NUM_THREADS=1
+# Initialize WORK before entering the shared build helper.  The helper uses it
+# for its private source copy and diagnostics; export keeps that boundary
+# explicit for any tool process it launches.
+WORK="$(mktemp -d)"
+export WORK
+
+# Keep failures actionable without retaining the full WORK/source tree in output.
+diagnose_failure() {
+  local status="$1" log
+  printf 'run.sh: failed with status %s; bounded diagnostics follow\n' "$status" >&2
+  for log in \
+    "$WORK/config.log" \
+    "$WORK/install.log" \
+    "$WORK/build.log" \
+    "$WORK/rundir.log" \
+    "$WORK/producer.log" \
+    "$WORK/runlog" \
+    "$WORK/run/runlog" \
+    "$WORK/run/runlog_start" \
+    "$WORK/run/runlog_restart"
+  do
+    if [ -f "$log" ]; then
+      printf '%s\n' "--- tail -40 $log ---" >&2
+      tail -40 "$log" >&2 || :
+    fi
+  done
+}
+trap 'status=$?; diagnose_failure "$status"; exit "$status"' ERR
 
 # One configured source is built directly at its final family path per solve.
 # The shared root is private to test.sh produce; direct run.sh calls fall back

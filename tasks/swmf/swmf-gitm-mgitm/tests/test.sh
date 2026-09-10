@@ -49,7 +49,7 @@ if [ "${1:-}" = "produce" ]; then
     fi
     log="$out_dir/run.log"; start=$(date +%s.%N)
     echo "RUN [$check] $IC"
-    if (cd "$check_dir" && env -i PATH="$PATH" HOME="${HOME:-/tmp}" LANG=C.UTF-8 \
+    if (cd "$check_dir" && exec </dev/null && env -i PATH="$PATH" HOME="${HOME:-/tmp}" LANG=C.UTF-8 \
           SOURCE_DIR="$SOURCE_DIR" OUT_DIR="$out_dir" CHECK_DIR="$check_dir" SAB_IC="$IC" \
           OMPI_ALLOW_RUN_AS_ROOT=1 OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1 ${passthrough[@]+"${passthrough[@]}"} \
           bash ./run.sh "$IC") >"$log" 2>&1; then
