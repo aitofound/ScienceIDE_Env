@@ -18,6 +18,7 @@ knob SAB_MAKE_JOBS "$(cpus_allowed)" "parallel jobs for the build of the pinned 
 # Alternative build, OPTIONAL: BATSRUS's own ./Config.pl -O0 rewrites every OPTn line of
 # Makefile.conf to -O0 where the shipped gfortran template (share/build/Makefile.Linux.gfortran)
 # builds at -O3 -- a legitimately different build of the same pinned source and deck.
+knob SAB_MPI_RANKS "2" "MPI ranks BATSRUS.exe runs on; the upstream test launch uses 2"
 ALTBUILD="the same Config.pl configuration built with ./Config.pl -O0 before make BATSRUS, which sets every OPTn level of Makefile.conf to -O0 where the shipped gfortran template uses -O3; same pinned source, same deck"
 if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; [ -z "$ALTBUILD" ] || echo "altbuild: $ALTBUILD"; exit 0; fi
 

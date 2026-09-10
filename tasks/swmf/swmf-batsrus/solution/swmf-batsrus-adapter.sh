@@ -40,7 +40,13 @@ export OPENACC=-noacc
 if [ "$needs_swmf" -eq 1 ]; then
   exec "$ROOT/Config.swmf.pl" "${args[@]}"
 fi
-if [[ " ${args[*]} " == *" -install "* || [[ " ${args[*]} " == *" -install="* ]]; then
+has_install=0
+for arg in "${args[@]}"; do
+  case "$arg" in
+    -install|-install=*) has_install=1 ;;
+  esac
+done
+if [ "$has_install" -eq 1 ]; then
   has_noacc=0
   for arg in "${args[@]}"; do [ "$arg" = -noopenacc ] && has_noacc=1; done
   [ "$has_noacc" -eq 1 ] || args+=( -noopenacc )
@@ -109,7 +115,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd -P)"
 if [ -f "$ROOT/Makefile" ] && ! head -1 "$ROOT/Makefile" | grep -q 'bash'; then
   cp "$ROOT/Makefile" "$ROOT/Makefile.swmf.active"
-  cp "$ROOT/Makefile.dispatch" "$ROOT/Makefile"
+  cp "$ROOT/.sciaccel_batsrus_makefile.dispatch" "$ROOT/Makefile"
 fi
 RESTORE
 cp Makefile .sciaccel_batsrus_makefile.dispatch
