@@ -1,0 +1,26 @@
+{
+  "check": "cimi-plasmasphere",
+  "policy": "pointwise",
+  "chaotic": false,
+  "upstream_test": "code/swmf/IM/CIMI/Makefile:PLASMASPHERE",
+  "configuration": "Pinned SWMF IM/CIMI unit_test_plasmasphere target, configured with the source's -EarthHO -GridDefault setup. The unit test preserves its source defaults: a 209 by 192 plasmasphere grid, 30-second updates, Kp ramp from 1 to 8 and the 86400-second physical window; no external input file is exposed.",
+  "observable": "the plasmasphere equatorial plot writer's density, flux-tube volume and convection potential on the pinned plasmasphere grid at every saved frame",
+  "expected_runtime_s": 1,
+  "default_vs_upstream": "upstream target and source defaults; no baseline file is shipped because the source PLASMASPHERE_check recipe is commented out",
+  "variant": "identical to nominal: the pinned unit_test_plasmasphere has no input file or runtime parameter to perturb without changing source code; this supplies no calibration spread and is not evidence of implementation invariance",
+  "altbuild": "none: no alternative build is claimed before calibration",
+  "comparison": {
+    "atol": 1e-10,
+    "rtol": 0.001,
+    "files": [
+      {"path": "Plas_eq.outs", "format": "swmf_stream", "atol": 1e-10, "rtol": 0.001}
+    ]
+  },
+  "evidence": {
+    "floor": "unknown",
+    "note": "Proposed policy and bound only; no reference baseline, runtime, floor, or PASS result is claimed. Human curator owns calibration and final tolerance.",
+    "self_validation_spread": "unknown",
+    "status": "hypothesis-pending-fresh-calibration"
+  },
+  "warrant": "This is a provisional pointwise policy for the physical values emitted by ModPlasmasphere.save_plot_plasmasphere, not for file bytes or bookkeeping: the writer outputs density, flux-tube volume and convection potential with the grid coordinates and variable names on every saved frame. A wrong density update, convection potential, refill/loss step, or interpolation changes those production values, while the source's commented DiffNum recipe identifies this stream as the official intended comparison. The numerical bound is deliberately unmeasured because the pinned source supplies no baseline recipe and the unit test exposes no active input for a calibration perturbation; it must be replaced or confirmed by the curator after a fresh reference and target-host calibration."
+}
