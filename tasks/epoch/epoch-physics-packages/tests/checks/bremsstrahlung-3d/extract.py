@@ -3,11 +3,13 @@
 text series this check compares.
 
 Each row is one SDF dump. The graded columns are the bremsstrahlung-photon
-macroparticle count (summed over the Particles_Per_Cell grid of the Photon
-species), the total tracked-photon energy, the total Electron_Beam kinetic
-energy and the total electromagnetic field energy (all four written by
-EPOCH's total_energy_sum and ppc diagnostics, src/io/calc_df.F90). No
-particle list, no timestamp and no grid coordinate is graded.
+physical photon number (sum of the dimensionless Photon macroparticle weights in
+`Particles/Weight/Photon`; `Particles_Per_Cell` is intentionally not used for this
+quantity), the total tracked-photon energy, the total Electron_Beam kinetic energy
+and the total electromagnetic field energy (all four written by
+EPOCH's total_energy_sum and ppc diagnostics, src/io/calc_df.F90). No particle list
+or grid coordinate is graded; `time_s` is retained for the validator's
+physical-time-grid contract.
 
 Standard library and numpy only; self-contained (nothing is imported from
 outside this check directory).
@@ -95,13 +97,35 @@ HEADER = ["time_s", "photon_count", "photon_energy_J", "electron_beam_energy_J",
           "field_energy_J"]
 
 
+def photon_number(blocks):
+    """Return physical tracked photon number from EPOCH point weights.
+
+    EPOCH writes Particles/Weight/Photon with empty units; each entry is a
+    dimensionless physical-particle multiplicity. Empty Photon species have
+    no point-variable block and therefore contribute zero. A non-empty ppc
+    grid without its weight block is malformed output.
+    """
+    ppc = blocks.get("Derived/Particles_Per_Cell/Photon")
+    weights = blocks.get("Particles/Weight/Photon")
+    if weights is None:
+        if ppc is not None and np.any(np.asarray(ppc) != 0.0):
+            raise ValueError("Photon ppc is nonzero but Particles/Weight/Photon is missing")
+        return 0.0
+    weights = np.asarray(weights, dtype=np.float64)
+    if weights.ndim != 1:
+        raise ValueError("Particles/Weight/Photon must be a one-dimensional point variable")
+    if not np.all(np.isfinite(weights)) or np.any(weights < 0.0):
+        raise ValueError("Particles/Weight/Photon contains invalid weights")
+    return float(weights.sum())
+
+
 def build_rows(paths):
     rows = []
     for path in paths:
         time, b = read_sdf(path)
         rows.append([
             time,
-            float(b["Derived/Particles_Per_Cell/Photon"].sum()),
+            photon_number(b),
             float(b.get("Total Particle Energy/Photon (J)", 0.0)),
             float(b.get("Total Particle Energy/Electron_Beam (J)", 0.0)),
             float(b.get("Total Field Energy in Simulation (J)", 0.0)),
