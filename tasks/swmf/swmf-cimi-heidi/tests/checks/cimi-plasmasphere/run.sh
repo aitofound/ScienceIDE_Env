@@ -89,7 +89,10 @@ if [ "$CACHE_HIT" -eq 0 ]; then
   cd "$CIMI_DIR"
   ./Config.pl -EarthHO -GridDefault -show > "$WORK/cimi-config.log" 2>&1
   # PLASMASPHERE itself is compile+rundir+execute upstream; compile only is
-  # the exact source-backed target needed here.
+  # the exact source-backed target needed here. The unit target's direct
+  # ModPlasmasphere.o prerequisite does not request the source's existing
+  # dependency-generation target, so generate that official metadata first.
+  (cd "$CIMI_DIR/src" && make DEPEND) > "$WORK/cimi-dependency-build.log" 2>&1 || { tail -60 "$WORK/cimi-dependency-build.log" >&2; exit 1; }
   make -j"$SAB_MAKE_JOBS" PLASMASPHERE_compile > "$WORK/plasmasphere-build.log" 2>&1 || { tail -60 "$WORK/plasmasphere-build.log" >&2; exit 1; }
   BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))
 else
