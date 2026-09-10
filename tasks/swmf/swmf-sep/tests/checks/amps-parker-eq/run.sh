@@ -18,7 +18,7 @@ AMPS="$WORK/code/PT/AMPS"
 cp "$CHECK_DIR/ic/$IC/sep_parker_spiral__field_line.input" "$AMPS/input/test/sep_parker_spiral__field_line.input"
 # Explicitly select the no-SPICE configuration; the migrated input also carries
 # this setting so a source-side default cannot introduce an external library.
-(cd "$AMPS" && ./Config.pl -application=test/sep_parker_spiral__field_line -spice-path=nospice -amps-test=on)
+(cd "$AMPS" && ./Config.pl -install -application=test/sep_parker_spiral__field_line -spice-path=nospice -amps-test=on)
 (cd "$AMPS" && make -j"$JOBS" amps)
 end_build="$(date +%s.%N)"
 export OMP_NUM_THREADS=1
