@@ -94,7 +94,7 @@ def read_sdf(path):
     """
     with open(path, "rb") as fh:
         buf = fh.read()
-    _require(buf, 0, 100, path)
+    _require(buf, 0, 112, path)
     if buf[0:4] != _MAGIC:
         raise ValueError("%s: not an SDF file" % path)
     if struct.unpack_from("<i", buf, 4)[0] != _LE:
@@ -108,7 +108,7 @@ def read_sdf(path):
     strlen = struct.unpack_from("<i", buf, 96)[0]
     if not np.isfinite(time):
         raise ValueError("%s: non-finite SDF time" % path)
-    if first < 100 or nblocks <= 0 or nblocks > len(buf) // 72 or header_len <= 0:
+    if first < 112 or nblocks <= 0 or nblocks > len(buf) // 72 or header_len <= 0:
         raise ValueError("%s: invalid SDF header" % path)
     if strlen <= 0 or header_len != 72 + strlen:
         raise ValueError("%s: invalid SDF block header length" % path)
