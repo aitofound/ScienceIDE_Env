@@ -1,0 +1,142 @@
+#DESCRIPTION
+Param/CORONA/PARAM.in.heat.cond:Heat conduction		StringDescription
+
+! Flux conservation is not implemented for GPU
+#CONSERVEFLUX
+F			DoConserveFlux
+
+#TIMING
+T			UseTiming
+-1			DnTiming  ! every session
+-1			nDepthTiming
+cumu			TypeTimingReport
+
+#PLANET
+NONE			NamePlanet
+
+#IOUNITS
+NONE			TypeIoUnit
+
+! Use a small No2UnitX to 'increase' the heat conductivity
+#NORMALIZATION
+READ			TypeNormalization
+1.0e-25			No2SiUnitX   (only read if TypeNormalization=READ)
+1.0			No2SiUnitU   (only read if TypeNormalization=READ)
+1.0			No2SiUnitRho (only read if TypeNormalization=READ)
+
+#GRIDGEOMETRY
+rotatedcartesian		TypeGeometry
+
+#GRID
+4			nRootBlock1
+4			nRootBlock2
+1			nRootBlock3
+-32			xMin
+ 32			xMax
+-32			yMin
+ 32			yMax
+-1			zMin
+ 1			zMax
+
+
+#SHOCKPOSITION
+0.0			ShockPosition
+3/4			ShockSlope
+
+#GRIDLEVEL
+1			nLevel
+initial			StringShape
+
+#GRIDLEVEL
+1			nLevel
+box			StringShape
+-1.0			xMinBox
+-1.0			yMinBox
+ 1.0			xMaxBox
+ 1.0			yMaxBox
+
+#GRIDBLOCKALL
+64			MaxBlock
+
+SHOCKPOSITION
+0.0			ShockPosition
+1.0			ShockSlope
+
+#UNIFORMSTATE
+1.0000000002		StateVar Rho
+0.0			StateVar Ux
+0.0			StateVar Uy
+0.0			StateVar Uz
+1.0			StateVar Bx
+0.0			StateVar By
+0.0			StateVar Bz
+1.0			StateVar pe
+1.0			StateVar p
+
+#WAVE
+Rho			NameVar
+1000.0			Width
+0.5			Amplitude
+32.0			LambdaX
+-1.0			LambdaY
+-1.0			LambdaZ
+0.0			Phase
+
+#OUTERBOUNDARY
+periodic		TypeBc1
+periodic		TypeBc2
+periodic		TypeBc3
+periodic		TypeBc4
+
+#SCHEME
+1			nOrder
+Rusanov			TypeFlux
+
+#ELECTRONENTROPY
+F			UseElectronEntropy
+T			UseElectronEnergy
+
+#HEATCONDUCTION
+T			UseHeatConduction
+spitzer			TypeHeatConduction
+
+#SEMIIMPLICIT
+T			UseSemiImplicit
+parcond			TypeSemiImplicit
+
+SEMIPRECONDITIONER
+F			DoPrecond (rest of parameters are read if true)
+
+#TEST
+krylov			StringTest
+
+#RESISTIVITYOPTIONS
+F			UseResistiveFlux
+F			UseJouleHeating
+F			UseHeatExchange
+
+#NONCONSERVATIVE
+T			UseNonConservative
+
+#SAVELOGFILE
+T			DoSaveLogfile
+raw			StringLog
+-1			DnSaveLogfile
+100.0			DtSaveLogfile
+
+#SAVERESTART
+F			DoSaveRestart
+
+#SAVEINITIAL
+T			DoSaveInitial
+
+#SAVEPLOT
+1			nPlotFile
+z=0 mhd idl_ascii		StringPlot
+1			DnSavePlot
+-1.0			DtSavePlot
+0.0			DxSavePlot
+
+#STOP
+-1			MaxIteration
+1e-24			tSimulationMax
