@@ -1,0 +1,309 @@
+{
+  "module": "swmf-cimi-heidi",
+  "tests": [
+    {
+      "chaotic": false,
+      "exercises": "GM+IE+IM/CIMI: the kinetic ring current in the IM slot with restart",
+      "id": "swpc-cimi",
+      "module": "swmf-cimi-heidi",
+      "path": "Param/SWPC/PARAM.in_cimi_init",
+      "policy": "pointwise",
+      "previous_module": "swmf-cimi-heidi",
+      "proposed_check": "swpc-cimi",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 700,
+      "why": "regression against Param/SWPC/TestOutput* at 1e-5 relative on the GM log, 2e-4 on magnetometers, ionosphere and geoindex files; the first steady-state steps are deterministic and the time-accurate 120 s window is short, so pointwise holds; the check must shorten the steady iterations (MaxIter 70 and 200 are already the test values) and keep the 2-minute time-accurate window Foundation mapping is graded-physics ownership; no fresh runtime is claimed."
+    },
+    {
+      "chaotic": false,
+      "exercises": "GM+IE+IM/CIMI with multi-species GM (H+ and O+ densities) and CIMI per-species pressures",
+      "id": "swpc-cimi-species",
+      "module": "swmf-cimi-heidi",
+      "path": "Param/SWPC/PARAM.in_cimi_species_init",
+      "policy": "pointwise",
+      "previous_module": "swmf-cimi-heidi",
+      "proposed_check": "swpc-cimi-species",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 700,
+      "why": "regression against Param/SWPC/TestOutput* at 1e-5 relative on the GM log, 2e-4 on magnetometers, ionosphere and geoindex files; the first steady-state steps are deterministic and the time-accurate 120 s window is short, so pointwise holds; the check must shorten the steady iterations (MaxIter 70 and 200 are already the test values) and keep the 2-minute time-accurate window Foundation mapping is graded-physics ownership; no fresh runtime is claimed."
+    },
+    {
+      "chaotic": false,
+      "exercises": "GM+IE+IM/CIMI+PW/PWOM: CIMI with polar-wind outflow feeding the multi-species GM",
+      "id": "swpc-cimi-pwom-species",
+      "module": "swmf-cimi-heidi",
+      "path": "Param/SWPC/PARAM.in_cimi_pwom_species_init",
+      "policy": "pointwise",
+      "previous_module": "swmf-cimi-heidi",
+      "proposed_check": "swpc-cimi-pwom-species",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 900,
+      "why": "regression against Param/SWPC/TestOutput* at 1e-5 relative on the GM log, 2e-4 on magnetometers, ionosphere and geoindex files; the first steady-state steps are deterministic and the time-accurate 120 s window is short, so pointwise holds; the check must shorten the steady iterations (MaxIter 70 and 200 are already the test values) and keep the 2-minute time-accurate window; four components, the heaviest SWPC variant Foundation mapping is graded-physics ownership; no fresh runtime is claimed."
+    },
+    {
+      "chaotic": false,
+      "exercises": "GM+IE+IM/HEIDI: the HEIDI ring-current model coupled to the magnetosphere and ionosphere",
+      "id": "gm-ie-heidi",
+      "module": "swmf-cimi-heidi",
+      "path": "Param/PARAM.in.test.GMIEHEIDI",
+      "policy": "pointwise",
+      "previous_module": "swmf-cimi-heidi",
+      "proposed_check": "gm-ie-heidi",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 300,
+      "why": "compares GM log at 1e-3 relative with 1e-8 absolute and the HEIDI pressure file IM_test1_h_prs.002 at 1e-5; the release notes warn inner-magnetosphere models are sensitive to optimization, so the calibration run decides the bound Foundation mapping is graded-physics ownership; no fresh runtime is claimed."
+    },
+    {
+      "chaotic": false,
+      "exercises": "CIMI standalone: dipole field drift test",
+      "id": "cimi-dipole",
+      "module": "swmf-cimi-heidi",
+      "path": "IM/CIMI/Makefile",
+      "policy": "pointwise",
+      "previous_module": "swmf-cimi-heidi",
+      "proposed_check": "cimi-dipole",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 120,
+      "why": "component-level make test target with a stored reference (IM/CIMI/output ignored upstream; the reference is in the repository's test inputs); runtime not measured here Foundation mapping is graded-physics ownership; no fresh runtime is claimed."
+    },
+    {
+      "chaotic": false,
+      "exercises": "CIMI standalone: bounce-averaged drift of the distribution",
+      "id": "cimi-drift",
+      "module": "swmf-cimi-heidi",
+      "path": "IM/CIMI/Makefile",
+      "policy": "pointwise",
+      "previous_module": "swmf-cimi-heidi",
+      "proposed_check": "cimi-drift",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 120,
+      "why": "component-level make test target with a stored reference (IM/CIMI/output ignored upstream; the reference is in the repository's test inputs); runtime not measured here Foundation mapping is graded-physics ownership; no fresh runtime is claimed."
+    },
+    {
+      "chaotic": false,
+      "exercises": "CIMI standalone: flux output",
+      "id": "cimi-flux",
+      "module": "swmf-cimi-heidi",
+      "path": "IM/CIMI/Makefile",
+      "policy": "pointwise",
+      "previous_module": "swmf-cimi-heidi",
+      "proposed_check": "cimi-flux",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 120,
+      "why": "component-level make test target with a stored reference (IM/CIMI/output ignored upstream; the reference is in the repository's test inputs); runtime not measured here Foundation mapping is graded-physics ownership; no fresh runtime is claimed."
+    },
+    {
+      "chaotic": false,
+      "exercises": "CIMI standalone: uniform-L grid variant",
+      "id": "cimi-uniforml",
+      "module": "swmf-cimi-heidi",
+      "path": "IM/CIMI/Makefile",
+      "policy": "pointwise",
+      "previous_module": "swmf-cimi-heidi",
+      "proposed_check": "cimi-uniforml",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 120,
+      "why": "component-level make test target with a stored reference (IM/CIMI/output ignored upstream; the reference is in the repository's test inputs); runtime not measured here Foundation mapping is graded-physics ownership; no fresh runtime is claimed."
+    },
+    {
+      "chaotic": false,
+      "exercises": "CIMI standalone: wave-particle diffusion terms",
+      "id": "cimi-waves",
+      "module": "swmf-cimi-heidi",
+      "path": "IM/CIMI/Makefile",
+      "policy": "pointwise",
+      "previous_module": "swmf-cimi-heidi",
+      "proposed_check": "cimi-waves",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 120,
+      "why": "component-level make test target with a stored reference (IM/CIMI/output ignored upstream; the reference is in the repository's test inputs); runtime not measured here Foundation mapping is graded-physics ownership; no fresh runtime is claimed."
+    },
+    {
+      "chaotic": false,
+      "exercises": "CIMI standalone: high-order ELSR advection scheme",
+      "id": "cimi-highorder",
+      "module": "swmf-cimi-heidi",
+      "path": "IM/CIMI/Makefile",
+      "policy": "pointwise",
+      "previous_module": "swmf-cimi-heidi",
+      "proposed_check": "cimi-highorder",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 120,
+      "why": "component-level make test target with a stored reference (IM/CIMI/output ignored upstream; the reference is in the repository's test inputs); runtime not measured here Foundation mapping is graded-physics ownership; no fresh runtime is claimed."
+    },
+    {
+      "chaotic": false,
+      "exercises": "HEIDI standalone: analytic electric field configuration",
+      "id": "heidi-analytic",
+      "module": "swmf-cimi-heidi",
+      "path": "IM/HEIDI/Makefile",
+      "policy": "pointwise",
+      "previous_module": "swmf-cimi-heidi",
+      "proposed_check": "heidi-analytic",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 120,
+      "why": "component make test target compared with DiffNum; runtime not measured Foundation mapping is graded-physics ownership; no fresh runtime is claimed."
+    },
+    {
+      "chaotic": false,
+      "exercises": "HEIDI standalone: numeric (self-consistent) electric field",
+      "id": "heidi-numeric",
+      "module": "swmf-cimi-heidi",
+      "path": "IM/HEIDI/Makefile",
+      "policy": "pointwise",
+      "previous_module": "swmf-cimi-heidi",
+      "proposed_check": "heidi-numeric",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 120,
+      "why": "component make test target compared with DiffNum; runtime not measured Foundation mapping is graded-physics ownership; no fresh runtime is claimed."
+    },
+    {
+      "chaotic": false,
+      "coverage_kind": "coupled-deck-graded-stage",
+      "exercises": "CIMI/HEIDI inner-magnetosphere distribution, pressure or restart observables; coupled deck components: GM/BATSRUS, IE/Ridley_serial, IM/HEIDI",
+      "id": "deck-test4-swmf-cimi-heidi-1",
+      "module": "swmf-cimi-heidi",
+      "path": "Makefile.test",
+      "policy": "pointwise",
+      "proposed_check": "deck-test4-swmf-cimi-heidi-1",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 600,
+      "why": "Foundation candidate only; no fresh runtime proof in this mission. Distinct deck assignments grade distinct physics; source build excluded from suite runtime."
+    },
+    {
+      "chaotic": false,
+      "coverage_kind": "coupled-deck-graded-stage",
+      "exercises": "CIMI/HEIDI inner-magnetosphere distribution, pressure or restart observables; coupled deck components: GM/BATSRUS, IE/Ridley_serial, IM/CIMI",
+      "id": "deck-test-swpc-cimi-swmf-cimi-heidi-1",
+      "module": "swmf-cimi-heidi",
+      "path": "Makefile.test",
+      "policy": "pointwise",
+      "proposed_check": "deck-test-swpc-cimi-swmf-cimi-heidi-1",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 600,
+      "why": "Foundation candidate only; no fresh runtime proof in this mission. Distinct deck assignments grade distinct physics; source build excluded from suite runtime."
+    },
+    {
+      "chaotic": false,
+      "coverage_kind": "coupled-deck-graded-stage",
+      "exercises": "CIMI/HEIDI inner-magnetosphere distribution, pressure or restart observables; coupled deck components: GM/BATSRUS, IE/Ridley_serial, IM/CIMI, PW/PWOM",
+      "id": "deck-test-swpc-cimi-pwom-species-swmf-cimi-heidi-1",
+      "module": "swmf-cimi-heidi",
+      "path": "Makefile.test",
+      "policy": "pointwise",
+      "proposed_check": "deck-test-swpc-cimi-pwom-species-swmf-cimi-heidi-1",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 600,
+      "why": "Foundation candidate only; no fresh runtime proof in this mission. Distinct deck assignments grade distinct physics; source build excluded from suite runtime."
+    },
+    {
+      "chaotic": false,
+      "coverage_kind": "coupled-deck-graded-stage",
+      "exercises": "CIMI/HEIDI inner-magnetosphere distribution, pressure or restart observables; coupled deck components: GM/BATSRUS, IE/Ridley_serial, IM/CIMI",
+      "id": "deck-test-swpc-cimi-species-swmf-cimi-heidi-1",
+      "module": "swmf-cimi-heidi",
+      "path": "Makefile.test",
+      "policy": "pointwise",
+      "proposed_check": "deck-test-swpc-cimi-species-swmf-cimi-heidi-1",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 600,
+      "why": "Foundation candidate only; no fresh runtime proof in this mission. Distinct deck assignments grade distinct physics; source build excluded from suite runtime."
+    }
+  ]
+}

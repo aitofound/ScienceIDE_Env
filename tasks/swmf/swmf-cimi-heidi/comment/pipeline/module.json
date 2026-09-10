@@ -1,0 +1,50 @@
+{
+  "module": {
+    "slug": "swmf-cimi-heidi",
+    "title": "Kinetic inner-magnetosphere ring-current alternatives CIMI and HEIDI",
+    "paths": [
+      "IM/CIMI",
+      "IM/HEIDI"
+    ],
+    "entrypoints": [
+      "IM/CIMI standalone: Highordelsr, Prerun, UniformL, WAVES, dipole, drift and flux cases with their variants",
+      "IM/HEIDI standalone: analytic and numeric",
+      "test4 (GM-IE-HEIDI), test_swpc_cimi, test_swpc_cimi_species and test_swpc_cimi_pwom_species variants"
+    ],
+    "expensive_path": "CIMI's bounce-averaged kinetic drift and wave-diffusion solve over the L/MLT/energy/pitch-angle phase-space grid, and HEIDI's drift-loss solve; these are the IM_run expensive paths in coupled sessions.",
+    "rationale": "HEIDI is deliberately folded into CIMI's leaf: it has two standalone cases plus GM-IE-HEIDI (three checks, below the four-check floor), and both codes are kinetic alternatives filling the same IM slot and using the same GM-IM/IE-IM interfaces. RCM2 stays with the coupling leaf because it has no standalone run.",
+    "excluded": [
+      "IM/RCM2 and its operational SWPC coupling (swmf-mit-coupling)",
+      "PWOM physics in the CIMI+PWOM species deck; that deck is attributed once to CIMI because CIMI is the graded physics"
+    ],
+    "hazards": [
+      "HEIDI and inner-magnetosphere outputs are sensitive to optimization; altbuild evidence must be measured on the target host.",
+      "The same coupled deck can occur in a CIMI leaf and a coupling leaf only when the graded physics differs; the inventory records that distinction once."
+    ]
+  },
+  "approval": {
+    "modules": [
+      "swmf-batsrus",
+      "swmf-fleks",
+      "swmf-sep",
+      "swmf-cimi-heidi",
+      "swmf-pwom",
+      "swmf-gitm-mgitm",
+      "swmf-mit-coupling"
+    ],
+    "human_ref": "非常好！开做吧！我允许你remote 跑docker，但是最多一次两个，本地也跑一次，一次两个，但是写代码并行去吧！",
+    "at": "2026-09-10T09:03:32Z"
+  },
+  "shared_infrastructure": [
+    "share",
+    "util",
+    "Config.pl",
+    "Makefile",
+    "Makefile.def",
+    "Makefile.test",
+    "PARAM.XML",
+    "Scripts",
+    "CON/Control",
+    "CON/Library"
+  ]
+}
