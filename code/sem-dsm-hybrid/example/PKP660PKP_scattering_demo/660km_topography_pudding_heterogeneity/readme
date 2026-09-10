@@ -1,0 +1,25 @@
+PKP660PKP scattering demo: 660 km topography + pudding heterogeneity
+
+This case was rebuilt from the old-version references listed below and uses the current SEM-DSM step workflow.
+
+Old references:
+- SPECFEM3D: /proj/mazu/wenbowu/SEM_DSM/SPECFEM3D_old/EXAMPLES_COUPLING/PKPPKPbc_660_PudingAlldepth_20180824CI/
+- InjectedWaves: /proj/mazu/wenbowu/SEM_DSM/InjectedWaves/example_old/PKPPKPbc_660_PudingAlldepth_20180824CI
+- DSM: /proj/mazu/wenbowu/SEM_DSM/DSM/example_clean_src/PKPPKPbc_660_0.8Hz_Hydra_NewQ_width24deg
+- xgenerate_databases model source: /proj/mazu/wenbowu/SEM_DSM/SPECFEM3D/src/generate_databases/model_tomo/old/660km_PudingHete
+
+Current setup:
+- DATA/Par_file_SEM_DSM drives the current step scripts.
+- DATA/old_reference stores old Par_file, Mesh_Par_file, Coupling_Par_file, and InjectedWaves Par_file snapshots.
+- DATA/meshfem3D_files stores the old static 25/660/735/top interface files.
+- DATA/heterogeneities stores the old pudding heterogeneity helper scripts and a link to the saved tomography_model.xyz.
+- step0_prepare_660km_heterogeneity.sh selects the source pair from DSM1D_OR_3D, cleans and builds the canonical xgenerate_databases, and stages DATA/heterogeneities only for DSM3D. DSM1D builds from src/SPECFEM3D/src/generate_databases/model_tomo/1D_DSM and does not require tomography_model.xyz. DSM3D links the saved old-version tomography_model.xyz instead of copying the 24 GB file.
+- step1_specfem_mesh_database.sh uses USE_STATIC_MESHFEM3D_FILES=.true. to preserve the old four-interface all-elastic mesh.
+- step2_3Dmodel_implementation.sh documents the case model sources and does not modify the active SPECFEM3D source tree.
+
+Run order:
+1. ./step0_prepare_660km_heterogeneity.sh
+2. ./step1_specfem_mesh_database.sh
+3. ./step2_3Dmodel_implementation.sh
+4. ./step3_submit_specfem_mesh_gen.sh
+5. Continue with steps 4-10 after mesh/database outputs are available.

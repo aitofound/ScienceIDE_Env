@@ -1,0 +1,248 @@
+Sometimes errors appear when use large Nr (e.g., 150000) while Nr=149990 works well. Still do not know why this happens.
+
+**********************************************************************
+The unit of output:
+velocity meter/second
+displacement meter
+stress pascal
+pressure pascal
+coef_disp_solid  meter
+coef_fluid_fluid meter 
+dcdr     dimensionless
+
+******************************************fluid media**************
+Q is potential and gradQ=velocity
+
+**********************************************
+#For single-force source, the coordinate notations are
+r     --- z
+theta --- r
+phi   --- t
+
+***********************************Interpretation for some parameters***********************************
+#######################
+input parameters
+    9000     0   8000   ngrid_r0 lmin lmax
+         ngrid_r0(ngrid_r in subroutine param_input) is the number of grids in the whole earth. The grids are equal-spacing. 
+         To large extents, the accuracy of seismograms depend on this parameter. 
+
+#######################
+depth_cutoff is the depth used to determine the cut-off harmonic degree l. The current version cannot handle the case where the target 
+depth is equal to the source depth.
+
+#######################
+In almost all subroutines, except param_input, ngrid_r represents the final number of radial grids. During source implementation, 
+zero, one, or two additional nodes may be inserted. There are three possible cases (see line 229 in param.f):
+1. The source is located between two grid nodes. Add one node with
+  grid_r(itmp) = source_r
+  (a) If the two nodes are the top nodes of a solid zone, add an additional node with
+      r = ( grid_r(itmp) + source_r ) / 2.d0
+  (b) Otherwise, do nothing.
+
+2. The source is located exactly at the top node of a solid zone. Move the source slightly deeper and add two nodes.
+
+3. All other cases. Do nothing. For example, if the source is located exactly on a grid node below the top node, no additional nodes are inserted.
+
+########################
+Maximum number of radial nodes
+
+The maximum number of radial nodes is fixed and equally spaced. Every 100 harmonic-degree (l) iterations, the subroutine check_amp_significance 
+is called to update the cut-off radius and determine whether the computation should terminate.
+########################
+idim1_sph, idim0, idim1_sph0, and idim2_sph in comp_wavefield
+idim1_sph = max0( idim0,idim1_sph0 )
+idim0 is updated every 100 harmonic-degree iterations in check_amp_significance.
+idim1_sph0 = 1 and idim2_sph = ngrid_r are fixed after the radial grids are generated.
+
+These variables define the deepest grid point (minimum ir) to which the equations are solved. In check_amp_significance,
+
+if(itmp.gt.min_ir_dep) itmp=min_ir_dep
+
+ensures that the solution always extends at least to the deepest station.
+*****************************************************************************************************************
+
+
+
+
+     
+************************************************Q, V and U at each grid*******************************************
+
+###########Q, V and U at CMB and ICB###############################
+CMB
+i=ir_cmb     to get grid_mu(1,i)----zoneMantle and take r=r(ir_cmb). Thus, it is Non-zero
+             to get grid_mu(2,i)----zoneMantle and take r=r(ir_cmb+1). Thus, it is Non-zero
+i=ir_cmb-1   to get grid_mu(1,i)----zoneOUTER_CORE and take r=r(ir_cmb-1). Thus, it is zero
+             to get grid_mu(2,i)----zoneOUTER_CORE and take r=r(ir_cmb). Thus, it is zero
+To satisfy the traction continuity,we have Q(r_cmb),V(r_cmb) and U(r_cmb) at r=r_cmb
+
+ICB   
+i=ir_icb     grid_mu(1,i)----zoneOUTER_CORE and  r=r(ir_icb). Thus, it is zero.
+             grid_mu(2,i)----zoneOUTER_CORE and  r=r(ir_icb+1). Thus, it is zero.
+i=ir_icb-1   grid_mu(1,i)----zoneINNER_CORE --Non-zero
+             grid_mu(2,i)----zoneINNER_CORE  --Non-zero
+To satisfy the traction continuity,we have Q(r_cmb),V(r_cmb) and U(r_cmb) at r=r_icb
+##################################################################
+
+
+################count Q, V and U at each grid#####################
+        idim = 0
+        do 600 ir=1,ngrid_r-1
+          if ( grid_mu(1,ir)*grid_mu(2,ir).ne.0.d0 ) idim = ir
+  600   continue
+        if ( idim.eq.0 ) call error_handling(18)
+c
+c --- computing positions of non-zero elements in excitation vectors
+        ipos1 = 0
+        ipos3 = 0
+        ipos2 = 0
+        if ( idim.gt.1 ) then
+          do 200 i=1,idim-1
+!!!!!!!!!!fluid media including r=r_cmb-1 and r=r_icb
+            if ( grid_mu(1,i)*grid_mu(2,i).eq.0.d0 ) then
+              ipos1 = ipos1 + 1   #Q in fluid media
+              ipos3 = ipos3 + 1   #Q in fluid media for l=0
+              ipos2 = 0   #No W in fluid
+            else
+!!!!!!!!!!solid media including r=r_cmb and r=r_icb-1
+              ipos1 = ipos1 + 2     #V and U 
+              ipos3 = ipos3 + 1     #Only U for l=0  
+              ipos2 = ipos2 + 1     #W for toroidal mode
+            endif
+!!!!!!!!!!r=r_cmb-1
+            if ( ( grid_mu(2,i).eq.0.d0 ).and.
+     &             ( grid_mu(1,i+1).ne.0.d0 )    ) then
+              ipos1 = ipos1 + 1    #Q
+              ipos3 = ipos3 + 1    #Q
+              ipos2 = 0
+            endif
+!!!!!!!!!!r=r_icb-1
+            if ( ( grid_mu(2,i).ne.0.d0 ).and.
+     &             ( grid_mu(1,i+1).eq.0.d0 )    ) then
+              ipos1 = ipos1 + 2  #V and U
+              ipos3 = ipos3 + 1  #Only U
+              ipos2 = 0
+            endif
+            idim_ir_sph(i)=ipos1-1
+            idim_ir_tor(i)=ipos2
+            idim_ir_sph0(i)=ipos3
+  200     continue
+!!!!Final results
+!!!!at r=r_cmb  U, V and W
+!!!!at r=r_cmb-1 two Qs and no W
+!!!!at r=r_icb  Q and no W
+!!!!at r=r_icb-1 two Us and two Vs and W
+ICB      
+ir_icb-1    U,V for ir_icb-i
+ir_icb-2=429  grid_r(429)=1211.43  idim_ir_sph(i)=857(U,V for ir_cmb-2 and U,V for ir_cmb-1) idim_ir_tor(i)=429  idim_ir_sph0(i)=429(U for ir_cmb-2 and ir_icb-1)
+ir_icb-1=430  grid_r(430)=1214.26  idim_ir_sph(i)=861(U for ir_icb) idim_ir_tor(i)=0  idim_ir_sph0(i)=431(U for ir_icb)
+ir_icb=431    grid_r(431)=1217.1   idim_ir_sph(i)=862(V for ir_icb) idim_ir_tor(i)=0  idim_ir_sph0(i)=432(Q for ir_icb)
+ir_icb+1=432  grid_r(432)=1219.93  idim_ir_sph(i)=863(Q for ir_icb) idim_ir_tor(i)=0  idim_ir_sph0(i)=433(Q for ir_icb+1)
+
+CMB
+ir_cmb-i           idim_ir_sph(i) (Q for ir_cmb-i-1)                      idim_ir_sph0(i) (Q for ir_cmb-i)
+ir_cmb-2=1229  grid_r(429)=3476.33  idim_ir_sph(i)=1660(Q for ir_cmb-3 and ir_cmb-2) idim_ir_tor(i)=0  idim_ir_sph0(i)=1230 ----Q for ir_cmb-2 and ir_cmb-1
+ir_cmb-1=1230  grid_r(430)=3479.16  idim_ir_sph(i)=1662(Q for ir_cmb-1 and ir_cmb) idim_ir_tor(i)=0  idim_ir_sph0(i)=1232(Q for ir_cmb)
+ir_cmb=1231    grid_r(431)=3482.0   idim_ir_sph(i)=1664(U,V for ir_cmb) idim_ir_tor(i)=1(W)  idim_ir_sph0(i)=1233   (U for ir_cmb)
+ir_cmb+1=1232  grid_r(432)=3484.81  idim_ir_sph(i)=1666(U,V for ir_cmb+1) idim_ir_tor(i)=2(W)  idim_ir_sph0(i)=1234  (U for ir_cmb+1)
+***************************************************************************************************************
+
+
+***************************Solving the linear equations Ax=B***************************************************
+All modes with different m values (from -2 to 2) but the same harmonic degree l share the same coefficient matrix A. Therefore, the Cholesky 
+decomposition of A only needs to be performed once (for example, for m=−2 in the moment-tensor case). The remaining m values are obtained by forward substitution.
+
+Wenbo Wu modified the code so that the linear system includes all station grids, even when their amplitudes fall below the threshold (eps in check_amp_significance). Otherwise, solutions would not be available at those stations.
+
+cccc         Even if the coefficient amplitude at station grids are
+cccc         under threshold, we still solve it.
+              if(itmp.gt.min_ir_dep) itmp=min_ir_dep
+******************************************Matrix w^2T-H********************************************************
+Refer to the papers Kenji Kawai Nozomu Takeuchi and Robert J. Geller(GJI, 2006)  and Takeuchi, Geller and Cummins (GRL, 1996)
+
+whole_matrix_sph(4,ipos)    ------- ipos ranges from 1 to 2*ngrid_solid+grid_fluid. Because
+                                    we have two components at each r_grid_solid and one variable at each r_grid_fluid
+
+     (a) matrix structure
+
+             4 3 2 1     (4 is corresponding to -H_k'1k1+w*w*T_k'1k1(1 means S1lm, refer to the GJI paper.), where k'=iposN and k=iposN. 
+                         Similarly, 3 is H_k'1k2(S2lm, refer to the GJI paper), where k'=iposN and k=iposN-1; 2 is H_k'1k1, where 
+                         k'=iposN and k=iposN-1;          
+               4 3 2 1   (4 is -H_k'2k2+w*wT_k'2k2, where k'=iposN and k=iposN;)
+                 4 3 2 1
+       symetrical  4 3 2                        solid
+                     4 3 2 1
+                       4 3 2 
+                         4 3 2 1
+                             ..............
+                                4 3 
+                                  4 3
+                                    4 3             fluid
+                 
+       This matrix is symmetrical: H_k'1k2 = H_k'2k1 and, H_k'1k1, with k'-k=1, is equal to H_k'1k1, with k'-k=-1. 
+
+    (b) For each integral term, such as submatrix_I4_mod, they have different types clasiffied by k' and k. For example,
+        k'-k=0,k-k'=-1 or k-k'=1.
+
+    (c)It seems that the integral Ikk' is not calculated as a whole. More specifically, Xk is composed of two branches and 
+       each Ikk' corresponds to only the integral result involving 1-branch by 1-branch, instead of 2 by 2. You can see that
+
+              whole_matrix_sph(3,npos+1)
+     &        = dcmplx( lsq )
+     &          * (
+     &          factor_qkappa(1)
+     &          * dcmplx( submatrix_I3k_mod(4,ir-1)
+     &                    + 2.d0 * submatrix_I5k(4,ir-1)
+     &                  )
+     &          + factor_qmu(1)
+     &          * dcmplx( submatrix_I3m_mod(4,ir-1)
+     &                    - submatrix_I4_mod(4,ir-1)
+     &                    + 2.d0 * submatrix_I5m(4,ir-1)
+     &                    + submatrix_I6(4,ir-1)
+     &                    - 2.d0 * submatrix_I7(4,ir-1)
+     &                  )
+     &          + factor_qkappa(2)
+     &          * dcmplx( submatrix_I3k_mod(1,ir)
+     &                    + 2.d0 * submatrix_I5k(1,ir)
+     &                  )
+     &          + factor_qmu(2)
+     &          * dcmplx( submatrix_I3m_mod(1,ir)
+     &                    - submatrix_I4_mod(1,ir)
+     &                    + 2.d0 * submatrix_I5m(1,ir)
+     &                    + submatrix_I6(1,ir)
+     &                    - 2.d0 * submatrix_I7(1,ir)
+     &                  )
+     &           )
+              whole_matrix_sph(4,npos+1)
+     &        = omega * omega
+     &          * dcmplx( submatrix_I0(4,ir-1)
+     &                  + submatrix_I0(1,ir)
+     &                )
+     &          - factor_qkappa(1)
+     &          * dcmplx( lsq2 * submatrix_I5k(4,ir-1)
+     &                  )
+     &          - factor_qmu(1)
+     &          * dcmplx( submatrix_I2(4,ir-1)
+     &                    - 2.d0 * submatrix_I4(4,ir-1)
+     &                    + lsq2 * submatrix_I5m(4,ir-1)
+     &                    + submatrix_I6(4,ir-1)
+     &                    - 2.d0 * submatrix_I7(4,ir-1)
+     &                  )
+     &          - factor_qkappa(2)
+     &          * dcmplx( lsq2 * submatrix_I5k(1,ir)
+     &                  )
+     &          - factor_qmu(2)
+     &          * dcmplx( submatrix_I2(1,ir)
+     &                    - 2.d0 * submatrix_I4(1,ir)
+     &                    + lsq2 * submatrix_I5m(1,ir)
+     &                    + submatrix_I6(1,ir)
+     &                    - 2.d0 * submatrix_I7(1,ir)
+     &                  )
+
+       Two terms contributed to whole_matrix_sph(4,npos+1) and whole_matrix_sph(3,npos+1) are taken into account. 
+       One is from ir-1 and the other is from ir. Moreover, the elastic coefficients also correspond to 
+       ir and ir-1, respectively. Therefore, the whole matrix is symmetrical. Then we only need to save half of the total elements.
+        *      *     *      *      *      *     *        *
+       *  and *     *   and  *      * and  *     *  and *
+      *      *  ,  *          * ,    *      *,    *    *
+
+****************************************************************************************************************
