@@ -1,0 +1,104 @@
+{
+  "study_id": "AMPS_DECEMBER_2006_CUTOFF_EROSION_V1",
+  "event": {
+    "context_start_utc": "2006-12-12T00:00:00Z",
+    "production_start_utc": "2006-12-14T00:00:00Z",
+    "production_end_utc": "2006-12-17T00:00:00Z",
+    "poes_comparison_end_utc": "2006-12-16T12:00:00Z",
+    "quiet_window_hours": 6,
+    "quiet_median_abs_symh_max_nt": 20,
+    "quiet_abs_theil_sen_slope_max_nt_per_hour": 1.0,
+    "compression_search_start_utc": "2006-12-14T12:00:00Z",
+    "compression_search_end_utc": "2006-12-14T18:00:00Z"
+  },
+  "data": {
+    "driver": "data/drivers/ts05_dec2006_5min.txt",
+    "pamela_reference": "data/observations/pamela_table_s1.csv",
+    "poes_reference": "data/observations/poes_metop_meped_boundaries.csv.gz"
+  },
+  "model": {
+    "field_model": "IGRF+TS05",
+    "electric_field": "OFF",
+    "field_state": "FROZEN_SNAPSHOT",
+    "mover": "RK4",
+    "cutoff_search": "DIRECT_ACCESS",
+    "cutoff_sampling": "VERTICAL",
+    "trace_limit_policy": "FORBIDDEN",
+    "max_trace_time_s": 300.0,
+    "latitude_band_abs_deg": [35.0, 85.0],
+    "shell_longitude_step_deg": 15.0,
+    "shell_latitude_step_deg": 2.0,
+    "shell_altitudes_km": [475.0, 850.0],
+    "mode3d_mesh_res_earth_re": 0.02,
+    "mode3d_mesh_res_boundary_re": 2.0,
+    "mode3d_mesh_coarsening": "LINEAR",
+    "mode3d_mesh_exponent": 1.0,
+    "rigidities_gv": [
+      0.15, 0.174013525, 0.20, 0.25, 0.262395866, 0.30,
+      0.35, 0.369131538, 0.40, 0.423556372, 0.45,
+      0.498397432, 0.50, 0.531334344, 0.55, 0.587877538,
+      0.60, 0.65, 0.692820323, 0.70, 0.75, 0.80,
+      0.817006732, 0.85, 0.90, 0.95, 0.962081078, 1.00,
+      1.05, 1.10, 1.131017241, 1.15, 1.20, 1.25
+    ]
+  },
+  "profiles": {
+    "SMOKE": {
+      "explicit_epochs_utc": [
+        "2006-12-14T00:00:00Z",
+        "2006-12-14T14:10:00Z",
+        "2006-12-15T00:50:00Z",
+        "2006-12-16T00:00:00Z"
+      ]
+    },
+    "ROUTINE": {
+      "cadence_minutes": 180,
+      "include_landmarks": true
+    },
+    "FULL": {
+      "cadence_minutes": 15,
+      "include_landmarks": true,
+      "rapid_window_half_width_minutes": 60,
+      "rapid_window_cadence_minutes": 5
+    }
+  },
+  "execution": {
+    "mpi_ranks": 4,
+    "threads_per_rank": 16,
+    "scheduler": "DYNAMIC",
+    "dynamic_chunk": 32,
+    "parallel_field_initialization": true,
+    "epochs_per_batch": 16
+  },
+  "observation_operators": {
+    "pamela": {
+      "altitude_km": 475.0,
+      "latitude_band_abs_deg": [35.0, 75.0],
+      "aacgm_grid_step_deg": 0.25,
+      "minimum_resolved_longitude_fraction": 0.80,
+      "minimum_boundary_edge_margin_deg": 1.0
+    },
+    "poes_metop": {
+      "altitude_km": 850.0,
+      "latitude_band_abs_deg": [45.0, 85.0],
+      "aacgm_grid_step_deg": 0.25,
+      "minimum_resolved_profile_fraction": 0.66,
+      "minimum_boundary_edge_margin_deg": 1.0,
+      "n_mlt_bins": 8,
+      "primary_channels": ["P6", "P7"],
+      "diagnostic_channels": ["P8", "P9"]
+    }
+  },
+  "analysis": {
+    "transmission_threshold": 0.5,
+    "lag_min_hours": -3.0,
+    "lag_max_hours": 6.0,
+    "lag_step_minutes": 15,
+    "hysteresis_symh_tolerance_nt": 10.0,
+    "hysteresis_pdyn_fractional_tolerance": 0.20,
+    "hysteresis_bz_tolerance_nt": 2.0,
+    "bootstrap_replicates": 2000,
+    "bootstrap_block_hours": 3.0,
+    "random_seed": 20061214
+  }
+}
