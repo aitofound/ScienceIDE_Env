@@ -11,10 +11,28 @@ case "$IC" in nominal|variant) ;; *) echo "unsupported initial condition: $IC" >
 JOBS="${SAB_MAKE_JOBS:-4}"
 RANKS="${SAB_MPI_RANKS:-4}"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/sab-amps-parker-eq.XXXXXX")"
-trap 'rm -rf "$WORK"' EXIT
+preserve_work() {
+  local status="$1"
+  printf 'SAB_WORK_PRESERVED=%s\nSAB_EXIT_STATUS=%s\n' "$WORK" "$status" >&2
+  return "$status"
+}
+trap 'status=$?; preserve_work "$status"' EXIT
 start_build="$(date +%s.%N)"
 cp -R "$SOURCE_DIR/." "$WORK/code"
 AMPS="$WORK/code/PT/AMPS"
+SHARED="$SOURCE_DIR/share"
+[ -f "$AMPS/Config.pl" ] || { echo "missing pinned AMPS Config.pl: $AMPS/Config.pl" >&2; exit 1; }
+for rel in Scripts/Config.pl build/Makefile.conf build/Makefile.Linux.gfortran build/Makefile.gcc_mpicc; do
+  [ -f "$SHARED/$rel" ] || { echo "missing pinned AMPS shared source: $SHARED/$rel" >&2; exit 1; }
+done
+# AMPS Config.pl resolves share/build relative to PT/AMPS. Stage the pinned
+# shared script and compiler templates there; this is the official install
+# layout, not a generated or compiler-substituted configuration.
+mkdir -p "$AMPS/share/Scripts" "$AMPS/share/build"
+cp "$SHARED/Scripts/Config.pl" "$AMPS/share/Scripts/Config.pl"
+cp "$SHARED/build/Makefile.conf" "$AMPS/share/build/Makefile.conf"
+cp "$SHARED/build/Makefile.Linux.gfortran" "$AMPS/share/build/Makefile.Linux.gfortran"
+cp "$SHARED/build/Makefile.gcc_mpicc" "$AMPS/share/build/Makefile.gcc_mpicc"
 cp "$CHECK_DIR/ic/$IC/sep_parker_spiral__field_line.input" "$AMPS/input/test/sep_parker_spiral__field_line.input"
 # Explicitly select the no-SPICE configuration; the migrated input also carries
 # this setting so a source-side default cannot introduce an external library.
