@@ -37,6 +37,10 @@ import numpy as np
 _MAGIC = b"SDF1"
 _LE = 16911887
 _POINT_VARIABLE = 4
+# SDF v1 uses fixed 32-byte identifiers in block metadata (the EPOCH/SDF
+# c_id_length / SDF_ID_LENGTH constant); the file's string_length is only for
+# display names and does not change these metadata layouts.
+_ID_LENGTH = 32
 _DTYPE = {1: "<i4", 2: "<i8", 3: "<f4", 4: "<f8", 7: "<u1"}
 _SCALAR_FMT = {1: "<i", 2: "<q", 3: "<f", 4: "<d", 7: "<B"}
 
@@ -63,7 +67,9 @@ def _expected_bytes(blocktype, datatype, ndims, info_length, meta, buf, path):
             count *= dimension
         if count > (1 << 62):
             raise ValueError("%s: plain variable dimensions are too large" % path)
-        expected_info = 72 + 4 * ndims
+        # mult (real8), units (id32), mesh_id (id32), dims (int4[n]),
+        # and stagger (int4); block_info_length excludes the common block header.
+        expected_info = 8 + 2 * _ID_LENGTH + 4 * (ndims + 1)
         expected_data = count * itemsize
     elif blocktype == _POINT_VARIABLE:
         if ndims != 1:
@@ -72,7 +78,9 @@ def _expected_bytes(blocktype, datatype, ndims, info_length, meta, buf, path):
         npoints = struct.unpack_from("<q", buf, meta + 72)[0]
         if npoints < 0 or npoints > (1 << 62):
             raise ValueError("%s: point variable has invalid point count" % path)
-        expected_info = 80
+        # mult (real8), units (id32), mesh_id (id32), np (int8),
+        # and species/material id (id32); block_info_length excludes the header.
+        expected_info = 8 + 8 + 3 * _ID_LENGTH
         expected_data = npoints * itemsize
     elif blocktype == 5:
         if ndims != 1:
