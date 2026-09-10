@@ -1,0 +1,257 @@
+{
+  "module": "swmf-pwom",
+  "tests": [
+    {
+      "chaotic": false,
+      "exercises": "The official PWOM Earth field-aligned multi-ion solve and its restart/plot output.",
+      "id": "pwom-earth-official",
+      "module": "swmf-pwom",
+      "path": "PW/PWOM/Makefile",
+      "policy": "pointwise",
+      "proposed_check": "pwom-earth",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 8,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 2,
+      "why": "It is a shipped standalone component target and directly exercises the owned PW/PWOM solver path."
+    },
+    {
+      "chaotic": false,
+      "exercises": "The official Earth STET coupling variant with field-line histories and restart state.",
+      "id": "pwom-earth-stet-official",
+      "module": "swmf-pwom",
+      "path": "PW/PWOM/input/Earth/PARAM.in.stet",
+      "policy": "pointwise",
+      "proposed_check": "pwom-earth-stet",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 8,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 8,
+      "why": "The source ships a distinct PARAM.in.stet official variant that reaches PWOM's STET production path."
+    },
+    {
+      "chaotic": false,
+      "exercises": "The official Earth two-stream photoelectron transport variant coupled into PWOM.",
+      "id": "pwom-earth-twostream-official",
+      "module": "swmf-pwom",
+      "path": "PW/PWOM/input/Earth/PARAM.in.twostream",
+      "policy": "pointwise",
+      "proposed_check": "pwom-earth-twostream",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 8,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 43,
+      "why": "It is a separately shipped official input and exercises the distinct two-stream source path."
+    },
+    {
+      "chaotic": false,
+      "exercises": "The official Jupiter neutral-atmosphere and polar-wind standalone solve.",
+      "id": "pwom-jupiter-official",
+      "module": "swmf-pwom",
+      "path": "PW/PWOM/Makefile",
+      "policy": "pointwise",
+      "proposed_check": "pwom-jupiter",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 8,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 20,
+      "why": "The PWOM Makefile exposes a dedicated Jupiter official target with distinct planet source inputs."
+    },
+    {
+      "chaotic": false,
+      "exercises": "The official Jupiter two-stream transport variant and its field-aligned output.",
+      "id": "pwom-jupiter-twostream-official",
+      "module": "swmf-pwom",
+      "path": "PW/PWOM/Makefile",
+      "policy": "pointwise",
+      "proposed_check": "pwom-jupiter-twostream",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 8,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 43,
+      "why": "The source carries this named planet/transport combination as an official input variant."
+    },
+    {
+      "chaotic": false,
+      "exercises": "The official aggregate/original PWOM regression sequence across the shipped planet cases.",
+      "id": "pwom-orig-official",
+      "module": "swmf-pwom",
+      "path": "PW/PWOM/Makefile",
+      "policy": "pointwise",
+      "proposed_check": "pwom-orig",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 8,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 60,
+      "why": "test_orig is a native Makefile target and provides cross-planet regression coverage without splitting outputs into fake checks."
+    },
+    {
+      "chaotic": false,
+      "exercises": "The top-level official test_pw framework deck with PWOM selected in the PW slot.",
+      "id": "pwom-polar-wind-official",
+      "module": "swmf-pwom",
+      "path": "Param/PARAM.in.test.PW",
+      "policy": "pointwise",
+      "proposed_check": "pwom-polar-wind",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 8,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 2,
+      "why": "It is an upstream Makefile.test target that exercises PWOM through the framework session loop."
+    },
+    {
+      "chaotic": false,
+      "exercises": "The official Saturn neutral-atmosphere and field-aligned outflow target.",
+      "id": "pwom-saturn-official",
+      "module": "swmf-pwom",
+      "path": "PW/PWOM/Makefile",
+      "policy": "pointwise",
+      "proposed_check": "pwom-saturn",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 8,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 27,
+      "why": "The standalone PWOM Makefile has a dedicated Saturn target and shipped Saturn source/input set."
+    },
+    {
+      "chaotic": false,
+      "exercises": "The official Saturn restart-save/restart-read cadence and final field-line state.",
+      "id": "pwom-saturn-restart-official",
+      "module": "swmf-pwom",
+      "path": "PW/PWOM/input/Saturn/PARAM.in.restartsave",
+      "policy": "pointwise",
+      "proposed_check": "pwom-saturn-restart",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 8,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 25,
+      "why": "Restart cadence is a distinct official PWOM input and is a required owned hazard, not a second output-only check."
+    },
+    {
+      "chaotic": false,
+      "exercises": "The official GM+IE+PW coupled deck, grading PWOM field-line output plus coupling products.",
+      "id": "gm-ie-pw-official",
+      "module": "swmf-pwom",
+      "path": "Param/PARAM.in.test.GMIEPW",
+      "policy": "pointwise",
+      "proposed_check": "gm-ie-pw",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 8,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 35,
+      "why": "The shipped test_gm_ie_pw deck is the approved coupled coverage for PWOM's GM boundary exchange."
+    },
+    {
+      "chaotic": false,
+      "exercises": "The official SWPC GM+IE+RCM2+PWOM initial coupled stage.",
+      "id": "swpc-pwom-official",
+      "module": "swmf-pwom",
+      "path": "Param/SWPC/PARAM.in_pwom_init",
+      "policy": "pointwise",
+      "proposed_check": "swpc-pwom",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 8,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 65,
+      "why": "It is the top-level test_swpc_pwom official deck and exercises the PWOM-to-GM/IE coupling path."
+    },
+    {
+      "chaotic": false,
+      "exercises": "The official SWPC PWOM restart continuation and coupled output products.",
+      "id": "swpc-pwom-restart-official",
+      "module": "swmf-pwom",
+      "path": "Param/SWPC/PARAM.in_pwom_restart",
+      "policy": "pointwise",
+      "proposed_check": "swpc-pwom-restart",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 8,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 100,
+      "why": "The source's restart stage is part of test_swpc_pwom and preserves the measured cadence hazard."
+    },
+    {
+      "chaotic": false,
+      "exercises": "The official multispecies SWPC GM+IE+RCM2+PWOM initial stage.",
+      "id": "swpc-pwom-species-official",
+      "module": "swmf-pwom",
+      "path": "Param/SWPC/PARAM.in_pwom_species_init",
+      "policy": "pointwise",
+      "proposed_check": "swpc-pwom-species",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 8,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 68,
+      "why": "It is a distinct upstream test_swpc_pwom_species deck that activates the PWOM species exchange."
+    },
+    {
+      "chaotic": false,
+      "exercises": "The official multispecies SWPC PWOM restart continuation.",
+      "id": "swpc-pwom-species-restart-official",
+      "module": "swmf-pwom",
+      "path": "Param/SWPC/PARAM.in_pwom_species_restart",
+      "policy": "pointwise",
+      "proposed_check": "swpc-pwom-species-restart",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 8,
+        "mpi_ranks": 2
+      },
+      "runtime_measured": false,
+      "suitable": true,
+      "upstream_runtime_s": 100,
+      "why": "The restart input is an official stage of the shipped multispecies test and retains species-state coverage."
+    }
+  ]
+}

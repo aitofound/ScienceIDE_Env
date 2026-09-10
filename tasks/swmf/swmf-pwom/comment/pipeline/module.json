@@ -1,0 +1,50 @@
+{
+  "module": {
+    "slug": "swmf-pwom",
+    "title": "Polar-wind field-aligned outflow with PWOM",
+    "paths": [
+      "PW/PWOM"
+    ],
+    "entrypoints": [
+      "PW/PWOM standalone: earth, earth_stet, earth_twostream, jupiter, jupiter_twostream, orig, saturn and restart",
+      "test1, test_pw, test_swpc_pwom variants and test_gm_ie_pw",
+      "#555 pwom-earth, pwom-earth-twostream, pwom-polar-wind, pwom-saturn, pwom-saturn-restart and the restart/species variants"
+    ],
+    "expensive_path": "Hundreds of independent 1-D field-aligned multi-ion hydrodynamic solves with implicit stepping and photochemistry, followed by interpolation of outflow to the GM inner boundary; field-line count and time window are runtime knobs.",
+    "rationale": "PWOM is a distinct polar-wind code family with standalone and coupled cases. Coupled CIMI+PWOM decks are attributed to CIMI when CIMI is the graded kinetic physics, avoiding duplicate PWOM ownership.",
+    "excluded": [
+      "IE potential and GM coupling routines (swmf-mit-coupling), except as dependencies in coupled decks",
+      "CIMI's kinetic physics in test_swpc_cimi_pwom_species (swmf-cimi-heidi)",
+      "non-public external data not read by the selected PWOM cases"
+    ],
+    "hazards": [
+      "PWOM's implicit solver is sensitive to the exact restart cadence; preserve #555 windows.",
+      "The old swpc-pwom checks are historical evidence only; fresh references are generated in the pinned container downstream."
+    ]
+  },
+  "approval": {
+    "modules": [
+      "swmf-batsrus",
+      "swmf-fleks",
+      "swmf-sep",
+      "swmf-cimi-heidi",
+      "swmf-pwom",
+      "swmf-gitm-mgitm",
+      "swmf-mit-coupling"
+    ],
+    "human_ref": "非常好！开做吧！我允许你remote 跑docker，但是最多一次两个，本地也跑一次，一次两个，但是写代码并行去吧！",
+    "at": "2026-09-10T09:03:32Z"
+  },
+  "shared_infrastructure": [
+    "share",
+    "util",
+    "Config.pl",
+    "Makefile",
+    "Makefile.def",
+    "Makefile.test",
+    "PARAM.XML",
+    "Scripts",
+    "CON/Control",
+    "CON/Library"
+  ]
+}
