@@ -1,0 +1,42 @@
+{
+  "module": {
+    "slug": "gyrokinetic-dg",
+    "title": "Full-f Gyrokinetic DG Solvers",
+    "paths": [
+      "gyrokinetic/"
+    ],
+    "entrypoints": [
+      "gyrokinetic/creg/ (compiled gyrokinetic simulation drivers)",
+      "gyrokinetic/luareg/ (Lua gyrokinetic inputs through the gkeyll executable)"
+    ],
+    "expensive_path": "Full-f gyrokinetic phase-space DG updates, collision/source operators, moments, field solves, and geometry evaluation over tokamak or mirror coordinates; production cases combine high-dimensional kernels with global reductions and elliptic solves.",
+    "rationale": "Gyrokinetics uses a reduced physical model, specialized geometry, field equations, boundary conditions, and verification cases that are scientifically distinct from full Vlasov kinetics.",
+    "excluded": [
+      "Full Vlasov-Maxwell/Vlasov-Poisson evolution belongs to the Vlasov module.",
+      "PKPM's perpendicular-moment closure is treated as its own model."
+    ],
+    "hazards": [
+      "Some cases depend on optional ADAS data or machine-specific linear-algebra/GPU facilities.",
+      "Large realistic geometries and grids are unsuitable as bounded benchmark fixtures without reduction."
+    ]
+  },
+  "approval": {
+    "modules": [
+      "fluid-mhd-moments",
+      "vlasov-maxwell-dg",
+      "gyrokinetic-dg",
+      "pkpm-reduced-kinetic"
+    ],
+    "human_ref": "同意这四个模块",
+    "at": "2026-09-03T01:35:26Z"
+  },
+  "shared_infrastructure": [
+    "core/",
+    "gkeyll/",
+    "Makefile",
+    "alltargets.mak",
+    "configure",
+    "install-deps/",
+    "machines/"
+  ]
+}

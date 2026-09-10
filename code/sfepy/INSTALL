@@ -1,0 +1,107 @@
+This text contains short installation instructions of SfePy from sources.
+The full instructions are given in doc/installation.rst, see also [1, 2].
+
+[1] https://sfepy.org
+[2] https://sfepy.org/doc-devel/installation.html
+
+Platforms
+---------
+
+*SfePy* is known to work on various flavours of Linux, on Intel Macs and
+Windows.
+
+Requirements
+------------
+
+Installation prerequisites, required to build SfePy:
+
+- a C compiler suite (for example gcc)
+- Python 3.x
+- NumPy
+- Cython
+
+Python packages required for using SfePy:
+
+- Pyparsing
+- SciPy
+- meshio, for reading and writing mesh files
+- scikit-umfpack, for enabling UMFPACK solver for SciPy >= 0.14.0
+- Matplotlib, for various plots
+- PyTables, for storing results in HDF5 files
+- SymPy, for some tests and functions
+- Pysparse, for additional eigenvalue problem solvers
+- igakit, for generating IGA domains
+- petsc4py and mpi4py, for running parallel examples and using parallel
+  solvers from PETSc
+- slepc4py, for eigenvalue problem solvers from SLEPc
+- pymetis, for mesh partitioning using Metis
+- psutil, for memory requirements checking
+- PyVista, for post-processing
+
+Make sure the dependencies of those packages are also installed -
+scikit-umfpack does not work without UMFPACK, petsc4py without PETSc, etc.
+
+Other dependencies:
+
+- To be able to (re)generate the documentation: Sphinx, numpydoc, LaTeX.
+- Mesh generation tools use gmsh or tetgen.
+- IPython is preferred over the regular Python shell for following some
+  parts of primer/tutorial.
+- MUMPS library for using MUMPS linear direct solver (real and complex
+  arithmetic, parallel factorization)
+- PRIMME: PReconditioned Iterative MultiMethod Eigensolver
+
+SfePy can be used in-place without any installation by running the scripts from
+the top-level directory of the distribution (TOPDIR), or can be installed
+locally or system-wide.
+
+Compilation of C Extension Modules
+----------------------------------
+
+1. Look at ``site_cfg_template.py`` and follow the instructions
+   therein. Usually no changes are necessary.
+
+2. Compile the extension modules
+
+   a) for in-place use:
+
+      python setup.py build_ext --inplace
+
+   b) for installation:
+
+      python setup.py build
+
+Installation
+------------
+
+(As mentioned above, this step is not required to use SfePy.)
+
+- System-wide (may require root privileges):
+
+    pip install .
+
+- Local:
+
+    pip install --user .
+
+- development (editable install)::
+
+    pip install -e .
+
+  The editable install allows working in-place and at the same time the
+  ``sfepy-*`` commands are available.
+
+Testing:
+--------
+
+Run
+
+  python -c "import sfepy; sfepy.test()"
+
+in TOPDIR.
+
+Documentation:
+--------------
+
+SfePy is documented using Sphinx, see [1] above. The documentation sources are
+in the doc directory.
