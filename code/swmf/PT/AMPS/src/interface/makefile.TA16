@@ -1,0 +1,11 @@
+# Build rule for the Tsyganenko (2016) RBF model (TA16)
+# Added to AMPS: 2026-02-26
+
+# NOTE:
+#  - TA16 needs the coefficient file (TA16_RBF.par) at runtime.
+#  - AMPS patched TA16.for to allow overriding this filename via TA16_SET_COEFF_FILE.
+
+ta16 :
+	${COMPILE.f77} ${Cflag3} TA16.for
+	${COMPILE.mpicxx} ${FLAGC} -std=c++14 TA16Interface.cpp -o TA16Interface.o
+	ar -src TA16.a TA16.o TA16Interface.o

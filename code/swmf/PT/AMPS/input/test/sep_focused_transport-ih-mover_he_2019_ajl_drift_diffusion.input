@@ -1,0 +1,31 @@
+
+#include input/test/sep_focused_transport--borovikov.input
+
+#main 
+CouplerMode=swmf !!T96 !ices !!off, ices, swmf
+#endmain
+
+#General
+  InitialSampleLength=40 
+
+  !keep data recieved from the SWMF for two time instances for calculation time-derivatives
+  !define _PIC_SWMF_COUPLER__SAVE_TWO_DATA_SETS_ _PIC_MODE_ON_
+
+  define _SEP_MOVER_ _SEP_MOVER_HE_2019_AJL_
+  !define _SEP_MOVER_ _SEP_MOVER_KARTAVYKH_2016_AJ_ 
+
+  !define _SEP_MOVER_DRIFT_ _PIC_MODE_ON_
+
+  OutputMode=DistributedFiles !!SingleFile !SingleFile,DistributedFiles
+
+  define  _SEP_MOVER_DRIFT_ _PIC_MODE_ON_
+  define _SEP_DIFFUSION_MODEL_ _DIFFUSION_JOKIPII1966AJ_
+
+ TrajectoryTracing=on
+ MaxSampledTrajectoryNumber=1000
+
+ define _PIC_PARTICLE_TRACKER_MODE_ _PIC_MODE_ON_
+
+ define _PIC_USER_DEFING_PARTICLE_SAMPLING__NODE_(ParticleData,LocalParticleWeight,SamplingBuffer,spec,Node) SEP::OutputAMPS::SamplingParticleData::SampleParticleData(ParticleData,LocalParticleWeight,SamplingBuffer,spec,Node) 
+
+#endGeneral

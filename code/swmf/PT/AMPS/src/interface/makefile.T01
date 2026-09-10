@@ -1,0 +1,12 @@
+# Build rule for the Tsyganenko T01 model interface
+# Added to AMPS: 2026-02-26
+
+# NOTE:
+#  - Uses the same compilation macros as the existing makefile.T96/makefile.T05
+#  - Produces a small convenience archive (T01.a) in case a higher-level build
+#    system links per-model archives.
+
+t01 :
+	${COMPILE.f77} ${Cflag3} T01.for
+	${COMPILE.mpicxx} ${FLAGC} -std=c++14 T01Interface.cpp -o T01Interface.o
+	ar -src T01.a T01.o T01Interface.o
