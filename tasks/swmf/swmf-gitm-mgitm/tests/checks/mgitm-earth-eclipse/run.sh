@@ -48,8 +48,14 @@ cp -R "$SOURCE_DIR/." "$WORK/src"
 export LC_ALL=C OMP_NUM_THREADS=1
 SRC="$WORK/src"
 BUILD_START=$(date +%s)
+# Config.pl -install=BATSRUS is the pinned SWMF root-install boundary.
+# It stages share/build/Makefile.conf and share/Scripts/Config.pl before
+# the MGITM component selection; without it component Config.pl aborts
+# with "share/build/Makefile.conf is missing".
+cd "$SRC"
+GIT_TERMINAL_PROMPT=0 ./Config.pl -install=BATSRUS -compiler=gfortran > "$WORK/install.log" 2>&1
 cd "$SRC/UA/MGITM"
-./Config.pl -install -Earth > "$WORK/config.log" 2>&1
+./Config.pl -Earth > "$WORK/config.log" 2>&1
 ./Config.pl -g=1,1,50,4 >> "$WORK/config.log" 2>&1
 make -j"$MAKE_JOBS" GITM > "$WORK/build.log" 2>&1
 BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))
