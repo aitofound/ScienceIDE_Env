@@ -1,0 +1,47 @@
+{
+  "module": {
+    "slug": "swmf-gitm-mgitm",
+    "title": "Upper-atmosphere thermosphere-ionosphere models GITM and MGITM",
+    "paths": [
+      "UA/GITM",
+      "UA/GITM/ext/Electrodynamics",
+      "UA/MGITM"
+    ],
+    "entrypoints": [
+      "UA/GITM standalone auto_test, Makefile test_earth/test_rcmr_quick/test_mars/test_hime, test.Short and WPGITM suites",
+      "UA/MGITM: gitm_earth, gitm_earth_1d, gitm_earth_3d, gitm_earth_eclipse, gitm_mars, gitm_mars_1d and gitm_mars_3d",
+      "test12 with MGITM; test3 with GITM is attributed to swmf-mit-coupling for its coupling physics"
+    ],
+    "expensive_path": "GITM's 3-D lon-lat-alt thermosphere advance with chemistry, electrodynamics and radiative terms, and MGITM's corresponding 3-D upper-atmosphere update; GITM production grid and simulated-hour window are compile/run knobs.",
+    "rationale": "GITM and MGITM are the approved upper-atmosphere code family. GITM's public Electrodynamics dependency is vendored with it. The two models reach the coverage floor together and are one upper-atmosphere leaf, while GITM's coupled test3 is graded by the coupling leaf.",
+    "excluded": [
+      "UA/GITM2 legacy version (unclaimed, not selected by the approved tests)",
+      "GM/IE/IM coupling physics in test3 (swmf-mit-coupling)",
+      "GITM decks requiring non-vendored Aurora or tidal tables"
+    ],
+    "hazards": [
+      "Top-level GITM install order and the Electrodynamics path must be repaired in the build recipe; the current pinned source has the ModIE API mismatch in coupled SWMF.exe.",
+      "GITM committed reference logs are stale against the pinned source and are not truth; references are generated in-container.",
+      "GITM grid is compile-time; every grid is a separate configuration/build."
+    ]
+  },
+  "approval": {
+    "modules": [
+      "swmf-gitm-mgitm"
+    ],
+    "human_ref": "非常好！开做吧！我允许你remote 跑docker，但是最多一次两个，本地也跑一次，一次两个，但是写代码并行去吧！",
+    "at": "2026-09-10T09:03:32Z"
+  },
+  "shared_infrastructure": [
+    "share",
+    "util",
+    "Config.pl",
+    "Makefile",
+    "Makefile.def",
+    "Makefile.test",
+    "PARAM.XML",
+    "Scripts",
+    "CON/Control",
+    "CON/Library"
+  ]
+}
