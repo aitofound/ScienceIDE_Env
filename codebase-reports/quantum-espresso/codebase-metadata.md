@@ -15,7 +15,7 @@ Generated from the canonical JSON. Unknown values are visible; this report never
 
 | module | approval | purpose / difference | owned files | owned text lines | collected tests | shared components |
 |---|---|---|---:|---:|---:|---|
-| `pw-ground-state` | approved | This is the only module that computes a ground state; every other module consumes one. It owns PW/src apart from the five exact-exchange files, and KS_Solvers, which no other modu… | 305 | 129014 | 214 | `shared-infrastructure` |
+| `pw-ground-state` | approved | This is the only module that computes a ground state; every other module consumes one. It owns PW/src apart from the five exact-exchange files, and KS_Solvers, which no other modu… | 305 | 129014 | 232 | `shared-infrastructure` |
 | `pw-hybrid-exx` | approved | It owns only the five exx* files of PW/src and nothing else. It cannot run without the semi-local SCF of pw-ground-state, but the semi-local SCF never enters this code, so the bou… | 5 | 8608 | 23 | `shared-infrastructure` |
 | `ph-linear-response` | approved | It never converges a ground state and never computes a total energy of its own; it linearises around one. It owns PHonon/, which no other module touches, and shares LR_Modules wit… | 218 | 56577 | 93 | `shared-infrastructure` |
 | `cp-car-parrinello` | approved | It replaces the SCF fixed point with a dynamics, so it shares neither the diagonalisers nor the mixing of pw-ground-state. It owns CPV/src alone. | 108 | 50021 | unknown | `shared-infrastructure` |
@@ -41,9 +41,9 @@ Generated from the canonical JSON. Unknown values are visible; this report never
 
 | count | value | unit |
 |---|---:|---|
-| `test_files` | 338 | files |
-| `test_definitions` | 341 | source-level test definitions |
-| `collected_items` | 341 | framework-collected items |
+| `test_files` | 356 | files |
+| `test_definitions` | 359 | source-level test definitions |
+| `collected_items` | 359 | framework-collected items |
 | `inner_cases` | unknown | inner cases |
 
 ### Gaps and warnings
