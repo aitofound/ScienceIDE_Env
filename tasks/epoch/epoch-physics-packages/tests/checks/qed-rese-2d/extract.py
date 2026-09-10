@@ -283,8 +283,8 @@ HEADER = ["time_s", "photon_number", "photon_energy_J", "electron_energy_J",
           "field_energy_J", "laser_energy_injected_J"]
 
 
-def _validated_photon_point_variable(blocks, expected_name):
-    """Return one point variable selected by exact name and serialized metadata.
+def _validated_photon_point_variable(blocks, block_id, expected_name):
+    """Return one point variable selected by serialized ID and metadata.
 
     The parser records each POINT_VARIABLE under its serialized block ID after
     validating the block type, datatype, metadata length, data length, and
@@ -294,11 +294,9 @@ def _validated_photon_point_variable(blocks, expected_name):
     records = getattr(blocks, "point_variables", None)
     if not isinstance(records, dict):
         raise ValueError("Photon point-variable metadata is unavailable")
-    matches = [record for record in records.values()
-               if record["name"] == expected_name]
-    if len(matches) != 1:
+    record = records.get(block_id)
+    if record is None or record["name"] != expected_name:
         raise ValueError("required Photon point variable is missing or ambiguous")
-    record = matches[0]
     if record["blocktype"] != _POINT_VARIABLE or record["datatype"] not in _DTYPE:
         raise ValueError("Photon point variable has invalid serialized type")
     if record["mesh_id"] != _PHOTON_MESH_ID:
@@ -336,9 +334,8 @@ def photon_number(blocks):
     records = getattr(blocks, "point_variables", None)
     if not isinstance(records, dict):
         raise ValueError("Photon point-variable metadata is unavailable")
-    weights_matches = [record for record in records.values()
-                       if record["name"] == "Particles/Weight/Photon"]
-    if not weights_matches:
+    weight_record = records.get("weight/photon")
+    if weight_record is None:
         if "Particles/Weight/Photon" in blocks:
             raise ValueError("Photon weight block is not a serialized point variable")
         mesh_records = getattr(blocks, "point_meshes", {})
@@ -347,7 +344,7 @@ def photon_number(blocks):
         # EPOCH omits both Photon point blocks when the species has zero points.
         return 0.0
     record, weights = _validated_photon_point_variable(
-        blocks, "Particles/Weight/Photon")
+        blocks, "weight/photon", "Particles/Weight/Photon")
     if not np.all(np.isfinite(weights)) or np.any(weights < 0.0):
         raise ValueError("Particles/Weight/Photon contains invalid weights")
 
