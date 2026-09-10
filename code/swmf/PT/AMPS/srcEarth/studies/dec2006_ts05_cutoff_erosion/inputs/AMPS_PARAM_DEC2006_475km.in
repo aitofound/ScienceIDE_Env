@@ -1,0 +1,130 @@
+! =============================================================================
+! December 2006 production study: 475-km rigidity-access morphology shell
+!
+! This deck produces the common-rigidity morphology product at the representative
+! PAMELA altitude.  It is separate from the C9 observation-equivalent input:
+! C9 uses only the seven published bins and an orbit-scale comparison, whereas
+! this deck also samples intermediate rigidities for storm-time maps, harmonics,
+! accessible area, lag, and hysteresis.  The fixed scientific assumptions are:
+!
+!   * a 475-km WGS-84 geodetic shell and vertical incident protons;
+!   * IGRF plus T05/TS05, frozen at each five- or fifteen-minute epoch;
+!   * zero electric field and relativistic full-orbit backtracing;
+!   * Mode3D mesh interpolation with explicit GRIDLESS parity subsets;
+!   * DIRECT_ACCESS/RIGIDITY_LIST over 0.15--1.25 GV;
+!   * three-state allowed/forbidden/unresolved classification; and
+!   * MLT-resolved, weighted-isotonic T=0.5 boundary extraction.
+!
+! scripts/run_morphology.py copies this template per epoch and changes only
+! documented directives.  The generated input, copied driver, command, raw
+! Tecplot product, and postprocessed tables remain together in the case folder.
+! =============================================================================
+
+#CALCULATION_MODE
+CALC_TARGET             CUTOFF_RIGIDITY
+FIELD_EVAL_METHOD       GRID_3D
+
+#CUTOFF_RIGIDITY
+! The configured 0.15--1.25 GV study range is expressed as proton kinetic
+! energy because the common AMPS cutoff parser still requires the bracket.
+CUTOFF_EMIN             11.9145
+CUTOFF_EMAX             624.691
+CUTOFF_MAX_PARTICLES    1
+CUTOFF_NENERGY          50
+CUTOFF_SAMPLING         VERTICAL
+! This deck is intentionally RIGIDITY_LIST/DIRECT_ACCESS.  It classifies every
+! listed rigidity directly and restricts trajectory launches to the stated
+! absolute-geodetic-latitude band.  The Python reducer later forms resolved
+! ACCESS_T50 boundaries; it never infers them between sparse energy channels.
+CUTOFF_SEARCH_ALGORITHM RIGIDITY_LIST
+CUTOFF_UPPER_SCAN_N     160
+CUTOFF_RIGIDITY_LIST_GV 0.15,0.174013525,0.20,0.25,0.262395866,0.30,0.35,0.369131538,0.40,0.423556372,0.45,0.498397432,0.50,0.531334344,0.55,0.587877538,0.60,0.65,0.692820323,0.70,0.75,0.80,0.817006732,0.85,0.90,0.95,0.962081078,1.00,1.05,1.10,1.131017241,1.15,1.20,1.25
+CUTOFF_ACCESS_ABS_LAT_MIN 35.0
+CUTOFF_ACCESS_ABS_LAT_MAX 85.0
+CUTOFF_SCAN_SPACING     LINEAR
+CUTOFF_TRACE_POLICY     ACCURATE
+CUTOFF_BACKTRACE_CHARGE REVERSED
+CUTOFF_TRACE_LIMIT_POLICY FORBIDDEN
+CUTOFF_MAX_TRAJ_TIME    300.0
+
+#PARTICLE_SPECIES
+SPECIES                 PROTON
+CHARGE                  1
+MASS_AMU                1.007276466621
+
+#BACKGROUND_FIELD
+! The driver table is sampled once at EPOCH for each standalone snapshot run.
+! The study runner copies the checksum-verified event driver beside this input.
+FIELD_MODEL             T05
+EPOCH                   2006-12-14T00:00:00
+DRIVER_FILE             ts05_dec2006_5min.txt
+! Static values are parser-safe fallbacks only.  A loaded driver overrides them.
+DST                     -100.0
+PDYN                    4.0
+IMF_BX                  0.0
+IMF_BY                  0.0
+IMF_BZ                  -5.0
+SW_VX                   -450.0
+SW_N                    5.0
+T05_W1                  0.0
+T05_W2                  0.0
+T05_W3                  0.0
+T05_W4                  0.0
+T05_W5                  0.0
+T05_W6                  0.0
+
+
+#MODE3D_MESH
+! Near-Earth resolution controls interpolation accuracy where the 475-km
+! cutoff boundary is determined.  The outer-boundary target controls the cost
+! of filling the +/-25-Re domain.  Repeat selected event landmarks with a
+! 0.01-Re near-Earth target before interpreting small spatial structures.
+MODE3D_MESH_RES_EARTH_RE     0.02
+MODE3D_MESH_RES_BOUNDARY_RE  2.0
+MODE3D_MESH_COARSENING       LINEAR
+MODE3D_MESH_EXPONENT         1.0
+
+#DOMAIN_BOUNDARY
+! Bare lengths are kilometers.  +/-25 Re is large enough for the empirical
+! magnetosphere used by this event-level access calculation.
+DOMAIN_X_MIN            -159280.0
+DOMAIN_X_MAX             159280.0
+DOMAIN_Y_MIN            -159280.0
+DOMAIN_Y_MAX             159280.0
+DOMAIN_Z_MIN            -159280.0
+DOMAIN_Z_MAX             159280.0
+R_INNER                  6371.2
+
+#SPECTRUM
+! Required by the common parser; not used by cutoff-rigidity tracing.
+SPECTRUM_TYPE           POWER_LAW
+SPEC_J0                 1.0
+SPEC_GAMMA              2.0
+SPEC_E0                 1000.0
+SPEC_EMIN               1.0
+SPEC_EMAX               2000.0
+
+#OUTPUT_DOMAIN
+! The shell remains globally structured in longitude, but DIRECT_ACCESS launches
+! trajectories only inside CUTOFF_ACCESS_ABS_LAT_MIN/MAX.  The postprocessor
+! transforms retained GEO points to AACGM/MLT at the exact snapshot epoch.
+! SHELL_GEOMETRY=GEODETIC follows the current Earth cutoff-test convention.
+OUTPUT_MODE             SHELLS
+SHELL_COUNT             1
+SHELL_ALTS_KM           475.0
+SHELL_LON_RES_DEG       15.0
+SHELL_LAT_RES_DEG       2.0
+SHELL_GEOMETRY          GEODETIC
+
+#OUTPUT_OPTIONS
+OUTPUT_COORDS           GEO
+
+#NUMERICAL
+DT_TRACE                0.2
+ADAPTIVE_DT             T
+MAX_STEPS               500000
+MAX_TRACE_TIME          300.0
+MAX_TRACE_DISTANCE      400.0
+TRAP_DETECTION          T
+
+!#END

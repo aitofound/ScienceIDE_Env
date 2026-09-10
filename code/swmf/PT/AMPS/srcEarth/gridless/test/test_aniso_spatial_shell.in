@@ -1,0 +1,101 @@
+#==============================================================================
+# test_aniso_spatial.in
+# Anisotropic spatial: DAYSIDE_NIGHTSIDE (exact analytic ratio = 1.25)
+#==============================================================================
+! EXPECTED BEHAVIOUR
+! --------------------
+! The observation point (0, 8Re, 0) lies on the GSM Y-axis (dusk meridian).
+! By the left-right symmetry of the domain box about the GSM Y-Z plane,
+! exactly half the allowed exit points have x_exit > 0 (dayside) and half x_exit < 0.
+!
+! Therefore the solid-angle-averaged spatial weight is EXACTLY:
+!   <f_spatial> = (f_day + f_night) / 2 = (2.0 + 0.5) / 2 = 1.25
+!
+! And:
+!   n_aniso / n_iso = <f_spatial> = 1.25   [EXACT ANALYTIC, no approximation]
+!
+! This test is independent of the PAD model and independent of the
+! straight-line approximation. The 1.25 prediction is exact by symmetry.
+!
+! Companion script: python3 test_density_aniso.py
+
+#CALCULATION_MODE
+  CALC_TARGET        DENSITY_SPECTRUM
+  FIELD_EVAL_METHOD  GRIDLESS
+
+#BACKGROUND_FIELD
+  FIELD_MODEL        DIPOLE
+  DIPOLE_MOMENT      1.0
+  DIPOLE_TILT        0.0
+
+#DOMAIN_BOUNDARY
+  DOMAIN_X_MAX       57340.8   ! km =  9.0 Re
+  DOMAIN_X_MIN      -57340.8   ! km = -9.0 Re
+  DOMAIN_Y_MAX       57340.8   ! km =  9.0 Re
+  DOMAIN_Y_MIN      -57340.8   ! km = -9.0 Re
+  DOMAIN_Z_MAX       57340.8   ! km =  9.0 Re
+  DOMAIN_Z_MIN      -57340.8   ! km = -9.0 Re
+  R_INNER            6434.9    ! km = 1.01 Re
+
+#DENSITY_SPECTRUM
+  DS_EMIN            30000.0    ! MeV = 5 GeV  [rL > 21 Re at all 3 points >> 9 Re domain]
+  DS_EMAX            50000.0   ! MeV = 50 GeV
+  DS_NINTERVALS      40        ! 41 log-spaced bins
+  DS_ENERGY_SPACING  LOG
+  DS_BOUNDARY_MODE   ANISOTROPIC
+
+
+#SPECTRUM
+  ! Power-law differential intensity: J_b(E) = J0 * (E/E0)^(-GAMMA)
+  ! Units as registered by the solver: J0 in m^-2 s^-1 sr^-1 MeV^-1
+  !
+  ! IMPORTANT: Verify that these key names match your spectrum.h
+  ! InitGlobalSpectrumFromKeyValueMap() implementation. Common alternatives:
+  !   SPECTRAL_INDEX instead of GAMMA
+  !   E_REFERENCE instead of E0_MEV
+  !   J_REFERENCE instead of J0
+  !
+  SPECTRUM_TYPE      POWER_LAW
+  SPEC_J0                1.00e+4   ! p/cm2/s/sr/(MeV/n)
+  SPEC_GAMMA             3.50         ! spectral index
+  SPEC_E0                10.0          ! MeV/n pivot
+  SPEC_EMIN              30000.0          ! MeV/n
+  SPEC_EMAX              50000.0       ! MeV/n
+
+#NUMERICAL
+  DT_TRACE           0.5
+  MAX_STEPS          200000
+  MAX_TRACE_TIME     60.0
+  MAX_TRACE_DISTANCE 50       ! Re -  hard cap on integration distance per trajectory
+
+
+  DS_BOUNDARY_MODE   ANISOTROPIC
+
+#BOUNDARY_ANISOTROPY
+  BA_PAD_MODEL        ISOTROPIC     ! no PAD anisotropy — isolates spatial effect
+  BA_PAD_EXPONENT     2.0
+  BA_SPATIAL_MODEL    DAYSIDE_NIGHTSIDE
+  BA_DAYSIDE_FACTOR   2.0           ! dayside (GSM x_exit > 0) flux multiplier
+  BA_NIGHTSIDE_FACTOR 0.5           ! nightside (GSM x_exit <= 0) flux multiplier
+
+#OUTPUT_DOMAIN
+  OUTPUT_MODE            SHELLS
+  FLUX_DT                1.0           ! min (trajectory cadence; ignored for POINTS/SHELLS)
+  SHELL_COUNT            2                 ! number of shells
+  SHELL_ALTS_KM          9000.0 7000.0          ! km; one altitude per shell
+  SHELL_RES_DEG          60                 ! deg; angular resolution (lat/lon)
+
+#ENERGY_CHANNELS
+  ! Integral-flux output channels: F_ch = 4pi * int[E1,E2] T(E)*Jb(E) dE  [m^-2 s^-1]
+  ! NOTE: the solver energy grid is 5-50 GeV.
+  !   CH1 [10-100 MeV] and CH2 [100 MeV-1 GeV] lie BELOW the grid; solver returns 0.
+  !   CH3 [1-10 GeV]  clips to [5-10 GeV]  (within grid).
+  !   CH4 [10-20 GeV] clips to [10-20 GeV] (fully within grid).
+  ! Analytic reference (power-law gamma=2, T=T_eff):
+  !   F_ch = 4pi * T_eff * J0 * E0^2 * (1/lo - 1/hi)  where lo,hi = clipped limits
+  !
+  ! NAME    E1_MeV    E2_MeV
+  CH_BEGIN
+    CH1    30000.0    40000.0   ! 10-100 MeV  — below grid, expect F=0
+    CH2    40000.0    50000.0   ! 100 MeV-1 GeV — below grid, expect F=0
+  CH_END

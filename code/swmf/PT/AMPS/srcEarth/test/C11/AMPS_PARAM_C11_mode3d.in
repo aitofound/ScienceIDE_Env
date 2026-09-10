@@ -1,0 +1,82 @@
+! ═══════════════════════════════════════════════════════════════
+! AMPS SEP geospace validation test C11
+! Penumbra-pocket regression: legacy BINARY Rmin-collapse defect
+!
+! Parser-compatible Mode3D input.  The Python harness supplies the
+! cutoff-search algorithm, UPPER_SCAN sample count, thread count,
+! MPI scheduler, and Mode3D field-evaluation backend on the command line.
+! ═══════════════════════════════════════════════════════════════
+
+#CALCULATION_MODE
+CALC_TARGET            CUTOFF_RIGIDITY
+FIELD_EVAL_METHOD      GRID_3D
+
+#CUTOFF_RIGIDITY
+CUTOFF_EMIN            0.05         ! MeV/n; Rmin ~= 9.6866e-3 GV for protons
+CUTOFF_EMAX            20000.0      ! MeV/n
+CUTOFF_MAX_PARTICLES   500          ! per injection point
+CUTOFF_NENERGY         50           ! log-spaced energy bins
+CUTOFF_SAMPLING        VERTICAL     ! C11 targets vertical access
+CUTOFF_MAX_TRAJ_TIME   600          ! sec; overwritten by run_C11.py if requested
+
+! The debug scan is intentionally active for C11.  It writes the selected,
+! endpoint-BINARY, and UPPER_SCAN cutoffs for the primary point so the historical
+! Rmin-collapse signature is visible even when only one search algorithm is run.
+CUTOFF_DEBUG_RIGIDITY_SCAN T
+CUTOFF_DEBUG_SCAN_LON      0.0
+CUTOFF_DEBUG_SCAN_LAT     -60.0
+CUTOFF_DEBUG_SCAN_ALT    9000.0
+CUTOFF_DEBUG_SCAN_N       200
+CUTOFF_DEBUG_SCAN_FILE    C11_debug_rigidity_scan.dat
+
+#PARTICLE_SPECIES
+SPECIES                PROTON
+CHARGE                 1
+MASS_AMU               1.0073
+
+#BACKGROUND_FIELD
+FIELD_MODEL            DIPOLE
+DIPOLE_MOMENT          1.00
+DIPOLE_TILT            0.0
+
+#DOMAIN_BOUNDARY
+DOMAIN_X_MAX           35.0         ! RE dayside
+DOMAIN_X_MIN           -35.0        ! RE nightside
+DOMAIN_Y_MAX           35.0         ! RE dusk
+DOMAIN_Y_MIN           -35.0        ! RE dawn
+DOMAIN_Z_MAX           35.0         ! RE north
+DOMAIN_Z_MIN           -35.0        ! RE south
+R_INNER                1.0          ! RE inner loss sphere
+
+#ELECTRIC_FIELD
+!COROTATION_E           NO
+!CONV_E_MODEL           VOLLAND_STERN
+
+!#TEMPORAL
+!TEMPORAL_MODE          TIME_SERIES
+
+#SPECTRUM
+SPECTRUM_TYPE          POWER_LAW
+SPEC_J0                1.00e+4
+SPEC_GAMMA             3.50
+SPEC_E0                10.0
+SPEC_EMIN              1.0
+SPEC_EMAX              1000.0
+
+#OUTPUT_DOMAIN
+OUTPUT_MODE            SHELLS
+SHELL_COUNT            2
+SHELL_ALTS_KM          500.0 9000.0
+SHELL_RES_DEG          30
+
+#OUTPUT_OPTIONS
+!OUTPUT_CUTOFF          T
+!OUTPUT_FORMAT          TECPLOT
+!OUTPUT_COORDS          GEO
+
+#NUMERICAL
+DT_TRACE               1.0
+MAX_TRACE_TIME         600
+MAX_TRACE_DISTANCE     300.0        ! RE; distance cap used to avoid long-time leakage
+
+!#END

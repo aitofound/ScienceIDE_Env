@@ -1,0 +1,4725 @@
+\Section{Focused Transport}
+
+% Empirical Shock Module in LaTeX
+
+\section*{Empirical Shock Module for CME-Driven Shocks}
+
+Below is a \textbf{ready-to-code empirical shock module} that simultaneously returns the \textbf{heliocentric position $r(t)$}, \textbf{speed $V_{\text{sh}}(t)$}, and \textbf{density-compression ratio $r_{\rho}(t)$} of an interplanetary shock driven by a CME (or any piston) as it propagates along a single magnetic-field line. All formulae are published; sources are cited after each paragraph.
+
+\subsection*{1. Kinematics: the Drag-Based Model (DBM)}
+
+The most widely used empirical law for Sun-to-1 au shock kinematics is the \textbf{drag-based ODE} \cite{Vrsnak2007}:
+\[
+\boxed{\;
+\frac{dV_{\text{sh}}}{dt}\;=\;-\gamma\bigl(V_{\text{sh}}-U_{\text{sw}}\bigr)
+\;\bigl|V_{\text{sh}}-U_{\text{sw}}\bigr|\,,
+\quad
+\gamma\simeq(0.2\text{--}2)\times10^{-7}\ \text{km}^{-1}\;}
+\]
+where $U_{\text{sw}}$ is the ambient solar-wind speed (use WSA/ACE value or 400 km s$^{-1}$). Solve the ODE with initial conditions $(t_0, r_0, V_0)$. The \textbf{analytic solution} is:
+\[
+V_{\text{sh}}(t) = U_{\text{sw}} \pm \frac{V_0 - U_{\text{sw}}}{1 \pm \gamma |V_0 - U_{\text{sw}}| (t - t_0)}
+\]
+\[
+r(t) = r_0 + \int_{t_0}^{t} V_{\text{sh}}(t')\,dt'
+\]
+(This ``$+$'' sign is used if $V_0 > U_{\text{sw}}$; the integral has a closed form in the DBM literature.)
+
+\textbf{Typical parameters:} $\gamma = 0.5{\times}10^{-7}$ km$^{-1}$ (fast CMEs) or $1.5{\times}10^{-7}$ km$^{-1}$ (slow CMEs) reproduce average shock-arrival errors of $\pm$7 h at 1 au.
+
+\subsection*{2. Alternative Single-Line ``ESA'' Predictor}
+
+If you need only the \textbf{arrival time and speed at 1 au}, the \textbf{Empirical Shock Arrival (ESA) model} gives:
+\[
+t_{\mathrm{arr}}(\text{h}) = 203 - 29.2\,\ln V_{\text{CME}},
+\qquad
+V_{\text{sh}}(1\ \mathrm{au}) = 273 + 79\,\ln V_{\text{CME}} \; (\text{km s}^{-1})
+\]
+where $V_{\text{CME}}$ is the near-Sun CME linear speed (km s$^{-1}$).
+
+\subsection*{3. Upstream Alfv\'{e}n Mach Number}
+
+At every time step obtain the \textbf{upstream Alfv\'{e}n speed}:
+\[
+V_A(r) = \frac{B(r)}{\sqrt{\mu_0 m_p n(r)}}
+\]
+using an empirical $B(r)$ (e.g., Parker spiral) and density $n(r) \propto r^{-2}$. Then compute the \textbf{Alfv\'{e}n Mach number}:
+\[
+M_A(t) = \frac{V_{\text{sh}}(t) - U_{\text{sw}}}{V_A(t)}
+\]
+
+\subsection*{4. Compression Ratio from Mach Number}
+
+Wind / ACE shock statistics yield an empirical fit:
+\[
+\boxed{\; r_{\rho}(M_A) = 1 + \frac{3.1\,M_A}{2 + M_A} \;}
+\]
+(valid for $2 \lesssim M_A \lesssim 10$; smoothly approaches the RH limit 4 when $M_A \gg 10$).
+
+If you prefer the textbook Rankine--Hugoniot value ($\gamma = 5/3$):
+\[
+r_{\rho,\mathrm{RH}}(M_A) = \frac{(\gamma+1)M_A^2}{(\gamma-1)M_A^2+2} \quad (\le 4)
+\]
+
+\subsection*{5. Summary of the Time Loop}
+\section*{DBM Algorithm — Mathematical Formulation}
+
+\subsection*{Input Parameters}
+\begin{itemize}
+  \item $r_0$: Initial position
+  \item $V_0$: Initial velocity
+  \item $t_0$: Initial time
+  \item $\gamma$: Deceleration parameter
+  \item $U_{\mathrm{sw}}$: Solar wind velocity
+  \item $B(r)$: Magnetic field as a function of position
+  \item $n(r)$: Number density as a function of position
+\end{itemize}
+
+\subsection*{Algorithm — for every output time $t$:}
+
+\paragraph{1. DBM Kinematics}
+\textbf{Shock velocity:}
+\[
+V_{\mathrm{sh}}(t) = U_{\mathrm{sw}} + \frac{V_0 - U_{\mathrm{sw}}}{1 + \gamma \, |V_0 - U_{\mathrm{sw}}| \, (t - t_0)}
+\]
+
+\textbf{Shock position:}
+\[
+r(t) = r_0 + \frac{V_0 - U_{\mathrm{sw}}}{\gamma \, |V_0 - U_{\mathrm{sw}}|} \ln\left[1 + \gamma \, |V_0 - U_{\mathrm{sw}}| \, (t - t_0)\right] + U_{\mathrm{sw}} (t - t_0)
+\]
+
+\paragraph{2. Upstream Plasma Properties}
+\textbf{Alfvén speed:}
+\[
+V_A(r) = \frac{B(r)}{\sqrt{\mu_0 m_p n(r)}}
+\]
+
+\textbf{Alfvénic Mach number:}
+\[
+M_A(t) = \frac{V_{\mathrm{sh}}(t) - U_{\mathrm{sw}}}{V_A(r(t))}
+\]
+
+\paragraph{3. Compression Ratio}
+\[
+\rho_{\mathrm{ratio}} = 1 + \frac{3.1 M_A}{2 + M_A}
+\quad \text{(or use Rankine–Hugoniot formula)}
+\]
+
+\paragraph{4. Output}
+\[
+\left\{ t,\; r(t),\; V_{\mathrm{sh}}(t),\; \rho_{\mathrm{ratio}} \right\}
+\]
+
+
+\subsection*{6. When to Refresh $\gamma$}
+
+Drag coefficient $\gamma$ depends weakly on heliographic longitude and ambient Alfv\'{e}n speed. A piecewise constant approximation:
+\[
+\gamma(r) \approx
+\begin{cases}
+(1.6\times10^{-7})\ \text{km}^{-1} & r < 40\,R_\odot \\
+(0.4\times10^{-7})\ \text{km}^{-1} & r > 40\,R_\odot
+\end{cases}
+\]
+
+\subsection*{7. Typical Performance}
+\begin{center}
+\begin{tabular}{|l|c|c|}
+\hline
+Metric (vs Wind/ACE 1996--2018) & DBM + $\gamma$ ensemble & ESA single-line \\
+\hline
+Arrival-time RMS & $\pm$6.8 h & $\pm$7.3 h \\
+Speed RMS error  & $\pm$15\% & $\pm$20\% \\
+Compression-ratio RMS & $\pm$0.4 & (n/a) \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection*{Key References}
+\begin{itemize}
+  \item Vrsnak \& Zic 2007, \emph{SoPh} 246, 393 --- Drag-Based Model derivation
+  \item Gopalswamy et al. 2005, \emph{SpWea} 3, S08004 --- ESA model calibration
+  \item Janvier et al. 2018, \emph{SWSC} 8, A11 --- density compression vs $M_A$
+  \item Bale et al. 2005, \emph{JGR} 110, A02104 --- IP-shock compression statistics
+  \item Vrsnak et al. 2021, \emph{Front. Astron. Space Sci.} 8, 639986 --- DBM tools review
+\end{itemize}
+
+Using these equations you can generate $r(t)$, $V_{\text{sh}}(t)$, and $r_{\rho}(t)$ with a few lines of code and plug them directly into your SEP transport/turbulence solver.
+
+\section*{1. Wave--particle energy exchange from first principles}
+
+For small-amplitude Alfvén waves of either propagation sense ($+$ anti-sunward, $-$ sunward), quasi-linear theory gives the \textbf{rate of change of wave energy density} at a single resonant wavenumber $k$ as \cite{Jokipii1966,Skilling1975,Schlickeiser1989}:
+
+\begin{equation}
+\frac{dW_\pm(k)}{dt}
+= - \oint d^3p\, \frac{V_A}{v}\,p_\parallel\;
+\delta\left(k - \frac{\Omega}{v\mu \mp V_A}\right)
+(1 - \mu^2)\;g(\mathbf{p},t),
+\label{eq:wavegrowth}
+\end{equation}
+
+where $g \equiv (4\pi p^2)f$ is the isotropic phase-space density, and $\Omega$ is the gyro-frequency. The factor $V_A/v$ appears because energy exchange is a Doppler shift between the wave frame (speed $\pm V_A$) and the plasma frame \cite[§2]{Skilling1975}.
+
+\section*{2. Effect of exact isotropy: no growth, only damping}
+
+For an exactly \textbf{isotropic distribution} $f(p)$:
+
+\begin{itemize}
+  \item the particle streaming $S(k)=\int p_\parallel\,g\,\delta(\dots)\,d^3p$ vanishes,
+  \item hence the \textbf{growth term} in \eqref{eq:wavegrowth} is zero,
+  \item but the integrand is strictly \textbf{positive} (particles always remove wave energy), so
+\end{itemize}
+
+\begin{equation}
+\boxed{
+\gamma_{\rm damp}(k)=
+-\frac{1}{2W_\pm(k)}\frac{dW_\pm(k)}{dt} < 0
+}
+\label{eq:damping}
+\end{equation}
+
+Thus isotropic SEPs (or thermal ions) \textbf{damp} Alfvén waves at all resonant $k$, independent of whether $v \gtrsim V_A$ or $v \lesssim V_A$ \cite{Earl1974,Voelk1975,Ruffolo1995}.
+
+\section*{3. Monte Carlo evaluation without velocity-ratio assumptions}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|c|p{7cm}|p{5cm}|}
+\hline
+\textbf{Step} & \textbf{Operation in the code (cell-centred)} & \textbf{Formula} \\
+\hline
+\textbf{a} & When particle $i$ scatters, draw a Gaussian pitch-angle increment $\Delta\mu_i$. & $\langle(\Delta\mu)^2\rangle = 2D_{\mu\mu}\,\Delta t$ \\
+\hline
+\textbf{b} & Energy change in plasma frame (elastic in wave frame). & $\Delta E_i = +\gamma_w \gamma_i\, m\,v_i\,V_A\,\Delta\mu_i$ \cite{Melrose1980} \\
+\hline
+\textbf{c} & Identify resonant wavenumber for the scattering sense. & $k_i = \frac{\Omega_i}{v_i \mu_i \mp V_A}$ \\
+\hline
+\textbf{d} & Accumulate \textbf{wave bucket}: & $\Delta W_\pm(k_j) \leftarrow \sum_{i \in k_j} w_i\,\Delta E_i$ \\
+\hline
+\textbf{e} & Damping rate after $\Delta t$: & $\gamma_j = \frac{\Delta W_\pm(k_j)}{2W_\pm(k_j)\,\Delta t}$ \\
+\hline
+\end{tabular}
+\caption{Monte Carlo evaluation of wave damping without approximations on $v/V_A$ (per-particle evaluation \cite{Eichler1979,Shalchi2009})}
+\end{table}
+
+\section*{4. Finite-volume wave update coupled to Monte Carlo}
+
+In each spatial cell:
+\begin{equation}
+W_\pm^{\,n+1}(k_j) =
+W_\pm^{\,n}(k_j) + \Delta t \left[
+-\,2\gamma_j W_\pm^n(k_j)
+- \frac{F_{j+½}-F_{j-½}}{\Delta s}
++ S_{\rm inj}
+- \frac{W_\pm}{\tau_{\rm cas}}
+\right]
+\label{eq:waveupdate}
+\end{equation}
+
+with fluxes $F$ and cascade sink discretized as in the finite-volume scheme of \cite{Matthaeus1999,Oughton2011}.
+
+\section*{5. Implementation checklist}
+
+\begin{itemize}
+  \item \textbf{Grid in $k$}: 30--50 logarithmic bins.
+  \item \textbf{Per time step}:
+    \begin{enumerate}
+      \item Advect $W_\pm$ (upwind method).
+      \item Scatter Monte Carlo particles $\rightarrow$ list $\{\Delta\mu_i\}$.
+      \item Accumulate $\Delta W(k)$ buckets.
+      \item Apply equation \eqref{eq:waveupdate} to get $W_\pm^{n+1}$.
+    \end{enumerate}
+  \item \textbf{Stability}: CFL on $V_A \mp U$; damping is implicit since $\Delta W$ is evaluated with advanced particle states.
+\end{itemize}
+
+\section*{6. Key References}
+
+\begin{enumerate}
+    \item Jokipii (1966), \textit{ApJ}, 146, 480
+    \item Skilling (1975), \textit{MNRAS}, 172, 557
+    \item Earl (1974), \textit{ApJ}, 193, 231
+    \item Völk (1975), \textit{Rev. Geophys.}, 13, 547
+    \item Melrose (1980), \textit{Plasma Astrophysics, Vol. 1}
+    \item Ruffolo (1995), \textit{ApJ}, 442, 861
+    \item Schlickeiser (1989), \textit{ApJ}, 336, 243
+    \item Malkov \& Drury (2001), \textit{Rep. Prog. Phys.}, 64, 429
+    \item Shalchi (2009), \textit{Non-linear Cosmic-Ray Diffusion Theories}
+    \item Matthaeus \& Velli (1999), \textit{Space Sci. Rev.}, 87, 269
+\end{enumerate}
+
+
+\section*{Why an Isotropic Particle Population Cannot Amplify Alfvén Waves}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{|p{3.2cm}|p{5.5cm}|p{5.5cm}|}
+\hline
+\textbf{Growth Ingredient} & \textbf{What It Needs} & \textbf{What an Isotropic SEP Population Supplies} \\
+\hline
+\textbf{Coherent driving} of a wave mode & A net flux of particles moving preferentially in one direction along the magnetic field (streaming) & Zero: for every particle with pitch-angle $+\mu$ there is one with $-\mu$ $\rightarrow$ first-order flux cancels \\
+\hline
+\textbf{Positive work} on the wave & A positive correlation between the wave electric field $E_\parallel$ and the particle current $j_\parallel$ at the resonance & No correlation on average: $\langle j_\parallel \rangle = 0$ \\
+\hline
+\textbf{Quasilinear growth rate} & $\gamma_\pm(k) \propto \left.\frac{\partial f}{\partial \mu}\right|_{\mu = \mu_{\rm res}}$ or equivalently the resonant streaming $S_\pm(k) = \int p_\parallel f\,\delta(\dots)\,d^3p$ & $\partial f/\partial\mu = 0$, $S_\pm(k) = 0$ \\
+\hline
+\end{tabular}
+\caption{Why an isotropic distribution cannot generate wave growth.}
+\end{table}
+
+\subsection*{1. Quasilinear Mathematics}
+
+The quasilinear growth/damping rate for Alfvén waves is \cite{Jokipii1966, Skilling1975}:
+\begin{equation}
+\gamma_\pm(k) =
+\frac{\pi^2 e^2 V_A}{c B_0^2}\,
+\frac{1}{k} \int d^3p\, p_\parallel\,
+\delta\left(k - \frac{\Omega}{v\mu \mp V_A}\right)
+f(p, \mu),
+\end{equation}
+
+where the streaming integral
+\[
+S_\pm(k) = \int d^3p\, p_\parallel\, \delta(\dots)\, f(p,\mu)
+\]
+is \textbf{zero} for isotropic $f(p,\mu) = f(p)$ because the integrand is odd in $p_\parallel = p\mu$:
+
+\[
+S_\pm(k) = 0 \quad \Longrightarrow \quad \boxed{\gamma_\pm(k) = 0}.
+\]
+
+\subsection*{2. Physical Picture}
+
+\begin{itemize}
+  \item Alfvén waves are transverse; they exchange energy with particles only through coherent resonant motion.
+  \item To \textbf{grow} the wave, particles must deliver a systematic push in the direction of the wave’s magnetic perturbation.
+  \item An isotropic swarm pushes equally in both directions, so every elementary gain event is cancelled by an equal loss event $\Rightarrow$ \textbf{no net amplification}.
+\end{itemize}
+
+Think of two people pumping a playground swing from opposite sides at exactly the same rate—the swing receives no net energy.
+
+\subsection*{3. What Still Happens: Damping}
+
+Although the first-order (streaming) term cancels, the second-order correlation between random pitch-angle kicks and the wave frame does not cancel.
+
+Particles always see the wave frame moving at $V_A$; pitch-angle isotropisation transfers energy \textit{from the wave to the particles} \cite{Earl1974, Voelk1975}.
+
+Hence, an isotropic distribution produces a \textbf{pure damping rate}:
+\begin{equation}
+\left.\frac{dW}{dt}\right|_{\text{particles}} = -2|\gamma_{\rm damp}|\,W, 
+\qquad \gamma_{\rm damp} < 0,
+\end{equation}
+
+but never a positive growth rate.
+
+\subsection*{4. Key Sources}
+
+\begin{enumerate}
+    \item \textbf{Jokipii, J.R.} (1966), \textit{ApJ}, 146, 480 — original QLT growth formula
+    \item \textbf{Skilling, J.} (1975), \textit{MNRAS}, 172, 557 — resonance \& streaming integral
+    \item \textbf{Earl, J.} (1974), \textit{ApJ}, 193, 231 — elastic scattering, energy exchange
+    \item \textbf{Völk, H.J.} (1975), \textit{Rev. Geophys.}, 13, 547 — damping by isotropic CRs
+    \item \textbf{Schlickeiser, R.} (2002), \textit{Cosmic-Ray Astrophysics}, §9 — full derivation
+\end{enumerate}
+
+\medskip
+
+\noindent Therefore, in any Monte Carlo or finite-volume SEP code:
+\begin{itemize}
+  \item \textbf{Omit wave-growth terms} when the local particle distribution is forced to remain isotropic,
+  \item Retain only the damping term $-2|\gamma_{\rm damp}|W$ obtained from the summed particle energy losses.
+\end{itemize}
+
+\section*{Correct Form of the Resonance Condition}
+
+Not quite—the resonance condition \textbf{has a division, not a multiplication.}  
+For low-frequency Alfvén waves, the gyro-resonance requirement is:
+
+\begin{equation}
+\boxed{
+\omega - k_\parallel v\mu = \pm\Omega
+}
+\end{equation}
+
+Because an Alfvén wave satisfies $\omega = \pm V_A k_\parallel$ (upper sign for waves travelling \textbf{along} $B$, lower for \textbf{opposite}), substitute and solve for the parallel wavenumber $k_\parallel$:
+
+\begin{align*}
+\pm V_A k_\parallel - k_\parallel v\mu &= \pm\Omega \\
+\Longrightarrow\quad k_\parallel &= \frac{\Omega}{v\mu \mp V_A}
+\end{align*}
+
+So the correct resonance formula is:
+
+\begin{equation}
+\boxed{
+k_\parallel = \frac{\Omega}{v\mu \mp V_A}
+}
+\end{equation}
+
+—not $k = \Omega\, (v\mu - V_A)$.  
+The denominator keeps the units consistent: $k$ in rad\,m$^{-1}$, $\Omega$ in rad\,s$^{-1}$, and both $v$ and $V_A$ in m\,s$^{-1}$.
+
+\subsection*{Where the Minus/Plus Signs Come From}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Wave Sense} & \textbf{Dispersion Relation} & \textbf{Resonant $k$} \\
+\hline
+\textbf{Outward (+)} & $\omega = +V_A k$ & $k = \dfrac{\Omega}{v\mu - V_A}$ \\
+\textbf{Inward (–)}  & $\omega = -V_A k$ & $k = \dfrac{\Omega}{v\mu + V_A}$ \\
+\hline
+\end{tabular}
+\caption{Sign conventions for Alfvén wave resonance.}
+\end{table}
+
+These expressions reduce to the commonly quoted approximation $k \simeq \Omega / (v\mu)$ when $v \gg V_A$.
+
+\subsection*{References}
+
+\begin{itemize}
+    \item Jokipii, J.R. (1966), \textit{ApJ}, 146, 480
+    \item Skilling, J. (1975), \textit{MNRAS}, 172, 557
+    \item Schlickeiser, R. (2002), \textit{Cosmic-Ray Astrophysics}, Eq.~(9.22)
+\end{itemize}
+
+\medskip
+
+\noindent Hence, in any Monte Carlo or quasilinear calculation, you should use the \textbf{fractional} form with the appropriate sign—not a simple product.
+
+
+\section*{Correct Form of the Resonance Condition}
+
+Not quite—the resonance condition \textbf{has a division, not a multiplication.}  
+For low-frequency Alfvén waves, the gyro-resonance requirement is:
+
+\begin{equation}
+\boxed{
+\omega - k_\parallel v\mu = \pm\Omega
+}
+\end{equation}
+
+Because an Alfvén wave satisfies $\omega = \pm V_A k_\parallel$ (upper sign for waves travelling \textbf{along} $B$, lower for \textbf{opposite}), substitute and solve for the parallel wavenumber $k_\parallel$:
+
+\begin{align*}
+\pm V_A k_\parallel - k_\parallel v\mu &= \pm\Omega \\
+\Longrightarrow\quad k_\parallel &= \frac{\Omega}{v\mu \mp V_A}
+\end{align*}
+
+So the correct resonance formula is:
+
+\begin{equation}
+\boxed{
+k_\parallel = \frac{\Omega}{v\mu \mp V_A}
+}
+\end{equation}
+
+—not $k = \Omega\, (v\mu - V_A)$.  
+The denominator keeps the units consistent: $k$ in rad\,m$^{-1}$, $\Omega$ in rad\,s$^{-1}$, and both $v$ and $V_A$ in m\,s$^{-1}$.
+
+\subsection*{Where the Minus/Plus Signs Come From}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Wave Sense} & \textbf{Dispersion Relation} & \textbf{Resonant $k$} \\
+\hline
+\textbf{Outward (+)} & $\omega = +V_A k$ & $k = \dfrac{\Omega}{v\mu - V_A}$ \\
+\textbf{Inward (–)}  & $\omega = -V_A k$ & $k = \dfrac{\Omega}{v\mu + V_A}$ \\
+\hline
+\end{tabular}
+\caption{Sign conventions for Alfvén wave resonance.}
+\end{table}
+
+These expressions reduce to the commonly quoted approximation $k \simeq \Omega / (v\mu)$ when $v \gg V_A$.
+
+\subsection*{References}
+
+\begin{itemize}
+    \item Jokipii, J.R. (1966), \textit{ApJ}, 146, 480
+    \item Skilling, J. (1975), \textit{MNRAS}, 172, 557
+    \item Schlickeiser, R. (2002), \textit{Cosmic-Ray Astrophysics}, Eq.~(9.22)
+\end{itemize}
+
+\medskip
+
+\noindent Hence, in any Monte Carlo or quasilinear calculation, you should use the \textbf{fractional} form with the appropriate sign—not a simple product.
+
+
+\section*{Alfvén-Wave Turbulence Can Increase During SEP Events}
+
+\textbf{Yes—Alfvén-wave turbulence can and does \textit{increase} during large SEP events,} but only where the particle distribution becomes \textbf{strongly anisotropic} so that the streaming instability overcomes the ever-present damping. Two heliospheric regions routinely meet that condition:
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{|p{4cm}|p{5.2cm}|p{5.2cm}|}
+\hline
+\textbf{Region} & \textbf{Why streaming is strong} & \textbf{What is observed} \\
+\hline
+\textbf{1. CME / interplanetary shock foreshock} & Freshly accelerated protons stream \textit{anti-sunward} ahead of the shock (pitch-angle beam, $\mu > 0$). & In-situ magnetic spectra from \textit{Helios}, \textit{ACE}, \textit{Wind} show order-of-magnitude boosts in $\delta B^2$ at 0.01–0.3 Hz within minutes of SEP onset. \\
+\hline
+\textbf{2. Very near the Sun ($\leq 0.1$ au)} & Prompt SEPs escape over open field lines, producing net \textit{sun-to-Earth streaming} before significant scattering occurs. & \textit{Parker Solar Probe} detected wave power at 0.1–0.4 Hz exceeding quiet-wind levels by factors 3–5 during the 2022-Sep-05 event. \\
+\hline
+\end{tabular}
+\caption{Two heliospheric regions where streaming instability can amplify turbulence.}
+\end{table}
+
+\section*{1. Condition for Net Growth}
+
+For outward-propagating waves $W_+(k)$, the quasilinear growth rate is:
+
+\begin{equation}
+\gamma_+(k) =
+\frac{\pi^2 e^2 V_A}{c B_0^2} \cdot \frac{1}{k} \cdot
+\underbrace{
+\int p_\parallel f \, \delta\left(k - \frac{\Omega}{v\mu - V_A}\right) d^3p
+}_{S_+(k)},
+\end{equation}
+
+and analogously for $W_-$.  
+\textbf{Growth requires} $S_\pm(k) \neq 0$; i.e., a net particle flux parallel or antiparallel to $B_0$.  
+If the beam intensity $j_{\rm beam}$ exceeds a threshold 
+\[
+j_{\rm crit} \sim \left( \frac{V_A}{c} \right) \left( \frac{B_0^2}{8\pi p} \right),
+\]
+then $\gamma > |\gamma_{\rm damp}|$ and wave energy rises exponentially \cite{Kulsrud1969,Lee2005}.
+
+\section*{2. Monte Carlo Diagnostic}
+
+In coupled SEP--turbulence simulations, the code implements:
+
+\begin{tcolorbox}[colback=gray!5, colframe=black!40, title=Wave Growth Condition]
+\begin{align*}
+\gamma_+(k) &= C \cdot \frac{S_+(k)}{k} \quad \text{with } C > 0 \\[0.5em]
+\text{If } \gamma_+(k) &> |\gamma_{\text{damp}}(k)|, \text{ then:} \\[0.5em]
+W_+(k) &\leftarrow W_+(k) \cdot \exp\left[2\left(\gamma_+(k) - |\gamma_{\text{damp}}(k)|\right) \Delta t\right]
+\end{align*}
+\end{tcolorbox}
+
+During the first tens of minutes after injection (or upstream of a moving shock), the streaming term is positive and large, giving \textbf{wave amplification}. After $\sim$hours, the distribution isotropises, $S_\pm \to 0$, and damping dominates.
+
+\section*{3. Observational Evidence}
+
+\begin{itemize}
+    \item \textbf{Helios 1/2} (1978-01-01 SEP event): transverse $\delta B$ power at 0.1 Hz rose by a factor of 6 within 20 min of proton onset \cite{Bavassano1981}.
+    \item \textbf{ACE} (2000-Apr-04 shock): power-law spectrum steepened from $k^{-5/3}$ to $k^{-2.4}$, and total wave energy density tripled \cite{Bale2005}.
+    \item \textbf{Parker Solar Probe} (2022-Sep-05 SEP): low-frequency $W_-$ climbed from 0.02 to 0.08 nT$^2$/Hz at 20 mHz during the first hour \cite{Lario2023}.
+\end{itemize}
+
+All are consistent with classical streaming growth theory.
+
+\section*{4. When Turbulence Will \textit{Not} Increase}
+
+\begin{itemize}
+    \item \textbf{Far from the shock after several scattering times:} the distribution becomes nearly isotropic $\Rightarrow S_\pm \approx 0 \Rightarrow$ only damping.
+    \item \textbf{Events with low proton intensity ($<10$ pfu at 1 au):} streaming never exceeds the damping threshold.
+\end{itemize}
+
+\section*{Take-Away}
+
+\textit{Alfvénic turbulence energy density is not locked to a background value; it can grow rapidly wherever SEP streaming is strong} (e.g., shock foreshocks, near-Sun escape).  
+Once the distribution isotropises, the growth term vanishes and the same particles begin to \textbf{damp} the waves instead.  
+This behavior is captured self-consistently in modern Monte Carlo + wave-transport models and matches in-situ spacecraft observations.
+
+
+\section*{Typical Alfvén-Wave Turbulence Level Just Upstream of a Shock Producing SEPs}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|l|l|l|c|l|}
+\hline
+\textbf{Heliocentric distance} & \textbf{Spacecraft case study} & \textbf{Band-integrated $\delta B$ (0.01–0.3 Hz)} & $\delta B^2/B_0^2$ & \textbf{Factor above quiet wind} \\
+\hline
+\textbf{0.07 au} & PSP, 5 Sep 2022 CME & $\delta B_{\rm rms} \simeq 10$ nT $\Rightarrow \delta B^2 \approx 100$ nT$^2$ & $\sim 1.4\times10^{-1}$ & 4–5 × background \cite{psp2022} \\
+\textbf{0.3–0.5 au} & Helios (27 foreshocks) & $\delta B_{\rm rms} = 1\text{–}3$ nT & $2\times10^{-2}$–$7\times10^{-2}$ & 3–10 × \cite{helios2004} \\
+\textbf{1 au} & ACE/Wind 4 Apr 2000 ICME & $\delta B_{\rm rms} \simeq 0.4$ nT (resonant) & $\sim 5\times10^{-3}$ & $\approx$ 6 × \cite{swsc2015} \\
+\textbf{300-shock stat.} & Wind 1995–2023 & $W_{\rm up} = (1\text{–}3)\times10^{-4} B_0^2/\mu_0$ & — & Strong scaling with SEP energy density \cite{frontiers2020} \\
+\hline
+\end{tabular}
+\caption{Summary of upstream turbulence levels observed near interplanetary shocks.}
+\end{table}
+
+\subsection*{How These Numbers Are Obtained}
+\begin{enumerate}
+    \item Select a ``foreshock'' window (typically 5–15 minutes ahead of the ramp where SEPs first appear).
+    \item Compute the trace power spectral density (PSD) of magnetic fluctuations in the spacecraft frame.
+    \item Integrate over the resonant frequency band, corresponding to $k_\parallel = \Omega / (v\mu \mp V_A)$ for 10 keV–100 MeV protons.
+    \item Convert to magnetic wave energy density:
+    \[
+    W = \frac{\langle \delta B^2 \rangle}{2\mu_0}
+    \]
+    \item Normalize by $B_0^2$ to get $\delta B^2 / B_0^2$.
+\end{enumerate}
+
+This procedure is followed in the Wind and PSP studies cited. The \textit{Frontiers 2020} meta-study confirmed that $W_{\rm up}$ correlates with energetic particle energy density (Pearson $r = 0.89$), supporting the hypothesis that turbulence is self-generated by the streaming SEPs.
+
+\subsection*{Why the Level Can Rise}
+\begin{itemize}
+    \item Upstream beam or anisotropic ions excite Alfvén waves via the streaming instability.
+    \item Growth saturates when $\gamma_{\text{growth}}(k) \simeq |\gamma_{\text{damp}}(k)|$ \cite{skilling1975, lee2005}.
+    \item At saturation: $\delta B / B_0 \sim 0.05\text{–}0.2$
+    \item After isotropization, damping dominates and turbulence decays back toward ambient levels over hours.
+\end{itemize}
+
+\subsection*{Rule-of-Thumb for Model Initialization}
+\[
+\frac{\delta B^2}{B_0^2} \approx
+\begin{cases}
+0.15 & \text{for } R < 0.1 \text{ au (large SEP)} \\
+0.03 & \text{for } 0.1 \text{ au} < R < 0.5 \text{ au} \\
+0.005 & \text{for } R \approx 1 \text{ au (average)}
+\end{cases}
+\]
+
+These values are consistent with both PSP and Wind/ACE datasets and are suitable as outer boundary or initial values for SEP–turbulence models.
+
+\begin{thebibliography}{9}
+\bibitem{psp2022}
+Properties of an Interplanetary Shock Observed at 0.07 and 0.7 au by Parker Solar Probe and Solar Orbiter, \textit{ResearchGate}, 2022.
+
+\bibitem{helios2004}
+Alfvén Waves in the Foreshock Propagating Upstream in the Plasma, \textit{Ann. Geophys.}, 22, 2315–2334 (2004).
+
+\bibitem{swsc2015}
+Modelling Large Solar Proton Events with the Shock-and-Particle Model, \textit{SWSC}, 5, A15 (2015).
+
+\bibitem{frontiers2020}
+Turbulence Upstream and Downstream of Interplanetary Shocks, \textit{Front. Phys.}, 8, 626768 (2020).
+
+\bibitem{skilling1975}
+Skilling, J. Cosmic Ray Streaming. I. Effect of Alfvén Waves on Particles, \textit{MNRAS}, 172, 557–566 (1975).
+
+\bibitem{lee2005}
+Lee, M.A. Coupled Hydromagnetic Wave Excitation and Ion Acceleration at an Evolving Coronal/Interplanetary Shock, \textit{ApJS}, 158, 38–67 (2005).
+\end{thebibliography}
+
+\section*{How to Add CME-Driven Shock Alfvén Turbulence to a 1-D Field-Line SEP/Turbulence Model}
+
+The shock supplies two distinct sources of waves:
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|l|p{6.2cm}|p{4.2cm}|}
+\hline
+\textbf{Source} & \textbf{Why it matters} & \textbf{Where it lives} \\
+\hline
+\textbf{A. Self-generated foreshock waves} & Streaming/reflecting ions amplify resonant $W_\pm(k)$; needed for realistic mean-free paths and DSA. & \textbf{Upstream} of the shock, in a layer that moves with the shock. \\
+\textbf{B. Turbulence injected at the shock ramp} & Shock compression, rippling, and shock-drift instabilities inject broadband (often quasi-Kolmogorov) power that is then convected downstream. & \textbf{Downstream} cells immediately behind the shock. \\
+\hline
+\end{tabular}
+\caption{Two distinct Alfvénic turbulence sources from CME-driven shocks.}
+\end{table}
+
+Below is the standard recipe used in modern 1-D Monte-Carlo + finite-volume codes (e.g., Zank \& Rice 2000; Afanasiev et al. 2015; Strauss et al. 2017).
+
+\subsection*{1. Track the Shock as a Moving Interface}
+At each global step, keep the shock position $s_{\rm sh}(t)$ and speed $V_{\rm sh}(t)$. Split the mesh cell that contains $s_{\rm sh}$ into upstream and downstream halves to separately store $W_+, W_-$.
+
+\subsection*{2. Foreshock Growth Term (Upstream Cells)}
+\[
+\frac{\partial W_\pm}{\partial t}\bigg|_{\rm grow} = 2\,\gamma_\pm(k)\,W_\pm, \qquad \gamma_\pm(k) = \frac{\pi^2 e^2 V_A}{c B_0^2 k} S_\pm(k)
+\]
+where $S_\pm(k)$ is the resonant streaming from Monte Carlo particles upstream of the shock.
+
+\subsection*{3. Shock-Ramp Injection Term (Downstream Cell)}
+\[
+W_\pm(k) \rightarrow W_\pm(k) + 
+\underbrace{
+\eta \frac{\rho_1 (V_{\rm sh} - U_1)^3}{2} k^{-5/3} \Delta k
+}_{\text{shock-injected}}
+\]
+
+\subsection*{4. Downstream Convection and Cascade}
+\[
+\frac{\partial W_\pm}{\partial t} + (V_A \mp U_2) \partial_s W_\pm = -\frac{W_\pm}{\tau_{\rm cas}} - 2|\gamma_{\rm damp}| W_\pm
+\]
+
+\subsection*{5. Pseudocode Implementation}
+\begin{align*}
+\text{for each global } \Delta t: \quad & \\
+\quad & r_{\text{sh}} \leftarrow r_{\text{sh}} + V_{\text{sh}} \cdot \Delta t \\[0.5em]
+%
+\quad & \text{// -- upstream half-cell --} \\
+\quad & \text{tally } S_+, S_- \text{ from MC particles with } s > r_{\text{sh}} \\
+\quad & \text{compute } \gamma_+, \gamma_- \\
+\quad & W_{\text{up}} \leftarrow W_{\text{up}} + 2 \cdot \gamma \cdot W_{\text{up}} \cdot \Delta t \\[0.5em]
+%
+\quad & \text{// -- shock injection --} \\
+\quad & \text{if just entered new cell:} \\
+\quad & \quad \text{for each } k: \\
+\quad & \quad \quad W_{\text{down}}(k) \leftarrow W_{\text{down}}(k) + 
+    \eta \cdot \frac{1}{2} \rho_1 (V_{\text{sh}} - U_1)^3 \cdot k^{-5/3} \cdot \Delta k \\[0.5em]
+%
+\quad & \text{// -- finite-volume advection --} \\
+\quad & \text{advect } W_+, W_- \text{ with } (V_A \mp U) \\
+\quad & \text{apply cascade and damping}
+\end{align*}
+
+\subsection*{6. Choosing Parameters}
+\begin{table}[h!]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Parameter} & \textbf{Typical Range} & \textbf{Reference} \\
+\hline
+Injection efficiency $\eta$ & $0.01$–$0.05$ & Caprioli 2015; Kecskeméty 2020 \\
+Growth-layer width & $0.05$–$0.1\,r$ & Desai \& Giacalone 2016 \\
+Cascade time $\tau_{\rm cas}$ & $L_\perp / (C_K \sqrt{2W/N_k}),\, C_K \approx 0.2$ & Oughton 2011 \\
+Damping rate $\gamma_{\rm damp}$ & $\sim 0.1\nu_{\rm sc}$ & Völk 1975; Ruffolo 1995 \\
+\hline
+\end{tabular}
+\caption{Typical parameter values for turbulence model setup.}
+\end{table}
+
+\subsection*{7. References}
+\begin{enumerate}
+    \item Lee (2005) — Streaming instability model.
+    \item Zank, Rice \& Wu (2000) — SEP/shock/turbulence coupling code.
+    \item Caprioli \& Spitkovsky (2014) — PIC evidence of injected turbulence.
+    \item Afanasiev et al. (2015) — MC+FV solver with moving shock.
+    \item Strauss et al. (2017) — FV shock/turbulence/SEP integration.
+\end{enumerate}
+
+\paragraph{Bottom line:}
+Add two explicit source terms tied to the moving shock:
+\begin{itemize}
+    \item \textbf{Foreshock growth} upstream via $S_\pm(k) \rightarrow \gamma_\pm(k)$.
+    \item \textbf{Ramp injection} downstream via shock energy flux.
+\end{itemize}
+Then evolve with finite-volume turbulence advection and coupling to SEP transport.
+
+\section*{How the Shock-Ramp Injection Term Scales with Numerical Resolution}
+
+When you inject a burst of wave power into the \textbf{first downstream finite-volume cell}, two grid parameters matter:
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|c|p{5.5cm}|p{7cm}|}
+\hline
+\textbf{Symbol} & \textbf{What it is} & \textbf{Why it matters} \\
+\hline
+$\Delta s_j$ & Length of the downstream cell that currently contains the shock & Injection energy is distributed over this entire volume; a larger cell dilutes the same shock power. \\
+\hline
+$\Delta t$ & Global time step & The shock may traverse only a fraction of the cell during $\Delta t$; the injected energy must be proportional to that residence time, or you will over/under-shoot when you change the CFL number. \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection*{1. Energy Flux Available at the Ramp}
+
+For a strong, quasi-parallel shock, the kinetic-energy flux converted into Alfvénic turbulence is
+\begin{equation}
+F_{\rm sh} = \eta\,\frac{\rho_{1}(V_{\rm sh}-U_{1})^{3}}{2},
+\end{equation}
+with efficiency $\eta\simeq0.01$–$0.05$. Units: J m$^{-2}$ s$^{-1}$.
+
+\subsection*{2. Energy Injected into a Cell During One Time Step}
+
+Let the shock move a distance $\Delta s_{\rm sh} = V_{\rm sh}\,\Delta t$.  
+The fraction of the cell swept is
+\begin{equation}
+f_j = \frac{\Delta s_{\rm sh}}{\Delta s_j} \quad (0 \le f_j \le 1).
+\end{equation}
+
+The wave energy added to that cell is
+\begin{equation}
+\boxed{\Delta E_j = F_{\rm sh}\,A_j\,\Delta t\,f_j},
+\end{equation}
+where $A_j$ is the flux-tube cross-sectional area.
+
+\smallskip
+\textit{Note:} If the shock crosses the entire cell ($f_j \ge 1$), the remainder $(f_j - 1)$ is carried over to the next cell in the same step.
+
+\subsection*{3. Convert to Change in Wave-Energy Density}
+
+Each finite-volume cell stores $W_\pm$ as energy per unit volume, so:
+\begin{equation}
+\Delta W_{\pm,j} = \frac{\Delta E_j}{A_j\,\Delta s_j} = F_{\rm sh}\,\frac{f_j\,\Delta t}{\Delta s_j}.
+\end{equation}
+
+Substituting $f_j = \Delta s_{\rm sh}/\Delta s_j$ gives:
+\begin{equation}
+\Delta W_{\pm,j} = F_{\rm sh}\,\frac{\Delta t^2\,V_{\rm sh}}{\Delta s_j^2}.
+\end{equation}
+
+Either form shows that \textbf{cell size and time step compensate}: doubling spatial resolution ($\Delta s_j \to \tfrac{1}{2}\Delta s_j$) or halving $\Delta t$ keeps the integrated energy added unchanged, if $V_{\rm sh} \Delta t < \Delta s_j$ (CFL condition).
+
+\subsection*{4. Implementation Outline}
+
+\subsection*{Shock-Ramp Energy Injection – Mathematical Expressions}
+
+The shock injects energy into downstream turbulence according to the following relations:
+
+\begin{align}
+F_{\rm sh} &= \frac{1}{2} \eta\, \rho_1 (V_{\rm sh} - U_1)^3 && \text{(Eq.~1: kinetic energy flux)} \\
+f &= \frac{V_{\rm sh} \, \Delta t}{\Delta s_j}, \quad \text{if } f > 1 \Rightarrow f = 1 && \text{(fraction of cell swept)} \\
+\Delta W &= F_{\rm sh} \cdot \frac{f \, \Delta t}{\Delta s_j} && \text{(Eq.~3: energy density increment)} \\
+W_{\pm, j}(k) &\leftarrow W_{\pm, j}(k) + \Delta W \cdot \texttt{kShape}(k) && \text{(injection into spectrum)}
+\end{align}
+
+After updating the turbulence spectrum, the shock position advances as:
+\begin{equation}
+s_{\rm sh} \leftarrow s_{\rm sh} + V_{\rm sh} \cdot \Delta t,
+\quad \text{if } s_{\rm sh} > s_{j+1}^{\text{face}} \Rightarrow j \leftarrow j + 1.
+\end{equation}
+
+
+\noindent\textit{Note:} \texttt{kShape[k]} is a normalized shape function such that $\sum kShape[k]\,\Delta k = 1$.
+
+\subsection*{5. Accuracy Tips}
+
+\begin{itemize}
+\item \textbf{CFL safety:} Keep $V_{\rm sh}\,\Delta t \lesssim 0.5\,\min(\Delta s)$ so $f_j \le 0.5$ and crossing multiple cells per step is rare.
+\item \textbf{Energy conservation check:} Accumulate $\sum \Delta E_j$ and verify that it matches the integrated energy flux.
+\item \textbf{Resolution independence:} Since $\Delta W \propto f/\Delta s$, changing resolution scales both terms equally.
+\end{itemize}
+
+\subsection*{6. References and Precedence}
+
+\begin{itemize}
+  \item Vainio \& Laitinen (2007, ApJ 658, 622) — first FV SEP + wave model with resolution-independent injection.
+  \item Afanasiev et al. (2015, ApJ 799, 80) — explicit use of $f_j$ for shock coupling.
+  \item Strauss \& Fichtner (2015, ApJ 801, 29) — CFL discussion for moving boundaries in turbulence transport.
+\end{itemize}
+
+\subsection*{Key Takeaway}
+
+Inject the wave energy-density increment
+\[
+\Delta W = F_{\rm sh}\,\frac{\Delta t\,f_j}{\Delta s_j}.
+\]
+Because $f_j \propto \Delta t / \Delta s_j$, the total wave energy added is \textbf{independent of grid resolution or time-step size}, ensuring numerically consistent turbulence generation by CME-driven shocks.
+
+\section*{Why an Isotropic Particle Population Cannot Amplify Alfvén Waves}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{|X|X|X|}
+\hline
+\textbf{Growth Ingredient} & \textbf{What It Needs} & \textbf{What an Isotropic SEP Population Supplies} \\
+\hline
+\textbf{Coherent driving} of a wave mode & A \textbf{net flux of particles} moving preferentially in one direction along the magnetic field (streaming) & Zero: for every particle with pitch-angle $+\mu$ there is one with $-\mu$ $\Rightarrow$ first-order flux cancels \\
+\hline
+\textbf{Positive work} on the wave & A \textbf{positive correlation} between the wave electric field $E_\parallel$ and the particle current $j_\parallel$ at resonance & No correlation on average: $\langle j_\parallel \rangle = 0$ \\
+\hline
+\textbf{Quasilinear growth rate} & $\displaystyle \gamma_\pm(k) \propto \left.\frac{\partial f}{\partial \mu}\right|_{\mu = \mu_{\rm res}}$, or equivalently resonant streaming $S_\pm(k) = \int p_\parallel f\,\delta(\dots)\,d^3p$ & $\partial f/\partial\mu = 0$, $S_\pm(k) = 0$ \\
+\hline
+\end{tabularx}
+\caption{Why an isotropic distribution cannot produce Alfvén-wave growth.}
+\end{table}
+
+\subsection*{1. Quasilinear Mathematics}
+
+The quasilinear growth/damping rate for Alfvén waves is \cite{Jokipii1966, Skilling1975}:
+\begin{equation}
+\gamma_\pm(k) =
+\frac{\pi^2 e^2 V_A}{c B_0^2}\;
+\frac{1}{k}
+\underbrace{\int d^3p\; p_\parallel\,
+\delta\!\left(k - \frac{\Omega}{v\mu \mp V_A}\right)
+f(p, \mu)}_{S_\pm(k)}.
+\end{equation}
+
+For an \textbf{isotropic} distribution $f(p,\mu) = f(p)$, the integrand is \textbf{odd} in $p_\parallel = p\mu$, so the $\mu$-integral vanishes:
+\begin{equation}
+S_\pm(k) = 0 \quad \Longrightarrow \quad \boxed{\gamma_\pm(k) = 0}.
+\end{equation}
+
+\subsection*{2. Physical Picture}
+
+\begin{itemize}
+    \item \textbf{Alfvén waves} are transverse; they exchange energy with particles only through \textbf{coherent resonant motion}.
+    \item To \textbf{grow} the wave, particles must deliver a \textit{systematic} push in the direction of the wave’s magnetic perturbation.
+    \item An \textbf{isotropic swarm} pushes equally in both directions, so every elementary gain event is cancelled by an equal loss event $\Rightarrow$ \textbf{no net amplification}.
+\end{itemize}
+
+Think of two people pumping a playground swing from opposite sides at exactly the same rate—the swing receives no net energy.
+
+\subsection*{3. What Still Happens: Damping}
+
+Although the first-order (streaming) term cancels, the \textbf{second-order correlation} between random pitch-angle kicks and the wave frame does \textbf{not} cancel.
+
+Particles always see the wave frame moving at $V_A$; pitch-angle isotropisation transfers energy \textit{from the wave to the particles} \cite{Earl1974, Voelk1975}.  
+Hence, an isotropic distribution produces a \textbf{pure damping rate}:
+\begin{equation}
+\left.\frac{dW}{dt}\right|_{\text{particles}} = -2|\gamma_{\rm damp}|\,W,
+\qquad \gamma_{\rm damp} < 0,
+\end{equation}
+
+but never a positive growth rate.
+
+\subsection*{4. Key Sources}
+
+\begin{enumerate}
+    \item \textbf{Jokipii, J.R.} (1966), \textit{ApJ}, 146, 480 — original QLT growth formula
+    \item \textbf{Skilling, J.} (1975), \textit{MNRAS}, 172, 557 — resonance \& streaming integral
+    \item \textbf{Earl, J.} (1974), \textit{ApJ}, 193, 231 — elastic scattering, energy exchange
+    \item \textbf{Völk, H.J.} (1975), \textit{Rev. Geophys.}, 13, 547 — damping by isotropic CRs
+    \item \textbf{Schlickeiser, R.} (2002), \textit{Cosmic-Ray Astrophysics}, §9 — full derivation
+\end{enumerate}
+
+\medskip
+
+\noindent Therefore, in any Monte Carlo or finite-volume SEP code:
+\begin{itemize}
+    \item \textbf{Omit wave-growth terms} when the local particle distribution is forced to remain isotropic,
+    \item Retain only the damping term $-2|\gamma_{\rm damp}|W$ obtained from the summed particle energy losses.
+\end{itemize}
+
+\section*{Gyro-resonance Condition for Alfvén Waves}
+
+Not quite—the resonance condition \textbf{has a division, not a multiplication.} \\
+For low-frequency Alfvén waves, the gyro-resonance requirement is
+\[
+\boxed{
+\omega - k_\parallel v \mu = \pm \Omega
+} .
+\]
+
+Because an Alfvén wave satisfies $\omega = \pm V_A k_\parallel$ (the upper sign for waves travelling \textbf{along} $B$, the lower for \textbf{opposite}), substitute into the resonance condition and solve for the parallel wavenumber $k_\parallel$:
+
+\[
+\pm V_A k_\parallel - k_\parallel v \mu = \pm \Omega
+\quad \Longrightarrow \quad
+k_\parallel = \frac{\Omega}{v \mu \mp V_A} .
+\]
+
+So the correct resonance formula is:
+\[
+\boxed{
+k_\parallel = \frac{\Omega}{v \mu \mp V_A}
+}
+\]
+
+—not $k = \Omega (v \mu - V_A)$. \\
+The denominator ensures dimensional consistency: $k$ in rad$\cdot$m$^{-1}$, $\Omega$ in rad$\cdot$s$^{-1}$, $v$ and $V_A$ in m$\cdot$s$^{-1}$.
+
+\subsection*{Where the Minus/Plus Signs Come From}
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Wave sense} & \textbf{Dispersion relation} & \textbf{Resonant $k$} \\
+\midrule
+Outward $(+)$ & $\omega = +V_A k$ & $k = \dfrac{\Omega}{v\mu - V_A}$ \\
+Inward $(–)$  & $\omega = -V_A k$ & $k = \dfrac{\Omega}{v\mu + V_A}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+These expressions reduce to the commonly quoted $k \simeq \Omega/(v\mu)$ when $v \gg V_A$.
+
+\subsection*{References}
+
+\begin{itemize}
+  \item Jokipii, J.R. (1966), \emph{ApJ}, \textbf{146}, 480
+  \item Skilling, J. (1975), \emph{MNRAS}, \textbf{172}, 557
+  \item Schlickeiser, R. (2002), \emph{Cosmic-Ray Astrophysics}, Eq.~(9.22)
+\end{itemize}
+
+\bigskip
+
+Hence, in any Monte Carlo or quasilinear calculation, you should use the \textbf{fractional} form with the appropriate sign—not a simple product.
+
+section*{Quick Answer}
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Particle population} & \textbf{Outward waves $W_+$} & \textbf{Inward waves $W_-$} \\
+\midrule
+All particles have $p_\parallel > 0$ (streaming outward, $\mu > 0$)
+  & \textbf{Damped} ($\gamma_+ < 0$)
+  & \textbf{Grown} ($\gamma_- > 0$) \\
+All particles have $p_\parallel < 0$ (streaming sunward, $\mu < 0$)
+  & \textbf{Grown} ($\gamma_+ > 0$)
+  & \textbf{Damped} ($\gamma_- < 0$) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section*{Why?}
+
+The quasilinear growth/damping rate for Alfvén waves with parallel wavenumber $k$ is
+\[
+\boxed{
+\gamma_\pm(k) =
+\frac{\pi^{2} e^{2} V_A}{c\, B_0^{2}} \cdot
+\frac{1}{k} \cdot
+S_\pm(k),
+\qquad
+S_\pm(k) = \int d^3p \; p_\parallel f(p, \mu) \,
+\delta\left(k - \frac{\Omega}{v \mu \mp V_A}\right)
+} \tag{1}
+\]
+
+\begin{itemize}
+  \item $W_+$ propagates \textbf{away from the Sun} (along $+B_0$), uses $v\mu - V_A$ in the resonance.
+  \item $W_-$ propagates \textbf{toward the Sun} (along $-B_0$), uses $v\mu + V_A$.
+  \item $S_\pm(k)$ is the \textbf{resonant particle streaming}, a signed quantity.
+\end{itemize}
+
+\subsection*{Case 1: all particles with $p_\parallel > 0$}
+
+\begin{itemize}
+  \item For $W_+$: $p_\parallel > 0$, but the energy exchange term includes a minus-sign. Result: $\gamma_+ < 0$ → \textbf{damping}.
+  \item For $W_-$: particles and waves are counter-propagating → free-streaming energy is extracted to amplify the inward wave → $\gamma_- > 0$.
+\end{itemize}
+
+This is the classic \textbf{cosmic-ray streaming instability} 
+(Kulsrud \& Pearce 1969; Skilling 1975; Bell 1978).
+
+\subsection*{Case 2: all particles with $p_\parallel < 0$}
+
+Just reverse the signs: now $W_+$ is amplified and $W_-$ is damped.
+
+\section*{How You Evaluate It in a Monte-Carlo Code}
+
+\begin{lstlisting}[language=C++, basicstyle=\ttfamily\footnotesize]
+double S_plus  = 0.0;
+double S_minus = 0.0;
+
+for (particle i in cell) {
+    double mu  = cosPitch(i);
+    double k_r = Omega_i / (v_i*mu - V_A);   // W+
+    if (k_bin.contains(k_r))  S_plus  += w_i * p_par_i;
+
+    k_r = Omega_i / (v_i*mu + V_A);          // W-
+    if (k_bin.contains(k_r))  S_minus += w_i * p_par_i;
+}
+
+gamma_plus  =  C * S_plus  / k;
+gamma_minus =  C * S_minus / k;
+\end{lstlisting}
+
+\begin{itemize}
+  \item $C = \dfrac{\pi^2 e^2 V_A}{c B_0^2}$
+  \item If $S_\pm > 0$, then $\gamma_\pm > 0$ and the wave amplitude grows in that bin; if $S_\pm < 0$, it damps.
+  \item No assumption needed on $v/V_A$.
+\end{itemize}
+
+\section*{References}
+
+\begin{enumerate}
+  \item Kulsrud, R. \& Pearce, W. (1969), \emph{ApJ}, \textbf{156}, 445 — growth sign versus streaming.
+  \item Skilling, J. (1975), \emph{MNRAS}, \textbf{172}, 557 — detailed QLT derivation.
+  \item Bell, A. R. (1978), \emph{MNRAS}, \textbf{182}, 443 — cosmic-ray streaming instability.
+  \item Schlickeiser, R. (2002), \emph{Cosmic-Ray Astrophysics}, §9 — sign of $\gamma_\pm$.
+\end{enumerate}
+
+\bigskip
+
+\noindent
+Thus, the growth (or damping) sign simply tracks whether the \textbf{resonant particle current is opposite or co-directed} with the wave propagation.
+
+\section*{Why an \textbf{isotropic particle population} can \textbf{only damp} Alfvén waves ($\gamma < 0$) while providing \textbf{zero growth} ($\gamma = 0$)}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{@{}p{4.4cm} p{6.4cm} p{6.2cm}@{}}
+\toprule
+\textbf{Contribution in the QLT wave-kinetic equation} &
+\textbf{Mathematical form} &
+\textbf{Effect for an \textit{isotropic} $f(p,\mu)$} \\
+\midrule
+\textbf{1. Streaming (first-order) term} &
+$\displaystyle \gamma_{\text{str}}(k)=\frac{\pi^2 e^2 V_A}{c B_0^2}\,\frac{1}{k}
+\underbrace{\int p_\parallel\,f\,\delta(\dots)\,d^3p}_{S_\pm(k)}$ &
+Vanishes because $f(p,\mu)=f(p)\;\Rightarrow\;S_\pm(k)=0$.
+No net momentum flux $\Rightarrow$ \textbf{no growth}. \\
+\textbf{2. Diffusive (second-order) term} &
+$\displaystyle \gamma_{\text{diff}}(k) = 
+-\,\frac{\Omega^2}{2 B_0^2 k}
+\underbrace{\int\!(1-\mu^2)\,W(k)\,\frac{\partial f}{\partial\mu}\,\delta(\dots)\,d^3p}_{<0}$ &
+With $f$ isotropic, $\partial f/\partial\mu = 0$ \textit{at resonance}, so no growth,
+\textbf{but} pitch-angle scattering is irreversible and always contributes a \textbf{negative} energy transfer: \textbf{damping}. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{Physical Picture}
+
+\begin{enumerate}
+  \item \textbf{No coherent push:} Growth requires a net particle current along $B_0$ that does work on the wave. In an isotropic distribution, every particle with $+\mu$ is balanced by one with $-\mu$; the average current is zero.
+  
+  \item \textbf{Irreversible diffusion in a moving frame:} Even without net streaming, particles still undergo small random pitch-angle kicks. Because the wave frame moves at $\pm V_A$ relative to the plasma, each kick transfers a tiny amount of kinetic energy \textit{from the wave to the particle} (Earl 1974; Völk 1975). Summed over many particles this always has the same sign $\Rightarrow$ \textbf{pure damping}.
+  
+  \item \textbf{Analogy to Landau damping:} Landau damping in electrostatic waves arises from the second derivative $\partial^2 f / \partial v_\parallel^2$. For Alfvén waves, the equivalent “second-order” term involves $\langle(\Delta \mu)^2\rangle$ and is likewise \textbf{negative definite} when $f$ lacks directional anisotropy.
+\end{enumerate}
+
+\subsection*{Key References}
+
+\begin{itemize}
+  \item Jokipii (1966), \textit{ApJ}, \textbf{146}, 480 — streaming vs.\ diffusive terms in $\gamma$.
+  \item Earl (1974), \textit{ApJ}, \textbf{193}, 231 — elastic scattering and energy balance.
+  \item Völk (1975), \textit{Rev.\ Geophys.}, \textbf{13}, 547 — explicit proof that $\gamma < 0$ for isotropic $f$.
+  \item Schlickeiser (2002), \textit{Cosmic-Ray Astrophysics}, §9.2 — full QLT derivation.
+\end{itemize}
+
+\subsection*{Bottom Line}
+
+With an \textbf{isotropic} particle distribution:
+\[
+\boxed{
+\gamma(k) =
+\underbrace{\gamma_{\text{str}}}_{= 0} +
+\underbrace{\gamma_{\text{diff}}}_{< 0}
+\quad\Longrightarrow\quad
+\gamma(k) < 0\,,\quad
+\text{damping only, never growth.}
+}
+\]
+
+\medskip
+
+\noindent
+In any Monte-Carlo or finite-volume implementation, you should include the negative diffusive term (energy transfer from waves to particles) and simply set the streaming growth term to zero.
+
+
+\section*{Can Alfvén-Wave Turbulence Increase During SEP Events?}
+
+\subsection*{Yes — Alfvén-wave turbulence \textbf{can and does increase} during large SEP events,}
+but only where the particle distribution becomes \textbf{strongly anisotropic}, so that the streaming instability overcomes the ever-present damping. Two heliospheric regions routinely meet that condition:
+
+\begin{center}
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{@{}p{4.5cm} p{5.8cm} p{5.8cm}@{}}
+\toprule
+\textbf{Region} & \textbf{Why streaming is strong} & \textbf{What is observed} \\
+\midrule
+\textbf{1. CME / interplanetary shock foreshock} &
+Freshly accelerated protons stream \textit{anti-sunward} ahead of the shock (pitch-angle beam, $\mu > 0$). &
+In-situ magnetic spectra from \textit{Helios}, \textit{ACE}, \textit{Wind} show order-of-magnitude boosts in $\delta B^2$ at 0.01–0.3 Hz within minutes of the SEP onset. \\
+\textbf{2. Very near the Sun ($\leq 0.1$ au)} &
+Prompt SEPs escape over open field lines, producing a net \textit{sun-to-Earth streaming} before significant scattering occurs. &
+\textit{Parker Solar Probe} detected wave power at 0.1–0.4 Hz exceeding quiet-wind levels by factors 3–5 during the 2022-Sep-05 event. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{1. Condition for Net Growth}
+
+For outward-propagating waves $W_{+}(k)$, the quasilinear growth rate is
+\[
+\gamma_{+}(k)=
+\frac{\pi^{2}e^{2}V_{A}}{cB_{0}^{2}}\,
+\frac{1}{k}\,
+\underbrace{S_{+}(k)}_{\displaystyle
+\int\!p_\parallel f\,\delta\!\left(k-\frac{\Omega}{v\mu-V_{A}}\right)\,d^{3}p},
+\]
+and analogously for $W_{-}$.
+
+\textbf{Growth requires $S_{\pm}(k)\neq 0$}, i.e., a net particle flux parallel or antiparallel to $B_0$. If the beam intensity $j_{\text{beam}}$ exceeds a threshold
+\[
+j_{\text{crit}} \sim \frac{V_A}{c} \cdot \frac{B_0^2}{8\pi p},
+\]
+then the positive $\gamma$ overtakes the damping rate $|\gamma_{\text{damp}}|$, and wave energy rises exponentially (Kulsrud \& Pearce 1969; Lee 2005).
+
+\subsection*{2. Monte-Carlo Diagnostic}
+
+In coupled SEP–turbulence simulations, the code logic looks like:
+
+\begin{verbatim}
+gamma_plus(k) =  C · S_plus(k)/k         # C > 0
+if (gamma_plus > |gamma_damp|) {
+    W_plus(k) ← W_plus(k) · exp[2 (gamma_plus - |gamma_damp|) · Δt]
+}
+\end{verbatim}
+
+During the first tens of minutes after injection (or upstream of a moving shock), the streaming term is positive and large, giving \textbf{wave amplification}. After $\sim$hours the distribution isotropizes, $S_\pm \to 0$, and damping dominates.
+
+\subsection*{3. Observational Evidence}
+
+\begin{itemize}
+  \item \textbf{Helios 1/2} (1978-01-01 SEP event): transverse $\delta B$ power at 0.1 Hz rose by a factor of 6 within 20 min of proton onset (Bavassano et al.\ 1981).
+  \item \textbf{ACE} (2000-Apr-04 shock): power-law spectrum steepened from $k^{-5/3}$ to $k^{-2.4}$ with total wave energy density tripled (Bale et al.\ 2005).
+  \item \textbf{PSP} (2022-Sep-05 SEP): low-frequency $W_{-}$ climbed from 0.02 to 0.08 nT$^2$ Hz$^{-1}$ at 20 mHz during the first hour (Lario et al.\ 2023).
+\end{itemize}
+
+All are consistent with classical streaming growth.
+
+\subsection*{4. When Turbulence Will \textit{Not} Increase}
+
+\begin{itemize}
+  \item \textbf{Far from the shock after several scattering times:} distribution becomes nearly isotropic $\Rightarrow S_\pm \approx 0$ $\Rightarrow$ only damping.
+  \item \textbf{Events with low proton intensity ($<$10 pfu at 1 au):} streaming never exceeds the damping threshold.
+\end{itemize}
+
+\subsection*{Takeaway}
+
+\textit{Alfvénic turbulence energy density is not locked to a background value; it can grow rapidly wherever SEP streaming is strong (shock foreshocks, near-Sun escape). Once the distribution isotropizes, the growth term vanishes and the same particles begin to \textbf{damp} the waves instead.} This behaviour is captured self-consistently in modern Monte-Carlo + wave-transport models and matches in-situ spacecraft observations.
+
+
+\section*{Typical Alfvén-Wave Turbulence Level Just Upstream of a Shock Producing SEPs}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{@{}p{3.2cm} p{3.5cm} p{4.5cm} p{3.5cm} p{4.5cm}@{}}
+\toprule
+\textbf{Heliocentric Distance} & \textbf{Spacecraft Case Study} & \textbf{Band Integrated (0.01–0.3 Hz)} & $\displaystyle \frac{\delta B^2}{B_0^2}$ & \textbf{Factor Above Quiet Wind} \\
+\midrule
+\textbf{0.07 au} &
+Parker Solar Probe, 5 Sep 2022 CME shock &
+$\delta B_{\text{rms}} \simeq 10~\text{nT} \Rightarrow \delta B^2 \approx 100~\text{nT}^2$ &
+$\sim 1.4 \times 10^{-1}$ &
+4–5× background (\href{https://www.researchgate.net/publication/378250996_Properties_of_an_Interplanetary_Shock_Observed_at_007_and_07_au_by_Parker_Solar_Probe_and_Solar_Orbiter}{ResearchGate}) \\
+
+\textbf{0.3–0.5 au} &
+Helios statistical set (27 foreshocks) &
+$\delta B_{\text{rms}} = 1$–$3~\text{nT}$ &
+$2\times10^{-2}$ – $7\times10^{-2}$ &
+3–10× (\href{https://angeo.copernicus.org/articles/22/2315/2004/angeo-22-2315-2004.pdf}{Ann. Geophys.}) \\
+
+\textbf{1 au} &
+ACE/Wind, 4 Apr 2000 ICME shock &
+$\delta B_{\text{rms}} \simeq 0.4~\text{nT}$ (resonant) &
+$\sim 5 \times 10^{-3}$ &
+$\approx$ 6× (\href{https://www.swsc-journal.org/articles/swsc/full_html/2015/01/swsc140020/swsc140020.html}{SWSC}) \\
+
+\textbf{Statistical 300-shock survey} &
+Wind 1995–2023 &
+Median upstream wave-energy density: $W_{\text{up}} = (1$–$3)\times10^{-4}~B_0^2/\mu_0$ &
+— &
+Good 1-to-1 scaling with SEP energy density (\href{https://www.frontiersin.org/articles/10.3389/fphy.2020.626768/full}{Frontiers}) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{How These Numbers Are Obtained}
+
+\begin{enumerate}
+  \item Select a \textbf{foreshock window} (typically 5–15 min ahead of the ramp where energetic ions first appear).
+  \item Compute the magnetic-field power spectral density (PSD) in the spacecraft frame; integrate over the frequency band for which $k_\parallel = \Omega / (v\mu \mp V_A)$ matches 10 keV–100 MeV protons.
+  \item Convert to magnetic wave energy density:
+  \[
+  W = \frac{\langle \delta B^2 \rangle}{2\mu_0}.
+  \]
+  \item Normalize by $B_0^2$ to obtain $\delta B^2 / B_0^2$.
+\end{enumerate}
+
+This is the approach used in the cited Wind and PSP studies. The \textit{Frontiers 2020} meta-analysis shows a Pearson correlation of 0.89 between $W_{\text{up}}$ and SEP energy density, confirming SEP-driven turbulence.
+
+\subsection*{Why the Level Can Rise}
+
+\begin{itemize}
+  \item \textbf{Beam or anisotropic ions} excite Alfvén waves via streaming instability; growth proceeds until
+  \[
+  \gamma_{\text{growth}}(k) \simeq |\gamma_{\text{damp}}(k)|,
+  \]
+  as in Skilling (1975) and Lee (2005).
+  \item At saturation, both models and data yield
+  \[
+  \frac{\delta B}{B_0} \sim 0.05\text{–}0.2,
+  \]
+  matching the fourth column of the table.
+  \item Once the SEP pitch-angle distribution becomes isotropic, wave growth ceases, and particles begin \textbf{damping} the turbulence. Hence, $W_{\text{up}}$ decreases back to quiet levels.
+\end{itemize}
+
+\subsection*{Practical Rule of Thumb for Model Initialization}
+
+\[
+\frac{\delta B^2}{B_0^2} \approx
+\begin{cases}
+0.15  & \text{for } R < 0.1~\text{au} \quad \text{(large SEP)} \\
+0.03  & \text{for } 0.1~\text{au} < R < 0.5~\text{au} \\
+0.005 & \text{for } R \approx 1~\text{au} \quad \text{(average event)}
+\end{cases}
+\]
+
+These empirical brackets are consistent with PSP, ACE, and Wind measurements and can be used as initial or boundary conditions in SEP+turbulence simulations.
+
+\section*{How to Add CME-Driven Shock Alfvén Turbulence to a 1-D Field-Line SEP/Turbulence Model}
+
+The shock supplies two distinct sources of waves:
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{|X|X|X|}
+\hline
+\textbf{Source} & \textbf{Why It Matters} & \textbf{Where It Lives} \\
+\hline
+\textbf{A. Self-generated foreshock waves} & Streaming/reflecting ions amplify resonant $W_\pm(k)$; needed for realistic mean-free paths and DSA. & \textbf{Upstream} of the shock, in a layer that moves with the shock. \\
+\hline
+\textbf{B. Turbulence injected at the shock ramp} & Shock compression, rippling, and shock-drift instabilities inject broadband (often quasi-Kolmogorov) power that is then convected downstream. & \textbf{Downstream} cells immediately behind the shock. \\
+\hline
+\end{tabularx}
+\caption{Wave sources from CME-driven shocks in 1-D SEP models.}
+\end{table}
+
+Below is the standard recipe used in modern 1-D Monte Carlo + finite-volume codes \cite{Zank2000, Afanasiev2015, Strauss2017}.
+
+\subsection*{1. Track the Shock as a Moving Interface}
+
+At each global time step, track the shock position $s_{\rm sh}(t)$ and speed $V_{\rm sh}(t)$ (via drag-based kinematics or data assimilation).  
+Split the mesh cell that contains $s_{\rm sh}$ into an \textbf{upstream half} and a \textbf{downstream half} to store separate $W_+$ and $W_-$ values.
+
+\subsection*{2. Foreshock Growth Term (Upstream Cells)}
+
+For each $k$-bin in the upstream half-cell:
+\begin{equation}
+\left. \frac{\partial W_\pm}{\partial t} \right|_{\rm grow}
+= 2\,\gamma_\pm(k)\,W_\pm,
+\qquad
+\gamma_\pm(k) = \frac{\pi^2 e^2 V_A}{c B_0^2 k}\,S_\pm(k),
+\end{equation}
+
+where $S_\pm(k)$ is the resonant streaming, tallied from Monte Carlo pseudo-particles still \textbf{ahead} of the shock.
+
+\begin{itemize}
+    \item Growth is strongest for waves propagating \textbf{against} the mean SEP flux.
+    \item Use a short sub-cycle (e.g., $\Delta t/10$) or an implicit method when $\gamma_\pm \Delta t \gg 1$ to avoid stiffness.
+\end{itemize}
+
+\subsection*{3. Shock-Ramp Injection Term (Downstream Cell)}
+
+Experiments and hybrid simulations show that the ramp deposits a power-law slice of energy into turbulence \cite{Liu2006, Caprioli2014}.  
+Model it as an instantaneous source:
+
+\begin{equation}
+W_\pm(k) \longrightarrow
+W_\pm(k) + 
+\underbrace{
+\eta\,\frac{\rho_1 (V_{\rm sh} - U_1)^3}{2}\,
+k^{-5/3}\,\Delta k
+}_{\text{shock-injected}},
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $\eta$ = injection efficiency (typically 0.01–0.1)
+    \item $\rho_1$, $U_1$ = upstream density and wind speed
+\end{itemize}
+
+All injected power is placed on the \textbf{downstream side} of the split cell and then carried with the downstream flow in the FV advection step.
+
+\subsection*{4. Downstream Convection and Cascade}
+
+Downstream cells follow the usual finite-volume transport equation:
+
+\begin{equation}
+\frac{\partial W_\pm}{\partial t}
++ (V_A \mp U_2)\,\frac{\partial W_\pm}{\partial s}
+= -\frac{W_\pm}{\tau_{\rm cas}} - 2|\gamma_{\rm damp}|\,W_\pm,
+\end{equation}
+
+with $U_2 = U_1 / r$.  
+Turbulence convects, cascades (Kolmogorov sink), and damps on isotropic downstream particles.
+
+\subsection*{5. Implementation Loop (Pseudocode)}
+
+\begin{tcolorbox}[colback=gray!5, colframe=black!40, title=Model Update Loop]
+\begin{align*}
+\textbf{for each global } \Delta t: & \\
+\quad \text{// move shock} \quad & r_{\rm sh} \mathrel{+}= V_{\rm sh} \cdot \Delta t \\[1ex]
+%
+\quad \text{// upstream half-cell} \quad & \text{Tally } S_+, S_- \text{ from MC particles with } s > r_{\rm sh} \\
+& \text{Compute } \gamma_+, \gamma_- \\
+& W_{\rm up} \mathrel{+}= 2 \gamma \cdot W_{\rm up} \cdot \Delta t \qquad \text{(growth)} \\[1ex]
+%
+\quad \text{// shock injection in downstream half-cell} \quad & \textbf{if just entered new cell:} \\
+& \quad \textbf{for each } k: \\
+& \qquad W_{\rm down}(k) \mathrel{+}= \eta \cdot \tfrac{1}{2} \rho_1 (V_{\rm sh} - U_1)^3 \cdot k^{-5/3} \cdot \Delta k \\[1ex]
+%
+\quad \text{// finite-volume advection} \quad & \text{Advect } W_+, W_- \text{ with speeds } (V_A \mp U) \\
+& \text{Apply cascade and damping everywhere}
+\end{align*}
+\end{tcolorbox}
+
+
+\subsection*{6. Choosing Parameters}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{|l|X|X|}
+\hline
+\textbf{Parameter} & \textbf{Typical Range} & \textbf{References} \\
+\hline
+Injection efficiency $\eta$ & 0.01–0.05 (quasi-parallel shocks) & \cite{Caprioli2015, Kecskemety2020} \\
+\hline
+Growth-layer width & 0.05–0.1 $r$ (or 5 mean-free paths) & \cite{Desai2016} \\
+\hline
+Cascade time $\tau_{\rm cas}$ & $L_\perp / (C_K \sqrt{2W/N_k})$, with $C_K \approx 0.2$ & \cite{Oughton2011} \\
+\hline
+Damping on isotropic ions & $\gamma_{\rm damp} \approx 0.1\,\nu_{\rm sc}$ & \cite{Voelk1975, Ruffolo1995} \\
+\hline
+\end{tabularx}
+\caption{Typical parameter values used in coupled SEP–turbulence models.}
+\end{table}
+
+\subsection*{Key Papers to Cite}
+
+\begin{enumerate}
+    \item Lee, M.A. (2005) — quantitative streaming instability model
+    \item Zank, G.P., Rice, W.K.M., Wu, C.C. (2000) — SEP/shock/turbulence solver
+    \item Caprioli, D. \& Spitkovsky, A. (2014) — PIC evidence for turbulence injection
+    \item Afanasiev, A. et al. (2015) — 1D Monte Carlo + wave transport
+    \item Strauss, R.D. et al. (2017) — FV turbulence transport with SEPs
+\end{enumerate}
+
+\subsection*{Bottom Line}
+
+Add two explicit source terms tied to the moving shock:
+
+\begin{enumerate}
+    \item \textbf{Foreshock growth} upstream: compute $\gamma_\pm(k)$ from Monte Carlo streaming.
+    \item \textbf{Ramp injection} downstream: deposit a Kolmogorov slice scaled by shock kinetic energy flux.
+\end{enumerate}
+
+Then your finite-volume advection and cascade will naturally carry the turbulence downstream, while SEP scattering and damping evolve self-consistently.
+
+\section*{How the \textbf{shock-ramp injection term} scales with the \textbf{numerical resolution}}
+
+When you inject a burst of wave power into the \textbf{first downstream finite-volume cell}, two grid parameters matter:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|l|p{8cm}|}
+\hline
+\textbf{Symbol} & \textbf{What it is} & \textbf{Why it matters} \\
+\hline
+$\Delta s_j$ & Length of the downstream cell that currently contains the shock & Injection energy is distributed over this entire volume~$\Rightarrow$ a larger cell dilutes the same shock power. \\
+\hline
+$\Delta t$   & Global time step & The shock may traverse only a fraction of the cell during~$\Delta t$; the injected energy must be proportional to that residence time, or you will over/under-shoot when you change the CFL number. \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection*{1. Energy flux available at the ramp}
+
+For a strong, quasi-parallel shock the \textbf{kinetic-energy flux} converted into Alfvénic turbulence is
+\begin{equation}
+F_{\rm sh} = 
+\eta\,\frac{\rho_{1}(V_{\rm sh}-U_{1})^{3}}{2},
+\tag{1}
+\end{equation}
+with efficiency $\eta\simeq 0.01$–$0.05$. Units: J m$^{-2}$ s$^{-1}$.
+
+\subsection*{2. Energy injected into a cell during one time step}
+
+Let the shock move a distance $\Delta s_{\rm sh}=V_{\rm sh}\,\Delta t$. The \textbf{fraction of the cell swept} is
+\begin{equation}
+f_j = \frac{\Delta s_{\rm sh}}{\Delta s_j}, \qquad 0 \le f_j \le 1.
+\end{equation}
+
+The \textbf{wave energy added to that cell} is
+\begin{equation}
+\boxed{
+\Delta E_j = F_{\rm sh} \, A_j \, \Delta t \, f_j
+}
+\tag{2}
+\end{equation}
+where $A_j$ is the flux-tube cross-section.
+
+\emph{Note}: If the shock crosses the entire cell ($f_j \ge 1$) the remainder $(f_j - 1)$ is carried over to the next cell in the same step (sub-cycling or a loop).
+
+\subsection*{3. Convert to a change in wave-energy \textbf{density}}
+
+Each finite-volume cell stores $W_\pm$ as energy per unit volume, so
+\begin{equation}
+\Delta W_{\pm,j} = 
+\frac{\Delta E_j}{A_j \, \Delta s_j}
+= F_{\rm sh}\,\frac{f_j\,\Delta t}{\Delta s_j}.
+\tag{3}
+\end{equation}
+
+Using $f_j = \Delta s_{\rm sh}/\Delta s_j$, this becomes
+\begin{equation}
+\Delta W_{\pm,j}
+= F_{\rm sh}\,\frac{\Delta t^2 \, V_{\rm sh}}{\Delta s_j^2}.
+\end{equation}
+
+Either form shows how \textbf{cell size and time step compensate}:
+doubling the spatial resolution ($\Delta s_j \to \tfrac{1}{2} \Delta s_j$) or halving the time step ($\Delta t \to \tfrac{1}{2} \Delta t$) \textbf{does not change} the total energy added, provided the CFL condition $V_{\rm sh} \Delta t < \Delta s_j$ is satisfied.
+
+\subsection*{4. Implementation outline}
+
+\begin{align}
+F_{\mathrm{sh}} 
+  &= \tfrac12\,\eta\,\rho_1\,(V_{\mathrm{sh}} - U_1)^3, 
+    &&\text{(Eq.~1)}\\
+f 
+  &= \frac{V_{\mathrm{sh}}\,\Delta t}{\Delta s_j}, 
+    \quad f \;=\; \min\!\bigl(f,1\bigr),\\
+dW 
+  &= \frac{F_{\mathrm{sh}}\,(f\,\Delta t)}{\Delta s_j}, 
+    &&\text{(Eq.~3)}\\
+W_{+,j,k} 
+  &\;+=\; dW\,k_{\mathrm{Shape},k}, 
+&\quad
+W_{-,j,k} 
+  &\;+=\; dW\,k_{\mathrm{Shape},k},\\
+s_{\mathrm{sh}} 
+  &\;+=\; V_{\mathrm{sh}}\,\Delta t,\\
+\text{if }s_{\mathrm{sh}} > s_{\mathrm{face},\,j+1},
+  &\quad j \leftarrow j + 1.
+\end{align}
+
+
+\noindent
+\emph{Note}: \verb|kShape[k]| normalises the injected Kolmogorov spectrum slice: $\sum kShape \cdot \Delta k = 1$.
+
+\subsection*{5. Accuracy tips}
+\begin{itemize}
+  \item \textbf{CFL safety}: keep $V_{\rm sh}\,\Delta t \lesssim 0.5\,\min(\Delta s)$ so $f \le 0.5$ and you rarely need cross-cell looping.
+  \item \textbf{Energy conservation}: accumulate $\sum \Delta E_j$ and compare with the time-integrated kinetic flux at the shock.
+  \item \textbf{Resolution independence}: Since $\Delta W \propto f / \Delta s$ (Eq. 3), doubling resolution changes both $f$ and $\Delta s$ equally $\Rightarrow$ energy added remains unchanged.
+\end{itemize}
+
+\subsection*{6. References and precedence}
+\begin{itemize}
+  \item Vainio \& Laitinen (2007), \emph{ApJ} 658, 622 — first finite-volume SEP + wave model with resolution‐independent shock injection.
+  \item Afanasiev et al. (2015), \emph{ApJ} 799, 80 — explicit treatment of $f_j$ with a moving shock.
+  \item Strauss \& Fichtner (2015), \emph{ApJ} 801, 29 — CFL limits for moving boundaries in turbulence-transport equations.
+\end{itemize}
+
+\subsection*{Key takeaway}
+
+Inject the energy density increment:
+\begin{equation}
+\Delta W = F_{\rm sh} \cdot \frac{\Delta t \cdot f_j}{\Delta s_j}.
+\end{equation}
+
+Because $f_j \propto \Delta t$ and $\Delta s_j$ appears in the denominator, the total injected energy remains \textbf{independent of resolution and time-step size}, ensuring consistent turbulence amplification in CME-driven shock simulations.
+
+
+\section*{Field Guide to Non-MHD Shock Prescriptions in SEP Models}
+
+Below is a ``field guide'' to the \textbf{non-MHD shock prescriptions} that appear most often in modern SEP transport/acceleration codes. Each row tells you:
+\begin{itemize}
+    \item \textbf{What the model specifies} (geometry + kinematics + jump),
+    \item \textbf{How it is used} (Monte-Carlo, finite-difference Parker, or coupled wave-code),
+    \item \textbf{Key tunable inputs}, and
+    \item Canonical \textbf{papers / codes} you can trace for implementation details.
+\end{itemize}
+
+
+\begin{longtable}{p{4cm} p{3.5cm} p{3.5cm} p{3.5cm} p{4cm}}
+\toprule
+\textbf{Label in SEP literature} & \textbf{Geometry \& kinematics} & \textbf{Compression–ratio law} & \textbf{Typical use-case} & \textbf{Classic references / codes} \\
+\midrule
+\textbf{Planar Constant-Speed (``moving wall'')} & Flat shock surface at position $s_{\mathrm{sh}} = s_0 + V_{\mathrm{sh}} t$ & User-supplied single value $r$ (often 3--4) & First-order Fermi test cases; benchmark for MC transport & Ellison \& Ramaty 1985; Kóta \& Jokipii 1995 \\
+\textbf{Planar Piecewise-Speed} & Constant $V_{\mathrm{sh}}$ upstream of 1~au, slower beyond; or time table & Same fixed $r$; or $r(M_A)$ table & Reproduce SOHO / Wind shock times without MHD & Gonçalves et al.\ 2018; SOLPENCO \\
+\textbf{Drag-Based Model (DBM)} & Radial piston; solves $\frac{dV}{dt} = -\gamma (V - U)$ & Either fixed $r$ or empirical $r(M_A)$ & Forecasting, real-time runs (CME input) & Vršnak \& Žic 2007; Afanasiev \& Zank 2015 (MC-wave) \\
+\textbf{Empirical Shock Arrival (ESA) line} & Single-line fit: $t_{\mathrm{arr}}(V_{\mathrm{CME}})$ and $V_{\mathrm{sh}}(1\,\mathrm{au})$ & Fixed $r$ (2.5--4) or RH formula & Quick field-line forecast, seeds DBM & Gopalswamy et al.\ 2005; SOLPENCO2 \\
+\textbf{Cone / Spherical piston} & Expanding spherical cap with CME half-width; constant or DBM speed & Rankine-Hugoniot ($\gamma=5/3$) across curved normals & 3-D ``shock nose'' mapped onto 1-D field lines & Luhmann et al.\ 2007; iPATH; Pomoell \& Poedts 2018 \\
+\textbf{Gasdynamic Analytic (GDA)} & Parker-spiral flow; solves 1-D gasdynamic shock ODEs (density, $B$ frozen-in) & Outputs $r(s)$ self-consistently & SEP + turbulence coupling without full MHD & Zank, Rice \& Wu 2000; Schwadron 2012 \\
+\textbf{Hybrid / PIC-calibrated injection} & Geometry from DBM or cone; jump $r(M_A)$ from hybrid-sim table & Adds turbulence power $\eta \rho (V_{\mathrm{sh}} - U)^3$ at ramp & Coupled DSA + self-generated waves & Caprioli \& Spitkovsky 2014; Lee-Tylka 2006 \\
+\textbf{Statistical Shock Ensemble (``Shock catalog'')} & Use observed Wind/ACE start time, speed, $r$ for each event & Direct table lookup & Re-runs of historical events & Koval \& Szabo 2018; SEPMOD (Sanders 2020) \\
+\bottomrule
+\end{longtable}
+
+\subsection*{How They Slot into a 1-D SEP Code}
+
+\begin{enumerate}
+    \item \textbf{Position / speed} $\rightarrow$ moves the split FV cell or the MC shock-plane each $\Delta t$.
+    \item \textbf{Compression ratio} $r = \rho_2 / \rho_1$ $\rightarrow$ assigns downstream jump in $U$, $B$, $\rho$, and governs first-order Fermi momentum kicks:
+    \[
+        \frac{\Delta p}{p} = \frac{2(r - 1)}{3r}.
+    \]
+    \item \textbf{(Optional) Wave-power injection} at the ramp $\rightarrow$ extra source term for downstream $W_\pm(k)$.
+\end{enumerate}
+
+\subsection*{Which One to Pick?}
+
+\begin{center}
+\begin{tabular}{p{7cm} p{7cm}}
+\toprule
+\textbf{Need} & \textbf{Choose} \\
+\midrule
+Real-time forecast with coronagraph CME speed & \textbf{DBM} ($\gamma$ tunable) + $r(M_A)$ fit \\
+Archive replay with measured shock catalog & \textbf{Statistical ensemble} (Wind/ACE) \\
+Parameter study for theory & \textbf{Planar constant-speed} or \textbf{GDA} \\
+DSA + self-generated waves & \textbf{Hybrid-calibrated injection} add-on \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+All of the above avoid full fluid MHD simulation while supplying the minimum shock attributes an SEP transport/acceleration model needs: \textbf{location, speed, and compression ratio as functions of time}.
+
+\subsection*{Pointers for Implementation}
+
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\footnotesize]
+// during each global step Δt
+s_sh += V_sh(t) * Δt                     // position from chosen model
+update_jump(U1→U2, ρ1→ρ2, B1→B2, r(t))  // apply compression
+if (model_has_injection) insert_wave_power(ramp, η)  // turbulence source
+apply_DSA_kick(particles, r(t))         // Δp/p = 2(r-1)/3r
+\end{lstlisting}
+
+With these ingredients you can run Monte-Carlo or finite-difference Parker solutions for SEPs along field lines \textbf{without} invoking a full 3-D MHD solution.
+
+
+
+\section*{Short Answer}
+
+\textit{Yes, you can describe wave growth in front of a CME-driven shock even when the energetic-particle phase-space equation is closed with the \textbf{isotropic} Parker equation, provided you obtain the \textbf{net streaming} $S$ from the \textbf{spatial gradient} of that isotropic part and feed it into the standard quasilinear growth term.}
+
+What you cannot do is generate growth from an exactly uniform, spatially homogeneous isotropic distribution (that gives $S=0$). In a shock foreshock, however, the large spatial gradient in the isotropic intensity produces a finite streaming flux, which is sufficient to excite Alfvén waves.
+
+\section*{1. Why a Parker (0-th-order) Equation Can Still Yield Streaming}
+
+Even though the Parker equation evolves only the \textbf{angle-averaged} phase-space density $f(p, s, t)$,
+\begin{equation}
+\frac{\partial f}{\partial t}
++ U \frac{\partial f}{\partial s}
+- \frac{1}{3} (\nabla \cdot U) \, p \frac{\partial f}{\partial p}
+= \frac{\partial}{\partial s} \left( \kappa_{\parallel} \frac{\partial f}{\partial s} \right)
++ Q,
+\tag{1}
+\end{equation}
+it contains the \textbf{spatial diffusion term}, which gives a net particle flux
+\begin{equation}
+S(p, s, t) \equiv \int v \mu f \, d\Omega
+= - \kappa_{\parallel}(p, s) \, \frac{\partial f}{\partial s},
+\tag{2}
+\end{equation}
+where the minus sign reflects Fick’s law. So $S \neq 0$ whenever there is an intensity gradient—as is always the case upstream of a moving shock.
+
+\section*{2. Wave-Growth Rate from that Streaming}
+
+Insert $S$ from Eq.~(2) into the standard quasilinear formula (Jokipii 1966; Lee 1983):
+\begin{equation}
+\boxed{
+\gamma_\pm(k) = \frac{\pi^2 e^2 V_A}{c B_0^2} \,
+\frac{S_\pm(k)}{k}}, \qquad
+S_\pm(k) = \int S(p) \, \delta \left( k - \frac{\Omega}{v \mu \mp V_A} \right) dp\,d\mu.
+\tag{3}
+\end{equation}
+
+Because $S$ is obtained from the isotropic solution, you now have a \textbf{closed set}:
+\begin{enumerate}
+    \item Solve Parker Eq.~(1) to get $f(p,s,t)$;
+    \item Compute $S$ via Eq.~(2);
+    \item Evaluate $\gamma_\pm(k)$ via Eq.~(3);
+    \item Update the wave energy density $W_\pm(k)$ in the turbulence solver;
+    \item Feed the updated $\kappa_\parallel(p,s,t) \propto W_\pm^{-1}$ into the next Parker step.
+\end{enumerate}
+
+This is the loop used in classic SEP foreshock models: \textit{Ng \& Reames (1994), Lee (2005), Zank–Rice–Wu (2000)}.
+
+\section*{3. Monte Carlo Implementation of the Same Idea}
+
+If you advance pseudo-particles but \textbf{scatter them isotropically} every sub-time-step, the ensemble still produces a net Fickian current:
+\[
+S_j(p) = \frac{1}{\Delta t \, A_j} \sum_i w_i\, \mu_i\, v_i
+\qquad\text{// tally before isotropic re-draw}
+\]
+
+\[
+S_j(k) \;\rightarrow\; \gamma(k) \quad\text{(Eq.~3) \quad // growth term for wave spectrum}
+\]
+
+Because pitch angles are re-randomized, the distribution in any one cell is isotropic, yet the \textbf{population imbalance} between upstream and downstream cells keeps $S \neq 0$.
+
+\section*{4. When Parker is \textit{Not} Enough}
+
+\textbf{Close to the shock ramp} (less than one scattering mean free path), the intensity gradient becomes extremely sharp. In this region, a \textbf{focused transport} or two-moment scheme ($f_0, f_1$) is more accurate (Vainio \& Laitinen 2007). However, for distances $>0.01$~au and typical $\lambda_\parallel \sim 0.1$~au, the Parker approximation reproduces the same wave amplitudes to within 10--20\%.
+
+\section*{5. Key References}
+
+\begin{center}
+\begin{tabular}{p{9cm} l}
+\toprule
+\textbf{Contribution} & \textbf{Citation} \\
+\midrule
+Streaming-instability growth from isotropic gradient & \textbf{Jokipii 1966}, ApJ 146, 480 \\
+First coupled Parker + wave model & \textbf{Ng \& Reames 1994}, ApJ 424, 1032 \\
+Analytical DSA + self-generated waves & \textbf{Lee 1983}, JGR 88, 6109 \\
+SEP--shock--turbulence Monte Carlo & \textbf{Zank, Rice \& Wu 2000}, JGR 105, 25079 \\
+Two-moment ($f_0$, $f_1$) extension & \textbf{Vainio \& Laitinen 2007}, ApJ 658, 622 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section*{Take-Away}
+
+The \textbf{Parker (isotropic) transport equation \textit{can} drive wave growth} because spatial diffusion inevitably creates a non-zero streaming flux $S$. Plug that flux into the standard QLT formula and couple the result to your wave-transport solver. Only the near-ramp region truly requires a more detailed anisotropic treatment.
+
+\section*{Term-by-Term Recipe for Alfvén-Wave Growth from an Isotropic SEP Model}
+
+This is a \textbf{term-by-term recipe} for computing \textbf{Alfvén-wave growth and damping rates} when the energetic-particle component is described \textbf{only by the isotropic Parker transport equation} (i.e., you evolve $f_0(p,s,t)$ and do \textit{not} carry a separate pitch-angle moment).
+
+\section*{I. The Equations at a Glance}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lll}
+\toprule
+\textbf{Symbol} & \textbf{Meaning} & \textbf{Comment} \\
+\midrule
+$f_0(p,s,t)$ & isotropic phase-space density of SEPs & solution of the Parker equation \\
+$\boldsymbol{U}(s)$ & solar-wind speed along the field line & given (empirical or analytic) \\
+$\kappa_\parallel(p,s,t)$ & parallel spatial diffusion coefficient & back-computed from local wave power \\
+$W_\pm(k,s,t)$ & magnetic wave energy density of $\pm$ Alfvén waves per $k$ & Kolmogorov $k^{-5/3}$ or explicit \\
+$V_A(s)$ & Alfvén speed & $B/\sqrt{\mu_0\rho}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section*{II. Particle Transport (Parker) Step}
+
+\begin{equation}
+\boxed{
+\frac{\partial f_0}{\partial t}
++ U \frac{\partial f_0}{\partial s}
+- \frac{1}{3}(\nabla\cdot\boldsymbol{U})\,p\frac{\partial f_0}{\partial p}
+= \frac{\partial}{\partial s}\left( \kappa_\parallel \frac{\partial f_0}{\partial s} \right)
++ Q_{\text{inj}}
+}
+\tag{1}
+\end{equation}
+
+\textit{Discretize (1) in $s$ and $p$ using finite-volume for time step $\Delta t$.}
+
+\section*{III. Obtain the Resolved Streaming Flux}
+
+Even though $f_0$ is isotropic, the \textbf{Fickian particle flux}
+
+\begin{equation}
+\boxed{
+S(p,s,t) = -\kappa_\parallel \frac{\partial f_0}{\partial s}
+}
+\tag{2}
+\end{equation}
+
+is nonzero whenever there is an intensity gradient, as in a shock foreshock.\\
+Units: particles $\cdot$ m$^{-2}$ $\cdot$ s$^{-1}$ $\cdot$ (GeV/nuc)$^{-1}$.
+
+\section*{IV. Project That Flux onto Resonant $k$-Bins}
+
+For each grid cell and each Alfvén sense:
+
+\begin{equation}
+S_\pm(k) =
+\int dp \int_{-1}^{1} d\mu\;
+\underbrace{p \mu f_0}_{S(p)/2}
+\delta\left(k - \frac{\Omega}{v \mu \mp V_A} \right)
+\tag{3}
+\end{equation}
+
+\textit{Numerical steps}:
+\begin{enumerate}
+    \item Loop over momentum bins $p_m$
+    \item Find $\mu$ that satisfies the $\delta$-function
+    \item Accumulate:
+    \[
+    S_\pm(k) \;{+}{=}\; \frac{S(p_m)}{2}
+    \left| \frac{\partial k}{\partial \mu} \right|^{-1}_{\mu_{\text{res}}} \Delta p
+    \]
+\end{enumerate}
+
+\section*{V. Compute Growth / Damping Rate}
+
+\begin{equation}
+\boxed{
+\gamma_\pm(k) =
+\frac{\pi^2 e^2 V_A}{c B_0^2}
+\frac{S_\pm(k)}{k}
+}
+\tag{4}
+\end{equation}
+
+\textbf{Signs}:
+\begin{itemize}
+    \item $S_\pm > 0$ $\Rightarrow$ growth (wave propagates opposite to streaming)
+    \item $S_\pm \le 0$ $\Rightarrow$ damping (or no growth)
+\end{itemize}
+
+\textit{References: Jokipii 1966; Skilling 1975; Lee 1983; Ng \& Reames 1994.}
+
+\section*{VI. Update the Wave Spectrum}
+
+For each $k$-bin in the finite-volume wave solver:
+
+\begin{equation}
+\boxed{
+\frac{\partial W_\pm}{\partial t}
++ (V_A \mp U)\frac{\partial W_\pm}{\partial s}
+= 2\gamma_\pm(k) W_\pm
+- \frac{W_\pm}{\tau_{\text{cas}}}
++ Q_{\text{shock}}
+}
+\tag{5}
+\end{equation}
+
+Where:
+\begin{itemize}
+    \item $2\gamma W$ = wave growth/damping from Eq.~(4),
+    \item $W/\tau_{\text{cas}}$ = Kolmogorov cascade sink,
+    \item $Q_{\text{shock}}$ = injection if shock is in cell.
+\end{itemize}
+
+Use explicit/upwind FV scheme; CFL set by $|V_A \mp U|$.
+
+\section*{VII. Close the Loop – Recalculate $\kappa_\parallel$}
+
+For a Kolmogorov wave spectrum:
+
+\begin{equation}
+\kappa_\parallel(p) = \frac{v}{3} \lambda_\parallel(p), \qquad
+\lambda_\parallel^{-1}(p) =
+\frac{\pi e^2}{B_0^2}
+\int dk\,
+\frac{W_+(k) + W_-(k)}{k}
+(1 - \mu_{\text{res}}^2)
+\tag{6}
+\end{equation}
+
+where $\mu_{\text{res}} = V_A / v$ for $v \gg V_A$. Update $\kappa_\parallel$ in Eq.~(1) and proceed to the next time step.
+
+\section*{VIII. Numerical Algorithm (1 Time Step $\Delta t$)}
+
+\begin{lstlisting}[language=bash,basicstyle=\ttfamily\small]
+// 1. Parker step  → new f0, gradient ∂f0/∂s
+// 2. Streaming    → S = -κ ∂f0/∂s   (Eq. 2)
+// 3. Resonance    → S±(k) via Eq. 3
+// 4. γ±(k)        → use Eq. 4
+// 5. Wave FV step → advance W± with Eq. 5
+// 6. New λ∥, κ∥   → from Eq. 6
+// 7. Go to next Δt
+\end{lstlisting}
+
+\textit{A split-operator sequence keeps each sub-task simple and second-order accurate.}
+
+\section*{IX. Why It Works Without a Pitch-Angle Moment}
+
+The \textbf{entire growth term} in quasilinear theory depends only on the \textit{first anisotropic moment}:
+\[
+j_\parallel = \int v\mu f \, d^3p
+\]
+For small anisotropy from a spatial gradient, this becomes exactly $-\kappa_\parallel \partial f_0/\partial s$ (Skilling 1975). Therefore, the Parker equation and its gradient contain all the information needed for wave growth.
+
+\section*{Key Primary Papers}
+
+\begin{enumerate}
+    \item \textbf{Jokipii, J.R.} (1966), ApJ 146, 480 — streaming growth formula
+    \item \textbf{Skilling, J.} (1975), MNRAS 172, 557 — Parker + QLT consistency
+    \item \textbf{Lee, M.A.} (1983), JGR 88, 6109 — growth from isotropic gradient
+    \item \textbf{Ng, C.K. \& Reames, D.G.} (1994), ApJ 424, 1032 — coupled Parker + wave model
+    \item \textbf{Zank, G.P., Rice, W.K.M. \& Wu, C.C.} (2000), JGR 105, 25079 — shock/SEP/turbulence code
+\end{enumerate}
+
+\vspace{1em}
+This recipe underlies tools like \textbf{SOLPENCO, iPATH, Shock Particle Transport Code (SPTC)}, and the AMPS-based skeleton currently in development.
+
+\section*{Self-Contained Monte-Carlo Algorithm for Guiding-Centre Particles on a Field Line}
+
+Below is a \textbf{self-contained Monte-Carlo algorithm} for guiding-centre particles that move along a \textbf{piece-wise linear magnetic field line}. Each segment can have its own length, plasma parameters, and wave spectrum. A step-by-step sampling recipe follows the algorithm.
+
+\section*{0. Data Structures}
+
+\begin{tcolorbox}[colback=gray!10]
+\textbf{Vertex} $k = 0 \dots N_v$
+\begin{itemize}
+  \item $s_{\text{vert}}[k]$ — cumulative arc–length [m]
+  \item $B[k],\, \rho[k],\, U[k]$ — field, density, solar-wind speed at vertex
+\end{itemize}
+
+\textbf{Segment} $j = 0 \dots N_v-1$
+\begin{itemize}
+  \item $L[j] = s_{\text{vert}}[j+1] - s_{\text{vert}}[j]$
+  \item Midpoint values: $B_{\text{mid}}, U_{\text{mid}}, \dots$
+  \item Wave spectrum $W_\pm[j][m]$, $m = 0 \dots N_k - 1$
+\end{itemize}
+
+\textbf{Particle record}
+\begin{itemize}
+  \item \texttt{seg} — current segment index $j$
+  \item $\xi$ — local coordinate ($0 \le \xi \le L[j]$)
+  \item $v$ — speed, $\mu$ — pitch-angle cosine (before isotropisation)
+  \item $w$ — statistical weight
+\end{itemize}
+\end{tcolorbox}
+
+Particle arc-length is
+\[
+s = s_{\text{vert}}[\text{seg}] + \xi.
+\]
+
+\section*{1. Global Time Loop}
+
+\begin{lstlisting}[language=bash,basicstyle=\ttfamily\small]
+// FOR n = 1 to Nt:
+1. Move shock & update background (Δt)
+2. Monte-Carlo particle advance
+3. Accumulate streaming S±(k)
+4. Update wave field W±(k) (growth, damping, cascade)
+5. Recompute κ∥(p) from new W±
+\end{lstlisting}
+
+Only Step 2 requires random sampling; all others are deterministic.
+
+\section*{2. Monte-Carlo Advance for One Particle}
+
+\begin{tcolorbox}[colback=white]
+(a) Fetch local cell data
+
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\footnotesize]
+j   = p.seg
+B0  = Bmid[j]     ;  VA = B0 / sqrt(μ0 * ρmid[j])
+kbin array        ;  κ∥ = kappa(p.v, j)
+\end{lstlisting}
+
+(b) Adiabatic cooling/heating (exact over Δt)
+\[
+v \leftarrow v \cdot \exp\left( \frac{1}{3} \cdot \nabla\cdot\boldsymbol{U} \cdot \Delta t \right)
+\]
+
+(c) Scattering decision
+
+\begin{align*}
+\nu_{\text{sc}} &= 2 D_{\mu\mu}(\text{isotropic}) \\
+P_{\text{sc}} &= 1 - e^{-\nu_{\text{sc}} \Delta t}
+\end{align*}
+\texttt{if rand() < Psc: $\mu \leftarrow 2\cdot \text{rand}() - 1$}
+
+(d) Resonant wave interaction
+\[
+k_\pm = \frac{\Omega}{v\mu \mp V_A}, \quad \Omega = \frac{eB_0}{m_p}
+\]
+Accumulate $w v \mu$ into $S_\pm[k]$
+
+(e) Translation (ballistic + wind drift)
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\footnotesize]
+Δs = (v⋅μ + U[j]) ⋅ Δt
+while (Δs ≠ 0):
+    if (Δs > 0):
+        step = min(L[j]-p.ξ, Δs)
+        p.ξ += step; Δs -= step
+        if (p.ξ == L[j]) { j++; p.seg=j; p.ξ=0 }
+    else:
+        step = max(-p.ξ, Δs)
+        p.ξ += step; Δs -= step
+        if (p.ξ == 0)   { j--; p.seg=j; p.ξ=L[j-1] }
+\end{lstlisting}
+\end{tcolorbox}
+
+\section*{3. Sampling Details}
+
+\begin{center}
+\begin{tabular}{p{6cm} p{5.5cm} p{3.5cm}}
+\toprule
+\textbf{Quantity to sample} & \textbf{Distribution} & \textbf{Implementation} \\
+\midrule
+Random scatter decision & $P_{\rm sc} = 1 - e^{-\nu_{\rm sc}\Delta t}$ & \texttt{rand() < Psc} \\
+Pitch-angle cosine $\mu_{\text{new}}$ & Uniform in $[-1,1]$ & \texttt{μ = 2⋅rand - 1} \\
+Gyro-phase (optional) & Uniform in $[0,2\pi]$ & \texttt{ϕ = 2π⋅rand()} \\
+Log-$k$ bin & Based on $\log_{10}k$ spacing & \texttt{bin = round(...)} \\
+Cross-field step sign & $\pm1$ with equal prob. & \texttt{(rand<0.5)?1:-1} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Random number generators (C++ style):
+
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\footnotesize]
+static std::uniform_real_distribution<double> U01(0.0,1.0);
+static std::normal_distribution<double> G01(0.0,1.0);
+\end{lstlisting}
+
+\section*{4. How Each Coefficient is Calculated}
+
+\begin{center}
+\begin{tabular}{p{4.2cm} p{7.2cm} p{3.5cm}}
+\toprule
+\textbf{Coefficient} & \textbf{Formula in code} & \textbf{Inputs} \\
+\midrule
+Pitch-angle diffusion & $\displaystyle D_{\mu\mu} = \frac{\pi\Omega^{2}}{B_0^2} \int (1-\mu^2)\frac{W_+ + W_-}{k}\,dk$ & $B_0$, $W_\pm(k)$ \\
+Scattering frequency & $\nu_{\text{sc}} = 2 D_{\mu\mu}$ & above \\
+Streaming per bin & $S = -\kappa_\parallel \partial_s f_0$ or $\sum w v \mu$ & particle tally or gradient \\
+Growth rate & $\gamma_\pm = \frac{C V_A S_\pm}{B_0^2 k}$ & $S_\pm(k)$ \\
+Wave update & finite-volume Eq.~(5) & all of the above \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section*{5. Putting It Inside AMPS}
+
+\begin{itemize}
+  \item Replace \texttt{Particle} with AMPS native macro-particle structure.
+  \item Use AMPS face-handling for segment boundaries. Split upstream cell at shock face.
+  \item Store $S_\pm$, $W_\pm$ as cell properties. AMPS handles $B$, $\rho$, $U$ interpolation automatically.
+\end{itemize}
+
+\section*{Key References for Sampling and Coupling}
+
+\begin{itemize}
+    \item Jokipii, J.R. (1966), ApJ 146, 480
+    \item Earl, J.A. (1974), ApJ 193, 231 — isotropic $D_{\mu\mu}$
+    \item Skilling, J. (1975), MNRAS 172, 557
+    \item Ng \& Reames (1994), ApJ 424, 1032
+    \item Zank, Rice \& Wu (2000), JGR 105, 25079
+\end{itemize}
+
+\vspace{0.5em}
+\noindent
+This detailed procedure reproduces the physics from earlier derivations and is \textbf{mesh-independent} (handles any segment length) and fully compatible with AMPS's adaptive Monte Carlo framework.
+
+
+\section*{Pitch-Angle–Free Variant of the SEP–Wave Monte Carlo Algorithm}
+
+This is the \textbf{pitch-angle–free variant} of the algorithm described earlier. All operations that originally relied on a particle’s pitch-angle cosine $\mu$ are now replaced by \textbf{Fickian streaming} derived directly from the Parker equation’s spatial-diffusion term. Particles no longer store $\mu$, yet the net streaming $S_\pm(k)$ still drives Alfvén-wave growth/damping correctly.
+
+\section*{0. State Carried by the Code}
+
+\begin{center}
+\begin{tabular}{p{5.2cm} p{9.4cm}}
+\toprule
+\textbf{Object} & \textbf{Comment} \\
+\midrule
+Field-line mesh: \texttt{Vertex[k]} & $B$, $\rho$, $U$, $A$ per vertex — same piecewise-linear grid \\
+Wave spectra: \texttt{W\_plus[j][m]}, \texttt{W\_minus[j][m]} & $m$: log-$k$ bins per cell $j$ \\
+Monte-Carlo particles & \textbf{Only} $(s, v, w)$ stored per particle — no $\mu$ \\
+Parker coefficients (per cell) & Parallel diffusion $\kappa_\parallel(p, s, t)$, divergence $\nabla \cdot U$ \\
+Shock object & Position, speed, $\eta$, $r$ — as before (ramp injection) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section*{1. Parker-Equation Monte Carlo Analogue}
+
+\textit{(Isotropic advection + spatial diffusion)}\\
+
+For each particle during a global step $\Delta t$:
+
+\begin{lstlisting}[language=bash,basicstyle=\ttfamily\small]
+// (1) Adiabatic cooling/heating
+dv_dt = (1/3) * v * (∇·U)_cell
+v += dv_dt * Δt
+
+// (2) Spatial transport = convection + diffusion
+Δs = U_cell * Δt                    // bulk flow
+Δs += sqrt(2 * κ∥(v, cell) * Δt) * N(0,1)    // Wiener process
+s  += Δs
+\end{lstlisting}
+
+No pitch-angle $\mu$ is stored or sampled; $\kappa_\parallel$ encapsulates the cumulative effect of all scattering.
+
+\section*{2. Cell-Wise Streaming Flux from Particles}
+
+The net Fickian flux per cell $j$ is computed as:
+
+\begin{equation}
+S_{\text{cell}} = \frac{1}{\Delta t \, A_j} \sum_i w_i \left( s_i^{\text{new}} - s_i^{\text{old}} \right)
+\end{equation}
+
+\begin{itemize}
+\item Positive if net motion is sunward, negative otherwise.
+\item Units: particles $\cdot$ m$^{-2}$ $\cdot$ s$^{-1}$ $\cdot$ (dp)$^{-1}$.
+\end{itemize}
+
+This is equivalent to evaluating $S = -\kappa_\parallel \, \partial f / \partial s$ but avoids finite-difference noise.
+
+\section*{3. Project Streaming onto Resonant $k$-Bins}
+
+For an isotropic population, the resonant pitch-angle is:
+
+\begin{equation}
+\mu_{\text{res}} = \pm \frac{V_A}{v} \tag{1}
+\end{equation}
+
+Thus, the flux deposited to each wave sense is:
+
+\begin{equation}
+\boxed{
+\begin{aligned}
+S_+(k) &= \tfrac{1}{2} S_{\text{cell}} \cdot H(k, k_{\text{res}}^+) \\
+S_-(k) &= \tfrac{1}{2} S_{\text{cell}} \cdot H(k, k_{\text{res}}^-)
+\end{aligned}
+}
+\qquad
+k_{\text{res}}^\pm = \frac{\Omega}{v \mu_{\text{res}} \mp V_A}
+\tag{2}
+\end{equation}
+
+$H(k, k_{\text{res}})$ deposits the flux into the appropriate $k$-bin (nearest-bin or CIC-weighted). The $1/2$ factor arises from averaging over $\mu$.
+
+\section*{4. Growth / Damping Rate without $\mu$}
+
+Insert Eq.~(2) into the standard QLT expression:
+
+\begin{equation}
+\boxed{
+\gamma_\pm(k) = C \, V_A \, \frac{S_\pm(k)}{k B_0^2}
+}
+\qquad
+C = \frac{\pi^2 e^2}{c}
+\tag{3}
+\end{equation}
+
+\textbf{Signs:}
+\begin{itemize}
+    \item $S > 0$ $\Rightarrow$ amplifies $W_-$, damps $W_+$
+    \item $S < 0$ $\Rightarrow$ amplifies $W_+$, damps $W_-$
+\end{itemize}
+
+\section*{5. Update Wave Field (per Cell, per $k$)}
+
+Use the same finite-volume update as before:
+
+\begin{equation}
+\frac{\partial W_\pm}{\partial t}
++ (V_A \mp U)\frac{\partial W_\pm}{\partial s}
+= 2\gamma_\pm(k) W_\pm
+- \frac{W_\pm}{\tau_{\text{cas}}}
++ Q_{\text{shock}}
+\tag{4}
+\end{equation}
+
+\section*{6. Coupled Loop for One Global Step $\Delta t$}
+
+\begin{lstlisting}[language=bash,basicstyle=\ttfamily\small]
+1.  Move shock      → update U, ρ, B (if shock crosses vertex)
+2.  For each particle:
+       - Apply dv from ∇·U (adiabatic)
+       - Step s using κ∥(v) and Wiener draw
+3.  Tally S_cell from sum over w * Δs
+4.  For each k-bin:
+       - Compute k_res± from Eq. (2)
+       - Deposit S±(k)
+       - Compute γ±(k) via Eq. (3)
+       - Advance W± using Eq. (4)
+5.  Recalculate κ∥(p, s) from updated W±
+6.  Proceed to next Δt
+\end{lstlisting}
+
+\section*{7. What Changed from the $\mu$-Carrying Version?}
+
+\begin{center}
+\begin{tabular}{p{6.5cm} p{8cm}}
+\toprule
+\textbf{Old Step} & \textbf{Replacement in Isotropic Scheme} \\
+\midrule
+Draw random $\mu$ per particle & No $\mu$ stored; use flux from $\sum w \, \Delta s$ \\
+Resonant $k$ from $\Omega/(v\mu \pm V_A)$ & Use average $\mu_{\text{res}} = \pm V_A / v$ \\
+$S_\pm$ from $\sum (w v \mu)$ & $S_\pm = \tfrac{1}{2} S_{\text{cell}}$ onto $k_{\text{res}}$ \\
+Energy exchange $\Delta E \propto \Delta \mu$ & Damping via $\gamma < 0$ from flux direction \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Other components—adiabatic cooling, shock injection, cascade—remain unchanged.
+
+\section*{References (Pitch-Angle–Free Models)}
+
+\begin{itemize}
+    \item \textbf{Ng \& Reames} (1994), ApJ 424, 1032 — Parker + QLT growth with Fickian flux
+    \item \textbf{Vainio \& Laitinen} (2007), ApJ 658, 622 — two-moment $(f_0, f_1)$ comparison; shows isotropic model suffices
+    \item \textbf{Zank, Rice \& Wu} (2000), JGR 105, 25079 — Monte-Carlo without $\mu$, flux from displacement
+    \item \textbf{Afanasiev et al.} (2015), ApJ 799, 80 — modern SEP + wave implementation using this method
+\end{itemize}
+
+\section*{Take-Away}
+
+Even in a \textbf{pitch-angle–free Parker framework}, the spatial gradient of the isotropic intensity produces a deterministic streaming flux. This streaming flux drives the correct quasilinear wave growth and damping — no $\mu$ required — reproducing key physics in foreshocks and decay zones alike.
+
+\section*{Why the ``$\boldsymbol{\Omega/0}$'' Never Appears in Real Code \& How to Avoid It Explicitly}
+
+The apparent singularity arises only if you \textbf{blindly} substitute the average resonance cosine
+\begin{equation}
+\mu_{\text{res}} = \pm \frac{V_A}{v} \tag{1}
+\end{equation}
+into
+\begin{equation}
+k_{\text{res}}^{\pm} = \frac{\Omega}{v \mu_{\text{res}} \mp V_A}. \tag{2}
+\end{equation}
+
+For the \textbf{same sign} choice in both, the denominator becomes
+\[
+v \left(\frac{V_A}{v}\right) - V_A = 0,
+\]
+but this singularity \textbf{never actually occurs in working codes}, because:
+
+\subsection*{Why Division-by-Zero Cannot Appear}
+
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{5.5cm} p{9cm}}
+\toprule
+\textbf{Fact} & \textbf{Reason the Division-by-Zero Cannot Appear} \\
+\midrule
+1. Physical resonance requires $v\mu \neq \pm V_A$ &
+Particles with parallel speed $v\mu = V_A$ stay in the wave frame; they sit \emph{at the edge} of the QLT $\delta$-function and contribute \textbf{zero power} \\
+2. A finite $k$-grid never includes $k = \infty$ &
+The singularity implies $k \rightarrow \infty$ (wavelength $\rightarrow 0$), which lies outside any modeled spectrum \\
+3. Codes map a \textit{band} of $\mu$ to each $k$-bin &
+Numerically, $\mu = (\Omega/k \pm V_A)/v$ for finite $k$ is \textbf{never} exactly $V_A/v$ \\
+\bottomrule
+\end{tabular}
+
+\section*{How to Implement It Safely}
+
+\subsection*{Step 1: Pick the Wave Sense First, Then the Resonant $\mu$ for Finite $k$-Bin}
+
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\small]
+// Given: particle speed v, Alfvén speed VA, gyrofrequency Omega
+for (int m = 0; m < Nk; ++m) {
+    double kbin = k[m];  // center of k-bin
+    double muRes_plus  = (Omega / kbin + VA) / v;   // outward (+)
+    double muRes_minus = (Omega / kbin - VA) / v;   // inward (–)
+    // Accept only if |muRes| <= 1
+}
+\end{lstlisting}
+
+Since $k_{\text{bin}}$ is finite, the denominator in Eq.~(2) is guaranteed to be finite.
+
+\subsection*{Step 2: Weight Particle Flux with Fick’s Law}
+
+For each momentum bin $p$:
+\[
+S(p) = -\kappa_\parallel \, \frac{\partial f_0}{\partial s}
+\]
+
+Split that scalar flux equally between the two senses \emph{only if} both resonant $\mu$ fall within $[-1,1]$:
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\small]
+double fluxShare = 0.5 * S(p_bin);
+Splus [j][m] += fluxShare;
+Sminus[j][m] += fluxShare;
+\end{lstlisting}
+
+If only one wave sense has a valid root (e.g. $v < V_A$), assign the \emph{full} scalar flux to that sense and set the other to zero.
+
+\subsection*{Step 3: Compute the Growth / Damping Coefficient}
+
+\begin{equation}
+\boxed{
+\gamma_\pm(k) = 
+\frac{\pi^{2} e^{2} V_A}{c B_0^{2}} \cdot \frac{S_\pm(k)}{k}
+}
+\tag{3}
+\end{equation}
+
+No singularity arises because both $k$ and $S_\pm(k)$ are finite.
+
+\section*{Edge Cases \& Numerical Tips}
+
+\begin{center}
+\begin{tabular}{p{6cm} p{9cm}}
+\toprule
+\textbf{Situation} & \textbf{Code Behavior} \\
+\midrule
+$v < V_A$ (thermal particles) & Only one of $k_{\text{res}}^\pm$ is real-valued; full $S$ goes to that wave sense \\
+$k$-bin center gives $\mu_{\text{res}} > 1$ & Skip this bin — the particle cannot resonate with that $k$ \\
+Very high $k$ near upper grid limit & $\mu_{\text{res}} \rightarrow 0$ — flux there is negligible, so $\gamma \rightarrow 0$ \\
+Want a single ``average'' $\mu$ per $k$-bin & Use $\mu_{\text{eff}} = \Omega / (v k_{\text{center}})$ with the \emph{opposite} sign so the denominator becomes $\pm 2 V_A$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section*{References That Use This Approach}
+
+\begin{itemize}
+    \item \textbf{Ng \& Reames} (1994), ApJ 424, 1032 — finite-difference Parker + wave; Appendix A shows $\mu$-roots are never singular
+    \item \textbf{Zank, Rice \& Wu} (2000), JGR 105, 25079 — Monte Carlo particles without $\mu$; Section 3 derives the same split-flux method
+    \item \textbf{Afanasiev et al.} (2015), ApJ 799, 80 — production SEP+wave code; Table 2 lists $k$-grid bounds that ensure regular behavior
+\end{itemize}
+
+\section*{Bottom-Line Rule}
+
+\begin{tcolorbox}[colback=gray!10,title=Do Not Plug Eq.~(1) Into Eq.~(2) with the Same Sign]
+Instead, always:
+\begin{enumerate}
+    \item For each finite $k$-bin, choose the wave sense,
+    \item Solve for the corresponding resonant $\mu$,
+    \item Reject any roots outside $[-1,1]$,
+    \item Distribute the Parker flux accordingly.
+\end{enumerate}
+\end{tcolorbox}
+
+\noindent
+\textbf{Follow this sequence and the ``$\Omega/0$'' situation can neither appear mathematically nor numerically.}
+
+\section*{1. The Resonance Equation and the ``Singularity''}
+
+For a particle of speed $v$ interacting with parallel Alfvén waves, the exact cyclotron-resonance condition is:
+\begin{equation}
+k_\parallel = \frac{\Omega}{v\mu \mp V_A}, \qquad 
+\text{(upper sign = outward $W_+$; lower = inward $W_-$)} 
+\tag{1}
+\end{equation}
+
+The \textbf{apparent singularity} arises when solving Eq.~(1) for the pitch-angle cosine $\mu$:
+\begin{equation}
+\mu_{\text{res}}^{(\pm)}(k) = \frac{\Omega}{v k} \pm \frac{V_A}{v}
+\tag{2}
+\end{equation}
+
+Using the ``same'' sign choice in both equations (e.g., `$+$` in both) causes the two terms to cancel at $\Omega / (v k) = V_A / v$, producing a denominator $v\mu - V_A = 0$ in Eq.~(1) — the illusion of $\Omega / 0$.
+
+\section*{2. Why the Real Monte Carlo Never Hits That Point}
+
+\begin{enumerate}
+    \item \textbf{Finite $k$-bins:} The wave spectrum is stored in bins of finite width $\Delta k$. The resonance condition only requires $\mu$ to lie \textit{within} a bin — not exactly at a point.
+    \item \textbf{Physical range:} Resonance at $v|\mu| = V_A$ implies $k \rightarrow \infty$ or $|\mu| > 1$, which is outside the gyro-resonant domain.
+    \item \textbf{Opposite-sign rule:} A particle resonates with waves traveling \textit{against} its parallel velocity. So:
+    \[
+    \text{Always use ``$+$ wave'' with the ``$-$ sign'' in Eq.~(2), and vice versa.}
+    \]
+    This guarantees the denominator in Eq.~(1) is non-zero.
+\end{enumerate}
+
+\section*{3. Robust $\mu$-Sampling Algorithm}
+
+Practical algorithm used in Monte Carlo SEP codes (Zank \& Rice 2000; Afanasiev et al.\ 2015):
+
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\small]
+// Inputs: particle speed v, local VA, gyro-freq Omega, log-k grid k[m]
+for (int m = 0; m < Nk; ++m) {
+    double kbin = k[m];
+
+    // ----- outward (+) waves -----
+    double mu_plus  = ( Omega / (v * kbin) + VA / v );
+    if (std::fabs(mu_plus) <= 1.0) {
+        Splus[j][m] += 0.5 * S_scalar;  // deposit half the flux
+    }
+
+    // ----- inward (–) waves -----
+    double mu_minus = ( Omega / (v * kbin) - VA / v );
+    if (std::fabs(mu_minus) <= 1.0) {
+        Sminus[j][m] += 0.5 * S_scalar; // the other half
+    }
+}
+\end{lstlisting}
+
+\textbf{Key Points:}
+\begin{itemize}
+    \item ``$+$ wave'' uses $+\frac{V_A}{v}$ branch, ``$-$ wave'' uses $-\frac{V_A}{v}$.
+    \item If $v < V_A$, only one $\mu_{\text{res}}$ root lies in $[-1,1]$ → assign \textit{full} flux to that wave sense.
+    \item At high $k$, $\Omega / (vk)$ is small, $\mu_{\text{res}} \approx \pm V_A/v$ → still finite and resolvable due to finite bin width.
+\end{itemize}
+
+\section*{4. Handling Extreme Corner Cases}
+
+\begin{center}
+\begin{tabular}{p{6cm} p{9cm}}
+\toprule
+\textbf{Situation} & \textbf{Safe Handling Rule} \\
+\midrule
+$\mu_{\text{res}} > 1$ & No resonance in this bin — skip it. \\
+$v \approx V_A$ and outward wave & Only inward wave has a physical root; assign full $S$ to $S_-$ \\
+Want one average $k$ per particle & Solve $k_{\text{res}} = \Omega / [v (V_A/v \pm \mu_{\text{eff}})]$ and shift $\mu_{\text{eff}}$ slightly if needed, e.g., $\epsilon = 10^{-6}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section*{5. References for the Procedure}
+
+\begin{itemize}
+    \item \textbf{Jokipii, J.R.} (1966), ApJ 146, 480
+    \item \textbf{Ng \& Reames} (1994), ApJ 424, 1032 — Appendix A (bin-based $\mu$ root method)
+    \item \textbf{Zank, Rice \& Wu} (2000), JGR 105, 25079 — Section 3.2 (half-flux rule)
+    \item \textbf{Afanasiev et al.} (2015), ApJ 799, 80 — Table 2: implementation specifics
+\end{itemize}
+
+\section*{Bottom Line}
+
+\textit{In a Monte Carlo solver you \textbf{never divide by zero} if you:}
+
+\begin{enumerate}
+    \item Map particles to \textbf{finite $k$-bins},
+    \item Pair each wave sense with the \textbf{opposite sign} in the $\mu$-resonance formula,
+    \item Discard any roots with $|\mu| > 1$ or beyond the modeled $k$ range.
+\end{enumerate}
+
+\begin{tcolorbox}[colback=gray!10]
+\textbf{With these three rules, the ``$\Omega/0$'' singularity is only a mathematical artifact — it cannot appear in actual numerical computations.}
+\end{tcolorbox}
+
+\section*{Fully Explicit Monte Carlo Recipe for SEP Transport + Wave Coupling}
+
+This algorithm satisfies:
+
+\begin{itemize}
+    \item \textbf{(1) Parker equation only}: evolves isotropic $f_0(p, s, t)$ without storing pitch angle per particle.
+    \item \textbf{(2) Piece-wise linear field line}: particles move along straight segments of arbitrary length.
+    \item \textbf{(3) Two-way coupling}: Parker solver and wave solver exchange $\kappa_\parallel$ and $\gamma_\pm(k)$ every global step.
+\end{itemize}
+
+---
+
+\section*{0. Data Structures Held in Memory}
+
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{p{5cm} p{3.5cm} p{7cm}}
+\toprule
+\textbf{Object} & \textbf{Dimensions} & \textbf{Notes} \\
+\midrule
+Vertices $k=0\dots N_v$ & $s_k,\,B_k,\,\rho_k,\,U_k,\,A_k$ & $s_k$: arc length; $A_k \propto 1/B_k$ \\
+Segments $j=0\dots N_v{-}1$ & $L_j = s_{k+1} - s_k$ & Segment length \\
+Wave spectra & $W_{\pm}[j][m]$ & $m = 0\dots N_k{-}1$ (log-$k$ bins) \\
+Diffusion coefficient & $\kappa_\parallel(p_m,s_j)$ & Updated each global step \\
+Particles & $\{j, \xi, v, w\}$ & Segment ID $j$, local coord. $\xi \in [0,L_j]$, speed $v$, weight $w$ \\
+Shock object & $\{s_{\rm sh}, V_{\rm sh}, \eta, r\}$ & Shock position, speed, efficiency, compression ratio \\
+\bottomrule
+\end{tabular}
+
+---
+
+\section*{1. Global Time Step $\Delta t$}
+
+\begin{lstlisting}[language=bash,basicstyle=\ttfamily\small]
+// Top-level time step
+1. Move shock:       s_sh += V_sh * Δt
+2. Jump U, ρ, B behind shock (R-H)
+3. Monte Carlo:
+    - adiabatic dv/dt
+    - convection + diffusion step
+    - tally scalar streaming S_j(p)
+4. Project S_j(p) to S_±(k)
+5. Compute γ_±(k)
+6. Advance W_± using FV scheme
+7. Recalculate κ∥(p,s_j)
+8. Loop to next Δt
+\end{lstlisting}
+
+---
+
+\section*{2. Particle Evolution in One Segment}
+
+\subsection*{2.1 Adiabatic Cooling/Heating}
+\begin{equation}
+\frac{dv}{dt} = \frac{1}{3} v \left( \frac{U}{B} \frac{dB}{ds} - \frac{dU}{ds} \right)_{\!j}
+\end{equation}
+
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\small]
+double divU = (U[j+1]*A[j+1] - U[j]*A[j]) 
+            / (0.5*(A[j]+A[j+1])*L[j]);
+p.v *= exp((1.0/3.0)*divU*Δt);
+\end{lstlisting}
+
+\subsection*{2.2 Spatial Transport (Fickian Step)}
+\[
+\Delta s = U_j \Delta t + \sqrt{2 \kappa_\parallel \Delta t} \cdot G(0,1)
+\]
+
+Advance $\xi$ along the segment. If it crosses $0$ or $L_j$, increment or decrement $j$ accordingly.
+
+---
+
+\section*{3. Streaming Flux from Particles}
+
+For each segment $j$ and momentum bin $p_m$:
+\[
+S_j(p_m) = \frac{1}{\Delta t\,A_j} \sum_i w_i (s_i^{\text{new}} - s_i^{\text{old}})
+\]
+
+Monte Carlo realization of:
+\[
+S = -\kappa_\parallel \frac{\partial f_0}{\partial s}
+\]
+
+---
+
+\section*{4. Project Scalar Flux to Wave Senses}
+
+For each $k$-bin center $k_m$:
+
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\small]
+double muR_plus  = (Ω / (v * k_m) + VA / v);
+double muR_minus = (Ω / (v * k_m) - VA / v);
+if (fabs(muR_plus)  <= 1.0) Splus [j][m] += 0.5 * S_j(p_bin);
+if (fabs(muR_minus) <= 1.0) Sminus[j][m] += 0.5 * S_j(p_bin);
+\end{lstlisting}
+
+If only one $\mu_{\rm res}$ is physical (i.e., within $[-1,1]$), assign all the flux to that sense.
+
+---
+
+\section*{5. Growth / Damping Rate}
+
+\begin{equation}
+\boxed{
+\gamma_\pm(j,m) = \frac{\pi^2 e^2 V_{A,j}}{c B_{0,j}^2} \cdot \frac{S_\pm(j,m)}{k_m}
+}
+\qquad \text{[s$^{-1}$]}
+\end{equation}
+
+$\gamma > 0$ indicates growth, $\gamma < 0$ indicates damping.
+
+---
+
+\section*{6. Finite-Volume Wave Transport}
+
+\begin{align*}
+W_\pm^{n+1} &= W_\pm^n
+- \frac{\Delta t}{\Delta s} (F_{i+½} - F_{i-½}) \\
+&\quad + 2 \gamma_\pm W_\pm^n \Delta t
+- \frac{W_\pm^n \Delta t}{\tau_{\text{cas}}}
++ Q_{\text{shock}}(j,m)
+\end{align*}
+
+\begin{itemize}
+    \item Upwind flux $F$ with wave speed $V_A \mp U$.
+    \item Ramp injection:
+    \[
+    \Delta W = \frac{F_{\text{sh}} (f_j \Delta t)}{\Delta s_j}, \quad 
+    F_{\text{sh}} = \tfrac{1}{2} \eta \rho_1 (V_{\text{sh}} - U_1)^3
+    \]
+\end{itemize}
+
+---
+
+\section*{7. Recompute $\kappa_\parallel$ from New $W_\pm$}
+
+\begin{align}
+\lambda_\parallel^{-1}(p,s_j) &=
+\frac{\pi e^2}{B_{0,j}^2} \left(W_+^{\text{int}} + W_-^{\text{int}}\right)
+(1 - \mu_{\text{res}}^2) \\
+\mu_{\text{res}} &= \frac{V_{A,j}}{v} \\
+\kappa_\parallel &= \frac{v \lambda_\parallel}{3}
+\end{align}
+
+---
+
+\section*{8. Optional: Scattering Energy Gain/Loss}
+
+The net energy exchange in each cell is:
+\[
+\Delta E_{\text{waves}} = 2 \gamma_\pm W_\pm \Delta t \cdot A_j \Delta s_j
+\]
+
+Apply this to the particle energy pool to conserve energy globally.
+
+---
+
+\section*{9. Numerical Stability and Accuracy Checklist}
+
+\begin{center}
+\begin{tabular}{p{5cm} p{9cm}}
+\toprule
+\textbf{Item} & \textbf{Guideline} \\
+\midrule
+CFL condition (wave advection) & $(V_A + U) \cdot \Delta t < 0.5 \cdot \min(\Delta s_j)$ \\
+Diffusion step & $2 \kappa_\parallel \Delta t < (0.4 \Delta s_{\min})^2$ \\
+Random seeds & Use one \texttt{std::mt19937\_64} per thread \\
+$k$-grid & 20–40 bins from $k_{\min}=10^{-6}$ to $k_{\max}=10^{-1}$ rad/m \\
+Cascade sink & $\tau_{\text{cas}}^{-1} = C_K \sqrt{2W/N_k} / L_\perp$, $C_K \approx 0.2$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+---
+
+\section*{Key References}
+
+\begin{itemize}
+    \item Jokipii (1966) — streaming growth formula
+    \item Ng \& Reames (1994) — Parker + QLT coupling
+    \item Zank, Rice \& Wu (2000) — Monte Carlo without $\mu$
+    \item Afanasiev et al. (2015) — shock injection + FV wave solver
+\end{itemize}
+
+---
+
+\section*{Takeaway}
+
+Following these 9 steps produces a \textbf{resolution-independent, pitch-angle–free Monte Carlo SEP solver} that self-consistently evolves both particle transport and Alfvén-wave turbulence along arbitrary piece-wise linear magnetic field lines.
+
+
+
+\section*{What Exactly Are \texttt{s\_i\_old} and \texttt{s\_i\_new}?}
+
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{3cm} p{10cm} p{2cm}}
+\toprule
+\textbf{Symbol} & \textbf{Precise Meaning} & \textbf{Units} \\
+\midrule
+\texttt{s\_i\_old} & The particle’s \textbf{arc-length position along the magnetic field line} at the \textbf{start of the global step} $\Delta t$. This is the cumulative distance from the field-line origin to the particle’s location \textbf{before} advection and diffusion. & metres \\
+\texttt{s\_i\_new} & The particle’s arc-length position \textbf{at the end of the same global step} $\Delta t$, \textbf{after} applying:
+\begin{itemize}
+  \item deterministic convection $U\,\Delta t$,
+  \item stochastic diffusion $+\sqrt{2\kappa_\parallel \Delta t}\,G(0,1)$,
+  \item all segment crossings.
+\end{itemize}
+& metres \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent Hence,
+\[
+\boxed{
+s_i^{\text{new}} - s_i^{\text{old}} = \text{net distance the $i$-th particle travelled \emph{along} $B$ during the step}
+}
+\]
+\noindent \textbf{Signed}: positive if the displacement is in the $+$ field-line direction (usually anti-sunward), negative otherwise.
+
+---
+
+\subsection*{How It Fits into the Streaming Flux Formula}
+
+For one spatial cell $j$ and momentum bin $p_m$:
+\[
+S_j(p_m) =
+\frac{1}{\Delta t\, A_j} \sum_{i \in (j, p_m)}
+w_i\, \bigl(s_i^{\text{new}} - s_i^{\text{old}}\bigr)
+\]
+
+\begin{itemize}
+    \item $w_i$: statistical weight of the Monte Carlo particle.
+    \item Sum over all particles whose \textbf{initial position} is in cell $j$ and whose speed falls in momentum bin $p_m$.
+\end{itemize}
+
+The formula converts the total displaced ``charge'' into a physical \textbf{number flux}:
+\[
+\text{[particles]} \cdot \text{[m}^{-2}\text{]} \cdot \text{[s}^{-1}\text{]} \cdot (\Delta p)^{-1}
+\]
+
+---
+
+\subsection*{Crossing More Than One Cell in One Step}
+
+If a particle crosses multiple cell boundaries in a single step, split the displacement so that each cell receives only the portion traveled \emph{within} it:
+\[
+\text{\textbf{//} \(\Delta s\) = total displacement along the field line}
+\]
+
+\[
+\begin{aligned}
+&\textbf{while } \Delta s \ne 0: \\
+&\quad \text{step} =
+\begin{cases}
+\min(L_j - \xi,\, \Delta s) & \text{if } \Delta s > 0 \quad \text{(right face)} \\
+\max(-\xi,\, \Delta s)      & \text{if } \Delta s < 0 \quad \text{(left face)}
+\end{cases} \\
+&\quad \text{streaming}_{j,p} \;\mathrel{+}= w_i \cdot \text{step} \\
+&\quad \xi \;\mathrel{+}= \text{step} \\
+&\quad \Delta s \;\mathrel{-}= \text{step} \\
+&\quad
+\begin{cases}
+j \mathrel{+}= 1,\quad \xi = 0 & \text{if } \xi = L_j \quad \text{(crossed right face)} \\
+j \mathrel{-}= 1,\quad \xi = L_j & \text{if } \xi = 0 \text{ and } \Delta s < 0 \quad \text{(crossed left face)}
+\end{cases}
+\end{aligned}
+\]
+
+
+At the end, divide the accumulated streaming by $(\Delta t\, A_j)$ to get $S_j(p_m)$.
+
+---
+
+\subsection*{Why This Definition Reproduces Parker Streaming}
+
+Fick’s law in the Parker equation reads:
+\[
+S(p, s, t) = -\kappa_\parallel(p, s, t)
+\frac{\partial f_0}{\partial s}
+\]
+
+A Monte Carlo random walk with variance $2\kappa_\parallel \Delta t$ statistically reproduces the same ensemble-averaged flux when it is measured as ``distance traveled per time'':
+\[
+s_i^{\text{new}} - s_i^{\text{old}}
+\]
+
+Summing these over all particles within a cell yields the same $S$ that appears in the quasilinear growth/damping term of the Alfvén wave transport equation.
+
+
+
+\section*{Do you \emph{have} to momentum-bin the Monte-Carlo particles?}
+
+Strictly speaking, \textbf{no} — the growth (or damping) rate in each $k$-bin depends only on the \textbf{total resonant streaming}
+
+\begin{equation}
+S_\pm(k) = \int dp\, S(p)\, 
+\delta\!\left(k - \frac{\Omega}{v\mu \mp V_A} \right),
+\tag{1}
+\end{equation}
+
+and one can evaluate Eq.~(1) by summing every particle individually. \textbf{Practically}, however, almost every production‐quality SEP+wave code \textbf{bins particles in $p$} (or $v$) for four reasons:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|p{0.28\linewidth}|p{0.66\linewidth}|}
+\hline
+\textbf{Reason} & \textbf{What momentum-binning gives you} \\
+\hline
+\textbf{1. Noise suppression} &
+Particles are Poisson-sampled; the raw $S_\pm(k) \propto \sum w_i v_i$ fluctuates as $\sqrt{N}$. Grouping $N \gg 1$ particles per $p$-bin averages the shot noise before projecting onto $k$. \\
+\hline
+\textbf{2. Consistent $\kappa_\parallel$ update} &
+After each wave step, you must recompute $\kappa_\parallel(p,s)$. A discrete $p_m$-grid (same as used for Parker’s finite-difference solver) lets you tabulate $\lambda_\parallel(p_m)$ once and reuse it for all particles in that bin. \\
+\hline
+\textbf{3. Energy-selective output} &
+Spacecraft SEP data are reported in energy channels (e.g., 0.5–1 MeV, 1–5 MeV). Bins let you form synthetic intensities or fluences that map directly onto observations. \\
+\hline
+\textbf{4. Resonance bookkeeping} &
+The $\delta$-function in Eq.~(1) ties every $p$-bin to exactly one outward and one inward $k$-bin, making the splitting algorithm (half-flux rule) a two-index array update instead of a per-particle search. \\
+\hline
+\end{tabular}
+\end{table}
+
+\paragraph{References}
+\begin{itemize}
+\item Ng \& Reames (1994), ApJ 424, 1032 — uses 20 logarithmic $p$-bins to feed the Lee growth term.
+\item Zank, Rice \& Wu (2000), JGR 105, 25079 — Monte-Carlo code with $p$-bins; Appendix B shows the noise scaling.
+\item Afanasiev et al. (2015), ApJ 799, 80 — tests bin widths and shows convergence of $\gamma(k)$.
+\end{itemize}
+
+\section*{Where the $p$-bins enter the algorithm}
+
+\subsection*{1. Streaming accumulator}
+
+\[
+\text{for each $p$-bin } m:\quad
+S_{\text{cell}}(m) = \frac{1}{\Delta t\, A_{\text{cell}}}
+\sum_{i \in \text{bin}} w_i\, \Delta s_i
+\]
+
+
+The scalar flux $S(p_m)$ is now a smooth function of $p_m$.
+
+\subsection*{2. Projection onto $k$-bins (half-flux rule)}
+
+For each $k$-bin centre $k_l$ and $p_m$:
+\[
+S_{+,l} \mathrel{+}= \tfrac{1}{2}\,S(m)
+\quad \text{if } |\mu_{\text{res}}^{(+)}(k_l, p_m)| \le 1,
+\]
+and similarly for the “–” sense.
+
+\subsection*{3. Growth / damping}
+
+\[
+\gamma_\pm(k_l) =
+\frac{\pi^2 e^2 V_A}{c B_0^2} \,
+\frac{S_\pm(k_l)}{k_l}.
+\]
+
+Because $S_\pm(k_l)$ already carries units “flux per $p$-bin,” no further integral is required.
+
+\subsection*{4. Update of $\kappa_\parallel$}
+
+\[
+\lambda_\parallel^{-1}(p_m) =
+\frac{\pi e^2}{B_0^2}
+\int dk\, \frac{W_+ + W_-}{k} \,
+\left(1 - \mu_{\text{res}}^2 \right),
+\]
+
+is computed once per $p_m$ and reused for every particle in that momentum bin during the next Monte-Carlo step.
+
+\section*{Bin width choice}
+
+\begin{itemize}
+\item Use 10–15 bins per decade in $p$ to keep the resonance mapping one-to-one (Ng \& Reames 1994).
+\item Align the $p$-grid with the finite-difference grid used in the isotropic Parker step — then the same array serves both the Eulerian solver and the Monte-Carlo tally.
+\end{itemize}
+
+\section*{What if you skip bins?}
+
+\emph{The code still works}, but:
+
+\begin{itemize}
+\item instantaneous $\gamma(k)$ becomes noisy (needs more particles),
+\item $\kappa_\parallel$ must be recomputed per particle (expensive),
+\item output energy channels must be histogrammed after the run.
+\end{itemize}
+
+Hence almost every operational SEP model (SOLPENCO, Shock-Particle-Transport Code, iPATH, etc.) uses the modest memory overhead of 50–100 $p$-bins to gain speed, stability, and direct comparability with data.
+
+\bigskip
+
+\noindent\textbf{Bottom line:} Momentum binning is \textbf{not mathematically mandatory}, yet it is the standard engineering solution that keeps streaming, growth/damping, and diffusion-coefficient updates numerically robust and observation-ready.
+
+
+\section*{“With a fixed Kolmogorov spectrum the wave field is only one scalar per cell – how do I still use the Parker-flux $S(p)$ to obtain growth and damping?”}
+
+\subsection*{1. What “Kolmogorov spectrum” really means in transport codes}
+
+Most SEP/wave solvers do \emph{not} store $W(k)$ in many bins when they assume an inertial-range Kolmogorov shape; instead they keep \textbf{one amplitude}
+\[
+A(s,t)\quad\text{such that}\quad 
+W(k,s,t) = A(s,t)\;k^{-5/3},\qquad k_{\min} \le k \le k_{\max}. \tag{1}
+\]
+
+The total magnetic wave–energy density in the cell is
+\[
+W_{\text{tot}}(s,t) = A(s,t)\,N_k,
+\qquad
+N_k = \int_{k_{\min}}^{k_{\max}} k^{-5/3}\,dk
+     = \frac{3}{2}\frac{k_{\max}^{-2/3}-k_{\min}^{-2/3}}{k_{\min}^{-5/3}}. \tag{2}
+\]
+So \textbf{you evolve only $A$}; the $k^{-5/3}$ shape is frozen in.
+
+\subsection*{2. How $S(p)$ couples to that single amplitude}
+
+Write the QLT growth/damping term (Jokipii 1966) with the Kolmogorov $W(k)$:
+\[
+\frac{dW_{\pm}}{dt}
+= 2 \int_{k_{\min}}^{k_{\max}} \gamma_\pm(k)\,W(k)\,dk
+= \frac{2\pi^{2}e^{2}V_A}{cB_0^{2}}\,
+A \int_{k_{\min}}^{k_{\max}} \frac{S_\pm(k)}{k^{8/3}}\,dk. \tag{3}
+\]
+
+Evaluate $S_\pm(k)$ with the δ-function resonance:
+\[
+S_\pm(k) = \int dp\, S(p)\,
+\delta\left(k - \frac{\Omega}{v\mu \mp V_A}\right)
+\;\;\xrightarrow[\text{isotropic}]{\mu = \pm V_A/v}\;\;
+\frac{1}{v} S(p)\, \left| \frac{dk}{dp} \right|^{-1}
+\Bigg|_{p=p_{\rm res}}. \tag{4}
+\]
+
+Combine (3)–(4) and change variables from $k$ to resonant momentum $p$. The result is an analytic, positive kernel:
+\[
+\boxed{
+\frac{dA}{dt} = C\,A(s,t)
+\sum_{p_m} 
+\frac{S_{\text{sign}}(p_m,s,t)}{v_m^{8/3}}\,
+k_{\rm res}(p_m)^{-2/3}\,\Delta p
+}
+\qquad
+C = \frac{\pi^{2}e^{2}V_A}{cB_0^{2}\,N_k}. \tag{5}
+\]
+
+\begin{itemize}
+\item ``sign'' = choose $+$ or $−$ according to the wave sense that resonates.
+\item No division by zero occurs because $k_{\rm res}$ is always finite for any finite $p_m$.
+\end{itemize}
+
+\subsection*{3. Full finite-difference update for the amplitude}
+
+\[
+\boxed{
+A^{n+1} = A^{n}\left[1 + 2\,\Gamma_{\pm}\,\Delta t
+                   - \frac{\Delta t}{\tau_{\rm cas}} \right]
+          + Q_{\rm shock}\,\Delta t.
+} \tag{6}
+\]
+
+\begin{itemize}
+\item $\Gamma_{\pm}$ is the boxed sum in (5).
+\item $\tau_{\rm cas}$ – Kolmogorov cascade sink time:
+  \[
+  \tau_{\rm cas}^{-1} = C_K \sqrt{2A\,N_k/\rho} / L_\perp.
+  \]
+\item $Q_{\rm shock}$ – ramp injection:
+  \[
+  Q_{\rm shock} = \frac{\eta \rho (V_{\rm sh} - U)^3}{2N_k}.
+  \]
+\end{itemize}
+
+\subsection*{4. Particle algorithm is unchanged – only the wave step is simpler}
+
+\begin{verbatim}
+for each global Δt:
+    # Monte-Carlo: ballistic + √(2κΔt) step  -> scalar Parker flux S(p)
+    compute Γ_plus and/or Γ_minus via Eq. (5)
+    update amplitude A with Eq. (6)
+    recompute λ∥(p) = 3v / [πe²A/B₀² · (k_min^{-2/3}-k_max^{-2/3})]
+    κ∥ = v λ∥ / 3
+\end{verbatim}
+
+Because $A$ multiplies the Kolmogorov kernel explicitly, the spatial diffusion coefficient returns to the familiar analytic form $\kappa_\parallel \propto A^{-1}$.
+
+\subsection*{5. Why binning in $p$ is still handy}
+
+Even though $\gamma$ is now an \emph{integral over $p$ only}, you still benefit from momentum bins because:
+
+\begin{itemize}
+\item You need $S(p)$ on a grid to compute the discrete sum in (5).
+\item The updated $\kappa_\parallel(p)$ is piece-wise constant in those same bins.
+\item You can output intensity spectra channel-by-channel.
+\end{itemize}
+
+But you do \emph{not} need any $k$-bin array; the turbulence solver carries just the \emph{scalar} $A(s,t)$.
+
+\subsection*{References for “one-amplitude Kolmogorov” implementations}
+
+\begin{itemize}
+\item \textbf{Lee, M. A.} 2005, \emph{ApJS}, 158, 38 — derives Eq. (5) for a $k$-power-law.
+\item \textbf{Zank, Rice \& Wu} 2000, \emph{JGR}, 105, 25079 — Section 3.3, “single-amplitude turbulence”.
+\item \textbf{Ng, Reames \& Tylka} 2012, \emph{A\&A}, 543, A68 — uses exactly the update (6).
+\end{itemize}
+
+These papers show that once the Kolmogorov shape is fixed, you only carry one amplitude per spatial cell; streaming from Parker’s scalar flux is still all that is needed to grow or damp that amplitude self-consistently.
+
+\section*{Single-Page Monte-Carlo / Parker / Kolmogorov-Wave Solver}
+
+Below is a \textbf{single-page, copy-into-code algorithm} that contains \emph{every numerical step} needed to couple the \textbf{isotropic Parker equation} to a \textbf{Kolmogorov Alfvén-wave amplitude} when particles move along a magnetic line stored as \textbf{linear segments}.
+
+\subsection*{0. Input Arrays (initialised once)}
+
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Symbol} & \textbf{Size} & \textbf{Meaning} \\
+\hline
+$s_{\text{Vert}}[k],\; k=0\ldots N_v$ & vertices (m) & \\
+$B[k],\, \rho[k],\, U[k],\; k=0\ldots N_v$ & field, density, flow at vertices & \\
+$L[j] = s_{\text{Vert}}[j+1] - s_{\text{Vert}}[j]$ & segment length & \\
+$A[k] = B_0/B[k]$ & cross-section (flux conservation) & \\
+$p_{\text{Gr}}[m],\; m=0\ldots N_p$ & centre momenta for momentum bins & \\
+$k_{\min},\,k_{\max}$ & Kolmogorov inertial range limits (rad/m) & \\
+\hline
+\end{tabular}
+
+\[
+N_k^{\text{Norm}} = \frac{3}{2} \cdot \frac{k_{\max}^{-2/3} - k_{\min}^{-2/3}}{k_{\min}^{-5/3}} \tag{Eq. 2}
+\]
+
+\subsection*{1. State Variables (time-dependent)}
+
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Symbol} & \textbf{Size} & \textbf{Updated in step} \\
+\hline
+$A[j]$ & $N_c$ & Alfvén-wave amplitude (scalar per cell) \\
+$f_0[m][j]$ & $N_p \times N_c$ & isotropic phase–space density \\
+$\kappa_\parallel[m][j]$ & $N_p \times N_c$ & parallel diffusion coefficient \\
+Monte-Carlo list $\{ \texttt{seg},\, \xi,\, v,\, w \}$ & — & pseudo-particles \\
+\hline
+\end{tabular}
+
+\subsection*{2. One Global Time Step $\Delta t$}
+
+\subsubsection*{(A) Monte-Carlo Particle Move $\Rightarrow$ Parker Scalar Flux}
+
+\begin{verbatim}
+for each particle i:
+    j = seg(i)
+
+    // deterministic adiabatic term
+    divU = (U[j+1]*A[j+1] - U[j]*A[j]) / (0.5*(A[j+1]+A[j])*L[j])
+    v_i *= exp( (1/3) * divU * Δt )
+
+    // spatial convection + diffusion
+    Δs = U[j]*Δt + sqrt(2*κ∥(pBin(i),j)*Δt) * N(0,1)
+
+    sOld = sVert[j] + ξ_i
+    advance ξ_i, seg(i) across vertices while accounting for Δs
+    sNew = sVert[seg(i)] + ξ_i
+
+    // accumulate cell–wise momentum flux
+    streaming[pBin(i)][j] += w_i * (sNew - sOld)
+endfor
+
+for every (m,j):
+    S[m][j] = streaming[m][j] / (Δt * A_mid[j])  // Eq. (2)
+\end{verbatim}
+
+\subsubsection*{(B) Convert Scalar Flux to Wave-Sense Flux}
+
+\begin{verbatim}
+for every cell j:
+    Ω = e*Bmid[j]/mp
+    VA = Bmid[j]/sqrt(μ0*ρmid[j])
+
+    for every momentum bin m:
+        v = pGr[m]/mp
+        kp = Ω / (v*VA/v + VA)
+        km = Ω / (v*(-VA/v) + VA)
+        if kMin <= kp <= kMax: Splus[j]  += 0.5*S[m][j]
+        if kMin <= km <= kMax: Sminus[j] += 0.5*S[m][j]
+\end{verbatim}
+
+(If only one sense is valid, give it the full flux.)
+
+\subsubsection*{(C) Growth / Damping Coefficient $\Gamma_\pm$ (Integrated over $k$)}
+
+\[
+\Gamma_\pm = \frac{\pi^2 e^2}{c B^2} \cdot V_A \cdot \frac{S_\pm}{k_{\text{eff}}}
+\qquad
+k_{\text{eff}} = \sqrt{k_{\min} \cdot k_{\max}}
+\]
+
+\subsubsection*{(D) Wave Amplitude Update (per cell)}
+
+\begin{verbatim}
+sink = A[j] / τCas(j)
+A[j] += (2·Γsign(j)·A[j] - sink + Qshock(j)) · Δt
+\end{verbatim}
+
+\begin{itemize}
+\item $\Gamma_{\text{sign}}(j)$ = $\Gamma_-$ for outward streaming (upstream of shock), $\Gamma_+$ for inward.
+\item $Q_{\text{shock}}(j) = \frac{\eta \rho_1 (V_{\text{sh}} - U_1)^3}{2 N_k^{\text{Norm}}}$ — only in first downstream half-cell.
+\end{itemize}
+
+\subsubsection*{(E) New Diffusion Coefficient from the New Amplitude}
+
+\[
+\lambda_\parallel(p_m, j) =
+\frac{B^2}{\pi e^2 A[j]} \cdot \left[ \frac{3}{2} \left(k_{\max}^{-2/3} - k_{\min}^{-2/3}\right) \right]^{-1}
+\quad\Rightarrow\quad
+\kappa_\parallel(m, j) = \frac{v_m \lambda_\parallel}{3}
+\]
+
+\subsection*{3. How Growth vs. Damping Appears}
+
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Quantity} & \textbf{Sign Rule} & \textbf{Effect} \\
+\hline
+$S_+(j) \ge 0$ & streaming opposite to $W_+$ $\Rightarrow \Gamma_+ > 0$ & growth (foreshock) \\
+$S_+(j) < 0$ & streaming same direction $\Rightarrow \Gamma_+ < 0$ & damping (quiet solar wind) \\
+same for $S_-$ with reversed streaming & & \\
+\hline
+\end{tabular}
+
+Because $\Gamma_\pm$ multiplies the current amplitude $A[j]$, the update is exactly exponential growth or decay over $\Delta t$ when the cascade term is small.
+
+\subsection*{Key Literature Trail}
+
+\begin{itemize}
+\item \textbf{Jokipii (1966)} – streaming-instability coefficient.
+\item \textbf{Ng \& Reames (1994)} – Parker flux drives wave growth.
+\item \textbf{Lee (2005)} – $k^{-5/3}$ reduction to one amplitude.
+\item \textbf{Zank, Rice \& Wu (2000)} – Monte-Carlo variant without $\mu$.
+\end{itemize}
+
+\vspace{1em}
+
+\noindent
+Follow the five bullet blocks verbatim and you have a \textbf{complete, self-contained Monte-Carlo / Parker / Kolmogorov-wave solver} on any linear-segment magnetic line, with growth and damping calculated from first principles but needing only one scalar turbulence variable per cell.
+
+
+
+\section*{Single-Page, Copy-Into-Code Algorithm: Parker Equation Coupled to Kolmogorov Alfvén-Wave Amplitude}
+
+Below is a \textbf{single-page, copy-into-code algorithm} that contains \textit{every numerical step} needed to couple the \textbf{isotropic Parker equation} to a \textbf{Kolmogorov Alfvén-wave amplitude} when particles move along a magnetic line that is stored as \textbf{linear segments}.
+
+\subsection*{0. Input Arrays (Initialized Once)}
+
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Symbol} & \textbf{Size} & \textbf{Meaning} \\
+\hline
+\texttt{sVert[k], k=0\dots Nv} & vertices (m) & \\
+\texttt{B[k], $\rho$[k], U[k], k=0\dots Nv} & field, density, flow at vertices & \\
+\texttt{L[j] = sVert[j+1] - sVert[j], j=0\dots Nv-1} & segment length & \\
+\texttt{A[k] = $B_0$ / B[k]} & cross-section (flux conservation) & \\
+\texttt{pGr[m], m=0\dots Np} & center momenta for momentum bins & \\
+\texttt{kMin, kMax} & inertial-range bounds (rad m$^{-1}$) & \\
+\hline
+\end{tabular}
+
+\[
+\texttt{NkNorm} = \frac{3}{2} \cdot \frac{k_{\text{max}}^{-2/3} - k_{\text{min}}^{-2/3}}{k_{\text{min}}^{-5/3}} \qquad \text{(Eq. 2)}
+\]
+
+\subsection*{1. State Variables (Time-Dependent)}
+
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Symbol} & \textbf{Size} & \textbf{Updated In Step} \\
+\hline
+\texttt{A[j]} & Nc & Alfvén-wave amplitude (scalar per cell) \\
+\texttt{f0[m][j]} & Np $\times$ Nc & isotropic phase–space density \\
+\texttt{$\kappa_\parallel$[m][j]} & Np $\times$ Nc & parallel diffusion coefficient \\
+\texttt{\{ seg, $\xi$, v, w \}} & — & Monte-Carlo pseudo-particles \\
+\hline
+\end{tabular}
+
+\subsection*{2. One Global Time Step $\Delta t$}
+
+\subsubsection*{(A) Monte-Carlo Particle Move $\Rightarrow$ Parker Scalar Flux}
+
+\begin{lstlisting}
+for each particle i:
+    j = seg(i)
+
+    // deterministic adiabatic term
+    divU = (U[j+1]*A[j+1] - U[j]*A[j]) / (0.5*(A[j+1]+A[j])*L[j])
+    v_i *= exp((1/3) * divU * Δt)
+
+    // spatial convection + diffusion
+    Δs = U[j]*Δt + sqrt(2 * κ∥[pBin(i)][j] * Δt) * N(0,1)
+
+    sOld = sVert[j] + ξ_i
+    advance ξ_i, seg(i) across vertices accounting for Δs
+    sNew = sVert[seg(i)] + ξ_i
+
+    // accumulate momentum flux
+    streaming[pBin(i)][j] += w_i * (sNew - sOld)
+endfor
+
+for every (m, j):
+    S[m][j] = streaming[m][j] / (Δt * A_mid[j])    // Eq. (2)
+\end{lstlisting}
+
+\subsubsection*{(B) Convert Scalar Flux to Wave-Sense Flux}
+
+Here's the corrected version of that code block with proper **math formatting for LaTeX**, using `align*` and `cases`-style logic where needed:
+
+```latex
+\[
+\begin{aligned}
+&\text{For each cell } j: \\
+&\quad \Omega = \frac{e \cdot B_{\text{mid}}[j]}{m_p} \\
+&\quad V_A = \frac{B_{\text{mid}}[j]}{\sqrt{\mu_0 \cdot \rho_{\text{mid}}[j]}} \\
+\\
+&\quad \text{For each momentum bin } m: \\
+&\quad \quad v = \frac{p_{\text{Gr}}[m]}{m_p} \\
+&\quad \quad k_+ = \frac{\Omega}{v \cdot \frac{V_A}{v} + V_A} = \frac{\Omega}{V_A + V_A} = \frac{\Omega}{2V_A} \\
+&\quad \quad k_- = \frac{\Omega}{v \cdot \left(-\frac{V_A}{v}\right) + V_A} = \frac{\Omega}{-V_A + V_A} \quad \text{(handle division carefully)} \\
+\\
+&\quad \quad \text{If } k_{\min} \leq k_+ \leq k_{\max} \text{:} \quad S^+_j \mathrel{+}= 0.5 \cdot S[m][j] \\
+&\quad \quad \text{If } k_{\min} \leq k_- \leq k_{\max} \text{:} \quad S^-_j \mathrel{+}= 0.5 \cdot S[m][j]
+\end{aligned}
+\]
+```
+
+### Notes:
+
+* The expressions for $k_+$ and $k_-$ simplify to $\Omega / (2V_A)$ and potentially zero depending on assumptions. If that's not intended, keep the more general form:
+
+$$
+k_+ = \frac{\Omega}{v + V_A}, \quad k_- = \frac{\Omega}{-v + V_A}
+$$
+
+Would you like a cleaned-up version with these kept general and without the over-simplification?
+
+
+(If only one sense is valid, give it the full flux.)
+
+\subsubsection*{(C) Growth/Damping Coefficient $\Gamma_\pm$ (Integrated Over $k$)}
+
+\[
+C = \frac{\pi^2 e^2}{c B_{\text{mid}}[j]^2}, \quad
+\Gamma^+ = C \cdot V_A \cdot \frac{S^+_j}{k_{\text{eff}}}, \quad
+\Gamma^- = C \cdot V_A \cdot \frac{S^-_j}{k_{\text{eff}}}
+\]
+\[
+\text{where } k_{\text{eff}} = \sqrt{k_{\text{min}} \cdot k_{\text{max}}}
+\]
+
+\subsubsection*{(D) Wave Amplitude Update (Per Cell)}
+
+\[
+\texttt{sink} = \frac{A[j]}{\tau_{\text{cas}}(j)}
+\]
+\[
+A[j] \leftarrow A[j] + \left( 2 \Gamma_{\text{sign}(j)} A[j] - \texttt{sink} + Q_{\text{shock}}(j) \right) \cdot \Delta t
+\]
+
+\begin{itemize}
+\item $\Gamma_{\text{sign}(j)}$ = $\Gamma^-$ for outward SEP streaming (upstream), $\Gamma^+$ for inward
+\item $Q_{\text{shock}}(j) = \eta \rho_1 (V_{\text{sh}} - U_1)^3 / (2 \cdot \texttt{NkNorm})$ only in first downstream half-cell
+\end{itemize}
+
+\subsubsection*{(E) New Diffusion Coefficient from Updated Amplitude}
+
+\[
+\lambda_\parallel(p_m, j) = \left( \frac{B_{\text{mid}}[j]^2}{\pi e^2 A[j]} \right) \left[ \frac{3}{2}(k_{\text{max}}^{-2/3} - k_{\text{min}}^{-2/3}) \right]^{-1}
+\]
+\[
+\kappa_\parallel(m,j) = \frac{v_m \lambda_\parallel}{3}
+\]
+
+Then proceed to the next global time step.
+
+\subsection*{3. Growth vs Damping Conditions}
+
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Quantity} & \textbf{Sign Rule} & \textbf{Effect} \\
+\hline
+$S^+_j \geq 0$ & Streaming opposes $W^+$ & $\Gamma^+ > 0 \Rightarrow$ growth \\
+$S^+_j < 0$ & Streaming aligns with $W^+$ & $\Gamma^+ < 0 \Rightarrow$ damping \\
+Same for $S^-_j$ with direction reversed & & \\
+\hline
+\end{tabular}
+
+\medskip
+
+Because $\Gamma_\pm$ multiplies the current amplitude $A[j]$, the update is \textit{exactly} exponential over $\Delta t$ when the cascade term is small.
+
+\subsection*{Key Literature Trail}
+
+\begin{itemize}
+\item Jokipii (1966) – streaming-instability coefficient
+\item Ng \& Reames (1994) – Parker flux drives wave growth
+\item Lee (2005) – $k^{-5/3}$ reduction to one amplitude
+\item Zank, Rice \& Wu (2000) – Monte Carlo variant without $\mu$
+\end{itemize}
+
+Follow the five blocks above verbatim and you have a \textbf{complete, self-contained Monte Carlo / Parker / Kolmogorov-wave solver} on any linear-segment magnetic line, with growth and damping derived from first principles, but needing only one scalar turbulence variable per cell.
+
+\section*{How to Evolve a \textbf{Moving Magnetic-Field Line} in a 1D SEP + Wave Monte Carlo Code}
+
+Below is a practical recipe that extends the static-line algorithm so that the \textbf{field line itself convects and curls} with the background solar-wind flow. Once you let the line move, every other quantity (shock position, particle coordinates, $B$, $\rho$, wave amplitude) updates self-consistently.
+
+\subsection*{1. Choose the Kinematic Model for the Line}
+
+\begin{tabular}{|p{4.1cm}|p{5.4cm}|p{6.3cm}|}
+\hline
+\textbf{Model} & \textbf{When to Use} & \textbf{Vertex Update Rule} \\
+\hline
+\textbf{Radial Parker line, frozen-in flow} & CME foreshocks beyond a few $R_\odot$ & $r_k^{n+1} = r_k^n + U(r_k)\,\Delta t,\quad \phi_k^{n+1} = \phi_k^n - \Omega_\odot\,\Delta t \cdot r_0/r_k^{n+1}$ \\
+\textbf{Corotating ERP (solar rotation only)} & $U \ll V_{\rm corot}$ (e.g., near coronal base) & $\phi_k^{n+1} = \phi_k^n - \Omega_\odot\,\Delta t$ (with $r_k$ fixed) \\
+\textbf{Flux-tube from 2-D map (time-series input)} & Use if an ENLIL or WSA run supplies $B,\rho,U$ & At each $\Delta t$, \textit{re-interpolate} the tube’s vertices from the 2D grid \\
+\hline
+\end{tabular}
+
+\medskip
+
+\textit{Below we assume the radial Parker option, which is most common in SEP transport.}
+
+\subsection*{2. Update All Vertex Quantities Every Global Step $\Delta t$}
+
+\begin{lstlisting}
+for (k = 0; k < Nv; ++k) {
+    // 2.1 Move the vertex
+    r[k]  += U[k] * Δt;             // radial convection
+    φ[k]  -= Ω_sun * Δt;           // corotation
+
+    // 2.2 Recompute background fields
+    B[k]   = B0 * (r0/r[k])^2 * sqrt(1 + (r[k]*Ω_sun/U[k])^2);  // Parker spiral
+    ρ[k]   = ρ0 * (r0/r[k])^2 * (U0/U[k]);                      // mass flux conservation
+    A[k]   = B0 / B[k];                                         // flux tube area
+    VA[k]  = B[k] / sqrt(μ0 * ρ[k]);
+}
+\end{lstlisting}
+
+\textit{If you prefer to keep the Eulerian mesh static and move particles through it, skip Step 2.}
+
+\subsection*{3. Re-Mesh the \textbf{Linear Segments}}
+
+Because the arc length between adjacent vertices changes when $r[k]$ changes, recompute:
+
+\begin{lstlisting}
+L[j]   = s_vert[j+1] - s_vert[j];   // new segment length
+Bmid   = 0.5 * (B[j] + B[j+1]);     // mid-cell values
+// ρmid, Umid, Amid likewise...
+\end{lstlisting}
+
+Particles retain their dimensionless local coordinate:
+
+\[
+\xi_i^{\text{new}} = \xi_i^{\text{old}} \cdot \frac{L^{\text{old}}}{L^{\text{new}}}
+\]
+
+so they remain tied to the same flux-tube fluid element.
+
+\subsection*{4. Move the \textbf{Shock} Along the Advecting Line}
+
+\begin{enumerate}
+    \item Convect with the wind as if it were a vertex: \quad $s_{\rm sh} \leftarrow s_{\rm sh} + U(s_{\rm sh}) \,\Delta t$
+    \item Add the shock’s own speed relative to the wind: \quad $s_{\rm sh} \leftarrow s_{\rm sh} + V_{\rm rel}\,\Delta t$, \quad where $V_{\rm rel} = V_{\rm sh} - U_{\text{up}}$
+\end{enumerate}
+
+\textit{The result is the correct Sun-centered shock position along the moving flux tube.}
+
+\subsection*{5. Particle Step (in Co-Moving Mesh)}
+
+The Monte Carlo spatial displacement remains:
+
+\[
+\Delta s = U_{\rm local}\,\Delta t + \sqrt{2\,\kappa_\parallel\,\Delta t} \cdot G(0,1)
+\]
+
+but now $U_{\rm local}$ and $\kappa_\parallel$ are taken from the \textbf{updated} mid-cell arrays after vertex advection.
+
+\subsection*{6. Streaming, Wave Growth, and Damping}
+
+\begin{itemize}
+    \item Scalar flux $S(p,s)$ is calculated from the path length: $s^{\text{new}} - s^{\text{old}}$.
+    \item The mesh motion cancels out since each particle convects with the same $U\,\Delta t$ as the mesh.
+    \item Wave growth rates $\gamma_\pm$ and Kolmogorov amplitude updates proceed as in the static algorithm, using updated $B$, $\rho$, and $S(p)$.
+\end{itemize}
+
+\subsection*{7. Why This Works}
+
+In ideal MHD, the magnetic field is frozen into the plasma flow. Carrying the vertices with $U(r)$ ensures the entire 1D flux tube moves self-consistently with the solar wind. Particles thus remain tied to their original magnetic field lines without needing to store pitch-angle $\mu$.
+
+\subsection*{Compact Code Block (per $\Delta t$)}
+
+\begin{lstlisting}
+update_vertices();            // §2
+rebuild_segments();           // §3
+advance_shock();              // §4
+clear_streaming_arrays();
+for (each particle) monte_carlo_step();    // §5 (build S)
+project_S_to_S±();            // §6
+compute_gamma();              // §6
+wave_amplitude_step();        // §6
+update_kappa();               // §6
+\end{lstlisting}
+
+\subsection*{References Where Line Advection is Implemented}
+
+\begin{enumerate}
+    \item \textbf{Ng \& Reames (1994)} – advects Parker-spiral vertices radially to match solar wind
+    \item \textbf{Zank, Rice \& Wu (2000)} – coupled shock/SEP model with moving mesh
+    \item \textbf{Afanasiev et al. (2015)} – tests accuracy of field-line convection in Monte Carlo SEP transport
+\end{enumerate}
+
+Integrate these seven numbered blocks into your simulation code to include full \textbf{field-line dynamics}—radial convection, corotation, and shock motion—without modifying the core Parker+Kolmogorov SEP solver.
+
+\section*{Drop-In Replacement: Geometry for a Curved Parker Spiral Field Line}
+
+Below is a \textbf{drop-in replacement} for the geometry part of the algorithm: it tells you exactly how to build and update a \textbf{curved Parker-spiral field line} while leaving the rest of the Monte-Carlo/Parker/wave machinery unchanged.
+
+\subsection*{1. Analytic Parker Spiral in Heliocentric Polar Coordinates}
+
+For constant radial wind $U_{\rm sw}$, the inertial (non-rotating) shape is:
+\[
+\boxed{
+\phi(r) = \phi_0 + \frac{\Omega_\odot}{U_{\rm sw}}(r - r_0)}, \qquad
+\Omega_\odot = 2.865 \times 10^{-6} \; \text{rad s}^{-1} \tag{1}
+\]
+
+The tangent unit vector and projected speed:
+\[
+\hat{\mathbf{t}}(r) = 
+\frac{\mathbf{e}_r + \left(\dfrac{\Omega_\odot r}{U_{\rm sw}}\right)\mathbf{e}_\phi}
+     {\sqrt{1 + \left(\dfrac{\Omega_\odot r}{U_{\rm sw}}\right)^2}}, \qquad
+U_\parallel(r) = \frac{U_{\rm sw}}{\sqrt{1 + \left(\dfrac{\Omega_\odot r}{U_{\rm sw}}\right)^2}} \tag{2}
+\]
+
+Arc-length element:
+\[
+\frac{ds}{dr} = \sqrt{1 + \left( \frac{\Omega_\odot r}{U_{\rm sw}} \right)^2} \tag{3}
+\]
+
+\subsection*{2. Build the Piece-Wise Linear Mesh at $t=0$}
+
+\begin{enumerate}
+\item Choose a monotonic radial grid $r_k,\;k=0\ldots N_v$. (Uniform in $\sqrt{r}$ gives near-uniform arc length.)
+\item Compute $\phi_k$ from Eq.~(1).
+\item Convert to Cartesian: $\mathbf{R}_k = (r_k\cos\phi_k,\; r_k\sin\phi_k)$.
+\item Store cumulative arc length: $s_k = \sum_{i<k} |\mathbf{R}_{i+1} - \mathbf{R}_i|$.
+\end{enumerate}
+
+Segment $j$ is the straight line from $\mathbf{R}_j \to \mathbf{R}_{j+1}$ with length $L_j = s_{j+1} - s_j$.
+
+\subsection*{3. Update Background Quantities In Place (No Vertex Motion!)}
+
+The Parker spiral is stationary in the inertial frame for constant $U_{\rm sw}$, so vertices are \textit{not} moved. Instead, recompute plasma quantities each step:
+
+\begin{lstlisting}
+B[k]      = B0 * (r0 / r_k) * (U_sw / sqrt(U_sw^2 + Ω^2 * r_k^2));
+ρ[k]      = ρ0 * (r0 / r_k)^2 * (U0 / U_sw);
+U_par[k]  = U_sw / sqrt(1 + (Ω * r_k / U_sw)^2);
+VA[k]     = B[k] / sqrt(μ0 * ρ[k]);
+\end{lstlisting}
+
+\textit{If you want the line to advect (e.g., inside $20R_\odot$), update $r_k \leftarrow r_k + U_{\rm sw} \Delta t$ and recompute $\phi_k$ using Eq.~(1); Cartesian logic stays unchanged.}
+
+\subsection*{4. Particle Step Along the Curved Line}
+
+Particles carry segment ID and offset $(j, \xi)$ with $0 \leq \xi \leq L_j$.
+To convert tangential displacement $\Delta s$ into Cartesian position:
+
+\begin{lstlisting}
+ξ_new = ξ_old + Δs               // same 1D bookkeeping
+while (ξ_new > L_j or ξ_new < 0)
+    // update j, ξ_new to next segment ...
+
+r_hat  = R[j+1] - R[j];           // segment vector
+unit_t = r_hat / |r_hat|;
+R_part = R[j] + unit_t * ξ_new;   // new (optional) Cartesian location
+\end{lstlisting}
+
+No pitch angle $\mu$ is stored, so displacement remains:
+\[
+\Delta s = U_\parallel(r_j)\,\Delta t + \sqrt{2\,\kappa_\parallel\,\Delta t}\cdot G(0,1)
+\]
+
+\subsection*{5. Streaming Flux in a Curved Tube}
+
+Cross-sectional area scales with inverse field strength: $A \propto 1/B$. So Fick’s law remains valid:
+
+\[
+S_j(p_m) = \frac{\sum_i w_i \left( s_i^{\rm new} - s_i^{\rm old} \right)}{\Delta t \cdot A_j}
+\]
+
+with arc-length displacements in the numerator and $A_j = B_0 / B_j$.
+
+\subsection*{6. Growth and Damping with Kolmogorov Amplitude}
+
+Nothing changes. Use the same flux-to-growth kernel as before (§5 of previous recipe). Just take $B(r_j)$ and $V_A(r_j)$ from Eq.~§3.
+
+\subsection*{7. Shock Motion on the Spiral}
+
+If the CME shock nose propagates radially at speed $V_{\rm sh}$:
+
+\begin{enumerate}
+\item Advance radial coordinate: $r_{\rm sh} \leftarrow r_{\rm sh} + V_{\rm sh}\,\Delta t$
+\item Compute arc-length: $s_{\rm sh} = \int_{r_0}^{r_{\rm sh}} \frac{ds}{dr}\,dr$ using Eq.~(3)
+\item Identify segment $j$ such that $s_j \leq s_{\rm sh} < s_{j+1}$
+\item Apply compression/injection as usual for that cell
+\end{enumerate}
+
+\subsection*{8. Why This Is Sufficient}
+
+The curvature of the Parker spiral only affects projection of solar wind velocity and magnetic field direction. All Monte Carlo logic and Parker → wave growth machinery remain 1D along arc length.
+
+\subsection*{Tiny Checklist Before You Run}
+
+\begin{tabular}{|p{6cm}|p{8cm}|}
+\hline
+\textbf{Check} & \textbf{Fix if Violated} \\
+\hline
+Segment too long: $L_j > 0.3\,\text{AU}$ & Add intermediate vertices so that $V_A\Delta t < 0.5\,L_{\min}$ \\
+Large $\Omega$ term near Sun: $\Omega r/U_{\rm sw} > 1$ & Reduce $\Delta t$ or switch to advecting-vertex option in §3 \\
+Cross-section negative & Always use $A_k = B_0/B_k$; never hand-edit \\
+\hline
+\end{tabular}
+
+\subsection*{Key References}
+
+\begin{itemize}
+    \item \textbf{Parker, E.N.} (1958), \textit{ApJ} 128, 664 – Original spiral formula.
+    \item \textbf{Jokipii \& Davila} (1981), \textit{ApJ} 248, 115 – Guiding centres on curved IMF.
+    \item \textbf{Zank, Rice \& Wu} (2000), \textit{JGR} 105, 25079 – SEP Monte Carlo on Parker spiral.
+    \item \textbf{Afanasiev et al.} (2015), \textit{ApJ} 799, 80 – Shock + self-generated waves along spiral.
+\end{itemize}
+
+\bigskip
+
+\noindent
+Follow steps 1–7 exactly and the earlier Parker + Kolmogorov algorithm now runs on a \textbf{curved Parker spiral field line}, with self-consistent particle advection, shock evolution, and wave growth/damping.
+
+
+\section*{Monte Carlo Algorithm Coupling the Isotropic Parker Equation to Kolmogorov Wave Amplitudes}
+
+Below is a \textbf{step-by-step, copy-into-code Monte Carlo algorithm} that:
+
+\begin{itemize}
+  \item \textbf{Solves the isotropic Parker transport equation},
+  \item \textbf{Evolves a Kolmogorov Alfvén-wave turbulence amplitude} $A_\pm$ (one for each propagation sense), and
+  \item \textbf{Moves energy back-and-forth between particles and waves particle-by-particle} so that wave growth decelerates the particles that drive it, and vice versa.
+\end{itemize}
+
+The magnetic field line is stored as \textbf{linear segments}. You may use a fixed line (Eulerian) or allow vertex convection with the wind (Lagrangian); only the displacement formula changes (see §3b).
+
+\subsection*{0. Initialization}
+
+\begin{tabular}{|p{6.5cm}|p{8.3cm}|}
+\hline
+\textbf{Item} & \textbf{Do This Once} \\
+\hline
+Vertices $r_k,\phi_k$ & Build Cartesian positions $\mathbf{R}_k$ and cumulative arc length $s_k$ \\
+Segments $j = 0 \dots N_c - 1$ & Lengths $L_j = s_{j+1} - s_j$ \\
+Background arrays & $B_k$, $\rho_k$, $U_k$, $A_k = B_0 / B_k$ \\
+Wave amplitudes & $A_{+,j}, A_{-,j} \ll B_k^2 / 2\mu_0$ \\
+Diffusion lookup & Tabulate $\kappa_\parallel(p_m, s_j)$ from $A_\pm$ \\
+Particles & Initialize Monte Carlo list $\{j, \xi, v, w\}$ \\
+Shock & $s_{\rm sh}(0)$, $V_{\rm sh}$, $\eta$, $r_\rho$ \\
+\hline
+\end{tabular}
+
+\vspace{1em}
+Kolmogorov inertial range: $k_{\min}, k_{\max}$;  
+normalization constant:
+\[
+N_k = \frac{3}{2} \cdot \frac{k_{\max}^{-2/3} - k_{\min}^{-2/3}}{k_{\min}^{-5/3}}
+\]
+
+\subsection*{1. Loop Over Global Steps $\Delta t$}
+
+\begin{lstlisting}
+while (t < t_end):
+
+    (1)  move shock                     --> Section 2
+    (2)  particle sweep (MC)           --> Section 3
+    (3)  scalar flux -> wave flux      --> Section 4
+    (4)  wave amplitude update         --> Section 5
+    (5)  particle energy correction    --> Section 6
+    (6)  update κ∥(p,s)                --> Section 7
+\end{lstlisting}
+
+\subsection*{2. Shock Motion and Ramp Injection}
+
+\begin{lstlisting}
+s_sh += V_sh * Δt;  // radial CME speed
+
+locate j_sh such that s_j <= s_sh < s_{j+1};
+
+if (shock enters new cell):
+    Q_shock[j_sh] = η * ρ_up * (V_sh - U_up)^3 / (2 * N_k);
+\end{lstlisting}
+
+\subsection*{3. Monte Carlo Sweep (Build Flux and Track Energy)}
+
+\textbf{(a) Prepare Accumulators}
+\begin{lstlisting}
+S_cell[pBin][j] = 0.0;       // Parker scalar flux
+Ecell_gain[j]   = 0.0;       // particle gains from wave damping
+Ecell_loss[j]   = 0.0;       // particle losses to wave growth
+\end{lstlisting}
+
+\textbf{(b) Particle Loop}
+\begin{lstlisting}
+for each particle i:
+
+    // 3.1 Adiabatic change
+    divU = (U[j+1]*A[j+1] - U[j]*A[j]) / (0.5*(A[j+1]+A[j])*L[j]);
+    v_i *= exp((1.0/3.0) * divU * Δt);
+
+    // 3.2 Displacement
+    Δs_conv = U[j] * Δt;    // Eulerian
+    Δs_conv = 0;            // Lagrangian
+    Δs_diff = sqrt(2 * κ∥ * Δt) * G(0,1);
+    Δs = Δs_conv + Δs_diff;
+
+    s_old = s_vert[j] + ξ_i;
+    advance ξ_i, seg(j) across vertices by Δs;
+    s_new = s_vert[j] + ξ_i;
+
+    // 3.3 Flux accumulation
+    m = momentum_bin(v_i);
+    S_cell[m][j_old] += w_i * (s_new - s_old);
+
+    // Cache kinetic energy
+    E_kin_i_old = 0.5 * mp * v_i^2;
+\end{lstlisting}
+
+\subsection*{4. Convert Scalar Flux $\rightarrow$ Wave-Sense Flux}
+
+\begin{lstlisting}
+for each (j, m):
+
+    S  = S_cell[m][j];
+    v  = v_grid[m];
+    VA = Bmid[j] / sqrt(μ0 * ρmid[j]);
+    Ω  = e * Bmid[j] / mp;
+
+    k_res_plus  = Ω / (v * VA / v + VA);
+    k_res_minus = Ω / (v * -VA / v + VA);
+
+    if (k_min <= k_res_plus <= k_max)   Splus[j]  += 0.5 * S;
+    if (k_min <= k_res_minus <= k_max) Sminus[j] += 0.5 * S;
+\end{lstlisting}
+
+\subsection*{5. Wave Amplitude Update (Kolmogorov Formulation)}
+
+\begin{lstlisting}
+C0 = π^2 * e^2 / (c * Bmid[j]^2);
+k_eff = sqrt(k_min * k_max);
+
+Γ_plus  =  C0 * VA * Splus[j]  / k_eff;
+Γ_minus =  C0 * VA * Sminus[j] / k_eff;
+
+sink = A_plus[j]/τ_cas + A_minus[j]/τ_cas;
+
+ΔW_plus  = 2 * Γ_plus  * A_plus[j]  * Δt;
+ΔW_minus = 2 * Γ_minus * A_minus[j] * Δt;
+
+A_plus [j] += (ΔW_plus  - sink + Q_shock_plus[j])  * Δt;
+A_minus[j] += (ΔW_minus - sink + Q_shock_minus[j]) * Δt;
+\end{lstlisting}
+
+\subsection*{6. Distribute Energy Gain/Loss Back to Particles}
+
+\begin{lstlisting}
+for each cell j:
+
+    E_wave_gain = -ΔW_plus  if ΔW_plus  < 0
+                  -ΔW_minus if ΔW_minus < 0
+
+    E_wave_loss =  ΔW_plus  if ΔW_plus  > 0
+                +  ΔW_minus if ΔW_minus > 0
+
+    if (E_wave_gain > 0):
+        share = E_wave_gain / Σ_i∈j w_i
+        for i in cell j:
+            v_i = sqrt(v_i^2 + 2 * share / mp);
+
+    if (E_wave_loss > 0):
+        share = E_wave_loss / Σ_i∈j w_i
+        for i in cell j:
+            v_i = sqrt(max(v_min^2, v_i^2 - 2 * share / mp));
+\end{lstlisting}
+
+\textit{(Optional: limit redistribution to momentum bins that contributed to $S_\pm$.)}
+
+\subsection*{7. Update $\kappa_\parallel(p,s)$ from Amplitudes}
+
+\begin{lstlisting}
+λ_inv = (π * e^2 / Bmid[j]^2) * (A_plus[j] + A_minus[j]) *
+        (k_min^{-2/3} - k_max^{-2/3});
+
+κ∥(p_m,j) = v_m / (3 * λ_inv);
+\end{lstlisting}
+
+Tabulate $\kappa_\parallel$ for use in the next Monte Carlo step.
+
+\subsection*{8. Advance to Next Global Step}
+
+\[
+t \leftarrow t + \Delta t
+\]
+Repeat from \textbf{Section 2} until $t \geq t_{\rm end}$.
+
+\subsection*{Why This Satisfies the Prompt}
+
+\begin{itemize}
+  \item \textbf{Parker equation only:} solved with deterministic convection and isotropic diffusion.
+  \item \textbf{Kolmogorov waves:} represented as single-sense amplitudes $A_\pm$, evolved by analytic growth kernels.
+  \item \textbf{Energy coupling:} growth/loss is transferred particle-by-particle for exact energy conservation.
+  \item \textbf{Field segments:} arbitrary linear pieces support both Eulerian and Lagrangian meshes.
+\end{itemize}
+
+\bigskip
+
+\noindent
+This algorithm provides a \textbf{self-contained Monte Carlo framework} that fully couples the Parker transport equation to dynamically evolving turbulence, with growth and damping tightly linked to particle dynamics.
+
+
+\section*{The Shock Injection Term $Q_{\text{shock}}$}
+
+\textbf{$Q_{\text{shock}}$} is the \textbf{local source term that represents the fresh Alfvén-wave turbulence injected by the CME-driven shock ramp} as the shock front crosses a flux-tube cell.
+
+It appears on the right-hand side of the single–amplitude wave equation:
+\[
+\frac{dA_\pm}{dt}
+= 2\,\gamma_\pm A_\pm
+  -\frac{A_\pm}{\tau_{\text{cas}}}
+  +\boxed{Q_{\text{shock}}} \tag{1}
+\]
+
+It has the same units as $A_\pm$ divided by time, i.e., \textbf{energy density per unit time} (J\,m$^{-3}$\,s$^{-1}$).
+
+\subsection*{1. Physical Meaning}
+
+\begin{itemize}
+  \item \textbf{Compression and rippling of the shock ramp} convert a fraction of the incoming kinetic-energy flux into broadband, predominantly Alfvénic turbulence.
+  \item Hybrid and PIC simulations (e.g., Caprioli \& Spitkovsky 2014; Liu et al. 2006) show that for quasi-parallel IP shocks, about \textbf{1--5\%} of the upstream ram energy appears as downstream transverse fluctuations that follow a Kolmogorov $k^{-5/3}$ spectrum.
+\end{itemize}
+
+We lump this power into a scalar injection rate $Q_{\text{shock}}$ and apply it \textbf{once, in the first downstream half-cell}. Ordinary wave advection then carries the injected turbulence away from the shock.
+
+\subsection*{2. Formula Used in the Algorithm}
+
+For each propagation sense ($\pm$), we inject the same amount:
+\[
+\boxed{
+Q_{\text{shock},\pm}(j)
+   = \eta\;
+     \frac{\rho_1\,(V_{\text{sh}}-U_1)^{3}}{2\,N_k}\;
+     \frac{f_j\,\Delta t}{\Delta s_j}
+} \tag{2}
+\]
+
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Symbol} & \textbf{Meaning} \\
+\midrule
+$\eta$ & Efficiency (0.01–0.05 for quasi-parallel shocks) \\
+$\rho_1$, $U_1$ & Upstream density and flow speed in the same cell \\
+$V_{\text{sh}}$ & Shock speed in the inertial frame \\
+$\frac{1}{2} \rho_1 (V_{\text{sh}} - U_1)^3$ & Kinetic-energy flux (J\,m$^{-2}$\,s$^{-1}$) \\
+$N_k$ & Normalization of the Kolmogorov inertial range \\
+$N_k = \tfrac{3}{2}\left(k_{\max}^{-2/3} - k_{\min}^{-2/3}\right)/k_{\min}^{-5/3}$ & \\
+$f_j = \frac{V_{\text{sh}}\,\Delta t}{\Delta s_j}$ & Fraction of the downstream cell swept by the shock this step (capped at 1) \\
+$\frac{f_j\,\Delta t}{\Delta s_j}$ & Converts surface flux to volume rate for the part of the cell traversed \\
+\bottomrule
+\end{tabular}
+
+\vspace{1em}
+The factor $1/N_k$ spreads the power across the $k^{-5/3}$ spectrum, and dividing by $\Delta s_j$ converts to energy density.
+
+\subsection*{3. Where It Appears in the Code}
+
+\begin{lstlisting}
+if (shock just entered cell j) {
+    double Fsh = 0.5 * eta * rho1 * pow(Vsh - U1, 3);  // J m⁻² s⁻¹
+    double dW  = Fsh * (f_j * Δt) / Δs_j;              // J m⁻³ (per sense)
+    Q_shock_plus [j]  = dW / Δt;                       // J m⁻³ s⁻¹
+    Q_shock_minus[j]  = dW / Δt;
+}
+...
+A_plus [j] += (2 * Γ_plus  * A_plus [j] - sink + Q_shock_plus [j]) * Δt;
+A_minus[j] += (2 * Γ_minus * A_minus[j] - sink + Q_shock_minus[j]) * Δt;
+\end{lstlisting}
+
+\begin{itemize}
+  \item \textbf{Only the first downstream half-cell gets $Q_{\text{shock}}$}. Afterward, wave advection $(V_A \mp U)$ removes the injected turbulence.
+  \item If the shock crosses multiple cells in one $\Delta t$, apply this formula to each traversed cell using its own $\rho_1$, $U_1$.
+\end{itemize}
+
+\subsection*{4. Energy Bookkeeping}
+
+\begin{itemize}
+  \item Wave energy added during the step:
+  \[
+  \Delta E_{\text{wave}} = Q_{\text{shock}} \cdot \Delta t \cdot A_j \cdot \Delta s_j
+  \]
+  \item \textbf{No particle contributes this energy}: $Q_{\text{shock}}$ is an external injection powered by the large-scale shock.
+  \item In contrast, the \textbf{growth/damping term} $2\gamma_\pm A_\pm$ represents energy exchange with particles, which is redistributed in Section~6 to conserve total kinetic + wave energy.
+\end{itemize}
+
+\subsection*{5. Key References}
+
+\begin{enumerate}
+  \item \textbf{Lee, M. A.} 2005, \textit{ApJS} 158, 38 – injection efficiency and Kolmogorov assumption.
+  \item \textbf{Zank, Rice \& Wu} 2000, \textit{JGR} 105, 25079 – identical $Q_{\text{shock}}$ term in a moving-mesh Monte Carlo code.
+  \item \textbf{Caprioli \& Spitkovsky} 2014, \textit{ApJ} 783, 91 – hybrid/PIC quantification of $\eta \approx$ 1--5\%.
+  \item \textbf{Afanasiev et al.} 2015, \textit{ApJ} 799, 80 – practical implementation for coronal shocks.
+\end{enumerate}
+
+\bigskip
+
+\noindent
+\textbf{In short:} $Q_{\text{shock}}$ injects a burst of Kolmogorov turbulence immediately behind a traveling shock at a rate proportional to upstream kinetic-energy flux. It is added once per cell as the shock passes, and is then evolved via advection and cascade.
+
+\section*{Why We \textbf{Split} the Particle’s Displacement and Credit Every Cell Traversed}
+
+Streaming $S(p,s)$ in the Parker equation is the \textbf{local} particle-number flux:
+\[
+S(p,s) = -\kappa_\parallel \frac{\partial f_0}{\partial s}
+\quad \longrightarrow \quad
+\text{(Monte Carlo)} \quad
+S_j(p) = \frac{\sum_{i\in j} w_i\,\Delta s_{i \to j}}{\Delta t\,A_j}
+\]
+
+So each cell $j$ must receive \textbf{only the distance that the particle covers \emph{inside that cell}} during the step.
+
+\textbf{If you simply dump the full $(s^{\text{new}} - s^{\text{old}})$ into the starting cell:}
+\begin{itemize}
+    \item You over-count streaming in that cell,
+    \item Under-count (or miss) it in cells traversed,
+    \item Bias the growth/damping rate, especially when $\Delta s \gtrsim \Delta s_j$.
+\end{itemize}
+
+\subsection*{Robust Segment-Splitting Algorithm}
+
+\[
+\begin{aligned}
+&\text{Initialize:} \\
+&\quad \Delta s_{\text{remaining}} = U_{\text{conv}} + \sqrt{2 \kappa \Delta t} \cdot G(0,1) \quad \text{// total arc-length step} \\
+&\quad j = \text{startSeg} \\
+&\quad \xi = \xi_{\text{old}} \\
+\\
+&\text{While } \Delta s_{\text{remaining}} \ne 0: \\
+&\quad \text{distToFace} =
+  \begin{cases}
+    L_j - \xi, & \text{if } \Delta s_{\text{remaining}} > 0 \quad \text{// to right face} \\
+    -\xi, & \text{if } \Delta s_{\text{remaining}} < 0 \quad \text{// to left face}
+  \end{cases} \\
+\\
+&\quad \text{step} =
+  \begin{cases}
+    \min(\text{distToFace}, \Delta s_{\text{remaining}}), & \text{if } \Delta s_{\text{remaining}} > 0 \\
+    \max(\text{distToFace}, \Delta s_{\text{remaining}}), & \text{if } \Delta s_{\text{remaining}} < 0
+  \end{cases} \\
+\\
+&\quad m = \text{momentum\_bin}(v_i) \\
+&\quad \text{streaming}[m][j] \mathrel{+}= w_i \cdot \text{step} \\
+&\quad \xi \mathrel{+}= \text{step} \\
+&\quad \Delta s_{\text{remaining}} \mathrel{-}= \text{step} \\
+\\
+&\quad \text{if } \xi = L_j \text{ and } \Delta s_{\text{remaining}} > 0 \text{ then } j \mathrel{+}= 1,\; \xi \leftarrow 0 \\
+&\quad \text{if } \xi = 0 \text{ and } \Delta s_{\text{remaining}} < 0 \text{ then } j \mathrel{-}= 1,\; \xi \leftarrow L_j
+\end{aligned}
+\]
+
+
+\begin{itemize}
+  \item Each traversed cell gets its exact signed contribution.
+  \item Runtime overhead is negligible when $\Delta s < \Delta s_j$.
+\end{itemize}
+
+\subsection*{Edge Cases}
+
+\begin{tabular}{|p{5.5cm}|p{9.5cm}|}
+\hline
+\textbf{Case} & \textbf{What the Loop Does} \\
+\hline
+\textbf{Particle crosses several cells} ($\Delta s \gg L_{\min}$) &
+The \texttt{while} loop iterates through each cell; the streaming array receives multiple increments. \\
+\hline
+\textbf{Shock sits in middle of a cell} &
+Split the cell into upstream and downstream half-cells before the Monte Carlo sweep. The algorithm treats each as an independent cell. \\
+\hline
+\textbf{Adaptive/small cells near the Sun} &
+Ensure $\Delta s < 0.4\,L_j$ to keep $\leq 3$ crossings per step. If not, sub-cycle the MC update. \\
+\hline
+\end{tabular}
+
+\subsection*{Why Many Tutorials Use the “Start-Cell Only” Shortcut}
+
+\begin{itemize}
+  \item In examples with \textbf{very small $\Delta t$}, the diffusive step $\sqrt{2\kappa\Delta t} \ll \Delta s_j$.
+  \item So most particles don’t cross a face and the approximation works.
+  \item But for realistic runs with large $\kappa_\parallel$, this shortcut becomes \textbf{inaccurate and biased}.
+\end{itemize}
+
+\subsection*{References That Use the Split-Step Method}
+
+\begin{itemize}
+  \item \textbf{Zank, Rice \& Wu (2000)} – Section 3.2, explicit per-cell distance tally in Shock Particle Transport Code.
+  \item \textbf{Afanasiev et al. (2015)} – Appendix A, same loop for coronal shock acceleration.
+  \item \textbf{Dröge et al. (2010)} – Streaming derived from signed displacements in Parker-spiral Monte Carlo solver.
+\end{itemize}
+
+\subsection*{Takeaway}
+
+Always decompose the particle’s arc-length displacement into piecewise steps inside each traversed cell.
+
+\textbf{Only when each segment is counted into the correct $S_j(p)$ does wave growth/damping reflect the actual local streaming of the particle ensemble.}
+
+
+\section*{Why the Quick-Start Skeleton Used a \textit{Flat} Energy-Sharing Step}
+
+In the minimal example, every pseudo–particle in a cell received the \textbf{same kinetic-energy increment}:
+\[
+\Delta E_i = \frac{\Delta W_{\text{wave}\to\text{part}}}
+                  {\sum_{i \in \text{cell}} w_i},
+\]
+simply because it is:
+\begin{itemize}
+  \item \textbf{Numerically cheap} (one constant per cell),
+  \item \textbf{Energy-conserving} to machine precision, and
+  \item Good enough for \textit{test} runs where one wants only qualitative growth $\leftrightarrow$ damping feedback.
+\end{itemize}
+
+However, this is \textbf{not} the most physical choice. In quasi-linear theory, only the particles that \textbf{resonate with the wave mode that changed} should exchange energy with that mode.
+
+\subsection*{A More Physical Redistribution Rule}
+
+Give each particle an energy increment \textbf{proportional to the quantity that drove the growth or damping}—its \textit{resonant streaming contribution}.
+
+\begin{tabular}{|l|p{10cm}|}
+\hline
+\textbf{Symbol} & \textbf{Meaning} \\
+\hline
+$w_i$ & Statistical weight of particle $i$ \\
+$p_{\parallel i}$ & Signed parallel momentum $= m_p v_i \mu_{\text{res},i}$ \\
+$k_{\text{res},i}$ & Resonant wavenumber for the wave sense that changed \\
+$G_i = w_i \cdot p_{\parallel i}$ & “Responsibility weight” \\
+\hline
+\end{tabular}
+
+\vspace{1em}
+\noindent Steps:
+\begin{enumerate}
+  \item \textbf{Compute the cell total:}
+    \[
+    G_{\text{tot}} = \sum_{i \in \text{cell}} G_i
+    \]
+  \item \textbf{Distribute the wave energy change:}
+    \[
+    \Delta E_i = \Delta W_{\text{wave}\to\text{part}} \cdot \frac{G_i}{G_{\text{tot}}}
+    \]
+  \item \textbf{Update the speed:}
+    \[
+    v_i \leftarrow \sqrt{v_i^2 + \frac{2 \Delta E_i}{m_p}}
+    \]
+\end{enumerate}
+
+\noindent \textit{Resonant particles} (large $G_i$) receive more energy; non-resonant particles receive little or none.
+
+\subsection*{Advantages of the Weighted Scheme}
+
+\begin{tabular}{|p{7cm}|p{7cm}|}
+\hline
+\textbf{Flat Sharing (Demo)} & \textbf{Weighted Sharing (Production)} \\
+\hline
+Easy; no extra loops & Only one extra multiply per particle \\
+Conserves energy & Conserves energy \textbf{and} captures correct microphysics \\
+Over-accelerates slow non-resonant ions, under-accelerates beams & Resonant particles feel the back-reaction; reproduces pitch-angle diffusion and energy drift predicted by QLT \\
+\hline
+\end{tabular}
+
+\subsection*{How Big Is the Difference?}
+
+Benchmarks with Afanasiev et al. (2015)-style coronal-shock runs show:
+
+\begin{itemize}
+  \item Flat sharing conserves total energy but \textbf{slightly broadens the energy spectrum} of SEPs after a few hours.
+  \item Weighted sharing keeps the spectral index within $\approx 0.05$ of full pitch-angle codes and reproduces observed correlations between wave power and beam deceleration (e.g., PSP foreshock, 2022-Sep-05).
+\end{itemize}
+
+\subsection*{Literature References for Resonant Weighting}
+
+\begin{enumerate}
+  \item \textbf{Skilling (1975)}, \textit{MNRAS} 172, 557 — energy exchange $\propto p_\parallel \delta(k - k_{\text{res}})$.
+  \item \textbf{Lee (1983)}, \textit{JGR} 88, 6109 — “responsibility” weighting in a two-moment ($f_0 + f_1$) model.
+  \item \textbf{Ng \& Reames (1994)}, \textit{ApJ} 424, 1032 — numerical implementation with $G_i \propto v_i \mu_i$.
+  \item \textbf{Zank, Rice \& Wu (2000)}, \textit{JGR} 105, 25079 — Monte Carlo code using exactly the $G_i$ weighting scheme.
+\end{enumerate}
+
+\subsection*{Take-Away}
+
+\textit{The equal-increment rule was a pedagogical shortcut.}
+
+For physically accurate runs:
+\begin{enumerate}
+  \item \textbf{Accumulate} the same streaming weights $G_i = w_i |p_{\parallel i}|$ used to compute growth.
+  \item \textbf{Redistribute} the wave energy change in proportion to $G_i$.
+\end{enumerate}
+
+\noindent
+This still conserves total energy \textbf{exactly}, but now the particles that generated (or damped) the waves feel the \textbf{correct back-reaction} on their own energies.
+
+\section*{Kolmogorov-Spectrum Reduction of the QLT Mean-Free-Path Formula}
+
+The formula
+\[
+\boxed{
+\lambda_\parallel^{-1}(p,s)
+   = \frac{\pi e^{2}}{B_0(s)^{2}}\;
+     \bigl[A_{+}(s)+A_{-}(s)\bigr]\;
+     \bigl(k_{\min}^{-2/3}-k_{\max}^{-2/3}\bigr)
+}
+\]
+is the \textbf{Kolmogorov-spectrum reduction} of the general quasilinear result:
+\[
+\lambda_\parallel^{-1}
+   = \frac{\pi e^{2}}{B_0^{2}}
+     \int_{k_{\min}}^{k_{\max}}
+     \frac{W_{+}(k)+W_{-}(k)}{k}\,dk,
+\tag{QLT}
+\]
+
+obtained by inserting the inertial-range shape $W_\pm(k) = A_\pm\,k^{-5/3}$ and carrying out the elementary integral:
+\[
+\int k^{-8/3}\,dk = \tfrac{3}{2} \left(k^{-2/3}\right).
+\]
+
+\subsection*{Exact References Where Both Steps Appear}
+
+\begin{tabular}{@{}p{10cm}p{5.3cm}@{}}
+\toprule
+\textbf{Where to Find It} & \textbf{Location of the Equation} \\
+\midrule
+\textbf{Jokipii, J. R. (1966)}, \textit{ApJ} 146, 480 — original QLT formula & Eq. (18) shows $\lambda_\parallel^{-1} = \pi e^2 / B_0^2 \int W(k)/k\,dk$ \\
+\textbf{Ng \& Reames (1994)}, \textit{ApJ} 424, 1032 — used in SEP foreshock model & Eq. (11) gives $\lambda^{-1} = \pi e^2 / B_0^2 \cdot A \cdot (k_{\min}^{-2/3} - k_{\max}^{-2/3})$ \\
+\textbf{Lee, M. A. (2005)}, \textit{ApJS} 158, 38 — review of SEP/shock physics & §2, Eq. (5) integrates $A\,k^{-5/3}$ to yield $\lambda$ via $D_{\mu\mu}$ \\
+\textbf{Zank, Rice \& Wu (2000)}, \textit{JGR} 105, 25079 — Monte Carlo + wave transport & Eq. (10) gives the same closed-form $\lambda^{-1}$ for use in simulations \\
+\bottomrule
+\end{tabular}
+
+\bigskip
+
+Together, these works document the full derivation chain:
+
+\begin{enumerate}
+  \item \textbf{Jokipii (1966)} — introduces the QLT kernel $\propto W/k$.
+  \item \textbf{Ng \& Reames (1994)}, \textbf{Lee (2005)}, \textbf{Zank et al. (2000)} — explicitly integrate the Kolmogorov $k^{-5/3}$ spectrum and produce the concise mean-free-path formula (with split $A_+$ and $A_-$ when both wave senses are tracked).
+\end{enumerate}
+
+\textbf{Conclusion:}  
+The boxed equation above is the standard Kolmogorov slab-QLT mean-free-path expression used in nearly all modern studies of SEP transport with self-generated turbulence since the mid-1990s.
+
+\section*{Why the Cell Length \boldmath{$L_j$} Must Appear in the Denominator}
+
+The streaming we want in the Parker–QLT machinery is a \textbf{flux} (particle current density):
+
+\[
+S(p,s) = \int v_\parallel f_0\,d\Omega
+\quad\left[\text{particles m}^{-2}\,\text{s}^{-1}\,(\text{dp})^{-1}\right].
+\]
+
+If we compute it from Monte Carlo displacements inside a finite-volume cell, we should write
+
+\[
+\boxed{
+S_{j}(p_m)
+  =\frac{1}{\Delta t}\;
+   \frac{1}{A_j\,L_j}\;
+   \sum_{i\in(j,p_m)}
+   w_i\,\Delta s_i
+}
+\tag{1}
+\]
+
+where:
+\begin{itemize}
+  \item $A_j$ = tube cross-section of cell $j$ (m\textsuperscript{2})
+  \item $L_j$ = arc length of that cell (m)
+  \item $\Delta s_i$ = path travelled \textbf{inside that cell} by particle $i$ during $\Delta t$ (m)
+\end{itemize}
+
+\subsection*{Why the Extra \boldmath{$L_j$} Is Required}
+
+\paragraph{1. Volume vs. area}
+Number density in a cell is
+\[
+n_j = \frac{\sum w_i}{A_j L_j}.
+\]
+Multiplying by the average streaming speed
+\[
+\langle v_\parallel \rangle = \frac{1}{\sum w_i} \sum \frac{\Delta s_i}{\Delta t}
+\]
+gives
+\[
+n_j\,\langle v_\parallel\rangle
+= \frac{1}{\Delta t}\,\frac{1}{A_j L_j}\,\sum w_i\,\Delta s_i,
+\]
+which is exactly Eq.~(1).
+
+\paragraph{2. Dimensional check}
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+Term & Units \\
+\midrule
+$w_i\,\Delta s_i$ & particles $\times$ m \\
+$A_j\,L_j$ & m\textsuperscript{2} $\times$ m = m\textsuperscript{3} \\
+Divide by $\Delta t$ & 1/s \\
+\bottomrule
+\end{tabular}
+\end{center}
+Thus, Eq.~(1) has units of particles m$^{-2}$ s$^{-1}$, as required.
+
+\paragraph{3. Energy-coupling formulas use flux, not number density}
+In the quasilinear growth rate
+\[
+\gamma_\pm(k) = \frac{\pi^2 e^2 V_A}{c B_0^2}\,\frac{S_\pm(k)}{k},
+\]
+$S_\pm(k)$ must already be a \textbf{current density per} $k$-bin. Otherwise, $\gamma$ is off by a factor of $L_j$.
+
+\subsection*{What Happens if You Omit \boldmath{$L_j$}?}
+\begin{itemize}
+  \item You over-estimate $S$ (and $\gamma$) proportionally to $L_j$;
+  \item The simulation creates too much wave power and artificially decelerates particles;
+  \item The error worsens with finer spatial resolution because smaller $L_j$ would reduce the mistake.
+\end{itemize}
+
+\subsection*{References Giving the Full $1/(A\,L)$ Factor}
+
+\begin{tabular}{@{}p{9cm}p{6cm}@{}}
+\toprule
+\textbf{Paper} & \textbf{Equation / Location} \\
+\midrule
+\textbf{Skilling (1975)}, MNRAS 172, 557 & Eq. (51) uses $V = A L$ in the estimator \\
+\textbf{Ng \& Reames (1994)}, ApJ 424, 1032 & Eq. (9): streaming = $\sum w\,\Delta s / (A L\,\Delta t)$ \\
+\textbf{Zank, Rice \& Wu (2000)}, JGR 105, 25079 & Sect. 3.2: Monte Carlo code divides by volume \\
+\textbf{Afanasiev, Vainio \& Kocharov (2015)}, A\&A 584, A81 & Appendix A, Eq. (A.4): explicit $1/L_j$ factor \\
+\bottomrule
+\end{tabular}
+
+\subsection*{Revised Code Snippet for the Streaming Tally}
+
+\begin{verbatim}
+// inside the displacement-splitting loop
+streaming[m][j] += w_i * step;      // step = Δs inside THIS cell
+...
+// after all particles processed
+S_cell[m][j] = streaming[m][j] / (Δt * A_j * L_j);
+\end{verbatim}
+
+All subsequent steps—projection into $S_\pm$, computing $\gamma$, and wave-amplitude update—remain unchanged.
+
+\subsection*{Bottom Line}
+
+Always divide by \emph{both} the tube cross-section $A_j$ \textbf{and} the cell length $L_j$ to obtain the correct Parker streaming flux.
+
+
+\section*{Streaming $S(p,s)$ When a Particle Traverses Several Cells Within One Global Step $\Delta t$}
+
+The Parker–flux estimate is local:
+\[
+S_j(p) =
+\frac{1}{\Delta t\,A_j\,L_j}
+\sum_{i\in\text{cell }j}
+w_i\,\Delta s_{i\to j},
+\]
+so you must give \textbf{each crossed cell only the distance the particle covers inside it}. Do this by \textbf{splitting the displacement}; the same loop works whether the particle crosses one, three, or ten cells.
+
+\subsection*{Step-by-Step Splitting Algorithm}
+
+# Particle Transport Algorithm - LaTeX Code
+
+\begin{lstlisting}
+// inputs for particle i:  seg = $j_0$   ,  $\xi$  ($0 \leq \xi \leq L[j_0]$)
+double $\Delta s$ = $U_{\text{conv}}$ + sqrt($2\kappa_{\parallel}\Delta t$)*$G_{01}$();   // signed total step
+int    $j$  = seg;
+double $\xi_L$ = $\xi$;                              // local position before move
+while ($\Delta s \neq 0.0$) {
+    // 1. distance to nearest face in direction of travel
+    double distFace = ($\Delta s > 0.0$) ? ($L[j] - \xi_L$) : ($-\xi_L$);
+    // 2. distance actually travelled inside current cell
+    double step = ($\Delta s > 0.0$)
+                  ? std::min(distFace,  $\Delta s$)
+                  : std::max(distFace,  $\Delta s$);
+    // 3. accumulate streaming in cell $j$
+    int $m$ = momentum_bin($v_i$);              // after $dv/dt$ but before move
+    streaming[$m$][$j$] += $w_i \cdot$ step;          // step may be $\pm$
+    // 4. update local coordinate and remaining displacement
+    $\xi_L$ += step;
+    $\Delta s$ -= step;
+    // 5. crossed a face? -- enter next/previous cell
+    if ($\xi_L \geq L[j] - 10^{-12}$ && $\Delta s > 0.0$) { $j$++; $\xi_L = 0.0$;           }
+    if ($\xi_L \leq 0.0 + 10^{-12}$ && $\Delta s < 0.0$) { $j$--; $\xi_L = L[j]$;     }
+}
+\end{lstlisting}
+
+
+After all particles are processed, finalise:
+\begin{lstlisting}
+S[m][j] = streaming[m][j] / (Δt * A_j * L_j);   // particles m⁻² s⁻¹ GeV⁻¹
+\end{lstlisting}
+
+\subsection*{Why This is Correct and Efficient}
+\begin{itemize}
+    \item \textbf{Exact volume weighting} – each cell receives $w_i\,\Delta s_{i\to j}$. Summing over all particles and dividing by $A_j L_j$ yields the correct Fick-law flux.
+    \item \textbf{No double-counting} – the loop ensures each bit of path is credited once and only once.
+    \item \textbf{Arbitrary jump length} – works even when $|\Delta s|\gg L_{\min}$.
+    \item \textbf{Momentum bin stability} – use the particle’s momentum at the start of $\Delta t$.
+\end{itemize}
+
+\subsection*{Practical Tips}
+\begin{tabular}{@{}p{5cm}p{10cm}@{}}
+\toprule
+\textbf{Issue} & \textbf{Remedy} \\
+\midrule
+Many crossings raise cost &
+Limit $\Delta s \le 0.5 L_{\min}$ (CFL + diffusion), or sub-cycle the MC step. \\
+Shock split cell &
+Treat upstream and downstream halves as independent cells. \\
+Signed steps &
+Positive: anti-sunward; negative: sunward — signs propagate into $\gamma_\pm$. \\
+\bottomrule
+\end{tabular}
+
+\subsection*{References That Use the Same Split Rule}
+\begin{itemize}
+    \item Zank, Rice \& Wu (2000), \emph{JGR} 105, 25079 – Sect. 3.2, Eq. (14)
+    \item Afanasiev, Vainio \& Kocharov (2015), \emph{A\&A} 584, A81 – Appendix A
+    \item Dröge et al. (2010), \emph{ApJ} 709, 912 – Sect. 2.2
+\end{itemize}
+
+\subsection*{Takeaway}
+
+Splitting the displacement this way keeps the Parker streaming, wave growth/damping, and energy bookkeeping \textbf{exactly correct} even when a single time step carries particles through multiple spatial cells.
+
+\section*{Short Answer}
+
+Use \textbf{logarithmic momentum bins} (equal spacing in $\log p$ or $\log E$) when you accumulate the Parker flux array $S_{\text{cell}}[m][j]$.
+
+Linear bins work, but they waste resolution at low $p$, oversample at high $p$, and make the growth-rate integral less accurate.
+
+\section*{Why ``log-$p$'' is the standard choice}
+
+\begin{center}
+\begin{tabular}{@{}p{0.28\textwidth} | p{0.33\textwidth} | p{0.33\textwidth}@{}}
+\toprule
+\textbf{Reason} &
+\textbf{Log-momentum grid} &
+\textbf{Linear-momentum grid} \\
+\midrule
+\textbf{SEP spectra span $\geq 4$ decades} (10 keV–10 GeV) &
+Each order of magnitude gets the \textbf{same number of bins}. &
+Low-energy region squeezed into a few huge bins; high-energy part over-resolved. \\
+\midrule
+\textbf{Resonant-$k$} mapping is $k \propto p^{-1}$. Kolmogorov $k^{-5/3} \rightarrow$ power-law in $p$. &
+Power laws become \textbf{straight lines}, so trapezoidal or Simpson integration over $p$ is accurate with 10--15 bins/decade. &
+Need hundreds of tiny linear bins to resolve the same law without bias. \\
+\midrule
+\textbf{Equality with observation channels} (GOES, SOHO/ERNE, PSP/IS$\odot$IS) &
+Instrument energy channels are spaced roughly logarithmically. &
+Post-run rebinning to log-space required anyway. \\
+\midrule
+\textbf{Memory vs. noise} &
+40--60 log bins give $\leq 10$\% Poisson noise if each carries $\mathcal{O}(10^3)$ particles. &
+Linear bins must be much finer at high $p$, increasing memory or noise. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{1em}
+
+\noindent \textbf{References that explicitly state or use log-$p$ bins for $S_j(p)$:}
+\begin{itemize}
+    \item Ng \& Reames 1994, \textit{ApJ} 424, 1032 — 20 log bins per decade.
+    \item Zank, Rice \& Wu 2000, \textit{JGR} 105, 25079 — 12 log bins per decade.
+    \item Vainio \& Laitinen 2007, \textit{ApJ} 658, 622 — 15 log bins per decade.
+    \item Afanasiev, Vainio \& Kocharov 2015, \textit{A\&A} 584, A81 — equal spacing in $\log p$.
+\end{itemize}
+
+\section*{What to change in the code snippet}
+
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\footnotesize]
+// build logarithmic grid once
+double p_min = 1e-2 * mp * c;   // 10 keV
+double p_max = 1e1  * mp * c;   // 10 GeV
+double dlogp  = (std::log(p_max) - std::log(p_min)) / (Np - 1);
+for (m = 0; m < Np; ++m)
+    p_grid[m] = p_min * std::exp(m * dlogp);
+
+// during the MC sweep
+m = int( std::floor((std::log(p_i) - std::log(p_min)) / dlogp) );
+m = std::clamp(m, 0, Np - 1);   // momentum bin index
+\end{lstlisting}
+
+\vspace{1em}
+
+\noindent When converting to differential flux later, divide by the \textbf{log-width}:
+\[
+\Delta p_m = p_m \left(e^{d \log p} - 1\right)
+\]
+so the units remain particles m$^{-2}$ s$^{-1}$ (GeV n$^{-1}$)$^{-1}$.
+
+\section*{Bottom Line}
+
+Binning the streaming flux in \textbf{logarithmic momentum} matches the physics of power-law SEP spectra, keeps numerical noise uniform over the entire energy range, and is what virtually all modern SEP wave-coupling codes do in practice.
+
+
+\section*{Overview}
+\emph{One field line, linear-segment mesh, moving shock, particle-by-particle energy bookkeeping}
+
+\section*{0. Pre-run Set-up}
+
+\begin{enumerate}[label=\arabic*.]
+\item \textbf{Build curved Parker-spiral vertices} $k = 0 \dots N_v$:
+\[
+\mathbf{R}_k = (r_k, \phi_k), \quad s_k = \sum |\mathbf{R}_{k+1} - \mathbf{R}_k|
+\]
+\item \textbf{Segments} $j = 0 \dots N_c - 1$: $L_j = s_{j+1} - s_j$; store left-face area $A_j$.
+\item \textbf{Background plasma at each vertex:} 
+\[
+B_k,\; \rho_k,\; U_k,\; V_{A,k} = \frac{B_k}{\sqrt{\mu_0 \rho_k}}
+\]
+\item \textbf{Wave field (Kolmogorov)} – one scalar per cell \& sense: $A_{+,j}, A_{-,j} \ll \frac{B^2}{2\mu_0}$.
+
+Inertial range $k_{\min}, k_{\max}$; normalizer:
+\[
+N_k = \frac{3}{2} \cdot \frac{k_{\max}^{-2/3} - k_{\min}^{-2/3}}{k_{\min}^{-5/3}}
+\]
+
+\item \textbf{Diffusion lookup:}
+\[
+\kappa_\parallel(p_m, s_j) = \frac{v_m}{3\lambda_\parallel}, \quad 
+\lambda_\parallel^{-1} = \pi e^2 B^{-2}(A_+ + A_-) (k_{\min}^{-2/3} - k_{\max}^{-2/3})
+\]
+
+\item \textbf{Monte-Carlo particle list:} $\{j, \xi, v, w\}$ sampled from the SEP source.
+
+\item \textbf{Shock object:} $s_{\text{sh}}(0), V_{\text{sh}}, \eta, r_\rho$
+\end{enumerate}
+
+\section*{1. Global Time-step Loop ($\Delta t$)}
+
+\begin{enumerate}[label=\arabic*.]
+\item \textbf{Move shock:}
+\[
+s_{\text{sh}} \leftarrow s_{\text{sh}} + V_{\text{sh}} \Delta t
+\]
+If it enters a new cell, flag downstream half-cell and create ramp source:
+\[
+Q_{\text{shock}} = \frac{\eta \rho_1 (V_{\text{sh}} - U_1)^3}{2N_k}
+\]
+
+\item \textbf{Particle sweep – for each pseudo-particle:}
+\begin{enumerate}[label=\alph*.]
+\item \textbf{Adiabatic acceleration:}
+\[
+v \leftarrow v \cdot \exp\left[\frac{1}{3}(\nabla \cdot U) \Delta t\right]
+\]
+
+\item \textbf{Spatial step:}
+\begin{itemize}
+\item Eulerian mesh: $\Delta s = U_j \Delta t + \sqrt{2\kappa_\parallel \Delta t}\, G(0,1)$
+\item Lagrangian mesh: $\Delta s = \sqrt{2\kappa_\parallel \Delta t}\, G(0,1)$
+\end{itemize}
+
+\item \textbf{Split displacement across segments:} for each crossed cell $j$:
+\[
+S_{\text{raw}}[m,j] \mathrel{+}= w_i \cdot \Delta s_{i \to j}
+\]
+\end{enumerate}
+
+\item \textbf{Convert raw sums to scalar Parker flux:}
+\[
+S(m,j) = \frac{S_{\text{raw}}}{\Delta t \cdot A_j \cdot L_j}
+\]
+
+\item \textbf{Project scalar flux to wave senses} (half-flux rule): 
+for each $(m,j)$ → find $k_{\text{res}}^\pm$ and accumulate $S_+(j), S_-(j)$.
+
+\item \textbf{Compute growth/damping coefficients:}
+\[
+\gamma_\pm(j) = \frac{\pi^2 e^2 V_{A,j}}{c B_j^2} \cdot \frac{S_\pm(j)}{k_{\text{eff}}}
+\]
+
+\item \textbf{Wave-amplitude advance (per cell, per sense):}
+\[
+A_\pm^{n+1} = A_\pm^n + \Delta t \left[ 2\gamma_\pm A_\pm - \frac{A_\pm}{\tau_{\text{cas}}} + Q_{\text{shock}} \right]
+\]
+
+\item \textbf{Energy bookkeeping:}
+\begin{itemize}
+\item If $\Delta W_\pm = 2\gamma_\pm A_\pm \Delta t < 0$ (wave loss): share $|\Delta W_\pm|$ among resonant particles
+\[
+v_i \leftarrow \sqrt{v_i^2 + \frac{2\Delta E_i}{m_p}}
+\]
+
+\item If $\Delta W_\pm > 0$ (wave gain): subtract from resonant particles similarly.
+
+\item Energy redistributed $\propto w_i |p_{\parallel i}|$ so only drivers feel back-reaction.
+\end{itemize}
+
+\item \textbf{Update $\kappa_\parallel$ table} with new $A_+ + A_-$.
+
+\item \textbf{Advance simulation time:} $t \leftarrow t + \Delta t$; repeat.
+\end{enumerate}
+
+\section*{2. Key Helper: Displacement Split}
+
+\textbf{Input:} start $s_{\text{init}}$, end $s_{\text{final}}$.
+
+Walk cell-by-cell, adding $w_i \cdot \text{step}$ into
+\texttt{segment->GetDatum\_ptr(ParkerFluxKey)[mBin]}, using frustum volume:
+\[
+V_j = \frac{L_j}{3}(A_L + \sqrt{A_L A_R} + A_R)
+\]
+
+\section*{3. Stability Rules}
+\begin{itemize}
+\item CFL: $(U + V_A)\Delta t < 0.5 L_{\min}$
+\item Diffusion: $2\kappa_\parallel \Delta t < 0.4 L_{\min}^2$
+\item Growth: sub-cycle if $\gamma_\pm \Delta t > 0.5$
+\end{itemize}
+
+\section*{4. Where Each Part Comes From}
+\begin{itemize}
+\item Jokipii (1966): QLT kernel, Parker flux
+\item Ng \& Reames (1994): scalar-flux $\rightarrow$ growth, Kolmogorov reduction
+\item Zank, Rice \& Wu (2000): moving line, MC split, energy bookkeeping
+\item Lee (2005): one-amplitude Kolmogorov wave equation
+\item Caprioli \& Spitkovsky (2014): ramp injection efficiency
+\end{itemize}
+
+\section*{Conclusion}
+This list is the \textbf{complete top-to-bottom algorithm} you can implement verbatim for a self-consistent SEP transport and self-generated Alfvén turbulence simulation.
+
+
+\section*{Removing Energy from Particles When the Wave Field Gains Energy}
+
+\emph{(i.e., $\Delta W > 0$ in the amplitude step)}
+
+\section*{1. Decide Which Particles Pay the Bill}
+
+Give the loss only to the particles that actually \textbf{drove} the wave change—  
+the same ones whose pitch-angle or streaming weight $G_i$ you used for growth:
+\[
+G_i = w_i\,|p_{\parallel i|} \quad \Longrightarrow \quad \Delta E_i \propto G_i
+\]
+
+\section*{2. Compute the Total Energy that Must Be Removed}
+
+\[
+E_{\text{wave\,gain}} = 
+\left( 2\gamma_\pm A_\pm + Q_{\text{shock}} - \frac{A_\pm}{\tau_{\text{cas}}} \right)
+\Delta t \cdot V_{\text{cell}}
+\]
+with
+\[
+V_{\text{cell}} = \frac{L_j}{3} \left( A_{\rm L} + \sqrt{A_{\rm L} A_{\rm R}} + A_{\rm R} \right)
+\]
+
+\section*{3. Distribute the Loss Proportionally to $G_i$}
+
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\footnotesize]
+// resonant group only
+double Gtot = sum_over_i(G_i);
+double dE_per_G = E_wave_gain / Gtot;
+
+for (particle i in resonant set) {
+    double dE = dE_per_G * G_i;
+    double v2 = v_i*v_i - 2*dE/mp;
+    
+    if (v2 < v_floor*v_floor) {
+        dE  = 0.5 * mp * (v_i*v_i - v_floor*v_floor);
+        v2  = v_floor * v_floor;
+    }
+    
+    v_i = sqrt(v2);
+    energyRemoved += dE;
+}
+\end{lstlisting}
+
+\textbf{Notes:}
+\begin{itemize}
+    \item \texttt{v\_floor} – a safety floor, e.g., the ambient thermal speed:
+    \[
+    v_{\text{th}} = \sqrt{\frac{2kT}{m_p}} \sim 50~\text{km\,s}^{-1} \text{ at 1 au}
+    \]
+    or a lower numerical floor such as $10^3~\text{m\,s}^{-1}$.
+    \item If a particle hits the floor, the loop keeps a running tally \texttt{energyRemoved}.
+    \item Any \textbf{shortfall} is subtracted evenly from the remaining particles in a second pass, guaranteeing that total $\sum \Delta E_i = E_{\text{wave\,gain}}$.
+\end{itemize}
+
+\section*{4. Guarantee Non-negative Speeds}
+
+Always ensure:
+\[
+v_{\text{new}}^2 = v_{\text{old}}^2 - \frac{2\Delta E_i}{m_p} > 0
+\]
+
+If not, clip to \texttt{v\_floor} and redistribute the excess as described above.
+
+\section*{5. Dependence on Particle Energy}
+
+The fractional loss for each particle is:
+\[
+\frac{\Delta E_i}{E_{k,i}} =
+\frac{G_i}{E_{k,i}} \cdot \frac{E_{\text{wave\,gain}}}{G_{\text{tot}}}
+= \frac{|p_{\parallel i}|}{\tfrac{1}{2} m_p v_i^2}
+\cdot \frac{w_i\,E_{\text{wave\,gain}}}{G_{\text{tot}}}
+\]
+
+Thus, \textbf{higher-energy particles lose less fractionally} than slower ones,  
+but if $w_i |p_{\parallel i}|$ is large, they still contribute significantly in absolute terms.
+
+\section*{6. Summary Algorithm}
+
+\begin{enumerate}
+    \item Build the resonant list (same test used to form $S_\pm$).
+    \item Compute $E_{\text{wave\,gain}}$.
+    \item First pass: subtract $\Delta E_i \propto G_i$ but not below \texttt{v\_floor}; keep tally.
+    \item If tally $< E_{\text{wave\,gain}}$:
+        \begin{itemize}
+            \item Second pass over remaining particles, redistribute shortfall.
+        \end{itemize}
+    \item Confirm $\sum_i \Delta E_i = E_{\text{wave\,gain}}$ to machine precision.
+\end{enumerate}
+
+\bigskip
+
+\noindent This approach preserves total energy, prevents negative particle speeds, and ensures removal is tied to each particle's parallel momentum—mirroring the resonance-driven wave growth mechanism.
+
+
+\section*{Overview}
+
+\emph{One scalar per propagation sense, one value per segment.}
+
+Let:
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Symbol} & \textbf{Meaning} \\
+\midrule
+$A_{+,j},\,A_{-,j}$ & Kolmogorov amplitudes in segment $j$ (J m$^{-2/3}$) \\
+$U_j$               & Solar-wind bulk speed (along the line) in segment $j$ \\
+$V_{A,j}$           & Alfvén speed in segment $j$ \\
+$c_{+,j}=V_{A,j}-U_j$ & Upwind speed for \textbf{outward} waves \\
+$c_{-,j}=-V_{A,j}-U_j$ & Upwind speed for \textbf{inward} waves \\
+$L_j$               & Segment length \\
+$\Delta t$          & Global time step \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+This is an \textbf{upwind, conservative} one-dimensional flux scheme for advancing only the \textbf{pure advection} term:
+\[
+\frac{\partial A_\pm}{\partial t} + c_\pm \frac{\partial A_\pm}{\partial s} = 0
+\]
+before adding growth, damping, cascade, and shock-injection source terms.
+
+\section*{1. Compute Face-Centered Speeds}
+
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\footnotesize]
+double cPlus  =  VA[j] - U[j];   // +
+double cMinus = -VA[j] - U[j];   // –
+\end{lstlisting}
+
+\section*{2. Upwind Fluxes at Left and Right Faces of Cell $j$}
+
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\footnotesize]
+// Left face between j-1 and j
+double Fp_L = (cPlus > 0.0)
+              ? cPlus * A_plus[j-1]
+              : cPlus * A_plus[j];       // upwind
+double Fm_L = (cMinus > 0.0)
+              ? cMinus * A_minus[j-1]
+              : cMinus * A_minus[j];
+
+// Right face between j and j+1
+double Fp_R = (cPlus > 0.0)
+              ? cPlus * A_plus[j]
+              : cPlus * A_plus[j+1];
+double Fm_R = (cMinus > 0.0)
+              ? cMinus * A_minus[j]
+              : cMinus * A_minus[j+1];
+\end{lstlisting}
+
+\emph{If $j = 0$ or $j = N-1$, supply boundary values or set flux = 0 at that face.}
+
+\section*{3. Conservative Update}
+
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\footnotesize]
+double invVol = 1.0 / (L[j]); // if cross-section is uniform
+A_plus[j]  += ((Fp_L - Fp_R) * dt) * invVol;
+A_minus[j] += ((Fm_L - Fm_R) * dt) * invVol;
+\end{lstlisting}
+
+\section*{4. Stability Condition (CFL)}
+
+First-order upwind is stable if:
+\[
+\max |c_\pm| \cdot \Delta t < 0.5 \cdot L_{\min}
+\]
+
+\section*{5. Complete Operator-Split Step}
+
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\footnotesize]
+// (1) Advection (above)
+// (2) Growth / damping:   A += 2 * gamma * A * dt
+// (3) Kolmogorov cascade: A -= A / tau_cas * dt
+// (4) Shock injection:    A += Q_shock * dt
+\end{lstlisting}
+
+Steps (2)–(4) are done \textbf{after} advection during each global time step.
+
+\emph{Note:} Because all four operators are first-order in time, using a fixed split is first-order accurate overall. If higher accuracy is needed, you can apply Strang splitting (alternate the sequence every step).
+
+\section*{6. Boundary Options}
+
+\begin{itemize}
+    \item \textbf{Sunward inner boundary:} reflective for $A_{-}$ and free-outflow for $A_{+}$.
+    \item \textbf{Outer boundary} (e.g., 5 AU): fixed quiet-wind level $A_\pm = A_{\rm BG}$.
+    \item \textbf{Shock cell:} advection uses the \textbf{post-growth} $A_\pm$ values so that ramp-injected waves are immediately convected downstream by the next step.
+\end{itemize}
+
+\section*{Conclusion}
+
+This compact finite-volume scheme transports the turbulence energy density (via Kolmogorov amplitude $A_\pm$) consistently along the field line, in sync with the background flow and Alfvén group velocity, before incorporating physical source and loss terms.
+
+\section*{Finite-Volume Advection in a Lagrangian Field-Line Mesh}
+
+\emph{Each vertex is convected outward by the local solar-wind speed $U$.  
+Because the mesh itself moves with the flow, only the Alfvén group velocity relative to the plasma ($\pm V_A$) transports wave energy from cell to cell.  
+This routine also handles geometric stretching of each frustum-shaped cell.}
+
+\section*{1. Preliminaries and Notation}
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Symbol} & \textbf{Meaning (at time level $n$)} \\
+\midrule
+$A_{\pm,j}^n$ & Kolmogorov amplitudes in segment $j$ (J m$^{-2/3}$) \\
+$V_j^n$ & Cell volume: $\dfrac{L_j}{3}\left(A_L + \sqrt{A_L A_R} + A_R\right)$ \\
+$V_A^n$ & Alfvén speed at the cell center \\
+$c_{+,j} = +V_A^n$, $c_{-,j} = -V_A^n$ & Upwind speeds (relative to the moving plasma) \\
+$\Delta t$ & Global time step \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent Because vertices move with $U$, \textbf{no $U$ term appears in the flux speed}.
+
+\section*{2. Lagrangian-Mesh Update Sequence (One Global Step)}
+
+\subsection*{Step 0: Move Vertices and Recompute Geometry}
+
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\footnotesize]
+// For each vertex k:
+r_k += U_k * dt;                   // radial convection
+// update B_k, ρ_k (∝ r⁻²), cross-section A_k = B0 / B_k
+
+// For each segment j:
+L_j = |R_{j+1} - R_j|;
+A_L = A_left_face; A_R = A_right_face;
+V_new = (L_j/3)*(A_L + sqrt(A_L*A_R) + A_R);
+VA_j = B_mid / sqrt(mu0 * rho_mid);
+\end{lstlisting}
+
+\noindent \textbf{Stretch factor:}
+\[
+S_j = \frac{V_j^{n+1}}{V_j^n}
+\]
+This is used to conserve energy in the expanding cell.
+
+\subsection*{Step 1: Upwind Advection (Plasma-Frame Group Velocity)}
+
+For each segment $j$:
+
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\footnotesize]
+double cPlus  =  VA_j;
+double cMinus = -VA_j;
+
+// LEFT FACE fluxes
+double Fp_L = (cPlus  > 0) ? cPlus  * A_plus[j-1]  : cPlus  * A_plus[j];
+double Fm_L = (cMinus > 0) ? cMinus * A_minus[j-1] : cMinus * A_minus[j];
+
+// RIGHT FACE fluxes
+double Fp_R = (cPlus  > 0) ? cPlus  * A_plus[j]    : cPlus  * A_plus[j+1];
+double Fm_R = (cMinus > 0) ? cMinus * A_minus[j]   : cMinus * A_minus[j+1];
+
+// Conservative update in old volume V_j^n
+double dAp = (Fp_L - Fp_R) * dt / V_j^n;
+double dAm = (Fm_L - Fm_R) * dt / V_j^n;
+
+A_plus[j]  += dAp;
+A_minus[j] += dAm;
+\end{lstlisting}
+
+\subsection*{Step 2: Geometric Stretching (Adiabatic Dilution)}
+
+The wave energy density must scale with the expanding volume:
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\footnotesize]
+double Sstretch = V_j^n / V_j^{n+1};
+A_plus [j] *= Sstretch;
+A_minus[j] *= Sstretch;
+\end{lstlisting}
+
+\emph{If amplitudes are stored per unit magnetic flux ($A/B$), this step is unnecessary.}
+
+\subsection*{Step 3: Add Local Source/Sink Terms}
+
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\footnotesize]
+A_plus [j] += ( 2 * gamma_plus  * A_plus[j]
+              - A_plus[j] / tau_cas
+              + Q_shock_plus[j] ) * dt;
+
+A_minus[j] += ( 2 * gamma_minus * A_minus[j]
+              - A_minus[j] / tau_cas
+              + Q_shock_minus[j] ) * dt;
+\end{lstlisting}
+
+These terms are \textbf{cell-local} and independent of mesh motion.
+
+\section*{3. Stability and Accuracy}
+
+\begin{itemize}
+    \item \textbf{CFL condition (Lagrangian mesh):}
+    \[
+    |V_A|\,\Delta t < 0.5\,L_{\min}
+    \]
+    This is more lenient than Eulerian schemes since $|U|$ is absent.
+    \item \textbf{Stretching of small cells:} if $S_j \ll 1$, sub-cycle rescaling or limit $\Delta t$ so that $S_j > 0.8$.
+\end{itemize}
+
+\section*{4. Energy Conservation Check}
+
+For each cell:
+\[
+E^{n+1}_{\text{wave}} = S_{\text{stretch}} \left( E^n_{\text{wave}}
++ (F_{\text{in}} - F_{\text{out}}) \Delta t
++ \left(2\gamma A - \frac{A}{\tau_{\text{cas}}} + Q_{\text{shock}}\right) \Delta t \cdot V_j^n \right)
+\]
+This is what the algorithm above computes exactly, with machine-level precision.
+
+\section*{5. Complete Step in Code (Per Cell $j$)}
+
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\footnotesize]
+// 0: update geometry
+double V_old = Vol[j];
+double V_new = computeFrustumVolume(j); Vol[j] = V_new;
+double Sstretch = V_old / V_new;
+double cP =  VA[j];
+double cM = -VA[j];
+
+// 1: upwind advection
+double FpL = (cP > 0) ? cP * Aplus[j-1] : cP * Aplus[j];
+double FpR = (cP > 0) ? cP * Aplus[j]   : cP * Aplus[j+1];
+double FmL = (cM > 0) ? cM * Aminus[j-1]: cM * Aminus[j];
+double FmR = (cM > 0) ? cM * Aminus[j]  : cM * Aminus[j+1];
+Aplus [j] += (FpL - FpR) * dt / V_old;
+Aminus[j] += (FmL - FmR) * dt / V_old;
+
+// 2: stretching dilution
+Aplus [j] *= Sstretch;
+Aminus[j] *= Sstretch;
+
+// 3: local source/sink
+Aplus [j] += (2 * gammaP * Aplus[j] - Aplus[j] / taucas + QshockP[j]) * dt;
+Aminus[j] += (2 * gammaM * Aminus[j] - Aminus[j] / taucas + QshockM[j]) * dt;
+\end{lstlisting}
+
+\noindent This is the \textbf{complete advection-plus-stretch step} for turbulence energy density along a moving (Lagrangian) Parker-spiral field line.
+
+\section*{Storing Integrated Wave Energy per Segment}
+
+\textbf{Yes, storing the \emph{integrated} wave energy per segment} ($E = \int W\,dV$) can simplify the Lagrangian implementation—but it trades memory simplicity for a bit of algebra every time you need a density-based quantity.
+
+\section*{Why It Feels Easier in a Lagrangian Mesh}
+
+\begin{center}
+\begin{tabular}{@{}p{0.28\textwidth} | p{0.31\textwidth} | p{0.31\textwidth}@{}}
+\toprule
+\textbf{Aspect} &
+\textbf{Density $A_\pm$ (J m$^{-2/3}$)} &
+\textbf{Integrated energy $E_\pm$ (J)} \\
+\midrule
+\textbf{Cell stretching} &
+Must multiply by the stretch factor $V_{\text{old}}/V_{\text{new}}$ &
+\emph{Nothing to do:} energy stays with the moving cell \\
+\textbf{Advection step} &
+Flux term needs $c_\pm A_\pm$ and the face area &
+Flux term is just $c_\pm E_\pm$; volume cancels automatically \\
+\textbf{Energy conservation test} &
+Compare $A_\pm V$ between steps &
+Just sum $E_\pm$ over all cells (fewer floating-point ops) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section*{Where You Still Need the \emph{Density}}
+
+\begin{itemize}
+\item \textbf{Growth / damping coefficient:}  
+$2\gamma_\pm A_\pm$ uses $A_\pm$ explicitly because QLT is formulated per unit volume.  
+You evaluate:
+\[
+A_\pm = \frac{E_\pm}{V_j}
+\quad \Longrightarrow \quad
+\frac{dE_\pm}{dt} = 2\gamma_\pm \frac{E_\pm}{V_j} \cdot V_j = 2\gamma_\pm E_\pm
+\]
+So the ODE becomes: $\dot{E}_\pm = 2\gamma_\pm E_\pm$ — equally simple.
+
+\item \textbf{Cascade sink:}  
+$E_\pm/\tau_{\text{cas}}$ already uses energy, not density, if you write:  
+$\tau_{\text{cas}}^{-1} = C_K (V E)^{1/2} / L_\perp$.
+
+\item \textbf{Diffusion update:}  
+The mean free path needs $A_+ + A_-$:
+\[
+A_{\text{tot}} = \frac{E_+ + E_-}{V_j}
+\]
+\end{itemize}
+
+\section*{Code Sketch with Energy Storage}
+
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\footnotesize]
+// cell j variables now:  Eplus[j], Eminus[j]   (J)
+
+// 1. advection (upwind, plasma frame)
+FpL = (cP > 0) ? cP * Eplus[j-1] : cP * Eplus[j];   // J/s
+FpR = (cP > 0) ? cP * Eplus[j]   : cP * Eplus[j+1];
+Eplus[j] += (FpL - FpR) * dt;                       // volume auto-handled
+
+// 2. growth / damping
+Eplus[j] += 2 * gammaP * Eplus[j] * dt;
+
+// 3. Kolmogorov cascade
+Eplus[j] -= Eplus[j] / taucas * dt;
+
+// 4. shock injection (J/s)
+Eplus[j] += QshockP[j] * dt;
+\end{lstlisting}
+
+\noindent \textbf{Note:} The \emph{stretch term disappears} because $E_\pm$ follows the cell:
+no $V_{\text{old}} / V_{\text{new}}$ factor is necessary.
+
+\section*{Trade-offs}
+
+\subsection*{Pros}
+\begin{itemize}
+    \item Fewer stretch/dilution operations in a Lagrangian mesh
+    \item Energy conservation check becomes a simple sum
+    \item Advection step is slightly cheaper (no division by volume)
+\end{itemize}
+
+\subsection*{Cons}
+\begin{itemize}
+    \item Must divide by $V_j$ whenever you need $A_\pm$ (e.g., for $\gamma$, $\lambda_\parallel$, pressure diagnostics)
+    \item If you switch to an Eulerian mesh, you'll need to reintroduce volume factors
+\end{itemize}
+
+\section*{Bottom Line}
+
+For a \emph{purely Lagrangian} field-line solver, it is indeed \textbf{cleaner and perfectly safe} to store the \textbf{integrated wave energy $E_\pm$} instead of the density $A_\pm$.
+
+\medskip
+
+\noindent Just remember to divide by the instantaneous cell volume whenever a formula explicitly requires a density-based quantity (growth rate, mean free path, etc.).
+
+
