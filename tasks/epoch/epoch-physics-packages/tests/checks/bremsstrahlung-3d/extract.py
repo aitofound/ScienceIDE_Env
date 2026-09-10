@@ -268,7 +268,7 @@ def main() -> int:
     os.makedirs(a.out, exist_ok=True)
     write_table(os.path.join(a.out, "series.txt"), HEADER, rows)
     write_table(os.path.join(a.out, "tail.txt"), HEADER, rows[-5:])
-    # Early window: dumps 1-3 (skip dump 0, the t=0 initial condition), while
+    # Early window: dumps 1-3 (skip the first positive-time dump; EPOCH writes the first simulation step at or after the zero-time output target), while
     # the beam is still inside the box (it clears the domain well before the
     # final dump; see rubric.json warrant).
     write_table(os.path.join(a.out, "early.txt"), HEADER, rows[1:4])
