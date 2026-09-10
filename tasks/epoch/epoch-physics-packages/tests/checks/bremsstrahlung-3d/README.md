@@ -67,7 +67,7 @@ exactly zero, and a dropped recoil leaves the `Electron_Beam` early-mean energy 
 value rather than decaying. Achievable: the same deck run at `nprocx = 1, nprocy = 2, nprocz = 2` instead
 of the graded `nprocx = 2, nprocy = 2, nprocz = 1` gives the run-to-run spread of a correct but differently ordered
 execution: 1.6% on the weighted photon number, about 0.35% on the photon energy and 0.060% on the
-`Electron_Beam` early-mean energy, so the photon-count bound sits roughly four times above the
+`Electron_Beam` early-mean energy, so the photon-number bound sits roughly four times above the
 largest legitimate spread measured, the photon-energy bound about six times above it, and the
 electron-energy bound about five times above it; field energy differed by 0.0031% of its own
 value between layouts, about ten times below its 3e-4 guard bound.
