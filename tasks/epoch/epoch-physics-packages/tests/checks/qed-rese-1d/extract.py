@@ -30,17 +30,17 @@ import numpy as np
 # --- Minimal SDF reader -------------------------------------------------------
 # EPOCH writes its dumps in the SDF container documented in
 # code/epoch/SDF/documentation/sdf_format.tex.  The default task build emits
-# particle variables as POINT_VARIABLE blocks (type 4), while grid diagnostics
-# are PLAIN_VARIABLE blocks (type 3) and scalar diagnostics are CONSTANT (type
-# 5).  Point data are a one-dimensional array whose count is stored in the
-# common metadata at +72 bytes; unlike a grid, it has no dimensions to infer.
+# particle point meshes as POINT_MESH blocks (type 2), particle variables as
+# POINT_VARIABLE blocks (type 4), grid diagnostics as PLAIN_VARIABLE blocks
+# (type 3), and scalar diagnostics as CONSTANT (type 5).  Point metadata uses
+# the fixed SDF c_id_length identifier size; the file's string_length is only
+# for display names and does not change these metadata layouts.
 _MAGIC = b"SDF1"
 _LE = 16911887
+_POINT_MESH = 2
 _POINT_VARIABLE = 4
-# SDF v1 uses fixed 32-byte identifiers in block metadata (the EPOCH/SDF
-# c_id_length / SDF_ID_LENGTH constant); the file's string_length is only for
-# display names and does not change these metadata layouts.
 _ID_LENGTH = 32
+_MAX_DIMS = 4  # SDF c_maxdims from the pinned EPOCH SDF source.
 _DTYPE = {1: "<i4", 2: "<i8", 3: "<f4", 4: "<f8", 7: "<u1"}
 _SCALAR_FMT = {1: "<i", 2: "<q", 3: "<f", 4: "<d", 7: "<B"}
 
@@ -50,10 +50,37 @@ def _require(buf, offset, size, path):
         raise ValueError("%s: truncated SDF data" % path)
 
 
+def _point_mesh_metadata(ndims, meta, buf, path):
+    """Return (explicit npoints, metadata length) for an SDF POINT_MESH.
+
+    This is the pinned EPOCH/SDF writer order, not a count inferred from any
+    grid diagnostic: mults, labels, units, geometry, extents, npoints, and
+    species id.  The returned metadata length excludes the common block header.
+    """
+    if ndims <= 0 or ndims > _MAX_DIMS:
+        raise ValueError("%s: point mesh has invalid dimensions" % path)
+    real8_size = struct.calcsize("<d")
+    int4_size = struct.calcsize("<i")
+    int8_size = struct.calcsize("<q")
+    mults_length = ndims * real8_size
+    labels_length = ndims * _ID_LENGTH
+    units_length = ndims * _ID_LENGTH
+    geometry_length = int4_size
+    extents_length = 2 * ndims * real8_size
+    npoints_offset = (mults_length + labels_length + units_length
+                      + geometry_length + extents_length)
+    expected_info = npoints_offset + int8_size + _ID_LENGTH
+    _require(buf, meta, expected_info, path)
+    npoints = struct.unpack_from("<q", buf, meta + npoints_offset)[0]
+    if npoints < 0 or npoints > (1 << 62):
+        raise ValueError("%s: point mesh has invalid point count" % path)
+    return npoints, expected_info
+
+
 def _expected_bytes(blocktype, datatype, ndims, info_length, meta, buf, path):
-    if blocktype in (3, _POINT_VARIABLE, 5) and datatype not in _DTYPE:
+    if blocktype in (_POINT_MESH, 3, _POINT_VARIABLE, 5) and datatype not in _DTYPE:
         raise ValueError("%s: unsupported datatype for decoded block" % path)
-    if blocktype in (3, _POINT_VARIABLE, 5):
+    if blocktype in (_POINT_MESH, 3, _POINT_VARIABLE, 5):
         itemsize = np.dtype(_DTYPE[datatype]).itemsize
     if blocktype == 3:
         if ndims <= 0 or ndims > 8:
@@ -71,6 +98,9 @@ def _expected_bytes(blocktype, datatype, ndims, info_length, meta, buf, path):
         # and stagger (int4); block_info_length excludes the common block header.
         expected_info = 8 + 2 * _ID_LENGTH + 4 * (ndims + 1)
         expected_data = count * itemsize
+    elif blocktype == _POINT_MESH:
+        npoints, expected_info = _point_mesh_metadata(ndims, meta, buf, path)
+        expected_data = npoints * ndims * itemsize
     elif blocktype == _POINT_VARIABLE:
         if ndims != 1:
             raise ValueError("%s: point variable must have one dimension" % path)
@@ -176,6 +206,9 @@ def read_sdf(path):
                 count *= dimension
             arr = np.frombuffer(buf, dtype=_DTYPE[datatype], count=count, offset=data_loc)
             blocks[name] = np.array(arr, dtype=np.float64)
+        elif blocktype == _POINT_MESH:
+            npoints, _ = _point_mesh_metadata(ndims, meta, buf, path)
+            blocks[name] = int(npoints)
         elif blocktype == _POINT_VARIABLE and datatype in _DTYPE:
             npoints = struct.unpack_from("<q", buf, meta + 72)[0]
             arr = np.frombuffer(buf, dtype=_DTYPE[datatype], count=npoints, offset=data_loc)
@@ -221,31 +254,46 @@ HEADER = ["time_s", "photon_number", "photon_energy_J", "electron_energy_J",
 def photon_number(blocks):
     """Return the direct physical photon-number observable from point weights.
 
-    The ppc grid validates the number of point records, while the returned
-    observable remains the direct sum of ``Particles/Weight/Photon``.
+    PPC is a required independent grid diagnostic only.  Point cardinality is
+    taken from the explicit Photon POINT_MESH metadata and never from PPC.
     """
-    if "Derived/Particles_Per_Cell/Photon" not in blocks:
+    ppc_name = "Derived/Particles_Per_Cell/Photon"
+    mesh_name = "Grid/Particles/Photon"
+    weights_name = "Particles/Weight/Photon"
+    if ppc_name not in blocks:
         raise ValueError("required Photon particles-per-cell grid is missing")
-    ppc = np.asarray(blocks["Derived/Particles_Per_Cell/Photon"], dtype=np.float64)
+    ppc = np.asarray(blocks[ppc_name], dtype=np.float64)
     if ppc.ndim == 0 or ppc.size == 0 or not np.all(np.isfinite(ppc)) or np.any(ppc < 0.0):
         raise ValueError("Photon particles-per-cell grid is malformed")
     rounded = np.rint(ppc)
-    if not np.all(ppc == rounded) or np.any(rounded > np.iinfo(np.int64).max):
+    if not np.all(ppc == rounded) or np.any(rounded >= (1 << 63)):
         raise ValueError("Photon particles-per-cell grid is not safely integer-valued")
-    ppc_counts = [int(value) for value in rounded]
-    expected_points = sum(ppc_counts)
-    weights = blocks.get("Particles/Weight/Photon")
-    if weights is None:
-        if expected_points == 0:
-            return 0.0
-        raise ValueError("Photon ppc is nonzero but Particles/Weight/Photon is missing")
-    weights = np.asarray(weights, dtype=np.float64)
+
+    mesh_present = mesh_name in blocks
+    if mesh_present:
+        mesh_array = np.asarray(blocks[mesh_name])
+        if mesh_array.ndim != 0:
+            raise ValueError("Photon point mesh count is not a scalar")
+        mesh_value = mesh_array.item()
+        if isinstance(mesh_value, (bool, np.bool_)) or not isinstance(mesh_value, (int, np.integer)):
+            raise ValueError("Photon point mesh count is not an integer")
+        mesh_count = int(mesh_value)
+        if mesh_count < 0 or mesh_count > (1 << 62):
+            raise ValueError("Photon point mesh count is out of safe range")
+
+    if weights_name not in blocks:
+        if mesh_present:
+            raise ValueError("Photon point mesh is present but Particles/Weight/Photon is missing")
+        # EPOCH omits both Photon point blocks when the species has zero points.
+        return 0.0
+
+    weights = np.asarray(blocks[weights_name], dtype=np.float64)
     if weights.ndim != 1:
         raise ValueError("Particles/Weight/Photon must be a one-dimensional point variable")
-    if weights.size != expected_points:
-        raise ValueError("Photon ppc count does not match Particles/Weight/Photon size")
-    if weights.size == 0:
-        return 0.0
+    if not mesh_present:
+        raise ValueError("Particles/Weight/Photon is present but Photon point mesh is missing")
+    if weights.size != mesh_count:
+        raise ValueError("Photon point mesh count does not match Particles/Weight/Photon size")
     if not np.all(np.isfinite(weights)) or np.any(weights < 0.0):
         raise ValueError("Particles/Weight/Photon contains invalid weights")
     total = float(weights.sum())
