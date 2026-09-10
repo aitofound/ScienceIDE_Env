@@ -12,6 +12,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY code/swmf/ /workspace/code/
+# Approved immutable SWMF_data payload at the source tree's original lookup root.
+COPY integration/SWMF_data/ /workspace/code/SWMF_data/
 COPY tests/ /workspace/tests/
 RUN chmod +x /workspace/tests/test.sh /workspace/tests/checks/*/run.sh
 ENV SOURCE_DIR=/workspace/code
