@@ -26,23 +26,30 @@ import struct
 import numpy as np
 
 
-# --- Minimal SDF reader: only the block types this check reads ----------------
+# --- Minimal SDF reader -------------------------------------------------------
 # EPOCH writes its dumps in the SDF container documented in
-# code/epoch/SDF/documentation/sdf_format.tex. This reader decodes exactly two
-# block types from the raw bytes: CONSTANT (a scalar, block type 5) and
-# PLAIN_VARIABLE (a grid array, block type 3). Every other block -- including
-# the run-info block that carries the run date and the machine name -- is
-# skipped after its header, so nothing environment-dependent is ever read.
+# code/epoch/SDF/documentation/sdf_format.tex.  The default task build emits
+# particle variables as POINT_VARIABLE blocks (type 4), while grid diagnostics
+# are PLAIN_VARIABLE blocks (type 3) and scalar diagnostics are CONSTANT (type
+# 5).  Point data are a one-dimensional array whose count is stored in the
+# common metadata at +72 bytes; unlike a grid, it has no dimensions to infer.
 _MAGIC = b"SDF1"
 _LE = 16911887
+_POINT_VARIABLE = 4
 _DTYPE = {1: "<i4", 2: "<i8", 3: "<f4", 4: "<f8", 7: "<u1"}
 _SCALAR_FMT = {1: "<i", 2: "<q", 3: "<f", 4: "<d", 7: "<B"}
+
+
+def _require(buf, offset, size, path):
+    if offset < 0 or size < 0 or offset + size > len(buf):
+        raise ValueError("%s: truncated SDF data" % path)
 
 
 def read_sdf(path):
     """Return (time, {block name: scalar or numpy array}) for one .sdf file."""
     with open(path, "rb") as fh:
         buf = fh.read()
+    _require(buf, 0, 100, path)
     if buf[0:4] != _MAGIC:
         raise ValueError("%s: not an SDF file" % path)
     if struct.unpack_from("<i", buf, 4)[0] != _LE:
@@ -54,28 +61,53 @@ def read_sdf(path):
     header_len = struct.unpack_from("<i", buf, 72)[0]
     time = struct.unpack_from("<d", buf, 80)[0]
     strlen = struct.unpack_from("<i", buf, 96)[0]
-    if nblocks == 0:
-        raise ValueError("%s: nblocks == 0, the dump was never finished" % path)
+    if not np.isfinite(time):
+        raise ValueError("%s: non-finite SDF time" % path)
+    if first < 0 or nblocks <= 0 or header_len <= 0 or strlen < 0:
+        raise ValueError("%s: invalid SDF header" % path)
     blocks = {}
     loc = first
-    for _ in range(nblocks):
+    for index in range(nblocks):
+        _require(buf, loc, 68, path)
         nxt, data_loc = struct.unpack_from("<qq", buf, loc)
         blocktype, datatype, ndims = struct.unpack_from("<iii", buf, loc + 56)
+        _require(buf, loc + 68, strlen, path)
         name = buf[loc + 68:loc + 68 + strlen].split(b"\x00", 1)[0].decode("ascii", "replace").strip()
         meta = loc + header_len
         if blocktype == 5 and datatype in _SCALAR_FMT:          # CONSTANT scalar
+            _require(buf, meta, struct.calcsize(_SCALAR_FMT[datatype]), path)
             blocks[name] = struct.unpack_from(_SCALAR_FMT[datatype], buf, meta)[0]
         elif blocktype == 3 and datatype in _DTYPE:             # PLAIN_VARIABLE grid
+            if ndims <= 0:
+                raise ValueError("%s: plain variable has no dimensions" % path)
             common = meta + 72
+            _require(buf, common, 4 * ndims, path)
             dims = struct.unpack_from("<%di" % ndims, buf, common)
             count = 1
-            for d in dims:
-                count *= d
+            for dimension in dims:
+                if dimension < 0:
+                    raise ValueError("%s: negative grid dimension" % path)
+                count *= dimension
+            itemsize = np.dtype(_DTYPE[datatype]).itemsize
+            _require(buf, data_loc, count * itemsize, path)
             arr = np.frombuffer(buf, dtype=_DTYPE[datatype], count=count, offset=data_loc)
             blocks[name] = np.array(arr, dtype=np.float64)
-        if nxt <= loc:
-            break
-        loc = nxt
+        elif blocktype == _POINT_VARIABLE and datatype in _DTYPE:  # POINT_VARIABLE particle list
+            if ndims != 1:
+                raise ValueError("%s: point variable must have one dimension" % path)
+            common = meta + 72
+            _require(buf, common, 8, path)
+            npoints = struct.unpack_from("<q", buf, common)[0]
+            if npoints < 0:
+                raise ValueError("%s: negative point count" % path)
+            itemsize = np.dtype(_DTYPE[datatype]).itemsize
+            _require(buf, data_loc, npoints * itemsize, path)
+            arr = np.frombuffer(buf, dtype=_DTYPE[datatype], count=npoints, offset=data_loc)
+            blocks[name] = np.array(arr, dtype=np.float64)
+        if index + 1 < nblocks:
+            if nxt <= loc:
+                raise ValueError("%s: invalid SDF block chain" % path)
+            loc = nxt
     return time, blocks
 
 
@@ -93,30 +125,44 @@ def write_table(path, header, rows):
             fh.write("  ".join("%.17e" % v for v in row) + "\n")
 
 
-HEADER = ["time_s", "photon_count", "photon_energy_J", "electron_beam_energy_J",
+HEADER = ["time_s", "photon_number", "photon_energy_J", "electron_beam_energy_J",
           "field_energy_J"]
 
 
 def photon_number(blocks):
-    """Return physical tracked photon number from EPOCH point weights.
+    """Return physical photon number by summing EPOCH's point weights.
 
-    EPOCH writes Particles/Weight/Photon with empty units; each entry is a
-    dimensionless physical-particle multiplicity. Empty Photon species have
-    no point-variable block and therefore contribute zero. A non-empty ppc
-    grid without its weight block is malformed output.
+    ``Particles/Weight/Photon`` is a one-dimensional POINT_VARIABLE whose
+    entries are dimensionless physical-particle multiplicities.  The required
+    ppc grid is used only to identify a valid empty Photon species: EPOCH omits
+    the point block when the species is empty and emits an all-zero ppc grid.
+    Missing ppc, malformed ppc, nonfinite/negative ppc, or a nonempty ppc
+    without weights fails closed rather than becoming a false zero.  Particle
+    count is deliberately never substituted for the weighted observable.
     """
-    ppc = blocks.get("Derived/Particles_Per_Cell/Photon")
+    if "Derived/Particles_Per_Cell/Photon" not in blocks:
+        raise ValueError("required Photon particles-per-cell grid is missing")
+    ppc = np.asarray(blocks["Derived/Particles_Per_Cell/Photon"], dtype=np.float64)
+    if ppc.ndim == 0 or not np.all(np.isfinite(ppc)) or np.any(ppc < 0.0):
+        raise ValueError("Photon particles-per-cell grid is malformed")
     weights = blocks.get("Particles/Weight/Photon")
     if weights is None:
-        if ppc is not None and np.any(np.asarray(ppc) != 0.0):
-            raise ValueError("Photon ppc is nonzero but Particles/Weight/Photon is missing")
-        return 0.0
+        if np.all(ppc == 0.0):
+            return 0.0
+        raise ValueError("Photon ppc is nonzero but Particles/Weight/Photon is missing")
     weights = np.asarray(weights, dtype=np.float64)
     if weights.ndim != 1:
         raise ValueError("Particles/Weight/Photon must be a one-dimensional point variable")
+    if weights.size == 0:
+        if np.all(ppc == 0.0):
+            return 0.0
+        raise ValueError("Photon ppc is nonzero but the point weight list is empty")
     if not np.all(np.isfinite(weights)) or np.any(weights < 0.0):
         raise ValueError("Particles/Weight/Photon contains invalid weights")
-    return float(weights.sum())
+    total = float(weights.sum())
+    if not np.isfinite(total):
+        raise ValueError("Particles/Weight/Photon sum is non-finite")
+    return total
 
 
 def build_rows(paths):
