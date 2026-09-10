@@ -128,6 +128,21 @@ grab() {           # grab <name in OUT_DIR> <glob> [<glob> ...]
 
 # ---- build ------------------------------------------------------------------
 cd "$WORK/src"
+# The pinned source package keeps these test5 inputs under SWMF_data. Stage the
+# exact upstream files into the private work tree before Config.pl can link
+# GM/BATSRUS/data; this explicit step is robust to a sparse staged tree and
+# never synthesizes or downloads a replacement.
+FLUX_SOURCE="$SOURCE_DIR/SWMF_data/GM/BATSRUS/data/FLUXEMERGENCE"
+FLUX_DEST="$WORK/src/SWMF_data/GM/BATSRUS/data/FLUXEMERGENCE"
+for input in InitialStateSph.dat EOS.dat.gz; do
+  [ -f "$FLUX_SOURCE/$input" ] || {
+    echo "run.sh: missing required pinned source input $FLUX_SOURCE/$input" >&2
+    exit 2
+  }
+done
+mkdir -p "$FLUX_DEST"
+cp "$FLUX_SOURCE/InitialStateSph.dat" "$FLUX_DEST/"
+cp "$FLUX_SOURCE/EOS.dat.gz" "$FLUX_DEST/"
 BUILD_EXTRA=0          # extra build seconds of the stages that reconfigure and rebuild
 if [ "$BUILD_CACHE_HIT" -eq 1 ]; then
   # Config.pl records the configured tree's absolute DIR. The cache is copied
@@ -162,8 +177,8 @@ make rundir RUNDIR="$WORK/run" > "$WORK/rundir.log" 2>&1 \
   || { echo "run.sh: make rundir failed" >&2; tail -n 40 "$WORK/rundir.log" >&2; exit 1; }
 
 # The rest of the upstream _rundir recipe.
-cp "$WORK/src/GM/BATSRUS/data/FLUXEMERGENCE/"*Sph.dat "$WORK/run/"
-cp "$WORK/src/GM/BATSRUS/data/FLUXEMERGENCE/EOS."* "$WORK/run/"
+cp "$FLUX_DEST/"*Sph.dat "$WORK/run/"
+cp "$FLUX_DEST/EOS."* "$WORK/run/"
 ( cd "$WORK/run" && gzip -d -f EOS.dat.gz )
 
 # ---- run ---------------------------------------------------------------------
