@@ -38,6 +38,11 @@ fi
 case "$CHECK_NAME" in
   rbe-standalone)
     (cd RB/RBE && make -j"$SAB_BUILD_JOBS" RBE)
+    # The pinned standalone Makefile resolves ../input/PARAM.in from RUNDIR.
+    # Stage the exact task input at that boundary; upstream data files remain
+    # unresolved and are intentionally not synthesized or replaced.
+    mkdir -p "$WORK/input"
+    cp "$INPUT" "$WORK/input/PARAM.in"
     RUN="$WORK/rbe-run"; (cd RB/RBE && make rundir RUNDIR="$RUN" STANDALONE=YES RBDIR="$PWD")
     (cd "$RUN" && ./rbe.exe > runlog)
     ;;

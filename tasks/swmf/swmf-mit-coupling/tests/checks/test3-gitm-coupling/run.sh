@@ -25,7 +25,7 @@ prepare_gitm_embedded() {
   [ -x "$IEDIR/config.sh" ] || { echo 'run.sh: vendored Electrodynamics/config.sh is missing' >&2; exit 2; }
   # Configure and build the vendored IE library first; this is the real
   # Electrodynamics producer, not a placeholder archive or source patch.
-  (cd "$IEDIR" && ./config.sh --compiler=gfortran)
+  (cd "$IEDIR" && ./config.sh --compiler gfortran)
   make --no-print-directory -C "$IEDIR" LIB
   # Config.pl may install a component tree without the standalone GITM
   # Makeversion helper.  Supply the release-file recipe in this scratch copy;
