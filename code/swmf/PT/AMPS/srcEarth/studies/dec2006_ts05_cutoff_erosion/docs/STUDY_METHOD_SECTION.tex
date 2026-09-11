@@ -1,0 +1,556 @@
+% -----------------------------------------------------------------------------
+% December 2006 production study
+% -----------------------------------------------------------------------------
+% This file defines the observation-facing geospace research experiment.  It is
+% deliberately separate from validation.tex: C9 and C10 establish whether the
+% model reproduces published/archived cutoff products, whereas this section
+% pre-registers the additional morphology, timing, and hysteresis analyses that
+% will be populated after the frozen production run.
+
+\section{December 2006 Research Experiment: Storm-Time Cutoff Erosion and Memory}
+\label{sec:experiment}
+
+\subsection{Scientific Objective and Falsifiable Hypotheses}
+
+The December 2006 solar energetic particle (SEP) event and geomagnetic storm
+provide a particularly useful natural experiment because energetic protons
+were present while the magnetosphere underwent rapid compression, sustained
+southward interplanetary magnetic field (IMF), main-phase erosion, and
+recovery. PAMELA measured a rigidity-dependent equatorward displacement of the
+SEP cutoff, reaching approximately $7^{\circ}$ for the lowest reported
+rigidities, on its approximately 94-min orbit cadence
+\cite{Adriani-2016-SW}. Contemporaneous NOAA POES/MetOp measurements provide a
+complementary, multi-spacecraft view of lower-rigidity proton boundaries as a
+function of magnetic local time (MLT) \cite{Dmitriev-2010-JGR}. The event
+therefore permits a test of absolute cutoff latitude, spatial morphology, and
+time dependence using one internally consistent IGRF+TS05 trajectory model.
+
+The primary scientific objective is to determine how the rigidity-dependent
+geomagnetic shielding boundary changes during storm development and whether
+its recovery is described by the instantaneous geomagnetic disturbance alone
+or retains measurable dependence on prior solar-wind driving. Four hypotheses
+are fixed before inspecting the production results:
+
+\begin{enumerate}
+\item The storm-time equatorward displacement is larger and persists longer at
+lower rigidity than at higher rigidity.
+\item Boundary motion is not longitudinally uniform: its mean latitude,
+first-harmonic MLT amplitude, and phase evolve differently during compression,
+main phase, and recovery.
+\item Dynamic pressure primarily controls the prompt compression response,
+whereas southward IMF, SYM-H, and the TS05 history variables $W_1$--$W_6$
+better describe the delayed erosion and recovery.
+\item Main- and recovery-phase boundaries differ at matched SYM-H, constituting
+hysteresis. If the TS05 history variables contain relevant storm memory, they
+should reduce this phase-dependent residual relative to an instantaneous-index
+description.
+\end{enumerate}
+
+These are model--data and numerical sensitivity hypotheses, not claims that a
+single empirical-field parameter is a unique physical cause. Solar-wind and
+geomagnetic drivers covary strongly, and TS05 is an empirical storm-time field
+model rather than a self-consistent plasma simulation \cite{Tsyganenko-2005-JGR}.
+The analysis therefore emphasizes prediction, timing, and controlled
+counterfactual calculations; causal language is reserved for mechanisms that
+cannot be distinguished by the present design.
+
+\subsection{Event Windows and Predefined Landmarks}
+
+The context interval is 12--18 December 2006. The production interval is
+14 December 00:00 UT through 17 December 00:00 UT, matching the complete
+five-minute TS05 driver used by the C9 validation. A 15-min model cadence is
+used throughout the production interval, with five-minute calculations added
+around rapid changes in dynamic pressure, IMF $B_z$, and SYM-H. The cadence is
+chosen before examining modeled cutoff motion.
+
+Event landmarks are selected algorithmically from the quality-controlled
+driver rather than moved to coincide with a modeled extremum. The quiet
+reference $t_q$ is the last complete six-hour interval before the storm for
+which median $|\mathrm{SYM\mbox{-}H}|\leq20$ nT, the absolute Theil--Sen SYM-H
+trend is no greater than 1 nT h$^{-1}$, and no required TS05 input is missing.
+The compression time $t_c$ is the epoch of the largest positive five-minute
+change in $\ln P_{\mathrm{dyn}}$ during the storm arrival window. The
+main-phase time $t_m$ is the
+minimum SYM-H. The maximum-erosion time $t_e(R)$ is determined separately from
+the modeled mean cutoff at each rigidity and is reported relative to $t_c$ and
+$t_m$. Recovery samples are retained only after $t_m$. Matched main/recovery
+pairs are then formed using the driver tolerances specified below. This
+separation prevents the observational landmarks and the modeled response times
+from being defined circularly.
+
+\begin{table*}
+\caption{Predefined Time Sampling and Its Scientific Role}
+\label{tab:exp-time-sampling}
+\centering
+\small
+\begin{tabular}{p{0.20\textwidth}p{0.21\textwidth}p{0.49\textwidth}}
+\toprule
+Product & Sampling & Purpose \\
+\midrule
+Event context & 12--18 December; 5-min drivers & Establish upstream conditions, disturbance indices, data gaps, and event phases. \\
+Production survey & 14 December 00:00--17 December 00:00 UT; 15 min & Resolve rigidity-dependent erosion, recovery, MLT morphology, and accessible area. \\
+Rapid-transition subset & 5 min around $t_c$, strong southward-$B_z$ changes, $t_m$, and fastest modeled motion & Bound cadence error and quantify prompt versus delayed response. \\
+PAMELA comparison & Published orbit midpoints; optionally a five-minute average over each approximately 94-min accumulation interval & Reproduce the C9 observation operator without treating an orbit-average as an instantaneous measurement. \\
+POES/MetOp comparison & Native 16-s samples grouped in two-hour windows and three-hour MLT sectors & Reproduce the C10 constellation operator and estimate MLT-resolved boundaries. \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Data Sources, Provenance, and Processing}
+
+\subsubsection{Solar-Wind and Geomagnetic Drivers}
+
+Near-Earth solar-wind, IMF, and geomagnetic indices are taken from the NASA
+Space Physics Data Facility (SPDF) OMNI high-resolution data service
+\cite{King-2005-JGR,NASA-SPDF-OMNI-2026}. The production TS05 input is the
+official five-minute 2006 OMNI file distributed with the TS05 history
+variables, \texttt{2006\_OMNI\_5m\_with\_TS05\_variables}, from the model
+author's archive \cite{Tsyganenko-TS05-Drivers-2006}. Each record supplies the
+epoch, GSM IMF $B_y$ and $B_z$, solar-wind speed and density, dynamic pressure,
+DST or SYM-H-compatible storm index, dipole tilt, and $W_1$--$W_6$. TS05 uses
+dynamic pressure, disturbance level, IMF, dipole tilt, and the six history
+variables to represent storm-time current systems \cite{Tsyganenko-2005-JGR}.
+
+The preprocessing archive will retain the unmodified downloaded file, source
+URL, retrieval date, checksum, parser version, and a normalized table used by
+AMPS. Automated checks require monotonic five-minute epochs, documented units,
+finite required values, no duplicate epochs, physically plausible ranges, and
+an explicit gap mask. No interpolation is allowed across a gap longer than
+15 min. Shorter gaps are linearly interpolated for instantaneous quantities;
+the interpolation flag is retained. Dynamic pressure is recomputed from the
+available density and speed as a consistency check but the distributed TS05
+value remains authoritative unless a documented file defect is found. The
+exact row or interpolating pair selected for every AMPS snapshot is written to
+the run manifest. These checks extend the C15 driver-interpolation contract.
+
+\subsubsection{PAMELA Rigidity-Dependent Cutoffs}
+
+The PAMELA comparison uses the numerical supporting information to
+\citet{Adriani-2016-SW}, specifically Table S1 rather than values digitized
+from a figure. The table contains 37 orbit midpoints and seven rigidity bins,
+yielding 259 time--rigidity cells, of which 258 contain reported cutoffs. The
+geometric-mean bin rigidities are 0.424, 0.498, 0.588, 0.693, 0.817, 0.962,
+and 1.131 GV. PAMELA defined the observed cutoff latitude as the latitude at
+which the measured proton flux reached one half of its mean high-latitude
+value above $65^{\circ}$ AACGM latitude. Published asymmetric uncertainties
+are preserved. The primary analysis uses the published orbit midpoint and
+cutoff directly, because the public table is an orbit-level product rather
+than event data. A temporal-sampling sensitivity calculation averages model
+transmission over five-minute snapshots spanning the nominal 94-min orbit
+window; it is reported separately and is not represented as reconstruction of
+the unpublished event selection.
+
+The validation-equivalent model samples a 475-km WGS-84 geodetic shell, traces
+vertical protons, longitude-averages the resolved access state separately in
+each hemisphere, and extracts a weighted-isotonic 50\% transmission crossing.
+The north and south absolute cutoff latitudes are combined using their median,
+matching the C9 contract. This shell approximation is an explicit assumption:
+it removes orbit-location details not present in Table S1 and tests the global
+cutoff response rather than a spacecraft-by-spacecraft ephemeris reconstruction.
+
+\subsubsection{NOAA POES/MetOp Proton Boundaries}
+
+The local-time analysis uses NOAA/NCEI Level-2 SEM-2 16-s data from NOAA-15,
+NOAA-16, NOAA-17, NOAA-18, and MetOp-A (MetOp-02), obtained from the public
+POES/MetOp Space Environment Monitor archive \cite{NOAA-NCEI-POES-SEM2}.
+Required fields are UTC, geodetic latitude, longitude, altitude, $L$, MLT, and
+the MEPED omnidirectional proton variables \texttt{mepomp6} through
+\texttt{mepomp9}. The archived daily files, retrieval URLs, checksums, and the
+NOAA processing-version identifier are recorded. Samples outside 14 December
+00:00 UT--16 December 12:00 UT, samples with nonzero fatal quality flags, and
+nonfinite or nonpositive fluxes are excluded with reason codes. Positions are
+converted to AACGM latitude and MLT using one frozen coordinate-library
+version.
+
+The four integral thresholds are represented by the lower-threshold proton
+rigidities 0.174013525, 0.262395866, 0.369131538, and 0.531334344 GV for P6,
+P7, P8, and P9, respectively. P6 and P7 are primary. P8 and P9 are diagnostics
+because their subcommutated sampling, broad response, and spectral dependence
+make a sharp lower-threshold interpretation less secure
+\cite{Evans-2000-NOAA,Machol-2012-NOAA,Green-2013-NOAA,Yando-2011-JGR}.
+Additional limitations include proton/electron contamination, radiation
+damage and threshold drift, broad angular response, and cross-spacecraft
+calibration differences \cite{Asikainen-2011-JASTP,Sandanger-2015-JGR,Peck-2015-JGR}.
+Consequently, the model is not empirically adjusted to make these channels
+agree, and the primary claims do not rely on P8/P9.
+
+For each poleward pass, the observed normalized transmission is
+\begin{linenomath*}
+\begin{equation}
+ T_{\mathrm{obs}}(\lambda)=
+ \frac{F(\lambda)-F_{\mathrm{bg}}}
+      {F_{\mathrm{pol}}-F_{\mathrm{bg}}},
+ \label{eq:exp-poes-transmission}
+\end{equation}
+\end{linenomath*}
+where $F_{\mathrm{pol}}$ is the median flux poleward of $75^{\circ}$ AACGM and
+$F_{\mathrm{bg}}$ is the median within $5^{\circ}$ of the low-latitude edge of
+the retained leg. A weighted isotonic fit gives $T_{25}$, $T_{50}$, and
+$T_{75}$. Eligible crossings require the sample counts, polar-to-background
+contrast, bracket, width, and isotonic-residual criteria specified by C10.
+Eligible legs are grouped into two-hour windows centered hourly and into eight
+three-hour MLT sectors. The corresponding model calculation uses an 850-km
+shell and the identical AACGM/MLT binning and crossing estimator.
+
+\begin{table*}
+\caption{Observation and Driver Data Used in the December 2006 Study}
+\label{tab:exp-data}
+\centering
+\small
+\begin{tabular}{p{0.18\textwidth}p{0.21\textwidth}p{0.24\textwidth}p{0.27\textwidth}}
+\toprule
+Data set & Source & Variables retained & Role and principal limitation \\
+\midrule
+Five-minute OMNI/TS05 driver & NASA SPDF OMNI and official TS05 driver archive & $P_{\mathrm{dyn}}$, GSM $B_y,B_z$, speed, density, DST/SYM-H, tilt, $W_1$--$W_6$ & Drives IGRF+TS05; empirical inputs are correlated and carry upstream timing and interpolation uncertainty. \\
+PAMELA Table S1 & Supporting information to \citet{Adriani-2016-SW} & Orbit midpoint, rigidity bin, absolute cutoff latitude, asymmetric uncertainty & Primary rigidity-dependent absolute validation; orbit-averaged product lacks event-level selection and full ephemeris. \\
+NOAA POES/MetOp SEM-2 Level 2 & NOAA/NCEI archive & 16-s position, MLT, quality, P6--P9 omnidirectional proton channels & Primary P6/P7 MLT-resolved validation; broad response, aging, contamination, and threshold-proxy assumptions. \\
+AMPS run manifest & Generated with every production case & Input checksums, exact driver rows, command, revision, numerical controls, state counts & Makes every modeled point reproducible and prevents silent mixing of configurations. \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Production Model and Numerical Design}
+
+The production magnetic field is IGRF plus TS05. Trajectory tracing in
+realistic, time-indexed geomagnetic fields is the established basis for
+storm-time cutoff calculations \cite{Cooke-1991-INC,Smart-2005-ASR,
+Kress-2010-SW,Kress-2015-JGR}. No alternative external-field
+model enters the primary science result; alternative fields, if calculated,
+are labeled structural-sensitivity experiments. The field is frozen during
+each backtrace, and the electric field is set to zero, so the result is a
+quasi-static rigidity access boundary rather than a time-dependent
+electromagnetic transport solution. Relativistic full-orbit protons are
+backtraced with the RK4 mover. Boris is used at selected quiet, compression,
+main-phase, and recovery epochs to test mover sensitivity. Mode3D mesh field
+evaluation supplies the production time series, while GRIDLESS field
+evaluation and mesh refinement provide parity and interpolation checks.
+
+The trajectory classifier returns three states,
+\begin{linenomath*}
+\begin{equation}
+ A(R,\Omega,\mathbf{x},t) \in \{0,1,2\},
+ \label{eq:exp-access-state}
+\end{equation}
+\end{linenomath*}
+for forbidden, allowed, and unresolved trajectories. Only states 0 and 1 enter
+the resolved transmission,
+\begin{linenomath*}
+\begin{equation}
+ T_{\mathrm{mod}}(R)=
+ \frac{\sum_{j:A_j\ne2} w_j A_j}
+      {\sum_{j:A_j\ne2} w_j}, \qquad
+ f_{\mathrm{unres}}=
+ \frac{\sum_{j:A_j=2}w_j}{\sum_j w_j},
+ \label{eq:exp-model-transmission}
+\end{equation}
+\end{linenomath*}
+where $j$ indexes longitude or look direction and $w_j$ is its quadrature
+weight. Unresolved weight is never silently converted to allowed or forbidden.
+A reported boundary must satisfy the C9 or C10 resolved-coverage and bracketing
+requirements; sensitivity runs lengthen the trace limit to distinguish a
+physical penumbra from insufficient integration.
+
+One common spatial product supplies two observation-equivalent reductions and
+the research analysis. It contains the C9 and C10 shell altitudes, vertical
+incidence, exact rigidity samples, exact observation midpoints, and all inputs
+needed by their separate time-aggregation and $T_{50}$ operators. The research
+product uses both 475- and 850-km shells, a $15^{\circ}$ longitude by
+$2^{\circ}$ latitude grid from $35^{\circ}$ to $85^{\circ}$ in both
+hemispheres, and a common rigidity grid from 0.15 to 1.25 GV. Exact PAMELA and
+POES/MetOp rigidities are inserted into that grid. Direct access is evaluated
+at each rigidity; cutoff boundaries are not inferred by interpolating between
+widely separated energy channels. The primary maps use vertical incidence so
+that they remain commensurate with the cutoff-latitude validation. Directional
+and aperture-folded access are reserved for a labeled secondary analysis and
+are not mixed with vertical cutoffs.
+
+The two shells are evaluated in one Mode3D process. Restartable groups of up to
+16 irregular epochs use \texttt{TEMPORAL\_MODE SNAPSHOT\_LIST}: AMR topology,
+distributed block allocation, and static data layout are retained, but the
+five-minute TS05 driver is interpolated and the complete IGRF+TS05 field is
+refilled at every epoch. The optimized result is required to reproduce a
+standalone one-epoch/one-shell calculation with complete access-grid closure,
+identical resolved access states and unresolved fractions, and derived
+$T_{50}$ boundaries equal to numerical reporting precision. Thus mesh reuse
+changes process lifecycle but not the physical snapshot definition.
+
+\subsection{Observation Operators and Model--Data Comparisons}
+
+For an observation $i$ and its strictly paired model value, the latitude
+residual is
+\begin{linenomath*}
+\begin{equation}
+ \epsilon_i=\Lambda_{c,i}^{\mathrm{mod}}-
+             \Lambda_{c,i}^{\mathrm{obs}}.
+ \label{eq:exp-residual}
+\end{equation}
+\end{linenomath*}
+Positive $\epsilon_i$ denotes excessive modeled shielding (a boundary that is
+too poleward), and negative $\epsilon_i$ denotes excessive modeled access. The
+reported aggregate measures are bias, median absolute error, root-mean-square
+error, Pearson and rank correlation, and the timing and magnitude errors of
+the maximum equatorward displacement. PAMELA metrics are reported overall and
+by rigidity. POES/MetOp metrics are reported for primary P6/P7 cells overall
+and by MLT, hemisphere, spacecraft, and storm phase; P8/P9 results remain
+diagnostic. All denominators use paired eligible cells, and tables show the
+eligible, rejected, missing, and unresolved counts.
+
+PAMELA and POES/MetOp are not treated as interchangeable measurements. Their
+altitudes, rigidities, directions, sampling, and cutoff definitions differ.
+Cross-instrument closure is tested only after imposing PAMELA's temporal and
+polar-pass sampling on the POES/MetOp constellation and applying the
+corresponding operator to AMPS. This nested comparison asks whether the model
+explains the expected altitude, rigidity, MLT, and sampling differences; it
+does not force either instrument onto the other's native measurement.
+
+\begin{table*}
+\caption{Primary Quantities Compared With Observations}
+\label{tab:exp-comparisons}
+\centering
+\small
+\begin{tabular}{p{0.20\textwidth}p{0.25\textwidth}p{0.25\textwidth}p{0.20\textwidth}}
+\toprule
+Quantity & Observation & AMPS analogue & Scientific use \\
+\midrule
+PAMELA cutoff latitude & Published 50\% polar-flux latitude in seven rigidity bins & Longitude-averaged resolved vertical-access $T_{50}$ at 475 km & Absolute rigidity-dependent validation and storm displacement. \\
+POES/MetOp P6/P7 boundary & Isotonic $T_{50}$ from normalized leg profiles & Identically binned vertical-access $T_{50}$ at 850 km & Low-rigidity MLT, hemisphere, and time validation. \\
+Transition width & $T_{75}-T_{25}$ from eligible NOAA legs & Modeled $T_{75}-T_{25}$ & Penumbra sharpness; secondary because detector response broadens the observed transition. \\
+Boundary timing & Epoch of largest observed equatorward displacement & Epoch of modeled minimum cutoff latitude & Prompt-response and recovery timing. \\
+Cross-instrument closure & Sampling-matched PAMELA and POES/MetOp boundaries & Same two observation operators applied to one field solution & Consistency across altitude, rigidity, and sampling. \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Cutoff Morphology and Accessible-Area Diagnostics}
+
+At each epoch, rigidity, altitude, and hemisphere, the MLT-resolved boundary is
+fit first with a mean and first harmonic,
+\begin{linenomath*}
+\begin{equation}
+ \Lambda_c(\mathrm{MLT},t,R)=\Lambda_0(t,R)+A_1(t,R)
+ \cos\left[\frac{2\pi}{24}\left(\mathrm{MLT}-\phi_1(t,R)\right)\right].
+ \label{eq:exp-harmonic}
+\end{equation}
+\end{linenomath*}
+The implemented reduction uses ordinary least squares on finite resolved MLT
+cells and archives the valid/requested cell counts and RMS residual. A second
+fit adds $C_2\cos(2\theta)+S_2\sin(2\theta)$, where
+$\theta=2\pi\,\mathrm{MLT}/24$, and reports
+$A_2=(C_2^2+S_2^2)^{1/2}$ and its 12-h phase. This semidiurnal term is a
+descriptive day--night versus dawn--dusk deformation metric; the original cell
+table and both fit residuals remain authoritative. The storm perturbation is
+referenced to the
+quiet median,
+\begin{linenomath*}
+\begin{equation}
+ \Delta\Lambda_c(t,R,\mathrm{MLT})=
+ \Lambda_c(t,R,\mathrm{MLT})-
+ \widetilde{\Lambda}_{c,q}(R,\mathrm{MLT}),
+ \label{eq:exp-cutoff-depression}
+\end{equation}
+\end{linenomath*}
+so negative values are equatorward erosion. Boundary speed is evaluated with
+centered finite differences except at gaps and interval endpoints.
+
+The implemented boundary-derived accessible fraction within the analyzed
+absolute-latitude band $[\Lambda_{\min},\Lambda_{\max}]$ is
+\begin{linenomath*}
+\begin{equation}
+ f_{\mathrm{acc}}(R,t)=\left\langle
+ \frac{\sin\Lambda_{\max}-\sin\Lambda_c(\mathrm{MLT},t,R)}
+ {\sin\Lambda_{\max}-\sin\Lambda_{\min}}
+ \right\rangle_{\mathrm{MLT}},\qquad
+ S_{\mathrm{eq}}=2\pi(R_E+h)^2
+ (\sin\Lambda_{\max}-\sin\Lambda_{\min})f_{\mathrm{acc}},
+ \label{eq:exp-accessible-area}
+\end{equation}
+\end{linenomath*}
+where boundaries are clamped to the analyzed band before integration and the
+average is over valid MLT sectors. $S_{\mathrm{eq}}$ is explicitly a
+spherical-shell-equivalent comparison metric; AACGM is not assumed to be an
+equal-area coordinate system. Reporting both latitude and accessible fraction
+distinguishes a nearly uniform equatorward shift from a strongly asymmetric
+opening confined to a limited range of MLT.
+
+The same exact-rigidity classifications are inverted independently at every
+geographic shell cell to form spatial cutoff-rigidity maps. Unresolved states
+are omitted, and the remaining binary access sequence $A(R_i)\in\{0,1\}$ is
+projected onto a nondecreasing sequence $\widehat{A}(R_i)$ using the
+equal-weight pool-adjacent-violators algorithm. A numerical map value is
+reported only when
+\begin{linenomath*}
+\begin{equation}
+ \widehat{A}(R_{\min})<0.5<\widehat{A}(R_{\max}), \qquad
+ R_{50}:\ \widehat{A}(R_{50})=0.5,
+ \label{eq:exp-spatial-r50}
+\end{equation}
+\end{linenomath*}
+with linear interpolation between adjacent fitted samples; an exact 0.5
+plateau is represented by the midpoint of its rigidity interval. All-allowed
+and all-forbidden profiles are retained as $R_{50}<R_{\min}$ and
+$R_{50}>R_{\max}$ censoring states rather than assigned endpoint values.
+Mixed profiles without an endpoint bracket and incomplete profiles remain
+non-numerical. Bracket width, resolved fraction, and raw nonmonotonic transition
+counts accompany every map cell.
+
+For a cell $j$ with a bracketed precompression quiet median $R_{50,q,j}$, the
+storm-time decrease is
+\begin{linenomath*}
+\begin{equation}
+ D_j(t)=\max[0,R_{50,q,j}-R_{50,j}(t)].
+ \label{eq:exp-spatial-cutoff-decrease}
+\end{equation}
+\end{linenomath*}
+The maximum of $D_j(t)$ over the event identifies where and when shielding loss
+is greatest. If the event profile becomes all-allowed, the recorded value
+$R_{50,q,j}-R_{\min}$ is a conservative lower bound and is flagged as censored;
+it is excluded from exact mean-change statistics. Shell-level evolution uses
+$\cos(\lambda_{\mathrm{GEO}})$ area weights and reports exact mean change,
+conservative median/90th-percentile/maximum decrease, and the weighted area
+fraction for which $D_j\geq0.05$~GV.
+
+\subsection{Lag, Driver Attribution, and Hysteresis}
+
+The candidate drivers are $P_{\mathrm{dyn}}$, IMF $B_z$, the time integral of
+southward IMF, SYM-H, and $W_1$--$W_6$. For a cutoff diagnostic $y(t)$ and a
+standardized driver $x(t)$, lagged association is summarized by
+\begin{linenomath*}
+\begin{equation}
+ C_{xy}(\tau)=
+ \frac{\sum_{t\in\mathcal{V}_{\tau}}[x(t-\tau)-\bar{x}_{\tau}]
+ [y(t)-\bar{y}_{\tau}]}
+ {\left\{\sum[x(t-\tau)-\bar{x}_{\tau}]^2
+ \sum[y(t)-\bar{y}_{\tau}]^2\right\}^{1/2}},
+ \label{eq:exp-lag-correlation}
+\end{equation}
+\end{linenomath*}
+where $\mathcal{V}_{\tau}$ contains only simultaneous valid samples. Lags are
+searched over the preregistered interval $-3$ to $+6$ h, with positive $\tau$
+meaning that cutoff response follows the driver. Confidence intervals use
+phase-preserving block bootstrap resamples; the effective number of
+independent samples, not the raw five-minute count, controls significance.
+Runs with fewer than 24 paired model epochs retain lag curves for software and
+exploratory diagnostics but omit bootstrap intervals and are labeled
+\texttt{DIAGNOSTIC\_ONLY}. The same minimum is applied to matched-driver
+hysteresis inference. Recovery half-times and e-folding times additionally
+require at least six post-peak samples and observed crossings of both levels.
+
+Predictive attribution uses a regularized distributed-lag model,
+\begin{linenomath*}
+\begin{equation}
+ y(t,R)=\beta_0(R)+\sum_m\sum_{k\in\mathcal{K}}
+ \beta_{mk}(R)x_m(t-k)+\gamma(R)\,\mathrm{MLT}+\varepsilon(t,R),
+ \label{eq:exp-distributed-lag}
+\end{equation}
+\end{linenomath*}
+with contiguous storm-phase blocks for cross-validation. Ridge or elastic-net
+regularization is selected within the training blocks and performance is
+reported on held-out blocks. The baseline contains SYM-H and dynamic pressure;
+the history model adds $B_z$ and $W_1$--$W_6$. Improvement is measured by
+held-out RMSE and correlation. Coefficient magnitude is not interpreted as a
+causal partition because the predictors are correlated and the $W_i$ are
+themselves derived driver histories.
+
+Hysteresis is tested without fitting a visual loop. Each main-phase sample is
+matched to a recovery-phase sample at the same rigidity, hemisphere, and MLT,
+with $|\Delta\mathrm{SYM\mbox{-}H}|\leq10$ nT. A stricter subset additionally
+requires dynamic pressure within 20\% and $|\Delta B_z|\leq2$ nT. The matched
+phase contrast is
+\begin{linenomath*}
+\begin{equation}
+ \Delta\Lambda_{\mathrm{hys}}(R,\mathrm{MLT})=
+ \operatorname{median}_{p}
+ \left[\Lambda_{c,p}^{\mathrm{rec}}-
+       \Lambda_{c,p}^{\mathrm{main}}\right],
+ \label{eq:exp-hysteresis}
+\end{equation}
+\end{linenomath*}
+and the signed loop area $\oint\Lambda_0\,\mathrm{d}(\mathrm{SYM\mbox{-}H})$
+is a secondary descriptor. Bootstrap confidence intervals resample matched
+pairs in contiguous time blocks. The history hypothesis is supported only if
+the contrast is resolved numerically, has a confidence interval excluding
+zero in the preregistered primary rigidity set, and is reduced in held-out
+prediction after $W_1$--$W_6$ are included.
+
+Three TS05 sensitivity experiments help interpret this result: the full
+time-varying driver; a calculation in which the $W_i$ are held at quiet values
+while instantaneous pressure, IMF, and disturbance inputs vary; and a
+calculation in which instantaneous inputs are held while the $W_i$ evolve.
+These are controlled numerical perturbations of an empirical model, not
+self-consistent alternative magnetospheres. Their purpose is to identify which
+parts of the TS05 parameterization generate modeled memory, not to prove that a
+particular magnetospheric current system caused the observations.
+
+\subsection{Numerical Convergence, Uncertainty, and Decision Rules}
+
+The numerical ensemble varies spatial mesh resolution, trajectory time step,
+trace duration, longitude/MLT resolution, rigidity spacing, mover, and
+Mode3D versus GRIDLESS field evaluation. The production result is accepted
+only if its key diagnostics are stable relative to the observational
+uncertainty and the unresolved fraction remains below the C9/C10 limits.
+Scheduler, MPI-rank, and thread-count invariance are checked by C13 and C18 and
+are not counted as independent physical ensembles. C15 verifies that the
+selected TS05 epoch and driver interpolation are reproducible.
+
+Observational uncertainty is kept separate from numerical spread. PAMELA uses
+the published asymmetric intervals and orbit-level sampling uncertainty.
+POES/MetOp uses block variation among legs and spacecraft, together with
+sensitivity to plateau/background windows, quality screening, and channel
+interpretation. AACGM transformation version, altitude-shell approximation,
+and TS05 structural limitations are reported as model-form assumptions rather
+than folded into a single Gaussian error bar. Confidence intervals are based
+on contiguous block bootstrap resampling. Rigidity- or MLT-resolved multiple
+comparisons use a false-discovery-rate correction, while the small set of
+primary global metrics is reported with unadjusted confidence intervals.
+
+The established C9 acceptance targets (valid fraction at least 0.85, RMSE no
+greater than $3^{\circ}$, absolute bias no greater than $2^{\circ}$, and
+correlation at least 0.80) remain the formal PAMELA validation gates. C10's
+cell-quality and coverage rules remain the POES/MetOp gates. The new science
+conclusions are not declared successful merely because those validation gates
+pass: the effect size, confidence interval, numerical stability, and dependence
+on sampling and model assumptions are reported independently.
+
+\begin{table*}
+\caption{Planned Analysis Products and Predefined Interpretation}
+\label{tab:exp-products}
+\centering
+\small
+\begin{tabular}{p{0.21\textwidth}p{0.34\textwidth}p{0.35\textwidth}}
+\toprule
+Product & Reported quantities & Decision or interpretation \\
+\midrule
+Absolute validation & Bias, MAE, RMSE, correlation, valid/rejected counts, maximum-displacement timing & Apply unchanged C9/C10 gates; report all paired residuals. \\
+Rigidity dependence & $\Delta\Lambda_c$, $S_{\mathrm{acc}}$, time of maximum erosion versus $R$ & Test ordered erosion and recovery with uncertainty, not only a selected low/high pair. \\
+MLT morphology & $\Lambda_0$, $A_1$, $\phi_1$, optional cross-validated second harmonic & Identify global shift versus localized access and compare with POES/MetOp sectors. \\
+Lag response & Peak $C_{xy}(\tau)$, lag interval, held-out prediction skill & Describe predictive timing; do not infer unique causation from correlated drivers. \\
+Hysteresis & Matched-phase contrast, loop area, rigidity/MLT dependence & Require resolved, numerically stable contrast and report unmatched/rejected samples. \\
+TS05 memory sensitivity & Difference between full, history-frozen, and instantaneous-frozen experiments & Attribute behavior to the empirical parameterization only; compare with observed phase residuals. \\
+Robustness & Mesh, mover, timestep, trace-limit, cadence, shell, and observation-operator spread & A claimed feature must exceed numerical spread and persist under the preregistered sensitivities. \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Results-Section Contract}
+
+The production archive will populate the following result sequence without
+changing definitions after the values are known. First, a driver panel will
+show $P_{\mathrm{dyn}}$, IMF $B_z$, SYM-H, and $W_1$--$W_6$, with the objective
+event landmarks and all data gaps. Second, paired PAMELA and POES/MetOp panels
+will establish absolute model skill and residual structure. Third, maps at
+$t_q$, $t_c$, $t_m$ or $t_e$, and a matched recovery time will show cutoff
+erosion and accessible area at selected rigidities. Fourth, time series of
+$\Lambda_0$, $A_1$, $\phi_1$, $S_{\mathrm{acc}}$, and unresolved fraction will
+quantify morphology and numerical validity. Finally, lag curves, matched-phase
+hysteresis, and the three TS05 sensitivity experiments will test the memory
+hypothesis. Machine-readable tables will accompany every plotted summary.
+
+This ordering makes negative results interpretable. A good absolute cutoff
+comparison with no resolved hysteresis would support AMPS as a storm-time
+shielding model while placing an upper bound on memory detectable in this
+event. Conversely, a modeled hysteresis signal without corresponding
+observation support, or one that disappears under numerical refinement, would
+identify a limitation of the TS05-based configuration rather than a discovery.
+The placeholders in Section~\ref{sec:results} are therefore a reporting
+contract: they will be replaced only by values from the frozen archive,
+including uncertainty, sample count, and sensitivity range.

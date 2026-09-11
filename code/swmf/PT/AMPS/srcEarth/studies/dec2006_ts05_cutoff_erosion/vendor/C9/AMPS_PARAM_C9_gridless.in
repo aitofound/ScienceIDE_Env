@@ -1,0 +1,127 @@
+! =============================================================================
+! AMPS Earth validation C9: PAMELA public-data global-shell cutoff validation
+!
+! Scientific observable
+! ---------------------
+! Adriani et al. (2016) Supporting Information Table S1 reports the magnitude
+! of the proton cutoff AACGM latitude for seven rigidity bins.  Each timestamp
+! is the middle of one 94-minute PAMELA interval.  C9 does not attempt to
+! reconstruct the proprietary Resurs-DK1 attitude/ephemeris.  Instead, it makes
+! a public-data global-shell comparison at PAMELA's representative altitude:
+!
+!   * one 475-km geodetic shell;
+!   * vertically incident protons;
+!   * IGRF + T05/TS05 driven by the bundled five-minute C9 driver;
+!   * PENUMBRA_SCAN, retaining Rc_lower, Rc_effective, and Rc_upper;
+!   * an additional exact-rigidity access-state product at the seven PAMELA
+!     geometric-center rigidities;
+!   * the primary modeled cutoff is the longitude-averaged T=0.5 boundary,
+!     evaluated over the same configured geodetic latitude band as the GRIDDED
+!     DIRECT_ACCESS product and then converted to AACGM in each hemisphere.
+!
+! The Python runner copies this template into every snapshot directory and
+! changes only named directives (EPOCH, DRIVER_FILE, scan count/resolution,
+! rigidity bracket, and numerical controls).  The generated input is archived
+! with every result so the comparison is reproducible.
+! =============================================================================
+
+#CALCULATION_MODE
+CALC_TARGET             CUTOFF_RIGIDITY
+FIELD_EVAL_METHOD       GRIDLESS
+
+#CUTOFF_RIGIDITY
+! Default bracket 0.30-1.35 GV for protons.  The corresponding kinetic-energy
+! limits are written explicitly because the AMPS cutoff parser accepts energy.
+CUTOFF_EMIN             46.7936514838217
+CUTOFF_EMAX             705.763955063706
+CUTOFF_MAX_PARTICLES    1
+CUTOFF_NENERGY          50
+CUTOFF_SAMPLING         VERTICAL
+CUTOFF_SEARCH_ALGORITHM PENUMBRA_SCAN
+CUTOFF_UPPER_SCAN_N     160
+CUTOFF_SCAN_SPACING     LINEAR
+! During PENUMBRA_SCAN a non-empty rigidity list requests an additional
+! long-form access-state file at these exact values. The complete 160-node scan
+! and Rc_lower/Rc_effective/Rc_upper outputs are unchanged. C9 uses the companion
+! states to calculate the same PAMELA_T50 observable as the Mode3D branches.
+CUTOFF_RIGIDITY_LIST_GV 0.423556372,0.498397432,0.587877538,0.692820323,0.817006732,0.962081078,1.131017241
+! GRIDLESS does not execute RIGIDITY_LIST, so these directives do not reduce
+! the C++ full-shell work. The runner nevertheless uses the same values to filter
+! the companion access rows before AACGM/T50 fitting, keeping the scientific
+! latitude domain identical to GRIDDED DIRECT_ACCESS and GRIDDED FULL_SCAN.
+CUTOFF_ACCESS_ABS_LAT_MIN 35.0
+CUTOFF_ACCESS_ABS_LAT_MAX 75.0
+CUTOFF_TRACE_POLICY     ACCURATE
+CUTOFF_BACKTRACE_CHARGE REVERSED
+CUTOFF_TRACE_LIMIT_POLICY FORBIDDEN
+CUTOFF_MAX_TRAJ_TIME    20.0
+
+#PARTICLE_SPECIES
+SPECIES                 PROTON
+CHARGE                  1
+MASS_AMU                1.007276466621
+
+#BACKGROUND_FIELD
+! The driver table is sampled once at EPOCH for each standalone snapshot run.
+! The runner uses the checksum-verified driver bundled under C9/data by default.
+FIELD_MODEL             T05
+EPOCH                   2006-12-15T03:03:00
+DRIVER_FILE             ts05_driver.txt
+! Static values are parser-safe fallbacks only.  A loaded driver overrides them.
+DST                     -100.0
+PDYN                    4.0
+IMF_BX                  0.0
+IMF_BY                  0.0
+IMF_BZ                  -5.0
+SW_VX                   -450.0
+SW_N                    5.0
+T05_W1                  0.0
+T05_W2                  0.0
+T05_W3                  0.0
+T05_W4                  0.0
+T05_W5                  0.0
+T05_W6                  0.0
+
+#DOMAIN_BOUNDARY
+! Bare lengths are kilometers.  +/-25 Re is large enough for the empirical
+! magnetosphere used by this event-level access calculation.
+DOMAIN_X_MIN            -159280.0
+DOMAIN_X_MAX             159280.0
+DOMAIN_Y_MIN            -159280.0
+DOMAIN_Y_MAX             159280.0
+DOMAIN_Z_MIN            -159280.0
+DOMAIN_Z_MAX             159280.0
+R_INNER                  6371.2
+
+#SPECTRUM
+! Required by the common parser; not used by cutoff-rigidity tracing.
+SPECTRUM_TYPE           POWER_LAW
+SPEC_J0                 1.0
+SPEC_GAMMA              2.0
+SPEC_E0                 1000.0
+SPEC_EMIN               1.0
+SPEC_EMAX               2000.0
+
+#OUTPUT_DOMAIN
+! Full geographic shell.  The runner transforms these grid points to AACGM in
+! postprocessing at the exact snapshot epoch.  SHELL_GEOMETRY=GEODETIC follows
+! the current Earth cutoff-test convention.
+OUTPUT_MODE             SHELLS
+SHELL_COUNT             1
+SHELL_ALTS_KM           475.0
+SHELL_LON_RES_DEG       30.0
+SHELL_LAT_RES_DEG       2.0
+SHELL_GEOMETRY          GEODETIC
+
+#OUTPUT_OPTIONS
+OUTPUT_COORDS           GEO
+
+#NUMERICAL
+DT_TRACE                0.2
+ADAPTIVE_DT             T
+MAX_STEPS               500000
+MAX_TRACE_TIME          20.0
+MAX_TRACE_DISTANCE      400.0
+TRAP_DETECTION          T
+
+!#END

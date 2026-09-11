@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# The script changes extensions of files in the current directory
+# Usage: change-ext ext1 ext2
+# Example: change-ext txt md (This will change all .txt files to .md)
+
+# Check if the help option is requested
+if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+    echo "Usage: change-ext ext1 ext2"
+    echo "This script changes the file extension of all files with extension 'ext1' to 'ext2' in the current directory."
+    echo "Example: change-ext txt md"
+    exit 0
+fi
+
+# Ensure two arguments are provided
+if [[ $# -ne 2 ]]; then
+    echo "Error: Two arguments required."
+    echo "Usage: change-ext ext1 ext2"
+    exit 1
+fi
+
+# Loop to change file extensions
+for f in *.$1
+do
+    [ -f "$f" ] && mv -v "$f" "${f%$1}$2"
+done
+

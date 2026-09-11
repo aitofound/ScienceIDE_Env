@@ -1,0 +1,126 @@
+###Time Dependent Density Functional Perturbation Theory (TDDFPT)
+
+TDDFPT developers would be grateful if any scientific work done with TDDFPT
+contained a reference to one of the following reference papers:
+
+----------------------------------------------------------------------------------------------------------
+
+Absorption spectroscopy:
+
+turboTDDFT – A code for the simulation of molecular spectra using the Liouville–Lanczos approach 
+to time-dependent density-functional perturbation theory  Original Research Article
+Authors: Osman Baris Malcioglu, Ralph Gebauer, Dario Rocca, Stefano Baroni
+Source: Computer Physics Communications   Volume: 182  Article Number: 1744  Published: APR 2011 
+
+turboTDDFT 2.0 - Hybrid functionals and new algorithms within time-dependent 
+density-functional perturbation theory
+Authors: X. Ge, S. J. Binnie, D. Rocca, R. Gebauer, and S. Baroni
+Source: Computer Physics Communications  Volume: 185  Article Number: 2080  Published: MAR 2014
+
+Turbo charging time-dependent density-functional theory with Lanczos chains
+Authors: D. Rocca, R. Gebauer, Y. Saad, and S. Baroni
+Source: JOURNAL OF CHEMICAL PHYSICS   Volume: 128   Article Number: 154105   Published: APR 2008
+
+Ultrasoft pseudopotentials in time-dependent density-functional theory
+Authors: B. Walker, and R. Gebauer
+Source: JOURNAL OF CHEMICAL PHYSICS   Volume: 127   Article Number: 164106   Published: OCT 2007
+
+Efficient approach to time-dependent density-functional perturbation theory for optical spectroscopy
+Authors: B. Walker, A. M. Saitta, R. Gebauer, and S. Baroni
+Source: PHYSICAL REVIEW LETTERS   Volume: 96   Article Number: 113001   Published: MAR 2006
+
+Book: Fundamentals of Time-Dependent Density Functional Theory,
+M.A.L. Marques, N.T. Maitra, F.M.S. Nogueira, E.K.U. Gross, and A. Rubio,
+Lecture Notes in Physics, Springer-Verlag, Berlin Heidelbnerg, volume 837, 2012.
+Chapter 19: The Liouville-Lanczos Approach to Time-Dependent Density-Functional (Perturbation) Theory,
+Authors: S. Baroni and R. Gebauer
+
+Self-consistent continuum solvation for optical absorption of complex molecular systems in solution
+Authors: I. Timrov, O. Andreussi, A. Biancardi, N. Marzari, and S. Baroni
+Source: JOURNAL OF CHEMICAL PHYSICS   Volume: 142  Article Number: 034111 Published: JAN 2015
+
+------------------------------------------------------------------------------------------------------------
+
+Electron energy loss spectroscopy (EELS):
+
+Electron energy loss and inelastic x-ray scattering cross sections from 
+time-dependent density-functional perturbation theory
+Authors: I. Timrov, N. Vast, R. Gebauer, and S. Baroni
+Source: PHYSICAL REVIEW B   Volume: 88   Article Number: 064301   Published: AUG 2 2013
+See also: PHYSICAL REVIEW B 91, 139901(E) (2015)
+
+turboEELS - A code for the simulation of the electron energy loss and inelastic X-ray scattering spectra 
+using the Liouville-Lanczos approach to time-dependent density-functional perturbation theory
+Authors: I. Timrov, N. Vast, R. Gebauer, and S. Baroni
+Source: Computer Physics Communications  Volume: 196  Article Number: 460 Published: 4 JUNE 2015
+
+Ab initio study of electron energy loss spectra of bulk bismuth up to 100 eV
+Authors: I. Timrov, M. Markov, T. Gorni, M. Raynaud, O. Motornyi, R. Gebauer, S. Baroni, and N. Vast
+Source: PHYSICAL REVIEW B 95, 094301 (2017)
+
+Electron energy loss spectroscopy of bulk gold with ultrasoft pseudopotentials and the Liouville-Lanczos method
+Authors: O. Motornyi, N. Vast, I. Timrov, O. Baseggio, S. Baroni, and A. Dal Corso
+Source: PHYSICAL REVIEW B 102, 035156 (2020)
+
+-------------------------------------------------------------------------------------------------------------
+
+Magnetic spectroscopy (inelastic neutron scattering)
+
+Spin dynamics from time-dependent density functional perturbation theory
+Authors: T. Gorni, I. Timrov, and S. Baroni,
+Source: The European Physical Journal B   Volume: 91   Article Number: 249     Published: 2018
+
+turboMagnon – A code for the simulation of spin-wave spectra using the Liouville-Lanczos approach 
+to time-dependent density-functional perturbation theory,
+Authors: T. Gorni, O. Baseggio, P. Delugas, S. Baroni, and I. Timrov
+Source: Computer Physics Communications   Volume: 280  Article Number: 108500  Published: 2022
+
+-------------------------------------------------------------------------------------------------------------
+
+This module uses subroutines from PW, Modules and LR_Modules along with 
+the general infrasturcture provided by Quantum ESPRESSO. 
+
+The directory TDDFPT must reside immediately under the espresso directory for Makefiles to work. 
+
+Standart compilation: Run "make tddfpt" in espresso directory where TDDFPT is a subdirectory
+ 
+Directory Structure: 
+bin      : The TDDFPT related binaries
+src      : The source files
+Doc      : The manual
+Examples : Examples and tests. Each example has its own seperate Makefile. 
+           Refer to the README under this subdirectory for further information. 
+
+-------------------------------------------------------------------------------------------------------------
+
+RESTART in turbo_eels.x and turbo_magnon.x
+
+To use the restart functionality in turbo_eels.x and turbo_magnon.x, a modification to the FFT library 
+interface is currently required. Specifically, edit the file:
+
+￼
+q-e/FFTXlib/src/fft_scalar.FFTW3.f90
+
+and replace all occurrences of:
+
+FFTW_MEASURE
+
+with:
+￼
+FFTW_ESTIMATE
+
+After applying this change, recompile all the codes and run the calculation from scratch. 
+Under these conditions, the restart feature in turbo_eels.x and turbo_magnon.x will produce results identical 
+to those obtained from a single uninterrupted run.
+
+Before starting production calculations, you are strongly advised to verify that the restart works correctly 
+in your setup by performing a test run and comparing results with and without restart.
+
+Additional details about this issue are available here:
+https://gitlab.com/QEF/q-e/-/work_items/843
+
+This modification is not applied by default because FFTW_ESTIMATE generally leads to slower performance 
+compared to FFTW_MEASURE. Since the issue affects only the restart functionality in TDDFPT modules, 
+enforcing this change globally would unnecessarily degrade performance for other parts of the code.
+If a more efficient solution becomes available, contributions are welcome. In that case, please reopen 
+the issue linked above on GitLab and provide a description of the proposed improvement.
