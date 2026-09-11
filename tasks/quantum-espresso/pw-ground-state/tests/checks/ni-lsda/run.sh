@@ -146,5 +146,5 @@ if [ ! -f "$XML" ]; then
   ls -la "$SCRATCH" "$SCRATCH/qe_out" 2>/dev/null || true
   exit 1
 fi
-python3 "$CHECK_DIR/extract_xml.py" "$XML" "$OUT_DIR/metrics.json"
+python3 "$CHECK_DIR/extract_xml.py" "$XML" "$OUT_DIR/metrics.json" "$CHECK_DIR/rubric.json"
 cp "$XML" "$OUT_DIR/data-file-schema.xml"
