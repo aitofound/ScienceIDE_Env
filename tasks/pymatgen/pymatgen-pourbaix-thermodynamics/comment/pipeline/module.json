@@ -1,0 +1,43 @@
+{
+  "module": {
+    "slug": "pymatgen-pourbaix-thermodynamics",
+    "title": "Aqueous phase stability and Pourbaix thermodynamics",
+    "paths": [
+      "src/pymatgen/analysis/pourbaix_diagram.py"
+    ],
+    "entrypoints": [
+      "PourbaixDiagram.__init__",
+      "PourbaixDiagram.get_pourbaix_domains",
+      "PourbaixDiagram.get_hull_energy",
+      "PourbaixDiagram.get_decomposition_energy"
+    ],
+    "expensive_path": "Composition-compatible multientry enumeration and reaction balancing, geometric halfspace construction, and batched pH/potential evaluation across stable phases. Entry count, component count and condition-grid size control cost; owned work versus SciPy/core dependency work must be profiled before the acceleration check is selected.",
+    "rationale": "One scientific model and energy convention from aqueous/solid entries through stable domains to decomposition energies. Offline Zn and multicomponent upstream fixtures provide reference assertions without API credentials.",
+    "excluded": [
+      "Materials Project API queries and newly downloaded databases",
+      "Solid-state PhaseDiagram and reaction balancing implementations now owned by pymatgen-core",
+      "Plot styling and image equivalence",
+      "Diffraction"
+    ],
+    "hazards": [
+      "Qhull joggling, degenerate phases and phase-boundary ties require physical equivalence rather than raw facet or vertex ordering",
+      "Keep entry identity and normalization conventions explicit; compare energy in eV/atom and stable phase identity where unique",
+      "Public upstream fixture provenance still needs a payload-specific source-PR review",
+      "The upstream multiprocessing test uses all host CPUs; initial native investigation excludes it and records that limitation",
+      "Twenty-one upstream test definitions include serialization and plotting; no final suitable-check count is claimed yet"
+    ]
+  },
+  "approval": {
+    "modules": [
+      "pymatgen-interface-matching",
+      "pymatgen-pourbaix-thermodynamics"
+    ],
+    "human_ref": "Looks good. But can we add regular phase diagram utilities in pymatgen.analysis.phase_diagram as well?",
+    "at": "2026-09-07T01:53:59Z"
+  },
+  "shared_infrastructure": [
+    "pymatgen-core==2026.8.30 supplies Structure, Lattice, Composition, slab generation, elasticity, reaction balancing and phase-diagram helpers; dependency, not owned implementation in this source snapshot",
+    "NumPy and SciPy numerical kernels; spglib symmetry; monty serialization",
+    "src/pymatgen/entries compatibility imports; tests/conftest.py; tests/testing.py"
+  ]
+}

@@ -1,0 +1,23 @@
+name: Documentation
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 6 * * 1'
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule' || github.repository == 'libmbd/libmbd'
+    steps:
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.x
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python -
+          $HOME/.local/share/pypoetry/venv/bin/pip install -U poetry-dynamic-versioning
+          echo $HOME/.local/bin >>$GITHUB_PATH
+      - uses: actions/checkout@v2
+      - name: Build documentation
+        run: make build_doc VIRTUAL_ENV=none

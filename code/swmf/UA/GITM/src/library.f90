@@ -1,0 +1,120 @@
+! Copyright 2021, the GITM Development Team (see srcDoc/dev_team.md for members)
+! Full license can be found in LICENSE
+
+!---------------------------------------------------------------------------
+!
+!---------------------------------------------------------------------------
+
+subroutine get_min_value_across_pes(value)
+
+  use ModGITM, only: iCommGITM
+  use ModMpi
+
+  implicit none
+  real, intent(inout) :: value
+  real :: localVar
+  integer :: iError
+
+  LocalVar = value
+  call MPI_REDUCE(LocalVar, value, 1, MPI_REAL, MPI_MIN, &
+                  0, iCommGITM, iError)
+  call MPI_BCAST(value, 1, MPI_Real, 0, iCommGITM, iError)
+
+end subroutine get_min_value_across_pes
+
+!---------------------------------------------------------------------------
+!
+!---------------------------------------------------------------------------
+
+subroutine get_max_value_across_pes(value)
+
+  use ModGITM, only: iCommGITM
+  use ModMpi
+
+  implicit none
+  real, intent(inout) :: value
+  real :: localVar
+  integer :: iError
+
+  LocalVar = value
+  call MPI_REDUCE(LocalVar, value, 1, MPI_REAL, MPI_MAX, &
+                  0, iCommGITM, iError)
+  call MPI_BCAST(value, 1, MPI_Real, 0, iCommGITM, iError)
+
+end subroutine get_max_value_across_pes
+
+!---------------------------------------------------------------------------
+!
+!---------------------------------------------------------------------------
+
+subroutine report(str, iLevel)
+
+  use ModInputs, only: iDebugLevel
+  implicit none
+
+  character(len=*), intent(in) :: str
+  integer, intent(in) :: iLevel
+  character(len=11) :: cArrow
+  integer :: i
+
+  if (iDebugLevel < iLevel .or. iDebugLevel > 10) return
+
+  do i = 1, iLevel
+    cArrow(i:i) = "="
+  enddo
+  cArrow(iLevel + 1:iLevel + 1) = ">"
+
+  write(*, *) cArrow(1:iLevel + 1), " ", str
+
+end subroutine report
+
+!---------------------------------------------------------------------------
+!
+!---------------------------------------------------------------------------
+
+subroutine stop_gitm(str)
+
+  use ModUtilities, ONLY: CON_stop
+
+  use ModGITM
+  use ModInputs, only: IsFramework
+  use ModMpi
+  implicit none
+
+  character(len=*), intent(in) :: str
+  integer :: ierror, erno
+
+  if (IsFramework) then
+    call CON_stop("UA/GITM Error: "//str)
+  else
+    write(*, *) 'Stopping execution! iProc=', iProc, ' with msg=', str
+    call MPI_abort(iCommGITM, erno, ierror)
+    stop
+  endif
+
+end subroutine stop_gitm
+
+!---------------------------------------------------------------------------
+!
+!---------------------------------------------------------------------------
+
+subroutine i2s(iValue, cOut, iLength)
+
+  integer, intent(in)            :: iValue, iLength
+  character(len=*), intent(out) :: cOut
+  character(len=10)             :: cFormat
+  integer                        :: i
+
+  if (iLength < 10) then
+    write(cFormat, "('(I',I1,')')") iLength
+  else
+    write(cFormat, "('(I',I2,')')") iLength
+  endif
+
+  write(cOut, cFormat) iValue
+
+  do i = 1, iLength
+    if (cOut(i:i) == ' ') cOut(i:i) = '0'
+  enddo
+
+end subroutine i2s

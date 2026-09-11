@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Check hd-visc-taylor-couette-subcritical-02: the TEST half of the check.
 #   run.sh nominal | run.sh variant     run one initial condition (see ic/)
-#   run.sh --help                       list the runtime knobs below
+#   run.sh altbuild                     nominal inputs on Linux.gcc.defs with make CFLAGS='-c -O0'
+#   run.sh --help                       list the runtime knobs below and the altbuild line
 # Environment supplied by the produce driver: SOURCE_DIR (read-only source tree),
 # OUT_DIR (empty directory for the graded files), CHECK_DIR (this directory).
 # Reads only CHECK_DIR and SOURCE_DIR; no network; never modifies SOURCE_DIR.
@@ -15,19 +16,24 @@ knob() { local name=$1 default=$2 desc=$3; [ -n "${!name:-}" ] || printf -v "$na
 knob SAB_TSTOP "0.025" "[Time] tstop of the deck in code units; the number of steps and the runtime scale linearly with it; the default is the graded window"
 knob SAB_GRID_SCALE "1" "multiplies the zone count of every grid axis of the deck (rounded to a multiple of 4); 1 is the graded deck; runtime scales as scale^(dimensions+1)"
 knob SAB_MAXSTEPS "-1" "cap on the number of time steps (pluto -maxsteps); -1 runs to SAB_TSTOP (graded); a small cap exercises build, run and output only"
-if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; exit 0; fi
+# Alternative build: the same pinned source and Linux.gcc.defs architecture with GCC
+# optimisation disabled on the make line. `run.sh altbuild` always runs ic/nominal.
+ALTBUILD="same Linux.gcc.defs architecture with make CFLAGS='-c -O0' instead of its nominal -O3 flags; the same pinned source and deck are used"
+if [ "${1:-}" = "--help" ]; then printf '%s' "$KNOB_HELP"; [ -z "$ALTBUILD" ] || echo "altbuild: $ALTBUILD"; exit 0; fi
 
 set -euo pipefail
-IC="${1:?usage: run.sh <nominal|variant> | run.sh --help}"
+IC="${1:?usage: run.sh <nominal|variant|altbuild> | run.sh --help}"
 : "${SOURCE_DIR:?}" "${OUT_DIR:?}" "${CHECK_DIR:?}"
-[ -d "$CHECK_DIR/ic/$IC" ] || { echo "run.sh: no initial condition ic/$IC" >&2; exit 2; }
+INPUTS="$IC"; MAKE_CFLAGS=()
+if [ "$IC" = altbuild ]; then INPUTS=nominal; MAKE_CFLAGS=("CFLAGS=-c -O0"); fi
+[ -d "$CHECK_DIR/ic/$INPUTS" ] || { echo "run.sh: no initial condition ic/$INPUTS" >&2; exit 2; }
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 PROBLEM="$WORK/problem"; RUN="$WORK/run"
 mkdir -p "$PROBLEM" "$RUN"
 
 # The problem directory: the official problem directory (init.c and everything else) from the source tree, then this check's definitions.h and pluto.ini from ic/<ic>/.
 cp -R "$SOURCE_DIR/Test_Problems/HD/Viscosity/Taylor_Couette/." "$PROBLEM/"
-cp -R "$CHECK_DIR/ic/$IC/." "$PROBLEM/"
+cp -R "$CHECK_DIR/ic/$INPUTS/." "$PROBLEM/"
 
 # Build against the source tree (setup.py writes only into the problem directory).
 # local_make is picked up by PLUTO's own makefile template (`-include local_make`):
@@ -35,8 +41,59 @@ cp -R "$CHECK_DIR/ic/$IC/." "$PROBLEM/"
 export PLUTO_DIR="$SOURCE_DIR"
 printf 'ARCH         = Linux.gcc.defs\n' >"$PROBLEM/makefile"
 printf 'CFLAGS += -D_DEFAULT_SOURCE\n' >"$PROBLEM/local_make"
-if ! (cd "$PROBLEM" && python3 "$PLUTO_DIR/setup.py" --auto-update  >setup.log 2>&1 && make -j"${SAB_BUILD_JOBS:-2}" >make.log 2>&1); then
-  echo "run.sh: build failed" >&2; tail -n 40 "$PROBLEM/setup.log" "$PROBLEM/make.log" >&2; exit 1
+# Only Taylor-Couette explicit-01 and subcritical-02 share this exact compiled
+# recipe.  The cache lives inside this solve's output root; altbuild has a
+# different fingerprint and can never reuse the nominal/variant binary.
+if [ "$IC" = altbuild ]; then
+  BUILD_FINGERPRINT="c4a330583a567d86c89a2abf695af64658f26c1bd995e1a4eb6b2a8d2bd7c82f"
+else
+  BUILD_FINGERPRINT="d500dbc235629bd63456a2cdd6251cabca2571658e37ed2b80659387c9dd839c"
+fi
+CACHE_ROOT="$(dirname "$OUT_DIR")/.sab-build-cache"
+CACHE_DIR="$CACHE_ROOT/$BUILD_FINGERPRINT"
+CACHE_LOCK="$CACHE_ROOT/$BUILD_FINGERPRINT.lock"
+mkdir -p "$CACHE_ROOT"
+
+reuse_build() {
+  [ -x "$CACHE_DIR/pluto" ] &&
+    [ "$(cat "$CACHE_DIR/ready" 2>/dev/null || true)" = "$BUILD_FINGERPRINT" ] || return 1
+  cp -p "$CACHE_DIR/pluto" "$PROBLEM/pluto"
+  echo "SAB_BUILD_SECONDS=0"
+}
+
+build_pluto() {
+  BUILD_START=$(date +%s)
+  if ! (cd "$PROBLEM" && python3 "$PLUTO_DIR/setup.py" --auto-update  >setup.log 2>&1 && make -j"${SAB_BUILD_JOBS:-2}" ${MAKE_CFLAGS[@]+"${MAKE_CFLAGS[@]}"} >make.log 2>&1); then
+    echo "run.sh: build failed" >&2; tail -n 40 "$PROBLEM/setup.log" "$PROBLEM/make.log" >&2; return 1
+  fi
+  BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))
+  [ "$BUILD_SECONDS" -gt 0 ] || BUILD_SECONDS=1
+  echo "SAB_BUILD_SECONDS=$BUILD_SECONDS"
+}
+
+if reuse_build; then
+  :
+elif mkdir "$CACHE_LOCK" 2>/dev/null; then
+  mkdir -p "$CACHE_DIR"
+  if build_pluto; then
+    cp -p "$PROBLEM/pluto" "$CACHE_DIR/pluto"
+    printf '%s\n' "$BUILD_FINGERPRINT" >"$CACHE_DIR/ready"
+  else
+    printf '%s\n' "build failed" >"$CACHE_DIR/failed"
+    exit 1
+  fi
+else
+  WAITED=0
+  while [ "$WAITED" -lt 120 ] && [ ! -f "$CACHE_DIR/ready" ] && [ ! -f "$CACHE_DIR/failed" ]; do
+    sleep 1
+    WAITED=$((WAITED + 1))
+  done
+  if reuse_build; then
+    :
+  else
+    echo "run.sh: shared exact-build cache unavailable after ${WAITED}s; building independently" >&2
+    build_pluto || exit 1
+  fi
 fi
 
 # The deck runs from a scratch directory; only the graded files are copied out.

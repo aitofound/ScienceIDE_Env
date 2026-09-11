@@ -1,0 +1,151 @@
+#==============================================================================
+# AMPS_PARAM_F3_gridless.in
+# F3 — dipole cutoff-filtered flux
+#
+# PURPOSE
+#   Validate the first end-to-end magnetic-access flux calculation by combining
+#   a centered aligned dipole, SCAN transmissivity, and a power-law outer-boundary
+#   spectrum.  The Python runner renders explicit points on the 9000 km shell so
+#   that the standard gridless POINTS density/spectrum/flux files can be analyzed
+#   without relying on nightly-test-only comparison files.
+#
+# REFERENCE
+#   For each point, run_F3.py computes the vertical Størmer cutoff rigidity,
+#   converts it to a proton kinetic-energy cutoff, and integrates
+#
+#       F_ch = 4*pi*T_open*int_{max(E1,Ecut)}^{E2} J0*(E/E0)^(-gamma) dE
+#
+#   where T_open is the analytic straight-line open-sky fraction outside the
+#   inner absorbing sphere.  The comparison is intentionally approximate because
+#   the numerical solver traces a full directional access map with penumbra,
+#   while the analytical target collapses access to a hard vertical cutoff.
+#==============================================================================
+
+#RUN_INFO
+  RUN_ID F3_dipole_cutoff_filtered_flux
+
+#CALCULATION_MODE
+  CALC_TARGET        DENSITY_SPECTRUM
+  FIELD_EVAL_METHOD  GRIDLESS
+
+#BACKGROUND_FIELD
+  FIELD_MODEL        DIPOLE
+  DIPOLE_MOMENT      1.0
+  DIPOLE_TILT        0.0
+  EPOCH              2026-07-10T00:00:00
+
+#ELECTRIC_FIELD
+  EFIELD_MODEL       NONE
+
+#DOMAIN_BOUNDARY
+  DOMAIN_X_MIN      -127424.0   ! km = -20 Re
+  DOMAIN_X_MAX       127424.0   ! km =  20 Re
+  DOMAIN_Y_MIN      -127424.0
+  DOMAIN_Y_MAX       127424.0
+  DOMAIN_Z_MIN      -127424.0
+  DOMAIN_Z_MAX       127424.0
+  R_INNER              6434.9   ! km = 1.01 Re
+
+#PARTICLE_SPECIES
+  SPECIES            PROTON
+  CHARGE             1
+  MASS_AMU           1.007276466621
+
+#DENSITY_SPECTRUM
+  DS_EMIN            1.0
+  DS_EMAX            1000.0
+  DS_NINTERVALS      120
+  DS_ENERGY_SPACING  LOG
+  DS_BOUNDARY_MODE   ISOTROPIC
+  DS_TRANSMISSION_MODE SCAN
+  DS_TRANSMISSION_SCAN_N 100
+  DS_MAX_PARTICLES   0
+  DS_MAX_TRAJ_TIME   900.0
+  DS_UNRESOLVED_TOL  0.01
+  DS_RETRY_UNRESOLVED F
+  DS_SAVE_TERMINATION_SUMMARY T
+  MODE3D_PARALLEL    SERIAL
+  MODE3D_THREADS     1
+  GRIDLESS_MPI_SCHEDULER DYNAMIC
+  GRIDLESS_MPI_DYNAMIC_CHUNK 0
+
+#ENERGY_CHANNELS
+  ! Same validation-plan bin edges used by F2.
+  CH_BEGIN
+    BIN01_1_3        1.0      3.0
+    BIN02_3_10       3.0     10.0
+    BIN03_10_30     10.0     30.0
+    BIN04_30_100    30.0    100.0
+    BIN05_100_300  100.0    300.0
+    BIN06_300_1000 300.0   1000.0
+    FULL             1.0   1000.0
+  CH_END
+
+#SPECTRUM
+  SPECTRUM_TYPE      POWER_LAW
+  SPEC_J0            1.0
+  SPEC_E0            10.0
+  SPEC_GAMMA         3.5
+  SPEC_EMIN          1.0
+  SPEC_EMAX          1000.0
+
+#NUMERICAL
+  DT_TRACE           0.1
+  ADAPTIVE_DT        T
+  MAX_STEPS          300000
+  MAX_TRACE_TIME     900.0
+  MAX_TRACE_DISTANCE 0.0
+  BOUNDARY_EVENT_TOL_M 1.0
+  BOUNDARY_EVENT_MAX_ITER 40
+  TRAP_DETECTION     T
+  TRAP_MIN_MIRROR_POINTS 8
+  TRAP_MIN_BOUNCES   4
+  TRAP_OUTER_MARGIN_RE 1.0
+  TRAP_RADIAL_GROWTH_TOL_RE 0.05
+  TRAP_ENERGY_REL_TOL 1.0e-4
+  TRAP_PARALLEL_DEADBAND 1.0e-6
+  MODE3D_PARALLEL    SERIAL
+  MODE3D_THREADS     1
+  GRIDLESS_MPI_SCHEDULER DYNAMIC
+  GRIDLESS_MPI_DYNAMIC_CHUNK 0
+
+#OUTPUT_DOMAIN
+  OUTPUT_MODE POINTS
+  POINTS_BEGIN
+    ! lon0_latm70 lon=0 lat=-70 alt=9000 km
+    POINT  5.257260027088e+03  0.000000000000e+00  -1.444420321262e+04
+    ! lon0_latm60 lon=0 lat=-60 alt=9000 km
+    POINT  7.685600000000e+03  0.000000000000e+00  -1.331184968665e+04
+    ! lon0_latm45 lon=0 lat=-45 alt=9000 km
+    POINT  1.086907975497e+04  0.000000000000e+00  -1.086907975497e+04
+    ! lon0_latm30 lon=0 lat=-30 alt=9000 km
+    POINT  1.331184968665e+04  0.000000000000e+00  -7.685600000000e+03
+    ! lon0_lat0 lon=0 lat=0 alt=9000 km
+    POINT  1.537120000000e+04  0.000000000000e+00  0.000000000000e+00
+    ! lon0_lat30 lon=0 lat=30 alt=9000 km
+    POINT  1.331184968665e+04  0.000000000000e+00  7.685600000000e+03
+    ! lon0_lat45 lon=0 lat=45 alt=9000 km
+    POINT  1.086907975497e+04  0.000000000000e+00  1.086907975497e+04
+    ! lon0_lat60 lon=0 lat=60 alt=9000 km
+    POINT  7.685600000000e+03  0.000000000000e+00  1.331184968665e+04
+    ! lon0_lat70 lon=0 lat=70 alt=9000 km
+    POINT  5.257260027088e+03  0.000000000000e+00  1.444420321262e+04
+    ! lon90_latm70 lon=90 lat=-70 alt=9000 km
+    POINT  3.219143332229e-13  5.257260027088e+03  -1.444420321262e+04
+    ! lon90_latm60 lon=90 lat=-60 alt=9000 km
+    POINT  4.706072719763e-13  7.685600000000e+03  -1.331184968665e+04
+    ! lon90_latm45 lon=90 lat=-45 alt=9000 km
+    POINT  6.655391865804e-13  1.086907975497e+04  -1.086907975497e+04
+    ! lon90_latm30 lon=90 lat=-30 alt=9000 km
+    POINT  8.151157054744e-13  1.331184968665e+04  -7.685600000000e+03
+    ! lon90_lat0 lon=90 lat=0 alt=9000 km
+    POINT  9.412145439527e-13  1.537120000000e+04  0.000000000000e+00
+    ! lon90_lat30 lon=90 lat=30 alt=9000 km
+    POINT  8.151157054744e-13  1.331184968665e+04  7.685600000000e+03
+    ! lon90_lat45 lon=90 lat=45 alt=9000 km
+    POINT  6.655391865804e-13  1.086907975497e+04  1.086907975497e+04
+    ! lon90_lat60 lon=90 lat=60 alt=9000 km
+    POINT  4.706072719763e-13  7.685600000000e+03  1.331184968665e+04
+    ! lon90_lat70 lon=90 lat=70 alt=9000 km
+    POINT  3.219143332229e-13  5.257260027088e+03  1.444420321262e+04
+  POINTS_END
