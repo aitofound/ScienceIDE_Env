@@ -1,0 +1,95 @@
+//
+// Copyright (c) 2024-2025 INRIA
+//
+
+#pragma once
+
+#include "pinocchio/visualizers/base-visualizer.hpp"
+#include "pinocchio/bindings/python/fwd.hpp"
+
+#include <eigenpy/optional.hpp>
+#include <eigenpy/std-vector.hpp>
+
+namespace pinocchio
+{
+  namespace python
+  {
+    namespace bp = boost::python;
+
+    template<class Visualizer>
+    struct VisualizerPythonVisitor : bp::def_visitor<VisualizerPythonVisitor<Visualizer>>
+    {
+      typedef ::pinocchio::visualizers::BaseVisualizer Base;
+      static_assert(
+        std::is_base_of_v<Base, Visualizer>,
+        "Visualizer class must be derived from pinocchio::visualizers::BaseVisualizer.");
+
+      static void setCameraPose_proxy(Visualizer & vis, const Base::Matrix4 & pose)
+      {
+        vis.setCameraPose(pose);
+      }
+
+      static void setCameraPose_proxy2(Visualizer & vis, const SE3 & pose)
+      {
+        vis.setCameraPose(pose);
+      }
+
+      static void play_proxy(
+        Visualizer & vis, const std::vector<visualizers::VectorXs> & qs, context::Scalar dt)
+      {
+        std::vector<visualizers::ConstVectorRef> qs_;
+        qs_.reserve(qs.size());
+        for (size_t i = 0; i < qs.size(); i++)
+        {
+          qs_.emplace_back(qs[i]);
+        }
+        vis.play(qs_, dt);
+      }
+
+      static void
+      play_proxy2(Visualizer & vis, const visualizers::ConstMatrixRef & qs, context::Scalar dt)
+      {
+        vis.play(qs, dt);
+      }
+
+      template<class... PyArgs>
+      void visit(bp::class_<PyArgs...> & cl) const
+      {
+        using ::pinocchio::visualizers::ConstVectorRef;
+        eigenpy::OptionalConverter<ConstVectorRef, boost::optional>::registration();
+
+// convenience macro to use a lambda -- passing &Visualizer::<getter-fun> doesn't work
+#define DEF_PROP_PROXY(name)                                                                       \
+  add_property(                                                                                    \
+    #name,                                                                                         \
+    bp::make_function(                                                                             \
+      +[](Visualizer & v) -> auto & { return v.name(); }, bp::return_internal_reference<>()))
+
+        cl.def("initViewer", &Visualizer::initViewer, bp::arg("self"))
+          .def("loadViewerModel", &Visualizer::loadViewerModel, bp::arg("self"))
+          .def("rebuildData", &Visualizer::rebuildData, bp::arg("self"))
+          .def(
+            "display",
+            +[](Visualizer & v, const boost::optional<ConstVectorRef> & q) { v.display(q); },
+            (bp::arg("self"), bp::arg("q") = boost::none))
+          .def("play", play_proxy, (bp::arg("self"), "qs", "dt"))
+          .def("play", play_proxy2, (bp::arg("self"), "qs", "dt"))
+          .def("setCameraTarget", &Visualizer::setCameraTarget, (bp::arg("self"), "target"))
+          .def("setCameraPosition", &Visualizer::setCameraPosition, (bp::arg("self"), "position"))
+          .def("setCameraPose", setCameraPose_proxy, (bp::arg("self"), "pose"))
+          .def("setCameraPose", setCameraPose_proxy2, (bp::arg("self"), "pose"))
+          .def("setCameraZoom", &Visualizer::setCameraZoom, (bp::arg("self"), "value"))
+          .def("clean", &Visualizer::clean, bp::arg("self"))
+          .def("hasExternalData", &Visualizer::hasExternalData, bp::arg("self"))
+          .DEF_PROP_PROXY(model)
+          .DEF_PROP_PROXY(visualModel)
+          .DEF_PROP_PROXY(collisionModel)
+          .DEF_PROP_PROXY(data)
+          .DEF_PROP_PROXY(visualData)
+          .DEF_PROP_PROXY(collisionData);
+#undef DEF_PROP_PROXY
+      }
+    };
+
+  } // namespace python
+} // namespace pinocchio
