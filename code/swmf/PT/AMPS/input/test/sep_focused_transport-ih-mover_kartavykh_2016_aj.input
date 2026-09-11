@@ -1,0 +1,21 @@
+
+#include input/test/sep_focused_transport--borovikov.input
+
+#main 
+CouplerMode=swmf !!T96 !ices !!off, ices, swmf
+#endmain
+
+#General
+  InitialSampleLength=40 
+
+  !keep data recieved from the SWMF for two time instances for calculation time-derivatives
+  define _PIC_SWMF_COUPLER__SAVE_TWO_DATA_SETS_ _PIC_MODE_ON_
+
+  !define _SEP_MOVER_ _SEP_MOVER_HE_2019_AJL_
+  define _SEP_MOVER_ _SEP_MOVER_KARTAVYKH_2016_AJ_ 
+
+  !define _SEP_MOVER_DRIFT_ _PIC_MODE_ON_
+
+  OutputMode=DistributedFiles !!SingleFile !SingleFile,DistributedFiles
+
+#endGeneral

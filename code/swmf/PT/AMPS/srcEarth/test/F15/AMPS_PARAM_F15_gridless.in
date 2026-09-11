@@ -1,0 +1,81 @@
+#==============================================================================
+# AMPS_PARAM_F15_gridless.in
+# F15 — density normalization from differential flux and relativistic speed
+#
+# PURPOSE
+#   Validate the conversion from isotropic directional differential flux J(E)
+#   to density n = 4*pi*int J(E)/v(E)dE.  The runner edits DS_EMIN/DS_EMAX,
+#   SPEC_EMIN/SPEC_EMAX, and the TOPHAT channel for each case centered at
+#   1, 10, 100, and 1000 MeV.
+#==============================================================================
+
+#RUN_INFO
+  RUN_ID F15_density_normalization
+
+#CALCULATION_MODE
+  CALC_TARGET        DENSITY_SPECTRUM
+  FIELD_EVAL_METHOD  GRIDLESS
+
+#BACKGROUND_FIELD
+  FIELD_MODEL        NONE
+  EPOCH              2026-07-10T00:00:00
+
+#ELECTRIC_FIELD
+  EFIELD_MODEL       NONE
+
+#DOMAIN_BOUNDARY
+  DOMAIN_X_MIN      -10000.0   ! km
+  DOMAIN_X_MAX       10000.0   ! km
+  DOMAIN_Y_MIN      -10000.0   ! km
+  DOMAIN_Y_MAX       10000.0   ! km
+  DOMAIN_Z_MIN      -10000.0   ! km
+  DOMAIN_Z_MAX       10000.0   ! km
+  R_INNER                0.0   ! km; disable geometric loss for normalization
+
+#PARTICLE_SPECIES
+  SPECIES            PROTON
+  CHARGE             1
+  MASS_AMU           1.007276466621
+
+#DENSITY_SPECTRUM
+  DS_EMIN            9.9
+  DS_EMAX            10.1
+  DS_NINTERVALS      128
+  DS_ENERGY_SPACING  LOG
+  DS_BOUNDARY_MODE   ISOTROPIC
+  DS_TRANSMISSION_MODE DIRECT
+  DS_MAX_PARTICLES   0
+  DS_MAX_TRAJ_TIME   5.0
+  MODE3D_PARALLEL    THREADS
+  MODE3D_THREADS     8
+  GRIDLESS_MPI_SCHEDULER DYNAMIC
+  GRIDLESS_MPI_DYNAMIC_CHUNK 0
+
+#ENERGY_CHANNELS
+  CH_BEGIN
+    TOPHAT            9.9      10.1
+  CH_END
+
+#SPECTRUM
+  SPECTRUM_TYPE      TABLE
+  SPEC_TABLE_FILE    F15_top_hat_spectrum.dat
+  SPEC_EMIN          9.9
+  SPEC_EMAX          10.1
+
+#NUMERICAL
+  DT_TRACE           0.05
+  ADAPTIVE_DT        T
+  MAX_STEPS          20000
+  MAX_TRACE_TIME     5.0
+  MAX_TRACE_DISTANCE 0.0
+  MODE3D_PARALLEL    THREADS
+  MODE3D_THREADS     8
+  GRIDLESS_MPI_SCHEDULER DYNAMIC
+  GRIDLESS_MPI_DYNAMIC_CHUNK 0
+
+#OUTPUT_DOMAIN
+  OUTPUT_MODE POINTS
+  POINTS_BEGIN
+    POINT     0.0     0.0     0.0
+    POINT  9000.0     0.0     0.0
+  POINTS_END

@@ -1,0 +1,112 @@
+#==============================================================================
+# AMPS_PARAM_F4_gridless.in
+# F4 — transmission reconstruction consistency
+#
+# PURPOSE
+#   Validate the exact internal reconstruction identities used by the gridless
+#   density/spectrum workflow.  The solver stores the transmission function T(E),
+#   the imposed boundary spectrum J_boundary(E), and the resulting local spectrum
+#   J_local(E).  The runner checks that
+#
+#       J_local(E) = T(E) * J_boundary(E)
+#       n = 4*pi*int J_local(E)/v(E) dE
+#       F = 4*pi*int J_local(E) dE
+#
+#   and that every requested integral flux channel matches the same saved
+#   spectrum.  This is an internal conservation/closure test, not an external
+#   Størmer cutoff comparison.
+#==============================================================================
+
+#RUN_INFO
+  RUN_ID F4_transmission_reconstruction
+
+#CALCULATION_MODE
+  CALC_TARGET        DENSITY_SPECTRUM
+  FIELD_EVAL_METHOD  GRIDLESS
+
+#BACKGROUND_FIELD
+  FIELD_MODEL        DIPOLE
+  DIPOLE_MOMENT      1.0
+  DIPOLE_TILT        0.0
+  EPOCH              2026-07-10T00:00:00
+
+#ELECTRIC_FIELD
+  EFIELD_MODEL       NONE
+
+#DOMAIN_BOUNDARY
+  DOMAIN_X_MIN      -127424.0   ! km = -20 Re
+  DOMAIN_X_MAX       127424.0   ! km =  20 Re
+  DOMAIN_Y_MIN      -127424.0
+  DOMAIN_Y_MAX       127424.0
+  DOMAIN_Z_MIN      -127424.0
+  DOMAIN_Z_MAX       127424.0
+  R_INNER              6434.9   ! km = 1.01 Re
+
+#PARTICLE_SPECIES
+  SPECIES            PROTON
+  CHARGE             1
+  MASS_AMU           1.007276466621
+
+#DENSITY_SPECTRUM
+  DS_EMIN            1.0
+  DS_EMAX            1000.0
+  DS_NINTERVALS      31
+  DS_ENERGY_SPACING  LOG
+  DS_BOUNDARY_MODE   ISOTROPIC
+  DS_TRANSMISSION_MODE SCAN
+  DS_TRANSMISSION_SCAN_N 32
+  DS_TRANSMISSION_SAVE T
+  DS_MAX_PARTICLES   512
+  DS_MAX_TRAJ_TIME   120.0
+  MODE3D_PARALLEL    THREADS
+  MODE3D_THREADS     8
+  GRIDLESS_MPI_SCHEDULER DYNAMIC
+  GRIDLESS_MPI_DYNAMIC_CHUNK 0
+  DS_RETRY_UNRESOLVED F
+
+#ENERGY_CHANNELS
+  ! Same validation-plan bin edges used by F2/F3.
+  CH_BEGIN
+    BIN01_1_3        1.0      3.0
+    BIN02_3_10       3.0     10.0
+    BIN03_10_30     10.0     30.0
+    BIN04_30_100    30.0    100.0
+    BIN05_100_300  100.0    300.0
+    BIN06_300_1000 300.0   1000.0
+    FULL             1.0   1000.0
+  CH_END
+
+#SPECTRUM
+  SPECTRUM_TYPE      POWER_LAW
+  SPEC_J0            1.0
+  SPEC_E0            10.0
+  SPEC_GAMMA         3.5
+  SPEC_EMIN          1.0
+  SPEC_EMAX          1000.0
+
+#NUMERICAL
+  DT_TRACE           0.1
+  ADAPTIVE_DT        T
+  MAX_STEPS          100000
+  MAX_TRACE_TIME     120.0
+  MAX_TRACE_DISTANCE 300.0
+  MODE3D_PARALLEL    THREADS
+  MODE3D_THREADS     8
+  GRIDLESS_MPI_SCHEDULER DYNAMIC
+  GRIDLESS_MPI_DYNAMIC_CHUNK 0
+  TRAP_DETECTION     T
+
+#OUTPUT_DOMAIN
+  OUTPUT_MODE POINTS
+  POINTS_BEGIN
+    ! lon0_latm60 lon=0 lat=-60 alt=9000 km
+    POINT  7.685600000000e+03  0.000000000000e+00  -1.331184968665e+04
+    ! lon0_latm30 lon=0 lat=-30 alt=9000 km
+    POINT  1.331184968665e+04  0.000000000000e+00  -7.685600000000e+03
+    ! lon0_lat0 lon=0 lat=0 alt=9000 km
+    POINT  1.537120000000e+04  0.000000000000e+00  0.000000000000e+00
+    ! lon0_lat30 lon=0 lat=30 alt=9000 km
+    POINT  1.331184968665e+04  0.000000000000e+00  7.685600000000e+03
+    ! lon0_lat60 lon=0 lat=60 alt=9000 km
+    POINT  7.685600000000e+03  0.000000000000e+00  1.331184968665e+04
+  POINTS_END

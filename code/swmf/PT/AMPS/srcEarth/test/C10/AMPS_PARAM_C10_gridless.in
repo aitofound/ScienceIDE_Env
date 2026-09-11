@@ -1,0 +1,142 @@
+! Validation roles: P6/P7 are the primary background-normalized code-validation
+! channels. P8/P9 exact states are retained as diagnostics until detector-response
+! folding is implemented; they do not control the default model/data PASS/FAIL gate.
+!
+! =============================================================================
+! AMPS Earth validation C10 GRIDLESS branch:
+!   POES/MetOp MEPED proton-access-boundary storm validation
+!
+! Scientific observable
+! ---------------------
+! During the December 2006 storm the equatorward edge of the polar proton-access
+! region (the "SEP cutoff boundary") observed by POES/MetOp SEM-2 MEPED moves
+! equatorward, becomes MLT-asymmetric, and recovers.  C10 reproduces that
+! boundary from first principles: for each storm interval it evaluates one or
+! more IGRF+T05/TS05 field snapshots on a global 850-km geodetic shell and
+! backtraces vertically incident protons at the four validation rigidities
+! (0.174, 0.262, 0.369, 0.531 GV, mapped from the nominal P6-P9 lower
+! thresholds 16, 36, 70, and 140 MeV).  The runner normally reconstructs a
+! common ACCESS_T50 boundary from the exact-rigidity access states: resolved
+! allowed fractions are evaluated in each MLT sector, fitted with weighted
+! isotonic regression, and interpolated at transmission T=0.5.  FULL_SCAN also
+! retains Rc_lower, Rc_effective, and Rc_upper as diagnostics.  The resulting
+! MLT boundaries are summarized with a first-harmonic polar-boundary fit; this
+! compact diagnostic is not the full five-parameter geometric ellipse of
+! Dmitriev et al. (2010).
+!
+! Unlike PAMELA (C9), every ingredient of the POES comparison is public: the
+! MEPED fluxes, the sub-satellite position (no attitude/ephemeris needed), and
+! the field driver reuse the same checksum-verified five-minute TS05 event
+! driver bundled with C9.  C10 does not need any nonpublic spacecraft data.
+!
+! This is the gridless companion to AMPS_PARAM_C10_mode3d.in.  GRIDLESS supports
+! FULL_SCAN and its companion exact-rigidity states.  DIRECT_ACCESS is
+! intentionally Mode3D/GRIDDED-only in the current Earth cutoff implementation.
+! The full GRIDLESS and GRIDDED products use the same driver, epochs, shell
+! geometry, rigidity list, mover, and trajectory limits.  GRIDLESS evaluates
+! IGRF+T05 directly along each trajectory.  The runner copies this template into
+! every snapshot directory and changes only named directives (EPOCH, DRIVER_FILE,
+! rigidity list/energy bracket, scan count, shell spacing, access-latitude band,
+! and trace time).  The generated input and full command are archived per run.
+! =============================================================================
+
+#CALCULATION_MODE
+CALC_TARGET             CUTOFF_RIGIDITY
+FIELD_EVAL_METHOD       GRIDLESS
+
+#CUTOFF_RIGIDITY
+! Default bracket 0.05-1.30 GV for protons brackets the four MEPED-channel
+! rigidities.  Kinetic-energy limits are written explicitly because the AMPS
+! cutoff parser accepts energy.
+CUTOFF_EMIN             1.331292
+CUTOFF_EMAX             664.960431
+CUTOFF_MAX_PARTICLES    1
+CUTOFF_NENERGY          50
+CUTOFF_SAMPLING         VERTICAL
+CUTOFF_SEARCH_ALGORITHM PENUMBRA_SCAN
+CUTOFF_UPPER_SCAN_N     120
+CUTOFF_SCAN_SPACING     LINEAR
+! During FULL_SCAN, a non-empty rigidity list requests an additional access file
+! classifying these exact rigidities; the Rc_lower/Rc_effective/Rc_upper full-
+! shell scan is unchanged.  During DIRECT_ACCESS, the runner changes
+! CUTOFF_SEARCH_ALGORITHM to RIGIDITY_LIST and traces only these four values in
+! the configured latitude band.  The Python postprocessor computes ACCESS_T50
+! identically from either exact-state product.
+CUTOFF_RIGIDITY_LIST_GV 0.174013525,0.262395866,0.369131538,0.531334344
+CUTOFF_ACCESS_ABS_LAT_MIN 45.0
+CUTOFF_ACCESS_ABS_LAT_MAX 85.0
+CUTOFF_TRACE_POLICY     ACCURATE
+CUTOFF_BACKTRACE_CHARGE REVERSED
+CUTOFF_TRACE_LIMIT_POLICY FORBIDDEN
+CUTOFF_MAX_TRAJ_TIME    20.0
+
+#PARTICLE_SPECIES
+SPECIES                 PROTON
+CHARGE                  1
+MASS_AMU                1.007276466621
+
+#BACKGROUND_FIELD
+! The driver table is sampled once at EPOCH for each standalone snapshot run.
+! The runner uses the checksum-verified driver bundled under C10/data by default.
+FIELD_MODEL             T05
+EPOCH                   2006-12-15T03:00:00
+DRIVER_FILE             ts05_driver.txt
+! Static values are parser-safe fallbacks only.  A loaded driver overrides them.
+DST                     -100.0
+PDYN                    4.0
+IMF_BX                  0.0
+IMF_BY                  0.0
+IMF_BZ                  -5.0
+SW_VX                   -450.0
+SW_N                    5.0
+T05_W1                  0.0
+T05_W2                  0.0
+T05_W3                  0.0
+T05_W4                  0.0
+T05_W5                  0.0
+T05_W6                  0.0
+
+#DOMAIN_BOUNDARY
+! Bare lengths are kilometers.  +/-25 Re is large enough for the empirical
+! magnetosphere used by this event-level access calculation.
+DOMAIN_X_MIN            -159280.0
+DOMAIN_X_MAX             159280.0
+DOMAIN_Y_MIN            -159280.0
+DOMAIN_Y_MAX             159280.0
+DOMAIN_Z_MIN            -159280.0
+DOMAIN_Z_MAX             159280.0
+R_INNER                  6371.2
+
+#SPECTRUM
+! Required by the common parser; not used by cutoff-rigidity tracing.
+SPECTRUM_TYPE           POWER_LAW
+SPEC_J0                 1.0
+SPEC_GAMMA              2.0
+SPEC_E0                 1000.0
+SPEC_EMIN               1.0
+SPEC_EMAX               2000.0
+
+#OUTPUT_DOMAIN
+! Global geodetic shell at POES altitude.  The runner transforms retained nodes
+! to AACGM latitude and MLT at the exact snapshot epoch and extracts the
+! per-MLT, per-hemisphere access boundary.  SHELL_GEOMETRY=GEODETIC follows the
+! current Earth cutoff-test convention.
+OUTPUT_MODE             SHELLS
+SHELL_COUNT             1
+SHELL_ALTS_KM           850.0
+SHELL_LON_RES_DEG       15.0
+SHELL_LAT_RES_DEG       2.0
+SHELL_GEOMETRY          GEODETIC
+
+#OUTPUT_OPTIONS
+OUTPUT_COORDS           GEO
+
+#NUMERICAL
+DT_TRACE                0.2
+ADAPTIVE_DT             T
+MAX_STEPS               500000
+MAX_TRACE_TIME          20.0
+MAX_TRACE_DISTANCE      400.0
+TRAP_DETECTION          T
+
+!#END
