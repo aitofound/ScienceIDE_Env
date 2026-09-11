@@ -1,12 +1,12 @@
---- code/epoch/epoch1d/example_decks/injectors.deck
-+++ tests/checks/load-balance-1d/ic/nominal/input.deck
+--- tasks/epoch/epoch-multidimensional-parallel-core/tests/checks/load-balance-1d/upstream/input.deck	2026-09-10 15:37:19
++++ tasks/epoch/epoch-multidimensional-parallel-core/tests/checks/load-balance-1d/ic/nominal/input.deck	2026-09-10 15:59:13
 @@ -1,12 +1,21 @@
  begin:control
    nx = 128
    # Final time of simulation
 -  t_end = 3.0e-1
 +  t_end = 2.5e-2
- 
+
    # Size of domain
    x_min = 0
    x_max =  2.5e5
@@ -22,9 +22,16 @@
 +  dlb_threshold = 0.95
 +  dlb_maximum_interval = 8
  end:control
- 
- 
-@@ -73,11 +82,6 @@
+
+
+@@ -67,17 +76,12 @@
+   dump_last = T
+
+   # Properties at particle positions
+-  #particles = always
++  particles = always
+   #px = always
+
    # Properties on grid
    grid = always
    ex = always
@@ -36,12 +43,13 @@
    jx = always
    ppc = always + species
    #average_particle_energy = always
-@@ -86,26 +90,4 @@
+@@ -86,26 +90,5 @@
    number_density = always + species
    #temperature = always + species
- 
+
 -  # Extended io
 -  distribution_functions = always
++  total_energy_sum = always + species
  end:output
 -
 -

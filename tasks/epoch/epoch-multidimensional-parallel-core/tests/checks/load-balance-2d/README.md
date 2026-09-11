@@ -1,176 +1,19 @@
 # load-balance-2d
 
-Upstream deck: `epoch2d/example_decks/injectors.deck`. Policy: `invariants` for the load-balanced x-partition and the per-species pseudoparticle-per-cell arrays, `pointwise` for the rest.
+## Physical contract
 
-## The test
+`run.sh` produces SDF snapshots at dumps 0001, 0003, 0005. The extractor reads assembled global plain-variable blocks and writes raw little-endian arrays in physical coordinate order (x fastest, then y, then z). The validator compares the same coordinate in reference and candidate; it never compares rank slots or particle ownership.
 
-One build of `epoch2d` runs the official injector deck on four MPI ranks laid
-out 4 x 1 along the beam axis, with dynamic load balancing switched on, and the
-check grades both the sequence of partitions EPOCH chose and the physics it
-produced on them.
+**Graded observables:**
+- Global physical grids: ex, jx, charge_density, number_density, number_density_Background, number_density_Beam.
+- Total field energy, using `0.5*epsilon0*integral(|E|^2 + c^2|B|^2)dV`, in joules.
+- Total and per-species particle kinetic energy in joules for Background, Beam, using `sum((gamma-1)*mass*weight*c^2)`.
+- Exact global particle count per species (Background, Beam), obtained by summing the source CPU-split count vector; only the scalar total is graded.
 
-The deck injects a beam through the x_min boundary every step into a dense
-background plasma. With the ranks laid out along x, the injected particles pile
-into the first rank's block and the per-rank load diverges, which is exactly
-the situation EPOCH's load balancer exists for. Two keys in the control block
-turn it on and keep it responsive: `dlb_threshold = 0.95`, which is the balance
-fraction below which the domain is redistributed (the fraction is 1.0 when
-every rank carries the same load), and `dlb_maximum_interval = 8`, which caps
-the back-off between checks. Under those settings the balancer is attempted
-every step and the seams move repeatedly inside the graded window, which is why
-the ladder is graded at five successive dumps rather than only at the last.
+## Bounds and limitations
 
-Every SDF dump carries the current partition as an integer array, so the check
-grades that array at five successive dumps -- the trajectory of the
-decomposition itself, not just its final state.
+Floating arrays use the explicit per-file `atol + rtol*abs(reference)` values in `rubric.json`. These are **provisional pending calibration**; this revision runs no science solve or full selfcheck. Integer global counts are exact. Missing, empty, shape-mismatched, or non-finite data fails closed.
 
-The window is 2.5e-2 with a dump every 5.0e-3, six dumps, and the grid is 64 x
-64; the upstream deck is 128 x 128 run to 3.0e-1, twelve times the graded
-window at four times the cells, and it is reachable with `SAB_NX=128` and
-`SAB_TEND_SCALE=12`. The shorter window is a run-time choice, not a claim that
-the upstream one is unsuitable.
+## Deliberately ungraded or unavailable
 
-Runtime knobs (`run.sh --help`): `SAB_NX`, `SAB_PPC`, `SAB_TEND_SCALE`,
-`SAB_DT_SNAPSHOT_SCALE`, `SAB_NPROCX`, `SAB_NPROCY`, `SAB_DLB_THRESHOLD`,
-`SAB_DLB_INTERVAL` and `SAB_MAKE_JOBS`. The defaults are the graded values and
-are what the reference run uses. `SAB_TEND_SCALE` scales the control block's
-`t_end` alone and `SAB_DT_SNAPSHOT_SCALE` the output block's `dt_snapshot`
-alone, so the upstream window and the upstream dump cadence can each be
-restored without disturbing the other; note that changing the cadence moves the
-graded dump indices. The build dominates the wall time and is reported
-separately as `SAB_BUILD_SECONDS`.
-
-## The two initial conditions
-
-`ic/nominal` is the deck described above. `ic/variant` multiplies the deck
-constant `dens` -- the one number that sets both the background density and the
-injected density -- by `(1 + 1e-15)`, five units in the last place of the
-binary64 the dumps carry. Deposition and the field advance take a different
-round-off path; the number of particles each rank holds does not change, so the
-load balancer makes exactly the same decisions and the graded partition ladders
-stay comparable exactly, which is the point.
-
-A different rank layout cannot be the variant: EPOCH seeds its random generator
-with 7842432 plus the rank number and each rank loads its own particles, so a
-different layout is a different draw of the initial condition. `SAB_NPROCX` and
-`SAB_NPROCY` expose the layout anyway.
-
-`run.sh altbuild` runs `ic/nominal` on the same pinned source and deck, built
-from a scratch copy of `epoch2d/Makefile` with only its gfortran `FFLAGS` line
-changed from `-O3 -g -std=f2003` to `-O0 -g -std=f2003`. EPOCH's own
-`MODE=debug` profile was tried first and rejected: its
-`-ffpe-trap=invalid,zero,overflow` fires inside Open MPI/PMIx's own `MPI_Init`
-on every multi-rank deck (`mpi_minimal_init`, `mpi_routines.F90`), not in
-EPOCH's arithmetic, aborting before any dump on this rank-layout leaf. Grading
-never uses `altbuild`, while self-validation measures the check's floor between
-the two legitimate builds from it; all five EPOCH leaves use this same altbuild
-definition.
-
-## The pass policy
-
-Historical (see "Policy under revision 5.10.2" below for the current policy):
-the five partition ladders and the per-species pseudoparticle counts per cell
-were compared exactly through round 2 of this PR. The ladder is the output of an integer particle histogram
-reduced across the ranks, projected onto each axis, and split greedily with a
-bounded perturbation loop; every step of that is integer arithmetic on integer
-input, so a port that gets the load metric, the projection or the improvement
-gate wrong lands on a different ladder and is caught at once. The per-cell
-counts are integers for the same reason as in the migration checks.
-
-The floating-point arrays are compared under absolute bounds of 1e-10 V/m on
-Ex, 1e-18 A/m^2 on Jx, 1e-22 C/m^3 on the charge density and 1e-03 m^-3 on the
-number densities. What they test is the redistribution itself: when the seams
-move, EPOCH copies the field and per-species arrays between ranks with MPI
-subarray transfers and a plain assignment for the block a rank keeps. There is
-no arithmetic in that path at all, so a correct redistribution is bit-exact and
-a transposed remap or a mishandled ghost margin corrupts the fields by their
-own full magnitude.
-
-## The upstream deck
-
-`upstream/input.deck` is a byte-for-byte copy of
-`epoch2d/example_decks/injectors.deck` as the pinned source ships it, and
-`upstream/nominal.patch` is the complete unified diff between that file and
-`ic/nominal/input.deck`. Nothing in the deck pair is an undocumented
-adaptation: every line of that patch is one of
-
-- the explicit `nprocx`/`nprocy` layout, written from the `SAB_NPROC*` knobs,
-  and the two dynamic-load-balancing keys the upstream deck does not set,
-  written from `SAB_DLB_THRESHOLD` and `SAB_DLB_INTERVAL`;
-- the grid size and the window, which `run.sh` rewrites from `SAB_NX`,
-  `SAB_PPC`, `SAB_TEND_SCALE` and `SAB_DT_SNAPSHOT_SCALE` -- the last two act
-  on `t_end` and on `dt_snapshot` independently, so the upstream window and the
-  upstream dump cadence can each be restored without disturbing the other;
-- `use_random_seed = F`, which restates EPOCH's own default, and a large
-  `stdout_frequency`, which only shortens the log;
-- output lines: the blocks the upstream file leaves commented out and this
-  check has to enable in order to grade anything at all, and, where the deck
-  has one, the distribution-function output this check does not grade.
-
-`run.sh --help` lists every setting, and the defaults leave `ic/nominal` at the
-values it ships -- the two scale knobs at 1 rewrite `75 * femto` as `75.0 *
-femto`, the same number -- so the difference from upstream is both visible and
-reversible.
-
-## Policy under revision 5.10.2
-
-The per-species pseudoparticle-per-cell arrays move to an invariants
-comparison (kind conservation, atol 0): each is reduced to its sum, the
-exact global count of that species at the dump, which must agree with the
-reference exactly, because conservation of particle number is exact
-regardless of which cell or which rank a particle ends up in. The rank
-partition ladder no longer stays pointwise as a whole: balance.F90 moves the
-dlb_threshold-triggered seams along x only (nprocy = 1 here, so there is no
-y seam to move), a discontinuous decision -- whether the sampled imbalance
-fraction is a hair above or below 0.95 -- that a legitimate target's
-different reduction order can flip one interval earlier or later without the
-port being wrong. The first nprocx-1 entries of each `cpu_rank_<dump>.f64`
-(the load-balanced x-boundaries) are graded by three invariants instead:
-`ladder_coverage` (the boundaries are strictly increasing and lie in
-(0, 64), checked on each run independently -- a dropped, duplicated or
-misrouted particle that starves an x-band to zero width fails this even
-without moving any single value), `load_quality` (the max-over-mean particle
-load of the four x-bands the ladder defines must agree with the reference
-within atol 0.35), and `repartition_count` (how many of the five graded
-dumps show a different x-ladder than the dump before it must agree with the
-reference within atol 1). This is the 2026-09-05 steward review's item 3:
-"load-quality and redistribution properties rather than exact equality to
-every CPU partition boundary." Both native probes available to this leaf
-(the 1e-15 density variant and the -O0 altbuild) measure exactly zero
-spread on every one of these statistics, because neither moves a particle
-across a cell or an x-band boundary or shifts when the 0.95 threshold is
-crossed; the load_quality and repartition_count bounds are therefore derived
-from the measured per-cell particle count next to each x seam (see Evidence
-below and comment/README.md), not from a nonzero native measurement, and
-ladder_coverage carries no tolerance parameter at all, only a validity
-condition. Item 5 of the same review: this deck sets dlb_threshold = 0.95
-and dlb_maximum_interval = 8, which the upstream deck leaves unset -- unset
-switches the balancer off entirely -- and
-SAB_DLB_THRESHOLD/SAB_DLB_INTERVAL restore the upstream (disabled)
-behaviour.
-
-## Evidence
-
-Native measurements on the packaging host (gfortran 15, OpenMPI 5, four ranks):
-
-The redistribution is genuinely exercised between graded dumps, not only in the
-pre-run pass.
-- `-O3` against `-O2` builds of the pinned source: all twenty-one graded files
-  bit-identical.
-- Variant preview, `-O3` on `ic/variant` against `ic/nominal`: largest absolute
-  difference 1.9e-15 V/m (Ex), 6.5e-23 A/m^2 (Jx), 5.8e-30 C/m^3 (charge
-  density), 3.7e-11 m^-3 (number density), and exactly zero on all five
-  partition ladders and all four per-cell count arrays.
-
-The complete graded-default x86 calibration selfcheck finished
-2026-09-04T13:49:13Z: its own nominal-versus-variant distance was 4.16094e-11.
-All 21 graded arrays (65551 values) contained the measured sensitivity under
-their own bounds, with 0 values over bound; the worst array was jx_0005.f64 at
-7.42922e-05 of its bound. This comparison measures nominal-variant
-sensitivity, not a same-input run/build floor.
-
-The nominal run took 4.6 s excluding its 56.0 s build, and expected_runtime_s
-is 7 s. The earlier independent same-input build-floor evidence above remains
-distinct.
-
-The -O0 altbuild (`epoch2d/Makefile` FFLAGS `-O3` changed to `-O0` in the scratch build copy, everything else unchanged) is bit-identical to the nominal build on every graded array: floor 0, measured on 2026-09-05.
+Rank identifiers, rank boundaries, per-rank counts, particle ownership/order, load-balancing ladder/repartition count/timing, and other implementation bookkeeping are diagnostics only and do not appear in the rubric. Particle records emitted solely to expose global counts are likewise ungraded. Components not requested by this deck (for example Jy/Jz/Ez/Bx/By) are not invented. Total charge and momentum remain ungraded because these decks do not emit a validated scalar diagnostic.
