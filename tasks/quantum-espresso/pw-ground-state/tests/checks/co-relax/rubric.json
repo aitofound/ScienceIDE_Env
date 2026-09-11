@@ -54,14 +54,32 @@
     },
     "floor_bound_fraction": 2.1671553440683056e-07,
     "floor_allowed": {
-      "energy": 4.765503547332628e-10,
-      "eigenvalues": 4.939582628760153e-06,
-      "fermi": 1.6511856406609127e-06,
-      "forces": 1.1529578560806093e-05,
-      "stress": 3.340442644607903e-08,
-      "structure": 7.890411154232169e-06
+      "energy": {
+        "value": 4.765503547332628e-10,
+        "from": "allowed-diagonalization-cg",
+        "from_distance": 4.765503547332628e-10,
+        "probe": "comment/probes/co-relax/allowed-diagonalization-cg/validate.json"
+      },
+      "eigenvalues": {
+        "value": 4.939582628760153e-06,
+        "from": "allowed-mixing-beta-0.3",
+        "from_distance": 4.939582628760153e-06,
+        "probe": "comment/probes/co-relax/allowed-mixing-beta-0.3/validate.json"
+      },
+      "fermi": {
+        "value": 1.6511856406609127e-06,
+        "from": "allowed-diagonalization-cg",
+        "from_distance": 1.6511856406609127e-06,
+        "probe": "comment/probes/co-relax/allowed-diagonalization-cg/validate.json"
+      },
+      "structure": {
+        "value": 7.890411154232169e-06,
+        "from": "allowed-diagonalization-cg",
+        "from_distance": 7.890411154232169e-06,
+        "probe": "comment/probes/co-relax/allowed-diagonalization-cg/validate.json"
+      }
     },
-    "floor_allowed_how": "per-group max max_abs_error over comment/probes allowed-altbuild, allowed-diagonalization-cg, allowed-mixing-beta-0.3, allowed-omp-threads-2, allowed-startingwfc-random (the last is omitted from the max when its energy error exceeds 1e-3 Ha, a different SCF attractor; measured on feo-lda-u)",
+    "floor_allowed_how": "Per graded group: the largest max_abs_error over comment/probes allowed-altbuild, allowed-diagonalization-cg, allowed-mixing-beta-0.3, allowed-omp-threads-2, allowed-startingwfc-random (omitted from the max when its energy error exceeds 1e-3 Ha, a different SCF attractor; measured on feo-lda-u). `from` names the probe that set the max.",
     "finalised": {
       "energy": {
         "provisional": 5e-07,
@@ -79,7 +97,7 @@
         "rounded": 0.001,
         "cap": 0.007349864435130998,
         "final": 0.001,
-        "winner": "100×floor_allowed"
+        "winner": "100\u00d7floor_allowed"
       },
       "fermi": {
         "provisional": 1e-05,
@@ -88,7 +106,7 @@
         "rounded": 0.001,
         "cap": 0.007349864435130998,
         "final": 0.001,
-        "winner": "100×floor_allowed"
+        "winner": "100\u00d7floor_allowed"
       },
       "forces": {
         "provisional": 5e-05,
@@ -117,7 +135,168 @@
         "final": 0.001,
         "winner": "provisional"
       }
+    },
+    "dropped_groups": {
+      "forces": {
+        "value": 1.1529578560806093e-05,
+        "from": "allowed-diagonalization-cg",
+        "from_distance": 1.1529578560806093e-05,
+        "probe": "comment/probes/co-relax/allowed-diagonalization-cg/validate.json",
+        "provisional": 5e-05,
+        "100x_floor_allowed": 0.0011529578560806092,
+        "100x_spread": 6.7004487082442804e-12,
+        "rounded": 0.01,
+        "cap": 0.0005,
+        "reason": "rule gave 0.01 after next-decade rounding of 0.00115296, above the upstream cap 0.0005"
+      },
+      "stress": {
+        "value": 3.340442644607903e-08,
+        "from": "allowed-mixing-beta-0.3",
+        "from_distance": 3.340442644607903e-08,
+        "probe": "comment/probes/co-relax/allowed-mixing-beta-0.3/validate.json",
+        "provisional": 1.7e-07,
+        "100x_floor_allowed": 3.340442644607903e-06,
+        "100x_spread": 1.1622647289044608e-14,
+        "rounded": 1e-05,
+        "cap": 6.799999999999999e-06,
+        "reason": "rule gave 1e-05 after next-decade rounding of 3.34044e-06, above the upstream cap 6.8e-06"
+      }
+    },
+    "fault_vs_final": {
+      "conv-thr-x1e3": {
+        "status": "ok",
+        "groups": {
+          "energy": {
+            "max_abs_error": 8.330081868734851e-08,
+            "final_atol": 1e-06,
+            "ratio": 0.08330081868734851,
+            "probe": "comment/probes/co-relax/fault-conv-thr-x1e3/validate.json"
+          },
+          "eigenvalues": {
+            "max_abs_error": 4.088534220580975e-05,
+            "final_atol": 0.001,
+            "ratio": 0.04088534220580975,
+            "probe": "comment/probes/co-relax/fault-conv-thr-x1e3/validate.json"
+          },
+          "fermi": {
+            "max_abs_error": 4.088534220580975e-05,
+            "final_atol": 0.001,
+            "ratio": 0.04088534220580975,
+            "probe": "comment/probes/co-relax/fault-conv-thr-x1e3/validate.json"
+          },
+          "structure": {
+            "max_abs_error": 0.00011872665266299265,
+            "final_atol": 0.001,
+            "ratio": 0.11872665266299265,
+            "probe": "comment/probes/co-relax/fault-conv-thr-x1e3/validate.json"
+          }
+        },
+        "worst_ratio": 0.11872665266299265,
+        "worst_group": "structure",
+        "clears_100x": false
+      },
+      "ecutwfc-x0.9": {
+        "status": "ok",
+        "groups": {
+          "energy": {
+            "max_abs_error": 0.022481674238449045,
+            "final_atol": 1e-06,
+            "ratio": 22481.674238449046,
+            "probe": "comment/probes/co-relax/fault-ecutwfc-x0.9/validate.json"
+          },
+          "eigenvalues": {
+            "max_abs_error": 0.0023024547985981414,
+            "final_atol": 0.001,
+            "ratio": 2.3024547985981414,
+            "probe": "comment/probes/co-relax/fault-ecutwfc-x0.9/validate.json"
+          },
+          "fermi": {
+            "max_abs_error": 0.00012762636735630384,
+            "final_atol": 0.001,
+            "ratio": 0.12762636735630384,
+            "probe": "comment/probes/co-relax/fault-ecutwfc-x0.9/validate.json"
+          },
+          "structure": {
+            "max_abs_error": 0.0030121411991950175,
+            "final_atol": 0.001,
+            "ratio": 3.0121411991950175,
+            "probe": "comment/probes/co-relax/fault-ecutwfc-x0.9/validate.json"
+          }
+        },
+        "worst_ratio": 22481.674238449046,
+        "worst_group": "energy",
+        "clears_100x": true
+      },
+      "ecutrho-x0.5": {
+        "status": "ok",
+        "groups": {
+          "energy": {
+            "max_abs_error": 0.004630153985591079,
+            "final_atol": 1e-06,
+            "ratio": 4630.153985591079,
+            "probe": "comment/probes/co-relax/fault-ecutrho-x0.5/validate.json"
+          },
+          "eigenvalues": {
+            "max_abs_error": 0.002024348422074995,
+            "final_atol": 0.001,
+            "ratio": 2.024348422074995,
+            "probe": "comment/probes/co-relax/fault-ecutrho-x0.5/validate.json"
+          },
+          "fermi": {
+            "max_abs_error": 0.002024348422074995,
+            "final_atol": 0.001,
+            "ratio": 2.024348422074995,
+            "probe": "comment/probes/co-relax/fault-ecutrho-x0.5/validate.json"
+          },
+          "structure": {
+            "max_abs_error": 0.002231866921762027,
+            "final_atol": 0.001,
+            "ratio": 2.231866921762027,
+            "probe": "comment/probes/co-relax/fault-ecutrho-x0.5/validate.json"
+          }
+        },
+        "worst_ratio": 4630.153985591079,
+        "worst_group": "energy",
+        "clears_100x": true
+      },
+      "forc-conv-thr-x10": {
+        "status": "ok",
+        "groups": {
+          "energy": {
+            "max_abs_error": 1.620311849137579e-06,
+            "final_atol": 1e-06,
+            "ratio": 1.620311849137579,
+            "probe": "comment/probes/co-relax/fault-forc-conv-thr-x10/validate.json"
+          },
+          "eigenvalues": {
+            "max_abs_error": 0.000514494000393162,
+            "final_atol": 0.001,
+            "ratio": 0.514494000393162,
+            "probe": "comment/probes/co-relax/fault-forc-conv-thr-x10/validate.json"
+          },
+          "fermi": {
+            "max_abs_error": 7.590439028704044e-05,
+            "final_atol": 0.001,
+            "ratio": 0.07590439028704044,
+            "probe": "comment/probes/co-relax/fault-forc-conv-thr-x10/validate.json"
+          },
+          "structure": {
+            "max_abs_error": 0.0017132798455987697,
+            "final_atol": 0.001,
+            "ratio": 1.7132798455987697,
+            "probe": "comment/probes/co-relax/fault-forc-conv-thr-x10/validate.json"
+          }
+        },
+        "worst_ratio": 1.7132798455987697,
+        "worst_group": "structure",
+        "clears_100x": false
+      },
+      "degauss-x2": {
+        "status": "not_applicable",
+        "groups": {},
+        "reason": "not a metallic (smearing) check"
+      }
     }
   },
-  "warrant": "The graded observables are the XML total energy etot (Hartree), the occupied Kohn-Sham eigenvalues per k-point (occupation > 1e-3, Hartree, ordered by the XML's ascending eigenvalues at each k the deck fixes), the Fermi energy or highestOccupiedLevel, the forces (Ha/Bohr) and the stress (Ha/Bohr^3) written by qexsd_init_forces / qexsd_init_stress after dividing by e2 in PW/src/pw_restart_new.f90. Physical: loosening conv_thr by 1e3 (the named 'speed bought by loosening convergence' fault) or cutting ecutwfc by 10 percent leaves the SCF short of the XML energy and occupied eigenvalues by amounts that cross those bounds, while a dropped nonlocal projector in PW/src/add_vuspsi.f90 or a wrong XC kernel in PW/src/v_of_rho.f90 (line 9) moves etot by millihartree. Achievable: the SCF in PW/src/electrons.f90 (line 10) is a converging iterative diagonalisation (KS_Solvers/Davidson/cegterg.f90 line 18 applying PW/src/h_psi.f90 line 12) plus charge mixing (PW/src/mix_rho.f90 line 87) and Ewald (PW/src/ewald.f90 line 10); two legitimate IEEE builds of correct code differ by accumulated round-off inside the self-consistency threshold. Empty bands, SCF iteration counts and estimated scf accuracy are not graded. Final cell vectors and atomic positions in output/atomic_structure (Bohr) are graded because this deck moves the ions (PW/src/move_ions.f90, Modules/bfgs_module.f90); a wrong force or a dropped stress contribution displaces the relaxed geometry by millibohr, above the 1e-3 Bohr provisional bound. CURATOR-DECISIONS section 6 will drop structure if 100 times the measured floor exceeds 1e-3 Bohr. Pointwise under the finalised bounds: energy atol 1e-06 Ha (provisional 5e-07, 100×spread 1.98952e-11, 100×floor_allowed 4.7655e-08 from allowed-omp-threads-2, provisional won); eigenvalues atol 0.001 Ha (provisional 1e-05, 100×spread 1.59872e-12, 100×floor_allowed 0.000493958 from allowed-omp-threads-2, 100×floor_allowed won); fermi atol 0.001 Ha (provisional 1e-05, 100×spread 3.88578e-14, 100×floor_allowed 0.000165119 from allowed-omp-threads-2, 100×floor_allowed won); structure atol 0.001 Bohr (provisional 0.001, 100×spread 3.37508e-12, 100×floor_allowed 0.000789041 from allowed-omp-threads-2, provisional won). Groups that left the graded set: forces because rule gave 0.01 after next-decade rounding of 0.00115296, above the upstream cap 0.0005; stress because rule gave 1e-05 after next-decade rounding of 3.34044e-06, above the upstream cap 6.8e-06. Tolerances finalised by the CURATOR-DECISIONS section 6 rule: max(provisional, 100x allowed-variation floor, 100x self-validation spread), rounded up one decade, never above the upstream testcode cap; probes retained under comment/probes. -- Kangkai Liang, 2026-09-10 Fault probes that do not land ≥100× above the finalised bound (named, observable kept where another fault of the same check does): fault-conv-thr-x1e3 worst ratio 0.118727 on structure; fault-forc-conv-thr-x10 worst ratio 1.71328 on structure. Pointwise under the finalised bounds: energy atol 1e-06 Ha (provisional 5e-07, 100x spread 1.98952e-11, 100x floor_allowed 4.7655e-08 from allowed-diagonalization-cg, provisional won); eigenvalues atol 0.001 Ha (provisional 1e-05, 100x spread 1.59872e-12, 100x floor_allowed 0.000493958 from allowed-mixing-beta-0.3, 100×floor_allowed won); fermi atol 0.001 Ha (provisional 1e-05, 100x spread 3.88578e-14, 100x floor_allowed 0.000165119 from allowed-diagonalization-cg, 100×floor_allowed won); structure atol 0.001 Bohr (provisional 0.001, 100x spread 3.37508e-12, 100x floor_allowed 0.000789041 from allowed-diagonalization-cg, provisional won). Groups that left the graded set: forces because rule gave 0.01 after next-decade rounding of 0.00115296, above the upstream cap 0.0005; stress because rule gave 1e-05 after next-decade rounding of 3.34044e-06, above the upstream cap 6.8e-06. Tolerances finalised by the CURATOR-DECISIONS section 6 rule: max(provisional, 100x allowed-variation floor, 100x self-validation spread), rounded up one decade, never above the upstream testcode cap; probes retained under comment/probes. -- Kangkai Liang, 2026-09-10 Fault probes that do not land ≥100× above the finalised bound (named, observable kept where another fault of the same check does): fault-conv-thr-x1e3 worst ratio 0.118727 on structure; fault-forc-conv-thr-x10 worst ratio 1.71328 on structure."
+  "warrant": "The graded observables are the XML total energy etot (Hartree), the occupied Kohn-Sham eigenvalues per k-point (occupation > 1e-3, Hartree, ordered by the XML's ascending eigenvalues at each k the deck fixes), the Fermi energy or highestOccupiedLevel (Hartree), the final cell and atomic positions (Bohr). The SCF that produces them is PW/src/electrons.f90 (line 10), Davidson KS_Solvers/Davidson/cegterg.f90 (line 18) applying PW/src/h_psi.f90 (line 12), charge mixing PW/src/mix_rho.f90 (line 87), XC and Hartree PW/src/v_of_rho.f90 (line 9), and Ewald PW/src/ewald.f90 (line 10). Empty bands, SCF/BFGS iteration counts and estimated scf accuracy are not graded. A dropped nonlocal projector in PW/src/add_vuspsi.f90 or a wrong XC kernel in PW/src/v_of_rho.f90 (line 9) moves etot by millihartree. Pointwise under the finalised bounds: energy atol 1e-06 Ha (provisional 5e-07, 100x spread 1.98952e-11, 100x floor_allowed 4.7655e-08 from allowed-diagonalization-cg (comment/probes/co-relax/allowed-diagonalization-cg/validate.json energy max_abs_error 4.7655e-10), provisional won); eigenvalues atol 0.001 Ha (provisional 1e-05, 100x spread 1.59872e-12, 100x floor_allowed 0.000493958 from allowed-mixing-beta-0.3 (comment/probes/co-relax/allowed-mixing-beta-0.3/validate.json eigenvalues max_abs_error 4.93958e-06), 100\u00d7floor_allowed won); fermi atol 0.001 Ha (provisional 1e-05, 100x spread 3.88578e-14, 100x floor_allowed 0.000165119 from allowed-diagonalization-cg (comment/probes/co-relax/allowed-diagonalization-cg/validate.json fermi max_abs_error 1.65119e-06), 100\u00d7floor_allowed won); structure atol 0.001 Bohr (provisional 0.001, 100x spread 3.37508e-12, 100x floor_allowed 0.000789041 from allowed-diagonalization-cg (comment/probes/co-relax/allowed-diagonalization-cg/validate.json structure max_abs_error 7.89041e-06), provisional won). Groups that left the graded set: forces: floor_allowed 1.15296e-05 from allowed-diagonalization-cg distance 1.15296e-05, 100x = 0.00115296, rounded 0.01, cap 0.0005; rule gave 0.01 after next-decade rounding of 0.00115296, above the upstream cap 0.0005; stress: floor_allowed 3.34044e-08 from allowed-mixing-beta-0.3 distance 3.34044e-08, 100x = 3.34044e-06, rounded 1e-05, cap 6.8e-06; rule gave 1e-05 after next-decade rounding of 3.34044e-06, above the upstream cap 6.8e-06. Tolerances finalised by the CURATOR-DECISIONS section 6 rule: max(provisional, 100x allowed-variation floor, 100x self-validation spread), rounded up one decade, never above the upstream testcode cap; probes retained under comment/probes. -- Kangkai Liang, 2026-09-10 This check's retained observables do not discriminate the named fault conv_thr \u00d71e3 (speed bought by loosening convergence) at the \u00a76 100\u00d7 margin: comment/probes/co-relax/fault-conv-thr-x1e3/validate.json energy max_abs_error 8.33008e-08 against the finalised energy bound 1e-06 is ratio 0.0833008. A candidate that loosened conv_thr by 1e3 would pass this check (ratio below 1). The check does reject ecutwfc \u00d70.9 (basis truncation) at ratio 22481.7 on energy (comment/probes/co-relax/fault-ecutwfc-x0.9/validate.json energy max_abs_error 0.0224817); ecutrho \u00d70.5 (USPP/PAW augmentation undersampling) at ratio 4630.15 on energy (comment/probes/co-relax/fault-ecutrho-x0.5/validate.json energy max_abs_error 0.00463015)."
 }
