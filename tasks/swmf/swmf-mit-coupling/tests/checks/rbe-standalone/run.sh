@@ -43,6 +43,7 @@ case "$CHECK_NAME" in
     # unresolved and are intentionally not synthesized or replaced.
     mkdir -p "$WORK/input"
     cp "$INPUT" "$WORK/input/PARAM.in"
+    bash "$CHECK_DIR/../../stage-runtime-inputs.sh" rbe "$SRC" "$WORK"
     RUN="$WORK/rbe-run"; (cd RB/RBE && make rundir RUNDIR="$RUN" STANDALONE=YES RBDIR="$PWD")
     (cd "$RUN" && ./rbe.exe | tee runlog)
     ;;

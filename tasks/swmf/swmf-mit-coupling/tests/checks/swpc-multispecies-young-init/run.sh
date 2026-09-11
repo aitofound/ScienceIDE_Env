@@ -64,7 +64,7 @@ case "$CHECK_NAME" in
     components='Empty,GM/BATSRUS,IE/Ridley_serial,IM/RCM2'; equation=Mhd
     case "$CHECK_NAME" in swpc-pe-*) equation=MhdPe;; swpc-multiion-*) equation=MultiIon;; swpc-multispecies-*) equation=MhdHpOp;; esac
     ./Config.pl -v="$components"; ./Config.pl -o=GM:u=Default,e="$equation",ng=2,g=8,8,8,IE:g=181,361; make -j"$SAB_BUILD_JOBS" SWMF
-    RUN="$WORK/swpc-run"; make rundir RUNDIR="$RUN"; cp "$INPUT" "$RUN/PARAM.in"; (cd "$RUN" && mpirun --oversubscribe -np "$SAB_MPI_RANKS" ./SWMF.exe | tee runlog); (cd "$RUN" && bash "$CHECK_DIR/../../retain-postproc.sh" -noptec)
+    RUN="$WORK/swpc-run"; make rundir RUNDIR="$RUN"; bash "$CHECK_DIR/../../stage-runtime-inputs.sh" swpc "$SRC" "$RUN"; cp "$INPUT" "$RUN/PARAM.in"; (cd "$RUN" && mpirun --oversubscribe -np "$SAB_MPI_RANKS" ./SWMF.exe | tee runlog); (cd "$RUN" && bash "$CHECK_DIR/../../retain-postproc.sh" -noptec)
     ;;
 esac
 echo "SAB_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))"
