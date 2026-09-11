@@ -10,6 +10,31 @@ files, plus KS_Solvers. Hybrid functionals, phonons, Car-Parrinello, TDDFPT
 and HP are other modules. libxc inputs and pw2casino are not packaged.
 Twenty checks. Acceleration label: `co-beef-vdw`.
 
+## Declared run times versus the shipped record
+
+`expected_runtime_s` is a declaration set from a named in-container
+self-validation run, not a number the next container run is required to
+reprint. Writing a new value into a rubric after a run would change the
+contract fingerprint and invalidate that run, so the declaration and the
+shipped record cannot be byte-equal. The rubric values were copied from
+`comment/pipeline/self-validation.json` of the run started 2026-09-11T03:58:14Z
+(finished 2026-09-11T04:08:35Z, `check_run_seconds_nominal`; `ni-lsda` was
+later resync'd 0.7 s → 0.9 s from the first revision-2 selfcheck). The
+shipped record is a later run, started 2026-09-11T06:33:23Z, finished
+2026-09-11T06:47:28Z. Per-check timings are re-measured every run and jitter
+(this host was also running the parallel `ph-linear-response` lane).
+
+Declared versus that shipped `check_run_seconds_nominal` (build excluded):
+the largest residual among genuine run times is `si-electric-string` 9.2 s
+declared vs 15.1 s recorded (+64%). `al-metal-smearing` prints 0.0 s in the
+shipped record because `SAB_BUILD_SECONDS` rounded to 78.0 against elapsed
+77.904 s, so run time max(0, 77.904−78.0) = 0 — rounding, not a vanished
+1.3 s physics run. The pipeline flags a check only when measured > 2 ×
+declared, or declared > 2 × measured with measured at least 1 s. None of
+the twenty trip that rule, and the record's `warnings` list is empty. Check
+READMEs state the number is the in-container self-validation measurement on
+the packaging host and that a reviewer's own run will differ.
+
 ## Build
 
 Each check's `run.sh` copies the pinned tree into a scratch directory,
