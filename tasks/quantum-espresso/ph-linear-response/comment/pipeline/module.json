@@ -1,0 +1,57 @@
+{
+  "module": {
+    "slug": "ph-linear-response",
+    "title": "Density-functional perturbation theory: phonons and response",
+    "paths": [
+      "PHonon/PH",
+      "PHonon/FD",
+      "PHonon/Gamma"
+    ],
+    "entrypoints": [
+      "ph.x",
+      "dynmat.x",
+      "q2r.x",
+      "matdyn.x",
+      "lambda.x"
+    ],
+    "expensive_path": "solve_linter, the self-consistent solution of the Sternheimer equation for each perturbation and each q-point: the conjugate-gradient solver cgsolve_all applied to the linear system, the perturbing potential dvqpsi_us, the induced-density accumulation incdrhoscf and the drhodv contraction. Each irreducible perturbation costs roughly one ground-state SCF calculation.",
+    "rationale": "Linear-response phonons are one coherent physical calculation with one expensive kernel: build the perturbation, solve the Sternheimer equation self-consistently, accumulate the induced density, contract into the dynamical matrix. The post-processing executables (dynmat.x for IR and Raman, q2r.x and matdyn.x for Fourier interpolation, lambda.x for electron-phonon coupling) read the dynamical matrices that ph.x writes and are the same scientific object seen at the end of the chain, so they belong to the same module rather than to separate ones.",
+    "excluded": [
+      "EPW, which builds on PHonon output but needs Wannier90 and long runs",
+      "The ground-state SCF that must precede every phonon run, owned by pw-ground-state",
+      "Third-order anharmonic response in external/d3q, an optional external component"
+    ],
+    "hazards": [
+      "Every ph_* official test is a chain: an scf step then one or more ph steps, sometimes then q2r/matdyn/dynmat; the steps must run in the jobconfig order and share one working directory",
+      "ph.x never purges its own _ph0 restart directory, so a stale _ph0 silently changes a later run",
+      "Acoustic modes at Gamma are only zero after the acoustic sum rule, and their raw values sit at the numerical floor",
+      "dynmat.x, matdyn.x and lambda.x write formatted text whose printed precision, not the physics, floors any tolerance derived from them",
+      "The dynamical matrix has a machine-readable XML form only when fildyn ends in .xml"
+    ]
+  },
+  "approval": {
+    "modules": [
+      "pw-ground-state",
+      "pw-hybrid-exx",
+      "ph-linear-response",
+      "cp-car-parrinello",
+      "tddfpt-linear-response",
+      "hp-hubbard-parameters"
+    ],
+    "human_ref": "Module cut approved as proposed in CURATOR-DECISIONS section 3: pw-ground-state, pw-hybrid-exx, ph-linear-response, cp-car-parrinello, tddfpt-linear-response, hp-hubbard-parameters; tasks now for pw-ground-state and ph-linear-response. -- Kangkai Liang, 2026-09-10",
+    "at": "2026-09-10T23:01:13Z"
+  },
+  "shared_infrastructure": [
+    "Modules",
+    "FFTXlib",
+    "LAXlib",
+    "UtilXlib",
+    "XClib",
+    "upflib",
+    "LR_Modules",
+    "include",
+    "install",
+    "external",
+    "dft-d3"
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "groups": [
+    "energy",
+    "eigenvalues",
+    "forces",
+    "stress",
+    "dielectric",
+    "born"
+  ],
+  "matdyn_freq_files": [
+    "bn.frq"
+  ],
+  "n_acoustic": 3,
+  "scf_prefixes": [
+    "bn"
+  ],
+  "steps": [
+    {
+      "exe": "pw.x",
+      "in": "scf.in"
+    },
+    {
+      "exe": "ph.x",
+      "in": "ph.in",
+      "wipe_ph0": true
+    },
+    {
+      "exe": "q2r.x",
+      "in": "q2r1.in"
+    },
+    {
+      "exe": "matdyn.x",
+      "in": "matdyn1.in"
+    },
+    {
+      "exe": "q2r.x",
+      "in": "q2r2.in"
+    },
+    {
+      "exe": "matdyn.x",
+      "in": "matdyn2.in"
+    }
+  ],
+  "testdir": "ph_2d"
+}
