@@ -17,23 +17,41 @@ self-validation run, not a number the next container run is required to
 reprint. Writing a new value into a rubric after a run would change the
 contract fingerprint and invalidate that run, so the declaration and the
 shipped record cannot be byte-equal. The rubric values were copied from
-`comment/pipeline/self-validation.json` of the run started 2026-09-11T03:58:14Z
-(finished 2026-09-11T04:08:35Z, `check_run_seconds_nominal`; `ni-lsda` was
-later resync'd 0.7 s → 0.9 s from the first revision-2 selfcheck). The
-shipped record is a later run, started 2026-09-11T06:33:23Z, finished
-2026-09-11T06:47:28Z. Per-check timings are re-measured every run and jitter
-(this host was also running the parallel `ph-linear-response` lane).
+`comment/pipeline/self-validation.json` `check_run_seconds_nominal` of
+Run A, started 2026-09-11T10:51:52Z, finished 2026-09-11T11:02:32Z. Every
+one of the twenty values was positive (`al-metal-smearing` 0.2 s); the
+first-check `SAB_BUILD_SECONDS` clamp did not fire, and no value was
+carried forward. The shipped record is Run B, started 2026-09-11T11:10:42Z,
+finished 2026-09-11T11:21:08Z, fingerprint
+`c6cde17d8d052f3ec95c9a6bc67f63e6a7f31c4983023b7d46276443aa8cb1dc`.
+Per-check timings are re-measured every run and jitter (this host was also
+running the parallel `ph-linear-response` lane). There is deliberately no
+Run C.
 
-Declared versus that shipped `check_run_seconds_nominal` (build excluded):
-the largest residual among genuine run times is `si-electric-string` 9.2 s
-declared vs 15.1 s recorded (+64%). `al-metal-smearing` prints 0.0 s in the
-shipped record because `SAB_BUILD_SECONDS` rounded to 78.0 against elapsed
-77.904 s, so run time max(0, 77.904−78.0) = 0 — rounding, not a vanished
-1.3 s physics run. The pipeline flags a check only when measured > 2 ×
-declared, or declared > 2 × measured with measured at least 1 s. None of
-the twenty trip that rule, and the record's `warnings` list is empty. Check
-READMEs state the number is the in-container self-validation measurement on
-the packaging host and that a reviewer's own run will differ.
+Declared versus that shipped `check_run_seconds_nominal` (build excluded),
+strict `>` on the floats as stored: 7 of 20 diverge by more than 25 % of
+the declared value, and 7 of 20 by more than 25 % of the measured value
+(both denominators 20). The seven checks are `al-metal-smearing`,
+`al-metal-tetrahedra`, `cu-uspp-smearing`, `fe-noncolin`,
+`h2o-cluster-isolated`, `ni-lsda`, `si-md-verlet`. The largest residual
+by fraction of the declared value is `al-metal-smearing` 0.2 s declared vs
+0.7 s measured. The largest absolute residual is `co-beef-vdw` 79.4 s vs
+91.6 s (15.4 % of declared, under 25 %). On the measured denominator
+`si-md-verlet` sits exactly on 25 % in one-decimal arithmetic (0.3 vs 0.4;
+0.4 − 0.3 = 0.10000000000000003 against 0.25 × 0.4 = 0.1) and is counted
+only because strict `>` on binary floats puts it over; six of the seven
+are unambiguous on that side, and all seven are unambiguous on the
+declared side.
+
+The pipeline flags a check when measured > 2 × declared. That rule fired
+once: Run B's `warnings` is not empty, and contains
+`al-metal-smearing: measured run time 1s (build excluded) vs declared expected_runtime_s 0s`.
+That is 0.7 s measured against 0.2 s declared (`0.7 > 2 × 0.2`); the CLI
+prints both with `:.0f`, so 0.7 becomes `1s` and 0.2 becomes `0s`.
+`al-metal-smearing` runs first, so the shared source build is subtracted
+from its elapsed time and the leftover is noisy. Check READMEs state the
+number is the in-container self-validation measurement on the packaging
+host and that a reviewer's own run will differ.
 
 ## Build
 
