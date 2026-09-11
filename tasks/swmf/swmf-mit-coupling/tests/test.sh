@@ -75,7 +75,7 @@ CANDIDATE_DIR="${HARBOR_CANDIDATE_DIR:-${CANDIDATE_DIR:-}}"
 REWARD_FILE="${HARBOR_REWARD_FILE:-${REWARD_FILE:-}}"
 
 python3 -B -s - "$CHECKS_DIR" "$REFERENCE_DIR" "$CANDIDATE_DIR" "$REWARD_FILE" <<'PY'
-import filecmp, json, os, subprocess, sys, tempfile, time
+import contextlib, filecmp, json, os, subprocess, sys, tempfile, time
 
 checks_dir, reference_arg, candidate_arg, reward_file = sys.argv[1:]
 checks = sorted(d for d in os.listdir(checks_dir)
@@ -131,7 +131,7 @@ if reference == candidate or os.path.commonpath((reference, candidate)) in (refe
     wiring_error("aliased_artifact_roots", "reference and candidate roots must be physically distinct and non-nested")
 
 rows, passed, identical_checks = {}, 0, []
-with tempfile.TemporaryDirectory(prefix="sciaccel-verify-") as scratch:
+with contextlib.nullcontext(tempfile.mkdtemp(prefix="sciaccel-verify-")) as scratch:
     for check in checks:
         check_dir = os.path.join(checks_dir, check)
         ref_dir, cand_dir = os.path.join(reference, check), os.path.join(candidate, check)
