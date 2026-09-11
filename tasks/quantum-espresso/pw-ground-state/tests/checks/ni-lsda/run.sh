@@ -57,6 +57,13 @@ build_pw() {
   mkdir -p "$src/install"
   : > "$src/install/git_devx"
   : > "$src/install/git_mbd"
+  # configure (install/m4/x_ac_qe_git.m4) errors "git needed" if no git is on PATH,
+  # even when the tree has no .git. Do not install git in the image: a real git
+  # would also enable the offline-forbidden submodule fetch. A no-op stub is enough.
+  mkdir -p "$WORK/stubs"
+  printf '%s\n' '#!/bin/sh' 'exit 0' > "$WORK/stubs/git"
+  chmod +x "$WORK/stubs/git"
+  export PATH="$WORK/stubs:$PATH"
   (
     cd "$src"
     if [ "$FLAVOR" = altbuild ]; then
