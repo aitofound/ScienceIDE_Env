@@ -1,0 +1,419 @@
+[workspace]
+name = "pinocchio"
+version = "4.1.0"
+description = "A fast and flexible implementation of Rigid Body Dynamics algorithms and their analytical derivatives"
+platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
+channels = ["conda-forge"]
+license = "BSD-2-Clause"
+license-file = "LICENSE"
+preview = ["pixi-build"]
+
+[dependencies]
+ccache = ">=4.9.1"
+cxx-compiler = ">=1.7.0"
+cmake = ">=3.10"
+ninja = ">=1.11"
+pkg-config = ">=0.29.2"
+doxygen = ">=1.12.0"
+git = ">=2.47.1"
+libboost-devel = ">=1.80.0"
+libboost-python-devel = ">=1.80.0"
+eigen = ">=3.4.0"
+numpy = ">=1.22.0"
+python = ">=3.10.0"
+eigenpy = ">=3.7.0"
+urdfdom = ">=4.0"
+meshcat-python = ">=0.3"
+matplotlib = ">=3.9.2"
+
+# This is a workaround because of nvpl issue:
+# https://github.com/conda-forge/scipy-feedstock/issues/310
+[target.linux-aarch64.dependencies]
+blas = { version = "*", build = "netlib" }
+
+[package]
+name = { workspace = true }
+version = { workspace = true }
+
+[package.build]
+backend = { name = "pixi-build-cmake", version = "0.3.*" }
+
+[package.build.config]
+extra-args = [
+  "-DGENERATE_PYTHON_STUBS=ON",
+  "-DBUILD_TESTING=OFF",
+  "-DBUILD_WITH_COLLISION_SUPPORT=ON",
+  "-DBUILD_WITH_ACCELERATE_SUPPORT=OFF",
+  "-DBUILD_WITH_CASADI_SUPPORT=OFF",
+  "-DBUILD_WITH_AUTODIFF_SUPPORT=OFF",
+  "-DBUILD_WITH_EXTRA_SUPPORT=OFF",
+  "-DBUILD_WITH_OPENMP_SUPPORT=OFF",
+  "-DBUILD_WITH_CODEGEN_SUPPORT=OFF",
+  "-DBUILD_WITH_SDF_SUPPORT=OFF",
+  "-DBUILD_PYTHON_BINDINGS_WITH_BOOST_MPFR_SUPPORT=OFF",
+  "-DPINOCCHIO_BUILD_MPFR_TESTING=OFF",
+  "-DBUILD_BENCHMARK=OFF",
+  "-DBUILD_TESTING_SCIPY=OFF",
+]
+
+[package.build.target.win-64.config]
+extra-args = [
+  "-DPYTHON_SITELIB=%PREFIX%/Lib/site-packages",
+  "-DGENERATE_PYTHON_STUBS=ON",
+  "-DBUILD_TESTING=OFF",
+  "-DBUILD_WITH_COLLISION_SUPPORT=ON",
+  "-DBUILD_WITH_ACCELERATE_SUPPORT=OFF",
+  "-DBUILD_WITH_CASADI_SUPPORT=OFF",
+  "-DBUILD_WITH_AUTODIFF_SUPPORT=OFF",
+  "-DBUILD_WITH_EXTRA_SUPPORT=OFF",
+  "-DBUILD_WITH_OPENMP_SUPPORT=OFF",
+  "-DBUILD_WITH_CODEGEN_SUPPORT=OFF",
+  "-DBUILD_WITH_SDF_SUPPORT=OFF",
+  "-DBUILD_PYTHON_BINDINGS_WITH_BOOST_MPFR_SUPPORT=OFF",
+  "-DPINOCCHIO_BUILD_MPFR_TESTING=OFF",
+  "-DBUILD_BENCHMARK=OFF",
+  "-DBUILD_TESTING_SCIPY=OFF",
+]
+
+[package.build-dependencies]
+pkg-config = ">=0.29.2"
+
+[package.host-dependencies]
+libboost-devel = ">=1.80.0"
+libboost-python-devel = ">=1.80.0"
+eigen = ">=3.4.0"
+coal = ">=3"
+numpy = ">=1.22.0"
+python = ">=3.10.0"
+eigenpy = ">=3.7.0"
+urdfdom = ">=4.0"
+
+[package.run-dependencies]
+libboost-devel = ">=1.80.0"
+libboost-python-devel = ">=1.80.0"
+
+[activation.env]
+# Setup ccache
+CMAKE_CXX_COMPILER_LAUNCHER = "ccache"
+# Create compile_commands.json for language server
+CMAKE_EXPORT_COMPILE_COMMANDS = "ON"
+# Activate color output with Ninja
+CMAKE_COLOR_DIAGNOSTICS = "ON"
+# Help ccache manage generated files and PCH (https://ccache.dev/manual/latest.html#_precompiled_headers)
+CCACHE_SLOPPINESS = "include_file_ctime,include_file_mtime,pch_defines,time_macros"
+
+[activation]
+scripts = ["development/scripts/pixi/activation.sh"]
+
+[target.win-64.activation]
+scripts = ["development/scripts/pixi/activation.bat"]
+
+[tasks]
+# We must avoid to set CMAKE_CXX_FLAGS because of WIN32
+# https://discourse.cmake.org/t/strictly-appending-to-cmake-lang-flags/6478
+configure = { cmd = [
+  "CXXFLAGS=$PINOCCHIO_CXX_FLAGS",
+  "cmake",
+  "-G",
+  "Ninja",
+  "-B",
+  "build",
+  "-S",
+  ".",
+  "-DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX",
+  "-DCMAKE_BUILD_TYPE=$PINOCCHIO_BUILD_TYPE",
+  "-DGENERATE_PYTHON_STUBS=$PINOCCHIO_PYTHON_STUBS",
+  "-DBUILD_WITH_COLLISION_SUPPORT=$PINOCCHIO_COLLISION_SUPPORT",
+  "-DBUILD_WITH_ACCELERATE_SUPPORT=$PINOCCHIO_ACCELERATE_SUPPORT",
+  "-DBUILD_WITH_CASADI_SUPPORT=$PINOCCHIO_CASADI_SUPPORT",
+  "-DBUILD_WITH_AUTODIFF_SUPPORT=$PINOCCHIO_AUTODIFF_SUPPORT",
+  "-DBUILD_WITH_EXTRA_SUPPORT=$PINOCCHIO_EXTRA_SUPPORT",
+  "-DBUILD_WITH_OPENMP_SUPPORT=$PINOCCHIO_OPENMP_SUPPORT",
+  "-DBUILD_WITH_CODEGEN_SUPPORT=$PINOCCHIO_CODEGEN_SUPPORT",
+  "-DBUILD_WITH_SDF_SUPPORT=$PINOCCHIO_SDF_SUPPORT",
+  "-DBUILD_PYTHON_BINDINGS_WITH_BOOST_MPFR_SUPPORT=$PINOCCHIO_MPFR_SUPPORT",
+  "-DPINOCCHIO_BUILD_MPFR_TESTING=$PINOCCHIO_MPFR_SUPPORT",
+  "-DBUILD_BENCHMARK=$PINOCCHIO_BUILD_BENCHMARK",
+] }
+build = { cmd = "cmake --build build --target all", depends-on = ["configure"] }
+clean = { cmd = "rm -rf build" }
+test = { cmd = "ctest --test-dir build --output-on-failure", depends-on = [
+  "build",
+] }
+
+# Increment the version number with PINOCCHIO_VERSION variable
+[feature.new-version.dependencies]
+tomlkit = ">=0.13.2"
+
+[feature.new-version.tasks]
+configure-new-version = { cmd = [
+  "CXXFLAGS=$PINOCCHIO_CXX_FLAGS",
+  "cmake",
+  "-G",
+  "Ninja",
+  "-B",
+  "build_new_version",
+  "-S",
+  ".",
+  "-DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX",
+  "-DCMAKE_BUILD_TYPE=$PINOCCHIO_BUILD_TYPE",
+  "-DGENERATE_PYTHON_STUBS=ON",
+  "-DBUILD_WITH_COLLISION_SUPPORT=ON",
+  "-DBUILD_WITH_ACCELERATE_SUPPORT=OFF",
+  "-DBUILD_WITH_CASADI_SUPPORT=OFF",
+  "-DBUILD_WITH_AUTODIFF_SUPPORT=OFF",
+  "-DBUILD_WITH_EXTRA_SUPPORT=OFF",
+  "-DBUILD_WITH_OPENMP_SUPPORT=OFF",
+  "-DBUILD_WITH_CODEGEN_SUPPORT=OFF",
+  "-DBUILD_WITH_SDF_SUPPORT=OFF",
+  "-DBUILD_PYTHON_BINDINGS_WITH_BOOST_MPFR_SUPPORT=OFF",
+  "-DPINOCCHIO_BUILD_MPFR_TESTING=OFF",
+] }
+release-new-version = { cmd = "VERSION=$PINOCCHIO_VERSION cmake --build build_new_version --target release", depends-on = [
+  "configure-new-version",
+] }
+
+[feature.lint]
+dependencies = { pre-commit = ">=3.6.2" }
+tasks = { lint = { cmd = "pre-commit run --all" } }
+
+[feature.benchmark]
+dependencies = { benchmark = ">=1.9.1", bokeh = ">=3.7.0" }
+activation = { env = { PINOCCHIO_BUILD_BENCHMARK = "ON" } }
+
+[feature.collision]
+dependencies = { coal = ">=3" }
+activation = { env = { PINOCCHIO_COLLISION_SUPPORT = "ON" } }
+
+[feature.sdf]
+dependencies = { libsdformat = ">=9.8", libgz-math = "*" }
+activation = { env = { PINOCCHIO_SDF_SUPPORT = "ON" } }
+
+[feature.casadi]
+dependencies = { casadi = ">=3.6.7" }
+activation = { env = { PINOCCHIO_CASADI_SUPPORT = "ON" } }
+
+[feature.autodiff]
+dependencies = { cppad = ">=20230000.0", pycppad = ">=1.2.4" }
+activation = { env = { PINOCCHIO_AUTODIFF_SUPPORT = "ON" } }
+
+# Not supported by Windows and Linux-aarch64
+[feature.codegen]
+[feature.codegen.target.linux-64]
+dependencies = { cppadcodegen = ">=2.4.3" }
+activation = { env = { PINOCCHIO_CODEGEN_SUPPORT = "ON" } }
+[feature.codegen.target.osx]
+dependencies = { cppadcodegen = ">=2.4.3" }
+activation = { env = { PINOCCHIO_CODEGEN_SUPPORT = "ON" } }
+
+[feature.mpfr]
+dependencies = { mpfr = ">=4.2.1" }
+activation = { env = { PINOCCHIO_MPFR_SUPPORT = "ON" } }
+
+[feature.extra.target.win]
+dependencies = { qhull = ">=2020.2" }
+activation = { env = { PINOCCHIO_EXTRA_SUPPORT = "ON" } }
+[feature.extra.target.unix]
+dependencies = { qhull = ">=2020.2", qhull-static = ">=2020.2" }
+activation = { env = { PINOCCHIO_EXTRA_SUPPORT = "ON" } }
+
+# Not supported by Windows (because of conda-forge issue)
+[feature.openmp]
+[feature.openmp.target.linux]
+dependencies = { libgomp = ">=14.2" }
+activation = { env = { PINOCCHIO_OPENMP_SUPPORT = "ON" } }
+[feature.openmp.target.osx]
+dependencies = { llvm-openmp = ">=19.1" }
+activation = { env = { PINOCCHIO_OPENMP_SUPPORT = "ON" } }
+
+# Accelerate only work on Apple ARM platform
+[feature.accelerate]
+[feature.accelerate.target.osx-arm64]
+activation = { env = { PINOCCHIO_ACCELERATE_SUPPORT = "ON" } }
+
+[feature.python-latest.dependencies]
+python = "3.14.*"
+
+[feature.python-oldest.dependencies]
+python = "3.10.*"
+
+# Use clang-cl on Windows
+# If something go wrong, we can check this repository:
+# https://github.com/conda-forge/clang-win-activation-feedstock/tree/main
+[feature.clang-cl]
+platforms = ["win-64"]
+dependencies = { clangxx = "*", lld = "*" }
+
+# Absolute path is needed to avoid using system clang-cl
+[feature.clang-cl.activation.env]
+CC = "%CONDA_PREFIX%\\Library\\bin\\clang-cl"
+CXX = "%CONDA_PREFIX%\\Library\\bin\\clang-cl"
+
+# Use clang on GNU/Linux
+[feature.clang]
+platforms = ["linux-64"]
+activation = { env = { CC = "clang", CXX = "clang++" } }
+dependencies = { clangxx = "*" }
+
+# [feature.test-pixi-build.dependencies]
+# pinocchio = { path = "." }
+# cmake = ">=3.22"
+# cxx-compiler = "*"
+# python = "*"
+
+# [feature.test-pixi-build.tasks]
+# test-cmake = "cmake -S unittest/packaging/cmake -B build_test_pixi_build"
+# test-python = "python -c 'import pinocchio'"
+# test = { depends-on = ["test-cmake", "test-python"] }
+
+[environments]
+default = { features = ["python-latest"], solve-group = "python-latest" }
+clang = { features = ["clang", "python-latest"] }
+lint = { features = ["lint"], solve-group = "python-latest" }
+benchmark = { features = ["benchmark", "python-latest"] }
+collision = { features = [
+  "collision",
+  "python-latest",
+], solve-group = "python-latest" }
+accelerate = { features = [
+  "accelerate",
+  "python-latest",
+], solve-group = "python-latest" }
+casadi = { features = [
+  "casadi",
+  "python-latest",
+], solve-group = "python-latest" }
+autodiff = { features = [
+  "autodiff",
+  "python-latest",
+], solve-group = "python-latest" }
+extra = { features = ["extra", "python-latest"], solve-group = "python-latest" }
+openmp = { features = [
+  "openmp",
+  "python-latest",
+], solve-group = "python-latest" }
+# codegen need autodiff
+codegen = { features = [
+  "autodiff",
+  "codegen",
+  "python-latest",
+], solve-group = "python-latest" }
+mpfr = { features = ["mpfr", "python-latest"], solve-group = "python-latest" }
+sdf = { features = ["sdf", "python-latest"], solve-group = "python-latest" }
+python-oldest = { features = ["python-oldest"], solve-group = "python-oldest" }
+# Accelerate will only work in Eigen next release
+all = { features = [
+  "collision",
+  "casadi",
+  "autodiff",
+  "extra",
+  "openmp",
+  "codegen",
+  "mpfr",
+  "sdf",
+  "python-latest",
+], solve-group = "python-latest" }
+all-python-oldest = { features = [
+  "collision",
+  "casadi",
+  "autodiff",
+  "extra",
+  "openmp",
+  "codegen",
+  "mpfr",
+  "sdf",
+  "python-oldest",
+], solve-group = "python-oldest" }
+all-clang-cl = { features = [
+  "collision",
+  "casadi",
+  "autodiff",
+  "extra",
+  "openmp",
+  "codegen",
+  "mpfr",
+  "sdf",
+  "clang-cl",
+  "python-latest",
+], solve-group = "python-latest" }
+all-benchmark = { features = [
+  "collision",
+  "casadi",
+  "autodiff",
+  "extra",
+  "openmp",
+  "codegen",
+  "mpfr",
+  "sdf",
+  "benchmark",
+  "python-latest",
+], solve-group = "python-latest" }
+# Release a new software version
+new-version = { features = [
+  "new-version",
+  "collision",
+  "python-latest",
+], solve-group = "python-latest" }
+# test-pixi-build = { features = ["test-pixi-build"], no-default-feature = true }
+
+# Sanitizers with clang
+[feature.clang-sanitizers]
+platforms = ["linux-64", "osx-64", "osx-arm64"]
+
+[feature.clang-sanitizers.dependencies]
+ccache = ">=4.9.1"
+cmake = ">=3.22"
+clangxx = ">=20"
+llvm-tools = ">=20"         # llvm-symbolizer to decode line numbers in sanitizer output (need to be in the shell to work)
+ninja = ">=1.11"
+pkg-config = ">=0.29.2"
+libboost-devel = ">=1.80.0"
+eigen = ">=3.4.0"
+urdfdom = ">=4.0"
+
+[feature.clang-sanitizers.activation.env]
+CC = "clang"
+CXX = "clang++"
+CMAKE_CXX_COMPILER_LAUNCHER = "ccache"
+CMAKE_EXPORT_COMPILE_COMMANDS = "ON"
+CMAKE_COLOR_DIAGNOSTICS = "ON"
+CCACHE_SLOPPINESS = "include_file_ctime,include_file_mtime,pch_defines,time_macros"
+
+[feature.clang-sanitizers.tasks]
+configure = { cmd = [
+  "CXXFLAGS=-DNDEBUG",
+  "cmake",
+  "-G",
+  "Ninja",
+  "-B",
+  "build",
+  "-S",
+  ".",
+  "-DCMAKE_BUILD_TYPE=Debug",
+  "-DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX",
+  "-DBUILD_TESTING=ON",
+  "-DBUILD_BENCHMARK=OFF",
+  "-DBUILD_WITH_RTSAN=ON",
+  "-DBUILD_WITH_COLLISION_SUPPORT=ON",
+  "-DGENERATE_PYTHON_STUBS=OFF",
+  "-DBUILD_WITH_ACCELERATE_SUPPORT=OFF",
+  "-DBUILD_WITH_CASADI_SUPPORT=OFF",
+  "-DBUILD_WITH_AUTODIFF_SUPPORT=OFF",
+  "-DBUILD_WITH_EXTRA_SUPPORT=OFF",
+  "-DBUILD_WITH_OPENMP_SUPPORT=OFF",
+  "-DBUILD_WITH_CODEGEN_SUPPORT=OFF",
+  "-DBUILD_WITH_SDF_SUPPORT=OFF",
+  "-DBUILD_PYTHON_BINDINGS_WITH_BOOST_MPFR_SUPPORT=OFF",
+  "-DPINOCCHIO_BUILD_MPFR_TESTING=OFF",
+  "-DBUILD_TESTING_SCIPY=OFF",
+] }
+build = { cmd = "cmake --build build --target pinocchio-test-cpp-dynamic-allocations", depends-on = [
+  "configure",
+] }
+test = { cmd = "ctest --test-dir build --output-on-failure -R pinocchio-test-cpp-dynamic-allocations", depends-on = [
+  "build",
+] }
+
+[environments.sanitizers]
+features = ["clang-sanitizers", "collision", "benchmark"]
+no-default-feature = true
