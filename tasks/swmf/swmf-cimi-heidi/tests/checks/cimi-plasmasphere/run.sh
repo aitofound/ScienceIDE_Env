@@ -93,6 +93,17 @@ if [ "$CACHE_HIT" -eq 0 ]; then
   # ModPlasmasphere.o prerequisite does not request the source's existing
   # dependency-generation target, so generate that official metadata first.
   (cd "$CIMI_DIR/src" && make DEPEND) > "$WORK/cimi-dependency-build.log" 2>&1 || { tail -60 "$WORK/cimi-dependency-build.log" >&2; exit 1; }
+  # The full CIMI target prepares SHARE before DATAREAD/srcIndices, but the
+  # PLASMASPHERE_compile wrapper omits DATAREAD/srcIndices. Build both official
+  # libraries in that order so ModKind.mod and then ModIndicesInterfaces.mod
+  # are placed in the configured share/include module directory before the
+  # unchanged PLASMASPHERE_compile unit target. No source or link recipe is
+  # changed; these are the upstream LIB targets used by CIMI.
+  (cd "$WORK/src/share/Library/src" && make LIB) > "$WORK/share-library-build.log" 2>&1 || { tail -60 "$WORK/share-library-build.log" >&2; exit 1; }
+  # The normal CIMI recipe also prepares EMPIRICAL/srcGM before srcIndices;
+  # this official LIB target supplies EGM_ModTsyganenko without source changes.
+  (cd "$WORK/src/util/EMPIRICAL/srcGM" && make LIB) > "$WORK/empirical-gm-library-build.log" 2>&1 || { tail -60 "$WORK/empirical-gm-library-build.log" >&2; exit 1; }
+  (cd "$WORK/src/util/DATAREAD/srcIndices" && make LIB) > "$WORK/indices-library-build.log" 2>&1 || { tail -60 "$WORK/indices-library-build.log" >&2; exit 1; }
   make -j"$SAB_MAKE_JOBS" PLASMASPHERE_compile > "$WORK/plasmasphere-build.log" 2>&1 || { tail -60 "$WORK/plasmasphere-build.log" >&2; exit 1; }
   BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))
 else
