@@ -36,7 +36,9 @@ cp "$SHARED/Scripts/Config.pl" "$AMPS/share/Scripts/Config.pl"
 cp "$SHARED/build/Makefile.conf" "$AMPS/share/build/Makefile.conf"
 cp "$SHARED/build/Makefile.Linux.gfortran" "$AMPS/share/build/Makefile.Linux.gfortran"
 cp "$SHARED/build/Makefile.gcc_mpicc" "$AMPS/share/build/Makefile.gcc_mpicc"
-cp "$SHARED/Library/src/"{FluidPicInterface.h,MDArray.h,ReadParam.h,Writer.h,Timing_c.h} "$AMPS/share/Library/src/"
+# The official SHAREDIR is a library tree, not just pic.h's direct includes.
+# Preserve its full pinned contents (including transitive solver wrappers).
+cp -R "$SHARED/Library/src/." "$AMPS/share/Library/src/"
 cp "$CHECK_DIR/ic/$IC/sep_parker_spiral__field_line.input" "$AMPS/input/test/sep_parker_spiral__field_line.input"
 # Explicitly select the no-SPICE configuration; the migrated input also carries
 # this setting so a source-side default cannot introduce an external library.
