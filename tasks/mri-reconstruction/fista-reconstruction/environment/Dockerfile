@@ -9,7 +9,7 @@ FROM debian:bookworm-slim@sha256:1caf1c703c8f7e15dcf2e7769b35000c764e6f50e4d7401
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential python3 python3-numpy ca-certificates \
     && rm -rf /var/lib/apt/lists/*
-# <FILL: append the module's build and run dependencies to the apt-get line above (compilers, MPI, FFTW, HDF5, ...), then delete this line>
+# FISTA synthetic fixture
 
 COPY code/mri-reconstruction/ /workspace/code/
 COPY tests/ /workspace/tests/
