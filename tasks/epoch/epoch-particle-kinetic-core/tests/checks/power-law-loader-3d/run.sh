@@ -131,6 +131,8 @@ else
 fi
 echo "SAB_BUILD_SECONDS=$BUILD_SECONDS"   # zero only after a validated complete-cache reuse
 
+if [ "$IC" = variant ]; then SAB_NPROCX=4; SAB_NPROCY=1; SAB_NPROCZ=1; fi  # same four ranks, different layout/sample
+
 # The deck of this initial condition with the knobs written into it.
 mkdir -p "$WORK/run"
 sed -e "s|^  nx = .*|  nx = $SAB_NCELLS|" \
