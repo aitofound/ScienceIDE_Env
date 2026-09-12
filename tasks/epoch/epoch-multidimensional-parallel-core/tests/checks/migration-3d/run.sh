@@ -100,6 +100,7 @@ PY
 # The oracle image runs as root and may be given fewer cores than ranks.
 export OMPI_ALLOW_RUN_AS_ROOT=1 OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
 export OMPI_MCA_btl_vader_single_copy_mechanism=none
+if [ "$IC" = variant ]; then SAB_NPROCX=4; SAB_NPROCY=2; SAB_NPROCZ=1; fi  # same eight ranks, different migration layout/order
 RANKS=$((SAB_NPROCX * SAB_NPROCY * SAB_NPROCZ))
 
 mkdir -p "$WORK/run"

@@ -16,7 +16,13 @@ MAGIC=b"SDF1"; ENDIANNESS_LE=16911887
 PLAIN_MESH,PLAIN,CONSTANT,ARRAY,CPU_SPLIT=1,3,5,6,20
 IDLEN=32
 DT={1:("<i4",4),2:("<i8",8),3:("<f4",4),4:("<f8",8),7:("<u1",1)}
-OBS=[('Electric Field/Ex', 'ex'), ('Current/Jx', 'jx'), ('Derived/Number_Density', 'number_density'), ('Derived/Number_Density/Right', 'number_density_Right'), ('Derived/Number_Density/Left', 'number_density_Left')]
+OBS=[('Electric Field/Ex', 'ex'), ('Electric Field/Ey', 'ey'),
+     ('Electric Field/Ez', 'ez'), ('Current/Jx', 'jx'),
+     ('Current/Jy', 'jy'), ('Current/Jz', 'jz'),
+     ('Derived/Charge_Density', 'charge_density'),
+     ('Derived/Number_Density', 'number_density'),
+     ('Derived/Number_Density/Right', 'number_density_Right'),
+     ('Derived/Number_Density/Left', 'number_density_Left')]
 SPECIES=['Right', 'Left']
 DUMPS=(1, 2)
 LAYOUT=False
