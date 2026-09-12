@@ -8,7 +8,7 @@ solver the scale of a graded array lives.
 
 ## Current scientific-contract revision
 
-The executable policy is now invariant-based. Every binary output has a rubric-derived exact value count; reference and candidate must both be finite, and physical density/energy quantities must be nonnegative. Current-filter checks grade Jx Fourier-band power plus global field/current/density moments. Landau and two-stream checks grade electric-mode amplitude histories and logarithmic damping/growth rates. Power-law loaders grade density and x-px scale, centroid, width, and tail fractions. Calibration variants keep every physical input fixed and change only the valid MPI layout, giving independent rank-seeded particle realisations. The 10% scale, 0.05 normalized-shape/spectrum, and 0.25 per-frame log-rate bounds are provisional until the fresh selfcheck is inspected and the human finalizes them. All pointwise calibration prose below is historical provenance for the superseded contract.
+The executable policy is now invariant-based. Every binary output has a rubric-derived exact value count; reference and candidate must both be finite, and physical density/energy quantities must be nonnegative. Positive scale observables use a symmetric relative difference, which treats either side identically and still rejects a missing zero signal. Current-filter checks grade the symmetric RMS/mean-absolute scale of signed fields, density moments, and Jx Fourier-band fractions; signed-noise centroids are deliberately excluded. The short Landau window grades the mean/RMS and normalized shape of the mode-one Ex amplitude envelope, not a regression whose fitted sign changed across equally valid rank-seeded samples. Two-stream checks retain electric-mode growth, and power-law loaders grade density and x-px scale, centroid, width, and tail fractions. Calibration variants keep every physical input fixed and change only the valid MPI layout. The user accepted the measured bounds on 2026-09-12; the CLI-owned self-validation files are authoritative for freshness. All pointwise calibration prose below is historical provenance for the superseded contract.
 
 ## Module
 
@@ -440,10 +440,9 @@ a miss reports the measured compile interval.
 
 Deck rewriting, MPI execution and extraction still run separately for every
 check and every initial condition, and the nine-check denominator is unchanged.
-The current invariant-policy and MPI-layout-variant edits make the shipped
-`comment/pipeline/self-validation.json` historical and stale. No Docker run has
-yet been made for this revision; a fresh approved selfcheck must replace the
-provisional tolerances and refresh the CLI-owned record.
+The current invariant-policy and MPI-layout-variant revision is validated through
+the CLI-owned `comment/pipeline/self-validation.json`; that record, rather than
+the historical pointwise runs above, is authoritative for freshness and reward.
 
 ## Revision history of this file
 
