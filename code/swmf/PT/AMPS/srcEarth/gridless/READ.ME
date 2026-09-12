@@ -1,0 +1,848 @@
+================================================================================
+AMPS Earth -- GRIDLESS energetic-particle tools
+================================================================================
+
+This directory contains the gridless geospace energetic-particle solvers used by
+`srcEarth/main.cpp` when the executable is launched with:
+
+  ./amps -mode gridless -i AMPS_PARAM.in [options]
+
+The gridless path evaluates the magnetic field directly (rather than interpolating
+from a precomputed 3-D mesh) and integrates particle trajectories on the fly.
+At present the gridless workflow supports two science targets:
+
+  1) CUTOFF_RIGIDITY
+     Directional / effective geomagnetic cutoff rigidity at user-selected
+     locations or shell grids.
+
+  2) DENSITY_SPECTRUM
+     Local transmissivity, local spectrum, number density, and integral fluxes
+     implied by a prescribed outer-boundary spectrum.
+
+The gridless branch is intended for fast physics studies, algorithm development,
+benchmarking, and eventual user-facing Runs-on-Request style workflows where the
+inputs are specified in an AMPS parameter file.
+
+--------------------------------------------------------------------------------
+1. What “gridless” means here
+--------------------------------------------------------------------------------
+
+“Gridless” means that the solver does NOT construct or sample a volume mesh of B
+(and, in this branch, no electric field is used in the trajectory advance).
+Instead, each trajectory step evaluates the magnetic field directly from the
+selected field model and current particle position.
+
+In practical terms this means:
+
+  - no interpolation error from a precomputed field grid;
+  - no mesh generation cost for the magnetic field;
+  - trajectory cost is concentrated only where the solver actually traces;
+  - the code is naturally suited to point, shell, and trajectory-style products.
+
+For the standalone `-mode gridless` branch this is now enforced structurally in
+`srcEarth/main.cpp`: after `PIC::InitMPI()` and SPICE/input setup the gridless solver is
+called directly and returns before the legacy `amps_init_mesh()` call.  `PIC::InitMPI()`
+initializes the MPI runtime only; it does not construct the AMR field mesh.  The
+SWMF-coupled build is intentionally different because its background field exists on the
+coupler mesh; the standalone direct-field path described here is the one used by C19.
+
+The current gridless implementation is a magnetic-access / backtracing solver.
+It is NOT a full self-consistent radiation-belt transport model and it does NOT
+currently include electric-field drifts, diffusion, collisions, or wave-particle
+scattering in the shared gridless backtracer.
+
+--------------------------------------------------------------------------------
+2. High-level physics model
+--------------------------------------------------------------------------------
+
+2.1 Backtracing principle
+-------------------------
+
+A particle observed at a location x0 inside the magnetosphere is considered
+ALLOWED if the time-reversed trajectory launched from x0 escapes through the
+outer domain boundary before intersecting the inner loss sphere. Otherwise it is
+considered FORBIDDEN.
+
+Cutoff rigidity and density/spectrum share the same field models, movers,
+geometry, and trajectory implementation, but they intentionally expose different
+result contracts:
+
+  - cutoff rigidity uses a legacy Boolean classifier;
+  - density / spectrum / integral flux uses a structured trajectory result.
+
+The structured result distinguishes physical forbidden trajectories from
+numerical time/step/distance limits.  The Boolean cutoff wrapper maps those
+configured limits to forbidden for backward compatibility.  This caller-specific
+interpretation is implemented in the shared tracer and is described in Section 6.
+
+
+2.2 Cutoff rigidity mode
+------------------------
+
+For each observation point and each tested arrival direction, the solver searches
+for the transition rigidity between forbidden and allowed access. In the gridless
+implementation this is done numerically by repeated trajectory classification over
+an interval specified in the input file.
+
+Conceptually:
+
+  Rc(x0, direction) = minimum rigidity at which the direction becomes allowed.
+
+Depending on the configured sampling mode, the code can report either:
+
+  - VERTICAL cutoff (single local vertical direction), or
+  - an isotropic/effective cutoff based on a sampled sky of directions.
+
+An optional directional cutoff map can also be produced in POINTS mode.
+
+
+2.3 Density / spectrum mode
+---------------------------
+
+For each observation point x0 and kinetic energy E, the solver samples a set of
+arrival directions and computes the allowed fraction (transmissivity):
+
+  T(E; x0) ~= N_allowed / N_dirs
+
+for the isotropic boundary case.
+
+The local spectrum is then modeled as
+
+  J_loc(E; x0) = T(E; x0) * J_b(E)
+
+where J_b(E) is the user-provided outer-boundary differential intensity from the
+#SPECTRUM section.
+
+The total number density is obtained from
+
+  n_tot(x0) = 4*pi * integral[ J_loc(E; x0) / v(E) ] dE
+
+and the omnidirectional integral flux is
+
+  F_tot(x0) = 4*pi * integral[ J_loc(E; x0) ] dE
+
+Additional user-defined energy channels may also be integrated.
+
+
+2.4 Optional anisotropic boundary mode
+--------------------------------------
+
+Density/spectrum mode supports two boundary models:
+
+  DS_BOUNDARY_MODE = ISOTROPIC
+  DS_BOUNDARY_MODE = ANISOTROPIC
+
+In the anisotropic mode, the boundary spectrum is represented in factored form:
+
+  J_b(E, dir, x_exit) ~= J_b_iso(E) * f_PAD(cos alpha) * f_spatial(x_exit)
+
+where:
+
+  - cos alpha is evaluated at the outer-boundary exit point of an allowed
+    backtraced trajectory,
+  - f_PAD is a pitch-angle-distribution weight,
+  - f_spatial is a spatial weight on the boundary.
+
+Supported PAD / spatial forms are implemented in:
+
+  gridless/AnisotropicSpectrum.h
+  gridless/AnisotropicSpectrum.cpp
+
+This branch is still intentionally simple but already useful for SEP-like
+field-aligned streaming, pancake-like distributions, and crude dayside/nightside
+asymmetry tests.
+
+--------------------------------------------------------------------------------
+3. Main source files in this directory
+--------------------------------------------------------------------------------
+
+  CutoffRigidityGridless.h / .cpp
+      Gridless cutoff-rigidity solver, shared trajectory classifier,
+      MPI scheduling, Tecplot output, optional directional sky maps.
+
+  DensityGridless.h / .cpp
+      Gridless transmissivity / local-spectrum / density / flux solver.
+      Reuses the same shared trajectory classifier as cutoff rigidity.
+
+  GridlessParticleMovers.h / .cpp
+      Shared low-level particle movers and adaptive time-stepping utilities.
+      This file is the common numerical core used by the gridless solvers.
+
+  DipoleInterface.h / .cpp
+      Dipole-field helper used both for analytic benchmarking and for a simple
+      standalone DIPOLE field-model option.
+
+  AnisotropicSpectrum.h / .cpp
+      Boundary anisotropy weighting models used by density/spectrum mode.
+
+  test/
+      Analytical / regression test inputs and Python scripts for density and
+      anisotropic-density validation.
+
+--------------------------------------------------------------------------------
+4. Field models currently implemented in the gridless branch
+--------------------------------------------------------------------------------
+
+The actual gridless field evaluation in this source drop supports:
+
+  - T96
+  - T05
+  - DIPOLE
+
+Notes:
+
+  * The gridless tracer advances particles in GSM.
+  * The external-field evaluation uses the same access pattern as the rest of the
+    AMPS Earth code base (Geopack + Tsyganenko interfaces).
+  * DIPOLE is useful for analytic benchmarking and controlled regression tests.
+
+If parser aliases or other field-model names are added elsewhere, they should NOT
+be documented here unless the gridless field evaluator itself supports them.
+
+--------------------------------------------------------------------------------
+5. Particle movers and numerical integration
+--------------------------------------------------------------------------------
+
+The gridless CLI and shared mover layer support the following trajectory movers:
+
+  BORIS
+  HC4
+  RK2
+  RK4
+  RK6
+  GC2
+  GC4
+  GC6
+  HYBRID
+
+Default production choice:
+
+  BORIS
+
+because it is efficient, robust, and well suited to relativistic charged-particle
+motion in a magnetic field.
+
+General guidance:
+
+  - BORIS:
+      recommended default for most cutoff and density runs.
+
+  - HC4:
+      fourth-order Higuera-Cary/Boris composition for high-accuracy full-orbit
+      tracing.  HC4 uses a symmetric magnetic midpoint Boris-family base step and
+      a Yoshida/Forest-Ruth fourth-order composition.  It is designed for the case
+      where RK4-like cutoff accuracy is desired but the mover should retain the
+      pure-magnetic robustness of Boris: time reversibility and |p| conservation
+      in E=0 without any after-the-fact invariant projection.
+
+  - RK2 / RK4 / RK6:
+      explicit full-orbit alternatives mainly useful for cross-checks,
+      convergence studies, and regions where orbit reconstruction detail matters.
+
+  - GC2 / GC4 / GC6:
+      guiding-center approximations for cases where gyromotion itself is not the
+      main quantity of interest and adiabatic ordering is acceptable.
+
+  - HYBRID:
+      per-step switch between full-orbit and guiding-center updates using a local
+      adiabaticity estimate.
+
+HC4 implementation details:
+
+  The HC4 implementation lives in GridlessParticleMovers.cpp and uses:
+
+    1. HigueraCaryMagneticMidpointStep(dt):
+       x_mid = x_n + 0.5 dt v(p_n), B_mid = B(x_mid),
+       p_{n+1} = Boris/Cayley magnetic rotation of p_n using B_mid,
+       x_{n+1} = x_mid + 0.5 dt v(p_{n+1}).
+
+    2. HC4Step(dt):
+       H2(w1 dt), H2(w0 dt), H2(w1 dt), where
+       w1 = 1/(2 - 2^(1/3)) and w0 = -2^(1/3)/(2 - 2^(1/3)).
+
+  The middle coefficient is negative; this is normal for compact fourth-order
+  symmetric compositions.  For robust inner-sphere detection, StepParticleChecked
+  does not classify crossings from those internal negative stages.  Instead it
+  splits the requested outer step into several positive HC4 macro-steps and checks
+  the physical endpoints/segments between macro-steps.
+
+  References used in the source comments: Higuera & Cary (2017) for the
+  relativistic volume-preserving Boris-family mover; Yoshida (1990) and Forest &
+  Ruth (1990) for fourth-order composition; Birdsall & Langdon (1991) for Boris
+  particle pushing.
+
+Time stepping is adaptive, but the final selector depends on the caller's
+trajectory contract:
+
+  - StructuredAccurate (density/F3): DT_TRACE, gyro angle, and remaining time are
+    upper bounds; no minimum-displacement floor is allowed; accepted trajectory
+    chords are intersected explicitly with the inner sphere and outer box.
+
+  - LegacyCutoffCompatible (Boolean cutoff): retains the historical boundary-
+    distance limiter and 100 km/speed minimum-displacement floor used by the
+    existing cutoff references.
+
+The mover also includes checked handling of inner-sphere crossings.  The exact
+first-event chord policy is used by structured trajectories; the legacy endpoint
+policy is retained only for Boolean cutoff compatibility.
+
+--------------------------------------------------------------------------------
+6. Geometry and stopping conditions
+--------------------------------------------------------------------------------
+
+The gridless domain is defined by:
+
+  - an outer rectangular box (#DOMAIN_BOUNDARY), and
+  - an inner absorbing sphere of radius R_INNER.
+
+The structured trajectory result uses:
+
+  OUTER_BOUNDARY_ALLOWED
+  INNER_BOUNDARY_FORBIDDEN
+  MAGNETICALLY_TRAPPED_FORBIDDEN
+  TIME_LIMIT / STEP_LIMIT / DISTANCE_LIMIT
+  INVALID_TIME_STEP / INVALID_FIELD / NUMERICAL_FAILURE
+
+Density/transmission calculations keep the limit and failure states unresolved.
+They compute physical transmission only from allowed plus physically forbidden
+samples and report the unresolved fraction separately.
+
+The Boolean cutoff classifier applies the historical cutoff convention:
+
+  OUTER BOUNDARY ESCAPE                   -> true
+  INNER IMPACT OR VALIDATED TRAPPING       -> false
+  CONFIGURED STEP/TIME/DISTANCE CAP        -> false
+  INVALID STEP/FIELD/NUMERICAL FAILURE     -> retry once, then throw
+
+A trace-limit result is not retried in cutoff mode.  Repeating it only increases
+runtime and does not remove an unchanged distance cap.  The inner sphere remains
+a simple loss-surface proxy; it is not a detailed atmosphere, ionosphere, or
+loss-cone model.
+
+--------------------------------------------------------------------------------
+6.1 F3-compatible structured tracing and cutoff compatibility
+--------------------------------------------------------------------------------
+
+The implementation uses one termination enumeration and two caller policies.
+This prevents the F3 density calculation from counting an incomplete trajectory
+as physical loss while preserving the historical Boolean behavior expected by
+cutoff maps and C-series regression tests.
+
+Structured APIs:
+
+  TraceTrajectoryShared()
+  TraceTrajectorySharedEx()
+
+Boolean compatibility APIs:
+
+  TraceAllowedShared()
+  TraceAllowedSharedEx()
+
+The structured APIs select `StructuredAccurate`.  Every accepted chord is tested
+for the first analytic inner-sphere or outer-box intersection.  The time-step
+selector never raises a smaller accuracy-limited step.  Time, step, and distance
+caps are returned to the caller as unresolved termination states.
+
+The Boolean APIs select `LegacyCutoffCompatible`.  They retain the pre-F3
+boundary-distance limiter and 100-km minimum-displacement floor.  A finite cap
+returns false, while invalid-step, invalid-field, and numerical-failure outcomes
+receive one retry with stricter numerical settings.
+
+`MAX_TRACE_DISTANCE` is accumulated path length in Earth radii, not geocentric
+radius.  A value of zero disables only that cap.  `MAX_TRACE_TIME` and
+`MAX_STEPS` remain active.
+
+For a static field, optional trap detection can return
+`MAGNETICALLY_TRAPPED_FORBIDDEN` after repeated mirror points, complete bounce
+cycles, stable radial envelopes, outer-boundary clearance, and acceptable
+momentum conservation.  Trap detection can save work, but Boolean cutoff
+correctness does not depend on recognizing every trapped orbit because an
+undetected orbit still returns false at a configured cap.
+
+The scalar cutoff `UPPER_SCAN` also evaluates its logarithmic grid from Rmax
+downward.  It stops at the first forbidden point below the allowed top branch and
+bisects only that final bracket.  This preserves the upper-cutoff definition while
+avoiding expensive lower-rigidity trajectories that cannot change the result.
+
+--------------------------------------------------------------------------------
+7. Input-file interface
+--------------------------------------------------------------------------------
+
+The gridless branch is configured through the same AMPS parameter file parsed by:
+
+  util/amps_param_parser.h
+  util/amps_param_parser.cpp
+
+The minimum sections needed for a typical run are:
+
+  #CALCULATION_MODE
+      CALC_TARGET       CUTOFF_RIGIDITY | DENSITY_SPECTRUM
+      FIELD_EVAL_METHOD GRIDLESS
+
+  #PARTICLE_SPECIES
+      species charge and mass
+
+  #BACKGROUND_FIELD
+      FIELD_MODEL, epoch, and model-specific drivers
+
+  #DOMAIN_BOUNDARY
+      outer box and R_INNER
+
+  #OUTPUT_DOMAIN
+      POINTS or SHELLS definition
+
+  #NUMERICAL
+      DT_TRACE, MAX_STEPS, MAX_TRACE_TIME, etc.
+
+For cutoff runs add:
+
+  #CUTOFF_RIGIDITY
+
+For density/spectrum runs add:
+
+  #DENSITY_SPECTRUM
+  #SPECTRUM
+
+Optional sections:
+
+  #BOUNDARY_ANISOTROPY   (for DS_BOUNDARY_MODE = ANISOTROPIC)
+  #ENERGY_CHANNELS       (extra integral-flux channels)
+
+IMPORTANT INPUT CONVENTION:
+
+  The gridless solvers trace in GSM. The parser stores coordinate labels but does
+  not perform a full coordinate transformation of input points for the user.
+  Input coordinates therefore need to be consistent with the solver’s GSM-based
+  assumptions unless an external conversion has already been applied.
+
+--------------------------------------------------------------------------------
+8. Command-line interface
+--------------------------------------------------------------------------------
+
+Main usage:
+
+  ./amps -h
+  ./amps -mode gridless -i AMPS_PARAM.in
+  ./amps -mode gridless -i AMPS_PARAM.in -mover BORIS
+  ./amps -mode gridless -i AMPS_PARAM.in -density-mode ANISOTROPIC
+  ./amps -mode gridless -i AMPS_PARAM.in -max-trace-distance 200
+
+Useful options:
+
+  -h | --help
+      Print the solver help message.
+
+  -mode <gridless|3d>
+      Select execution path. This README documents the gridless branch only.
+
+  -i <file>
+      AMPS parameter file.
+
+  -mover <BORIS|HC4|RK2|RK4|RK6|GC2|GC4|GC6|HYBRID>
+      Override the default/shared mover.
+
+      HC4 aliases accepted by the parser include HIGUERA_CARY4,
+      HIGUERA-CARY4, HC_YOSHIDA4, BORIS4, and BORIS_YOSHIDA4.
+
+  -density-mode <ISOTROPIC|ANISOTROPIC>
+      Override DS_BOUNDARY_MODE for density/spectrum runs.
+
+  -max-trace-distance <Re>
+      Optional cumulative path-length cap in Earth radii.
+
+For the authoritative CLI wording, see:
+
+  util/cutoff_cli.cpp
+
+--------------------------------------------------------------------------------
+9. Output files written by the current gridless implementation
+--------------------------------------------------------------------------------
+
+9.1 Cutoff-rigidity mode
+------------------------
+
+Primary outputs written by the current code are:
+
+  cutoff_gridless_points.dat
+      Point list results (POINTS mode).
+
+  cutoff_gridless_shells.dat
+      Shell-grid results (SHELLS mode).
+
+Optional / benchmark-style outputs may also be written in specific branches:
+
+  cutoff_gridless_dir_map_point_####.dat
+      Directional cutoff maps for individual points when enabled.
+
+  cutoff_gridless_points_dipole_compare.dat
+  cutoff_gridless_shells_dipole_compare.dat
+      Comparison products used for dipole / analytic benchmarking.
+
+
+9.2 Density / spectrum mode
+---------------------------
+
+Primary outputs written by the current code are:
+
+  gridless_points_density.dat
+      Total number density per point.
+
+  gridless_points_spectrum.dat
+      Energy-resolved transmissivity and local spectrum per point.
+
+  gridless_points_flux.dat
+      Total integral flux plus optional user-defined energy channels.
+
+  gridless_shell_<ALT>km_density_channels.dat
+      Shell-grid density output with multiple Tecplot zones, including total
+      density and channel-resolved contributions.
+
+Optional dipole-comparison files may be written by benchmark paths:
+
+  density_gridless_points_dipole_compare.dat
+  spectrum_gridless_points_dipole_compare.dat
+  flux_gridless_points_dipole_compare.dat
+  density_gridless_shells_dipole_compare.dat
+  spectrum_gridless_shells_dipole_compare.dat
+  flux_gridless_shells_dipole_compare.dat
+
+--------------------------------------------------------------------------------
+10. Parallelism
+--------------------------------------------------------------------------------
+
+GRIDLESS cutoff/direct-access work uses the same two-level scheduling concept as
+Mode3D: MPI distributes coarse chunks between processes and a shared-memory backend
+processes independent trajectory tasks concurrently inside each rank.
+
+Configuration
+-------------
+
+Input-file controls:
+
+  GRIDLESS_PARALLEL             THREADS
+  GRIDLESS_THREADS              16
+  GRIDLESS_MPI_SCHEDULER        DYNAMIC
+  GRIDLESS_MPI_DYNAMIC_CHUNK    0
+
+Equivalent command-line controls:
+
+  -gridless-parallel THREADS
+  -gridless-threads 16
+  -gridless-mpi-scheduler DYNAMIC
+  -gridless-mpi-dynamic-chunk N     # optional; omit/0 for automatic
+
+`THREADS` is the recommended backend for the standalone direct-field cutoff path.
+`OPENMP` and `SERIAL` remain supported through the common backend resolver.  The thread
+count is per MPI rank, so `-np 4 -gridless-threads 16` requests up to 64 trajectory
+workers across a node, subject to CPU affinity and available cores.
+
+Dynamic MPI + local threads
+---------------------------
+
+The rank/main thread is the only thread that calls MPI.  In DYNAMIC mode it atomically
+fetches a chunk of flattened trajectory task ids, hands those tasks to the local worker
+team, waits for the team to finish, accumulates the results, and then updates the MPI
+completion counter.  Worker threads never enter MPI, so MPI_THREAD_MULTIPLE is not
+required.
+
+Each worker owns a private `cFieldEvaluator`.  Evaluators are constructed serially on
+the rank/main thread before workers start, avoiding concurrent Geopack/model-library
+initialization.  Worker results are returned through private `ResultMsg` slots and are
+merged by the rank/main thread after join; shared cutoff/output arrays therefore need no
+worker-side locking.
+
+Automatic dynamic chunking
+--------------------------
+
+`GRIDLESS_MPI_DYNAMIC_CHUNK <= 0` means automatic.  The shared scheduler receives the
+actual GRIDLESS worker count and currently chooses a chunk of approximately four work
+items per local worker, limited by the global task count.  This is deliberate: the old
+serial GRIDLESS code effectively used a one-task fetch, which would starve a 16-thread
+rank.  If an explicit chunk is used, it should normally be at least the worker count.
+
+C19 adaptive `DIRECT_ACCESS` is a special case because one top-level work item is an
+entire sky direction containing many sequential seed/refinement trajectories.  The C19
+runner therefore writes a worker-sized chunk by default (for example 16 tasks for 16
+workers) instead of leaving the generic four-items-per-worker AUTO heuristic in effect.
+This reduces MPI-rank straggler tails while still giving every local worker one adaptive
+direction.  Explicit user chunk settings continue to override the runner heuristic.
+
+Frozen-field thread-safety guard
+--------------------------------
+
+Standalone Tsyganenko/Geopack field parameters are process-global.  Concurrent direct
+field evaluation is therefore enabled only when all locations in one process use the
+same frozen epoch/driver snapshot.  This includes POINTS, SHELLS, and C19's normal
+one-epoch-per-process runs.  If a TRAJECTORY input contains multiple UTC epochs, GRIDLESS
+prints a warning and falls back to SERIAL intra-rank execution while retaining MPI
+parallelism.  This avoids racing a process-global Geopack state between epochs.
+
+The live SWMF-coupled gridless field sampler is also kept out of this standalone worker
+pool because it uses AMPS coupler-mesh interpolation with a different thread-safety
+contract.
+
+Performance
+-----------
+
+The runtime benefit depends on field model, mover, geometry, and the fraction of long
+near-cutoff trajectories.  For C19, combine GRIDLESS threading with
+`VECTOR_APERTURES`: pruning the full sphere reduces the task count, while the worker
+pool parallelizes the remaining cutoff and direct `A(E,Omega)` trajectories inside each
+MPI rank.
+
+Adaptive C19 DIRECT_ACCESS
+--------------------------
+GRIDLESS implements the same adaptive direct-access sampler as Mode3D through the shared
+`util/AdaptiveDirectAccess.h` helper.  When
+`CUTOFF_DIRECT_ACCESS_ADAPTIVE T` is used with `CUTOFF_SEARCH_ALGORITHM DIRECT_ACCESS`,
+`CUTOFF_RIGIDITY_LIST_GV` is interpreted as a mandatory coarse seed list rather than as
+a dense final grid.  One top-level GRIDLESS scheduler task owns one selected sky
+direction.  It evaluates every seed, performs the configured forced geometric-midpoint
+guard probes, and then recursively bisects intervals whose endpoint states differ.  The
+default C19 settings are max depth 6 and guard depth 1.  The three trajectory states are
+unchanged: PHYSICAL_FORBIDDEN, ALLOWED, and UNRESOLVED.  No monotonic cutoff is assumed.
+
+The full dyadic/geometric candidate tree is deterministic on every MPI rank.  Evaluated
+nodes are written into a direction-private slice of the fixed state array; unused nodes
+remain at the -1 sentinel.  This preserves the existing sentinel + MPI_MAX reduction
+without requiring every direction to evaluate the same rigidity nodes.  The output
+writer omits unused -1 nodes, so the resulting
+`cutoff_gridless_dir_access_point_####.dat` can have a different internal energy grid
+for each direction while retaining common seed/support nodes and the same public schema
+as Mode3D.  Dense behavior is available by setting
+`CUTOFF_DIRECT_ACCESS_ADAPTIVE F`; in dense mode an uncomputed -1 state remains a fatal
+consistency error.
+
+Guard probes are important because equal coarse endpoint states do not prove that no
+narrow access pocket exists between them.  After the guard depth, only visibly changing
+endpoint states are refined.  An UNRESOLVED/UNRESOLVED interval is not expanded through
+the full tree after its guard probes, since rigidity subdivision cannot repair a trace
+time/step/path limit.  C19 post-processing retains such intervals as explicit uncertainty.
+See `test/C19/README.md` for the complete algorithm, detector-response fold, convergence
+controls, and dense-reference procedure.
+
+--------------------------------------------------------------------------------
+11. Validation / tests in gridless/test
+--------------------------------------------------------------------------------
+
+The `gridless/test` directory contains analytical and regression-oriented tests,
+including:
+
+  - isotropic density tests in dipole / geometric-shadow configurations;
+  - anisotropic density regression tests;
+  - shell and point test inputs;
+  - Python scripts that compare solver output to analytical expectations.
+
+Useful entry points:
+
+  test/README_density_tests.md
+  test/README_aniso_density_tests.md
+  test/test_density_analytic.py
+  test/test_density_aniso.py
+
+These tests are important because they validate not only output formatting but
+also the physical consistency of transmissivity, density integration, and
+anisotropy weighting.
+
+--------------------------------------------------------------------------------
+12. Current limitations and scope boundaries
+--------------------------------------------------------------------------------
+
+This README should be explicit about what the gridless branch currently is and is
+not.
+
+Implemented / supported in the reviewed source:
+
+  - direct magnetic-field evaluation in GSM;
+  - gridless backtracing;
+  - cutoff-rigidity calculations;
+  - transmissivity-based density / spectrum / integral-flux calculations;
+  - optional factored anisotropic boundary weighting;
+  - DIPOLE / T96 / T05 magnetic fields;
+  - MPI scheduling and Tecplot ASCII outputs.
+
+Not currently part of the shared gridless trajectory physics:
+
+  - electric-field forcing in the backtracer;
+  - self-consistent time-dependent field evolution during a single trace;
+  - pitch-angle diffusion / radial diffusion;
+  - collisions or chemistry;
+  - detailed atmospheric loss physics beyond the absorbing inner sphere;
+  - a full 5-D boundary distribution J(E, direction, position, time).
+
+Therefore the present branch should be interpreted as a fast and flexible
+magnetic-access / boundary-filtering solver, not yet as a complete radiation-belt
+transport code.
+
+--------------------------------------------------------------------------------
+13. Practical recommendations
+--------------------------------------------------------------------------------
+
+For most new users / developers:
+
+  1) start with DIPOLE runs and the test cases in `gridless/test`;
+  2) use BORIS unless there is a specific reason to test another mover;
+  3) verify coordinate conventions before trusting point outputs;
+  4) refine energy or directional sampling near sharp transmissivity transitions;
+  5) treat the anisotropic mode as a controlled extension, not a substitute for a
+     fully tabulated boundary distribution.
+
+--------------------------------------------------------------------------------
+14. Minimal example commands
+--------------------------------------------------------------------------------
+
+Cutoff rigidity:
+
+  ./amps -mode gridless -i input/earth-geospace_boundary_injection_sep_t96.input
+
+Density / spectrum, isotropic boundary:
+
+  ./amps -mode gridless -i my_density_run.in -density-mode ISOTROPIC
+
+Density / spectrum, anisotropic boundary:
+
+  ./amps -mode gridless -i my_density_run.in -density-mode ANISOTROPIC
+
+Cross-check with a different mover:
+
+  ./amps -mode gridless -i my_run.in -mover RK4
+
+--------------------------------------------------------------------------------
+15. Where to look next in the source
+--------------------------------------------------------------------------------
+
+For architecture / shared classifier:
+
+  gridless/CutoffRigidityGridless.h
+
+For detailed density/spectrum theory and file formats:
+
+  gridless/DensityGridless.cpp
+
+For mover assumptions and adaptive time stepping:
+
+  gridless/GridlessParticleMovers.h
+
+For anisotropic boundary models:
+
+  gridless/AnisotropicSpectrum.h
+
+For AMPS input-file syntax:
+
+  util/amps_param_parser.h
+
+
+
+GRIDLESS threaded progress reporting
+------------------------------------
+For THREADS execution, trajectory completion is reported at sub-MPI-chunk granularity.
+Worker threads increment only a local atomic completion count; the MPI rank/main thread
+polls that count every 200 ms, updates the shared MPI RMA completion counter, and rank 0
+prints at approximately one-second cadence.  Therefore an AUTO dynamic chunk (for
+example ~64 tasks for 16 workers) does not have to finish completely before the progress
+bar moves.  Worker threads never call MPI, preserving the MPI_THREAD_FUNNELED contract.
+Rank 0 also polls the global completion counter through the final slow tail until all
+assigned work is actually complete.
+
+C19 trajectory termination, drift recurrence, and convergence update (2026-08-19)
+-------------------------------------------------------------------------------
+
+GRIDLESS `DIRECT_ACCESS` writes trajectory forensics for every evaluated
+`(point, sky direction, rigidity)` sample.  The original access columns are retained and
+are followed by stable `termination_code`, trace time, cumulative path, steps, retry
+count, mirror/bounce counters, drift-revolution diagnostics, trapping mechanism, and
+relative momentum spread.  The Tecplot header publishes the code-to-name map through
+`AUXDATA TERMINATION_REASON_CODES`.  Historical codes 0--8 remain unchanged and code 9
+is appended as `DRIFT_TRAPPED_FORBIDDEN`.
+
+Adaptive sampling does not allocate diagnostics for unused candidate nodes.  Each worker
+records only the trajectories it evaluates in a private sparse vector; after the worker
+pool joins, rank-local vectors are merged and rank 0 gathers/sorts the records by global
+candidate slot.  The writer checks that every emitted direct-access state has exactly one
+diagnostic record.
+
+The common `TrajectoryTrapDetector` supplements the historical mirror/bounce test with a
+positive frozen-field full-orbit drift-recurrence test.  It **never** interprets a
+TIME/STEP/DISTANCE limit as physical trapping.  The drift branch:
+
+1. unwraps the signed geocentric azimuth and counts complete net 2*pi drift turns;
+2. bins each completed turn in azimuth phase;
+3. averages full-orbit `r`, `z/r`, and `cos^2(pitch)` in every populated bin;
+4. compares consecutive complete-turn profiles with absolute+relative radial,
+   latitude-proxy, and pitch-cos2 tolerances;
+5. requires adequate bin coverage and a configured fraction of matching common bins;
+6. requires consecutive recurrence, a safe outer-box margin, and acceptable
+   momentum-magnitude spread before returning `DRIFT_TRAPPED_FORBIDDEN`.
+
+The full Lorentz trajectory remains authoritative; this classifier does not switch to a
+guiding-centre approximation.  The profile averages reduce gyrophase sensitivity without
+assuming adiabatic motion in the C19 penumbra.
+
+C19 disables `MAX_TRACE_DISTANCE` by default (`0.0`) and normally controls the safety
+budget with `MAX_TRACE_TIME`.  `MAX_TRACE_DISTANCE` is cumulative traveled path, not
+radial distance.  A fixed nonzero path cap therefore corresponds to a shorter physical
+trace for a faster proton and can bias an energy-dependent detector fold.  Nonzero values
+remain available for explicit convergence or machine-safety runs.
+
+New/extended parser controls are:
+
+  TRAP_DRIFT_DETECTION                         T|F
+  TRAP_MIN_DRIFT_REVOLUTIONS                   integer >= 2   (C19 default 3)
+  TRAP_DRIFT_RADIAL_GROWTH_TOL_RE              nonnegative Re (absolute tolerance)
+  TRAP_DRIFT_RADIAL_REL_TOL                    nonnegative
+  TRAP_DRIFT_LATITUDE_TOL                      nonnegative
+  TRAP_DRIFT_PITCH_COS2_TOL                    nonnegative
+  TRAP_DRIFT_PROFILE_BINS                      integer 8..360
+  TRAP_DRIFT_MIN_PROFILE_COVERAGE              0 < value <= 1
+  TRAP_DRIFT_MIN_MATCHED_BIN_FRACTION          0 < value <= 1
+  TRAP_ENERGY_REL_TOL                           nonnegative
+
+The recurrence criterion is meaningful only when the magnetic field is frozen for the
+complete backtrace.  C19's `run_C19_convergence.py` first performs distance/time sweeps
+with drift recurrence disabled, then adds a matched recurrence-enabled case.  This
+sequencing is intentional: it measures whether the old failure was a path/time budget
+artifact before allowing the new physical classifier to consume the long-lived
+population.  Optional timestep and mover sweeps are available for numerical cross-checks.
+
+The GRIDLESS termination summary now counts both bounce-trapped and drift-trapped
+trajectories separately while preserving the historical aggregate `N_trapped`.  This
+keeps `N_forbidden` consistent with the common resolved/physical-forbidden termination
+helpers after addition of code 9.
+
+See `test/C19/README.md` for the complete C19 phased evidence sequence, response-weighted
+termination budget, direct-bound-width gate, proxy semantics, observational provenance
+gates, and full AMPS regression requirements.
+
+CUTOFF unresolved-only staged trace extension
+---------------------------------------------
+
+The cutoff tracer supports an optional convergence extension for strict three-state
+workflows:
+
+  CUTOFF_UNRESOLVED_EXTENSION_PASSES   integer 0..8 (default 0)
+  CUTOFF_UNRESOLVED_EXTENSION_FACTOR   finite value > 1 (default 2)
+
+The feature requires `CUTOFF_TRACE_LIMIT_POLICY UNRESOLVED`.  The ordinary primary
+trajectory is computed first.  Only a primary `TIME_LIMIT` or `STEP_LIMIT` result is
+retraced from its original phase-space seed with successively larger total-time limits.
+Already resolved trajectories are not repeated, and `DISTANCE_LIMIT` is not extended.
+After the final pass, a trajectory that still reaches a safety limit remains
+`UNRESOLVED`; no trace duration is interpreted as physical shielding.
+
+For every extended pass, the implementation also raises the numerical `MAX_STEPS`
+allowance according to the requested time scaling and the previous trace's observed
+mean step duration, with a 25% margin.  This avoids an unchanged step budget becoming a
+hidden limiter when the time budget is increased.  The existing one-time retry for
+invalid-field/invalid-step/numerical-failure terminations is independent of this feature.
+
+DIRECT_ACCESS diagnostics append the primary termination code/time, extension count,
+initial and final time budgets, and the drift-shell mean-radius-change diagnostic.  The
+same fields are produced by Mode3D so GRIDLESS and GRIDDED post-processing semantics are
+identical.
+
+The full-orbit drift recurrence detector also supports
+`TRAP_DRIFT_MAX_MEAN_RADIUS_CHANGE_RE` (nonnegative; 0 disables).  When enabled, a
+candidate recurring drift shell must satisfy both the existing azimuth-resolved profile
+recurrence and this additional limit on the change of mean radial profile between
+consecutive completed drift revolutions.  It is a conservative veto only and cannot
+create a trapped classification.
