@@ -67,11 +67,3 @@ run, and no task checks or scientific thresholds are proposed by this source PR.
 
 The two source PRs can be reviewed independently; subsequent interface and
 Pourbaix tasks depend on the separately pinned pymatgen-core source.
-
-## Scientific references
-
-See [references.bib](references.bib) for the primary pymatgen paper and the
-scientific methods and fixture-project attribution relevant to the shipped
-interface-matching and Pourbaix-thermodynamics tasks. The
-[bibliography coverage and verification notes](bibliography.md) map both tasks
-to citations, link authoritative metadata, and document citation caveats.
