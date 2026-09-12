@@ -31,7 +31,7 @@ All six shipped task families explicitly cite `Marshall1997FiniteVolume`. The ta
 ### Sources and verification
 
 - [references.bib](references.bib) contains **23 real, distinct works**, with the two 1997 MITgcm foundation papers first, followed by grid/free-surface papers and component methods. Every entry has a verified DOI.
-- [citation-evidence.json](citation-evidence.json) retains per-entry pinned upstream source URLs/keys, publisher-deposited Crossref metadata, exact DOI lookup URLs and normalization notes.
+- The canonical [JSON report](codebase-metadata.json), under `bibliography`, retains per-entry pinned upstream source URLs/keys, exact publisher-deposited Crossref DOI lookup URLs and normalization notes.
 - The vendored `doc/manual_references.bib` matched the [upstream file at the task pin](https://github.com/MITgcm/MITgcm/blob/853761d8f46926cd8042d6e0ad252050561fd6fa/doc/manual_references.bib) byte-for-byte; SHA-256: `b6a12ddbe8cd33bed5200998ae15c8ab3505a47c116e044cbf7ef7c7d3bcf3b6`.
 - AIM/SPEEDY relevance comes from `doc/phys_pkgs/aim.rst` and `pkg/aim_v23/aim_v23_description.tex`; gray radiation from `verification/atm_gray/README.md`; BLING from `pkg/bling/bling_description.txt`. These supplement the manual bibliography.
 - Normalization avoids copying known metadata errors: Losch 2008 uses electronic locator C08043 rather than an unrelated page range; Goldberg 2011 uses the correctly spelled title; Heimbach initials and McWilliams capitalization follow upstream. Lipscomb pagination remains unspecified.
@@ -57,5 +57,5 @@ Shared paths, as recorded in the module cards: `eesupp/`, `model/inc/`, `tools/g
 - Goldberg 2011 supplies STREAMICE numerical/hybrid formulation context; the shipped halfpipe check is described as shallow-shelf and is also mapped to MacAyeal 1989. This is not a claim that hybrid/adjoint modes are tested.
 - Lipscomb 2007 page range/electronic article locator is left unspecified rather than treating a manuscript identifier or PDF-relative page count as publication pagination.
 
-Artifacts: [canonical JSON](codebase-metadata.json) · [self-contained HTML](codebase-metadata.html) · [BibTeX](references.bib) · [citation evidence](citation-evidence.json)
+Artifacts: [canonical JSON](codebase-metadata.json) · [self-contained HTML](codebase-metadata.html) · [BibTeX](references.bib)
 <!-- SCIACCEL_CODEBASE_METADATA_REPORT:END -->
