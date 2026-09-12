@@ -11,8 +11,9 @@
   "time_grid": {
     "units": "s",
     "time_column": 0,
-    "tolerance_s": 3.2311742677852644e-27,
-    "semantics": "observed physical dump times from the successful 2026-09-09 nominal/variant/altbuild selfcheck; EPOCH records the first simulation step at or after each requested output target, so the first dump is positive and the final dump may slightly exceed t_end; all three extracted float64 time arrays are bit-identical after the unchanged byte-80 SDF time read, fixed-width numeric dump ordering, and %.17e serialization; the observed nominal array is the expected canonical grid; tolerance is one float64 ULP at the largest observed timestamp, the minimum finite-positive allowance accepted by the validator",
+    "dump_index_column": 5,
+    "tolerance_s": 4.0275406647247966e-14,
+    "semantics": "dump identity is the exact complete SDF filename sequence 0000..0020, stored as dump_index; physical timestamps must be strictly increasing and remain within one reference timestep of the observed canonical grid, allowing correct compiler and architecture ports to differ in the last-step crossing while preserving the intended output cadence",
     "files": {
       "series.txt": {
         "count": 21,
@@ -39,18 +40,25 @@
           1.90099919375008e-11,
           2.0016877103681984e-11
         ],
-        "tolerance_s": 3.2311742677852644e-27
+        "tolerance_s": 4.0275406647247966e-14
       }
     },
     "canonical_series": "series.txt",
-    "calibration_status": "calibrated_from_successful_2026-09-09_actual_nva_series_with_one_max_time_float64_ulp_tolerance",
+    "calibration_status": "provisional_one_reference_timestep_portability_envelope_pending_fresh_selfcheck",
     "header": [
       "time_s",
       "photon_number",
       "photon_energy_J",
       "electron_beam_energy_J",
-      "field_energy_J"
+      "field_energy_J",
+      "dump_index"
     ],
+    "column_domains": {
+      "photon_number": {"min": 0.0},
+      "photon_energy_J": {"min": 0.0},
+      "electron_beam_energy_J": {"min": 0.0},
+      "field_energy_J": {"min": 0.0}
+    },
     "windows": {
       "series": {
         "start_index": 0,
@@ -71,6 +79,7 @@
   },
   "altbuild": "the same pinned source built with epoch1d/Makefile's FFLAGS at -O0 instead of -O3 in the scratch build copy only, not SOURCE_DIR (fallback from EPOCH's own MODE=debug profile, whose -ffpe-trap fires in EPOCH's mpi_minimal_init at MPI startup, before any deck-specific code runs, on every check in this leaf, verified on the worker 2026-09-05): the same source at a different optimisation level, which a correct candidate could plausibly be built at",
   "comparison": {
+    "trajectory_l1": true,
     "invariants": [
       {
         "name": "photon-number-final",
