@@ -46,7 +46,7 @@ def read_sdf(path):
         nxt,data=struct.unpack_from("<qq",buf,loc); blocktype,code,ndims=struct.unpack_from("<iii",buf,loc+56); block_id=_text(buf,loc+16,IDLEN); name=_text(buf,loc+68,slen); meta=loc+header; value=None; info={"kind":"other"}
         if code in DT:
             if blocktype==PLAIN_MESH:
-                n=ndims; dims=struct.unpack_from(f"<{n}i",buf,meta+88*n+4); mesh_values,_,_=_payload(buf,data,code,(sum(dims),)); value=(mesh_values,tuple(int(x) for x in dims),code); info={"kind":"mesh","dims":tuple(int(x) for x in dims),"geometry":struct.unpack_from("<i",buf,meta+88*n)[0]}
+                n=ndims; dims=struct.unpack_from(f"<{n}i",buf,meta+88*n+4); mesh_values,_,_=_payload(buf,data,code,(sum(dims),)); value=(mesh_values,tuple(int(x) for x in dims),code); info={"kind":"mesh","dims":tuple(int(x) for x in dims),"geometry":struct.unpack_from("<i",buf,meta+72*n)[0]}
             elif blocktype==PLAIN:
                 dims=struct.unpack_from(f"<{ndims}i",buf,meta+72); mesh_id=_text(buf,meta+8+IDLEN,IDLEN); stagger=struct.unpack_from("<i",buf,meta+72+4*ndims)[0]; value=_payload(buf,data,code,dims); info={"kind":"variable","mesh_id":mesh_id,"stagger":int(stagger),"dims":tuple(int(x) for x in dims)}
             elif blocktype==CONSTANT:
