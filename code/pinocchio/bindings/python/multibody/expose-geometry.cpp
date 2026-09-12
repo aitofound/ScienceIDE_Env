@@ -1,0 +1,27 @@
+//
+// Copyright (c) 2015-2021 CNRS INRIA
+//
+
+#include "pinocchio/bindings/python/fwd.hpp"
+#include "pinocchio/bindings/python/multibody/geometry-object.hpp"
+#include "pinocchio/bindings/python/multibody/geometry-model.hpp"
+#include "pinocchio/bindings/python/multibody/geometry-data.hpp"
+#include "pinocchio/bindings/python/utils/std-vector.hpp"
+
+namespace pinocchio
+{
+  namespace python
+  {
+
+    void exposeGeometry()
+    {
+      GeometryObjectPythonVisitor::expose();
+      StdVectorPythonVisitor<std::vector<GeometryObject>>::expose("StdVec_GeometryObject");
+
+      CollisionPairPythonVisitor::expose();
+      GeometryModelPythonVisitor::expose();
+      GeometryDataPythonVisitor::expose();
+    }
+
+  } // namespace python
+} // namespace pinocchio

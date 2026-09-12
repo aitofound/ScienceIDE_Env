@@ -1,0 +1,341 @@
+//
+// Copyright (c) 2015-2021 CNRS INRIA
+// Copyright (c) 2015 Wandercraft, 86 rue de Paris 91400 Orsay, France.
+//
+
+#pragma once
+
+// IWYU pragma: private, include "pinocchio/parsers/urdf.hpp"
+
+#ifdef PINOCCHIO_LSP
+  #undef PINOCCHIO_LSP
+  #include "pinocchio/parsers/urdf.hpp"
+#endif // PINOCCHIO_LSP
+
+namespace pinocchio
+{
+  namespace urdf
+  {
+
+    ///
+    /// \brief Build the model from a URDF file with a particular joint as root of the model tree
+    /// inside the model given as reference argument.
+    ///
+    /// \param[in] filename The URDF complete file path.
+    /// \param[in] rootJoint The joint at the root of the model tree.
+    /// \param[in] rootJointName Name of the rootJoint.
+    /// \param[in] verbose Print parsing info.
+    /// \param[in] mimic Parsing joints as mimic or not.
+    /// \param[out] model Reference model where to put the parsed information.
+    /// \return Return the reference on argument model for convenience.
+    ///
+    template<typename Scalar, int Options, template<typename, int> class JointCollectionTpl>
+    ModelTpl<Scalar, Options, JointCollectionTpl> & buildModel(
+      const std::string & filename,
+      const typename ModelTpl<Scalar, Options, JointCollectionTpl>::JointModel & rootJoint,
+      const std::string & rootJointName,
+      ModelTpl<Scalar, Options, JointCollectionTpl> & model,
+      const bool verbose = false,
+      const bool mimic = false);
+
+    ///
+    /// \brief Build the model from a URDF file with a particular joint as root of the model tree
+    /// inside the model given as reference argument.
+    ///
+    /// \param[in] filename The URDF complete file path.
+    /// \param[in] rootJoint The joint at the root of the model tree.
+    /// \param[in] mimic Parsing joints as mimic or not.
+    /// \param[in] verbose Print parsing info.
+    /// \param[out] model Reference model where to put the parsed information.
+    /// \return Return the reference on argument model for convenience.
+    ///
+    template<typename Scalar, int Options, template<typename, int> class JointCollectionTpl>
+    ModelTpl<Scalar, Options, JointCollectionTpl> & buildModel(
+      const std::string & filename,
+      const typename ModelTpl<Scalar, Options, JointCollectionTpl>::JointModel & rootJoint,
+      ModelTpl<Scalar, Options, JointCollectionTpl> & model,
+      const bool verbose = false,
+      const bool mimic = false);
+
+    ///
+    /// \brief Build the model from a URDF file with a fixed joint as root of the model tree.
+    ///
+    /// \param[in] filename The URDF complete file path.
+    /// \param[in] mimic Parsing joints as mimic or not.
+    /// \param[in] verbose Print parsing info.
+    /// \param[out] model Reference model where to put the parsed information.
+    /// \return Return the reference on argument model for convenience.
+    ///
+    template<typename Scalar, int Options, template<typename, int> class JointCollectionTpl>
+    ModelTpl<Scalar, Options, JointCollectionTpl> & buildModel(
+      const std::string & filename,
+      ModelTpl<Scalar, Options, JointCollectionTpl> & model,
+      const bool verbose = false,
+      const bool mimic = false);
+
+    ///
+    /// \brief Build the model from a URDF model with a particular joint as root of the model tree
+    /// inside the model given as reference argument.
+    ///
+    /// \param[in] urdfTree the tree build from the URDF
+    /// \param[in] rootJoint The joint at the root of the model tree.
+    /// \param[in] mimic Parsing joints as mimic or not.
+    /// \param[in] verbose Print parsing info.
+    /// \param[out] model Reference model where to put the parsed information.
+    /// \return Return the reference on argument model for convenience.
+    ///
+    /// \note urdfTree can be build from ::urdf::parseURDF
+    ///       or ::urdf::parseURDFFile
+    template<typename Scalar, int Options, template<typename, int> class JointCollectionTpl>
+    ModelTpl<Scalar, Options, JointCollectionTpl> & buildModel(
+      const std::shared_ptr<::urdf::ModelInterface> urdfTree,
+      const typename ModelTpl<Scalar, Options, JointCollectionTpl>::JointModel & rootJoint,
+      ModelTpl<Scalar, Options, JointCollectionTpl> & model,
+      const bool verbose = false,
+      const bool mimic = false);
+
+    ///
+    /// \brief Build the model from a URDF model with a particular joint as root of the model tree
+    /// inside the model given as reference argument.
+    ///
+    /// \param[in] urdfTree the tree build from the URDF
+    /// \param[in] mimic Parsing joints as mimic or not.
+    /// \param[in] rootJoint The joint at the root of the model tree.
+    /// \param[in] rootJointName Name of the rootJoint.
+    /// \param[in] verbose Print parsing info.
+    /// \param[out] model Reference model where to put the parsed information.
+    /// \return Return the reference on argument model for convenience.
+    ///
+    /// \note urdfTree can be build from ::urdf::parseURDF
+    ///       or ::urdf::parseURDFFile
+    template<typename Scalar, int Options, template<typename, int> class JointCollectionTpl>
+    ModelTpl<Scalar, Options, JointCollectionTpl> & buildModel(
+      const std::shared_ptr<::urdf::ModelInterface> urdfTree,
+      const typename ModelTpl<Scalar, Options, JointCollectionTpl>::JointModel & rootJoint,
+      const std::string & rootJointName,
+      ModelTpl<Scalar, Options, JointCollectionTpl> & model,
+      const bool verbose = false,
+      const bool mimic = false);
+
+    ///
+    /// \brief Build the model from a URDF model
+    ///
+    /// \param[in] urdfTree the tree build from the URDF
+    /// \param[in] mimic Parsing joints as mimic or not.
+    /// \param[in] verbose Print parsing info.
+    /// \param[out] model Reference model where to put the parsed information.
+    /// \return Return the reference on argument model for convenience.
+    ///
+    /// \note urdfTree can be build from ::urdf::parseURDF
+    ///       or ::urdf::parseURDFFile
+    template<typename Scalar, int Options, template<typename, int> class JointCollectionTpl>
+    ModelTpl<Scalar, Options, JointCollectionTpl> & buildModel(
+      const std::shared_ptr<::urdf::ModelInterface> urdfTree,
+      ModelTpl<Scalar, Options, JointCollectionTpl> & model,
+      const bool verbose = false,
+      const bool mimic = false);
+
+    ///
+    /// \brief Build the model from an XML stream with a particular joint as root of the model tree
+    /// inside the model given as reference argument.
+    ///
+    /// \param[in] xml_stream stream containing the URDF model.
+    /// \param[in] rootJoint The joint at the root of the model tree.
+    /// \param[in] rootJointName Name of the rootJoint.
+    /// \param[in] mimic Parsing joints as mimic or not.
+    /// \param[in] verbose Print parsing info.
+    /// \param[out] model Reference model where to put the parsed information.
+    /// \return Return the reference on argument model for convenience.
+    ///
+    /// \note urdfTree can be build from ::urdf::parseURDF
+    ///       or ::urdf::parseURDFFile
+    template<typename Scalar, int Options, template<typename, int> class JointCollectionTpl>
+    ModelTpl<Scalar, Options, JointCollectionTpl> & buildModelFromXML(
+      const std::string & xml_stream,
+      const typename ModelTpl<Scalar, Options, JointCollectionTpl>::JointModel & rootJoint,
+      const std::string & rootJointName,
+      ModelTpl<Scalar, Options, JointCollectionTpl> & model,
+      const bool verbose = false,
+      const bool mimic = false);
+
+    ///
+    /// \brief Build the model from an XML stream with a particular joint as root of the model tree
+    /// inside the model given as reference argument.
+    ///
+    /// \param[in] xml_stream stream containing the URDF model.
+    /// \param[in] rootJoint The joint at the root of the model tree.
+    /// \param[in] verbose Print parsing info.
+    /// \param[in] mimic Parsing joints as mimic or not.
+    /// \param[out] model Reference model where to put the parsed information.
+    /// \return Return the reference on argument model for convenience.
+    ///
+    /// \note urdfTree can be build from ::urdf::parseURDF
+    ///       or ::urdf::parseURDFFile
+    template<typename Scalar, int Options, template<typename, int> class JointCollectionTpl>
+    ModelTpl<Scalar, Options, JointCollectionTpl> & buildModelFromXML(
+      const std::string & xml_stream,
+      const typename ModelTpl<Scalar, Options, JointCollectionTpl>::JointModel & rootJoint,
+      ModelTpl<Scalar, Options, JointCollectionTpl> & model,
+      const bool verbose = false,
+      const bool mimic = false);
+
+    ///
+    /// \brief Build the model from an XML stream
+    ///
+    /// \param[in] xml_stream stream containing the URDF model.
+    /// \param[in] mimic Parsing joints as mimic or not.
+    /// \param[in] verbose Print parsing info.
+    /// \param[out] model Reference model where to put the parsed information.
+    /// \return Return the reference on argument model for convenience.
+    ///
+    /// \note urdfTree can be build from ::urdf::parseURDF
+    ///       or ::urdf::parseURDFFile
+    template<typename Scalar, int Options, template<typename, int> class JointCollectionTpl>
+    ModelTpl<Scalar, Options, JointCollectionTpl> & buildModelFromXML(
+      const std::string & xml_stream,
+      ModelTpl<Scalar, Options, JointCollectionTpl> & model,
+      const bool verbose = false,
+      const bool mimic = false);
+
+    /**
+     * @brief      Build The GeometryModel from a URDF file. Search for meshes
+     *             in the directories specified by the user first and then in
+     *             the environment variable ROS_PACKAGE_PATH
+     *
+     * @param[in]  model         The model of the robot, built with
+     *                           urdf::buildModel
+     * @param[in]  filename      The URDF complete (absolute) file path
+     * @param[in]  package_paths   A vector containing the different directories
+     *                           where to search for models and meshes, typically
+     *                           obtained from calling pinocchio::rosPaths()
+     *
+     * @param[in]   type         The type of objects that must be loaded (must be VISUAL or
+     * COLLISION)
+     * @param[in]   mesh_loader   object used to load meshes: coal::MeshLoader [default] or
+     * coal::CachedMeshLoader.
+     * @param[out]  geom_model    Reference where to put the parsed information.
+     *
+     * @return      Returns the reference on geom model for convenience.
+     *
+     * \warning     If coal has not been found during compilation, COLLISION objects can not be
+     * loaded
+     *
+     */
+    template<typename Scalar, int Options, template<typename, int> class JointCollectionTpl>
+    GeometryModel & buildGeom(
+      const ModelTpl<Scalar, Options, JointCollectionTpl> & model,
+      const std::string & filename,
+      const GeometryType type,
+      GeometryModel & geom_model,
+      const std::vector<std::string> & package_paths = std::vector<std::string>(),
+      ::coal::MeshLoaderPtr mesh_loader = ::coal::MeshLoaderPtr());
+
+    /**
+     * @brief      Build The GeometryModel from a URDF file. Search for meshes
+     *             in the directories specified by the user first and then in
+     *             the environment variable ROS_PACKAGE_PATH
+     *
+     * @param[in]  model         The model of the robot, built with
+     *                           urdf::buildModel
+     * @param[in]  filename      The URDF complete (absolute) file path
+     * @param[in]  package_path    A string containing the path to the directories of the meshes,
+     *                           typically obtained from calling pinocchio::rosPaths().
+     *
+     * @param[in]   type         The type of objects that must be loaded (must be VISUAL or
+     * COLLISION)
+     * @param[in]   mesh_loader   object used to load meshes: coal::MeshLoader [default] or
+     * coal::CachedMeshLoader.
+     * @param[out]  geom_model    Reference where to put the parsed information.
+     *
+     * @return      Returns the reference on geom model for convenience.
+     *
+     * \warning     If coal has not been found during compilation, COLLISION objects can not be
+     * loaded
+     *
+     */
+    template<typename Scalar, int Options, template<typename, int> class JointCollectionTpl>
+    GeometryModel & buildGeom(
+      const ModelTpl<Scalar, Options, JointCollectionTpl> & model,
+      const std::string & filename,
+      const GeometryType type,
+      GeometryModel & geom_model,
+      const std::string & package_path,
+      ::coal::MeshLoaderPtr mesh_loader = ::coal::MeshLoaderPtr())
+
+    {
+      const std::vector<std::string> dirs(1, package_path);
+      return buildGeom(model, filename, type, geom_model, dirs, mesh_loader);
+    }
+
+    /**
+     * @brief      Build The GeometryModel from a URDF model. Search for meshes
+     *             in the directories specified by the user first and then in
+     *             the environment variable ROS_PACKAGE_PATH
+     *
+     * @param[in]  model         The model of the robot, built with
+     *                           urdf::buildModel
+     * @param[in]  xml_stream     Stream containing the URDF model
+     * @param[in]  package_paths   A vector containing the different directories
+     *                           where to search for models and meshes, typically
+     *                           obtained from calling pinocchio::rosPaths()
+     *
+     * @param[in]   type         The type of objects that must be loaded (must be VISUAL or
+     * COLLISION)
+     * @param[in]   mesh_loader   object used to load meshes: coal::MeshLoader [default] or
+     * coal::CachedMeshLoader.
+     * @param[out]  geom_model    Reference where to put the parsed information.
+     *
+     * @return      Returns the reference on geom model for convenience.
+     *
+     * \warning     If coal has not been found during compilation, COLLISION objects cannot be
+     * loaded
+     *
+     */
+    template<typename Scalar, int Options, template<typename, int> class JointCollectionTpl>
+    GeometryModel & buildGeom(
+      const ModelTpl<Scalar, Options, JointCollectionTpl> & model,
+      const std::istream & xml_stream,
+      const GeometryType type,
+      GeometryModel & geom_model,
+      const std::vector<std::string> & package_paths = std::vector<std::string>(),
+      ::coal::MeshLoaderPtr mesh_loader = ::coal::MeshLoaderPtr());
+
+    /**
+     * @brief      Build The GeometryModel from a URDF model. Search for meshes
+     *             in the directories specified by the user first and then in
+     *             the environment variable ROS_PACKAGE_PATH
+     *
+     * @param[in]  model         The model of the robot, built with
+     *                           urdf::buildModel
+     * @param[in]  xml_stream     Stream containing the URDF model
+     * @param[in]  package_path    A string containing the path to the directories of the meshes,
+     *                           typically obtained from calling pinocchio::rosPaths().
+     *
+     * @param[in]   type         The type of objects that must be loaded (must be VISUAL or
+     * COLLISION)
+     * @param[in]   mesh_loader   object used to load meshes: coal::MeshLoader [default] or
+     * coal::CachedMeshLoader.
+     * @param[out]  geom_model    Reference where to put the parsed information.
+     *
+     * @return      Returns the reference on geom model for convenience.
+     *
+     * \warning     If coal has not been found during compilation, COLLISION objects cannot be
+     * loaded
+     *
+     */
+    template<typename Scalar, int Options, template<typename, int> class JointCollectionTpl>
+    GeometryModel & buildGeom(
+      const ModelTpl<Scalar, Options, JointCollectionTpl> & model,
+      const std::istream & xml_stream,
+      const GeometryType type,
+      GeometryModel & geom_model,
+      const std::string & package_path,
+      ::coal::MeshLoaderPtr mesh_loader = ::coal::MeshLoaderPtr())
+
+    {
+      const std::vector<std::string> dirs(1, package_path);
+      return buildGeom(model, xml_stream, type, geom_model, dirs, mesh_loader);
+    }
+
+  } // namespace urdf
+} // namespace pinocchio
