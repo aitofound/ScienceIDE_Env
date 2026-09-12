@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * Mechanical source-PR gate for the four-file codebase report bundle.
+ * Mechanical new-source gate for the four-file codebase report bundle.
  *
- * A source/vendor change is scoped from the final tree against BASE_REF.  Only
- * code/<source>/ directories that still exist are checked; a fully removed
- * source does not create a report obligation.  The gate deliberately checks
+ * A first-time source/vendor introduction is scoped from the final tree against
+ * BASE_REF. Existing codebases may be maintained without retroactive report
+ * paperwork; a fully removed source creates no obligation.  The gate deliberately checks
  * only regular-file/non-empty presence, not report contents.
  */
 
@@ -66,20 +66,36 @@ function sourceNameForPath(changedPath, root) {
   return null;
 }
 
-function existingSourceDirs(root, changes) {
+function sourceExistsAtBase(root, baseRef, source) {
+  try {
+    execFileSync('git', ['cat-file', '-e', `${baseRef}:code/${source}`], {
+      cwd: root,
+      stdio: ['ignore', 'ignore', 'ignore'],
+    });
+    return true;
+  } catch {
+    // readBaselineDiff already proved BASE_REF itself exists. A failed lookup
+    // therefore means this source path was absent at the baseline.
+    return false;
+  }
+}
+
+function newlyIntroducedSourceDirs(root, changes, baseRef, baselineSources) {
   const sourceNames = new Set();
   for (const change of changes) {
     const source = sourceNameForPath(change.path, root);
     if (!source) continue;
     const sourceDir = path.join(root, 'code', source);
     try {
-      // Checking the final tree is what lets an unchanged report bundle count,
-      // while a completely removed source is deliberately ignored.
-      if (fs.statSync(sourceDir).isDirectory()) sourceNames.add(source);
+      if (!fs.statSync(sourceDir).isDirectory()) continue;
     } catch {
-      // Missing source root: complete deletion/rename-away, not a fabricated
-      // missing-report error.
+      // Missing source root: complete deletion/rename-away, not a new vendor.
+      continue;
     }
+    const existed = baselineSources === undefined
+      ? sourceExistsAtBase(root, baseRef, source)
+      : baselineSources.includes(source);
+    if (!existed) sourceNames.add(source);
   }
   return [...sourceNames].sort();
 }
@@ -99,7 +115,7 @@ function reportFileProblem(file) {
 }
 
 /**
- * Return { errors, sources } for the source/vendor report gate.
+ * Return { errors, sources } for the first-time source/vendor report gate.
  *
  * `diffText` is intentionally injectable for hermetic unit tests. Production
  * callers omit it, which requires BASE_REF and performs the real git lookup;
@@ -109,6 +125,7 @@ export function checkCodebaseReports({
   root,
   baseRef = process.env.BASE_REF,
   diffText,
+  baselineSources,
 } = {}) {
   const repoRoot = path.resolve(root ?? process.cwd());
   let diff;
@@ -121,7 +138,12 @@ export function checkCodebaseReports({
     };
   }
 
-  const sources = existingSourceDirs(repoRoot, parseNameStatus(diff));
+  const sources = newlyIntroducedSourceDirs(
+    repoRoot,
+    parseNameStatus(diff),
+    baseRef,
+    baselineSources,
+  );
   const errors = [];
   for (const source of sources) {
     const reportId = source;
