@@ -1,0 +1,331 @@
+[PW]
+exe = XXXXXX/test-suite/run-pw.sh
+extract_program = XXXXXX/test-suite/extract-pw.sh
+inputs_args = ('*.in', '')
+run_cmd_template = tc.program tc.args tc.input tc.output tc.error
+tolerance = ( (8.0e-4, 1.0e-4, 'e1'),
+              (8.0e+0, 1.0e+1, 'n1'),
+              (1.0e-3, None,   'f1'),
+              (2.0e+0, None,   'p1'),
+              (8.0e-2, 2.0e-2, 'ef1'),
+              (1.0e-2, 1.0e-2, 'eh1'),
+              (1.0e-2, 2.0e-2, 'ehl1'),
+              (2.0e-1, None,   'band'),
+              (1.0e-2, 1.0e-2, 'tf1'),
+              (1.5e-1, None,   'vol'),
+              (5.0e-3, None,   'geom'),
+              (5.0e-3, None,   'num_kpts'), )
+skip_program = grep
+skip_args = 'not present in this version\|libxc needed for this functional'
+
+[CP]
+exe = XXXXXX/test-suite/run-cp.sh
+extract_program = XXXXXX/test-suite/extract-cp.sh
+inputs_args = ('*.in', '')
+run_cmd_template = tc.program -input tc.input tc.args > tc.output 2> tc.error
+tolerance = ( (1.0e-5, 1.0e-5, 'e1'),
+              (1.0e-5, 1.0e-5, 'mp1'),
+              (5.0e-4, 1.0e-4, 's1'),
+              (1.0e-2, 1.0e-2, 'v1u'),
+              (1.0e-2, 1.0e-2, 'v1d'),
+              (6.0e-3, 1.0e-3, 't1') )
+skip_program = grep
+skip_args = 'not present in this version\|libxc needed for this functional'
+
+[PH]
+exe = XXXXXX/test-suite/run-ph.sh
+extract_program = XXXXXX/test-suite/extract-ph.sh
+inputs_args = ('*.in', '')
+run_cmd_template = tc.program tc.args tc.input tc.output tc.error
+tolerance = ( (5.0e-5, 5.0e-3, 'e1'),
+              (5.0e+0, 5.0e-1, 'n1'),
+              (1.0e-3, 1.0e-5, 'f1'),
+              (1.0e-1, 1.0e-3, 'p1'),
+              (5.0e-2, None,   'band'),
+              (1.0e-2, 1.0e-2, 'ef1'),
+              (1.0e-2, 1.0e-2, 'eh1'),
+              (1.0e-2, 2.0e-2, 'ehl1'),
+              (1.0e-2, 1.0e-2, 'tf1'),
+              (5.0e-2, 5.0e-3, 'diel'),
+              (5.0e-2,   None, 'born'),
+              (5.0e-4, 5.0e-4, 'dos'),
+              (5.0e-2,   None, 'born_diff'),
+              (1.5e-0,   None, 'lambda'),
+              (1.0e-4,   None, 'dnsscf_e'),
+              (1.0e-4,   None, 'dnsscf_ph'),
+              (3.0e-1, 5.0e-3, 'lambda2'),
+              (1.0e-6, 1.0e-6, 'qpt'),
+              (2.0e+0,   None, 'phfreq'),
+              (2.0e+0,   None, 'dynmat_freqs'),
+              (1.0e-3, 1.0e-5, 'rlatt_cart'),
+              (1.0e-3, 1.0e-5, 'rlatt_crys'),
+              (5.0e-1,   None, 'sum_w_pot'),
+              (5.0e-4, 1.0e-2, 'postahc_selfen'),
+              (1.0e-2, 1.0e-2, 'quad'),
+              (1.0e-1, 1.0e-2, 'epsil'),
+              (5.0e-2,   None, 'raman_au'),
+              (5.0e-2,   None, 'raman_A2'),
+              (5.0e-2, 5.0e-3, 'polariz'),
+              (2.0e+0,   None, 'raman_act'),
+              (5.0e-2,   None, 'depol'))
+
+skip_program = grep
+skip_args = 'not present in this version'
+
+[HP]
+exe = XXXXXX/test-suite/run-hp.sh
+extract_program = XXXXXX/test-suite/extract-hp.sh
+inputs_args = ('*.in', '')
+run_cmd_template = tc.program tc.args tc.input tc.output tc.error
+tolerance = ( (5.0e-5, 5.0e-3, 'e1'),
+              (5.0e+0, 5.0e-1, 'n1'),
+              (1.0e-3, 1.0e-5, 'f1'),
+              (5.0e-1, 1.0e-3, 'p1'),
+              (1.5e-3, 1.2e-4, 'u'),
+              (1.5e-3, 1.2e-4, 'v1'),
+              (1.5e-3, 1.8e-4, 'v2'))
+skip_program = grep
+skip_args = 'not present in this version'
+
+
+[EPW]
+exe = XXXXXX/test-suite/run-epw.sh
+extract_program = XXXXXX/test-suite/extract-epw.sh
+inputs_args = ('*.in', '')
+run_cmd_template = tc.program tc.args tc.input tc.output tc.error
+tolerance = ( (1.0e-6, 5.0e-3, 'e1'),
+              (1.0e-3, 1.0e-5, 'f1'),
+              (1.0e-1, 5.0e-3, 'p1'),
+              (1.0e-2, 1.0e-4, 'ef1'),
+              (1.0e-2, 2.0e-4, 'eh1'),
+              (1.0e-2, 2.0e-4, 'ehl1'),
+              (1.0e-2, 1.0e-5, 'tf1'),
+              (1.0e-4, 1.0e-5, 'qdir'),
+              (5.0e-2, 5.0e-3, 'diel'),
+              (5.0e-2, 5.0e-3, 'born'),
+              (2.0e+0,   None, 'phfreq'),
+              (1.0e-5, 1.0e-5, 'q1'),
+              (1.0e-5, 1.0e-5, 'dos1'),
+              (1.0e-3, 5.0e-3, 'e2'),
+              (5.0   , 3.5e-1, 'rsig'),
+              (1.5   , 5.0e-1, 'isig'),
+              (1.0e-2, 1.0e-2, 'rpi'),
+              (1.0e-2, 1.0e-2, 'ipi'),
+              (   100,   None, 'z1'),    # Unstable on unconverged grids.
+              (2.0e-2,   None, 'lam'),
+              (1.0e-5, 1.0e-5, 'lambda'),
+              (7.0e-1,   None, 'lambda_tr'),
+              (1.0e-2,   None, 'gamma'),
+              (1.1e-2, 5.0e-4, 'omega'),
+              (1.1e-1, 5.0e-4, 'on_shell_Omega'),
+              (1.1e-1, 5.0e-4, 'off_shell_Omega'),
+              (1.0e-4, 5.0e-4, 'lam_tot'),
+              (3.0e+1, 1.0e+0, 'lam_tr'),
+              (2.0e-5, 6.0e-3, 'logavg'),
+              (1.0e-2, 5.0e-2, 'l_a2f'),
+              (1.0e-5, 1.0e-5, 'efm'),
+              (5.0e-4, 5.0e-4, 'elph'),
+              (4.0e-2, 1.5e-3, 'mcmillan'),
+              (4.0e-2, 1.5e-3, 'allDyn'),
+              (2.0e-3, 5.0e-4, 'pi'),
+              (1.0e-2, 5.0e-2, 'bcsgap'),
+              (1.0e-2, 5.0e-2, 'max_eigenvalue'),
+              (1.0e-4, 5.0e-4, 'mobvb'),
+              (9.0e-4, 5.0e-4, 'mobcb'),
+              (3.0e+1, 1.0e-1, 'mobnewxx'),
+              (3.0e+1, 1.0e-1, 'mobnewyy'),
+              (3.0e+1, 1.0e-1, 'mobnewzz'),
+              (None, 1.0e-2, 'condnewxx'), # Conductivity specially in metals can span 4 orders of magnitude
+              (None, 1.0e-2, 'condnewyy'), # between different compounds. Absolute error is not usefull
+              (None, 1.0e-2, 'condnewzz'), # Only relative error has meaning.
+              (5.0e-3, 5.0e-3, 'hall'),
+              (1.0e+10,1.0e+2, 'density'),
+              (1.0   , 1.0e-2, 'mobxZ'),
+              (1.5e+3,   None, 'indabs'),
+              (1.0e-4,   None, 'ratmax'),
+              (5.0e-2, 1.0e-1, 'eplrn'),
+              (1.0e-5, 5.0e-3, 'specfun'),
+              (1.0e-5, 5.0e-3, 'temperature'),
+              (1.0e-3, 1.0e-4, 'outband'))
+
+skip_program = grep
+skip_args = 'not present in this version'
+
+[ZG]
+exe = XXXXXX/test-suite/run-zg.sh
+extract_program = XXXXXX/test-suite/extract-zg.sh
+inputs_args = ('*.in', '')
+run_cmd_template = tc.program tc.args tc.input tc.output tc.error
+tolerance = ( (5.0e-4, 2.5e-1, 'conf') )
+
+skip_program = grep
+skip_args = 'not present in this version'
+
+[TDDFPT]
+exe = XXXXXX/test-suite/run-tddfpt.sh
+extract_program = XXXXXX/test-suite/extract-tddfpt.sh
+inputs_args = ('*.in', '')
+run_cmd_template = tc.program tc.args tc.input tc.output tc.error
+tolerance = ( (1.0e-6, 5.0e-3, 'e1'),
+              (1.0e-3, 1.0e-2, 'e3'),
+              (3.0e+0, 5.0e-1, 'n1'),
+              (3.0e+0, 5.0e-1, 'n3'),
+              (5.0e+0, 5.0e-1, 'nb1'),
+              (5.0e+0, 5.0e-1, 'nb2'),
+              (1.0e-3, None,   'chi'),
+              (1.0e-3, 1.0e-5, 'f1'),
+              (1.0e-1, 1.0e-3, 'p1'),
+              (1.0e-5, 1.0e-4, 'alpha'),
+              (1.0e-5, 1.0e-4, 'beta'),
+              (1.0e-5, 1.0e-4, 'gamma'),
+              (1.0e-5, 1.0e-4, 'average'),
+              (3.0e-3,   None, 'rechi'),
+              (3.0e-3,   None, 'imchi'),
+              (3.0e-3,   None, 'freq'),
+              (3.0e-3,   None, 'reepsm1'),
+              (3.0e-3,   None, 'imepsm1'),
+              (3.0e-3,   None, 'reeps'),
+              (3.0e-3,   None, 'imeps'),
+              (1.0e-5, 5.0e-4, 'averageosc'),
+              (1.0e-4,   None, 'epsiloninv'),
+              (1.0e-4,   None, 'chirr'),)
+
+skip_program = grep
+skip_args = 'not present in this version'
+
+[PP]
+exe = XXXXXX/test-suite/run-pp.sh
+extract_program = XXXXXX/test-suite/extract-pp.sh
+inputs_args = ('*.in', '')
+run_cmd_template = tc.program tc.args tc.input tc.output tc.error
+tolerance = ( (1.0e-5, 1.0e-4, 'e1') ,
+              (1.0e-5, 1.0e-4, 'efock') ,
+              (1.0e-5, 1.0e-4, 'exlda') ,
+              (1.0e-5, 1.0e-4, 'eclda') ,
+              (1.0e-5, 1.0e-4, 'exc') ,
+              (1.0e-5, 1.0e-4, 'etcl') ,
+              (1.0e-5, 1.0e-4, 'etnl') ,
+              (1.0e-5, 1.0e-4, 'ekc') ,
+              (1.0e-5, 1.0e-4, 'enl') )
+skip_program = grep
+skip_args = 'not present in this version'
+
+[QEHeat_h2o_mol_t]
+exe = XXXXXX/test-suite/run-all_currents.sh
+extract_program = XXXXXX/test-suite/extract-all_currents.sh
+inputs_args = ('*.in', '')
+run_cmd_template = tc.program tc.input tc.output tc.error
+tolerance = ( (1.0e-1, 2.5e-5 ) )
+skip_program = grep
+skip_args = 'not present in this version'
+
+[QEHeat_h2o_mol]
+exe = XXXXXX/test-suite/run-all_currents.sh
+extract_program = XXXXXX/test-suite/extract-all_currents.sh
+inputs_args = ('*.in', '')
+run_cmd_template = tc.program tc.input tc.output tc.error
+tolerance = ( (1.0e-1, 1.0e-7 ) )
+skip_program = grep
+skip_args = 'not present in this version'
+
+[QEHeat_translation]
+exe = XXXXXX/test-suite/run-all_currents.sh
+extract_program = XXXXXX/test-suite/extract-all_currents.sh
+inputs_args = ('*.in', '')
+run_cmd_template = tc.program tc.input tc.output tc.error
+tolerance = ( (1.0e-2, 1.0e-4 ) )
+skip_program = grep
+skip_args = 'not present in this version'
+
+[IMAGE]
+exe = XXXXXX/test-suite/run-image.sh
+extract_program = XXXXXX/test-suite/extract-image.sh
+inputs_args = ('*.in', '')
+run_cmd_template = tc.program tc.args tc.input tc.output tc.error
+tolerance = ( (5.0e-5, 5.0e-3, 'e1'),
+              (5.0e+0, 5.0e-1, 'n1'),
+              (1.0e-3, 1.0e-5, 'f1'),
+              (1.0e-1, 1.0e-3, 'p1'),
+              (5.0e-2, None,   'band'),
+              (1.0e-2, 1.0e-2, 'ef1'),
+              (1.0e-2, 1.0e-2, 'eh1'),
+              (1.0e-2, 2.0e-2, 'ehl1'),
+              (1.0e-2, 1.0e-2, 'tf1'),
+              (5.0e-2, 5.0e-3, 'diel'),
+              (5.0e-2, 5.0e-3, 'born'),
+              (5.0e-4, 5.0e-4, 'dos'),
+              (5.0e-2,   None, 'born_diff'),
+              (1.5e-0,   None, 'lambda'),
+              (3.0e-1, 5.0e-3, 'lambda2'),
+              (1.0e-6, 1.0e-6, 'qpt'),
+              (2.0e+0,   None, 'phfreq'),
+              (1.0e-3, 1.0e-5, 'rlatt_cart'),
+              (1.0e-3, 1.0e-5, 'rlatt_crys'))
+skip_program = grep
+skip_args = 'not present in this version'
+
+[user]
+benchmark = git
+date_fmt = %d%m%y
+diff = vimdiff
+
+[KCW]
+exe = XXXXXX/test-suite/run-kcw.sh
+extract_program = XXXXXX/test-suite/extract-kcw.sh
+inputs_args = ('*.in', '')
+run_cmd_template = tc.program tc.args tc.input tc.output tc.error
+tolerance = ( (5.0e-5, 5.0e-3, 'e1'),
+              (5.0e+0, 5.0e-1, 'n1'),
+              (1.0e-3, 1.0e-5, 'f1'),
+              (5.0e-1, 1.0e-3, 'p1'),
+              (5.0e-6, 1.0e-8, 'nkp1'),
+              (5.0e-6, 1.0e-8, 'nkp2'),
+              (5.0e-6, 1.0e-8, 'nkp3'),
+              (5.0e-4, 1.0e-5, 'omega'),
+              (5.0e-4, 1.0e-5, 'eig1'),
+              (5.0e-3, 1.0e-4, 'sh'),
+              (5.0e-4, 1.0e-5, 'rpi'),
+              (5.0e-4, 1.0e-5, 'upi'),
+              (5.0e-3, 1.0e-4, 'homo_ks'),
+              (5.0e-3, 1.0e-4, 'homo_kc'),
+              (5.0e-3, 1.0e-4, 'gap_ks'),
+              (5.0e-3, 1.0e-4, 'gap_kc'))
+skip_program = grep
+skip_args = 'not present in this version'
+
+[OSCDFT]
+exe = XXXXXX/test-suite/run-oscdft.sh
+extract_program = XXXXXX/test-suite/extract-pw.sh
+run_cmd_template = tc.program tc.args tc.input tc.output tc.error
+tolerance = ( (8.0e-4, 1.0e-4, 'e1'),
+              (8.0e+0, 1.0e+1, 'n1'),
+              (1.0e-3, None,   'f1'),
+              (2.0e+0, None,   'p1'),
+              (8.0e-2, 2.0e-2, 'ef1'),
+              (1.0e-2, 1.0e-2, 'eh1'),
+              (1.0e-2, 2.0e-2, 'ehl1'),
+              (2.0e-1, None,   'band'),
+              (1.0e-2, 1.0e-2, 'tf1'),
+              (1.0e-1, None,   'vol'),
+              (5.0e-3, None,   'geom') )
+skip_program = grep
+skip_args = 'not present in this version\|libxc needed for this functional'
+
+[OSCDFT_PP]
+exe = XXXXXX/test-suite/run-oscdft.sh
+extract_program = XXXXXX/test-suite/extract-oscdft-pp.sh
+run_cmd_template = tc.program tc.args tc.input tc.output tc.error
+tolerance = ( (1e-3, None) )
+skip_program = grep
+skip_args = 'not present in this version\|libxc needed for this functional'
+
+[PIOUD]
+exe = XXXXXX/test-suite/run-pioud.sh
+extract_program = XXXXXX/test-suite/extract-pioud.sh
+inputs_args = ('*.in', '')
+run_cmd_template = tc.program tc.input tc.output tc.error tc.args
+tolerance = ( (8.0e-4, 1.0e-4, 'Temp_K'),
+              (8.0e+0, 1.0e+1, 'Temp_Ha'),
+               (8.0e-4, 1.0e-4, 'E_kin'))
+skip_program = grep
+skip_args = 'not present in this version\|libxc needed for this functional'
