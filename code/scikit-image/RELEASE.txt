@@ -1,0 +1,268 @@
+How to make a new release of ``skimage``
+========================================
+
+While following this guide, note down all the times that you need to
+consult a previous release manager, or that you find an instruction
+unclear. You will, of course, make a PR to update these notes after
+you are done with the release! ;-)
+
+Before you start, make sure you have all the required write
+permissions (if not, you will need to ask an owner to grant you
+access), specifically to:
+
+  - https://github.com/scikit-image/skimage (push new tags, push to `main`)
+  - https://github.com/scikit-image/skimage-web (force-push)
+
+It's a good idea to have somebody standing by who can yank releases on
+https://pypi.org/project/scikit-image/ in case something goes wrong.
+
+- Check ``TODO.txt`` for any outstanding tasks.
+
+We use a variant of "semantic versioning", where version numbers are classified
+as v<major>.<minor>.<patch>.  By default, releases are made from the main
+branch as part of a linear release history and, as described below, are
+triggered by pushing a git tag to the scikit-image repository on github.  If
+a patch release is required, a branch can be created from the appropriate point
+in main and the following instructions are still apt.
+
+Example `version number`
+
+- 0.23.0rc0.dev0  # development version for 0.23.0 first release candidate
+- 0.23.0rc0       # 0.23.0 first release candidate
+- 0.23.0rc1.dev0  # development version for 0.23.0 second release candidate
+- 0.23.0          # 0.23.0 release
+- 0.24.0rc0.dev0  # development version for 0.24.0 first release candidate
+
+## Process
+
+- To debug building and testing wheels via CI, push to a branch named
+  `maintenance/anything`.
+
+  Once everything works as intended, remove those branches and proceed.
+
+- Set release variables:
+
+      export VERSION=<version number>
+      export PREVIOUS=<previous version number>
+      export ORG="scikit-image"
+      export REPO="scikit-image"
+
+  If this is a prerelease:
+
+      export NOTES="doc/source/release_notes/release_dev.rst"
+
+  If this is release:
+
+      export NOTES="doc/source/release_notes/release_${VERSION}.rst"
+      git rm doc/source/release_notes/release_dev.rst
+
+- Autogenerate release notes:
+
+      changelist ${ORG}/${REPO} v${PREVIOUS} main --version ${VERSION}  --out ${NOTES} --format rst
+      changelist ${ORG}/${REPO} v${PREVIOUS} main --version ${VERSION}  --out ${VERSION}.md
+
+- If you want, you can review the release notes:
+
+  - Scan the PR titles for highlights and mention these in the
+    relevant sections of the notes.
+    Ideally, all changed API objects are mentioned by name,
+    e.g. a new parameter or a deprecated function.
+
+  - Check for duplicate names in the automatically generated list of
+    contributors and reviewers.
+
+  - Append the release date to the title similar to previous iterations.
+
+- If this is a release:
+
+  - (Only needed if you create a new branch)
+    update the file ``src/skimage/data/_fetchers.py`` to point the pooch
+    repository to the new branch instead of main during testing.
+    Look for the parameter ``version_dev="main",`` for ``pooch.create`` and
+    change it to the newly created branch name.
+
+  - Edit ``doc/source/_static/docversions.js`` and
+    ``doc/source/_static/version_switcher.json`` in order to add the release, move the
+    key value pair `"preferred": true` to the most recent stable version, and commit.
+
+      git add src/skimage/data/_fetchers.py doc/source/_static/docversions.js doc/source/_static/version_switcher.json
+
+- Update ``__version__`` in ``src/skimage/__init__.py``.
+
+- Commit changes:
+
+      git add src/skimage/__init__.py ${NOTES}
+      git commit -m "Designate ${VERSION} release"
+
+- Tag the release in git:
+
+      git tag -s v${VERSION} -m "signed ${VERSION} tag"
+
+  (If you do not have a GPG key, follow the tutorial to set it up:
+   https://help.github.com/articles/signing-commits-with-gpg/)
+
+- Push the new meta-data to github:
+
+      git push --tags origin main
+
+  where `origin` is the name of the ``github.com:scikit-image/scikit-image``
+  repository
+
+- Create release from tag
+
+      - go to https://github.com/scikit-image/scikit-image/releases/new?tag=v${VERSION}
+      - add v${VERSION} for the `Release title`
+      - paste contents (or upload) of ${VERSION}.md in the `Describe this release section`
+      - if pre-release check the box labelled `Set as a pre-release`
+
+- If a release, update https://github.com/scikit-image/scikit-image/milestones:
+
+      - close old milestone
+      - ensure new milestone exists (perhaps setting due date)
+
+- Update ``__version__`` in ``src/skimage/__init__.py``.
+
+- Commit changes:
+
+      git add src/skimage/__init__.py
+      git commit -m 'Bump version'
+      git push origin main
+
+- Update documentation on the web:
+  The documentation is kept in a separate repo: scikit-image/docs
+
+  - Wait for the CI service to deploy to GitHub Pages
+  - Sync your branch with the remote repo: ``git pull``.
+  - Update the docs
+
+      git switch gh-pages
+      git branch -C gh-pages gh-pages-backup
+      cp -a dev ../.
+      git reset --hard <commit from last release>
+      git rm -rf dev
+      cp -a ../dev .
+      git add dev
+      cp -a ../dev <release name, e.g., 0.23.x>
+      git add <release name, e.g., 0.23.x>
+      rm stable
+      ln -s <release name, e.g., 0.23.x> stable
+      git add stable
+      git commit -m "Add <release name, e.g., 0.23.x>"
+      git push -f origin gh-pages # force push---be careful!
+
+- Update the web frontpage:
+  The webpage is kept in a separate repo: scikit-image/skimage-web
+
+  - Highlight new release in the news section
+
+      git pull
+      # Edit the ``News`` section of ``index.rst``
+      git add index.rst
+      git commit -m "Highlight ${VERSION} release"
+      git push
+
+----
+
+- Post release notes on user & dev forums, blog, Twitter, etc.
+
+  - https://forum.image.sc/tag/scikit-image
+  - https://discuss.scientific-python.org/c/contributor/skimage
+  - scipy-user@python.org
+  - scikit-learn@python.org
+
+- Update the version and the release date on Wikipedia
+  https://en.wikipedia.org/wiki/Scikit-image
+
+- Make a PR to scikit-image with any updates you might have to these notes
+
+- If making a patch release (v<major>.<minor>.<patch>), forward-port the
+  release notes to the main branch and make a PR.
+
+Conda-forge
+-----------
+
+**Note**: conda-forge now has an automated bot who makes the below PR for you.
+Now all you have to do is to look at pull requests at
+https://github.com/conda-forge/scikit-image-feedstock/pulls
+and check for a new one for this version. Wait for all the continuous
+integration checks to go green, then merge.
+
+The manual instructions remain below in case the bot fails for some reason.
+
+A scikit-image build recipe resides at
+https://github.com/conda-forge/scikit-image-feedstock. You should update it to
+point to the most recent release. You can do this by following these steps:
+
+- Fork the repository at https://github.com/conda-forge/scikit-image-feedstock,
+  and clone it to your machine.
+- Sprout a new branch, e.g. ``v<major>.<minor>``.
+- Find out the SHA256 hash of the source distribution. You can find this at
+  https://pypi.org/project/scikit-image/, or use the following commands:
+
+  - ``sha256sum path/to/scikit-image-*.tar.gz`` (Linux)
+  - ``shasum -a 256 dist/scikit-image-*.tar.gz`` (macOS)
+  - ``CertUtil -hashfile dist\scikit-image-*.tar.gz SHA256`` (Windows)
+
+- Edit the file ``recipe/meta.yaml``:
+
+  - Update the version number on the first line.
+  - Update the SHA256 value on line 9.
+  - If necessary, reset the build number to 0. (line 12)
+  - Update any requirements in the appropriate sections (build or run).
+    Note: don't remove ``numpy x.x``. This tells conda-smithy, conda-forge's
+    build system, that the library must be linked against NumPy at build time.
+  - Commit these changes.
+  - Update the infrastructure around the recipe with ``conda-smithy``:
+    * Install conda-smithy either with conda or pip
+    * Run ``conda-smithy rerender`` in the root of the repository, and commit
+      the changes.
+
+- Push to your fork, and submit a pull request to the
+  upstream repo.
+
+Debian
+------
+
+The below instructions remain here for completeness. However, the Debian
+scientific team has kindly taken over package maintenance. Simply follow the
+procedure described at https://www.debian.org/Bugs/Reporting to report a "bug"
+that there is a new version of scikit-image out (specifying the version
+number), with severity set to "Wishlist".
+
+If you want to take matters into your own hands for some reason, follow the
+instructions detailed below to cut a Debian release yourself.
+
+- Tag the release as per instructions above.
+- git checkout debian
+- git merge v0.x.x
+- uscan <- not sure if this step is necessary
+- Update changelog (emacs has a good mode, requires package dpkg-dev-el)
+  - C-C C-v add new version, C-c C-c timestamp / save
+- git commit -m 'Changelog entry for 0.x.x'
+- git-buildpackage -uc -us -rfakeroot
+- Sign the changes: debsign skimage_0.x.x-x_amd64.changes
+- cd ../build-area && dput mentors skimage_0.x.x-x_amd64.changes
+- The package should now be available at:
+
+  http://mentors.debian.net/package/skimage
+
+For the last lines above to work, you need ``~/.gbp.conf``::
+
+  [DEFAULT]
+  upstream-tag = %(version)s
+
+  [git-buildpackage]
+  sign-tags = True
+  export-dir = ../build-area/
+  tarball-dir = ../tarballs/
+
+As well as ``~/dput.cf``::
+
+  [mentors]
+  fqdn = mentors.debian.net
+  incoming = /upload
+  method = http
+  allow_unsigned_uploads = 0
+  progress_indicator = 2
+  # Allow uploads for UNRELEASED packages
+  allowed_distributions = .*
