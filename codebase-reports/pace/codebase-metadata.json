@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "report_type": "codebase-metadata",
-  "generated_at": "2026-09-12T02:04:23Z",
+  "generated_at": "2026-09-12T06:20:49Z",
   "informational": true,
   "non_blocking": true,
   "codebase": {
@@ -399,7 +399,7 @@
         "pyFV3/tests/savepoint/translate/translate_fillz.py"
       ],
       "expensive_path": "Every advected tracer is transported with the two-dimensional piecewise-parabolic finite-volume scheme, so the cost scales with the number of tracers: six water species in the standard configuration, more with chemistry. Each tracer needs the full PPM reconstruction, monotonicity limiting and flux-form update in both horizontal directions, followed by the positivity fixers that borrow mass between layers and neighbours.",
-      "rationale": "Tracer transport is a self-contained pass over the tracer array using fluxes the dynamics has already computed, and it is the part of the model whose cost grows with configuration rather than with resolution. The PPM reconstruction kernels and the fixers that repair its overshoots belong together: fillz and neg_adj3 exist to clean up exactly what fvtp2d produces.",
+      "rationale": "Tracer transport is a self-contained pass over the tracer array using fluxes the dynamics has already computed, and it is the part of the model whose cost scales with the number of tracers on top of grid resolution. The PPM reconstruction kernels and the fixers that repair its overshoots belong together: fillz and neg_adj3 exist to clean up exactly what fvtp2d produces.",
       "excluded": [
         "delnflux, the hyperdiffusive flux operator, which is shared with the D-grid update and is listed as shared infrastructure",
         "Vertical remapping of tracers, which is part of the remapping module"
@@ -409,7 +409,7 @@
         "fillz and neg_adj3 move mass conditionally and in a fixed order; reordering them for parallelism changes the answer, and the conservation invariant is the thing worth checking rather than the pointwise field"
       ],
       "approval_status": "proposed-only",
-      "purpose": "Tracer transport is a self-contained pass over the tracer array using fluxes the dynamics has already computed, and it is the part of the model whose cost grows with configuration rather than with resolution. The PPM reconstruction kernels and the fixers that repair its overshoots belong together: fillz and neg_adj3 exist to clean up exactly what fvtp2d produces.",
+      "purpose": "Tracer transport is a self-contained pass over the tracer array using fluxes the dynamics has already computed, and it is the part of the model whose cost scales with the number of tracers on top of grid resolution. The PPM reconstruction kernels and the fixers that repair its overshoots belong together: fillz and neg_adj3 exist to clean up exactly what fvtp2d produces.",
       "primary_inputs": [
         "tracer mixing-ratio array (6+ water species)",
         "horizontal mass fluxes precomputed by the dynamics",
@@ -437,7 +437,7 @@
       "depends_on_modules": [
         "halo-exchange"
       ],
-      "differences": "A self-contained pass over the tracer array using fluxes the dynamics already produced; cost grows with configuration (number of tracers), not resolution.",
+      "differences": "A self-contained pass over the tracer array using fluxes the dynamics already produced; cost scales with the number of tracers on top of grid resolution.",
       "evidence": [
         "pyFV3/pyfv3/stencils/tracer_2d_1l.py",
         "pyFV3/tests/savepoint/translate/translate_fvtp2d.py"
@@ -609,7 +609,7 @@
         "shared-infrastructure"
       ],
       "depends_on_modules": [],
-      "differences": "Runs entirely in the vertical at the end of the outer step; conserves total energy and total water, with phase-partition thresholds rather than smooth tolerances.",
+      "differences": "Runs entirely in the vertical at the end of the outer step; conserves total energy and total water by construction (upstream design property), with phase-partition thresholds rather than smooth tolerances.",
       "evidence": [
         "pyFV3/pyfv3/stencils/remapping.py",
         "pyFV3/tests/savepoint/translate/translate_satadjust3d.py"
@@ -658,17 +658,17 @@
         "NDSL/tests/test_tile_scatter_gather.py"
       ],
       "expensive_path": "Every stencil sweep in the model is preceded or followed by a halo update. On the cubed sphere the six tile edges do not align, so the exchange is not a memory copy: vector quantities are rotated, edge data is packed into contiguous buffers by an index transformation, sent, and unpacked with the receiving tile's orientation. On GPU this is the step that stalls the pipeline, and the packing kernels and the device-to-device path are what decide whether the accelerated dycore scales at all.",
-      "rationale": "This is the one genuinely cross-cutting module in Pace, and it is a module rather than shared infrastructure because it has its own dense test suite that runs on CPU today (halo update, data transformer, cube and tile scatter-gather), its own correctness question (does the rotated, packed exchange reproduce the reference field exactly) and its own well-known performance story. It is also the part of NDSL with an explicit GPU-to-GPU path already present, which is direct evidence it is worth accelerating.",
+      "rationale": "This is the one genuinely cross-cutting module in Pace, and it is a module rather than shared infrastructure because it has its own dense CPU test suite (halo update, data transformer, cube and tile scatter-gather), expected to run once the RED-1 install gap is resolved, its own correctness question (does the rotated, packed exchange reproduce the reference field exactly) and its own well-known performance story. It is also the part of NDSL with an explicit GPU-to-GPU path already present, which is direct evidence it is worth accelerating.",
       "excluded": [
         "The stencil compilation layer NDSL/ndsl/dsl/, which is a compiler rather than a numerical kernel and is shared by every module",
         "MPI process management, which is environment rather than code under test"
       ],
       "hazards": [
-        "The full test set is parameterised over cupy and over multi-rank layouts; the CPU-only, single-process subset is what runs from the pin, and the check has to be built on that subset or on the null-comm driver run",
+        "The full test set is parameterised over cupy and over multi-rank layouts; the CPU-only, single-process subset is what is expected to run once the RED-1 install gap is resolved, and the check has to be built on that subset or on the null-comm driver run",
         "Exchange correctness is exact, not approximate: the pass policy here is equality of the halo region, not a tolerance"
       ],
       "approval_status": "proposed-only",
-      "purpose": "This is the one genuinely cross-cutting module in Pace, and it is a module rather than shared infrastructure because it has its own dense test suite that runs on CPU today (halo update, data transformer, cube and tile scatter-gather), its own correctness question (does the rotated, packed exchange reproduce the reference field exactly) and its own well-known performance story. It is also the part of NDSL with an explicit GPU-to-GPU path already present, which is direct evidence it is worth accelerating.",
+      "purpose": "This is the one genuinely cross-cutting module in Pace, and it is a module rather than shared infrastructure because it has its own dense CPU test suite (halo update, data transformer, cube and tile scatter-gather), expected to run once the RED-1 install gap is resolved, its own correctness question (does the rotated, packed exchange reproduce the reference field exactly) and its own well-known performance story. It is also the part of NDSL with an explicit GPU-to-GPU path already present, which is direct evidence it is worth accelerating.",
       "primary_inputs": [
         "tile-local field arrays with halo regions",
         "cubed-sphere tile orientation and rank layout"
@@ -693,7 +693,7 @@
         "shared-infrastructure"
       ],
       "depends_on_modules": [],
-      "differences": "The one genuinely cross-cutting module; correctness is exact equality of the halo region, not a tolerance, and its CPU test suite runs from the pin.",
+      "differences": "The one genuinely cross-cutting module; correctness is exact equality of the halo region, not a tolerance, and its CPU test suite is expected to run once the RED-1 install gap is resolved.",
       "evidence": [
         "NDSL/ndsl/comm/",
         "NDSL/tests/test_halo_update.py"
@@ -995,7 +995,7 @@
           "NDSL halo/scatter-gather suite, runnable on CPU from the pin"
         ],
         "known_gaps": [
-          "Full set is parameterised over cupy and multi-rank; the CPU single-process subset runs from the pin."
+          "Full set is parameterised over cupy and multi-rank; the CPU single-process subset is expected to run once the RED-1 install gap is resolved."
         ],
         "execution": [],
         "classification": "agent-authored/evidenced, except any explicitly CLI-labelled counts"
@@ -1899,7 +1899,7 @@
         "id": "RED-1",
         "severity": "red",
         "what": "NDSL external/gt4py and external/dace pins dropped while setup.py installs them from those local directory paths; the pinned tree does not install as shipped.",
-        "resolution": "Either vendor gt4py@511a7ab and dace@e432a8c (plus DaCe's nested cub/moodycamel/dace-webclient submodules; ~2x payload, +4 licences) or move to an NDSL pin whose setup.py resolves them from PyPI. Curator picks when this is taken up."
+        "resolution": "Either vendor gt4py@511a7ab and dace@e432a8c (plus DaCe's nested cub/moodycamel/dace-webclient submodules; roughly doubles the payload and adds gt4py, dace and those nested submodules as new licence surfaces) or move to an NDSL pin whose setup.py resolves them from PyPI. Curator picks when this is taken up."
       },
       {
         "id": "RED-2",
