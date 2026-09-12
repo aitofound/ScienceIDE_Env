@@ -1,0 +1,263 @@
+[project]
+name = 'scikit-image'
+description = 'Image processing in Python'
+requires-python = '>=3.11'
+readme = 'README.md'
+classifiers = [
+    'Development Status :: 4 - Beta',
+    'Environment :: Console',
+    'Intended Audience :: Developers',
+    'Intended Audience :: Science/Research',
+    'License :: OSI Approved :: BSD License',
+    'Programming Language :: C',
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
+    'Programming Language :: Python :: 3.13',
+    'Programming Language :: Python :: 3.14',
+    'Programming Language :: Python :: 3 :: Only',
+    'Topic :: Software Development :: Libraries',
+    'Topic :: Scientific/Engineering',
+    'Operating System :: Microsoft :: Windows',
+    'Operating System :: POSIX',
+    'Operating System :: Unix',
+    'Operating System :: MacOS',
+]
+dynamic = ['version']
+dependencies = [
+    'numpy>=1.24',
+    'scipy>=1.11.4',
+    'networkx>=3.0',
+    'pillow>=10.1',
+    'imageio>=2.33,!=2.35.0',
+    'tifffile>=2022.8.12',
+    'packaging>=21',
+    'lazy-loader>=0.4',
+]
+
+[[project.maintainers]]
+name = 'scikit-image developers'
+email = 'skimage-core@discuss.scientific-python.org'
+
+[project.license]
+file = 'LICENSE.txt'
+
+[project.optional-dependencies]
+build = [
+    # Also update [build-system] -> requires
+    'meson-python>=0.16',
+    'ninja>=1.11.1.1',
+    'Cython>=3.0.8,!=3.2.0b1',
+    'pythran>=0.16',
+    'numpy>=2.0',
+    # Developer UI
+    'spin==0.13',
+    'build>=1.2.1',
+]
+data = ['pooch>=1.6.0']
+developer = [
+    'pre-commit',
+    'ipython',
+    'docstub==0.3.0.post0',
+    'scikit-image[asv]',
+]
+asv = [
+    'asv; sys_platform != "emscripten"',
+]
+docs = [
+    'sphinx>=8.0',
+    'sphinx-gallery[parallel]>=0.18',
+    'numpydoc>=1.7',
+    'sphinx-copybutton',
+    'matplotlib>=3.7',
+    'dask[array]>=2023.2.0',
+    'pandas>=2.0',
+    'seaborn>=0.11',
+    'pooch>=1.6',
+    'tifffile>=2022.8.12',
+    'myst-parser',
+    'intersphinx-registry>=0.2411.14',
+    'ipywidgets',
+    'ipykernel',  # needed until https://github.com/jupyter-widgets/ipywidgets/issues/3731 is resolved
+    'plotly>=5.20',
+    'kaleido==0.2.1',
+    'scikit-learn>=1.2',
+    'sphinx_design>=0.5',
+    'pydata-sphinx-theme>=0.16',
+    'PyWavelets>=1.6',
+    'pytest-doctestplus>=1.6.0',
+]
+optional = [
+    'SimpleITK; sys_platform != "emscripten"',
+    'scikit-learn>=1.2',
+    'pyamg>=5.2; sys_platform != "emscripten" and python_version < "3.14"',  # not packaged for Pyodide yet
+    'scikit-image[optional_free_threaded]'
+]
+optional_free_threaded = [
+    'astropy>=6.0',
+    'dask[array]>=2023.2.0',
+    'matplotlib>=3.7',
+    'pooch>=1.6.0; sys_platform != "emscripten"',  # requires stack switching with alternative pytest runner
+    'PyWavelets>=1.6',
+]
+
+test = [
+    'numpydoc>=1.7',
+    'pooch>=1.6.0; sys_platform != "emscripten"',
+    'pytest>=8.3',
+    'pytest-cov>=2.11.0',
+    'pytest-pretty',
+    'pytest-localserver',
+    'pytest-faulthandler',
+    'pytest-doctestplus>=1.6.0',
+]
+
+[project.urls]
+homepage = 'https://scikit-image.org'
+documentation = 'https://scikit-image.org/docs/stable'
+source = 'https://github.com/scikit-image/scikit-image'
+download = 'https://pypi.org/project/scikit-image/#files'
+tracker = 'https://github.com/scikit-image/scikit-image/issues'
+
+[build-system]
+build-backend = 'mesonpy'
+requires = [
+    'meson-python>=0.16',
+    'Cython>=3.0.8,!=3.2.0b1',
+    'pythran>=0.16',
+    'lazy_loader>=0.4',
+    'numpy>=2.0',
+]
+
+[tool.spin]
+package = 'skimage'
+
+[tool.spin.commands]
+Build = [
+    'spin.cmds.meson.build',
+    'spin.cmds.pip.install',
+    '.spin/cmds.py:test',
+    '.spin/cmds.py:sdist',
+]
+Environments = [
+    'spin.cmds.meson.run',
+    '.spin/cmds.py:ipython',
+    'spin.cmds.meson.python',
+]
+Documentation = ['.spin/cmds.py:docs']
+Metrics = [
+    '.spin/cmds.py:asv'
+]
+
+[tool.ruff.format]
+quote-style = "preserve"
+
+[tool.ruff.lint]
+select = [
+    'F',
+    'E',
+    'W',
+    'UP',
+    'NPY201',
+]
+ignore = [
+    'E501',
+    'E741',
+    'E712',
+    'E721',
+    'UP038',  # non-pep604-isinstance -- https://github.com/astral-sh/ruff/issues/7871
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = [
+    'E402',
+    'F401',
+    'F403',
+    'F405',
+]
+"**/__init__.pyi" = [
+    'E402',
+    'F401',
+    'F403',
+    'F405',
+]
+"src/skimage/_shared/testing.py" = ['F401']
+"doc/examples/**/*.py" = ['E402']
+
+[tool.ruff.lint.pydocstyle]
+convention = 'numpy'
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = ["-ra", "--strict-config", "--strict-markers", "--maxfail=5"]
+log_cli_level = "INFO"
+xfail_strict = true
+testpaths = ["tests"]
+filterwarnings = [
+    "error",
+    "ignore:.*use `imageio` or other I/O packages directly.*:FutureWarning",
+    # warn by pyamg in ruge_stuben_solver
+    "ignore:Implicit conversion of A to CSR:scipy.sparse.SparseEfficiencyWarning",
+    # Pyodide warning coming via threadpoolctl, remove when
+    # https://github.com/joblib/threadpoolctl/pull/201 is released
+    "ignore:.*JsProxy\\.as_object_map.*:RuntimeWarning",
+]
+norecursedirs = ["io/_plugins"]
+
+[tool.changelist]
+ignored_user_logins = [
+    "web-flow",
+    "pre-commit-ci[bot]"
+]
+
+
+[tool.docstub.type_prefixes]
+matplotlib = "matplotlib"
+scipy = "scipy"
+
+[tool.cibuildwheel]
+test-command = "pytest --doctest-plus --pyargs skimage ./tests"
+test-extras = ["test", "optional"]
+test-sources = ["tests", "pyproject.toml"]
+environment = {PIP_PREFER_BINARY=1}
+environment-pass = ["SKIMAGE_LINK_FLAGS", "PIP_EXTRA_INDEX_URL", "COLUMNS"]
+build-verbosity = 0
+enable="cpython-freethreading"
+
+[tool.cibuildwheel.config-settings]
+setup-args = "-Dinclude-v2=false"
+# Could be overwritten using CIBW_CONFIG_SETTINGS environment variable
+
+[[tool.cibuildwheel.overrides]]
+select = "cp3??t-*"
+test-environment = {PYTHON_GIL=0}
+test-extras = ["test", "optional_free_threaded"]
+
+[[tool.cibuildwheel.overrides]]
+select = "*-m*linux_aarch64"
+test-extras = ["test", "optional_free_threaded"]
+
+[[tool.cibuildwheel.overrides]]
+select = "*-win_arm64"
+test-extras = ["test", "optional_free_threaded"]
+
+[[tool.cibuildwheel.overrides]]
+select = "*-musllinux*"
+test-extras = ["test", "optional_free_threaded"]
+# SimpleITK does not support musllinux yet
+
+[tool.cibuildwheel.linux]
+environment = {PIP_PREFER_BINARY=1, SKIMAGE_LINK_FLAGS="-Wl,--strip-debug"}
+
+[tool.cibuildwheel.windows]
+archs = ["auto"]
+
+[tool.cibuildwheel.macos]
+test-command = "pytest ./tests"
+before-all = [
+    "bash {project}/tools/build_libomp.sh",
+]
+
+[tool.cibuildwheel.pyodide]
+test-command = "pytest --pyargs skimage tests"
