@@ -32,8 +32,8 @@ is copied from both shipped module cards; both task manifests still say `draft`.
 | `rcwa-eigenmode-smatrix` | Layer eigensystems, S-matrix propagation and in-tree linear algebra | 7 | unknown |
 
 Exact owned paths, entrypoints, check IDs and citation keys are retained in
-the canonical JSON. See [bibliography-notes.md](bibliography-notes.md) for the
-complete check-to-publication mapping and authoritative verification links.
+the canonical JSON, together with the complete check-to-publication mapping
+and authoritative verification links.
 
 ### Shared code
 
@@ -72,5 +72,5 @@ implied by this bibliography.
 - The fmm-metallic-grating slug refers to a fused-silica grating paper/deck; task shorthand also omits Povinelli from Liu 2009. Bibliography follows authoritative sources.
 - Crossref supplies only starting pages for Li 1997, Liu 2009 and Bi 2010; ending pages remain unasserted.
 
-Artifacts: [canonical JSON](codebase-metadata.json) · [self-contained HTML](codebase-metadata.html) · [BibTeX](references.bib) · [verification and coverage](bibliography-notes.md)
+Artifacts: [canonical JSON](codebase-metadata.json) · [self-contained HTML](codebase-metadata.html) · [BibTeX](references.bib)
 <!-- SCIACCEL_CODEBASE_METADATA_REPORT:END -->
