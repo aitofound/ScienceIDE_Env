@@ -2,6 +2,13 @@
   "check": "load-balance-2d",
   "comparison": {
     "coordinate_system": "SDF assembled global physical mesh; x-fastest, then y, then z",
+    "aggregation": {
+      "method": "global mean/RMS plus normalized absolute-amplitude centroid and width on each uniform Cartesian axis",
+      "moment_rtol": 0.05,
+      "shape_atol": 0.05,
+      "scalar_rtol": 0.05,
+      "status": "provisional_pending_fresh_layout_calibration"
+    },
     "files": [
       {
         "atol": 1e-06,
@@ -389,7 +396,7 @@
   "configuration": "One epoch2d build; epoch2d/example_decks/injectors.deck on four MPI ranks laid out 4x1 along the beam axis, at 64 x 64 cells (the upstream deck uses 128 x 128, reachable with SAB_NX=128) and 8 pseudoparticles per cell, over a window of 2.5e-2 (the upstream deck runs to 3.0e-1) with a dump every 5.0e-3, six dumps. dlb_threshold = 0.95 and dlb_maximum_interval = 8 in the control block turn on dynamic load balancing and keep it checking often; the x_min injector piles particles onto the first rank, so the seams move repeatedly inside the graded window. Graded (new physical contract): only the assembled global physical outputs named in comparison.files are checked (ex, jx, charge_density, number_density, number_density_Background, number_density_Beam, field_energy, exact global particle count Background, particle_energy, exact global particle count Beam); coordinate-indexed SDF arrays use x-fastest, then y, then z, and global species counts, where present, are exact little-endian int64 values. MPI layout controls are execution context only: rank identifiers, boundaries, local counts, ownership/order, repartition or load ladders, schedules and timing are explicitly ungraded.",
   "default_vs_upstream": "64 of the upstream 128 cells and window 1/12 of upstream, restored by SAB_NX=128 and SAB_TEND_SCALE=12 with the upstream dump cadence unchanged; dynamic load balancing is on, which the upstream deck leaves off, and both dlb keys are exposed as SAB_DLB_THRESHOLD and SAB_DLB_INTERVAL",
   "expected_runtime_s": 7,
-  "variant": "the deck constant dens multiplied by (1 + 1e-15), five units in the last place of the binary64 the dumps are written in (the deck parser evaluates 1 to 1.000000000000001, an absolute change of 1.1102e-15 where one unit in the last place at 1.0 is 2.2204e-16), which scales both the background density and the injected density in their last bits. This nominal-versus-variant input is a controlled numerical-sensitivity probe only: it does not change the current provisional bounds or establish acceptance for a new science run. The invariants policy grades only the physical outputs named by this rubric; execution layout, rank identifiers, boundaries, local counts, ownership/order, repartition schedule and timing are not grading targets.",
+  "variant": "the identical physical injector deck on a 2x2 layout instead of 4x1, retaining four ranks. This changes rank-seeded loading and the dynamic-repartition path while preserving all physical inputs, providing a decomposition-realisation spread for the global distribution moments.",
   "evidence": {
     "altbuild": {
       "at": "2026-09-09T04:23:26Z",
