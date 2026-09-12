@@ -73,7 +73,15 @@ def coordinate_index(snap,name,source):
     physical=[]
     for axis,n in enumerate(dims):
         edge=axes[axis]; bit=1<<axis
-        center=0.5*(edge[:-1]+edge[1:]); selected=edge if (int(info.get("stagger",0)) & bit) else center
+        center=0.5*(edge[:-1]+edge[1:])
+        if int(info.get("stagger",0)) & bit:
+            # These EPOCH plain variables omit the upper face while
+            # Grid/Grid retains both domain-edge coordinates.
+            if len(edge)==n: selected=edge
+            elif len(edge)==n+1: selected=edge[:-1]
+            else: raise ValueError(f"{source}: {name!r} staggered axis {axis} has {len(edge)} mesh coordinates for data dimension {n}")
+        else:
+            selected=center
         if len(selected)!=n:
             raise ValueError(f"{source}: {name!r} physical axis {axis} has {len(selected)} coordinates for data dimension {n}")
         physical.append(selected)
