@@ -1,0 +1,174 @@
+//
+// Copyright (c) 2025-2026 INRIA
+//
+
+#pragma once
+
+// IWYU pragma: private, include "pinocchio/algorithm/diagonal-preconditioner.hpp"
+
+#ifdef PINOCCHIO_LSP
+  #undef PINOCCHIO_LSP
+  #include "pinocchio/algorithm/diagonal-preconditioner.hpp"
+#endif // PINOCCHIO_LSP
+
+namespace pinocchio
+{
+
+  ///
+  /// \brief Pre-Conditioning a constraint problem is done purely for numerical reasons.
+  /// We have a problem that looks like $$ min_{x \in K} x^T G x + g^T x $$.
+  /// The pre-conditioner is a diagonal matrix P.
+  /// We write x = P * x_bar (hence x_bar = P^{-1} * x), g_bar = Pg and G_bar = P*G*P, such that
+  /// the problem now becomes:
+  /// $$ min_{x_bar \in K} x_bar^T G_bar x + g_bar^T x $$.
+  //
+  /// \note We call the original problem working on (x, g, G) the **unscaled** problem.
+  /// We call the new problem working on (x_bar, g_bar, G_bar) the **scaled** problem.
+  ///
+  template<typename VectorLike>
+  struct DiagonalPreconditionerTpl : PreconditionerBase<DiagonalPreconditionerTpl<VectorLike>>
+  {
+
+    typedef typename PINOCCHIO_EIGEN_PLAIN_TYPE(VectorLike) Vector;
+    typedef typename Vector::Scalar Scalar;
+
+    /// \brief Default constructor takes a vector.
+    /// @param diagonal Vector composing the diagonal of the preconditioner
+    template<typename InputVector>
+    explicit DiagonalPreconditionerTpl(const Eigen::MatrixBase<InputVector> & diagonal)
+    : m_diagonal(diagonal)
+    , m_squared_diagonal(diagonal)
+    {
+      PINOCCHIO_CHECK_INPUT_ARGUMENT((diagonal.array() >= Scalar(0)).all());
+      m_squared_diagonal.array() *= diagonal.array();
+    }
+
+    /// @brief Default constructor from a given size.
+    /// @param size Size of the preconditioner
+    explicit DiagonalPreconditionerTpl(const Eigen::Index size)
+    : m_diagonal(Vector::Ones(size))
+    , m_squared_diagonal(Vector::Ones(size))
+    {
+    }
+
+    /// \brief Construct an identity preconditioner
+    /// @param size Size of the preconditioner
+    static DiagonalPreconditionerTpl Identity(const Eigen::Index size)
+    {
+      return DiagonalPreconditionerTpl(size);
+    }
+
+    /// \brief Move constructor
+    DiagonalPreconditionerTpl(DiagonalPreconditionerTpl && other)
+    : m_diagonal(std::move(other.m_diagonal))
+    , m_squared_diagonal(std::move(other.m_squared_diagonal))
+    {
+    }
+
+    /// \brief Copy constructor
+    DiagonalPreconditionerTpl(const DiagonalPreconditionerTpl & other)
+    : m_diagonal(other.m_diagonal)
+    , m_squared_diagonal(other.m_squared_diagonal)
+    {
+    }
+
+    /// \brief Copy operator
+    DiagonalPreconditionerTpl & operator=(const DiagonalPreconditionerTpl & other)
+    {
+      m_diagonal = other.m_diagonal;
+      m_squared_diagonal = other.m_squared_diagonal;
+      return *this;
+    }
+
+    bool operator==(const DiagonalPreconditionerTpl & other) const
+    {
+      return m_diagonal == other.m_diagonal && m_squared_diagonal == other.m_squared_diagonal;
+    }
+
+    bool operator!=(const DiagonalPreconditionerTpl & other) const
+    {
+      return !(*this == other);
+    }
+
+    /// \brief Performs the scale operation to go from x to x_bar: x_bar = P^{-1} * x.
+    template<typename MatrixIn, typename MatrixOut>
+    void
+    scale(const Eigen::MatrixBase<MatrixIn> & x, const Eigen::MatrixBase<MatrixOut> & x_bar) const
+    {
+      auto & x_bar_ = x_bar.const_cast_derived();
+      x_bar_ = x;
+      scaleInPlace(x_bar_);
+    }
+
+    /// \brief see \ref scale
+    template<typename MatrixIn>
+    void scaleInPlace(const Eigen::MatrixBase<MatrixIn> & x) const
+    {
+      auto & x_ = x.const_cast_derived();
+      x_.array() = x.array() / m_diagonal.array();
+    }
+
+    /// \brief Performs the unscale operation to go from x_bar to x: x = P * x_bar.
+    template<typename MatrixIn, typename MatrixOut>
+    void
+    unscale(const Eigen::MatrixBase<MatrixIn> & x_bar, const Eigen::MatrixBase<MatrixOut> & x) const
+    {
+      auto & x_ = x.const_cast_derived();
+      x_ = x_bar;
+      unscaleInPlace(x_);
+    }
+
+    /// \brief see \ref \unscale
+    template<typename MatrixIn>
+    void unscaleInPlace(const Eigen::MatrixBase<MatrixIn> & x) const
+    {
+      auto & x_ = x.const_cast_derived();
+      x_.array() *= m_diagonal.array();
+    }
+
+    /// \brief Performs the scale operation twice: x_bar = P^{-2} * x.
+    template<typename MatrixIn, typename MatrixOut>
+    void scaleSquare(
+      const Eigen::MatrixBase<MatrixIn> & x, const Eigen::MatrixBase<MatrixOut> & x_bar) const
+    {
+      auto & x_bar_ = x_bar.const_cast_derived();
+      x_bar_.array() = x.array() / m_squared_diagonal.array();
+    }
+
+    /// \brief Performs the unscale operation twice: x = P * x_bar.
+    template<typename MatrixIn, typename MatrixOut>
+    void unscaleSquare(
+      const Eigen::MatrixBase<MatrixIn> & x_bar, const Eigen::MatrixBase<MatrixOut> & x) const
+    {
+      auto & x_ = x.const_cast_derived();
+      x_.array() = x_bar.array() * m_squared_diagonal.array();
+    }
+
+    Eigen::Index rows() const
+    {
+      return m_diagonal.size();
+    }
+    Eigen::Index cols() const
+    {
+      return m_diagonal.size();
+    }
+
+    template<typename DiagonalVectorType>
+    void setDiagonal(const Eigen::MatrixBase<DiagonalVectorType> & x)
+    {
+      m_diagonal = x;
+      m_squared_diagonal.array() = x.array().square();
+    }
+
+    const VectorLike & getDiagonal() const
+    {
+      return m_diagonal;
+    }
+
+  protected:
+    Vector m_diagonal;
+    Vector m_squared_diagonal;
+
+  }; // struct DiagonalPreconditionerTpl
+
+} // namespace pinocchio

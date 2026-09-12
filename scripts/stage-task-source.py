@@ -11,7 +11,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-SOURCE_RE = re.compile(r"[a-z][a-z0-9-]*\Z")
+SOURCE_RE = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*\Z")
 
 
 class StageError(ValueError):

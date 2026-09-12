@@ -1,0 +1,167 @@
+{
+  "check": "perturb-default-2lpt",
+  "policy": "invariants",
+  "chaotic": false,
+  "upstream_test": "code/21cmfast/tests/test_integration_features.py::test_perturb_field_data[simple]",
+  "configuration": "Seed 12345, z=10, HII_DIM=50, DIM=150, BOX_LEN=100 Mpc, two threads, default low-resolution 2LPT with all three production velocity components retained.",
+  "observable": "Mass conservation; mode-count-weighted low/mid/high-k density and total-vector velocity power; continuous density and velocity-magnitude summaries; within-realization density--velocity Fourier relations; longitudinal dominance; and the paired same-seed 2LPT-minus-Zel'dovich correction fraction.",
+  "expected_runtime_s": 8,
+  "default_vs_upstream": "Derived from the upstream simple perturb-field golden case; replaces per-bin spectrum/PDF comparison with broad-band and internal-physics invariants, enables KEEP_3D_VELOCITIES, and adds a same-seed Zel'dovich baseline.",
+  "knobs": "SAB_DIM, SAB_HII_DIM and SAB_THREADS expose the two grid sides and OpenMP worker count; defaults are graded. Thread changes are calibration probes, not formal variants.",
+  "variant": "BOX_LEN, grid geometry, k bands, mode counts and seed remain fixed. SIGMA_8 moves upward by exactly two float32 ulps, smoothly changing the fluctuation amplitude without changing random phases or the selected 2LPT branch.",
+  "altbuild": "none: this single arm64 host cannot establish a portable compiler/FFT cross-build floor.",
+  "comparison": {
+    "files": [
+      {
+        "path": "spectrum-density-bands.npy",
+        "format": "npy",
+        "rtol": 0.0,
+        "atol": 0.0
+      },
+      {
+        "path": "power-density-low.npy",
+        "format": "npy",
+        "rtol": 0.3,
+        "atol": 1e-08
+      },
+      {
+        "path": "power-density-mid.npy",
+        "format": "npy",
+        "rtol": 0.08,
+        "atol": 1e-08
+      },
+      {
+        "path": "power-density-high.npy",
+        "format": "npy",
+        "rtol": 0.1,
+        "atol": 1e-08
+      },
+      {
+        "path": "density-summary.npy",
+        "format": "npy",
+        "rtol": 0.25,
+        "atol": 0.02
+      },
+      {
+        "path": "spectrum-velocity-total-bands.npy",
+        "format": "npy",
+        "rtol": 0.0,
+        "atol": 0.0
+      },
+      {
+        "path": "power-velocity-total-low.npy",
+        "format": "npy",
+        "rtol": 0.35,
+        "atol": 1e-08
+      },
+      {
+        "path": "power-velocity-total-mid.npy",
+        "format": "npy",
+        "rtol": 0.08,
+        "atol": 1e-08
+      },
+      {
+        "path": "power-velocity-total-high.npy",
+        "format": "npy",
+        "rtol": 0.1,
+        "atol": 1e-08
+      },
+      {
+        "path": "velocity-magnitude-summary.npy",
+        "format": "npy",
+        "rtol": 0.25,
+        "atol": 0.02
+      },
+      {
+        "path": "density-mass-summary.npy",
+        "format": "npy",
+        "rtol": 0.001,
+        "atol": 0.0005
+      },
+      {
+        "path": "density-velocity-relation.npy",
+        "format": "npy",
+        "rtol": 0.01,
+        "atol": 0.001
+      },
+      {
+        "path": "velocity-longitudinal-ratio.npy",
+        "format": "npy",
+        "rtol": 0.1,
+        "atol": 0.002
+      },
+      {
+        "path": "two-lpt-correction-summary.npy",
+        "format": "npy",
+        "rtol": 0.1,
+        "atol": 0.002
+      }
+    ]
+  },
+  "physics_bounds": [
+    {
+      "path": "density-mass-summary.npy",
+      "index": 0,
+      "label": "mean evolved overdensity",
+      "abs_maximum": 0.001
+    },
+    {
+      "path": "density-mass-summary.npy",
+      "index": 1,
+      "label": "mean mass weight",
+      "minimum": 0.999,
+      "maximum": 1.001
+    },
+    {
+      "path": "density-velocity-relation.npy",
+      "index": 0,
+      "label": "low-k density--velocity-divergence coherence",
+      "minimum": 0.98
+    },
+    {
+      "path": "density-velocity-relation.npy",
+      "index": 1,
+      "label": "low-k density--velocity-divergence sign",
+      "maximum": -0.1
+    },
+    {
+      "path": "density-velocity-relation.npy",
+      "index": 2,
+      "label": "mid-k density--velocity-divergence coherence",
+      "minimum": 0.98
+    },
+    {
+      "path": "density-velocity-relation.npy",
+      "index": 3,
+      "label": "mid-k density--velocity-divergence sign",
+      "maximum": -0.1
+    },
+    {
+      "path": "velocity-longitudinal-ratio.npy",
+      "index": 0,
+      "label": "velocity curl/divergence amplitude ratio",
+      "maximum": 0.05
+    },
+    {
+      "path": "two-lpt-correction-summary.npy",
+      "index": 0,
+      "label": "2LPT density correction fraction",
+      "minimum": 0.03,
+      "maximum": 0.1
+    },
+    {
+      "path": "two-lpt-correction-summary.npy",
+      "index": 1,
+      "label": "2LPT velocity correction fraction",
+      "minimum": 0.01,
+      "maximum": 0.05
+    }
+  ],
+  "evidence": {
+    "spread": null,
+    "spread_how": "The completed two-ulp SIGMA_8 selfcheck had bound_fraction 5.86e-6. Across one thread-layout probe and five additional seeds, low-k density/velocity band powers moved by at most 20.6%/26.0%, mid-k by 4.2%/7.6%, high-k by 3.9%/4.1%, continuous velocity summaries by 17.5%, and the paired correction by 10.9%; all six seed realizations passed, with the closest at bound_fraction 0.947. Within-realization density--velocity relations remained far tighter. Removing 2LPT made both paired corrections zero and failed at 7.36 times the bound.",
+    "self_validation_spread": 5.8593749852065e-06,
+    "self_validation_bound_fraction": 5.859374962318317e-06
+  },
+  "warrant": "Broad mode-weighted bands and continuous summaries characterize the evolved random field without grading its phases. Mass conservation tests CIC normalization. Density--velocity coherence, sign and longitudinal dominance test the production velocity reconstruction inside each realization. The paired Zel'dovich solve isolates the nonzero second-order correction: silently omitting 2LPT makes the correction vanish and violates the absolute physics bounds."
+}
