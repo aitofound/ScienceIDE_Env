@@ -32,6 +32,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
 import { run, blank } from './validate-core.mjs';
+import { checkCodebaseReports } from './check-codebase-reports.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -637,6 +638,15 @@ try {
   execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'gen-index.mjs'), '--check'], { stdio: 'pipe' });
 } catch {
   errors.push('registry files are stale — run: node scripts/gen-index.mjs');
+}
+
+/* A source/vendor PR carries one report bundle beside the source. This is a
+   deliberately mechanical presence gate: BASE_REF is mandatory, scope comes
+   only from code/<source>/ paths in that diff, and the final tree is checked so
+   unchanged report files still satisfy a source change. */
+{
+  const reportGate = checkCodebaseReports({ root: ROOT });
+  errors.push(...reportGate.errors);
 }
 
 /* Optional transcript-URL liveness, when CI asks for it. Last, because it is
