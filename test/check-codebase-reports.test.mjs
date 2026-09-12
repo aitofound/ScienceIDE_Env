@@ -33,7 +33,11 @@ fs.mkdirSync(path.join(FIXTURES, 'root-file', 'code'), { recursive: true });
 fs.writeFileSync(path.join(FIXTURES, 'root-file', 'code', 'README.md'), 'source index');
 fs.mkdirSync(path.join(FIXTURES, 'removed'), { recursive: true });
 fixture('renamed', { source: 'new-source' });
-const diff = (text) => checkCodebaseReports({ root: path.join(FIXTURES, text.root), diffText: text.diff });
+const diff = (text) => checkCodebaseReports({
+  root: path.join(FIXTURES, text.root),
+  diffText: text.diff,
+  baselineSources: text.baselineSources || [],
+});
 
 const sourceChange = 'M\tcode/source/module.c\n';
 
@@ -69,6 +73,16 @@ test('rejects a directory where a regular report file is required', () => {
 
 test('counts an unchanged existing bundle for a source-only diff', () => {
   const result = diff({ root: 'unchanged', diff: 'M\tcode/source/module.c\n' });
+  assert.deepEqual(result.errors, []);
+});
+
+test('does not require retroactive reports for an existing codebase update', () => {
+  const result = diff({
+    root: 'unrelated',
+    diff: 'M\tcode/source/module.c\n',
+    baselineSources: ['source'],
+  });
+  assert.deepEqual(result.sources, []);
   assert.deepEqual(result.errors, []);
 });
 
