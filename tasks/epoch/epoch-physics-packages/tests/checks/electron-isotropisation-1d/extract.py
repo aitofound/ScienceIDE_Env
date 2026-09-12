@@ -92,7 +92,7 @@ def write_table(path, header, rows):
 
 HEADER = ["time_s", "electron_energy_J", "field_energy_J", "total_energy_J",
           "temperature_x_eV", "temperature_y_eV", "temperature_z_eV",
-          "anisotropy", "anisotropy_relaxed_fraction"]
+          "anisotropy", "anisotropy_relaxed_fraction", "dump_index"]
 
 _KB_OVER_QE = 1.380649e-23 / 1.602176634e-19   # kelvin -> electronvolt
 
@@ -104,16 +104,17 @@ def build_rows(paths):
         tx = float(b["Derived/Temperature_x/electrons"].mean()) * _KB_OVER_QE
         ty = float(b["Derived/Temperature_y/electrons"].mean()) * _KB_OVER_QE
         tz = float(b["Derived/Temperature_z/electrons"].mean()) * _KB_OVER_QE
-        raw.append((time,
+        raw.append((time, int(os.path.splitext(os.path.basename(path))[0]),
                     float(b["Total Particle Energy/electrons (J)"]),
                     float(b["Total Field Energy in Simulation (J)"]),
                     tx, ty, tz))
     aniso = [(tx - 0.5 * (ty + tz)) / ((tx + ty + tz) / 3.0)
-             for _, _, _, tx, ty, tz in raw]
+             for _, _, _, _, tx, ty, tz in raw]
     a0 = aniso[0]
     rows = []
-    for (time, ee, ef, tx, ty, tz), an in zip(raw, aniso):
-        rows.append([time, ee, ef, ee + ef, tx, ty, tz, an, 1.0 - an / a0])
+    for (time, dump_index, ee, ef, tx, ty, tz), an in zip(raw, aniso):
+        rows.append([time, ee, ef, ee + ef, tx, ty, tz, an, 1.0 - an / a0,
+                     dump_index])
     return rows
 
 

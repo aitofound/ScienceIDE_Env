@@ -280,7 +280,7 @@ def write_table(path, header, rows):
             fh.write("  ".join("%.17e" % v for v in row) + "\n")
 
 HEADER = ["time_s", "photon_number", "photon_energy_J", "electron_energy_J",
-          "field_energy_J", "laser_energy_injected_J"]
+          "field_energy_J", "laser_energy_injected_J", "dump_index"]
 
 
 def _validated_photon_point_variable(blocks, block_id, expected_name):
@@ -366,6 +366,7 @@ def build_rows(paths):
     rows = []
     for path in paths:
         time, b = read_sdf(path)
+        dump_index = int(os.path.splitext(os.path.basename(path))[0])
         rows.append([
             time,
             photon_number(b),
@@ -373,6 +374,7 @@ def build_rows(paths):
             scalar(b, "Total Particle Energy/Electron (J)"),
             scalar(b, "Total Field Energy in Simulation (J)"),
             scalar(b, "Absorption/Total Laser Energy Injected (J)"),
+            dump_index,
         ])
     return rows
 
