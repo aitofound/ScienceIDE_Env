@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "report_type": "codebase-metadata",
-  "generated_at": "2026-09-12T06:20:49Z",
+  "generated_at": "2026-09-12T15:59:27Z",
   "informational": true,
   "non_blocking": true,
   "codebase": {
@@ -229,11 +229,7 @@
   },
   "approval": {
     "proposed_modules": [
-      "acoustic-dynamics",
-      "tracer-transport",
-      "nonhydrostatic-riemann-solver",
-      "vertical-remapping-and-moist-adjustment",
-      "halo-exchange"
+      "fv3-dynamical-core"
     ],
     "approved_modules": [],
     "human_ref": null,
@@ -242,480 +238,155 @@
   },
   "shared_components": [
     {
-      "id": "shared-infrastructure",
-      "title": "Shared infrastructure",
-      "purpose": "Grid metrics and analytic init, the GT4Py/DaCe stencil DSL, run configuration, quantity/state containers, the FV3 driver, and expensive stencil helpers (delnflux, a2b_ord4, copy_corners, ppm) each called by two or more modules, plus the shared test-data fixtures.",
+      "id": "dsl-grid-and-harness",
+      "title": "Stencil DSL, grid setup and run harness",
+      "purpose": "The GT4Py/DaCe stencil DSL and its backends, the cubed-sphere grid metrics and analytic initialization that define the problem instance, run configuration, the FV3 driver and example decks, and the translate/savepoint test framework. This is the toolchain and scaffolding the dynamical core is written against and graded by; it is deliberately not part of the module, so a candidate optimizes the compute path and not the harness.",
       "paths": [
         "setup.py",
         "pyproject.toml",
         "pace/",
         "examples/configs/",
         "pyFV3/pyfv3/_config.py",
-        "pyFV3/pyfv3/dycore_state.py",
-        "pyFV3/pyfv3/tracers.py",
         "pyFV3/pyfv3/initialization/",
-        "pyFV3/pyfv3/utils/",
-        "pyFV3/pyfv3/stencils/fv_dynamics.py",
-        "pyFV3/pyfv3/stencils/copy_corners.py",
-        "pyFV3/pyfv3/stencils/a2b_ord4.py",
-        "pyFV3/pyfv3/stencils/delnflux.py",
-        "pyFV3/pyfv3/stencils/ppm.py",
+        "pyFV3/pyfv3/testing/",
+        "pyFV3/pyfv3/wrappers/",
         "pyFV3/tests/data/",
         "NDSL/ndsl/dsl/",
         "NDSL/ndsl/grid/",
-        "NDSL/ndsl/quantity/",
-        "NDSL/ndsl/stencils/",
         "NDSL/ndsl/constants.py",
         "NDSL/ndsl/config/",
         "NDSL/ndsl/performance/",
+        "NDSL/ndsl/stencils/testing/",
         "tests/main/"
       ],
       "used_by": [
-        "acoustic-dynamics",
-        "tracer-transport",
-        "nonhydrostatic-riemann-solver",
-        "vertical-remapping-and-moist-adjustment",
-        "halo-exchange"
+        "fv3-dynamical-core"
       ],
       "relationship": "runtime/build",
       "evidence": [
         "NDSL/ndsl/dsl/",
         "NDSL/ndsl/grid/",
-        "pyFV3/pyfv3/stencils/fv_dynamics.py"
+        "pyFV3/pyfv3/initialization/",
+        "pace/driver/"
       ],
       "classification": "agent-authored description; CLI-computed size",
       "metrics": {
-        "regular_files": 197,
-        "bytes": 8753649,
-        "text_files": 165,
-        "text_physical_lines": 35557
+        "regular_files": 182,
+        "bytes": 8577961,
+        "text_files": 150,
+        "text_physical_lines": 30025
       }
     }
   ],
   "modules": [
     {
-      "slug": "acoustic-dynamics",
-      "title": "Acoustic sub-loop: C-grid and D-grid shallow water updates",
+      "slug": "fv3-dynamical-core",
+      "title": "FV3 non-hydrostatic dynamical core: the whole integration path per model time step",
       "entrypoints": [
         "examples/configs/baroclinic_c12_null_comm.yaml",
+        "examples/configs/baroclinic_c12.yaml",
         "examples/configs/baroclinic_c48_no_out.yaml",
-        "tests/main/fv3core/test_dycore_call.py",
-        "pyFV3/tests/savepoint/translate/translate_c_sw.py",
-        "pyFV3/tests/savepoint/translate/translate_d_sw.py",
-        "pyFV3/tests/savepoint/translate/translate_divergencedamping.py"
+        "tests/main/fv3core/",
+        "NDSL/tests/",
+        "pyFV3/tests/savepoint/translate/"
       ],
-      "expensive_path": "The acoustic sub-loop runs n_split times inside every model time step, and each iteration performs the C-grid advective update, the D-grid shallow-water update with vorticity and kinetic energy fluxes, divergence damping and the horizontal diffusion operators over the entire three-dimensional cubed-sphere domain. It is the innermost loop of the model and the largest single consumer of time in the dynamical core.",
-      "rationale": "dyn_core is one closed loop: the C-grid half step produces the winds that the D-grid full step consumes, damping is applied inside the same iteration, and the Riemann solve is called from within it. Cutting between the C-grid and D-grid halves would leave neither testable in isolation, and upstream ships one savepoint translate file per stencil in exactly this group.",
+      "expensive_path": "One call to fv_dynamics per model time step drives everything this module owns. The acoustic sub-loop runs n_split times inside that step: each iteration does the C-grid advective half step, the D-grid full step with divergence damping and del2/del4 diffusion, the column-serial non-hydrostatic Riemann solve, and the halo exchanges that stitch the six cubed-sphere tiles together. After the sub-loop the step transports every tracer with the PPM finite-volume scheme, then remaps the deformed Lagrangian layers back to the fixed Eulerian coordinate and runs the moist adjustment. Wall time is dominated by the horizontal stencil sweeps in the acoustic sub-loop and by halo-exchange latency at higher rank counts; the vertical solves are column-serial and parallelise across columns but not within a column.",
+      "rationale": "The dynamical core is one unit of work, not five. The earlier five-way cut split a single closed loop into pieces that each owned a handful of stencil files while the grid, DSL, state containers and stencil helpers they all depended on stayed in a shared component larger than every module combined, so each piece was thin and none of them could be optimized without reaching across the boundary. Cutting it once, at the dycore boundary, makes the ownership match the physics: fv_dynamics and everything it calls per time step is owned, the toolchain that compiles it and the grid that defines the problem stay shared, and the module is measured end to end on a full model step rather than on four stencils in isolation. It also removes the overlap the earlier cut could not avoid, where dyn_core imported the Riemann solver and embedded halo updates that belonged to two other modules.",
       "excluded": [
-        "The non-hydrostatic Riemann solve, which dyn_core calls but which is its own module with a distinct numerical character",
-        "Tracer transport and vertical remapping, which sit in the slower outer loop"
+        "The GT4Py/DaCe stencil DSL (NDSL/ndsl/dsl/): this is the compiler and backend layer the module is written against, not the science it computes. A candidate retunes stencils and data movement; it does not rewrite the toolchain.",
+        "Grid metrics and analytic initialization (NDSL/ndsl/grid/, pyFV3/pyfv3/initialization/): these define the problem instance, so they must stay fixed for a result to be comparable.",
+        "The driver, run configuration and example decks (pace/, pyFV3/pyfv3/_config.py, examples/configs/): harness, not compute path.",
+        "The translate/savepoint test framework (NDSL/ndsl/stencils/testing/, pyFV3/pyfv3/testing/): test infrastructure that must stay fixed to keep the checks honest.",
+        "pySHiELD physics in its entirety: it does not import at this pin (see the not_packaged entry)."
       ],
       "hazards": [
-        "The cubed sphere has eight corner cells where the stencil is undefined and is patched by copy_corners; those are per-cell special cases that a fused or vectorised rewrite can silently get wrong",
-        "Halo exchanges inside the sub-loop serialise a GPU run, so a fast version has to change the communication pattern, not just the arithmetic",
-        "Divergence damping has a flow-dependent (Smagorinsky) coefficient with a max/min clamp, which is a branch"
+        "The cubed sphere has eight corner cells where the stencil is undefined and is patched by copy_corners and NDSL corners.py; a reimplementation that skips the corner treatment matches in the interior and is wrong at the seams.",
+        "Halo-exchange correctness is exact equality of the halo region, not a tolerance: an off-by-one in the rotation or buffer packing shows up only at tile edges, and only on multi-rank layouts.",
+        "The vertical solves (Riemann, remapping) are column-serial tridiagonal recursions. They parallelise across columns but not within a column, so a naive GPU port of this module can slow down on exactly these kernels.",
+        "The moist adjustment uses phase-partition thresholds rather than smooth functions, so small perturbations can flip a cell between phases and produce a large, legitimate output difference.",
+        "Pace already ships GT4Py and DaCe GPU backends (orch:dace:gpu). A task on this module must be framed so a candidate cannot satisfy it by selecting an existing backend.",
+        "The sharpest per-kernel evidence is the 38 savepoint translate tests, which need an external serialized-Fortran corpus that this snapshot does not ship; without it the module is graded on the example decks and the CPU-runnable component suites."
       ],
       "approval_status": "proposed-only",
-      "purpose": "dyn_core is one closed loop: the C-grid half step produces the winds that the D-grid full step consumes, damping is applied inside the same iteration, and the Riemann solve is called from within it. Cutting between the C-grid and D-grid halves would leave neither testable in isolation, and upstream ships one savepoint translate file per stencil in exactly this group.",
+      "purpose": "One call to fv_dynamics advances the atmosphere by one model time step, and everything this module owns runs inside that call. The acoustic sub-loop iterates n_split times over the C-grid half step, the D-grid full step with divergence damping and diffusion, the column-serial non-hydrostatic Riemann solve, and the halo exchanges that join the six cubed-sphere tiles. The outer step then transports every tracer with the PPM finite-volume scheme and remaps the deformed Lagrangian layers back onto the fixed Eulerian coordinate, finishing with the moist adjustment. These pieces share the same state arrays, the same halo machinery and the same stencil helpers, and upstream calls them from one place, so they are one unit of work rather than several.",
       "primary_inputs": [
-        "C-grid and D-grid winds (uc, vc, u, v)",
-        "layer pressure thickness delp",
-        "potential temperature pt",
-        "vorticity and kinetic energy fields",
-        "acoustic time step and n_split"
+        "D-grid and C-grid winds (u, v, uc, vc)",
+        "layer pressure thickness delp and surface pressure",
+        "potential temperature pt and the non-hydrostatic vertical velocity w",
+        "tracer mixing ratios (water species and any passive tracers)",
+        "grid metrics and the cubed-sphere tile decomposition",
+        "run configuration: time step, n_split, damping coefficients, tracer count"
       ],
       "primary_outputs": [
-        "updated D-grid winds and delp after each acoustic sub-step",
-        "divergence-damped and Rayleigh-damped fields",
-        "kinetic-energy and vorticity fluxes"
+        "the full prognostic state advanced by one model time step",
+        "remapped Eulerian layers with conserved total energy and total water",
+        "tracer fields after PPM transport and the positivity fixers",
+        "exchanged halo regions consistent across all six tiles"
       ],
       "algorithm_stages": [
-        "C-grid advective half-step (c_sw)",
-        "D-grid shallow-water full-step with vorticity/KE fluxes (d_sw)",
-        "divergence damping (divergence_damping, del2cubed)",
-        "Rayleigh friction (ray_fast)",
-        "A-to-C wind interpolation (d2a2c_vect) and advective fluxes (fxadv)"
+        "acoustic sub-loop, n_split iterations: C-grid advective half step (c_sw)",
+        "acoustic sub-loop: D-grid shallow-water full step with vorticity and kinetic-energy fluxes (d_sw)",
+        "acoustic sub-loop: divergence damping and del2/del4 diffusion (divergence_damping, del2cubed, delnflux)",
+        "acoustic sub-loop: non-hydrostatic Riemann solve and pressure-gradient update (riem_solver3, sim1_solver, nh_p_grad)",
+        "acoustic sub-loop: Rayleigh friction (ray_fast) and cubed-sphere halo exchange",
+        "outer step: PPM tracer transport with positivity fixers (tracer_2d_1l, fvtp2d, xppm, yppm, fillz, neg_adj3)",
+        "outer step: Lagrangian-to-Eulerian vertical remapping (remapping, map_single, remap_profile)",
+        "outer step: moist adjustment and sub-grid mixing (saturation_adjustment, moist_cv, fv_subgridz)"
       ],
       "unique_responsibilities": [
-        "the horizontal acoustic wind/pressure update run n_split times per step"
+        "advancing the atmospheric state by one model time step on the cubed sphere",
+        "all halo exchange, edge rotation and buffer packing between the six tiles",
+        "the memory layout and halo-aware storage the stencils operate on"
       ],
       "not_responsible_for": [
-        "The non-hydrostatic Riemann solve, which dyn_core calls but which is its own module with a distinct numerical character",
-        "Tracer transport and vertical remapping, which sit in the slower outer loop"
+        "The GT4Py/DaCe stencil DSL and its backends, which compile this module but are not part of it",
+        "Grid metrics and analytic initialization, which define the problem instance and stay fixed",
+        "The driver, run configuration and example decks, which set up and launch a run",
+        "The translate/savepoint test framework, which grades the module and must stay fixed",
+        "pySHiELD physics, which does not import at this pin"
       ],
       "shared_component_ids": [
-        "shared-infrastructure"
-      ],
-      "depends_on_modules": [
-        "nonhydrostatic-riemann-solver",
-        "halo-exchange"
-      ],
-      "differences": "Horizontal, wide-stencil work in the innermost loop; distinct from the column-serial Riemann solve it calls and from the outer-loop transport and remapping.",
-      "evidence": [
-        "pyFV3/pyfv3/stencils/dyn_core.py",
-        "pyFV3/tests/savepoint/translate/translate_d_sw.py"
-      ],
-      "owned_paths": [
-        "pyFV3/pyfv3/stencils/dyn_core.py",
-        "pyFV3/pyfv3/stencils/c_sw.py",
-        "pyFV3/pyfv3/stencils/d_sw.py",
-        "pyFV3/pyfv3/stencils/divergence_damping.py",
-        "pyFV3/pyfv3/stencils/del2cubed.py",
-        "pyFV3/pyfv3/stencils/fxadv.py",
-        "pyFV3/pyfv3/stencils/d2a2c_vect.py",
-        "pyFV3/pyfv3/stencils/ray_fast.py"
-      ],
-      "classification": "agent-authored module card; CLI-computed size and approval status",
-      "metrics": {
-        "owned": {
-          "regular_files": 8,
-          "bytes": 192654,
-          "text_files": 8,
-          "text_physical_lines": 5664
-        },
-        "shared": {
-          "regular_files": 197,
-          "bytes": 8753649,
-          "text_files": 165,
-          "text_physical_lines": 35557
-        },
-        "overlap": {
-          "regular_files": 0,
-          "bytes": 0,
-          "text_files": 0,
-          "text_physical_lines": 0
-        }
-      }
-    },
-    {
-      "slug": "tracer-transport",
-      "title": "Finite-volume tracer transport and positivity fixers",
-      "entrypoints": [
-        "examples/configs/baroclinic_c12_null_comm.yaml",
-        "pyFV3/tests/savepoint/translate/translate_tracer2d1l.py",
-        "pyFV3/tests/savepoint/translate/translate_fvtp2d.py",
-        "pyFV3/tests/savepoint/translate/translate_xppm.py",
-        "pyFV3/tests/savepoint/translate/translate_yppm.py",
-        "pyFV3/tests/savepoint/translate/translate_fillz.py"
-      ],
-      "expensive_path": "Every advected tracer is transported with the two-dimensional piecewise-parabolic finite-volume scheme, so the cost scales with the number of tracers: six water species in the standard configuration, more with chemistry. Each tracer needs the full PPM reconstruction, monotonicity limiting and flux-form update in both horizontal directions, followed by the positivity fixers that borrow mass between layers and neighbours.",
-      "rationale": "Tracer transport is a self-contained pass over the tracer array using fluxes the dynamics has already computed, and it is the part of the model whose cost scales with the number of tracers on top of grid resolution. The PPM reconstruction kernels and the fixers that repair its overshoots belong together: fillz and neg_adj3 exist to clean up exactly what fvtp2d produces.",
-      "excluded": [
-        "delnflux, the hyperdiffusive flux operator, which is shared with the D-grid update and is listed as shared infrastructure",
-        "Vertical remapping of tracers, which is part of the remapping module"
-      ],
-      "hazards": [
-        "The PPM monotonicity limiter selects between limbs on the sign of a slope ratio, and a rounding difference at the switch changes the branch taken; that is a threshold, not a tolerance",
-        "fillz and neg_adj3 move mass conditionally and in a fixed order; reordering them for parallelism changes the answer, and the conservation invariant is the thing worth checking rather than the pointwise field"
-      ],
-      "approval_status": "proposed-only",
-      "purpose": "Tracer transport is a self-contained pass over the tracer array using fluxes the dynamics has already computed, and it is the part of the model whose cost scales with the number of tracers on top of grid resolution. The PPM reconstruction kernels and the fixers that repair its overshoots belong together: fillz and neg_adj3 exist to clean up exactly what fvtp2d produces.",
-      "primary_inputs": [
-        "tracer mixing-ratio array (6+ water species)",
-        "horizontal mass fluxes precomputed by the dynamics",
-        "Courant numbers"
-      ],
-      "primary_outputs": [
-        "updated tracer mixing ratios after 2D PPM advection",
-        "mass-conserving positivity-fixed fields"
-      ],
-      "algorithm_stages": [
-        "PPM reconstruction (xppm, yppm)",
-        "flux-form 2D transport (fvtp2d, tracer_2d_1l)",
-        "column and neighbour positivity fixers (fillz, neg_adj3)"
-      ],
-      "unique_responsibilities": [
-        "the tracer advection pass whose cost scales with tracer count"
-      ],
-      "not_responsible_for": [
-        "delnflux, the hyperdiffusive flux operator, which is shared with the D-grid update and is listed as shared infrastructure",
-        "Vertical remapping of tracers, which is part of the remapping module"
-      ],
-      "shared_component_ids": [
-        "shared-infrastructure"
-      ],
-      "depends_on_modules": [
-        "halo-exchange"
-      ],
-      "differences": "A self-contained pass over the tracer array using fluxes the dynamics already produced; cost scales with the number of tracers on top of grid resolution.",
-      "evidence": [
-        "pyFV3/pyfv3/stencils/tracer_2d_1l.py",
-        "pyFV3/tests/savepoint/translate/translate_fvtp2d.py"
-      ],
-      "owned_paths": [
-        "pyFV3/pyfv3/stencils/tracer_2d_1l.py",
-        "pyFV3/pyfv3/stencils/fvtp2d.py",
-        "pyFV3/pyfv3/stencils/xppm.py",
-        "pyFV3/pyfv3/stencils/yppm.py",
-        "pyFV3/pyfv3/stencils/xtp_u.py",
-        "pyFV3/pyfv3/stencils/ytp_v.py",
-        "pyFV3/pyfv3/stencils/fillz.py",
-        "pyFV3/pyfv3/stencils/neg_adj3.py"
-      ],
-      "classification": "agent-authored module card; CLI-computed size and approval status",
-      "metrics": {
-        "owned": {
-          "regular_files": 8,
-          "bytes": 75389,
-          "text_files": 8,
-          "text_physical_lines": 2274
-        },
-        "shared": {
-          "regular_files": 197,
-          "bytes": 8753649,
-          "text_files": 165,
-          "text_physical_lines": 35557
-        },
-        "overlap": {
-          "regular_files": 0,
-          "bytes": 0,
-          "text_files": 0,
-          "text_physical_lines": 0
-        }
-      }
-    },
-    {
-      "slug": "nonhydrostatic-riemann-solver",
-      "title": "Non-hydrostatic vertical solver and pressure gradient",
-      "entrypoints": [
-        "examples/configs/baroclinic_c12_null_comm.yaml",
-        "pyFV3/tests/savepoint/translate/translate_riem_solver3.py",
-        "pyFV3/tests/savepoint/translate/translate_riem_solver_c.py",
-        "pyFV3/tests/savepoint/translate/translate_nh_p_grad.py",
-        "pyFV3/tests/savepoint/translate/translate_updatedzd.py"
-      ],
-      "expensive_path": "The semi-implicit vertical solve is a tridiagonal system per column, solved once per acoustic sub-step, together with the Lagrangian layer-height updates it depends on and the non-hydrostatic pressure gradient it feeds. The work is a sequential recursion down each column, which is the classic hard case on a GPU: it parallelises across columns but not within one.",
-      "rationale": "This is the part of the dynamical core that is vertical rather than horizontal, and its performance problem is structurally different from the stencil sweeps around it: a column-serial recursion instead of a wide stencil. The height update, the solve and the pressure gradient form one implicit step and share the same layer-interface state.",
-      "excluded": [
-        "The horizontal shallow-water updates that supply the winds, which are the acoustic-dynamics module"
-      ],
-      "hazards": [
-        "The tridiagonal recursion is sequential in the vertical, so a parallel-in-k rewrite (cyclic reduction) changes the arithmetic order and the rounding",
-        "The solver is semi-implicit with a configurable off-centring (a_imp, beta); the check has to fix these or the comparison is meaningless"
-      ],
-      "approval_status": "proposed-only",
-      "purpose": "This is the part of the dynamical core that is vertical rather than horizontal, and its performance problem is structurally different from the stencil sweeps around it: a column-serial recursion instead of a wide stencil. The height update, the solve and the pressure gradient form one implicit step and share the same layer-interface state.",
-      "primary_inputs": [
-        "layer heights (zh/gz) and pressure",
-        "vertical velocity w and delp",
-        "off-centring parameters a_imp and beta"
-      ],
-      "primary_outputs": [
-        "updated w and non-hydrostatic pressure",
-        "updated Lagrangian layer heights",
-        "non-hydrostatic pressure-gradient tendencies"
-      ],
-      "algorithm_stages": [
-        "Lagrangian layer-height update (updatedzc, updatedzd)",
-        "semi-implicit tridiagonal vertical solve (sim1_solver, riem_solver3, riem_solver_c)",
-        "non-hydrostatic pressure gradient (nh_p_grad) with pe/pk3 halos"
-      ],
-      "unique_responsibilities": [
-        "the semi-implicit vertical (column) solve and pressure gradient"
-      ],
-      "not_responsible_for": [
-        "The horizontal shallow-water updates that supply the winds, which are the acoustic-dynamics module"
-      ],
-      "shared_component_ids": [
-        "shared-infrastructure"
-      ],
-      "depends_on_modules": [
-        "halo-exchange"
-      ],
-      "differences": "Vertical rather than horizontal: a column-serial tridiagonal recursion that parallelises across columns but not within one, the classic GPU-hard pattern.",
-      "evidence": [
-        "pyFV3/pyfv3/stencils/sim1_solver.py",
-        "pyFV3/tests/savepoint/translate/translate_riem_solver3.py"
-      ],
-      "owned_paths": [
-        "pyFV3/pyfv3/stencils/riem_solver3.py",
-        "pyFV3/pyfv3/stencils/riem_solver_c.py",
-        "pyFV3/pyfv3/stencils/sim1_solver.py",
-        "pyFV3/pyfv3/stencils/nh_p_grad.py",
-        "pyFV3/pyfv3/stencils/updatedzc.py",
-        "pyFV3/pyfv3/stencils/updatedzd.py",
-        "pyFV3/pyfv3/stencils/pe_halo.py",
-        "pyFV3/pyfv3/stencils/pk3_halo.py"
-      ],
-      "classification": "agent-authored module card; CLI-computed size and approval status",
-      "metrics": {
-        "owned": {
-          "regular_files": 8,
-          "bytes": 57719,
-          "text_files": 8,
-          "text_physical_lines": 1795
-        },
-        "shared": {
-          "regular_files": 197,
-          "bytes": 8753649,
-          "text_files": 165,
-          "text_physical_lines": 35557
-        },
-        "overlap": {
-          "regular_files": 0,
-          "bytes": 0,
-          "text_files": 0,
-          "text_physical_lines": 0
-        }
-      }
-    },
-    {
-      "slug": "vertical-remapping-and-moist-adjustment",
-      "title": "Lagrangian-to-Eulerian remapping and moist adjustment",
-      "entrypoints": [
-        "examples/configs/baroclinic_c12_null_comm.yaml",
-        "pyFV3/tests/savepoint/translate/translate_remapping.py",
-        "pyFV3/tests/savepoint/translate/translate_satadjust3d.py",
-        "pyFV3/tests/savepoint/translate/translate_fvsubgridz.py",
-        "pyFV3/tests/savepoint/translate/translate_moistcvpluspt_2d.py"
-      ],
-      "expensive_path": "At the end of every outer time step the deformed Lagrangian layers are remapped back onto the fixed Eulerian coordinate: a conservative piecewise-parabolic reconstruction and re-integration per column for every prognostic field and every tracer, followed by the saturation adjustment that repartitions water species and adjusts temperature, and the sub-grid vertical mixing. It is the second-largest block in the dycore after the acoustic loop and, unlike the acoustic loop, it runs entirely in the vertical.",
-      "rationale": "Remapping and the moist adjustment that follows it operate on the same columns in the same pass and share the moist heat capacity calculation; upstream calls them from one place at the end of fv_dynamics. Saturation adjustment in particular is only meaningful on the remapped state.",
-      "excluded": [
-        "Horizontal tracer transport, which is its own module",
-        "The SHiELD physics microphysics, which is a separate parameterisation and does not import at this pin"
-      ],
-      "hazards": [
-        "Saturation adjustment iterates to a phase equilibrium and contains explicit temperature thresholds for the ice and liquid partition; a rounding difference can flip which phase a cell ends in",
-        "The remap profile has a monotonicity constraint with the same branch-on-slope character as PPM",
-        "Total energy and total water conservation are the invariants worth checking here, more than any single field"
-      ],
-      "approval_status": "proposed-only",
-      "purpose": "Remapping and the moist adjustment that follows it operate on the same columns in the same pass and share the moist heat capacity calculation; upstream calls them from one place at the end of fv_dynamics. Saturation adjustment in particular is only meaningful on the remapped state.",
-      "primary_inputs": [
-        "deformed Lagrangian layer state (all prognostics and tracers)",
-        "target Eulerian vertical coordinate",
-        "water species mixing ratios and temperature"
-      ],
-      "primary_outputs": [
-        "state remapped onto the fixed Eulerian coordinate",
-        "saturation-adjusted temperature and repartitioned water",
-        "sub-grid vertically mixed profiles"
-      ],
-      "algorithm_stages": [
-        "conservative PPM remap per column (remapping, map_single, mapn_tracer, remap_profile)",
-        "moist heat capacity (moist_cv)",
-        "saturation adjustment (saturation_adjustment, temperature_adjust)",
-        "sub-grid vertical mixing (fv_subgridz)"
-      ],
-      "unique_responsibilities": [
-        "the end-of-step vertical remap and moist thermodynamic adjustment"
-      ],
-      "not_responsible_for": [
-        "Horizontal tracer transport, which is its own module",
-        "The SHiELD physics microphysics, which is a separate parameterisation and does not import at this pin"
-      ],
-      "shared_component_ids": [
-        "shared-infrastructure"
+        "dsl-grid-and-harness"
       ],
       "depends_on_modules": [],
-      "differences": "Runs entirely in the vertical at the end of the outer step; conserves total energy and total water by construction (upstream design property), with phase-partition thresholds rather than smooth tolerances.",
+      "differences": "The single unit of work in this codebase: one model time step end to end, owning the horizontal stencil sweeps, the column-serial vertical solves and the halo exchange that couples them, and measured on a full step rather than on individual stencils.",
       "evidence": [
-        "pyFV3/pyfv3/stencils/remapping.py",
-        "pyFV3/tests/savepoint/translate/translate_satadjust3d.py"
+        "pyFV3/pyfv3/stencils/fv_dynamics.py",
+        "pyFV3/pyfv3/stencils/dyn_core.py",
+        "NDSL/ndsl/halo/updater.py",
+        "examples/configs/baroclinic_c12_null_comm.yaml"
       ],
       "owned_paths": [
-        "pyFV3/pyfv3/stencils/remapping.py",
-        "pyFV3/pyfv3/stencils/map_single.py",
-        "pyFV3/pyfv3/stencils/mapn_tracer.py",
-        "pyFV3/pyfv3/stencils/remap_profile.py",
-        "pyFV3/pyfv3/stencils/moist_cv.py",
-        "pyFV3/pyfv3/stencils/saturation_adjustment.py",
-        "pyFV3/pyfv3/stencils/temperature_adjust.py",
-        "pyFV3/pyfv3/stencils/fv_subgridz.py"
-      ],
-      "classification": "agent-authored module card; CLI-computed size and approval status",
-      "metrics": {
-        "owned": {
-          "regular_files": 8,
-          "bytes": 122963,
-          "text_files": 8,
-          "text_physical_lines": 3963
-        },
-        "shared": {
-          "regular_files": 197,
-          "bytes": 8753649,
-          "text_files": 165,
-          "text_physical_lines": 35557
-        },
-        "overlap": {
-          "regular_files": 0,
-          "bytes": 0,
-          "text_files": 0,
-          "text_physical_lines": 0
-        }
-      }
-    },
-    {
-      "slug": "halo-exchange",
-      "title": "Cubed-sphere halo exchange and boundary data transformation",
-      "entrypoints": [
-        "examples/configs/baroclinic_c48_no_out.yaml",
-        "NDSL/tests/test_halo_update.py",
-        "NDSL/tests/test_halo_data_transformer.py",
-        "NDSL/tests/test_g2g_communication.py",
-        "NDSL/tests/test_cube_scatter_gather.py",
-        "NDSL/tests/test_tile_scatter_gather.py"
-      ],
-      "expensive_path": "Every stencil sweep in the model is preceded or followed by a halo update. On the cubed sphere the six tile edges do not align, so the exchange is not a memory copy: vector quantities are rotated, edge data is packed into contiguous buffers by an index transformation, sent, and unpacked with the receiving tile's orientation. On GPU this is the step that stalls the pipeline, and the packing kernels and the device-to-device path are what decide whether the accelerated dycore scales at all.",
-      "rationale": "This is the one genuinely cross-cutting module in Pace, and it is a module rather than shared infrastructure because it has its own dense CPU test suite (halo update, data transformer, cube and tile scatter-gather), expected to run once the RED-1 install gap is resolved, its own correctness question (does the rotated, packed exchange reproduce the reference field exactly) and its own well-known performance story. It is also the part of NDSL with an explicit GPU-to-GPU path already present, which is direct evidence it is worth accelerating.",
-      "excluded": [
-        "The stencil compilation layer NDSL/ndsl/dsl/, which is a compiler rather than a numerical kernel and is shared by every module",
-        "MPI process management, which is environment rather than code under test"
-      ],
-      "hazards": [
-        "The full test set is parameterised over cupy and over multi-rank layouts; the CPU-only, single-process subset is what is expected to run once the RED-1 install gap is resolved, and the check has to be built on that subset or on the null-comm driver run",
-        "Exchange correctness is exact, not approximate: the pass policy here is equality of the halo region, not a tolerance"
-      ],
-      "approval_status": "proposed-only",
-      "purpose": "This is the one genuinely cross-cutting module in Pace, and it is a module rather than shared infrastructure because it has its own dense CPU test suite (halo update, data transformer, cube and tile scatter-gather), expected to run once the RED-1 install gap is resolved, its own correctness question (does the rotated, packed exchange reproduce the reference field exactly) and its own well-known performance story. It is also the part of NDSL with an explicit GPU-to-GPU path already present, which is direct evidence it is worth accelerating.",
-      "primary_inputs": [
-        "tile-local field arrays with halo regions",
-        "cubed-sphere tile orientation and rank layout"
-      ],
-      "primary_outputs": [
-        "filled halo regions with rotation-corrected vector data at tile edges"
-      ],
-      "algorithm_stages": [
-        "index-transform packing into contiguous buffers (buffer.py)",
-        "vector rotation at non-aligned tile edges (halo/)",
-        "send/receive on host or device (comm/)",
-        "unpack with the receiving tile's orientation"
-      ],
-      "unique_responsibilities": [
-        "the cubed-sphere halo exchange used by every stencil sweep"
-      ],
-      "not_responsible_for": [
-        "The stencil compilation layer NDSL/ndsl/dsl/, which is a compiler rather than a numerical kernel and is shared by every module",
-        "MPI process management, which is environment rather than code under test"
-      ],
-      "shared_component_ids": [
-        "shared-infrastructure"
-      ],
-      "depends_on_modules": [],
-      "differences": "The one genuinely cross-cutting module; correctness is exact equality of the halo region, not a tolerance, and its CPU test suite is expected to run once the RED-1 install gap is resolved.",
-      "evidence": [
-        "NDSL/ndsl/comm/",
-        "NDSL/tests/test_halo_update.py"
-      ],
-      "owned_paths": [
+        "pyFV3/pyfv3/stencils/",
+        "pyFV3/pyfv3/dycore_state.py",
+        "pyFV3/pyfv3/tracers.py",
+        "pyFV3/pyfv3/utils/",
         "NDSL/ndsl/comm/",
         "NDSL/ndsl/halo/",
-        "NDSL/ndsl/buffer.py"
+        "NDSL/ndsl/buffer.py",
+        "NDSL/ndsl/quantity/",
+        "NDSL/ndsl/stencils/__init__.py",
+        "NDSL/ndsl/stencils/arithmetic_functions.py",
+        "NDSL/ndsl/stencils/basic_operations.py",
+        "NDSL/ndsl/stencils/basic_operations_2d.py",
+        "NDSL/ndsl/stencils/c2l_ord.py",
+        "NDSL/ndsl/stencils/column_operations.py",
+        "NDSL/ndsl/stencils/corners.py",
+        "NDSL/ndsl/stencils/tridiag.py"
       ],
       "classification": "agent-authored module card; CLI-computed size and approval status",
       "metrics": {
         "owned": {
-          "regular_files": 16,
-          "bytes": 179975,
-          "text_files": 16,
-          "text_physical_lines": 4949
+          "regular_files": 73,
+          "bytes": 865092,
+          "text_files": 73,
+          "text_physical_lines": 25815
         },
         "shared": {
-          "regular_files": 197,
-          "bytes": 8753649,
-          "text_files": 165,
-          "text_physical_lines": 35557
+          "regular_files": 182,
+          "bytes": 8577961,
+          "text_files": 150,
+          "text_physical_lines": 30025
         },
         "overlap": {
           "regular_files": 0,
@@ -766,208 +437,53 @@
       }
     },
     "by_module": {
-      "acoustic-dynamics": {
+      "fv3-dynamical-core": {
         "sources": [
           "pyFV3/tests/savepoint/translate/translate_c_sw.py",
           "pyFV3/tests/savepoint/translate/translate_d_sw.py",
-          "pyFV3/tests/savepoint/translate/translate_divergencedamping.py"
-        ],
-        "selectors": [
-          "c_sw",
-          "d_sw",
-          "divergencedamping"
-        ],
-        "counts": {
-          "test_files": {
-            "value": 3,
-            "unit": "files",
-            "semantics": "distinct official test files considered",
-            "classification": "agent-authored/evidenced"
-          },
-          "test_definitions": {
-            "value": null,
-            "unit": "source-level test definitions",
-            "semantics": "source-level functions or methods, not collected cases",
-            "classification": "agent-authored/evidenced"
-          },
-          "collected_items": {
-            "value": null,
-            "unit": "framework-collected items",
-            "semantics": "items collected after framework parametrization",
-            "classification": "agent-authored/evidenced"
-          },
-          "inner_cases": {
-            "value": null,
-            "unit": "inner cases",
-            "semantics": "optional cases inside one source-level definition that collection does not expose",
-            "classification": "agent-authored/evidenced"
-          }
-        },
-        "covers": [
-          "upstream savepoint translate kernels for the owned stencils"
-        ],
-        "known_gaps": [
-          "Sharp savepoint kernels require an external serialized-Fortran corpus (Makefile.data_download, GCS bucket) that is not shipped."
-        ],
-        "execution": [],
-        "classification": "agent-authored/evidenced, except any explicitly CLI-labelled counts"
-      },
-      "tracer-transport": {
-        "sources": [
+          "pyFV3/tests/savepoint/translate/translate_divergencedamping.py",
           "pyFV3/tests/savepoint/translate/translate_tracer2d1l.py",
           "pyFV3/tests/savepoint/translate/translate_fvtp2d.py",
           "pyFV3/tests/savepoint/translate/translate_xppm.py",
           "pyFV3/tests/savepoint/translate/translate_yppm.py",
-          "pyFV3/tests/savepoint/translate/translate_fillz.py"
-        ],
-        "selectors": [
-          "tracer2d1l",
-          "fvtp2d",
-          "xppm",
-          "yppm",
-          "fillz"
-        ],
-        "counts": {
-          "test_files": {
-            "value": 5,
-            "unit": "files",
-            "semantics": "distinct official test files considered",
-            "classification": "agent-authored/evidenced"
-          },
-          "test_definitions": {
-            "value": null,
-            "unit": "source-level test definitions",
-            "semantics": "source-level functions or methods, not collected cases",
-            "classification": "agent-authored/evidenced"
-          },
-          "collected_items": {
-            "value": null,
-            "unit": "framework-collected items",
-            "semantics": "items collected after framework parametrization",
-            "classification": "agent-authored/evidenced"
-          },
-          "inner_cases": {
-            "value": null,
-            "unit": "inner cases",
-            "semantics": "optional cases inside one source-level definition that collection does not expose",
-            "classification": "agent-authored/evidenced"
-          }
-        },
-        "covers": [
-          "upstream savepoint translate kernels for the owned stencils"
-        ],
-        "known_gaps": [
-          "Sharp savepoint kernels require an external serialized-Fortran corpus (Makefile.data_download, GCS bucket) that is not shipped."
-        ],
-        "execution": [],
-        "classification": "agent-authored/evidenced, except any explicitly CLI-labelled counts"
-      },
-      "nonhydrostatic-riemann-solver": {
-        "sources": [
+          "pyFV3/tests/savepoint/translate/translate_fillz.py",
           "pyFV3/tests/savepoint/translate/translate_riem_solver3.py",
           "pyFV3/tests/savepoint/translate/translate_riem_solver_c.py",
           "pyFV3/tests/savepoint/translate/translate_nh_p_grad.py",
-          "pyFV3/tests/savepoint/translate/translate_updatedzd.py"
-        ],
-        "selectors": [
-          "riem_solver3",
-          "riem_solver_c",
-          "nh_p_grad",
-          "updatedzd"
-        ],
-        "counts": {
-          "test_files": {
-            "value": 4,
-            "unit": "files",
-            "semantics": "distinct official test files considered",
-            "classification": "agent-authored/evidenced"
-          },
-          "test_definitions": {
-            "value": null,
-            "unit": "source-level test definitions",
-            "semantics": "source-level functions or methods, not collected cases",
-            "classification": "agent-authored/evidenced"
-          },
-          "collected_items": {
-            "value": null,
-            "unit": "framework-collected items",
-            "semantics": "items collected after framework parametrization",
-            "classification": "agent-authored/evidenced"
-          },
-          "inner_cases": {
-            "value": null,
-            "unit": "inner cases",
-            "semantics": "optional cases inside one source-level definition that collection does not expose",
-            "classification": "agent-authored/evidenced"
-          }
-        },
-        "covers": [
-          "upstream savepoint translate kernels for the owned stencils"
-        ],
-        "known_gaps": [
-          "Sharp savepoint kernels require an external serialized-Fortran corpus (Makefile.data_download, GCS bucket) that is not shipped."
-        ],
-        "execution": [],
-        "classification": "agent-authored/evidenced, except any explicitly CLI-labelled counts"
-      },
-      "vertical-remapping-and-moist-adjustment": {
-        "sources": [
+          "pyFV3/tests/savepoint/translate/translate_updatedzd.py",
           "pyFV3/tests/savepoint/translate/translate_remapping.py",
           "pyFV3/tests/savepoint/translate/translate_satadjust3d.py",
-          "pyFV3/tests/savepoint/translate/translate_fvsubgridz.py"
-        ],
-        "selectors": [
-          "remapping",
-          "satadjust3d",
-          "fvsubgridz"
-        ],
-        "counts": {
-          "test_files": {
-            "value": 3,
-            "unit": "files",
-            "semantics": "distinct official test files considered",
-            "classification": "agent-authored/evidenced"
-          },
-          "test_definitions": {
-            "value": null,
-            "unit": "source-level test definitions",
-            "semantics": "source-level functions or methods, not collected cases",
-            "classification": "agent-authored/evidenced"
-          },
-          "collected_items": {
-            "value": null,
-            "unit": "framework-collected items",
-            "semantics": "items collected after framework parametrization",
-            "classification": "agent-authored/evidenced"
-          },
-          "inner_cases": {
-            "value": null,
-            "unit": "inner cases",
-            "semantics": "optional cases inside one source-level definition that collection does not expose",
-            "classification": "agent-authored/evidenced"
-          }
-        },
-        "covers": [
-          "upstream savepoint translate kernels for the owned stencils"
-        ],
-        "known_gaps": [
-          "Sharp savepoint kernels require an external serialized-Fortran corpus (Makefile.data_download, GCS bucket) that is not shipped."
-        ],
-        "execution": [],
-        "classification": "agent-authored/evidenced, except any explicitly CLI-labelled counts"
-      },
-      "halo-exchange": {
-        "sources": [
+          "pyFV3/tests/savepoint/translate/translate_fvsubgridz.py",
           "NDSL/tests/test_halo_update.py",
           "NDSL/tests/test_halo_data_transformer.py",
           "NDSL/tests/test_cube_scatter_gather.py",
           "NDSL/tests/test_g2g_communication.py",
           "NDSL/tests/test_tile_scatter_gather.py"
         ],
-        "selectors": [],
+        "selectors": [
+          "c_sw",
+          "d_sw",
+          "divergencedamping",
+          "tracer2d1l",
+          "fvtp2d",
+          "xppm",
+          "yppm",
+          "fillz",
+          "riem_solver3",
+          "riem_solver_c",
+          "nh_p_grad",
+          "updatedzd",
+          "remapping",
+          "satadjust3d",
+          "fvsubgridz"
+        ],
+        "known_gaps": [
+          "Sharp savepoint kernels require an external serialized-Fortran corpus (Makefile.data_download, GCS bucket) that is not shipped.",
+          "Full set is parameterised over cupy and multi-rank; the CPU single-process subset is expected to run once the RED-1 install gap is resolved."
+        ],
         "counts": {
           "test_files": {
-            "value": 5,
+            "value": null,
             "unit": "files",
             "semantics": "distinct official test files considered",
             "classification": "agent-authored/evidenced"
@@ -991,13 +507,6 @@
             "classification": "agent-authored/evidenced"
           }
         },
-        "covers": [
-          "NDSL halo/scatter-gather suite, runnable on CPU from the pin"
-        ],
-        "known_gaps": [
-          "Full set is parameterised over cupy and multi-rank; the CPU single-process subset is expected to run once the RED-1 install gap is resolved."
-        ],
-        "execution": [],
         "classification": "agent-authored/evidenced, except any explicitly CLI-labelled counts"
       }
     },
@@ -1006,16 +515,16 @@
   "classification_and_gaps": {
     "buckets": {
       "shared": {
-        "regular_files": 197,
-        "bytes": 8753649,
-        "text_files": 165,
-        "text_physical_lines": 35557
+        "regular_files": 182,
+        "bytes": 8577961,
+        "text_files": 150,
+        "text_physical_lines": 30025
       },
       "owned": {
-        "regular_files": 48,
-        "bytes": 628700,
-        "text_files": 48,
-        "text_physical_lines": 18645
+        "regular_files": 73,
+        "bytes": 865092,
+        "text_files": 73,
+        "text_physical_lines": 25815
       },
       "overlapping_owned": {
         "regular_files": 0,
@@ -1024,10 +533,10 @@
         "text_physical_lines": 0
       },
       "unclassified": {
-        "regular_files": 832,
-        "bytes": 65286493,
-        "text_files": 729,
-        "text_physical_lines": 123698
+        "regular_files": 822,
+        "bytes": 65225789,
+        "text_files": 719,
+        "text_physical_lines": 122060
       }
     },
     "overlaps": [],
@@ -1636,17 +1145,7 @@
       "pyFV3/examples/standalone/runfile/timing.py",
       "pyFV3/mkdocs.yml",
       "pyFV3/pyfv3/__init__.py",
-      "pyFV3/pyfv3/stencils/__init__.py",
-      "pyFV3/pyfv3/testing/__init__.py",
-      "pyFV3/pyfv3/testing/map_single.py",
-      "pyFV3/pyfv3/testing/null_comm.py",
-      "pyFV3/pyfv3/testing/translate_data.py",
-      "pyFV3/pyfv3/testing/translate_dyncore.py",
-      "pyFV3/pyfv3/testing/translate_fvdynamics.py",
-      "pyFV3/pyfv3/testing/validation.py",
       "pyFV3/pyfv3/version.py",
-      "pyFV3/pyfv3/wrappers/__init__.py",
-      "pyFV3/pyfv3/wrappers/geos_wrapper.py",
       "pyFV3/pyproject.toml",
       "pyFV3/tests/__init__.py",
       "pyFV3/tests/main/__init__.py",
@@ -1904,8 +1403,8 @@
       {
         "id": "RED-2",
         "severity": "red",
-        "what": "No recorded human curator approval of this exact five-module cut; prior state carried only a self-approval.",
-        "resolution": "Present as proposed-only; curator approves in words at STOP 1 when the proposal enters the post-V1 queue."
+        "what": "No recorded human curator approval of the module cut. The earlier five-module cut was sent back by the reviewer as too thin with heavy shared infrastructure; this revision replaces it with a single dynamical-core module, which the curator has not yet approved.",
+        "resolution": "Presented as proposed-only. The curator approves this single-module cut in words at STOP 1, recorded with `codebase approve-modules --human-ref`, before anything downstream is scaffolded."
       },
       {
         "id": "YELLOW-1",
@@ -1916,8 +1415,8 @@
       {
         "id": "YELLOW-2",
         "severity": "yellow",
-        "what": "Module overlap: dyn_core imports the Riemann/pressure-gradient solvers and embeds halo updates; sharpest per-module savepoint tests need absent external data.",
-        "resolution": "Dependencies recorded in depends_on_modules; curator to accept the overlap/THIN consequences or a data plan at STOP 1/STOP 4."
+        "what": "The sharpest per-kernel evidence is the 38 savepoint translate tests, which need an external serialized-Fortran corpus that this snapshot does not ship.",
+        "resolution": "Without that corpus the module is graded on the example decks and the CPU-runnable component suites; the curator accepts that evidence base or asks for a data plan at STOP 1. The module-overlap half of this gap is resolved by the single-module cut."
       },
       {
         "id": "YELLOW-3",
@@ -1928,12 +1427,12 @@
     ],
     "open_questions": [
       "Which RED-1 resolution path (vendor gt4py+dace vs repin NDSL to PyPI deps) does the curator prefer?",
-      "Is a dycore-only cut acceptable given pySHiELD does not import and the sharp savepoint data is not shipped?"
+      "Does the curator approve the single fv3-dynamical-core module, with the DSL, grid, driver and test framework held as shared infrastructure?"
     ],
     "classification": "CLI-computed accounting plus agent-authored gaps"
   },
   "warnings": [
-    "832 regular file(s) are unclassified; this is visible but non-blocking",
+    "822 regular file(s) are unclassified; this is visible but non-blocking",
     "no approved module cut is available; report remains informational"
   ],
   "notes": "Fill every field to best effort. Unknown is acceptable; this report is informational and non-blocking."
