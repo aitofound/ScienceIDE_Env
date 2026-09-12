@@ -146,6 +146,15 @@ entries, the declared shared source, `tests/checks/` with its `check.json`
 labels, flat strict-JSON targets. It does not read science. The repository
 validator also checks manifest shape and generated registry projections.
 
+A PR that changes a vendored source under `code/<source>/` must retain or add
+four regular, non-empty files under `codebase-reports/<source>/`:
+`codebase-metadata.json`, `codebase-metadata.html`, `codebase-metadata.md`, and
+`references.bib`. The check is presence-only and is scoped to source paths in
+the `BASE_REF` diff, so task-only changes and root `code/README` files are not
+swept; a completely removed source has no remaining bundle to check. A valid
+baseline is required: a failed `BASE_REF` lookup is an explicit validation
+error. Run the focused mechanical tests with `npm run test:report-gate`.
+
 ## Legacy packages
 
 `archive/templates/grid-v1/` retains its grandfathered pre-grid/grid contract
