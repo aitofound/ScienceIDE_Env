@@ -29,7 +29,7 @@ Check counts are pending check directories at the pinned PR heads, **not passes*
 
 ## Verification and selection
 
-- [bibliography-evidence.json](bibliography-evidence.json) retains exact publisher-deposited Crossref metadata, DOI verification URLs, relevance notes and immutable source/PR links. Titles, authors, journal, year, volume and available pagination were checked; typography is normalized for BibTeX.
+- The BibTeX entries record DOI verification URLs and component relevance in comments; the canonical JSON records validation results and immutable PR provenance. Titles, authors, journal, year, volume and available pagination were checked against publisher-deposited Crossref records; typography is normalized for BibTeX.
 - The vendored SWMF physics manual identifies field-line acceleration, RCM and ionospheric conductance references; the modern framework review supplies cross-component context. FLEKS upstream documentation identifies its SWMF PC/PT role and MHD-AEPIC coupling. GITM/MGITM and PWOM documentation establish model identity.
 - Component methods include AWSoM for solar BATSRUS cases; energy-conserving PIC and MHD-AEPIC for FLEKS; GITM/M-GITM, CIMI/HEIDI and hydrodynamic/kinetic PWOM; field-line and Poisson-bracket transport plus AMPS; and Ridley, RCM, DGCPM and RBE for the coupling leaf.
 - MITTENS is cited as source documentation by Alex Shane at an immutable upstream commit. Its README is byte-identical to the vendored copy; a publication year and separate paper were not verified and are not invented.
@@ -47,4 +47,4 @@ Check counts are pending check directories at the pinned PR heads, **not passes*
 - The bibliography covers all seven pending leaves and their named component families, not a separate publication for every benchmark input, planetary scenario, restart stage or third-party dependency. No benchmark-specific validation is inferred from a model paper.
 - Inherited module records contain historical hazards that later PR updates may supersede. They are used for ownership/provenance only; this report does not declare every historical blocker current.
 
-Artifacts: [canonical JSON](codebase-metadata.json) · [HTML detail](codebase-metadata.html) · [BibTeX](references.bib) · [verification evidence](bibliography-evidence.json)
+Artifacts: [canonical JSON](codebase-metadata.json) · [HTML detail](codebase-metadata.html) · [BibTeX](references.bib)
