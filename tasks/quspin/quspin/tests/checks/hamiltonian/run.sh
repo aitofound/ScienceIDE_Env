@@ -28,7 +28,10 @@ elif mode=='floquet':
 elif mode=='evolve':
  H,b=spin_ham(L,h); x=H.eigsh(k=1,which='SA')[1][:,0]; v=[float(np.real(np.vdot(y,H.dot(y)))) for y in H.evolve(x,0,np.linspace(0,.5,6),iterate=True,atol=1e-10,rtol=1e-10)]
 elif mode=='hamiltonian':
- H,b=spin_ham(L,h); A=np.asarray(H.todense()); v=[float(np.trace(A).real),float(np.linalg.norm(A)),float(np.max(np.abs(A-A.T.conj())))]
+ H,b=spin_ham(L,h); A=np.asarray(H.todense());
+ # Include the lowest eigenvalue so the field perturbation is observable even
+ # in the half-filled sector where trace/norm can be symmetry-insensitive.
+ v=[float(np.trace(A).real),float(np.linalg.norm(A)),float(np.max(np.abs(A-A.T.conj()))),float(H.eigsh(k=1,which='SA')[0][0])]
 elif mode=='sectors':
  v=[]
  for nf in range(L//2-1,L//2+2):
