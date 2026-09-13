@@ -1,0 +1,598 @@
+#---------------------------------*- sh -*-------------------------------------
+# =========                 |
+# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+#  \\    /   O peration     | Website:  https://openfoam.org
+#   \\  /    A nd           | Copyright (C) 2011-2025 OpenFOAM Foundation
+#    \\/     M anipulation  |
+#------------------------------------------------------------------------------
+# License
+#     This file is part of OpenFOAM.
+#
+#     OpenFOAM is free software: you can redistribute it and/or modify it
+#     under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+#     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+#     for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Script
+#     HookFunctions
+#
+# Description
+#     Functions for automatically checking code pre commit and receive
+#
+#------------------------------------------------------------------------------
+
+if [ -z "$sourceBanner" ]
+then
+    sourceBanner="(\
+/\*---------------------------------------------------------------------------\*\\\\|\
+/\*--------------------------------\*- C\+\+ -\*----------------------------------\*\\\\|\
+/\*---------------------------------\*- C -\*-----------------------------------\*\\\\)
+  =========                 \|
+  \\\\\\\\      /  F ield         \| OpenFOAM: The Open Source CFD Toolbox
+   \\\\\\\\    /   O peration     \| Website:  https://openfoam\.org
+    \\\\\\\\  /    A nd           \| Copyright \(C\) [0-9-]+ OpenFOAM Foundation
+     \\\\\\\\/     M anipulation  \|
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenFOAM\.
+
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    \(at your option\) any later version\.
+
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE\.  See the GNU General Public License
+    for more details\.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenFOAM\.  If not, see <http://www\.gnu\.org/licenses/>\.
+(.|
+)*?
+\\\\\*---------------------------------------------------------------------------\*/"
+fi
+
+if [ -z "$scriptBanner" ]
+then
+    scriptBanner="(\
+#------------------------------------------------------------------------------|\
+#---------------------------------\*- sh -\*-------------------------------------|\
+#----------------------------------\*-sh-\*--------------------------------------|\
+#----------------------------\*- makefile-gmake -\*------------------------------)
+# =========                 \|
+# \\\\\\\\      /  F ield         \| OpenFOAM: The Open Source CFD Toolbox
+#  \\\\\\\\    /   O peration     \| Website:  https://openfoam\.org
+#   \\\\\\\\  /    A nd           \| Copyright \(C\) [0-9-]+ OpenFOAM Foundation
+#    \\\\\\\\/     M anipulation  \|
+#------------------------------------------------------------------------------
+# License
+#     This file is part of OpenFOAM\.
+#
+#     OpenFOAM is free software: you can redistribute it and/or modify it
+#     under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     \(at your option\) any later version\.
+#
+#     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+#     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#     FITNESS FOR A PARTICULAR PURPOSE\.  See the GNU General Public License
+#     for more details\.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with OpenFOAM\.  If not, see <http://www\.gnu\.org/licenses/>\.
+(.|
+)*?
+#------------------------------------------------------------------------------"
+fi
+
+if [ -z "$dictBanner" ]
+then
+    dictBanner="(\
+/\*---------------------------------------------------------------------------\*\\\\|\
+/\*--------------------------------\*- C\+\+ -\*----------------------------------\*\\\\)
+  =========                 \|
+  \\\\\\\\      /  F ield         \| OpenFOAM: The Open Source CFD Toolbox
+   \\\\\\\\    /   O peration     \| Website:  https://openfoam\.org
+    \\\\\\\\  /    A nd           \| Version:  (dev|[0-9\.x]+)
+     \\\\\\\\/     M anipulation  \|(.|
+)*?
+\\\\\*---------------------------------------------------------------------------\*/"
+fi
+
+#-----------------------------------------------------------------------------
+
+gitIsRevision() # commit
+{
+    git rev-parse --verify "$1" > /dev/null 2>&1
+    return $?
+}
+
+
+scopeGit() # scope, cacheScope
+{
+    if [ "$1" == "--cached" ]
+    then
+        echo "$2"
+    elif gitIsRevision "$1"
+    then
+        echo "$1:"
+    else
+        echo "$(basename "$0"): $1 is not a valid scope"
+        exit 1
+    fi
+}
+
+
+scopeGitGrep() # scope
+{
+    scopeGit "$1" "--cached -- "
+}
+
+
+scopeGitShow() # scope
+{
+    scopeGit "$1" ":"
+}
+
+
+reportStart() # startMessage
+{
+    echo -n "$1 ... " 1>&2
+}
+
+
+reportEnd() # failMessage, errorCount, errorMessages...
+{
+    local failMessage errorCount
+
+    failMessage=$1
+    shift
+    errorCount=$1
+    shift
+    if [ "$errorCount" -eq 0 ]
+    then
+        echo PASSED 1>&2
+    else
+        echo "FAILED with $errorCount errors:" 1>&2
+        echo "$failMessage" | sed "s/^/    /g" 1>&2
+        for errorMessage in "$@"
+        do
+            echo "$errorMessage" | sed "s/^/        /g" 1>&2
+        done
+    fi
+}
+
+
+checkPattern() # scope, pattern, include, exclude, files...
+{
+    local scope pattern include exclude lines errorCount=0
+
+    scope=$(scopeGitGrep "$1")
+    shift
+    pattern="$1"
+    shift
+    include="$1"
+    shift
+    exclude="$1"
+    shift
+
+    shopt -s extglob
+
+    # Loop files, accumulating errors
+    for file in "$@"
+    do
+        case "$file" in
+            ($exclude)
+                ;;
+            ($include)
+                if [ "$(file -b "$file")" != "data" ]
+                then
+                    lines=$( \
+                        eval "git grep -E -hn $pattern $scope\"$file\"" \
+                      | sed -e "s/:.*//" \
+                      | tr "\n" " " \
+                    )
+                    if [ -n "$lines" ]
+                    then
+                        echo "$file: Lines $lines"
+                        ((++errorCount))
+                    fi
+                fi
+                ;;
+        esac
+    done
+
+    return $errorCount
+}
+
+
+checkTabs() # scope, files...
+{
+    reportStart "Check for tabs"
+
+    local scope pattern include exclude errorCount errorMessages
+
+    scope=$1
+    shift
+    pattern="-e $'\t'"
+    include="*"
+    exclude="@(*[Mm]akefile*|wmake/rules/*|bin/tools/gtagsrc|*.html|*.css|*.pdf|*.png|*.gz)"
+
+    errorMessages="$(checkPattern "$scope" "$pattern" "$include" "$exclude" "$@")"
+    errorCount=$?
+
+    reportEnd "Remove <TAB> characters from the following files:" $errorCount "$errorMessages"
+    return $errorCount
+}
+
+
+checkLineEnds() # scope, files...
+{
+    reportStart "Check for bad line endings"
+
+    local scope pattern include exclude errorCount errorMessages
+
+    scope=$1
+    shift
+    pattern="-e \"[ ]+$\" --or -e $'\r'"
+    include="*"
+    exclude="@(*.md|*.pdf|*.png|*.gz)"
+
+    errorMessages="$(checkPattern "$scope" "$pattern" "$include" "$exclude" "$@")"
+    errorCount=$?
+
+    reportEnd "Remove trailing whitespace and <CR> characters in the following files:" $errorCount "$errorMessages"
+    return $errorCount
+}
+
+
+checkLineLength() # scope, files...
+{
+    reportStart "Check line lengths"
+
+    local scope pattern include exclude errorCount errorMessages
+
+    scope=$1
+    shift
+    pattern="-e \"^.{81,}\" --and --not -e \"^ *#\""
+    include="*.[CH]"
+    exclude=""
+
+    errorMessages="$(checkPattern "$scope" "$pattern" "$include" "$exclude" "$@")"
+    errorCount=$?
+
+    reportEnd "Limit lines to 80 characters in the following files:" $errorCount "$errorMessages"
+    return $errorCount
+}
+
+
+checkNonStandardCode() # scope, files...
+{
+    reportStart "Check for non-standard code"
+
+    local scope pattern include exclude errorCount errorMessages
+
+    scope=$1
+    shift
+    pattern="-e \"> >\" --or -e \"NULL\""
+    include="*.[CH]"
+    exclude=""
+
+    errorMessages="$(checkPattern "$scope" "$pattern" "$include" "$exclude" "$@")"
+    errorCount=$?
+
+    reportEnd "$(cat << EOF
+The following is considered non-standard code:
+
+    1. Spaced ending of multi-level template parameters. For example,
+
+        List<List<scalar> >
+
+    should instead be written:
+
+        List<List<scalar>>
+
+    2. The 'NULL' macro. This should be replaced by 'nullptr'.
+
+Remove these patterns from the following files:
+EOF
+)" $errorCount "$errorMessages"
+
+    return $errorCount
+}
+
+
+checkHeaderIfndefNames() # scope, fix, files...
+{
+    reportStart "Check header file #ifndef/#define names"
+
+    local scopeGrep fix correctDefine currentDefine failMessage errorCount=0 errorMessages=()
+
+    scopeGrep=$(scopeGitGrep "$1")
+    shift
+    fix=$1
+    shift
+
+    for file in "$@"
+    do
+        case "$file" in
+            (*.H)
+                correctDefine=$(basename "${file%.H}" | sed 's/\./_/')
+
+                if git grep -q -e "#ifndef .*_H$" --and --not -e "#ifndef \(\|.\+_\)${correctDefine}.*_H" $scopeGrep"$file"
+                then
+                    ((++errorCount))
+                    errorMessages+=("$file")
+
+                    currentDefine=$(grep "#ifndef .*_H$" "$file" | sed 's/#ifndef\s*//')
+
+                    if $fix
+                    then
+                        sed -i -e "s/$currentDefine/${correctDefine}_H/" "$file"
+                    fi
+                fi
+                ;;
+        esac
+    done
+
+    if $fix
+    then
+        failMessage="The following files have been automatically updated so that the
+#ifndef/#define statements match the file name. Check and re-add them
+before pushing:"
+    else
+        failMessage="Revise the following files so that the #ifndef/#define statements match
+the file name:"
+    fi
+
+    reportEnd "$failMessage" $errorCount "${errorMessages[@]}"
+    return $errorCount
+}
+
+
+checkBanner() # scope, files...
+{
+    reportStart "Check banners"
+
+    local scopeGrep scopeShow fileName fileExtension errorCount=0 errorMessages=()
+
+    scopeGrep=$(scopeGitGrep "$1")
+    scopeShow=$(scopeGitShow "$1")
+    shift
+
+    for file in "$@"
+    do
+        fileName=$(basename "$file")
+        fileExtension=${fileName##*.}
+
+        # Skip links
+        if [ -h "$file" ]
+        then
+            :
+
+        # Copyrighted source and script files
+        elif git grep -q -e "Copyright (C) [0-9-]\+ OpenFOAM Foundation" $scopeGrep"$file"
+        then
+            case "$fileExtension" in
+                (c|C|Cver|cxx|dox|H|h|l|L)
+                    if ! git show $scopeShow"$file" | pcre2grep -q -M "$sourceBanner"
+                    then
+                        ((++errorCount))
+                        errorMessages+=("$file")
+                    fi
+                    ;;
+                (''|awk|csh|gnuplot|sed|sh)
+                    if ! git show $scopeShow"$file" | pcre2grep -q -M "$scriptBanner"
+                    then
+                        ((++errorCount))
+                        errorMessages+=("$file")
+                    fi
+                    ;;
+                (*)
+                    :
+                    #((++errorCount))
+                    #errorMessages+=("$file: Unknown extension")
+                    ;;
+            esac
+
+        # Versioned case files
+        elif git grep -q -e "Version:  \(dev\|[0-9.]+\)" $scopeGrep"$file"
+        then
+            if ! git show $scopeShow"$file" | pcre2grep -q -M "$dictBanner"
+            then
+                ((++errorCount))
+                errorMessages+=("$file")
+            fi
+
+        # Unknown files
+        elif git grep -q -e "OpenFOAM: The Open Source CFD Toolbox" $scopeGrep"$file"
+        then
+            :
+            #((++errorCount))
+            #errorMessages+=("$file: Missing copyright or version")
+        fi
+    done
+
+    reportEnd "Correct the banner formatting in the following files:" $errorCount "${errorMessages[@]}"
+    return $errorCount
+}
+
+
+checkMode() # scope, fix, files...
+{
+    reportStart "Check for executables"
+
+    local scope scopeGrep fix gitLs failMessage errorCount=0 errorMessages=()
+
+    scope="$1"
+    scopeGrep=$(scopeGitGrep "$scope")
+    shift
+    fix=$1
+    shift
+
+    if [ "$scope" == "--cached" ]
+    then
+        gitLs="git ls-files --stage"
+    else
+        gitLs="git ls-tree"
+    fi
+
+    for file in "$@"
+    do
+        if git grep -qe "\(^#\!.*/bin/.*\)" $scopeGrep"$file"
+        then
+            if [[ ! $($gitLs "$scope" "$file") =~ ^100(755|775|777) ]]
+            then
+                ((++errorCount))
+                errorMessages+=("$file")
+                if $fix
+                then
+                    chmod a+x "$file"
+                fi
+            fi
+        fi
+    done
+
+    if $fix
+    then
+        failMessage="The following files have been made executable automatically. Check and
+re-add them before pushing:"
+    else
+        failMessage="Make the following files executable:"
+    fi
+
+    reportEnd "$failMessage" $errorCount "${errorMessages[@]}"
+    return $errorCount
+}
+
+
+checkCopyright() # scope, fix, files...
+{
+    reportStart "Check copyright"
+
+    local scopeGrep fix year startYear endYear errorCount=0 errorMessages=() failMessage
+
+    scopeGrep=$(scopeGitGrep "$1")
+    shift
+    fix=$1
+    shift
+    year=$(date +%Y)
+
+    for file in "$@"
+    do
+        startYear=$( \
+            git grep -h -e "Copyright.*OpenFOAM" $scopeGrep"$file" \
+          | head -n 1 \
+          | sed 's/[^0-9]*\([0-9]*\).*/\1/g'
+        )
+        endYear=$( \
+            git grep -h -e "Copyright.*-.*OpenFOAM" $scopeGrep"$file" \
+          | head -n 1 \
+          | sed 's/[^-]*-\([0-9]*\).*/\1/g'
+        )
+
+        if [ "$startYear" != "" ]
+        then
+            if [ "$endYear" != "" ]
+            then
+                # Date is of type 2011-2012 OpenFOAM Foundation
+                if [ "$year" != "$endYear" ]
+                then
+                    ((++errorCount))
+                    errorMessages+=("$file")
+                    if $fix
+                    then
+                        sed -i -e "s/$startYear-$endYear OpenFOAM/$startYear-$year OpenFOAM/g" "$file"
+                    fi
+                fi
+            else
+                # Date is of type 2011 OpenFOAM Foundation
+                if [ "$year" != "$startYear" ]
+                then
+                    ((++errorCount))
+                    errorMessages+=("$file")
+                    if $fix
+                    then
+                        sed -i -e "s/$startYear OpenFOAM/$startYear-$year OpenFOAM/g" "$file"
+                    fi
+                fi
+            fi
+        fi
+    done
+
+    if $fix
+    then
+        failMessage="The following files have had their copyright dates automatically
+updated. Check and re-add them before pushing:"
+    else
+        failMessage="Update the copyright dates in the following files:"
+    fi
+
+    reportEnd "$failMessage" $errorCount "${errorMessages[@]}"
+    return $errorCount
+
+}
+
+
+checkAllNoCopyright() # scope, fix, files...
+{
+    local scope fix returnCode=0
+
+    scope="$1"
+    shift
+    fix="$1"
+    shift
+
+    # Check for tabs
+    checkTabs "$scope" "$@" || returnCode=1
+
+    # Check line endings
+    checkLineEnds "$scope" "$@" || returnCode=1
+
+    # Ensure code line lengths do not exceed 80 columns
+    checkLineLength "$scope" "$@" || returnCode=1
+
+    # Check for non-standard code patterns
+    checkNonStandardCode "$scope" "$@" || returnCode=1
+
+    # Check if #ifndef/#define bounds are named correctly
+    checkHeaderIfndefNames "$scope" "$fix" "$@" || returnCode=1
+
+    # Check banner
+    checkBanner "$scope" "$@" || returnCode=1
+
+    # Check mode
+    checkMode "$scope" "$fix" "$@" || returnCode=1
+
+    return $returnCode
+}
+
+
+checkAll() # scope, fix, files...
+{
+    local scope fix returnCode=0
+
+    scope="$1"
+    shift
+    fix="$1"
+    shift
+
+    # Check all except copyright
+    checkAllNoCopyright "$scope" "$fix" "$@" || returnCode=1
+
+    # Check copyright
+    checkCopyright "$scope" "$fix" "$@" || returnCode=1
+
+    return $returnCode
+}
+
+#------------------------------------------------------------------------------

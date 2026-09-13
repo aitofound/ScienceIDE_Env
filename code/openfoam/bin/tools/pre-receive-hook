@@ -1,0 +1,84 @@
+#!/bin/bash
+#---------------------------------*- sh -*-------------------------------------
+# =========                 |
+# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+#  \\    /   O peration     | Website:  https://openfoam.org
+#   \\  /    A nd           | Copyright (C) 2011-2020 OpenFOAM Foundation
+#    \\/     M anipulation  |
+#------------------------------------------------------------------------------
+# License
+#     This file is part of OpenFOAM.
+#
+#     OpenFOAM is free software: you can redistribute it and/or modify it
+#     under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+#     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+#     for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Script
+#     pre-receive-hook
+#
+# Description
+#     pre-receive hook for git. Copy or link this file to
+#     ".git/hooks/pre-receive"; e.g.,
+#     (
+#         cd $WM_PROJECT_DIR/.git/hooks &&
+#         ln -sf ../../bin/tools/pre-receive-hook pre-receive
+#     )
+#
+#     Hook receives: <old-sha1> <new-sha1> <ref-name>
+#
+#     Checks for:
+#     - tabs
+#     - trailing whitespace and non-standard line endings
+#     - lines longer that than 80 characters
+#     - non-standard code patterns, > > and NULL
+#     - mismatched header #ifndef/#define names
+#     - incorrect copyright statements
+#
+#------------------------------------------------------------------------------
+
+. $(git rev-parse --git-dir)/../bin/tools/HookFunctions || exit 1
+
+while read -r oldSHA1 newSHA1 refName
+do
+    unset rawFiles files
+
+    # Get the list of changed files
+    if [ "$newSHA1" = 0 ]
+    then
+        continue
+    elif [ "$oldSHA1" = 0 ]
+    then
+        readarray -t rawFiles < <(git diff-tree --root "$newSHA1")
+    else
+        readarray -t rawFiles < <(git diff --name-only "$oldSHA1".."$newSHA1")
+    fi
+
+    # If no files have changed then the checks are not necessary
+    [ "${#rawFiles[@]}" -gt 0 ] || continue
+
+    # Filter the file list
+    files=()
+    for file in "${rawFiles[@]}"
+    do
+        if git cat-file -e "$newSHA1":"$file" > /dev/null 2>&1
+        then
+            files+=("$file")
+        fi
+    done
+
+    # Do the checks
+    checkAllNoCopyright "$newSHA1" false "${files[@]}" || exit 1
+done
+
+exit 0
+
+#------------------------------------------------------------------------------

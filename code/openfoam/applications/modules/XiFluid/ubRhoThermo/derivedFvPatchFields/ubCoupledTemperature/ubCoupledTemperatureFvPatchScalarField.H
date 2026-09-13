@@ -1,0 +1,154 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Copyright (C) 2025-2026 OpenFOAM Foundation
+     \\/     M anipulation  |
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenFOAM.
+
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+
+Class
+    Foam::ubCoupledTemperatureFvPatchScalarField
+
+Description
+    Mixed boundary condition for the phase temperature of a phase in an
+    Euler-Euler multiphase simulation, to be used for heat-transfer with another
+    region in a CHT case.  Optional thin wall material layer resistances can be
+    specified through thicknessLayers and kappaLayers entries.
+
+See also
+    Foam::coupledTemperatureFvPatchScalarField
+
+SourceFiles
+    ubCoupledTemperatureFvPatchScalarField.C
+
+\*---------------------------------------------------------------------------*/
+
+#ifndef ubCoupledTemperatureFvPatchScalarField_H
+#define ubCoupledTemperatureFvPatchScalarField_H
+
+#include "coupledTemperatureFvPatchScalarField.H"
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+namespace Foam
+{
+
+/*---------------------------------------------------------------------------*\
+        Class ubCoupledTemperatureFvPatchScalarField Declaration
+\*---------------------------------------------------------------------------*/
+
+class ubCoupledTemperatureFvPatchScalarField
+:
+    public coupledTemperatureFvPatchScalarField
+{
+
+protected:
+
+    // Protected Member Functions
+
+        //- Get the patch kappa, sum kappa*Tc/delta and kappa/delta for all
+        //  phases except the phase being solved and also the phase heat-flux
+        //  obtained by partitioning the sum heat-flux provided
+        virtual void getThis
+        (
+            tmp<scalarField>& kappa,
+            tmp<scalarField>& sumKappaTByDelta,
+            tmp<scalarField>& sumKappaByDelta,
+            scalarField& sumq,
+            tmp<scalarField>& qByKappa
+        ) const;
+
+        //- Get the neighbour patch sum kappa*Tc/delta and kappa/delta
+        //  for all phases and the heat-flux correction
+        virtual void getNbr
+        (
+            tmp<scalarField>& sumKappaTByDeltaNbr,
+            tmp<scalarField>& sumKappaByDeltaNbr,
+            tmp<scalarField>& qNbr
+        ) const;
+
+
+public:
+
+    //- Runtime type information
+    TypeName("ubCoupledTemperature");
+
+
+    // Constructors
+
+        //- Construct from patch, internal field and dictionary
+        ubCoupledTemperatureFvPatchScalarField
+        (
+            const fvPatch&,
+            const DimensionedField<scalar, fvMesh>&,
+            const dictionary&
+        );
+
+        //- Construct by mapping given
+        //  ubCoupledTemperatureFvPatchScalarField
+        //  onto a new patch
+        ubCoupledTemperatureFvPatchScalarField
+        (
+            const ubCoupledTemperatureFvPatchScalarField&,
+            const fvPatch&,
+            const DimensionedField<scalar, fvMesh>&,
+            const fieldMapper&
+        );
+
+        //- Disallow copy without setting internal field reference
+        ubCoupledTemperatureFvPatchScalarField
+        (
+            const ubCoupledTemperatureFvPatchScalarField&
+        ) = delete;
+
+        //- Copy constructor setting internal field reference
+        ubCoupledTemperatureFvPatchScalarField
+        (
+            const ubCoupledTemperatureFvPatchScalarField&,
+            const DimensionedField<scalar, fvMesh>&
+        );
+
+        //- Construct and return a clone setting internal field reference
+        virtual tmp<fvPatchScalarField> clone
+        (
+            const DimensionedField<scalar, fvMesh>& iF
+        ) const
+        {
+            return tmp<fvPatchScalarField>
+            (
+                new ubCoupledTemperatureFvPatchScalarField(*this, iF)
+            );
+        }
+
+
+    // Member Operators
+
+        //- Inherit assignment
+        using coupledTemperatureFvPatchScalarField::operator=;
+};
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+} // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#endif
+
+// ************************************************************************* //

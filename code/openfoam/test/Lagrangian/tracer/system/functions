@@ -1,0 +1,71 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  dev
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      functions;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+linear
+{
+    type        tracerCloud;
+    libs        ("libLagrangianCloud.so");
+    executeControl timeStep;
+    writeControl writeTime;
+}
+
+linearPosition
+{
+    type        cloudPosition;
+    libs        ("libLagrangianCloudFunctionObjects.so");
+    cloud       linear;
+}
+
+linearPositionPlot
+{
+    type        LagrangianFieldValue;
+    libs        ("libLagrangianFunctionObjects.so");
+    Lagrangian  linear;
+    field       position;
+    operation   average;
+}
+
+linearAge
+{
+    type        cloudAge;
+    libs        ("libLagrangianCloudFunctionObjects.so");
+    cloud       linear;
+}
+
+parabolic
+{
+    $linear;
+}
+
+parabolicPosition
+{
+    $linearPosition;
+    cloud       parabolic;
+}
+
+parabolicPositionPlot
+{
+    $linearPositionPlot;
+    Lagrangian  parabolic;
+}
+
+parabolicAge
+{
+    $linearAge;
+    cloud       parabolic;
+}
+
+// ************************************************************************* //

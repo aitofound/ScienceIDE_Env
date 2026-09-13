@@ -1,0 +1,96 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # Run from this directory
+
+# Parse arguments for library compilation
+. ../wmake/scripts/AllwmakeParseArguments
+
+# Perform various checks
+wmakeCheckPwd "$WM_PROJECT_DIR/src" || {
+    echo "Allwmake error: Current directory is not \$WM_PROJECT_DIR/src"
+    echo "    The environment variables are inconsistent with the installation."
+    echo "    Check the OpenFOAM entries in your dot-files and source them."
+    exit 1
+}
+
+[ -n "$FOAM_EXT_LIBBIN" ] || {
+    echo "Allwmake error: FOAM_EXT_LIBBIN not set"
+    echo "    Check the OpenFOAM entries in your dot-files and source them."
+    exit 1
+}
+
+# Update OpenFOAM version strings if required
+wmakePrintBuild -check || wrmo OpenFOAM/global/global.o 2>/dev/null
+
+Pstream/Allwmake $targetType $*
+
+OSspecific/${WM_OSTYPE:-POSIX}/Allwmake $targetType $*
+wmake $targetType OpenFOAM
+
+wmake $targetType fileFormats
+wmake $targetType surfMesh
+wmake $targetType triSurface
+wmake $targetType meshTools
+
+# Decomposition methods needed by dummyThirdParty
+# (dummy metis, scotch etc) needed by e.g. meshTools
+dummyThirdParty/Allwmake $targetType $*
+
+wmake $targetType finiteVolume
+
+wmake $targetType ODE
+wmake $targetType physicalProperties
+thermophysicalModels/Allwmake $targetType $*
+
+wmake $targetType tracking
+wmake $targetType lagrangian/basic
+wmake $targetType Lagrangian/Lagrangian
+
+generic/Allwmake $targetType $*
+
+wmake $targetType sampling
+wmake $targetType meshCheck
+
+wmake $targetType pointMeshMovers
+
+wmake $targetType mesh/extrudeModel
+wmake $targetType polyTopoChange
+
+wmake $targetType conversion
+
+parallel/Allwmake $targetType $*
+
+wmake $targetType fvMeshStitchers
+fvMeshMovers/Allwmake $targetType $*
+fvMeshTopoChangers/Allwmake $targetType $*
+wmake $targetType fvMeshDistributors
+
+wmake $targetType randomProcesses
+
+twoPhaseModels/Allwmake $targetType $*
+multiphaseModels/Allwmake $targetType $*
+MomentumTransportModels/Allwmake $targetType $*
+ThermophysicalTransportModels/Allwmake $targetType $*
+wmake $targetType radiationModels
+wmake $targetType reactionModels
+mesh/Allwmake $targetType $*
+renumber/Allwmake $targetType $*
+fvAgglomerationMethods/Allwmake $targetType $*
+
+wmake $targetType fvConstraints
+
+fvModels/Allwmake $targetType $*
+functionObjects/Allwmake $targetType $*
+
+lagrangian/Allwmake $targetType $*
+Lagrangian/Allwmake $targetType $*
+rigidBodyMotion/Allwmake $targetType $*
+
+wmake $targetType fvModels/propellerDisk
+wmake $targetType fvModels/rigidBodyPropellerDisk
+
+wmake $targetType specieTransfer
+wmake $targetType atmosphericModels
+wmake $targetType waves
+
+
+#------------------------------------------------------------------------------

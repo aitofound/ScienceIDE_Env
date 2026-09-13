@@ -1,0 +1,39 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # Run from this directory
+
+# Source tutorial run functions
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+
+runApplication blockMesh
+runApplication extrudeMesh
+runApplication decomposePar
+
+runParallel foamRun
+
+runApplication reconstructPar -latestTime
+
+runApplication foamPostProcess -latestTime -func "
+    graphCell
+    (
+        name=graph,
+        start=(3.4901 0 0),
+        end=(3.4901 0.0096 0),
+        fields=(alpha.gas alpha.gas2 alpha.liquid T.liquid T.gas d.bubbles)
+    )"
+runApplication -append foamPostProcess -latestTime -func "
+    patchSurface
+    (
+        name=patchWallBoilingProperties,
+        patch=wall,
+        surfaceFormat=raw,
+        interpolate=false,
+        fields=(wallBoiling:dDeparture wallBoiling:fDeparture wallBoiling:nucleationSiteDensity wallBoiling:wetFraction)
+    )"
+
+if ! isTest "$@"
+then
+    ./validation/createGraphs
+    ./validation/createWallBoilingPropertiesGraphs
+fi
+
+#------------------------------------------------------------------------------

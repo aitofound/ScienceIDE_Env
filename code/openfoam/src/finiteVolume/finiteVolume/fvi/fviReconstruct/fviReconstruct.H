@@ -1,0 +1,93 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Copyright (C) 2026 OpenFOAM Foundation
+     \\/     M anipulation  |
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenFOAM.
+
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+
+InNamespace
+    Foam::fvi
+
+Description
+    Reconstruct volField from a face flux field returning a volInternalField
+
+SourceFiles
+    fviReconstruct.C
+
+\*---------------------------------------------------------------------------*/
+
+
+#ifndef fviReconstruct_H
+#define fviReconstruct_H
+
+#include "volFieldsFwd.H"
+#include "surfaceFieldsFwd.H"
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+namespace Foam
+{
+
+/*---------------------------------------------------------------------------*\
+                      Namespace fvi functions Declaration
+\*---------------------------------------------------------------------------*/
+
+namespace fvi
+{
+    template<class Type>
+    tmp<VolInternalField<typename outerProduct<vector, Type>::type>>
+    reconstruct(const SurfaceField<Type>&);
+
+    template<class Type>
+    tmp<VolInternalField<typename outerProduct<vector, Type>::type>>
+    reconstruct(const tmp<SurfaceField<Type>>&);
+
+    template<class Expression, class = EnableIfExpression<Expression>>
+    inline auto reconstruct(const Expression& e)
+    {
+        return reconstruct(eval(e));
+    }
+
+    tmp<volScalarField> reconstructMag(const surfaceScalarField&);
+
+    tmp<volScalarField> reconstructMag(const tmp<surfaceScalarField>&);
+
+    template<class Expression, class = EnableIfExpression<Expression>>
+    inline auto reconstructMag(const Expression& e)
+    {
+        return reconstructMag(eval(e));
+    }
+}
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+} // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#ifdef NoRepository
+    #include "fviReconstruct.C"
+#endif
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#endif
+
+// ************************************************************************* //
