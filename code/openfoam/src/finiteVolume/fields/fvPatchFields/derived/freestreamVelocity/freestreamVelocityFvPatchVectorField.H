@@ -1,0 +1,207 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Copyright (C) 2018-2026 OpenFOAM Foundation
+     \\/     M anipulation  |
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenFOAM.
+
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+
+Class
+    Foam::freestreamVelocityFvPatchVectorField
+
+Description
+    This boundary condition provides a free-stream condition for velocity.
+
+    It is an inlet-outlet condition that uses the velocity orientation to
+    continuously blend between fixed value for normal inlet and zero gradient
+    for normal outlet flow.
+
+    The \c freestreamValue can be specified as a uniform value, a field or a
+    function.
+
+Usage
+    \table
+        Property        | Description             | Required    | Default value
+        freestreamValue | freestream velocity     | yes         |
+    \endtable
+
+    Example of the boundary condition specification with uniform freestream:
+    \verbatim
+    <patchName>
+    {
+        type            freestreamVelocity;
+        freestreamValue uniform (300 0 0);
+    }
+    \endverbatim
+
+    Example of the boundary condition specification for an
+    atmospheric boundary layer:
+    \verbatim
+    <patchName>
+    {
+        type            freestreamVelocity;
+        freestreamValue
+        {
+            type            atmosphericBoundaryLayerVelocity;
+            libs            ("libatmosphericModels.so");
+        }
+    }
+    \endverbatim
+
+    Note:
+        This condition is designed to operate with the freestreamPressure
+        condition
+
+See also
+    Foam::DimensionedFieldFunction
+    Foam::UFunctionalDimensionedField
+    Foam::mixedFvPatchField
+    Foam::freestreamFvPatchField
+
+SourceFiles
+    freestreamVelocityFvPatchVectorField.C
+
+\*---------------------------------------------------------------------------*/
+
+#ifndef freestreamVelocityFvPatchVectorField_H
+#define freestreamVelocityFvPatchVectorField_H
+
+#include "mixedFvPatchFields.H"
+#include "UFunctionalDimensionedField.H"
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+namespace Foam
+{
+
+/*---------------------------------------------------------------------------*\
+            Class freestreamVelocityFvPatchVectorField Declaration
+\*---------------------------------------------------------------------------*/
+
+class freestreamVelocityFvPatchVectorField
+:
+    public mixedFvPatchVectorField
+{
+    // Private Data
+
+        //- DimensionedField and function for the freestream value
+        UFunctionalDimensionedField<vector, fvPatch>
+            dimensionedFreestreamValue_;
+
+
+public:
+
+    //- Runtime type information
+    TypeName("freestreamVelocity");
+
+
+    // Constructors
+
+        //- Construct from patch, internal field and dictionary
+        freestreamVelocityFvPatchVectorField
+        (
+            const fvPatch&,
+            const DimensionedField<vector, fvMesh>&,
+            const dictionary&
+        );
+
+        //- Construct by mapping given freestreamVelocityFvPatchVectorField onto
+        //  a new patch
+        freestreamVelocityFvPatchVectorField
+        (
+            const freestreamVelocityFvPatchVectorField&,
+            const fvPatch&,
+            const DimensionedField<vector, fvMesh>&,
+            const fieldMapper&
+        );
+
+        //- Disallow copy without setting internal field reference
+        freestreamVelocityFvPatchVectorField
+        (
+            const freestreamVelocityFvPatchVectorField&
+        ) = delete;
+
+        //- Copy constructor setting internal field reference
+        freestreamVelocityFvPatchVectorField
+        (
+            const freestreamVelocityFvPatchVectorField&,
+            const DimensionedField<vector, fvMesh>&
+        );
+
+        //- Construct and return a clone setting internal field reference
+        virtual tmp<fvPatchVectorField> clone
+        (
+            const DimensionedField<vector, fvMesh>& iF
+        ) const
+        {
+            return tmp<fvPatchVectorField>
+            (
+                new freestreamVelocityFvPatchVectorField(*this, iF)
+            );
+        }
+
+
+    // Member Functions
+
+            const vectorField& freestreamValue() const
+            {
+                return refValue();
+            }
+
+            vectorField& freestreamValue()
+            {
+                return refValue();
+            }
+
+
+        // Mapping functions
+
+            //- Map the given fvPatchField onto this fvPatchField
+            virtual void map(const fvPatchVectorField&, const fieldMapper&);
+
+            //- Reset the fvPatchField to the given fvPatchField
+            //  Used for mesh to mesh mapping
+            virtual void reset(const fvPatchVectorField&);
+
+
+        // Evaluation functions
+
+            //- Update the coefficients associated with the patch field
+            virtual void updateCoeffs();
+
+
+        //- Write
+        virtual void write(Ostream&) const;
+
+
+    // Member Operators
+
+        //- Inherit assignment
+        using mixedFvPatchVectorField::operator=;
+};
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+} // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#endif
+
+// ************************************************************************* //

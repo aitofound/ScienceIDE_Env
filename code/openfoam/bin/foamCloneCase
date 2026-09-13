@@ -1,0 +1,269 @@
+#!/bin/sh
+#------------------------------------------------------------------------------
+# =========                 |
+# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+#  \\    /   O peration     | Website:  https://openfoam.org
+#   \\  /    A nd           | Copyright (C) 2015-2023 OpenFOAM Foundation
+#    \\/     M anipulation  |
+#------------------------------------------------------------------------------
+# License
+#     This file is part of OpenFOAM.
+#
+#     OpenFOAM is free software: you can redistribute it and/or modify it
+#     under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+#     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+#     for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Script
+#     foamCloneCase
+#
+# Description
+#     Create a new case directory that includes time, system and constant
+#     directories from a source case.
+#     The time directory is the first time directory by default
+#
+#------------------------------------------------------------------------------
+usage() {
+    cat<<USAGE
+
+Usage: ${0##*/} [OPTION] <source case> <target name>
+options:
+  -add <file1...N>  copy 1 or more additional files/directories from source case
+  -help             print the usage
+  -latestTime       clone the latest time directory
+  -no-orig          do not copy 0.orig directory
+  -no-scripts       do not copy shell scripts
+  -processor        copies processor* directories of a decomposed case
+  -startFrom <time> set the starting time directory name
+  -template         search for source case directory in template directory paths
+
+Create a new <targetCase> case directory that includes time, system and constant
+directories, and shell scripts, of <sourceCase> directory.
+The time directory is the first time directory by default.  If no time directory
+exists, or it is 0, an existing 0.orig directory is copied by default.
+
+Template directory paths are:
+USAGE
+    for _tp in $TEMPLATE_DIRS ; do echo "    $_tp" ; done
+    echo ""
+}
+
+error() {
+    exec 1>&2
+    while [ "$#" -ge 1 ]; do echo "$1"; shift; done
+    usage
+    exit 1
+}
+
+cpIfPresent() {
+    _src="$1"
+    _sub="${1##*/}" ; shift
+    _tgt="$1" ; shift
+    [ "$1" ] && \
+        _start_time="$1" && \
+        _tgt="$_tgt/$1" && \
+        _sub="$1"
+
+    [ -e "$_src" ] && echo "$_src to ... $_sub" && cp -R "$_src" "$_tgt"
+    [ "$_start_time" ] || return 0
+
+    # If src time directory is copied to a different time,
+    # delete the uniform subdirectory and phi, Uf files
+    rm -rf "$_tgt/phi" "$_tgt/Uf" "$_tgt/uniform"
+}
+
+isCaseValid() {
+    foamListTimes -case "$1" >/dev/null 2>&1
+}
+
+isDecomposed() {
+    foamListTimes -withZero -case "$1" -processor >/dev/null 2>&1
+}
+
+isNumber() {
+    printf "%f" "$1" > /dev/null 2>&1
+}
+
+listProcessorDirs() {
+    # Match both uncollated and collated directory name formats
+    cd "$1" && find . -regex "./processors?[0-9]*" -type d
+}
+
+mkProcessorDirs() {
+    for _d in $(listProcessorDirs "$1")
+    do
+        mkdir "$2/$_d"
+    done
+}
+
+ver=$WM_PROJECT_VERSION
+tmp_dir=templates
+TEMPLATE_DIRS="
+    ${HOME}/.OpenFOAM/appTemplates/$ver
+    ${HOME}/.OpenFOAM/$ver/$tmp_dir
+    ${HOME}/.OpenFOAM/$tmp_dir
+    ${WM_PROJECT_SITE:-$WM_PROJECT_INST_DIR/site}/$ver/$tmp_dir
+    ${WM_PROJECT_SITE:-$WM_PROJECT_INST_DIR/site}/$tmp_dir
+    $WM_PROJECT_DIR/etc/$tmp_dir"
+
+templateDir() {
+    for t in $TEMPLATE_DIRS
+    do
+        [ -d "$t/$1" ] && echo "$t/$1"  && exit 0
+    done
+    exit 1
+}
+
+time_opt="head -1"
+proc_opt=""
+no_orig=""
+no_scripts=""
+template=""
+add=""
+start_from=""
+
+# Parse options
+while [ "$#" -gt 0 ]
+do
+    case "$1" in
+    -a | -add)
+        shift 1
+        while [ "$#" -gt 2 ]
+        do
+            case "$1" in
+            -*) break ;;
+            *) add="$add $1" ; shift 1 ;;
+            esac
+        done
+        [ "$add" ] || error "'-add' option requires 1 or more arguments"
+        ;;
+    -h | -help)
+        usage && exit 0
+        ;;
+    -l | -latestTime)
+        time_opt="tail -1"
+        shift 1
+        ;;
+    -no-orig)
+        no_orig="true"
+        shift 1
+        ;;
+    -no-scripts)
+        no_scripts="true"
+        shift 1
+        ;;
+    -p | -processor)
+        proc_opt="-processor"
+        shift 1
+        ;;
+    -s | -startFrom)
+        shift 1
+        isNumber "$1" || \
+            error "'-startFrom' option requires a <time> argument"
+        start_from="$(printf "%0.4g" "$1")"
+        printf "Setting a start time directory '%s' " "$start_from"
+        printf "using the '-startFrom %s' option\n" "$1"
+        shift 1
+        ;;
+    -template)
+        template="true"
+        shift 1
+        ;;
+    -*)
+        error "unknown option: '$*'"
+        ;;
+    *)
+        break
+        ;;
+    esac
+done
+
+[ $# -eq 2 ] || error "Incorrect arguments specified"
+
+# Set srcDir
+srcDir="$1"
+[ -z "$template" ] || \
+    srcDir="$(templateDir "$1")" || \
+    error "'$1' not found in template directories"
+shift
+
+# Check validity of case and options
+isCaseValid "$srcDir" || error "'$srcDir' is not a valid case directory"
+[ "${proc_opt#-*}" ] && ! isDecomposed "$srcDir" && \
+    error "'-processor' option requires source case to be decomposed"
+
+# Set additional files with -add option
+[ "$add" ] && \
+    for f in $add
+    do
+        ! [ -e "$srcDir/$f" ] && \
+            printf "Warning: additional file/directory " && \
+            printf "'%s' does not exist in '%s'\n" "$f" "$srcDir"
+    done
+
+# Set tgtDir
+tgtDir="$1"
+[ -e "$tgtDir" ] && \
+    error "'$tgtDir' file/directory already exists, delete and re-run"
+echo "Making $tgtDir case directory"
+mkdir "$tgtDir"
+
+# Copy system, constant and (optionally) processor*/constant
+echo "Copying directories/files from $srcDir to $tgtDir:"
+cpIfPresent "$srcDir/system" "$tgtDir"
+cpIfPresent "$srcDir/constant" "$tgtDir"
+
+[ "${proc_opt#-*}" ] && \
+    echo "$srcDir/processor*/constant to ... processor*/constant" && \
+    for p in $(listProcessorDirs "$srcDir")
+    do
+        mkdir "$tgtDir/$p"
+        cpIfPresent "$srcDir/$p/constant" "$tgtDir/$p" > /dev/null
+    done
+
+# Copy serial <time> dir and (optionally) processor*/<time>
+time_dir="$(foamListTimes -withZero $proc_opt -case "$srcDir" | $time_opt)"
+
+[ -n "$time_dir" ] && \
+    cpIfPresent "$srcDir/${time_dir}" "$tgtDir" "$start_from"
+
+[ "${proc_opt#-*}" ] && \
+    echo "$srcDir/processor*/$time_dir to ... processor*/$time_dir" && \
+    for p in $(listProcessorDirs "$srcDir")
+    do
+        cpIfPresent \
+            "$srcDir/$p/$time_dir" \
+            "$tgtDir/$p" \
+            "$start_from" > /dev/null
+    done
+
+# Copy 0.orig if required
+[ "$time_dir" = "0" ] 2> /dev/null || \
+    [ -z "${time_dir}" ] && \
+        [ -z "$no_orig" ] && \
+        cpIfPresent "$srcDir/0.orig" "$tgtDir"
+
+# Copy additional files/directories
+[ "$add" ] && \
+    for a in $add ; do cpIfPresent "$srcDir/$a" "$tgtDir" ; done
+
+# Copy scripts if required
+[ "$no_scripts" ] || \
+    scripts="$(find "$srcDir" -maxdepth 1 ! -name "*~" -type f \
+               -exec file {} \; | \
+               grep "shell script" | \
+               cut -d: -f1)"
+[ "$scripts" ] && echo "Copying scripts from $srcDir to $tgtDir:" && \
+    for s in $scripts ; do cpIfPresent "$s" "$tgtDir" ; done
+
+exit 0
+
+#------------------------------------------------------------------------------

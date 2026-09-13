@@ -1,0 +1,31 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # Run from this directory
+
+# Source tutorial run functions
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+
+# Create the initial block mesh and decompose
+runApplication blockMesh
+runApplication decomposePar -copyZero
+
+# Run snappy without layers
+runApplication -a foamDictionary system/snappyHexMeshDict -entry castellatedMesh -set on
+runApplication -a foamDictionary system/snappyHexMeshDict -entry snap -set on
+runApplication -a foamDictionary system/snappyHexMeshDict -entry addLayers -set off
+runParallel snappyHexMesh
+
+# Convert the face zones into mapped wall baffles and split
+runParallel createBaffles
+runParallel splitBaffles
+rm -rf processor*/constant/polyMesh/pointLevel
+
+# Run snappy again to create layers
+runApplication -a foamDictionary system/snappyHexMeshDict -entry castellatedMesh -set off
+runApplication -a foamDictionary system/snappyHexMeshDict -entry snap -set off
+runApplication -a foamDictionary system/snappyHexMeshDict -entry addLayers -set on
+runParallel -a snappyHexMesh
+
+# Split the mesh into regions
+runParallel splitMeshRegions -cellZones all -defaultRegion solid
+
+#------------------------------------------------------------------------------

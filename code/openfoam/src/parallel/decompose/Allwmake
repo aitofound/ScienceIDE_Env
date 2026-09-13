@@ -1,0 +1,24 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # Run from this directory
+
+# Parse arguments for library compilation
+. $WM_PROJECT_DIR/wmake/scripts/AllwmakeParseArguments
+
+wmake $targetType decompositionMethods
+
+# Optionally build the scotch method with its Allwmake
+wmake -a $targetType scotch
+
+# Optionally build the ptscotch method with its Allwmake
+wmake -a $targetType ptscotch
+
+# Optionally build the metis method with its Allwmake
+wmake -a $targetType metis
+
+# Optionally build the parMetis method with its Allwmake
+wmake -a $targetType parMetis
+
+# Optionally build the zoltan method with its Allwmake
+wmake -a $targetType zoltan
+
+#------------------------------------------------------------------------------

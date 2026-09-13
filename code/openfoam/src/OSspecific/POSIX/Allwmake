@@ -1,0 +1,24 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # Run from this directory
+
+# Parse arguments for library compilation
+targetType=libo
+. $WM_PROJECT_DIR/wmake/scripts/AllwmakeParseArguments $*
+
+unset COMP_FLAGS LINK_FLAGS
+
+#
+# use <sys/inotify.h> if available (Linux)
+#
+if echo "#include <sys/inotify.h>" | $WM_CXX $WM_CXXFLAGS -E - > /dev/null 2>&1
+then
+    echo "    found <sys/inotify.h>  --  enabling inotify for file monitoring."
+    export COMP_FLAGS="-DFOAM_USE_INOTIFY"
+else
+    unset COMP_FLAGS
+fi
+
+# make (non-shared by default) object
+wmake $targetType
+
+#------------------------------------------------------------------------------

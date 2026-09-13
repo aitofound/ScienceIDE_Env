@@ -1,0 +1,18 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # Run from this directory
+
+# Parse arguments for library compilation
+. $WM_PROJECT_DIR/wmake/scripts/AllwmakeParseArguments
+
+# Build if Metis is enabled
+case $METIS_TYPE in
+none)
+    ;;
+*)
+    . $($WM_PROJECT_DIR/bin/foamEtcFile config.sh/metis)
+    echo "    using METIS_ARCH_PATH=$METIS_ARCH_PATH"
+    wmake $targetType
+    ;;
+esac
+
+#------------------------------------------------------------------------------

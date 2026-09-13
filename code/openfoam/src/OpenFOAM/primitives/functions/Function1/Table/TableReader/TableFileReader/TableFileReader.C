@@ -1,0 +1,173 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Copyright (C) 2011-2026 OpenFOAM Foundation
+     \\/     M anipulation  |
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenFOAM.
+
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+
+\*---------------------------------------------------------------------------*/
+
+#include "TableFileReader.H"
+#include "fileOperation.H"
+
+// * * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * //
+
+template<class Coordinate, class Value>
+Foam::autoPtr<Foam::Function1s::unitSets>
+Foam::TableFileReader<Coordinate, Value>::readUnits
+(
+    const Function1s::unitSets& defaultUnits,
+    const dictionary& dict
+) const
+{
+    if (dict.found("units"))
+    {
+        Function1s::unitSets units(defaultUnits);
+        units.read(dict.lookup("units"));
+        return
+            autoPtr<Function1s::unitSets>
+            (
+                new Function1s::unitSets(units)
+            );
+    }
+    else
+    {
+        return autoPtr<Function1s::unitSets>(nullptr);
+    }
+}
+
+
+template<class Coordinate, class Value>
+void Foam::TableFileReader<Coordinate, Value>::read
+(
+    const Function1s::unitSets& defaultUnits,
+    const dictionary& dict,
+    List<Tuple2<Coordinate, Value>>& table
+) const
+{
+    // Expand the file
+    fileName fNameExpanded(fName_);
+    fNameExpanded.expand();
+
+    // Open a stream and check it
+    autoPtr<ISstream> isPtr(fileHandler().NewIFstream(fNameExpanded));
+    ISstream& is = isPtr();
+    if (!is.good())
+    {
+        FatalIOErrorInFunction(is)
+            << "Cannot open file " << fName_ << nl
+            << exit(FatalIOError);
+    }
+
+    // Read data from the stream
+    read(is, table);
+
+    // Check something was read
+    if (table.empty())
+    {
+        FatalIOErrorInFunction(is)
+            << "Table read from " << fName_ << " is empty" << nl
+            << exit(FatalIOError);
+    }
+
+    // Convert units
+    TableReader<Coordinate, Value>::convertRead
+    (
+        unitsPtr_.valid() ? unitsPtr_() : defaultUnits,
+        table
+    );
+}
+
+
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
+
+template<class Coordinate, class Value>
+Foam::TableFileReader<Coordinate, Value>::TableFileReader
+(
+    const Function1s::unitSets& defaultUnits,
+    const dictionary& dict
+)
+:
+    TableReader<Coordinate, Value>(),
+    fName_(dict.lookup("file")),
+    unitsPtr_(readUnits(defaultUnits, dict))
+{}
+
+
+template<class Coordinate, class Value>
+Foam::TableFileReader<Coordinate, Value>::TableFileReader
+(
+    const TableFileReader<Coordinate, Value>& tfr
+)
+:
+    TableReader<Coordinate, Value>(tfr),
+    fName_(tfr.fName_),
+    unitsPtr_
+    (
+        tfr.unitsPtr_.valid()
+      ? new Function1s::unitSets(tfr.unitsPtr_())
+      : nullptr
+    )
+{}
+
+
+// * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
+
+template<class Coordinate, class Value>
+Foam::TableFileReader<Coordinate, Value>::~TableFileReader()
+{}
+
+
+// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+
+template<class Coordinate, class Value>
+Foam::List<Foam::Tuple2<Coordinate, Value>>
+Foam::TableFileReader<Coordinate, Value>::read
+(
+    const Function1s::unitSets& units,
+    const dictionary& dict,
+    const word&
+) const
+{
+    List<Tuple2<Coordinate, Value>> data;
+    read(units, dict, data);
+    return data;
+}
+
+
+template<class Coordinate, class Value>
+void Foam::TableFileReader<Coordinate, Value>::write
+(
+    Ostream& os,
+    const Function1s::unitSets& units,
+    const List<Tuple2<Coordinate, Value>>& table,
+    const word&
+) const
+{
+    writeEntry(os, "format", this->type());
+    writeEntry(os, "file", fName_);
+
+    if (unitsPtr_.valid())
+    {
+        writeEntry(os, "units", unitsPtr_());
+    }
+}
+
+
+// ************************************************************************* //

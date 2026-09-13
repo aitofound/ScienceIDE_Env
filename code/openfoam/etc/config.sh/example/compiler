@@ -1,0 +1,60 @@
+#----------------------------------*-sh-*--------------------------------------
+# =========                 |
+# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+#  \\    /   O peration     | Website:  https://openfoam.org
+#   \\  /    A nd           | Copyright (C) 2011-2025 OpenFOAM Foundation
+#    \\/     M anipulation  |
+#------------------------------------------------------------------------------
+# License
+#     This file is part of OpenFOAM.
+#
+#     OpenFOAM is free software: you can redistribute it and/or modify it
+#     under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+#     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+#     for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+#
+# File
+#     config.sh/example/compiler
+#
+# Description
+#     Example of fine tuning compiler versions and settings for OpenFOAM
+#     Sourced from OpenFOAM-<VERSION>/etc/config.sh/settings
+#
+#------------------------------------------------------------------------------
+
+# First load the standard versions, if necessary
+foamFile=$($WM_PROJECT_DIR/bin/foamEtcFile -mode o config.sh/compiler \
+               2>/dev/null)
+[ $? -eq 0 ] && _foamSource $foamFile
+unset foamFile
+
+# Override compiler settings
+case "$WM_COMPILER" in
+Gcc46)
+    # Example of using an old unsupported third-party compiler
+    gcc_version=gcc-4.6.0
+    gmp_version=gmp-5.0.1
+    mpfr_version=mpfr-2.4.2
+    mpc_version=mpc-0.8.1
+    ;;
+Gcc13)
+    # Example of using the system Gcc-13
+    export WM_CC='gcc-13'
+    export WM_CXX='g++-13'
+    ;;
+Icx)
+    # Example for ensuring that third-party software uses the Icx compilers
+    export WM_CC='icx'
+    export WM_CXX='icpx'
+    ;;
+esac
+
+#------------------------------------------------------------------------------
