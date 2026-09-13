@@ -73,6 +73,13 @@ LIMITS=()
 [ -n "$CPUS" ] && LIMITS+=(--cpus "$CPUS")
 [ -n "$MEMORY_GB" ] && LIMITS+=(--memory "${MEMORY_GB}g")
 ENVS=(--env "SAB_IC=$IC")
+# One build cache beside the oracle root, shared by the nominal, variant and
+# altbuild solves of a selfcheck: run.sh keys binaries by source fingerprint,
+# configuration line and build mode, never by initial condition, so each
+# BATSRUS configuration compiles once per selfcheck (altbuild is its own build).
+BUILD_CACHE_HOST="$(dirname "$ORACLE")/sciaccel-$TASK-build-cache"
+mkdir -p "$BUILD_CACHE_HOST"
+ENVS+=(--env "SAB_BUILD_CACHE_ROOT=/app/build-cache")
 while IFS='=' read -r name _; do
   case "$name" in SAB_ORACLE_DIR|SAB_DOCKER_IMAGE|SAB_IC) ;; *) ENVS+=(--env "$name=${!name}") ;; esac
 done < <(env | grep -E '^SAB_[A-Z0-9_]+=' || true)
@@ -81,7 +88,7 @@ echo "RUN $CONTAINER (ic=$IC, network disabled${CPUS:+, cpus=$CPUS}${MEMORY_GB:+
 set +e
 docker run --name "$CONTAINER" --network none ${LIMITS[@]+"${LIMITS[@]}"} ${ENVS[@]+"${ENVS[@]}"} \
   --label "sciaccel.task=$TASK" --label "sciaccel.run-id=$RUN_ID" \
-  --volume "$ORACLE/results:/app/results:rw" "$IMAGE" 2>&1 | tee "$ORACLE/docker-run.log"
+  --volume "$ORACLE/results:/app/results:rw" --volume "$BUILD_CACHE_HOST:/app/build-cache:rw" "$IMAGE" 2>&1 | tee "$ORACLE/docker-run.log"
 status=("${PIPESTATUS[@]}")
 set -e
 IMAGE_ID="$(docker image inspect --format '{{.Id}}' "$IMAGE" 2>/dev/null || echo unknown)"

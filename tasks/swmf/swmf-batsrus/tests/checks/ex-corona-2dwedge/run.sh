@@ -173,8 +173,6 @@ run_cached_build() {
         "build-spec=$BUILD_SPEC" \
         "build-mode=$BUILD_MODE" \
         "altbuild-spec=$ALTBUILD" \
-        "initial-condition=$IC" \
-        "input-kind=$INPUTS" \
         "target=$BUILD_TARGET" \
         "target-descriptor-sha256=$BUILD_TARGET_SHA256" \
         "runner=linux-docker" \
@@ -187,7 +185,7 @@ run_cached_build() {
         "make-version=$make_version" \
         "mpi-version=$mpi_version" \
         "machine=$(uname -m)" | sha256sum | cut -d' ' -f1)"
-    CACHE_DIR="$SAB_BUILD_CACHE_ROOT/$BUILD_TASK/$IC/$BUILD_GROUP/$BUILD_FINGERPRINT"
+    CACHE_DIR="$SAB_BUILD_CACHE_ROOT/$BUILD_TASK/$BUILD_GROUP/$BUILD_FINGERPRINT"
     CACHE_BINARY="$CACHE_DIR/BATSRUS.exe"
     CACHE_POSTIDL="$CACHE_DIR/PostIDL.exe"
     CACHE_DIGEST_FILE="$CACHE_DIR/binaries.sha256"
