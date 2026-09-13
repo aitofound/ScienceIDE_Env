@@ -31,15 +31,6 @@ list_checks() {
 if [ "${1:-}" = "produce" ]; then
   [ "$#" -eq 4 ] || { echo "usage: test.sh produce <source_dir> <out_root> <nominal|variant|altbuild>" >&2; exit 2; }
   SOURCE_DIR="$(cd "$2" && pwd -P)"
-  ORIGINAL_SOURCE_DIR="$SOURCE_DIR"
-  # Historical BATSRUS checks are standalone-driver adapters; the #558 checks
-  # are genuine SWMF multi-instance drivers. Prepare one disposable
-  # GM/BATSRUS adapter copy and select it only for the former, so framework
-  # Param/ decks and top-level Config.pl remain untouched for multi-instance
-  # checks.
-  ADAPTED_PARENT_DIR="$(mktemp -d "${TMPDIR:-/tmp}/sciaccel-swmf-batsrus-adapted.XXXXXX")"
-  ADAPTED_SOURCE_DIR="$ADAPTED_PARENT_DIR/source"
-  bash "$(cd "$TESTS_DIR/../solution" && pwd -P)/swmf-batsrus-adapter.sh" "$ORIGINAL_SOURCE_DIR" "$ADAPTED_SOURCE_DIR"
   OUT_ROOT="$3"; IC="$4"
   case "$IC" in nominal|variant|altbuild) ;; *) echo "initial condition must be nominal, variant or altbuild" >&2; exit 2 ;; esac
   mkdir -p "$OUT_ROOT"
@@ -95,14 +86,6 @@ PY_SOURCE_FINGERPRINT
   while IFS= read -r check; do
     total=$((total + 1))
     check_dir="$CHECKS_DIR/$check"; out_dir="$OUT_ROOT/$check"
-    CHECK_SOURCE_DIR="$ORIGINAL_SOURCE_DIR"
-    CHECK_SOURCE_FINGERPRINT="$SAB_SOURCE_FINGERPRINT"
-    # Multi-instance checks advertise a real SWMF component selection. Every
-    # other lifted check is a standalone BATSRUS test and uses the adapter.
-    if ! grep -Eq 'Config\.pl -v=|Config\.pl -o=|code/swmf/Param' "$check_dir/run.sh"; then
-      CHECK_SOURCE_DIR="$ADAPTED_SOURCE_DIR"
-      CHECK_SOURCE_FINGERPRINT="${SAB_SOURCE_FINGERPRINT}-gm-batsrus-adapter"
-    fi
     if [ -e "$out_dir" ]; then echo "FAILED [$check]: output directory already exists: $out_dir" >&2; failed+=("$check"); continue; fi
     mkdir -p "$out_dir"
     if [ "$IC" = altbuild ] && ! (cd "$check_dir" && bash ./run.sh --help 2>/dev/null | grep -q '^altbuild:'); then
@@ -112,9 +95,9 @@ PY_SOURCE_FINGERPRINT
     log="$out_dir/run.log"; start=$(date +%s.%N)
     echo "RUN [$check] $IC"
     if (cd "$check_dir" && env -i PATH="$PATH" HOME="${HOME:-/tmp}" LANG=C.UTF-8 \
-          SOURCE_DIR="$CHECK_SOURCE_DIR" OUT_DIR="$out_dir" CHECK_DIR="$check_dir" SAB_IC="$IC" \
+          SOURCE_DIR="$SOURCE_DIR" OUT_DIR="$out_dir" CHECK_DIR="$check_dir" SAB_IC="$IC" \
           OMPI_ALLOW_RUN_AS_ROOT=1 OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1 ${passthrough[@]+"${passthrough[@]}"} \
-          SAB_SOURCE_FINGERPRINT="$CHECK_SOURCE_FINGERPRINT" SAB_BUILD_CACHE_ROOT="$BUILD_CACHE_ROOT" \
+          SAB_SOURCE_FINGERPRINT="$SAB_SOURCE_FINGERPRINT" SAB_BUILD_CACHE_ROOT="$BUILD_CACHE_ROOT" \
           bash ./run.sh "$IC") >"$log" 2>&1; then
       end=$(date +%s.%N)
       build="$(grep -o 'SAB_BUILD_SECONDS=[0-9.]*' "$log" | tail -1 | cut -d= -f2 || true)"  # no build line is legitimate; grep's 1 must not kill the driver

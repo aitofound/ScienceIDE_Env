@@ -69,7 +69,13 @@ preserve_diagnostics() {
 # Preserve build/configure evidence; intentionally do not remove WORK here.
 trap 'status=$?; trap - EXIT; preserve_diagnostics "$status"; exit "$status"' EXIT
 
-cp -R "$SOURCE_DIR/." "$WORK/src"
+# The pinned source is the SWMF tree. The upstream standalone BATSRUS tests run in
+# the standalone layout: GM/BATSRUS with share/ and util/ beside it, which is exactly
+# what BATSRUS's own Config.pl -install clones into its root. Assemble that layout from
+# the pinned tree here; SOURCE_DIR itself is never modified.
+cp -R "$SOURCE_DIR/GM/BATSRUS/." "$WORK/src"
+cp -R "$SOURCE_DIR/share" "$WORK/src/share"
+cp -R "$SOURCE_DIR/util" "$WORK/src/util"
 cd "$WORK/src"
 
 # The deck this run executes, taken from ic/<IC>/ and staged under Param/SAB/ of

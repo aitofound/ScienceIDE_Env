@@ -48,7 +48,13 @@ fi
 [ -d "$CHECK_DIR/ic/$INPUTS" ] || { echo "run.sh: no initial condition ic/$INPUTS" >&2; exit 2; }
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 export LC_ALL=C          # silences the perl locale warnings of Config.pl and PostProc.pl
-cp -R "$SOURCE_DIR/." "$WORK/src"
+# The pinned source is the SWMF tree. The upstream standalone BATSRUS tests run in
+# the standalone layout: GM/BATSRUS with share/ and util/ beside it, which is exactly
+# what BATSRUS's own Config.pl -install clones into its root. Assemble that layout from
+# the pinned tree here; SOURCE_DIR itself is never modified.
+cp -R "$SOURCE_DIR/GM/BATSRUS/." "$WORK/src"
+cp -R "$SOURCE_DIR/share" "$WORK/src/share"
+cp -R "$SOURCE_DIR/util" "$WORK/src/util"
 cd "$WORK/src"
 
 SRC="$WORK/src"
