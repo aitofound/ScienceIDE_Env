@@ -7,8 +7,8 @@ FROM debian:trixie-slim@sha256:1caf1c703c8f7e15dcf2e7769b35000c764e6f50e4d7401c3
 
 # Keep this apt-get line identical to the one in environment/Dockerfile.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential gfortran perl git openmpi-bin libopenmpi-dev \
-    python3 python3-numpy python3-scipy ca-certificates \
+    build-essential gfortran perl csh gzip git openmpi-bin libopenmpi-dev \
+    python3 python3-numpy python3-scipy python3-setuptools ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 COPY code/swmf/ /workspace/code/

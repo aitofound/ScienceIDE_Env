@@ -1,7 +1,5 @@
 # kelvinhelmholtz-multiion
 
-> **HISTORICAL-EVIDENCE NOTICE — NOT A CURRENT RECEIPT.** The inherited measurements and self-validation references below belong to prior tasks, not these current files or a current PASS. This new SWMF leaf has no validated receipt yet; retain the numbers as historical evidence pending fresh calibration.
-
 Upstream test: `code/swmf/GM/BATSRUS/Param/SHOCKTUBE/PARAM.in.kelvin_helmholtz_multiion` (Makefile.test target `test_kelvinhelmholtz_multiion`; upstream compares with none: upstream ships no reference output and no _check target for this test). Policy: `pointwise`.
 
 ## The test

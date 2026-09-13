@@ -1,7 +1,5 @@
 # earth
 
-> **HISTORICAL-EVIDENCE NOTICE — NOT A CURRENT RECEIPT.** The inherited measurements and self-validation references below belong to prior tasks, not these current files or a current PASS. This new SWMF leaf has no validated receipt yet; retain the numbers as historical evidence pending fresh calibration.
-
 Upstream test: `code/swmf/GM/BATSRUS/Param/EARTH/PARAM.in.gpu`. Policy: `pointwise`.
 
 ## The test
