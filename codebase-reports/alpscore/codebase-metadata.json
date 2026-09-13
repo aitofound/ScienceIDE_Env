@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "report_type": "codebase-metadata",
-  "generated_at": "2026-09-13T07:44:45Z",
+  "generated_at": "2026-09-13T07:54:08Z",
   "informational": true,
   "non_blocking": true,
   "codebase": {
@@ -19,14 +19,11 @@
     "owner": "JunkaiWang-TheoPhy",
     "source_tree_fingerprint": "b1f2fdf3d08772f9e29e17cfdda2c91d0f3e7968969ad1c1411d051f27e290a9",
     "fingerprint_algorithm": "SHA-256 over typed sorted regular-file paths+bytes and symlink paths+safe targets",
-    "measurement_source": "Step 1 investigation checkout intended for vendoring",
-    "agent_authored": {
-      "description": "",
-      "evidence": []
-    }
+    "measurement_source": "vendored source payload",
+    "agent_authored": {}
   },
   "measurement": {
-    "scope": "Step 1 investigation checkout intended for vendoring",
+    "scope": "vendored source payload",
     "regular_file_rule": "all regular files below the source snapshot",
     "physical_line_rule": "UTF-8/NUL-free bytes: newline count plus one final non-newline line",
     "text_binary_rule": "NUL-containing or non-UTF-8 files are binary for line accounting",
@@ -35,8 +32,22 @@
     "included_paths": [
       "."
     ],
-    "excluded_paths": [],
-    "source_extensions": [],
+    "excluded_paths": [
+      ".git",
+      "__pycache__"
+    ],
+    "source_extensions": [
+      ".py",
+      ".c",
+      ".cc",
+      ".cpp",
+      ".h",
+      ".hh",
+      ".hpp",
+      ".hxx",
+      ".f",
+      ".f90"
+    ],
     "test_path_markers": [
       "test",
       "tests",
@@ -53,14 +64,28 @@
       "included_paths": [
         "."
       ],
-      "excluded_paths": [],
-      "source_extensions": [],
+      "excluded_paths": [
+        ".git",
+        "__pycache__"
+      ],
+      "source_extensions": [
+        ".py",
+        ".c",
+        ".cc",
+        ".cpp",
+        ".h",
+        ".hh",
+        ".hpp",
+        ".hxx",
+        ".f",
+        ".f90"
+      ],
       "test_path_markers": [
         "test",
         "tests",
         "tst"
       ],
-      "generated_vendor_third_party_notes": ""
+      "generated_vendor_third_party_notes": "Eigen is built or installed externally; no third-party source is bundled outside the upstream checkout."
     }
   },
   "size": {
@@ -74,12 +99,12 @@
     "text_physical_lines": 179215,
     "binary_files": 0,
     "binary_bytes": 0,
-    "source_files": null,
-    "source_physical_lines": null,
-    "implementation_source_files": null,
-    "implementation_source_physical_lines": null,
-    "test_source_files": null,
-    "test_source_physical_lines": null,
+    "source_files": 601,
+    "source_physical_lines": 154254,
+    "implementation_source_files": 319,
+    "implementation_source_physical_lines": 77357,
+    "test_source_files": 282,
+    "test_source_physical_lines": 76897,
     "files_by_extension": [
       {
         "extension": ".bat",
@@ -277,25 +302,17 @@
         "Root MIT license coexists with component GPL license files; Boost/HDF5/Eigen ABI requirements; macOS CMake 4.3 could not discover Boost; MPI is optional but unavailable on this host."
       ],
       "approval_status": "approved",
-      "purpose": "The repository is released as one library collection with a shared CMake/test contract; its components are coupled by common parameter, serialization, and accumulator infrastructure.",
-      "primary_inputs": [],
-      "primary_outputs": [],
-      "algorithm_stages": [],
-      "unique_responsibilities": [],
-      "not_responsible_for": [
-        "Documentation-only files and build metadata are not scientific checks; MPI-only paths remain unmeasured until a Linux MPI host is available."
+      "owned_paths": [
+        "."
       ],
-      "shared_component_ids": [],
-      "depends_on_modules": [],
+      "purpose": "The repository is released as one library collection with a shared CMake/test contract; its components are coupled by common parameter, serialization, and accumulator infrastructure.",
       "differences": {
         "status": "unknown",
         "note": "not supplied"
       },
-      "evidence": [],
-      "owned_paths": [
-        "."
-      ],
       "classification": "agent-authored module card; CLI-computed size and approval status",
+      "shared_component_ids": [],
+      "depends_on_modules": [],
       "metrics": {
         "owned": {
           "regular_files": 748,
@@ -319,15 +336,13 @@
     }
   ],
   "official_tests": {
-    "frameworks": [],
-    "collection_commands": [],
-    "run_commands": [],
     "counts": {
       "test_files": {
-        "value": null,
+        "value": 296,
         "unit": "files",
         "semantics": "distinct official test files considered",
-        "classification": "agent-authored/evidenced"
+        "classification": "agent-authored/evidenced",
+        "evidence": "git ls-files test"
       },
       "test_definitions": {
         "value": null,
@@ -350,8 +365,6 @@
     },
     "by_module": {
       "alpscore": {
-        "sources": [],
-        "selectors": [],
         "counts": {
           "test_files": {
             "value": null,
@@ -378,9 +391,6 @@
             "classification": "agent-authored/evidenced"
           }
         },
-        "covers": [],
-        "known_gaps": [],
-        "execution": [],
         "classification": "agent-authored/evidenced, except any explicitly CLI-labelled counts"
       }
     },
@@ -437,8 +447,10 @@
     "classification": "CLI-computed accounting plus agent-authored gaps"
   },
   "warnings": [
-    "measurement.source_extensions is empty; source/implementation line totals remain unknown",
-    "repository/cache directory excluded from source accounting: .git"
+    "agent-authored classification_and_gaps section is absent; unknown values remain visible",
+    "agent-authored codebase section is absent; unknown values remain visible",
+    "agent-authored modules section is absent; unknown values remain visible",
+    "agent-authored shared_components section is absent; unknown values remain visible"
   ],
-  "notes": "Fill every field to best effort. Unknown is acceptable; this report is informational and non-blocking."
+  "notes": "Native configure reached project dependency discovery but stopped at Boost under CMake 4.3; no scientific test is claimed."
 }
