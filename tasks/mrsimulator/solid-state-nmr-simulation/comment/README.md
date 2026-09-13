@@ -14,7 +14,7 @@ The Docker image compiles MRSimulator once during image construction with setupt
 
 ## Tolerances
 
-The provisional pointwise/invariant bounds are atol=1e-8 and rtol=1e-6. The calibration run compares nominal and two-ulp variants with `sab.py task selfcheck`; the final bounds will be updated from the measured spread and reviewed before the second self-validation run. Per-check details live in each README and rubric.
+The pointwise bounds use atol=1e-8 and rtol=0; invariant mean-spectrum bounds use atol=1e-8 and rtol=1e-6. The nominal/variant calibration measured pointwise spread 1.78e-15 and invariant spread 1.27e-16, leaving ample numerical headroom. Per-check details live in each README and rubric.
 
 ## Blind spots
 
