@@ -142,11 +142,11 @@ if [ "$CACHE_ENABLED" -eq 1 ]; then
   fi
   if [ "$CACHE_HIT" -eq 1 ]; then
     configure_source
-    if mkdir -p "$WORK/src/bin" \
-        && cp "$CACHE_BINARY" "$WORK/src/bin/BATSRUS.exe" \
-        && cp "$CACHE_POSTIDL" "$WORK/src/bin/PostIDL.exe" \
-        && [ -x "$WORK/src/bin/BATSRUS.exe" ] \
-        && [ -x "$WORK/src/bin/PostIDL.exe" ]; then
+    if mkdir -p "$WORK/src/src" \
+        && cp "$CACHE_BINARY" "$WORK/src/src/BATSRUS.exe" \
+        && cp "$CACHE_POSTIDL" "$WORK/src/src/PostIDL.exe" \
+        && [ -x "$WORK/src/src/BATSRUS.exe" ] \
+        && [ -x "$WORK/src/src/PostIDL.exe" ]; then
       echo "SAB_BUILD_CACHE=hit group=$BUILD_GROUP fingerprint=$BUILD_FINGERPRINT variant=$IC altbuild=$BUILD_MODE"
       BUILD_SECONDS=0
     else
@@ -160,14 +160,14 @@ if [ "$CACHE_ENABLED" -eq 1 ]; then
     configure_source
     build_source
     BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))
-    [ -x "$WORK/src/bin/BATSRUS.exe" ] || { echo "run.sh: build did not produce bin/BATSRUS.exe" >&2; exit 3; }
-    [ -x "$WORK/src/bin/PostIDL.exe" ] || { echo "run.sh: build did not produce bin/PostIDL.exe" >&2; exit 3; }
+    [ -x "$WORK/src/src/BATSRUS.exe" ] || { echo "run.sh: build did not produce src/BATSRUS.exe" >&2; exit 3; }
+    [ -x "$WORK/src/src/PostIDL.exe" ] || { echo "run.sh: build did not produce src/PostIDL.exe" >&2; exit 3; }
     # Write binaries first and publish the matching digest/ready marker last;
     # incomplete cache entries therefore cannot be accepted as hits.
     if mkdir -p "$CACHE_DIR" \
         && printf '%s\n' building > "$CACHE_READY" \
-        && cp "$WORK/src/bin/BATSRUS.exe" "$CACHE_BINARY" \
-        && cp "$WORK/src/bin/PostIDL.exe" "$CACHE_POSTIDL" \
+        && cp "$WORK/src/src/BATSRUS.exe" "$CACHE_BINARY" \
+        && cp "$WORK/src/src/PostIDL.exe" "$CACHE_POSTIDL" \
         && sha256sum "$CACHE_BINARY" "$CACHE_POSTIDL" | awk '{printf "%s%s", sep, $1; sep=" ";} END {print ""}' > "$CACHE_DIGEST_FILE" \
         && printf '%s\n' "$BUILD_FINGERPRINT" > "$CACHE_READY"; then
       echo "SAB_BUILD_CACHE=published group=$BUILD_GROUP fingerprint=$BUILD_FINGERPRINT variant=$IC altbuild=$BUILD_MODE"
