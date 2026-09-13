@@ -1,0 +1,295 @@
+{
+  "skimage.color.rgb2gray": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 941,
+      "end_line": 984
+    },
+    "description": "Compute luminance of an RGB image.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.adjust_gamma": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 626,
+      "end_line": 688
+    },
+    "description": "Perform gamma correction on the input image.",
+    "calls": [
+      "_adjust_gamma_u8",
+      "_assert_non_negative",
+      "dtype_limits",
+      "((image / scale) ** gamma * scale * gain).astype"
+    ],
+    "branches": [
+      {
+        "line": 673,
+        "expression": "gamma < 0"
+      },
+      {
+        "line": 678,
+        "expression": "dtype is np.uint8"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.adjust_log": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 691,
+      "end_line": 732
+    },
+    "description": "Performs Logarithmic correction on the input image.",
+    "calls": [
+      "dtype_limits",
+      "_assert_non_negative",
+      "out.astype",
+      "dtype",
+      "np.log2"
+    ],
+    "branches": [
+      {
+        "line": 727,
+        "expression": "inv"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.adjust_sigmoid": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 735,
+      "end_line": 781
+    },
+    "description": "Performs Sigmoid Correction on the input image.",
+    "calls": [
+      "dtype_limits",
+      "np.exp",
+      "_assert_non_negative",
+      "out.astype",
+      "dtype"
+    ],
+    "branches": [
+      {
+        "line": 776,
+        "expression": "inv"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.cumulative_distribution": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 314,
+      "end_line": 356
+    },
+    "description": "Return cumulative distribution function (cdf) for the given image.",
+    "calls": [
+      "histogram",
+      "hist.cumsum",
+      "utils._supported_float_type",
+      "img_cdf.astype"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.equalize_adapthist": {
+    "implementation": {
+      "file": "src/skimage/exposure/_adapthist.py",
+      "line": 23,
+      "end_line": 91
+    },
+    "description": "Contrast Limited Adaptive Histogram Equalization (CLAHE).",
+    "calls": [
+      "rescale_intensity",
+      "adapt_rgb",
+      "img_as_uint",
+      "np.round(rescale_intensity(image, out_range=(0, NR_OF_GRAY - 1))).astype",
+      "_clahe",
+      "image.astype",
+      "np.min_scalar_type",
+      "isinstance",
+      "np.round",
+      "max"
+    ],
+    "branches": [
+      {
+        "line": 80,
+        "expression": "kernel_size is None"
+      },
+      {
+        "line": 82,
+        "expression": "isinstance(kernel_size, numbers.Number)"
+      },
+      {
+        "line": 84,
+        "expression": "len(kernel_size) != image.ndim"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.equalize_hist": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 359,
+      "end_line": 398
+    },
+    "description": "Return image after histogram equalization.",
+    "calls": [
+      "cumulative_distribution",
+      "np.interp",
+      "out.reshape",
+      "out.astype",
+      "utils._supported_float_type"
+    ],
+    "branches": [
+      {
+        "line": 389,
+        "expression": "mask is not None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.exposure.intensity_range": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 401,
+      "end_line": 441
+    },
+    "description": "Return image intensity range (min, max) based on desired value type.",
+    "calls": [
+      "np.min",
+      "np.max"
+    ],
+    "branches": [
+      {
+        "line": 429,
+        "expression": "range_values == 'dtype'"
+      },
+      {
+        "line": 432,
+        "expression": "range_values == 'image'"
+      },
+      {
+        "line": 435,
+        "expression": "range_values in DTYPE_RANGE"
+      },
+      {
+        "line": 437,
+        "expression": "clip_negative"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.histogram": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 190,
+      "end_line": 276
+    },
+    "description": "Return histogram of image.",
+    "calls": [
+      "_histogram",
+      "utils.channel_as_last_axis",
+      "utils.warn",
+      "np.stack",
+      "_bincount_histogram_centers",
+      "_get_numpy_hist_range",
+      "_get_bin_edges",
+      "hist.append"
+    ],
+    "branches": [
+      {
+        "line": 246,
+        "expression": "len(sh) == 3 and sh[-1] < 4 and (channel_axis is None)"
+      },
+      {
+        "line": 254,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 259,
+        "expression": "np.issubdtype(image.dtype, np.integer)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.rescale_intensity": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 491,
+      "end_line": 607
+    },
+    "description": "Return image after stretching or shrinking its intensity levels.",
+    "calls": [
+      "map",
+      "np.clip",
+      "_output_dtype",
+      "intensity_range",
+      "np.any",
+      "np.isnan",
+      "utils.warn",
+      "(image * (omax - omin) + omin).astype",
+      "np.clip(image, omin, omax).astype"
+    ],
+    "branches": [
+      {
+        "line": 583,
+        "expression": "out_range in ['dtype', 'image']"
+      },
+      {
+        "line": 593,
+        "expression": "np.any(np.isnan([imin, imax, omin, omax]))"
+      },
+      {
+        "line": 603,
+        "expression": "imin != imax"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 479,
+      "end_line": 505
+    },
+    "description": "Convert an image to floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_ubyte": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 557,
+      "end_line": 578
+    },
+    "description": "Convert an image to 8-bit unsigned integer format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_uint": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 508,
+      "end_line": 529
+    },
+    "description": "Convert an image to 16-bit unsigned integer format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

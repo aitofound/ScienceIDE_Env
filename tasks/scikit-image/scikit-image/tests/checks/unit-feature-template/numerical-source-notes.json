@@ -1,0 +1,157 @@
+{
+  "skimage.feature.match_template": {
+    "implementation": {
+      "file": "src/skimage/feature/template.py",
+      "line": 33,
+      "end_line": 186
+    },
+    "description": "Match a template to a 2-D or 3-D image using normalized correlation.",
+    "calls": [
+      "np.pad",
+      "_window_sum_2d",
+      "_window_sum_3d",
+      "fftconvolve",
+      "np.any",
+      "image.astype",
+      "template.mean",
+      "math.prod",
+      "np.sum",
+      "np.multiply",
+      "np.divide",
+      "np.maximum",
+      "np.sqrt",
+      "np.less",
+      "slices.append",
+      "np.finfo",
+      "slice"
+    ],
+    "branches": [
+      {
+        "line": 118,
+        "expression": "image.ndim < template.ndim"
+      },
+      {
+        "line": 123,
+        "expression": "np.any(np.less(image.shape, template.shape))"
+      },
+      {
+        "line": 132,
+        "expression": "mode == 'constant'"
+      },
+      {
+        "line": 141,
+        "expression": "image.ndim == 2"
+      },
+      {
+        "line": 152,
+        "expression": "image.ndim == 2"
+      },
+      {
+        "line": 144,
+        "expression": "image.ndim == 3"
+      },
+      {
+        "line": 154,
+        "expression": "image.ndim == 3"
+      },
+      {
+        "line": 178,
+        "expression": "pad_input"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.feature.peak_local_max": {
+    "implementation": {
+      "file": "src/skimage/feature/peak.py",
+      "line": 118,
+      "end_line": 313
+    },
+    "description": "Find peaks in an image as coordinate list.",
+    "calls": [
+      "_get_high_intensity_peaks",
+      "_get_peak_mask",
+      "_exclude_border",
+      "_get_excluded_border_width",
+      "_get_threshold",
+      "labels.astype",
+      "ndi.find_objects",
+      "image[roi].copy",
+      "labels_peak_coord.append",
+      "np.vstack",
+      "np.finfo",
+      "np.iinfo",
+      "np.logical_not"
+    ],
+    "branches": [
+      {
+        "line": 237,
+        "expression": "(footprint is None or footprint.size == 1) and min_distance < 1"
+      },
+      {
+        "line": 249,
+        "expression": "footprint is None"
+      },
+      {
+        "line": 255,
+        "expression": "labels is None"
+      },
+      {
+        "line": 269,
+        "expression": "np.issubdtype(image.dtype, np.floating)"
+      },
+      {
+        "line": 301,
+        "expression": "labels_peak_coord"
+      },
+      {
+        "line": 306,
+        "expression": "len(coordinates) > num_peaks"
+      },
+      {
+        "line": 279,
+        "expression": "roi is None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.diamond": {
+    "implementation": {
+      "file": "src/skimage/morphology/footprints.py",
+      "line": 342,
+      "end_line": 396
+    },
+    "description": "Generates a flat, diamond-shaped footprint.",
+    "calls": [
+      "np.abs",
+      "np.arange",
+      "np.meshgrid",
+      "diamond",
+      "_decompose_size"
+    ],
+    "branches": [
+      {
+        "line": 384,
+        "expression": "decomposition is None"
+      },
+      {
+        "line": 390,
+        "expression": "decomposition == 'sequence'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 479,
+      "end_line": 505
+    },
+    "description": "Convert an image to floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

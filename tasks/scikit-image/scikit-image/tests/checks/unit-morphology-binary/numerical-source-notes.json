@@ -1,0 +1,249 @@
+{
+  "skimage.morphology.closing": {
+    "implementation": {
+      "file": "src/skimage/morphology/gray.py",
+      "line": 364,
+      "end_line": 438
+    },
+    "description": "Return grayscale morphological closing of an image.",
+    "calls": [
+      "pad_footprint",
+      "dilation",
+      "erosion",
+      "mirror_footprint"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.diamond": {
+    "implementation": {
+      "file": "src/skimage/morphology/footprints.py",
+      "line": 342,
+      "end_line": 396
+    },
+    "description": "Generates a flat, diamond-shaped footprint.",
+    "calls": [
+      "np.abs",
+      "np.arange",
+      "np.meshgrid",
+      "diamond",
+      "_decompose_size"
+    ],
+    "branches": [
+      {
+        "line": 384,
+        "expression": "decomposition is None"
+      },
+      {
+        "line": 390,
+        "expression": "decomposition == 'sequence'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.dilation": {
+    "implementation": {
+      "file": "src/skimage/morphology/gray.py",
+      "line": 174,
+      "end_line": 284
+    },
+    "description": "Return grayscale morphological dilation of an image.",
+    "calls": [
+      "_min_max_to_constant_mode",
+      "pad_footprint",
+      "mirror_footprint",
+      "_iterate_gray_func",
+      "_footprint_is_sequence"
+    ],
+    "branches": [
+      {
+        "line": 260,
+        "expression": "out is None"
+      },
+      {
+        "line": 263,
+        "expression": "mode not in _SUPPORTED_MODES"
+      },
+      {
+        "line": 265,
+        "expression": "mode == 'ignore'"
+      },
+      {
+        "line": 273,
+        "expression": "not _footprint_is_sequence(footprint)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.erosion": {
+    "implementation": {
+      "file": "src/skimage/morphology/gray.py",
+      "line": 65,
+      "end_line": 171
+    },
+    "description": "Return grayscale morphological erosion of an image.",
+    "calls": [
+      "_min_max_to_constant_mode",
+      "pad_footprint",
+      "_iterate_gray_func",
+      "_footprint_is_sequence"
+    ],
+    "branches": [
+      {
+        "line": 150,
+        "expression": "out is None"
+      },
+      {
+        "line": 153,
+        "expression": "mode not in _SUPPORTED_MODES"
+      },
+      {
+        "line": 155,
+        "expression": "mode == 'ignore'"
+      },
+      {
+        "line": 160,
+        "expression": "not _footprint_is_sequence(footprint)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.footprint_rectangle": {
+    "implementation": {
+      "file": "src/skimage/morphology/footprints.py",
+      "line": 101,
+      "end_line": 199
+    },
+    "description": "Generate a rectangular or hyper-rectangular footprint.",
+    "calls": [
+      "partial_footprint",
+      "any",
+      "warnings.warn",
+      "min",
+      "_decompose_size",
+      "footprint.append"
+    ],
+    "branches": [
+      {
+        "line": 164,
+        "expression": "decomposition == 'sequence' and has_even_width"
+      },
+      {
+        "line": 177,
+        "expression": "decomposition is None"
+      },
+      {
+        "line": 180,
+        "expression": "decomposition in ('separable', 'sequence_fallback')"
+      },
+      {
+        "line": 185,
+        "expression": "decomposition == 'sequence'"
+      },
+      {
+        "line": 190,
+        "expression": "width > min_width"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.octagon": {
+    "implementation": {
+      "file": "src/skimage/morphology/footprints.py",
+      "line": 914,
+      "end_line": 996
+    },
+    "description": "Generates an octagon shaped footprint.",
+    "calls": [
+      "convex_hull_image(footprint).astype",
+      "convex_hull_image",
+      "footprint_rectangle",
+      "octagon",
+      "diamond"
+    ],
+    "branches": [
+      {
+        "line": 959,
+        "expression": "m == n == 0"
+      },
+      {
+        "line": 964,
+        "expression": "decomposition is None"
+      },
+      {
+        "line": 977,
+        "expression": "decomposition == 'sequence'"
+      },
+      {
+        "line": 979,
+        "expression": "m <= 2 and n <= 2"
+      },
+      {
+        "line": 983,
+        "expression": "m == 0"
+      },
+      {
+        "line": 987,
+        "expression": "m > 1"
+      },
+      {
+        "line": 991,
+        "expression": "n > 0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.octahedron": {
+    "implementation": {
+      "file": "src/skimage/morphology/footprints.py",
+      "line": 780,
+      "end_line": 838
+    },
+    "description": "Generates a octahedron-shaped footprint.",
+    "calls": [
+      "np.abs",
+      "octahedron",
+      "_decompose_size"
+    ],
+    "branches": [
+      {
+        "line": 823,
+        "expression": "decomposition is None"
+      },
+      {
+        "line": 832,
+        "expression": "decomposition == 'sequence'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.opening": {
+    "implementation": {
+      "file": "src/skimage/morphology/gray.py",
+      "line": 287,
+      "end_line": 361
+    },
+    "description": "Return grayscale morphological opening of an image.",
+    "calls": [
+      "pad_footprint",
+      "erosion",
+      "dilation",
+      "mirror_footprint"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_bool": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 581,
+      "end_line": 602
+    },
+    "description": "Convert an image to boolean format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}
