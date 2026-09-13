@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "report_type": "codebase-metadata",
-  "generated_at": "2026-09-13T01:32:59Z",
+  "generated_at": "2026-09-13T01:38:40Z",
   "informational": true,
   "non_blocking": true,
   "codebase": {
@@ -486,6 +486,7 @@
         "pyscf/cc: coupled-cluster methods are a separate solver family and a later task",
         "pyscf/scf, pyscf/gto and pyscf/ao2mo: shared molecular and integral infrastructure",
         "pyscf/pbc and periodic FCI paths: separate workload and dependency surface",
+        "pyscf/fci/__init__.py and pyscf/fci/cistring.py: public dispatch and discrete determinant-string utilities are follow-up scope",
         "pyscf/fci/direct_spin0_symm.py and pyscf/fci/direct_spin1_symm.py: point-group symmetry solvers are a follow-up task",
         "pyscf/fci/direct_uhf.py and pyscf/fci/fci_dhf_slow.py: unrestricted and relativistic solvers are follow-up tasks",
         "pyscf/fci/direct_ep.py and pyscf/fci/spin_op.py: electron-proton and spin-operator paths are follow-up tasks"
@@ -518,7 +519,7 @@
         "direct spin-0 and spin-1 FCI",
         "direct no-symmetry FCI",
         "selected CI",
-        "determinant string and RDM operations"
+        "reduced density-matrix operations"
       ],
       "not_responsible_for": [
         "pyscf/cc: coupled-cluster methods are a separate solver family and a later task",
@@ -538,8 +539,6 @@
         "https://github.com/pyscf/pyscf/tree/v2.14.0/pyscf/fci/test"
       ],
       "owned_paths": [
-        "pyscf/fci/__init__.py",
-        "pyscf/fci/cistring.py",
         "pyscf/fci/direct_spin0.py",
         "pyscf/fci/direct_spin1.py",
         "pyscf/fci/direct_nosym.py",
@@ -549,10 +548,10 @@
       "classification": "agent-authored module card; CLI-computed size and approval status",
       "metrics": {
         "owned": {
-          "regular_files": 7,
-          "bytes": 159080,
-          "text_files": 7,
-          "text_physical_lines": 3863
+          "regular_files": 5,
+          "bytes": 133260,
+          "text_files": 5,
+          "text_physical_lines": 3171
         },
         "shared": {
           "regular_files": 610,
@@ -584,7 +583,7 @@
         "value": 15,
         "unit": "files",
         "semantics": "distinct official test files considered",
-        "classification": "agent-authored/evidenced"
+        "classification": "CLI-computed from distinct paths in later tests.json"
       },
       "test_definitions": {
         "value": 126,
@@ -608,21 +607,21 @@
     "by_module": {
       "fci-solvers": {
         "sources": [
-          "pyscf/fci/test/test_cistring.py",
           "pyscf/fci/test/test_spin0.py",
           "pyscf/fci/test/test_spin1.py",
           "pyscf/fci/test/test_direct_nosym.py",
-          "pyscf/fci/test/test_selected_ci.py"
+          "pyscf/fci/test/test_selected_ci.py",
+          "pyscf/fci/test/test_rdm.py"
         ],
         "selectors": [
-          "pytest file-level selection; no test method was dropped within the five selected files"
+          "pytest file-level selection; no test method was dropped within the six selected files"
         ],
         "counts": {
           "test_files": {
-            "value": null,
+            "value": 15,
             "unit": "files",
             "semantics": "distinct official test files considered",
-            "classification": "agent-authored/evidenced"
+            "classification": "CLI-computed from distinct paths in later tests.json"
           },
           "test_definitions": {
             "value": null,
@@ -644,16 +643,16 @@
           }
         },
         "covers": [
-          "determinant-string indexing and parity",
           "spin-singlet FCI contraction, energy and RDM paths",
           "spin-general FCI contraction, energy and RDM paths",
           "complex/no-symmetry direct FCI paths",
-          "selected-CI and selected-space paths"
+          "selected-CI and selected-space paths",
+          "three- and four-particle RDM paths"
         ],
         "known_gaps": [
           "test_addons.py",
+          "test_cistring.py",
           "test_ep.py",
-          "test_rdm.py",
           "test_spin0_symm.py",
           "test_spin1_symm.py",
           "test_spin1_cyl_sym.py",
@@ -664,7 +663,7 @@
         ],
         "execution": [
           "Native editable build completed in 4m16s with Homebrew LLVM clang/clang++, CMake parallel level 4.",
-          "Five selected files each passed: 9, 9, 12, 5 and 27 tests; per-file wall times 26.6s, 2.1s, 0.9s, 1.6s and 2.3s.",
+          "Five selected files passed: 9, 12, 5, 27 and 7 tests with timings 2.1s, 0.9s, 1.6s, 2.3s and 22.1s.",
           "The full non-DHF FCI directory passed 119 tests in 51.79s real time; two warnings were emitted and the explicitly ignored DHF slow file was not run."
         ],
         "classification": "agent-authored/evidenced, except any explicitly CLI-labelled counts"
@@ -681,10 +680,10 @@
         "text_physical_lines": 759853
       },
       "owned": {
-        "regular_files": 7,
-        "bytes": 159080,
-        "text_files": 7,
-        "text_physical_lines": 3863
+        "regular_files": 5,
+        "bytes": 133260,
+        "text_files": 5,
+        "text_physical_lines": 3171
       },
       "overlapping_owned": {
         "regular_files": 0,
@@ -693,10 +692,10 @@
         "text_physical_lines": 0
       },
       "unclassified": {
-        "regular_files": 1656,
-        "bytes": 23573585,
-        "text_files": 1647,
-        "text_physical_lines": 452898
+        "regular_files": 1658,
+        "bytes": 23599405,
+        "text_files": 1649,
+        "text_physical_lines": 453590
       }
     },
     "overlaps": [],
@@ -1552,7 +1551,9 @@
       "pyscf/eph/test/test_uks.py",
       "pyscf/eph/uhf.py",
       "pyscf/eph/uks.py",
+      "pyscf/fci/__init__.py",
       "pyscf/fci/addons.py",
+      "pyscf/fci/cistring.py",
       "pyscf/fci/direct_ep.py",
       "pyscf/fci/direct_spin0_symm.py",
       "pyscf/fci/direct_spin1_cyl_sym.py",
@@ -2380,7 +2381,7 @@
     "classification": "CLI-computed accounting plus agent-authored gaps"
   },
   "warnings": [
-    "1656 regular file(s) are unclassified; this is visible but non-blocking"
+    "1658 regular file(s) are unclassified; this is visible but non-blocking"
   ],
   "notes": "Fill every field to best effort. Unknown is acceptable; this report is informational and non-blocking."
 }
