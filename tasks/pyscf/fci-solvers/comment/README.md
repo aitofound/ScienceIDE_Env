@@ -6,13 +6,12 @@ self-validation and runtime records). This file is the human-readable story.
 
 ## Module
 
-The module owns `pyscf/fci/direct_spin0.py`, `direct_spin1.py`,
-`direct_nosym.py`, `selected_ci.py` and `rdm.py`. It packages direct and
-selected FCI contractions plus physical energy and reduced-density-matrix
-outputs. Public dispatch, determinant-string helpers, point-group symmetry,
-unrestricted/relativistic, electron-proton and spin-operator paths are left
-out so this first task has a small closed numerical surface with active
-variants.
+The module boundary is the whole pinned PySCF codebase, as required by the
+current pipeline. The first closed check set exercises
+`pyscf/fci/direct_spin0.py`, `direct_spin1.py`, `direct_nosym.py`,
+`selected_ci.py` and `rdm.py`, with explicit follow-up gaps for SCF, coupled
+cluster, response, periodic and specialized FCI paths. This keeps the initial
+task small without misrepresenting it as a separate FCI codebase.
 
 ## Build
 

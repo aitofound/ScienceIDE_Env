@@ -16,7 +16,7 @@ COPY tests/ /workspace/tests/
 RUN chmod +x /workspace/tests/test.sh /workspace/tests/checks/*/run.sh
 RUN python3 -m venv /opt/venv \
     && /opt/venv/bin/pip install --no-cache-dir setuptools wheel numpy scipy h5py pytest \
-    && CC=gcc CXX=g++ CMAKE_BUILD_PARALLEL_LEVEL=2 \
+    && CC=gcc CXX=g++ CMAKE_BUILD_PARALLEL_LEVEL=8 \
        /opt/venv/bin/pip install --no-build-isolation --no-deps /workspace/code
 ENV PATH=/opt/venv/bin:$PATH PYTHONDONTWRITEBYTECODE=1
 ENV SOURCE_DIR=/workspace/code
