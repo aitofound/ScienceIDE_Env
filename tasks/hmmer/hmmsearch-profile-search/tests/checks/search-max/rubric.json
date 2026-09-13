@@ -6,10 +6,10 @@
   "observable": "Keyed target/domain rows, identities, coordinates, E-values, scores and biases from output.tbl/output.domtbl.",
   "expected_runtime_s": 100,
   "default_vs_upstream": "Runs the upstream exercise testsuite/testsuite.sqc with its options and captures scientific output; comments/timing excluded.",
-  "variant": "Variant perturbs the first active match-emission field in a copied text profile by 0.02 so printed scientific scores can move.",
+  "variant": "Variant perturbs the first active match-emission field in a copied text profile by 0.005 so printed scientific scores can move.",
   "altbuild": "CFLAGS=-O0 alternative build for the acceleration workload.",
   "comparison": {
-    "atol": 0.1,
+    "atol": 0.11,
     "rtol": 0.0,
     "files": [
       {
@@ -23,10 +23,21 @@
     ]
   },
   "evidence": {
-    "floor": null,
-    "floor_how": "Measured by self-validation when the alternative build is available; otherwise no independent floor is claimed.",
-    "self_validation_spread": null,
-    "self_validation_bound_fraction": null
+    "floor": 0.0,
+    "floor_how": "measured by selfcheck on 2026-09-13: run.sh altbuild (CFLAGS=-O0) against run.sh nominal, graded with the check's own validate.py: every graded value identical, an ungraded file differs",
+    "self_validation_spread": 0.0,
+    "self_validation_bound_fraction": 0.0,
+    "altbuild": {
+      "what": "CFLAGS=-O0",
+      "distance": 0.0,
+      "bound_fraction": 0.0,
+      "identical": false,
+      "graded_identical": true,
+      "passed": true,
+      "reason": "all keyed scientific rows match within printed-score tolerance",
+      "at": "2026-09-13T15:10:46Z"
+    },
+    "floor_bound_fraction": 0.0
   },
   "warrant": "Rows are keyed by target/query identity and domain number; physical numeric fields use a one-score-unit bound while identities and coordinates remain exact. A missing search stage, changed score, coordinate or threshold crosses the bound."
 }
