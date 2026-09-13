@@ -15,7 +15,7 @@ Generated from the canonical JSON. Unknown values are visible; this report never
 
 | module | approval | purpose / difference | owned files | owned text lines | collected tests | shared components |
 |---|---|---|---:|---:|---:|---|
-| `fci-solvers` | approved | Spin and symmetry implementations share the same FCI solver family but differ in determinant representation and Hamiltonian contraction paths; checks must grade physical energies,… | 36 | 12520 | unknown | `shared-infrastructure` |
+| `fci-solvers` | approved | Spin and symmetry implementations share the same FCI solver family but differ in determinant representation and Hamiltonian contraction paths; checks must grade physical energies,… | 7 | 3863 | unknown | `shared-infrastructure` |
 
 ### Shared code
 
@@ -28,9 +28,9 @@ Generated from the canonical JSON. Unknown values are visible; this report never
 | bucket | files | bytes | text lines |
 |---|---:|---:|---:|
 | shared | 610 | 36977300 | 759853 |
-| owned | 36 | 526140 | 12520 |
+| owned | 7 | 159080 | 3863 |
 | overlapping_owned | 0 | 0 | 0 |
-| unclassified | 1627 | 23206525 | 444241 |
+| unclassified | 1656 | 23573585 | 452898 |
 
 ### Total official-test counts (units are not interchangeable)
 
@@ -42,7 +42,7 @@ Generated from the canonical JSON. Unknown values are visible; this report never
 | `inner_cases` | unknown | inner cases |
 
 ### Gaps and warnings
-- CLI: 1627 regular file(s) are unclassified; this is visible but non-blocking
+- CLI: 1656 regular file(s) are unclassified; this is visible but non-blocking
 
 Artifacts: `codebase-metadata.json` (canonical) · `codebase-metadata.html` (self-contained detail)
 <!-- SCIACCEL_CODEBASE_METADATA_REPORT:END -->

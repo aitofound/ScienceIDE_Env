@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "report_type": "codebase-metadata",
-  "generated_at": "2026-09-13T01:28:02Z",
+  "generated_at": "2026-09-13T01:32:59Z",
   "informational": true,
   "non_blocking": true,
   "codebase": {
@@ -20,7 +20,7 @@
     "owner": "JunkaiWang-TheoPhy",
     "source_tree_fingerprint": "280fdb5c45776cf6eec4d6e3d7aa616f6d5d12f3f7f8b248924251430d76643c",
     "fingerprint_algorithm": "SHA-256 over typed sorted regular-file paths+bytes and symlink paths+safe targets",
-    "measurement_source": "Step 1 investigation checkout intended for vendoring",
+    "measurement_source": "vendored source payload",
     "agent_authored": {
       "description": "PySCF is a Python-based electronic-structure framework for quantum-chemistry and many-body calculations, with compiled numerical kernels and workflows for SCF, integral transformation, FCI, coupled cluster, response and periodic systems.",
       "evidence": [
@@ -30,7 +30,7 @@
     }
   },
   "measurement": {
-    "scope": "Step 1 investigation checkout intended for vendoring",
+    "scope": "vendored source payload",
     "regular_file_rule": "all regular files below the source snapshot",
     "physical_line_rule": "UTF-8/NUL-free bytes: newline count plus one final non-newline line",
     "text_binary_rule": "NUL-containing or non-UTF-8 files are binary for line accounting",
@@ -486,7 +486,9 @@
         "pyscf/cc: coupled-cluster methods are a separate solver family and a later task",
         "pyscf/scf, pyscf/gto and pyscf/ao2mo: shared molecular and integral infrastructure",
         "pyscf/pbc and periodic FCI paths: separate workload and dependency surface",
-        "pyscf/fci/fci_dhf_slow.py: relativistic DHF solver is not in the first bounded task"
+        "pyscf/fci/direct_spin0_symm.py and pyscf/fci/direct_spin1_symm.py: point-group symmetry solvers are a follow-up task",
+        "pyscf/fci/direct_uhf.py and pyscf/fci/fci_dhf_slow.py: unrestricted and relativistic solvers are follow-up tasks",
+        "pyscf/fci/direct_ep.py and pyscf/fci/spin_op.py: electron-proton and spin-operator paths are follow-up tasks"
       ],
       "hazards": [
         "Compiled C kernels and BLAS/LAPACK affect build and floating-point ordering",
@@ -494,7 +496,7 @@
         "RDM and determinant-array outputs require physical identity/order decisions before pointwise grading"
       ],
       "approval_status": "approved",
-      "purpose": "FCI is a coherent many-body solver family with distinct spin and symmetry implementations, determinant-string operations and RDM outputs. It can be packaged as one bounded task while sharing PySCF's molecular and integral infrastructure.",
+      "purpose": "The core direct and selected FCI solver family provides determinant-string operations, Hamiltonian contractions, energies and RDM outputs. It is packaged as one bounded task while sharing PySCF's molecular and integral infrastructure.",
       "primary_inputs": [
         "molecular geometry and basis through pyscf.gto",
         "one- and two-electron integrals in molecular-orbital form",
@@ -522,7 +524,9 @@
         "pyscf/cc: coupled-cluster methods are a separate solver family and a later task",
         "pyscf/scf, pyscf/gto and pyscf/ao2mo: shared molecular and integral infrastructure",
         "pyscf/pbc and periodic FCI paths: separate workload and dependency surface",
-        "pyscf/fci/fci_dhf_slow.py: relativistic DHF solver is not in the first bounded task"
+        "pyscf/fci/direct_spin0_symm.py and pyscf/fci/direct_spin1_symm.py: point-group symmetry solvers are a follow-up task",
+        "pyscf/fci/direct_uhf.py and pyscf/fci/fci_dhf_slow.py: unrestricted and relativistic solvers are follow-up tasks",
+        "pyscf/fci/direct_ep.py and pyscf/fci/spin_op.py: electron-proton and spin-operator paths are follow-up tasks"
       ],
       "shared_component_ids": [
         "shared-infrastructure"
@@ -534,15 +538,21 @@
         "https://github.com/pyscf/pyscf/tree/v2.14.0/pyscf/fci/test"
       ],
       "owned_paths": [
-        "pyscf/fci"
+        "pyscf/fci/__init__.py",
+        "pyscf/fci/cistring.py",
+        "pyscf/fci/direct_spin0.py",
+        "pyscf/fci/direct_spin1.py",
+        "pyscf/fci/direct_nosym.py",
+        "pyscf/fci/selected_ci.py",
+        "pyscf/fci/rdm.py"
       ],
       "classification": "agent-authored module card; CLI-computed size and approval status",
       "metrics": {
         "owned": {
-          "regular_files": 36,
-          "bytes": 526140,
-          "text_files": 35,
-          "text_physical_lines": 12520
+          "regular_files": 7,
+          "bytes": 159080,
+          "text_files": 7,
+          "text_physical_lines": 3863
         },
         "shared": {
           "regular_files": 610,
@@ -671,10 +681,10 @@
         "text_physical_lines": 759853
       },
       "owned": {
-        "regular_files": 36,
-        "bytes": 526140,
-        "text_files": 35,
-        "text_physical_lines": 12520
+        "regular_files": 7,
+        "bytes": 159080,
+        "text_files": 7,
+        "text_physical_lines": 3863
       },
       "overlapping_owned": {
         "regular_files": 0,
@@ -683,10 +693,10 @@
         "text_physical_lines": 0
       },
       "unclassified": {
-        "regular_files": 1627,
-        "bytes": 23206525,
-        "text_files": 1619,
-        "text_physical_lines": 444241
+        "regular_files": 1656,
+        "bytes": 23573585,
+        "text_files": 1647,
+        "text_physical_lines": 452898
       }
     },
     "overlaps": [],
@@ -1542,6 +1552,35 @@
       "pyscf/eph/test/test_uks.py",
       "pyscf/eph/uhf.py",
       "pyscf/eph/uks.py",
+      "pyscf/fci/addons.py",
+      "pyscf/fci/direct_ep.py",
+      "pyscf/fci/direct_spin0_symm.py",
+      "pyscf/fci/direct_spin1_cyl_sym.py",
+      "pyscf/fci/direct_spin1_symm.py",
+      "pyscf/fci/direct_uhf.py",
+      "pyscf/fci/fci_dhf_slow.py",
+      "pyscf/fci/fci_slow.py",
+      "pyscf/fci/selected_ci_slow.py",
+      "pyscf/fci/selected_ci_spin0.py",
+      "pyscf/fci/selected_ci_spin0_symm.py",
+      "pyscf/fci/selected_ci_symm.py",
+      "pyscf/fci/spin_op.py",
+      "pyscf/fci/test/spin_op_hamiltonian.h5",
+      "pyscf/fci/test/test_addons.py",
+      "pyscf/fci/test/test_cistring.py",
+      "pyscf/fci/test/test_dhf_slow.py",
+      "pyscf/fci/test/test_direct_nosym.py",
+      "pyscf/fci/test/test_ep.py",
+      "pyscf/fci/test/test_rdm.py",
+      "pyscf/fci/test/test_selected_ci.py",
+      "pyscf/fci/test/test_spin0.py",
+      "pyscf/fci/test/test_spin0_symm.py",
+      "pyscf/fci/test/test_spin1.py",
+      "pyscf/fci/test/test_spin1_cyl_sym.py",
+      "pyscf/fci/test/test_spin1_symm.py",
+      "pyscf/fci/test/test_spin_op.py",
+      "pyscf/fci/test/test_symm_init_guess.py",
+      "pyscf/fci/test/test_uhf.py",
       "pyscf/geomopt/__init__.py",
       "pyscf/geomopt/addons.py",
       "pyscf/geomopt/ase_solver.py",
@@ -2341,7 +2380,7 @@
     "classification": "CLI-computed accounting plus agent-authored gaps"
   },
   "warnings": [
-    "1627 regular file(s) are unclassified; this is visible but non-blocking"
+    "1656 regular file(s) are unclassified; this is visible but non-blocking"
   ],
   "notes": "Fill every field to best effort. Unknown is acceptable; this report is informational and non-blocking."
 }
