@@ -1,0 +1,88 @@
+import collections
+import dataclasses
+import typing
+
+import pytest
+
+import pyfv3._config
+
+CONFIG_CLASSES = [
+    pyfv3._config.SatAdjustConfig,
+    pyfv3._config.AcousticDynamicsConfig,
+    pyfv3._config.RiemannConfig,
+    pyfv3._config.DGridShallowWaterLagrangianDynamicsConfig,
+    pyfv3._config.DynamicalCoreConfig,
+]
+
+
+@dataclasses.dataclass
+class FirstConfigClass:
+    value: float
+
+
+@dataclasses.dataclass
+class CompatibleConfigClass:
+    value: float
+
+
+@dataclasses.dataclass
+class IncompatibleConfigClass:
+    value: int
+
+
+@dataclasses.dataclass
+class IncompatiblePropertyConfigClass:
+    @property
+    def value(self) -> int:
+        return 0
+
+
+def assert_types_match(classes):
+    types = collections.defaultdict(set)
+    for cls in classes:
+        for name, _field in cls.__dataclass_fields__.items():
+            # Get type hints in case we're using postponed evaluation of types
+            # Example: '<class 'bool'> instead of 'bool'
+            types[name].add(typing.get_type_hints(cls)[name])
+        for name, attr in cls.__dict__.items():
+            if isinstance(attr, property):
+                types[name].add(
+                    typing.get_type_hints(attr.fget).get("return", typing.Any)
+                )
+    assert not any(len(type_list) > 1 for type_list in types.values()), {
+        key: value for key, value in types.items() if len(value) > 1
+    }
+
+
+def assert_defaults_match(classes):
+    types = collections.defaultdict(set)
+    for cls in classes:
+        for name, field in cls.__dataclass_fields__.items():
+            types[name].add(field.default)
+    assert not any(len(type_list) > 1 for type_list in types.values()), {
+        key: value for key, value in types.items() if len(value) > 1
+    }
+
+
+def test_assert_types_match_compatible_types():
+    assert_types_match([FirstConfigClass, CompatibleConfigClass])
+
+
+def test_assert_types_match_incompatible_types():
+    with pytest.raises(AssertionError):
+        assert_types_match([FirstConfigClass, IncompatibleConfigClass])
+
+
+def test_assert_types_match_incompatible_property_type():
+    with pytest.raises(AssertionError):
+        assert_types_match([FirstConfigClass, IncompatiblePropertyConfigClass])
+
+
+def test_types_match():
+    """
+    Test that when an attribute exists on two or more configuration dataclasses,
+    their type hints are the same.
+
+    Checks both dataclass attributes and property methods.
+    """
+    assert_types_match(CONFIG_CLASSES)

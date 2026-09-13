@@ -1,0 +1,88 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Copyright (C) 2011-2024 OpenFOAM Foundation
+     \\/     M anipulation  |
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenFOAM.
+
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+
+\*---------------------------------------------------------------------------*/
+
+#include "surfaceFormatsCore.H"
+#include "Time.H"
+#include "IFstream.H"
+#include "OFstream.H"
+#include "SortableList.H"
+#include "surfMesh.H"
+
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
+
+Foam::word Foam::fileFormats::surfaceFormatsCore::nativeExt("ofs");
+
+
+// * * * * * * * * * * * * * Static Member Functions * * * * * * * * * * * * //
+
+Foam::string Foam::fileFormats::surfaceFormatsCore::getLineNoComment
+(
+    IFstream& is
+)
+{
+    string line;
+    do
+    {
+        is.getLine(line);
+    }
+    while ((line.empty() || line[0] == '#') && is.good());
+
+    return line;
+}
+
+
+bool Foam::fileFormats::surfaceFormatsCore::checkSupport
+(
+    const wordHashSet& available,
+    const word& ext,
+    const bool verbose,
+    const word& functionName
+)
+{
+    if (available.found(ext))
+    {
+        return true;
+    }
+    else if (verbose)
+    {
+        wordList known = available.sortedToc();
+
+        Info<< "Unknown file extension for " << functionName
+            << " : " << ext << nl
+            << "Valid types: (";
+
+        forAll(known, i)
+        {
+            Info<< " " << known[i];
+        }
+
+        Info<< " )" << endl;
+    }
+
+    return false;
+}
+
+
+// ************************************************************************* //

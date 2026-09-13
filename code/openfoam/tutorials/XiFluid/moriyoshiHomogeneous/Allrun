@@ -1,0 +1,51 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # Run from this directory
+
+# Source tutorial run functions
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+
+# Clone the propane case and set it up for hydrogen
+cloneCase moriyoshiHomogeneous moriyoshiHomogeneousHydrogen
+(
+    cd moriyoshiHomogeneousHydrogen || exit 1
+
+    mv constant/physicalProperties.u \
+        constant/physicalProperties.u.propane
+    mv constant/physicalProperties.u.hydrogen \
+        constant/physicalProperties.u
+
+    mv constant/physicalProperties.b \
+        constant/physicalProperties.b.propane
+    mv constant/physicalProperties.b.hydrogen \
+        constant/physicalProperties.b
+
+    mv constant/combustionPropertiesInclude \
+        constant/combustionPropertiesInclude.propane
+    mv constant/combustionPropertiesInclude.hydrogen \
+        constant/combustionPropertiesInclude
+)
+
+# Run the propane case
+(
+    cd moriyoshiHomogeneous || exit 1
+
+    foamRunTutorials
+
+    if ! isTest $@
+    then
+        runApplication -a foamDictionary system/controlDict -entry deltaT -set 1e-05
+        runApplication -a foamDictionary system/controlDict -entry endTime -set 0.015
+        runApplication -a foamDictionary system/controlDict -entry writeInterval -set 50
+
+        runApplication -a foamRun
+    fi
+)
+
+# Run the hydrogen case
+(
+    cd moriyoshiHomogeneousHydrogen || exit 1
+
+    foamRunTutorials
+)
+
+#------------------------------------------------------------------------------

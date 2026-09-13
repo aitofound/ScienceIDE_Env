@@ -546,6 +546,14 @@ def cmd_codebase_report(a) -> None:
     json_path = output / "codebase-metadata.json"
     html_path = output / "codebase-metadata.html"
     markdown_path = output / "codebase-metadata.md"
+    bibliography_path = output / "references.bib"
+    bibliography_created = not bibliography_path.exists()
+    if bibliography_created:
+        bibliography_path.write_text(
+            "% Add every scientific paper and software reference used by this codebase's tasks.\n"
+            "% Update this shared bibliography in every task PR before review.\n",
+            encoding="utf-8",
+        )
     html_text = render_metadata_html(report)
     markdown_text = render_metadata_markdown(report)
     write_json(json_path, report)
@@ -556,6 +564,8 @@ def cmd_codebase_report(a) -> None:
     print(f"  canonical JSON: {rel(json_path)}")
     print(f"  self-contained HTML: {rel(html_path)}")
     print(f"  bounded Markdown PR section: {rel(markdown_path)}")
+    action = "starter created" if bibliography_created else "existing file preserved"
+    print(f"  codebase bibliography ({action}): {rel(bibliography_path)}")
     for warning in report.get("warnings", []):
         print(f"WARNING: {warning}")
     print("The fingerprint covers the measured source snapshot only; report files live outside code/<source>/.")

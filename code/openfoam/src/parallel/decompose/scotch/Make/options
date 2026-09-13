@@ -1,0 +1,18 @@
+# Note including of mplib compilation rules.
+# This is purely to avoid scotch.h including mpicxx.h, which causes problems.
+
+-include $(GENERAL_RULES)/mplibType
+
+EXE_INC = \
+    $(PFLAGS) $(PINC) \
+    -I$(SCOTCH_ARCH_PATH)/include \
+    -I$(or $(SCOTCH_INCLUDE_DIR),/usr/include/scotch) \
+    -I../decompositionMethods/lnInclude
+
+LIB_LIBS = \
+    -L$(SCOTCH_ARCH_PATH)/lib \
+    $(if $(SCOTCH_LIB_DIR),-L$(SCOTCH_LIB_DIR)) \
+    -L$(FOAM_EXT_LIBBIN) \
+    -lscotch \
+    -lscotcherrexit \
+    -lrt

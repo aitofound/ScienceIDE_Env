@@ -1,0 +1,43 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # Run from this directory
+
+# Source tutorial run functions
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+
+runApplication blockMesh
+
+runApplication createBaffles
+runApplication splitBaffles
+
+runApplication splitMeshRegions -cellZones all
+
+rm -f 0/cellToRegion 0/*/cellToRegion constant/cellToRegion
+
+runApplication -s fluid createZones -dict system/createZonesDict -region fluid
+
+! isTest "$@" && [ -n "$1" ] && mode=$1 || mode=parallel
+
+case $mode in
+    serial)
+        runApplication createNonConformalCouples
+        runApplication foamMultiRun
+        ;;
+    parallel | stitchSerial)
+        runApplication createNonConformalCouples
+        runApplication decomposePar -allRegions -copyZero -cellProc
+        runParallel foamMultiRun
+        runApplication reconstructPar -allRegions
+        ;;
+    stitchParallel)
+        runApplication decomposePar -allRegions -copyZero -cellProc
+        runParallel createNonConformalCouples
+        runParallel foamMultiRun
+        runApplication reconstructPar -allRegions -constant
+        ;;
+    *)
+        echo "Error: mode $mode not recognised"
+        exit 1
+        ;;
+esac
+
+#------------------------------------------------------------------------------
