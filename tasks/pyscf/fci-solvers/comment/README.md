@@ -9,9 +9,11 @@ self-validation and runtime records). This file is the human-readable story.
 The module boundary is the whole pinned PySCF codebase, as required by the
 current pipeline. The first closed check set exercises
 `pyscf/fci/direct_spin0.py`, `direct_spin1.py`, `direct_nosym.py`,
-`selected_ci.py` and `rdm.py`, with explicit follow-up gaps for SCF, coupled
-cluster, response, periodic and specialized FCI paths. This keeps the initial
-task small without misrepresenting it as a separate FCI codebase.
+`selected_ci.py` and `rdm.py`. The selected-CI check uses the larger official
+eight-hydrogen STO-3G geometry to exercise a meaningful determinant space, with
+explicit follow-up gaps for SCF, coupled-cluster, response, periodic and
+specialized FCI paths. This keeps the initial task small without
+misrepresenting it as a separate FCI codebase.
 
 ## Build
 
@@ -27,10 +29,12 @@ The preliminary calibration ran each check's `run.sh nominal` and
 `run.sh variant` against the pinned CPU source with the default solver knobs;
 the variant changes one active one-body diagonal element by two binary64 ulps.
 The observed maximum spreads were 1.33e-15 (spin-0), 1.33e-15 (spin-1),
-6.96e-11 (no-symmetry), 3.33e-16 (selected CI) and 3.55e-15 (RDM). The
+6.96e-11 (no-symmetry), 5.33e-15 (selected CI) and 3.55e-15 (RDM). The
 provisional pointwise bounds are 1e-10 except 1e-8 for the iterative
-no-symmetry contraction. The first Docker selfcheck supplied the calibration
-record; the second, final selfcheck passed with these bounds and no warnings.
+no-symmetry contraction. The selected-CI variant now follows the same
+eight-hydrogen workload as the official test_h8 example. The refreshed Docker
+selfcheck supplies the calibration record for this contract; no GPU speedup is
+claimed from the CPU-only calibration.
 
 ## Blind spots
 
