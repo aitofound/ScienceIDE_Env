@@ -1,0 +1,50 @@
+# SWMF codebase metadata and bibliography
+
+**Informational, non-blocking backfill.** This report was assembled from the shipped source and pending task evidence, following neighboring `codebase-metadata.{json,md,html}` conventions. It is not a generated source census or scientific validation report.
+
+## Source and inspected scope
+
+- Benchmark repository snapshot: `9b9ac0eea13712f2e40d25e28ac4c4b49a07c761`.
+- Upstream: [SWMFsoftware/SWMF](https://github.com/SWMFsoftware/SWMF), source payload `code/swmf/`.
+- Upstream root pin: [`127a73cb13951351d60e7936583f69f39bd0272e`](https://github.com/SWMFsoftware/SWMF/commit/127a73cb13951351d60e7936583f69f39bd0272e).
+- Shipped `tasks/swmf/**` leaves at that snapshot: **none**. All seven pending inventory PRs below were inspected with `gh pr view` and their actual module records and check directories with `gh api`.
+- License: top-level Apache-2.0; component/dependency coverage unknown. Documented languages include Fortran and C++; no exhaustive language measurement was made.
+- Owner, source fingerprint, source size, runtime, speedup, tolerance approval and complete scientific validation: **unknown**.
+
+## References and task coverage
+
+The [BibTeX bibliography](references.bib) contains **20 deduplicated entries**: 19 DOI-verified papers and one AGU 2025 meeting abstract. Foundational framework papers come first, then component methods. The common references `toth2005swmf` and `toth2012adaptive` apply across all seven leaves.
+
+| Pending leaf / PR | Owned component families | Check definitions | Component references |
+|---|---|---:|---|
+| [`swmf-mit-coupling`](https://github.com/aitofound/ScienceAccelBench/pull/623) (#623) | `CON/Coupler`, `CON/Interface`, `IE/Ridley_serial`, `IM/RCM2`, `PS/DGCPM`, `RB/RBE` | 26 | `ridley2004conductance`, `toffoletto2003rcm`, `ober1997dgcpm`, `fok2008rbe` |
+| [`swmf-fleks`](https://github.com/aitofound/ScienceAccelBench/pull/624) (#624) | `PC/FLEKS`, `PT/FLEKS` | 45 | `shou2021mhdaepic`, `chen2023fleks` |
+| [`swmf-gitm-mgitm`](https://github.com/aitofound/ScienceAccelBench/pull/625) (#625) | `UA/GITM`, `UA/GITM/ext/Electrodynamics`, `UA/MGITM` | 33 | `ridley2006gitm`, `bougher2015mgitm` |
+| [`swmf-sep`](https://github.com/aitofound/ScienceAccelBench/pull/626) (#626) | `SP/MFLAMPA`, `PT/MITTENS`, `PT/AMPS/src`, `PT/AMPS/srcSEP`, `PT/AMPS/srcInterface` | 18 | `sokolov2004fieldline`, `liu2025sep`, `tenishev2021amps`, `2025AGUFMSH23F2629S` |
+| [`swmf-cimi-heidi`](https://github.com/aitofound/ScienceAccelBench/pull/627) (#627) | `IM/CIMI`, `IM/HEIDI` | 21 | `fok2014cimi`, `ilie2012heidi` |
+| [`swmf-pwom`](https://github.com/aitofound/ScienceAccelBench/pull/628) (#628) | `PW/PWOM` | 14 | `glocer2007pwom`, `glocer2018kineticoutflow` |
+| [`swmf-batsrus`](https://github.com/aitofound/ScienceAccelBench/pull/629) (#629) | `GM/BATSRUS`, `SC/BATSRUS`, `IH/BATSRUS`, `OH/BATSRUS`, `EE/BATSRUS` | 113 | `powell1999solutionadaptive`, `vanderholst2014awsom` |
+
+Check counts are pending check directories at the pinned PR heads, **not passes**, exhaustive source-test counts, or runtime measurements. All seven PRs remained open drafts. The [JSON report](codebase-metadata.json) records exact heads, full check names and ownership sources. BATSRUS slots share one code family; the PC/PT FLEKS slots likewise do not imply duplicate publications. Coupled checks are attributed by graded component physics, not by every dependency that happens to run.
+
+## Verification and selection
+
+- The BibTeX entries record DOI verification URLs and component relevance in comments; the canonical JSON records validation results and immutable PR provenance. Titles, authors, journal, year, volume and available pagination were checked against publisher-deposited Crossref records; typography is normalized for BibTeX.
+- The vendored SWMF physics manual identifies field-line acceleration, RCM and ionospheric conductance references; the two framework papers supply cross-component context. FLEKS upstream documentation identifies its SWMF PC/PT role and MHD-AEPIC coupling. GITM/MGITM and PWOM documentation establish model identity.
+- Component methods include AWSoM for solar BATSRUS cases; the FLEKS particle-in-cell code paper and MHD-AEPIC for FLEKS; GITM/M-GITM, CIMI/HEIDI and hydrodynamic/kinetic PWOM; field-line transport and a physics-based SEP event simulation plus AMPS; and Ridley, RCM, DGCPM and RBE for the coupling leaf.
+- MITTENS is cited through the PARMISAN AGU 2025 meeting abstract by Shane, Zhao, Sokolov and Liu. The vendored README remains byte-identical to upstream; no separate peer-reviewed MITTENS paper was verified.
+- Some older AGU Crossref records expose manuscript IDs as article numbers. These were not relabeled as pagination. Optional unverified pagination is omitted; DOI/volume/issue still identify the papers.
+- Dedupe is by normalized DOI and citation key. The meeting-abstract entry is distinct from model papers. Bibliographic coverage is not proof that any pending task passes.
+
+## Gaps and warnings
+
+- No tasks/swmf/** paths or codebase-reports/swmf report exist at the inspected main commit. This is an evidence-based backfill, not a reconstruction of missing measurements.
+- All seven inventory-mapped task PRs were OPEN drafts when inspected. Definitions, compilation, finite output, historical partial results and green CI must not be interpreted as a complete scientific PASS.
+- Runtime, speedup, numerical tolerance approval, current end-to-end validation, full source-tree fingerprint/size and owner are unknown in this bibliography-only review.
+- The root LICENSE.txt identifies Apache-2.0. Component/dependency licensing is not exhaustively audited and is not inferred from that root license.
+- The SWMF root pin does not independently specify every separately cloned component version. Task PRs carry component pins; this report does not invent missing pins.
+- MITTENS is cited through the PARMISAN AGU 2025 meeting abstract (ADS 2025AGUFMSH23F2629S), supplied by the maintainer. A meeting abstract is not a peer-reviewed paper and carries no DOI; no separate MITTENS journal publication was verified.
+- The bibliography covers all seven pending leaves and their named component families, not a separate publication for every benchmark input, planetary scenario, restart stage or third-party dependency. No benchmark-specific validation is inferred from a model paper.
+- Inherited module records contain historical hazards that later PR updates may supersede. They are used for ownership/provenance only; this report does not declare every historical blocker current.
+
+Artifacts: [canonical JSON](codebase-metadata.json) · [HTML detail](codebase-metadata.html) · [BibTeX](references.bib)
