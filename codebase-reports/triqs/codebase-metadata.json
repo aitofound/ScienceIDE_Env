@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "report_type": "codebase-metadata",
-  "generated_at": "2026-09-13T07:44:45Z",
+  "generated_at": "2026-09-13T07:54:09Z",
   "informational": true,
   "non_blocking": true,
   "codebase": {
@@ -19,14 +19,11 @@
     "owner": "JunkaiWang-TheoPhy",
     "source_tree_fingerprint": "11e813b2f80644da9e1f8cc2805918f669800516255b4bb2d24c0b37db4d4e52",
     "fingerprint_algorithm": "SHA-256 over typed sorted regular-file paths+bytes and symlink paths+safe targets",
-    "measurement_source": "Step 1 investigation checkout intended for vendoring",
-    "agent_authored": {
-      "description": "",
-      "evidence": []
-    }
+    "measurement_source": "vendored source payload",
+    "agent_authored": {}
   },
   "measurement": {
-    "scope": "Step 1 investigation checkout intended for vendoring",
+    "scope": "vendored source payload",
     "regular_file_rule": "all regular files below the source snapshot",
     "physical_line_rule": "UTF-8/NUL-free bytes: newline count plus one final non-newline line",
     "text_binary_rule": "NUL-containing or non-UTF-8 files are binary for line accounting",
@@ -35,8 +32,23 @@
     "included_paths": [
       "."
     ],
-    "excluded_paths": [],
-    "source_extensions": [],
+    "excluded_paths": [
+      ".git",
+      "__pycache__"
+    ],
+    "source_extensions": [
+      ".py",
+      ".c",
+      ".cc",
+      ".cpp",
+      ".cxx",
+      ".h",
+      ".hh",
+      ".hpp",
+      ".hxx",
+      ".f",
+      ".f90"
+    ],
     "test_path_markers": [
       "test",
       "tests",
@@ -53,14 +65,29 @@
       "included_paths": [
         "."
       ],
-      "excluded_paths": [],
-      "source_extensions": [],
+      "excluded_paths": [
+        ".git",
+        "__pycache__"
+      ],
+      "source_extensions": [
+        ".py",
+        ".c",
+        ".cc",
+        ".cpp",
+        ".cxx",
+        ".h",
+        ".hh",
+        ".hpp",
+        ".hxx",
+        ".f",
+        ".f90"
+      ],
       "test_path_markers": [
         "test",
         "tests",
         "tst"
       ],
-      "generated_vendor_third_party_notes": ""
+      "generated_vendor_third_party_notes": "HDF5, Boost, FFTW, MPI and Python packages are external dependencies; no third-party source is bundled."
     }
   },
   "size": {
@@ -87,12 +114,12 @@
     "text_physical_lines": 208639,
     "binary_files": 42,
     "binary_bytes": 5625565,
-    "source_files": null,
-    "source_physical_lines": null,
-    "implementation_source_files": null,
-    "implementation_source_physical_lines": null,
-    "test_source_files": null,
-    "test_source_physical_lines": null,
+    "source_files": 608,
+    "source_physical_lines": 121402,
+    "implementation_source_files": 387,
+    "implementation_source_physical_lines": 95271,
+    "test_source_files": 221,
+    "test_source_physical_lines": 26131,
     "files_by_extension": [
       {
         "extension": ".bib",
@@ -405,25 +432,17 @@
         "GPL-3.0; C++ compiler gate requires Clang >=19; HDF5/MPI/Boost/FFTW and generated binding ABI; stable-release pin must be used rather than an unstable API."
       ],
       "approval_status": "approved",
-      "purpose": "The checkout is the core TRIQS distribution with C++ and Python bindings, one CMake/CTest contract, and shared data structures used by its applications.",
-      "primary_inputs": [],
-      "primary_outputs": [],
-      "algorithm_stages": [],
-      "unique_responsibilities": [],
-      "not_responsible_for": [
-        "Documentation-only files and application repositories are not included in the core source module; application-specific leaves require their own source proposal."
+      "owned_paths": [
+        "."
       ],
-      "shared_component_ids": [],
-      "depends_on_modules": [],
+      "purpose": "The checkout is the core TRIQS distribution with C++ and Python bindings, one CMake/CTest contract, and shared data structures used by its applications.",
       "differences": {
         "status": "unknown",
         "note": "not supplied"
       },
-      "evidence": [],
-      "owned_paths": [
-        "."
-      ],
       "classification": "agent-authored module card; CLI-computed size and approval status",
+      "shared_component_ids": [],
+      "depends_on_modules": [],
       "metrics": {
         "owned": {
           "regular_files": 837,
@@ -447,15 +466,13 @@
     }
   ],
   "official_tests": {
-    "frameworks": [],
-    "collection_commands": [],
-    "run_commands": [],
     "counts": {
       "test_files": {
-        "value": null,
+        "value": 267,
         "unit": "files",
         "semantics": "distinct official test files considered",
-        "classification": "agent-authored/evidenced"
+        "classification": "agent-authored/evidenced",
+        "evidence": "git ls-files test"
       },
       "test_definitions": {
         "value": null,
@@ -478,8 +495,6 @@
     },
     "by_module": {
       "triqs": {
-        "sources": [],
-        "selectors": [],
         "counts": {
           "test_files": {
             "value": null,
@@ -506,9 +521,6 @@
             "classification": "agent-authored/evidenced"
           }
         },
-        "covers": [],
-        "known_gaps": [],
-        "execution": [],
         "classification": "agent-authored/evidenced, except any explicitly CLI-labelled counts"
       }
     },
@@ -565,8 +577,10 @@
     "classification": "CLI-computed accounting plus agent-authored gaps"
   },
   "warnings": [
-    "measurement.source_extensions is empty; source/implementation line totals remain unknown",
-    "repository/cache directory excluded from source accounting: .git"
+    "agent-authored classification_and_gaps section is absent; unknown values remain visible",
+    "agent-authored codebase section is absent; unknown values remain visible",
+    "agent-authored modules section is absent; unknown values remain visible",
+    "agent-authored shared_components section is absent; unknown values remain visible"
   ],
-  "notes": "Fill every field to best effort. Unknown is acceptable; this report is informational and non-blocking."
+  "notes": "Native configure stopped at the explicit Clang >=19 gate on macOS AppleClang 16; no scientific test is claimed."
 }
