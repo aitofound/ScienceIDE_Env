@@ -1,0 +1,19 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # Run from this directory
+
+# Parse arguments for library compilation
+. $WM_PROJECT_DIR/wmake/scripts/AllwmakeParseArguments
+
+# Build if ParMetis is enabled
+case $PARMETIS_TYPE in
+none)
+    ;;
+*)
+    . $WM_PROJECT_DIR/wmake/scripts/AllwmakeMpiLib
+    . $($WM_PROJECT_DIR/bin/foamEtcFile config.sh/parMetis)
+    echo "    using PARMETIS_ARCH_PATH=$PARMETIS_ARCH_PATH"
+    wmakeMpiLib parmetis-$PARMETIS_VERSION parMetis
+    ;;
+esac
+
+#------------------------------------------------------------------------------

@@ -1,0 +1,194 @@
+#!/bin/bash
+#------------------------------------------------------------------------------
+# =========                 |
+# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+#  \\    /   O peration     | Website:  https://openfoam.org
+#   \\  /    A nd           | Copyright (C) 2011-2024 OpenFOAM Foundation
+#    \\/     M anipulation  |
+#------------------------------------------------------------------------------
+# License
+#     This file is part of OpenFOAM.
+#
+#     OpenFOAM is free software: you can redistribute it and/or modify it
+#     under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+#     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+#     for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Script
+#     wmakeLnInclude
+#
+# Usage
+#     wmakeLnInclude [-u | -update] [-s | -silent] <dir>
+#
+# Description
+#     Link all the source files in the <dir> directory into <dir>/lnInclude
+#
+#     The desired source files:
+#         *.C *.H *.h *.cpp *.cxx *.hpp *.hxx
+#
+#     Avoid
+#         *.c (C source)
+#
+#------------------------------------------------------------------------------
+Script=${0##*/}
+
+usage() {
+    cat<<USAGE
+
+Usage: $Script [OPTION] [dir]
+
+options:
+  -update | -u      update
+  -silent | -s      use 'silent' mode (do not echo command)
+  -help   | -h      print the usage
+
+    Link all the source files in the <dir> into <dir>/lnInclude
+
+Note
+    The '-u' option forces an update when the lnInclude directory already exists
+    and changes the default linking from 'ln -s' to 'ln -sf'.
+
+USAGE
+}
+
+error() {
+    exec 1>&2
+    while [ "$#" -ge 1 ]; do echo "$1"; shift; done
+    usage
+    exit 1
+}
+
+#------------------------------------------------------------------------------
+# Parse arguments and options
+#------------------------------------------------------------------------------
+
+# Default 'ln' option
+lnOpt="-s"
+
+unset update silentOpt
+
+while [ "$#" -gt 0 ]
+do
+    case "$1" in
+        -h | -help)   # Provide immediate help
+            usage && exit 0
+            ;;
+        -u | -update)
+            update=true
+            lnOpt="-sf"
+            shift
+            ;;
+        -s | -silent)
+            silentOpt=true
+            shift
+            ;;
+        -*)
+            error "unknown option: '$*'"
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+if [ $# -eq 1 ]
+then
+    baseDir=$1
+else
+    error "Error: incorrect number of arguments"
+fi
+
+
+# Convert incorrect path/dir/lnInclude to something sensible
+while [ "${baseDir##*/}" = lnInclude ]
+do
+    baseDir="${baseDir%/*}"
+    if [ "$baseDir" = lnInclude ]
+    then
+        baseDir="."
+    fi
+done
+incDir="$baseDir"/lnInclude
+
+
+[ -d "$baseDir" ] || {
+    echo "$Script error: base directory $baseDir does not exist" 1>&2
+    exit 2
+}
+
+if [ -d "$incDir" ]
+then
+    [ "$update" = true ] || exit 0
+else
+    mkdir "$incDir"
+fi
+
+[ -d "$incDir" ] || {
+    echo "$Script error: failed to create include directory $incDir" 1>&2
+    exit 0
+}
+
+cd "$incDir" || exit 1
+
+if [ "$silentOpt" = true ] || [ -n "$WM_QUIET" ]
+then
+    echo "    ln: $incDir"
+else
+    echo "$Script: linking include files to $incDir"
+fi
+
+
+#------------------------------------------------------------------------------
+# Remove any broken links first (this helps when file locations have moved)
+#------------------------------------------------------------------------------
+find -L . -type l -print0 | xargs -0 rm -f
+
+
+#------------------------------------------------------------------------------
+# Create links. Avoid recreating links unless necessary. Files in lnInclude,
+# Make, config and noLink are ignored, as is anything within a sub-library.
+#------------------------------------------------------------------------------
+
+filter()
+{
+    kind="$1"
+    shift
+
+    while [ "$#" -gt 1 ]
+    do
+        echo "-$kind" && echo "$1"
+        shift
+        echo "-o"
+    done
+
+    echo "-$kind" && echo "$1"
+    shift
+}
+
+mapfile -t pruneNames < <(filter name lnInclude Make config noLink)
+mapfile -t prunePaths < <(find .. -mindepth 2 -type d -name Make -printf '%h\n')
+mapfile -t prunePaths < <(filter path "${prunePaths[@]}")
+mapfile -t matchNames < <(filter name '*.[CHh]' '*.[ch]xx' '*.[ch]pp' '*.type')
+
+find .. \
+    \( "${pruneNames[@]}" -o "${prunePaths[@]}" \) -prune \
+    -o \( "${matchNames[@]}" \) \
+    -exec ln $lnOpt {} . \;
+
+
+#------------------------------------------------------------------------------
+# Cleanup local variables and functions
+#------------------------------------------------------------------------------
+
+unset Script usage error
+
+
+#------------------------------------------------------------------------------

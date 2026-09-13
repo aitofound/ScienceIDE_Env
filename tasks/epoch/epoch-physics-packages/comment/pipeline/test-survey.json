@@ -1,0 +1,315 @@
+{
+  "module": "epoch-physics-packages",
+  "tests": [
+    {
+      "id": "qed-rese-1d",
+      "module": "epoch-physics-packages",
+      "path": "epoch1d/example_decks/qed_rese.deck",
+      "policy": "invariants",
+      "chaotic": false,
+      "exercises": "1-D laser on a solid target with QED photon emission and radiation reaction (-DPHOTONS, photons.F90, TABLES/), collisions on; 1024 cells, 64 ppc, 200 fs, 201 dumps",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 129.2,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Photon emission draws per particle from the seeded stream in list order, which a port cannot preserve: invariants (photon count and energy, electron energy, field energy) with a rank-layout variant. 128 s of core time on 2 ranks at the official window; shorten.",
+      "survey_run": [
+        {
+          "deck": "ex-qed_rese",
+          "np": 2,
+          "rc": 0,
+          "timed_out": false,
+          "wall_s": 129.25,
+          "core_s": 128.31,
+          "n_sdf": 201,
+          "sdf_mb": 199.6
+        }
+      ],
+      "proposed_check": "qed-rese-1d",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "qed-rese-2d",
+      "module": "epoch-physics-packages",
+      "path": "epoch2d/example_decks/qed_rese.deck",
+      "policy": "invariants",
+      "chaotic": false,
+      "exercises": "2-D QED deck, 128^2 cells, 64 ppc (1.05M particles), 100 fs",
+      "resources": {
+        "cpus": 16,
+        "memory_gb": 16.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 80.9,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Same policy as 1-D; heavy, shorten window and particles per cell.",
+      "survey_run": [
+        {
+          "deck": "ex-qed_rese",
+          "np": 4,
+          "rc": 0,
+          "timed_out": false,
+          "wall_s": 80.94,
+          "core_s": 77.21000000000001,
+          "n_sdf": 101,
+          "sdf_mb": 366.2
+        }
+      ],
+      "proposed_check": "qed-rese-2d",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "qed-rese-3d",
+      "module": "epoch-physics-packages",
+      "path": "epoch3d/example_decks/qed_rese.deck",
+      "policy": "invariants",
+      "chaotic": false,
+      "exercises": "3-D QED deck, 128^3 cells, 10 ppc (21M particles)",
+      "resources": {
+        "cpus": 16,
+        "memory_gb": 32.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 3600,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "The 3-D emission path; must be cut to a small box; the natural acceleration row of this module.",
+      "survey_run": [
+        {
+          "deck": "ex-qed_rese",
+          "np": 8,
+          "rc": 124,
+          "timed_out": true,
+          "wall_s": 180.05,
+          "core_s": null,
+          "n_sdf": 11,
+          "sdf_mb": 3322.0
+        }
+      ],
+      "proposed_check": "qed-rese-3d",
+      "budget_note": "shorten window or resolution through the knobs"
+    },
+    {
+      "id": "electron-ion-equilibration-1d",
+      "module": "epoch-physics-packages",
+      "path": "epoch1d/example_decks/electron_ion_equilibration.deck",
+      "policy": "invariants",
+      "chaotic": false,
+      "exercises": "Nanbu binary collisions between electrons and ions relaxing two temperatures (collisions.F90), 5 cells, 20 ps",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 600,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "Pair selection and scattering angles come from the random stream; invariants (species temperatures versus time, total energy drift) with a rank-layout or particle-count variant. Did not finish in 180 s serial (14 dumps written); shorten the window.",
+      "survey_run": [
+        {
+          "deck": "ex-electron_ion_equilibration",
+          "np": 1,
+          "rc": 124,
+          "timed_out": true,
+          "wall_s": 180.01,
+          "core_s": null,
+          "n_sdf": 14,
+          "sdf_mb": 0.1
+        }
+      ],
+      "proposed_check": "electron-ion-equilibration-1d",
+      "budget_note": "shorten window or resolution through the knobs"
+    },
+    {
+      "id": "electron-isotropisation-1d",
+      "module": "epoch-physics-packages",
+      "path": "epoch1d/example_decks/electron_isotropisation.deck",
+      "policy": "invariants",
+      "chaotic": false,
+      "exercises": "Like-species collisions isotropising an anisotropic electron distribution, 10 cells, 50 fs, 215 dumps",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 24.7,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Stochastic; invariants on the temperature components versus time and energy conservation.",
+      "survey_run": [
+        {
+          "deck": "ex-electron_isotropisation",
+          "np": 1,
+          "rc": 0,
+          "timed_out": false,
+          "wall_s": 24.68,
+          "core_s": 24.45,
+          "n_sdf": 215,
+          "sdf_mb": 1.8
+        }
+      ],
+      "proposed_check": "electron-isotropisation-1d",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "ionisation-1d",
+      "module": "epoch-physics-packages",
+      "path": "epoch1d/example_decks/ionisation.deck",
+      "policy": "invariants",
+      "chaotic": false,
+      "exercises": "Field ionisation of a carbon target (ionise.F90); the shipped deck sets nsteps = 0 and only writes the initial state",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 0.4,
+      "runtime_measured": true,
+      "suitable": false,
+      "why": "As shipped the deck runs zero steps, so there is no ionisation dynamics to grade; a check would have to change nsteps and t_end, which makes it custom-derived. Not proposed; the human may ask for it.",
+      "survey_run": [
+        {
+          "deck": "ex-ionisation",
+          "np": 2,
+          "rc": 0,
+          "timed_out": false,
+          "wall_s": 0.44,
+          "core_s": 0.05,
+          "n_sdf": 1,
+          "sdf_mb": 0.2
+        }
+      ],
+      "proposed_check": "field-ionisation-1d",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "ionisation-2d",
+      "module": "epoch-physics-packages",
+      "path": "epoch2d/example_decks/ionisation.deck",
+      "policy": "invariants",
+      "chaotic": false,
+      "exercises": "2-D field ionisation deck (nsteps = 0 as shipped)",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 4.0,
+        "mpi_ranks": 4
+      },
+      "upstream_runtime_s": 1.2,
+      "runtime_measured": true,
+      "suitable": false,
+      "why": "As ionisation-1d; also aborts natively at this pin (errcode 16, table lookup) when run outside the dimension directory.",
+      "survey_run": [
+        {
+          "deck": "ex-ionisation",
+          "np": 4,
+          "rc": 0,
+          "timed_out": false,
+          "wall_s": 1.23,
+          "core_s": 0.53,
+          "n_sdf": 1,
+          "sdf_mb": 82.0
+        }
+      ],
+      "proposed_check": "field-ionisation-2d",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "bremsstrahlung-1d",
+      "module": "epoch-physics-packages",
+      "path": "epoch1d/example_decks/bremsstrahlung.deck",
+      "policy": "invariants",
+      "chaotic": false,
+      "exercises": "Bremsstrahlung photon emission (-DPHOTONS -DBREMSSTRAHLUNG, bremsstrahlung.F90)",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 4.0,
+        "mpi_ranks": 2
+      },
+      "upstream_runtime_s": 3.8,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Brought into epoch-physics-packages 2026-09-06 (human: '1 make sense', bring bremsstrahlung and Bethe-Heitler pair production into this module, three official decks unchanged). Runs in about 3 s natively, well within budget; the shipped deck as-is is the check's ic/nominal.",
+      "survey_run": [
+        {
+          "deck": "ex-bremsstrahlung",
+          "np": 2,
+          "rc": 0,
+          "timed_out": false,
+          "wall_s": 3.75,
+          "core_s": 3.38,
+          "n_sdf": 21,
+          "sdf_mb": 80.3
+        }
+      ],
+      "proposed_check": "bremsstrahlung-1d",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "bremsstrahlung-2d",
+      "module": "epoch-physics-packages",
+      "path": "epoch2d/example_decks/bremsstrahlung.deck",
+      "policy": "invariants",
+      "chaotic": false,
+      "exercises": "Bremsstrahlung photon emission (-DPHOTONS -DBREMSSTRAHLUNG, bremsstrahlung.F90)",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 4.0,
+        "mpi_ranks": 4
+      },
+      "upstream_runtime_s": 90.3,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Brought into epoch-physics-packages 2026-09-06 (human: '1 make sense'). Measured natively 2026-09-06 (gfortran 15, OpenMPI 5, macOS, 4 ranks): about 90 s, well within budget.",
+      "survey_run": [
+        {
+          "deck": "ex-bremsstrahlung-2d",
+          "np": 4,
+          "rc": 0,
+          "timed_out": false,
+          "wall_s": 90.3,
+          "core_s": 349.0,
+          "n_sdf": 21,
+          "sdf_mb": null
+        }
+      ],
+      "proposed_check": "bremsstrahlung-2d",
+      "budget_note": "fits as is"
+    },
+    {
+      "id": "bremsstrahlung-3d",
+      "module": "epoch-physics-packages",
+      "path": "epoch3d/example_decks/bremsstrahlung.deck",
+      "policy": "invariants",
+      "chaotic": false,
+      "exercises": "Bremsstrahlung photon emission (-DPHOTONS -DBREMSSTRAHLUNG, bremsstrahlung.F90)",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 4.0,
+        "mpi_ranks": 4
+      },
+      "upstream_runtime_s": 52.3,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Brought into epoch-physics-packages 2026-09-06 (human: '1 make sense'). Measured natively 2026-09-06 (gfortran 15, OpenMPI 5, macOS, 4 ranks): about 52 s, well within budget.",
+      "survey_run": [
+        {
+          "deck": "ex-bremsstrahlung-3d",
+          "np": 4,
+          "rc": 0,
+          "timed_out": false,
+          "wall_s": 52.3,
+          "core_s": 200.4,
+          "n_sdf": 21,
+          "sdf_mb": null
+        }
+      ],
+      "proposed_check": "bremsstrahlung-3d",
+      "budget_note": "fits as is"
+    }
+  ]
+}

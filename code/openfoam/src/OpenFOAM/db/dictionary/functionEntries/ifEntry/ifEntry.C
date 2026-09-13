@@ -1,0 +1,98 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Copyright (C) 2018-2025 OpenFOAM Foundation
+     \\/     M anipulation  |
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenFOAM.
+
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+
+\*---------------------------------------------------------------------------*/
+
+#include "ifEntry.H"
+#include "addToRunTimeSelectionTable.H"
+#include "addToMemberFunctionSelectionTable.H"
+
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
+
+namespace Foam
+{
+namespace functionEntries
+{
+    defineFunctionTypeNameAndDebug(ifEntry, 0);
+    addToRunTimeSelectionTable(functionEntry, ifEntry, dictionary);
+
+    addToMemberFunctionSelectionTable
+    (
+        functionEntry,
+        ifEntry,
+        execute,
+        primitiveEntryIstream
+    );
+}
+}
+
+
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
+
+Foam::functionEntries::ifEntry::ifEntry
+(
+    const label lineNumber,
+    const dictionary& parentDict,
+    Istream& is
+)
+:
+    ifeqEntry
+    (
+        typeName,
+        lineNumber,
+        parentDict,
+        is,
+        functionEntry::readArgList(typeName, is)
+    )
+{}
+
+
+// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+
+bool Foam::functionEntries::ifEntry::execute
+(
+    dictionary& contextDict,
+    Istream& is
+)
+{
+    DynamicList<filePos> stack(10);
+    return execute(stack, contextDict, contextDict, is);
+}
+
+
+bool Foam::functionEntries::ifEntry::execute
+(
+    const dictionary& contextDict,
+    primitiveEntry& contextEntry,
+    Istream& is
+)
+{
+    DynamicList<filePos> stack(10);
+    return ifEntry(is.lineNumber(), contextDict, is).execute
+    (
+        stack, contextDict, contextEntry, is
+    );
+}
+
+
+// ************************************************************************* //

@@ -1,0 +1,38 @@
+{% set project_data = load_file_data('pyproject.toml')['project'] %}
+{% set version = load_setup_py_data()['version'] %}
+
+package:
+  name: "pyscf"
+  version: "{{ version }}"
+
+source:
+  path: ..
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - python {{ python }}
+    - cmake
+    - make
+    - mkl
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+  host:
+    - python
+  run:
+    - python
+    - mkl
+    - numpy>=1.13
+    - scipy!=1.5
+    - h5py>=2.7
+
+test:
+  imports:
+    - pyscf.lib
+
+about:
+  home: "{{ project_data['urls']['Homepage'] }}"
+  license: "{{ project_data['license'] }}"
+  summary: "{{ project_data['description'] }}"

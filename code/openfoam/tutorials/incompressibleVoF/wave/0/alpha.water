@@ -1,0 +1,49 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  dev
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0";
+    object      alpha.water;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [];
+
+internalField
+{
+    type        waveAlpha;
+    libs        ("libwaves.so");
+}
+
+boundaryField
+{
+    #includeEtc "caseDicts/setConstraintTypes"
+
+    "(right|bottom)"
+    {
+        type            zeroGradient;
+    }
+
+    left
+    {
+        type            waveAlpha;
+        libs            ("libwaves.so");
+        inletOutlet     true;
+    }
+
+    top
+    {
+        type            inletOutlet;
+        inletValue      uniform 0;
+    }
+}
+
+
+// ************************************************************************* //

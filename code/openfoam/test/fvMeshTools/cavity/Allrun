@@ -1,0 +1,24 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # Run from this directory
+
+# Source tutorial run functions
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+
+runApplication blockMesh
+
+# Serial tests
+runApplication Test-fvMeshTools
+runApplication checkMesh
+runApplication foamToVTK
+
+# Reset
+foamListTimes -rm
+
+# Parallel tests
+runApplication decomposePar
+runParallel -s par Test-fvMeshTools
+runParallel -s par checkMesh
+runParallel -s par foamToEnsight
+runApplication reconstructPar
+
+#------------------------------------------------------------------------------

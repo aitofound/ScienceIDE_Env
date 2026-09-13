@@ -1,0 +1,71 @@
+#----------------------------------*-sh-*--------------------------------------
+# =========                 |
+# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+#  \\    /   O peration     | Website:  https://openfoam.org
+#   \\  /    A nd           | Copyright (C) 2024 OpenFOAM Foundation
+#    \\/     M anipulation  |
+#------------------------------------------------------------------------------
+# License
+#     This file is part of OpenFOAM.
+#
+#     OpenFOAM is free software: you can redistribute it and/or modify it
+#     under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+#     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+#     for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+#
+# File
+#     etc/config.sh/parMetis
+#
+# Description
+#     Setup file for parMetis include/libraries.
+#     Sourced during wmake process only.
+#
+# Note
+#     A csh version is not needed, since the values here are only sourced
+#     during the wmake process
+#
+#------------------------------------------------------------------------------
+
+# Load functions
+. $WM_PROJECT_DIR/etc/config.sh/functions
+
+# Find the path to the parMetis installation
+case "$PARMETIS_TYPE" in
+none)
+    ;;
+system)
+    export PARMETIS_VERSION=system
+    export PARMETIS_ARCH_PATH=/usr
+    ;;
+OpenFOAM | ThirdParty)
+    # Look for the source directory
+    if [ -z "$PARMETIS_VERSION" ]
+    then
+        parMetisSrcDir=$(_foamMostRecentDir "$WM_THIRD_PARTY_DIR"/parmetis-*)
+    else
+        parMetisSrcDir=$WM_THIRD_PARTY_DIR/parmetis-$PARMETIS_VERSION
+    fi
+    # Set the version and the installation path
+    if [ -d "$parMetisSrcDir" ]
+    then
+        export PARMETIS_VERSION=${parMetisSrcDir##*parmetis-}
+        export PARMETIS_ARCH_PATH=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER$WM_PRECISION_OPTION$WM_LABEL_OPTION/parmetis-$PARMETIS_VERSION
+    fi
+    # Clean up
+    unset parMetisSrcDir
+    ;;
+esac
+
+# Unload functions
+. $WM_PROJECT_DIR/etc/config.sh/functions
+
+
+#------------------------------------------------------------------------------
