@@ -1,0 +1,128 @@
+begin:constant
+  nel = 1.0e22
+  intens = 1.0e22
+end:constant
+
+begin:control
+  nx = 1024 # SAB_NX
+  nparticles = nx * 64 # SAB_PPC
+  nsteps = -1
+  t_end = 40e-15 # SAB_T_END
+  x_min = -3e-6
+  x_max =  20e-6
+  dt_multiplier = 0.8
+  nprocx = 3 # rank layout: part of the initial condition, not a knob
+end:control
+
+begin:qed
+  use_qed = T
+  qed_start_time = 0
+  produce_photons = T
+  photon_energy_min = 50 * kev
+  produce_pairs = F
+  photon_dynamics = F
+end:qed
+
+begin:collisions
+  use_collisions = T
+  coulomb_log = auto
+  collide = all
+end:collisions
+
+begin:boundaries
+  bc_x_min = simple_laser
+  bc_x_max = simple_laser
+end:boundaries
+
+begin:species
+  name = Electron
+  fraction = 0.5
+  dump = T
+  temperature = 0
+  number_density = if (x gt -1e-6, nel * 1.0e6, 0)
+  number_density_min = 1
+  identify:electron
+end:species
+
+begin:species
+  name = Ion
+  fraction = 0.5
+  dump = T
+  number_density = number_density(Electron)
+  temperature = temperature_x(Electron)
+  number_density_min = 1
+  identify:proton
+end:species
+
+begin:species
+  name = Photon
+  nparticles = 0
+  dump = T
+  identify:photon
+end:species
+
+begin:species
+  name = Positron
+  nparticles = 0
+  dump = T
+  identify:positron
+end:species
+
+begin:output_global
+  force_final_to_be_restartable = F
+end:output_global
+
+begin:output
+  name = normal
+  use_offset_grid = F
+  dt_snapshot = 2.0e-15 # SAB_DT_SNAPSHOT
+  particles = never
+  px = never
+  py = never
+  pz = never
+  charge = never
+  mass = never
+  particle_weight = always + species
+  species_id = never
+  grid = always
+  ex = never
+  ey = never
+  ez = never
+  bx = never
+  by = never
+  bz = never
+  jx = never
+  jy = never
+  jz = never
+  average_particle_energy = never
+  mass_density = never
+  charge_density = never
+  number_density = never
+  temperature = never
+  ppc = always + species
+  total_energy_sum = always + species
+  absorption = always
+  distribution_functions = never
+  particle_probes = never
+end:output
+
+begin:constant
+  omega = 2.0 * pi * c / (1.0e-6)
+  den_crit = critical(omega)
+  scale = 3.5e-6
+  den_max = 5.0 * den_crit
+  den_maxpoint = 40.0e-6
+  den_contrast = 1.0
+  amax = 1.0
+end:constant
+
+begin:laser
+  boundary = x_min
+  intensity = intens * 1.0e4
+  omega = omega
+  polarisation = 0.0
+  phase = 0.0
+  t_profile = 1
+  t_start = 0.0
+  t_end = end
+end:laser

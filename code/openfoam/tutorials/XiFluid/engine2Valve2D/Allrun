@@ -1,0 +1,51 @@
+#!/bin/bash
+cd ${0%/*} || exit 1    # Run from this directory
+
+# Source tutorial run functions
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+
+# Get the serial/parallel mode
+! isTest "$@" && [ -n "$1" ] && mode=$1 || mode=serial
+
+case $mode in
+    serial)
+        ./Allmesh serial
+        runApplication foamRun
+        ;;
+    parallel | stitchSerial)
+        ./Allmesh serial
+
+        # Decompose the meshes and fields
+        runApplication decomposePar
+        for meshDir in constant/meshes/*
+        do
+            runApplication -a decomposePar -mesh "$(basename "$meshDir")"
+        done
+
+        runParallel foamRun
+
+        runApplication reconstructPar
+        ;;
+    stitchParallel)
+        ./Allmesh parallel
+
+        # Reconstruct the mesh and then decompose the fields
+        #
+        # !!! Note: We could do decomposePar -copyZero here instead if the
+        # field files were set up with boundary conditions for the processor
+        # and nonConformalProcessorCyclic patch groups
+        #
+        runApplication reconstructPar -noFields -constant
+        runApplication -a decomposePar -fields
+
+        runParallel foamRun
+
+        runApplication -a reconstructPar
+        ;;
+    *)
+        echo "Error: mode $mode not recognised"
+        exit 1
+        ;;
+esac
+
+#------------------------------------------------------------------------------

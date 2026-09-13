@@ -1,0 +1,29 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # Run from this directory
+
+# Source tutorial run functions
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+
+# Mesh
+runApplication blockMesh
+
+# Run
+runApplication decomposePar
+runParallel -s populationBalanceSetPhaseSizeDistribution foamPostProcess \
+    -solver multiphaseEuler -func populationBalanceSetPhaseSizeDistribution
+runParallel foamRun
+runApplication reconstructPar -latestTime
+
+# Post-process
+runApplication foamPostProcess -func "
+    graphLayerAverage
+    (
+        name=graphCrossSection,
+        patches=(inlet),
+        axis=distance,
+        d.particles
+    )
+    " -latestTime
+cd validation && ./createGraphs
+
+#------------------------------------------------------------------------------

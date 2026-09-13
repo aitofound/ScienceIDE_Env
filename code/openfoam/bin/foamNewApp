@@ -1,0 +1,95 @@
+#!/bin/sh
+#------------------------------------------------------------------------------
+# =========                 |
+# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+#  \\    /   O peration     | Website:  https://openfoam.org
+#   \\  /    A nd           | Copyright (C) 2015-2025 OpenFOAM Foundation
+#    \\/     M anipulation  |
+#------------------------------------------------------------------------------
+# License
+#     This file is part of OpenFOAM.
+#
+#     OpenFOAM is free software: you can redistribute it and/or modify it
+#     under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+#     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+#     for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Script
+#     foamNewApp
+#
+# Description
+#     Create directory with source and compilation files for a new application
+#
+#------------------------------------------------------------------------------
+Script=${0##*/}
+dir="$FOAM_ETC/codeTemplates/app"
+
+usage() {
+    cat<<USAGE
+Usage: $Script [OPTIONS] <application>
+options:
+  -help  | -h         print the usage
+  -plain | -p         create a plain application for non-CFD use
+
+Create directory with source and compilation files for a new application
+  <application> (dir)
+  - <application>.C
+  - Make (dir)
+    - files
+    - options
+  Compiles an executable named <application> in \$FOAM_USER_APPBIN:
+  $FOAM_USER_APPBIN
+USAGE
+}
+
+error() {
+    while [ "$#" -ge 1 ]; do echo "$1"; shift; done
+    usage
+    exit 1
+}
+
+case "$1" in
+-help | -h)
+    usage && exit 0
+    ;;
+-plain | -p)
+    dir="$FOAM_ETC/codeTemplates/plain"
+    shift
+    ;;
+-*)
+    error "$1 is not a valid filename"
+    ;;
+esac
+
+[ "$#" -eq 1 ] || error "Wrong number of arguments"
+[ -d "$1" ] && error "$1 directory already exists, aborting..."
+
+app="$1"
+year=$(date +%Y)
+
+file="${dir##*/}.C"
+
+echo "Creating application code directory $app" && mkdir "$app"
+sed -e "s#NAME#$app#g" \
+    -e "s#YEAR#$year#g" \
+    "$dir/$file" > "$app/$app.C"
+
+echo "Creating Make subdirectory" && mkdir "$app/Make"
+sed "s#NAME#$app#g" "$dir/Make/files" > "$app/Make/files"
+cp "$dir/Make/options" "$app/Make"
+
+otherFiles="$(find "$dir" -maxdepth 1 -type f ! -name "$file")"
+for f in $otherFiles
+do
+    echo "Copying example ${f##*/} file" && cp "$f" "$app"
+done
+
+#------------------------------------------------------------------------------

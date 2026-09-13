@@ -1,0 +1,115 @@
+#!/bin/sh
+#------------------------------------------------------------------------------
+# =========                 |
+# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+#  \\    /   O peration     | Website:  https://openfoam.org
+#   \\  /    A nd           | Copyright (C) 2011-2024 OpenFOAM Foundation
+#    \\/     M anipulation  |
+#------------------------------------------------------------------------------
+# License
+#     This file is part of OpenFOAM.
+#
+#     OpenFOAM is free software: you can redistribute it and/or modify it
+#     under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+#     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+#     for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Script
+#     foamCleanPath
+#
+# Description
+#     Usage: foamCleanPath [-strip] path [exp1] .. [expN]
+#
+#     Returns the <path> with individual paths removed which match partially or
+#     fully any expressions [exp1] ... [expN] provided.
+#
+#------------------------------------------------------------------------------
+usage() {
+    cat <<USAGE
+Usage: ${0##*/} [OPTION] "<path>" [exp1] .. [expN]
+options:
+  -help             print the usage
+
+Returns the <path> with individual paths removed which match partially or fully
+any expressions [exp1] ... [expN] provided.
+
++ The <path> must be a single quoted "" string with directory paths, separated
+  by colons.
++ Each [exp1] ... [expN] may be a single expression or a colon-separated set of
+  expressions.
+
+USAGE
+}
+
+error() {
+    exec 1>&2
+    while [ "$#" -ge 1 ]; do echo "$1" >&2; shift; done
+    usage
+    exit 1
+}
+
+strip=
+while [ "$#" -gt 0 ]
+do
+    case "$1" in
+    -h | -help)
+        usage && exit 0
+        ;;
+    -*)
+        error
+        ;;
+    *)
+        break
+        ;;
+    esac
+done
+[ "$#" -ge 1 ] || error "No arguments provided"
+
+oldPath="$1" ; shift
+
+# Quick exit if oldPath is not set, needed for LD_LIBRARY_PATH
+[ -n "$oldPath" ] || exit
+
+exps="$(echo "$*" | awk -F '[: ]' '{for(i=1;i<=NF;i++) print $i}')"
+
+# standard directories on PATH, e.g. /bin, /usr/bin
+stdPaths="$(getconf PATH)"
+
+for exp in $exps
+do
+    # do not remove standard directories
+    echo "$stdPaths" | grep -qE "(^|:)$exp(:|$)" && continue
+
+    oldPath=$(echo "$oldPath" | \
+        sed -e "s|${exp}[^:]*:||g" | \
+        sed -e "s|:${exp}[^:]*$||g" )
+done
+
+oldIFS=$IFS
+IFS=:
+newPath=
+for dir in $oldPath
+do
+    # Ignore duplicates
+    echo "$newPath" | grep -qE "(^|:)$dir(:|$)" && continue
+
+    # Clean the dir if it exists
+    [ -d "$dir" ] && dir="$(cd "$dir" && pwd)"
+
+    # Add an entry, without a colon for first time
+    [ "$newPath" ] && newPath="$newPath:$dir" && continue
+    newPath="$dir"
+done
+IFS=$oldIFS
+
+echo "$newPath"
+
+#------------------------------------------------------------------------------
