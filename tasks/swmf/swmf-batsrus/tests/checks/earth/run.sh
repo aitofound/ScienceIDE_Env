@@ -191,8 +191,6 @@ if [ "$CACHE_ENABLED" -eq 1 ]; then
       "build-group=$BUILD_GROUP" \
       "build-spec=$BUILD_SPEC" \
       "build-mode=$BUILD_MODE" \
-      "initial-condition=$IC" \
-      "input-kind=$INPUTS" \
       "target=$BUILD_TARGET" \
       "target-descriptor-sha256=$BUILD_TARGET_SHA256" \
       "runner=linux-docker" \
@@ -205,7 +203,7 @@ if [ "$CACHE_ENABLED" -eq 1 ]; then
       "make-version=$MAKE_VERSION" \
       "mpi-version=$MPI_VERSION" \
       "machine=$(uname -m)" | sha256sum | cut -d' ' -f1)"
-  CACHE_DIR="$SAB_BUILD_CACHE_ROOT/$BUILD_TASK/$IC/$BUILD_GROUP/$BUILD_FINGERPRINT"
+  CACHE_DIR="$SAB_BUILD_CACHE_ROOT/$BUILD_TASK/$BUILD_GROUP/$BUILD_FINGERPRINT"
   CACHE_BINARY="$CACHE_DIR/BATSRUS.exe"
   CACHE_POSTIDL="$CACHE_DIR/PostIDL.exe"
   CACHE_DIGEST_FILE="$CACHE_DIR/binaries.sha256"

@@ -79,7 +79,11 @@ tree(root)
 print(h.hexdigest())
 PY_SOURCE_FINGERPRINT
 )"
-  BUILD_CACHE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/sciaccel-swmf-batsrus-${IC}-build.XXXXXX")"
+  # The driver may hand in one cache root for all three initial conditions
+  # (solution/solve.sh mounts one per selfcheck), so a configuration is built
+  # once per selfcheck; without it the cache lives for this produce only.
+  BUILD_CACHE_ROOT="${SAB_BUILD_CACHE_ROOT:-$(mktemp -d "${TMPDIR:-/tmp}/sciaccel-swmf-batsrus-${IC}-build.XXXXXX")}"
+  mkdir -p "$BUILD_CACHE_ROOT"
   passthrough=()
   while IFS='=' read -r name _; do passthrough+=("$name=${!name}"); done < <(env | grep -E '^SAB_[A-Z0-9_]+=' || true)
   failed=(); total=0

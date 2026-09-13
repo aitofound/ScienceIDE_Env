@@ -49,8 +49,8 @@ WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 BUILD_PROFILE=sc-ih-awesomsa
 BUILD_MODE=stock
 [ "$IC" = altbuild ] && BUILD_MODE=o0
-BUILD_CACHE_ROOT="${TMPDIR:-/tmp}/sciaccel-swmf-solar-heliosphere-chain-build-cache-v1"
-BUILD_CACHE_DIR="$BUILD_CACHE_ROOT/$BUILD_PROFILE-$BUILD_MODE"
+BUILD_CACHE_ROOT="${SAB_BUILD_CACHE_ROOT:-${TMPDIR:-/tmp}}/sciaccel-swmf-batsrus-multi-build-cache-v2"
+BUILD_CACHE_DIR="$BUILD_CACHE_ROOT/$BUILD_PROFILE-$BUILD_MODE-${SAB_SOURCE_FINGERPRINT:-nofingerprint}"
 mkdir -p "$BUILD_CACHE_ROOT"
 BUILD_CACHE_HIT=0
 if [ -f "$BUILD_CACHE_DIR/complete" ] && [ -d "$BUILD_CACHE_DIR/src" ]; then
