@@ -6,7 +6,7 @@ if [ "$IC" = "--help" ]; then echo 'SAB_ITENSOR_THREADS=1'; exit 0; fi
 SOURCE_DIR=$SOURCE_DIR
 OUT_DIR=$OUT_DIR
 case "$IC" in nominal|variant) ;; *) exit 2;; esac
-BUILD_DIR=/tmp/sab-itensor-build-$IC
+BUILD_DIR=/tmp/sab-itensor-build-sample-ctmrg-cc-$IC
 SUBDIR="sample"
 TARGET="ctmrg"
 MODE="ctmrg"
