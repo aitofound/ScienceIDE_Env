@@ -1,0 +1,301 @@
+#!/bin/sh
+#------------------------------------------------------------------------------
+# =========                 |
+# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+#  \\    /   O peration     | Website:  https://openfoam.org
+#   \\  /    A nd           | Copyright (C) 2018-2024 OpenFOAM Foundation
+#    \\/     M anipulation  |
+#------------------------------------------------------------------------------
+# License
+#     This file is part of OpenFOAM.
+#
+#     OpenFOAM is free software: you can redistribute it and/or modify it
+#     under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+#     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+#     for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Script
+#     foamGet
+#
+# Description
+#     Finds an example OpenFOAM case dictionary in $FOAM_ETC/caseDicts and
+#     copies it into the respective case directory.
+#
+#------------------------------------------------------------------------------
+usage() {
+    cat<<USAGE
+
+Usage: ${0##*/} [OPTIONS] <file>
+options:
+  -case   | -c <dir>  specify case directory (default = local dir)
+  -ext    | -e <ext>  specify file extension, e.g -e cfg for files with ".cfg"
+  -help   | -h        print the usage
+  -no-ext | -n        specify file without extension
+  -target | -t <dir>  specify target directory (default = system)
+  -region | -r <name> specify alternative mesh region
+
+Finds an example OpenFOAM case dictionary file in $FOAM_ETC/caseDicts and
+copies it into the respective case directory, e.g.
+
+  foamGet decomposeParDict
+  foamGet extrudeMeshDict
+  foamGet createPatchDict
+  foamGet surfaces
+
+USAGE
+}
+
+error() {
+    exec 1>&2
+    while [ "$#" -ge 1 ]; do echo "Error: $1"; shift; done
+    usage
+    exit 1
+}
+
+findFilesInDirs () {
+    _dirs="$1"
+    _str="$2"
+    _out=""
+    for _d in $_dirs
+    do
+        # Follow links; use not clear, but perhaps for local/site configuration
+        _link_opt="-L"
+
+        # Do not follow links in $FOAM_ETC/caseDicts to avoid duplication from
+        # the postProcessing -> functions link
+        [ "$_d" = "$FOAM_ETC/caseDicts" ] && _link_opt="-P"
+
+        [ -d "$_d" ] && \
+            _out="$(find $_link_opt "$_d" -name "$_str" -type f | sort) $_out"
+    done
+
+    # Remove whitespace and blank lines
+    echo "$_out" | xargs -n 1 | awk 'NF'
+}
+
+findFiles () {
+    _dirs="$1"
+    _prefix="$2"
+    _ext="$3"
+
+    if [ -z "$_ext" ] || [ "$_ext" = "ANY" ] ; then
+        findFilesInDirs "$_dirs" "$_prefix"
+    else
+        findFilesInDirs "$_dirs" "${_prefix}.${_ext}"
+    fi
+    [ "$_ext" = "ANY" ] && findFilesInDirs "$_dirs" "${_prefix}.*"
+}
+
+# Remove files from unrelated version subdirs in ~/.OpenFOAM directory
+pruneFiles () {
+    _files="$*"
+    _vers="$(find ~/.OpenFOAM/ \
+             -maxdepth 1 -mindepth 1 \
+             -type d -name "[[:digit:]]*" \
+             -o -name "dev" 2> /dev/null | \
+             grep -v "$WM_PROJECT_VERSION" | \
+             awk -F "/" '{print $NF}')"
+    [ "$_vers" ] && \
+        for _v in $_vers
+        do
+            _files="$(echo "$_files" | xargs -n 1 | grep -v ".OpenFOAM/$_v")"
+        done
+
+    echo "$_files"
+}
+
+nArgs () {
+    echo "$1" | xargs -n 1 | wc -l
+}
+
+listArgs () {
+    _i=0
+    _suggest=""
+    _pri=100
+
+    for _a in $1
+    do
+        _i=$(( _i + 1))
+        echo "${_i}) $_a" >&2
+
+        # Prioritise suggestion locations
+        _tests="\
+            caseDicts/functions/ \
+            caseDicts/preProcessing/ \
+            caseDicts/general/ \
+            caseDicts/mesh/ \
+            caseDicts/surface/ \
+            caseDicts/solvers/"
+
+        _n=0
+        for _t in $_tests
+        do
+            _n=$(( _n + 1))
+            [ "$_n" -lt "$_pri" ] && \
+                echo "$_a" | grep -q "$_t" && _suggest="$_i" && _pri="$_n"
+        done
+    done
+
+    echo "$_suggest"
+}
+
+cpFile () {
+    _file="$1"
+    _dir="$2"
+
+    [ -d "$_dir" ] || return 0
+
+    echo "Copying $_file to $_dir"
+    cp "$_file" "$_dir"
+}
+
+setTgt () {
+    _prefix="$1"
+    _file="$2"
+    _tgt="$3"
+    _region="$4"
+
+    ! [ "$_tgt" ] && \
+        echo "$_file" | grep -q fvModel && \
+        _tgt="constant"
+
+    ! [ "$_tgt" ] && \
+        echo "$_file" | grep -q fvConstraint && \
+        _tgt="system"
+
+    ! [ "$_tgt" ] && \
+        case "$prefix" in
+            All*) _tgt="." ;;
+            *Properties|*Cloud) _tgt="constant" ;;
+            s) _tgt="0" ;;
+            *) _tgt="system" ;;
+        esac
+
+    [ "$_region" ] && _tgt="$_tgt/$_region"
+    echo "$_tgt"
+    [ -d "$_tgt" ] && return 0
+    return 1
+}
+
+setFile () {
+    _files="$1"
+    _n="$2"
+    echo "$_files" | tr -s "\n" " " | awk -v n="$_n" '{print $n}'
+}
+
+noFilesMessage () {
+    _ext="$1"
+    [ "$_ext" = "ANY" ] && echo "(with or without file extensions)" && return 1
+    [ -n "$_ext" ] && echo "with file extension '$_ext'" && return 1
+}
+
+searchDirs="\
+    ${HOME}/.OpenFOAM"
+[ -n "$WM_PROJECT_SITE" ] && searchDirs="$searchDirs \
+    $WM_PROJECT_SITE/$WM_PROJECT_VERSION/etc \
+    $WM_PROJECT_SITE/etc"
+searchDirs="$searchDirs \
+    $WM_PROJECT_INST_DIR/site/$WM_PROJECT_VERSION/etc \
+    $WM_PROJECT_INST_DIR/site/etc \
+    $FOAM_ETC/caseDicts"
+
+ext="ANY"
+tgt=""
+region=""
+while [ "$#" -gt 0 ]
+do
+   case "$1" in
+   -c | -case)
+      [ "$#" -ge 2 ] || error "'$1' option requires an argument"
+      cd "$2" 2>/dev/null || error "directory does not exist:  '$2'"
+      shift 2
+      ;;
+   -e | -ext)
+      [ "$#" -ge 2 ] || error "'$1' option requires an argument"
+      ext="$2"
+      shift 2
+      ;;
+   -h | -help)
+      usage && exit 0
+      ;;
+   -n | -no-ext)
+      ext=""
+      shift
+      ;;
+   -t | -target)
+      [ "$#" -ge 2 ] || error "'$1' option requires an argument"
+      tgt="$2"
+      shift 2
+      ;;
+   -r | -region)
+      [ "$#" -ge 2 ] || error "'$1' option requires an argument"
+      region="$2"
+      shift 2
+      ;;
+   -*)
+      error "invalid option '$1'"
+      ;;
+   *)
+      break
+      ;;
+    esac
+done
+
+[ $# -gt 1 ] && error "$# arguments \"$*\" specified: only 1 permitted"
+[ $# -eq 1 ] || error "missing argument: no file name/prefix <file> supplied"
+prefix="$1"
+
+{ [ -s "system/controlDict" ] || [ -s "system/controlDict.orig" ] ; } || \
+    echo "Warning: cannot find a system/controlDict file" \
+         "- is this a case directory?"
+
+files="$(findFiles "$searchDirs" "$prefix" "$ext")"
+
+# For ~/.OpenFOAM, prune out version subdirs except current version
+files="$(pruneFiles "$files")"
+
+[ -z "$files" ] && \
+    error "no file $prefix found $(noFilesMessage "$ext")"
+
+nFiles="$(nArgs "$files")"
+[ "$nFiles" -eq 1 ] && \
+    if tgt="$(setTgt "$prefix" "$files" "$tgt" "$region")"
+    then
+        cpFile "$files" "$tgt" && exit 0
+    else
+        error "target directory does not exist: '$tgt'"
+    fi
+
+echo "Multiple files with \"$prefix\" prefix found:"
+suggest="$(listArgs "$files")"
+echo "$files" | grep -q "annotated/" && \
+    echo "** Note: it is easier to use files NOT in the \"annotated\" directory"
+
+printf "\n%s" "Enter file number (1-$nFiles) to obtain description "
+[ -n "$suggest" ] && printf "%s" "(suggest $suggest) "
+printf "%s" ": "
+read -r nFile
+
+[ -z "$nFile" ] && [ -n "$suggest" ] && nFile="$suggest"
+[ -z "$nFile" ] && \
+    echo "Cannot specify nothing; re-run and enter a file number" && exit 1
+! [ "$nFile" -eq "$nFile" ] 2>/dev/null && \
+    echo "\"$nFile\" is not a number between 1 and $nFiles" && exit 1
+[ "$nFile" -lt 1 ] || [ "$nFile" -gt "$nFiles" ] && \
+    echo "\"$nFile\" is not a number between 1 and $nFiles" && exit 1
+
+file="$(setFile "$files" "$nFile")"
+if tgt="$(setTgt "$prefix" "$file" "$tgt" "$region")"
+then
+    cpFile "$file" "$tgt" && exit 0
+else
+    error "target directory does not exist: '$tgt'"
+fi
