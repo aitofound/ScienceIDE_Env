@@ -27,7 +27,7 @@ function readBaselineDiff(root, baseRef) {
     return execFileSync(
       'git',
       ['diff', '--name-status', '-M', baseRef, '--', 'code/', 'codebase-reports/'],
-      { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+      { cwd: root, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] },
     );
   } catch (error) {
     const detail = String(error.stderr ?? error.message ?? error).trim().split('\n')[0];
