@@ -1,0 +1,105 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Copyright (C) 2023-2026 OpenFOAM Foundation
+     \\/     M anipulation  |
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenFOAM.
+
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+
+\*---------------------------------------------------------------------------*/
+
+#include "codeIncludeEntry.H"
+#include "stringOps.H"
+#include "addToRunTimeSelectionTable.H"
+
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
+
+namespace Foam
+{
+namespace functionEntries
+{
+    defineFunctionTypeNameAndDebug(codeIncludeEntry, 0);
+    addToRunTimeSelectionTable(functionEntry, codeIncludeEntry, dictionary);
+}
+}
+
+
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
+
+Foam::functionEntries::codeIncludeEntry::codeIncludeEntry
+(
+    const label lineNumber,
+    const dictionary& parentDict,
+    Istream& is
+)
+:
+    functionEntry
+    (
+        typeName,
+        lineNumber,
+        parentDict,
+        is,
+        readArgOrList(typeName, is)
+    ),
+    fNames_(readList<fileName>(stream()))
+{}
+
+
+// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+
+bool Foam::functionEntries::codeIncludeEntry::execute
+(
+    dictionary& parentDict,
+    Istream& is
+)
+{
+    FatalIOErrorInFunction(is)
+        << typeName
+        << " can only be used within #codeBlock...#endCodeBlock"
+        << exit(FatalIOError);
+    return false;
+}
+
+
+void Foam::functionEntries::codeIncludeEntry::addCodeInclude
+(
+    const List<fileName>& fileNames,
+    const dictionary& contextDict,
+    dictionary& codeDict
+)
+{
+    verbatimString codeInclude;
+
+    forAll(fileNames, i)
+    {
+        // Copy the file name for inplace expansion
+        fileName expandedFname(fileNames[i]);
+
+        // Substitute dictionary and environment variables. Allow empty
+        // substitutions.
+        stringOps::inplaceExpandEntry(expandedFname, contextDict, true, true);
+
+        codeInclude +=
+            "#include \"" + expandedFname + '"' + '\n';
+    }
+
+    codeDict.add("codeInclude", codeInclude);
+}
+
+
+// ************************************************************************* //

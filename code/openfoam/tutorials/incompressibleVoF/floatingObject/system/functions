@@ -1,0 +1,36 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  dev
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      functions;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+rigidBodyState
+{
+    type           rigidBodyState;
+    libs           ("librigidBodyState.so");
+    angleUnits     [deg];
+    angularVelocityUnits [deg/s];
+}
+
+rigidBodyForces
+{
+    type            rigidBodyForces;
+    libs            ("librigidBodyForces.so");
+    body            floatingObject;
+    patches         (floatingObject);
+    log             on;
+    writeControl    timeStep;
+    writeInterval   1;
+}
+
+// ************************************************************************* //

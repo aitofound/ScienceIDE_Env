@@ -1,0 +1,56 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  dev
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      codesStreamDict1;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Values from outer-scope
+begIter     0;
+endIter     200;
+
+writeInterval   #codeStream
+{
+    // values from inner-scope
+    nDumps      5;
+
+    codeInclude
+    #{
+         // #include ".H"
+    #};
+
+    codeOptions
+    #{
+        -I$(LIB_SRC)/finiteVolume/lnInclude \
+        -I$(LIB_SRC)/meshTools/lnInclude
+    #};
+
+    localCode
+    #{
+        static int someCode()
+        {
+            Info << "called someCode\n";
+            return 10;
+        }
+    #};
+
+    code
+    #{
+        label interval = ($endIter - $begIter);
+        label nDumps = someCode();
+        os  << (interval / nDumps);
+    #};
+};
+
+// Play with cleanup
+#remove begIter
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

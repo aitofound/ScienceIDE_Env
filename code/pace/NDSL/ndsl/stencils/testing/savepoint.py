@@ -1,0 +1,92 @@
+import dataclasses
+from pathlib import Path
+from typing import Any, Protocol
+
+import numpy as np
+import xarray as xr
+
+from ndsl.stencils.testing.grid import Grid
+
+
+def dataset_to_dict(ds: xr.Dataset) -> dict[str, np.ndarray | float | int]:
+    return {
+        name: _process_if_scalar(array.values) for name, array in ds.data_vars.items()
+    }
+
+
+def _process_if_scalar(value: np.ndarray) -> np.ndarray | float | int:
+    if len(value.shape) == 0:
+        return value.max()  # trick to make sure we get the right type back
+    else:
+        return value
+
+
+class DataLoader:
+    def __init__(self, rank: int, data_path: Path, i_call: int) -> None:
+        self._data_path = data_path
+        self._rank = rank
+        self._i_call = i_call
+
+    def load(
+        self,
+        name: str,
+        postfix: str = "",
+        use_dynamic_i_call: bool = False,
+    ) -> dict[str, np.ndarray | float | int]:
+        call_index = self._i_call if use_dynamic_i_call else 0
+        return dataset_to_dict(
+            xr.open_dataset(self._data_path / f"{name}{postfix}.nc")
+            .isel(rank=self._rank)
+            .isel(savepoint=call_index)
+        )
+
+
+class Translate(Protocol):
+    def collect_input_data(self, ds: xr.Dataset) -> dict: ...
+
+    def compute(self, data: dict) -> Any: ...
+
+    def extra_data_load(self, data_loader: DataLoader) -> None: ...
+
+
+@dataclasses.dataclass
+class SavepointCase:
+    """
+    Represents a savepoint with data on one rank.
+    """
+
+    savepoint_name: str
+    data_dir: Path
+    i_call: int
+    testobj: Translate
+    grid: Grid
+    sort_report: str
+    no_report: bool
+
+    def __str__(self) -> str:
+        return f"{self.savepoint_name}-rank={self.grid.rank}-call={self.i_call}"
+
+    @property
+    def exists(self) -> bool:
+        return (
+            xr.open_dataset(self.data_dir / f"{self.savepoint_name}-In.nc").sizes[
+                "rank"
+            ]
+            > self.grid.rank
+        )
+
+    @property
+    def ds_in(self) -> xr.Dataset:
+        return (
+            xr.open_dataset(self.data_dir / f"{self.savepoint_name}-In.nc")
+            .isel(rank=self.grid.rank)
+            .isel(savepoint=self.i_call)
+        )
+
+    @property
+    def ds_out(self) -> xr.Dataset:
+        return (
+            xr.open_dataset(self.data_dir / f"{self.savepoint_name}-Out.nc")
+            .isel(rank=self.grid.rank)
+            .isel(savepoint=self.i_call)
+        )
