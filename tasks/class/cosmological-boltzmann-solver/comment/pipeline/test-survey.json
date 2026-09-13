@@ -1,0 +1,185 @@
+{
+  "module": "cosmological-boltzmann-solver",
+  "tests": [
+    {
+      "id": "background-c",
+      "module": "cosmological-boltzmann-solver",
+      "path": "test/test_background.c",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Background evolution from the input cosmology through conformal time, including scale factor, redshift and Hubble-rate tables.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 4,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "The official executable emits deterministic physical background columns for a fixed deck; a later pointwise check can compare the physical table while excluding textual progress and timing.",
+      "proposed_check": "background-evolution"
+    },
+    {
+      "id": "perturbations-c",
+      "module": "cosmological-boltzmann-solver",
+      "path": "test/test_perturbations.c",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Linear perturbation hierarchy evolution for the standard cosmological deck through the source-function stage.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 1,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "The path is deterministic for a fixed input deck and exposes a physical perturbation trajectory that can be compared at selected k and time samples.",
+      "proposed_check": "perturbation-hierarchy"
+    },
+    {
+      "id": "transfer-c",
+      "module": "cosmological-boltzmann-solver",
+      "path": "test/test_transfer.c",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Transfer-function initialization and evaluation after the perturbation and Fourier stages.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 1,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "The official test prints transfer-function values from a fixed cosmology; the physical k/l/mode coordinates are stable keys for a pointwise numerical comparison.",
+      "proposed_check": "transfer-functions"
+    },
+    {
+      "id": "fourier-c",
+      "module": "cosmological-boltzmann-solver",
+      "path": "test/test_fourier.c",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Linear matter-power/Fourier initialization and sigma8 output for the standard deck.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 1,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "The official path exposes deterministic Fourier observables and a scalar sigma8 summary; pointwise policy is appropriate after excluding iteration metadata.",
+      "proposed_check": "fourier-spectra"
+    },
+    {
+      "id": "harmonic-c",
+      "module": "cosmological-boltzmann-solver",
+      "path": "test/test_harmonic.c",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Transfer-to-harmonic projection and unlensed angular-spectrum computation.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 2,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "The official harmonic path is deterministic for the fixed deck and produces physical angular spectra indexed by multipole; a later validator must not grade unordered diagnostics or progress text.",
+      "proposed_check": "harmonic-spectra"
+    },
+    {
+      "id": "loops-c",
+      "module": "cosmological-boltzmann-solver",
+      "path": "test/test_loops.c",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The numerical loop/integration utility path used by CLASS interpolation and evolution helpers.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 44,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "This official executable exercises a long deterministic numerical loop and is the only short upstream path with a materially non-trivial runtime on the investigation host.",
+      "proposed_check": "numerical-loops"
+    },
+    {
+      "id": "explanatory-example",
+      "module": "cosmological-boltzmann-solver",
+      "path": "explanatory.ini",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The standard CLASS example deck through background, thermodynamics, perturbations, Fourier, transfer, unlensed/lensed harmonic output and file serialization.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 4,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "The upstream README presents this deck as the canonical smoke run; it covers the complete production path and provides a compact end-to-end fixed point.",
+      "proposed_check": "explanatory-end-to-end"
+    },
+    {
+      "id": "thermodynamics-c",
+      "module": "cosmological-boltzmann-solver",
+      "path": "test/test_thermodynamics.c",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Standalone thermodynamics table test.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 1,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "The pinned upstream test does not compile: it references removed struct member index_th_tau_d while the current header exposes index_th_tau_idr. It remains a documented upstream incompatibility rather than a hidden omission.",
+      "proposed_check": null
+    },
+    {
+      "id": "loops-openmp-c",
+      "module": "cosmological-boltzmann-solver",
+      "path": "test/test_loops_omp.c",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "OpenMP-specific numerical loop utility path.",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 1,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "The pinned Makefile defaults to a pthread/no-OpenMP build and this OMP-specific executable was not part of the short native pass; it should be revisited on Linux with OpenMP enabled rather than claimed as covered now.",
+      "proposed_check": null
+    },
+    {
+      "id": "python-wrapper",
+      "module": "cosmological-boltzmann-solver",
+      "path": "python/test_class.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Python classy wrapper scenarios and reference-array comparisons.",
+      "resources": {
+        "cpus": 2,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 1,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "The wrapper suite requires the upstream nose/parameterized/matplotlib dependency set and a separate reference checkout for comparison; defer it to a follow-up task after the C core is accepted.",
+      "proposed_check": null
+    }
+  ]
+}
