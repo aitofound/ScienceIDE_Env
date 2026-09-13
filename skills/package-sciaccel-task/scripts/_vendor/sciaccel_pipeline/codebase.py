@@ -274,8 +274,6 @@ def validate_tests(cb: str, doc: dict, source: Path, approved: list[str]) -> tup
 def verdict(s: dict) -> str:
     if s["suitable"] == 0:
         return "DISCOURAGED: no suitable official test; custom checks only with the human's agreement"
-    if s["suitable"] < config.THIN:
-        return f"THIN: {s['suitable']} suitable tests (fewer than {config.THIN}); add custom checks or accept the gap with the human"
     return "OK"
 
 

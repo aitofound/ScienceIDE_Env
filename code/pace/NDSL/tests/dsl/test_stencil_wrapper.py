@@ -1,0 +1,399 @@
+import contextlib
+import unittest.mock
+
+import numpy as np
+import pytest
+
+from ndsl import (
+    CompilationConfig,
+    DaceConfig,
+    DaCeOrchestration,
+    FrozenStencil,
+    Quantity,
+    StencilConfig,
+)
+from ndsl.config.backend import Backend
+from ndsl.dsl.gt4py import PARALLEL, computation, interval
+from ndsl.dsl.gt4py_utils import make_storage_from_shape
+from ndsl.dsl.stencil import _convert_quantities_to_storage
+from ndsl.dsl.typing import (
+    BoolFieldIJ,
+    Float,
+    FloatField,
+    FloatFieldIJ,
+    FloatFieldIJ32,
+    FloatFieldIJ64,
+    Int,
+    IntFieldIJ,
+    IntFieldIJ32,
+    IntFieldIJ64,
+)
+
+# GT4Py direct import need to be down after any `ndsl`
+import gt4py.cartesian.gtscript  # isort: skip
+from gt4py.cartesian import definitions  # isort: skip
+
+
+def get_stencil_config(
+    *,
+    backend: Backend,
+    orchestration: DaCeOrchestration = DaCeOrchestration.BuildAndRun,
+    **kwargs,
+) -> StencilConfig:
+    dace_config = DaceConfig(None, backend=backend, orchestration=orchestration)
+    config = StencilConfig(
+        compilation_config=CompilationConfig(
+            backend=backend,
+            **kwargs,
+        ),
+        dace_config=dace_config,
+    )
+    return config
+
+
+@contextlib.contextmanager
+def mock_gtscript_stencil(mock):
+    original_stencil = gt4py.cartesian.gtscript.stencil
+    try:
+        gt4py.cartesian.gtscript.stencil = mock
+        yield
+    finally:
+        gt4py.cartesian.gtscript.stencil = original_stencil
+
+
+class MockFieldInfo(definitions.FieldInfo):
+    def __init__(self, *, axes: tuple[str, ...] = (), data_dims: tuple[int, ...] = ()):
+        # defaults
+        access = definitions.AccessKind.READ
+        boundary = None
+        dtype = np.float64
+
+        super().__init__(
+            axes=axes,
+            data_dims=data_dims,
+            access=access,
+            boundary=boundary,
+            dtype=dtype,
+        )
+
+
+@pytest.mark.parametrize(
+    "field_info, origin, field_origins",
+    [
+        pytest.param(
+            {"a": MockFieldInfo(axes=("I",))},
+            (1, 2, 3),
+            {"_all_": (1, 2, 3), "a": (1,)},
+            id="single_field_I",
+        ),
+        pytest.param(
+            {"a": MockFieldInfo(axes=("J",))},
+            (1, 2, 3),
+            {"_all_": (1, 2, 3), "a": (2,)},
+            id="single_field_J",
+        ),
+        pytest.param(
+            {"a": MockFieldInfo(axes=("K",))},
+            (1, 2, 3),
+            {"_all_": (1, 2, 3), "a": (3,)},
+            id="single_field_K",
+        ),
+        pytest.param(
+            {"a": MockFieldInfo(axes=("I", "J"))},
+            (1, 2, 3),
+            {"_all_": (1, 2, 3), "a": (1, 2)},
+            id="single_field_IJ",
+        ),
+        pytest.param(
+            {"a": MockFieldInfo(axes=("I", "J", "K"))},
+            {"_all_": (1, 2, 3), "a": (1, 2, 3)},
+            {"_all_": (1, 2, 3), "a": (1, 2, 3)},
+            id="single_field_origin_mapping",
+        ),
+        pytest.param(
+            {"a": MockFieldInfo(axes=("I", "J", "K")), "b": MockFieldInfo(axes=("I",))},
+            {"_all_": (1, 2, 3), "a": (1, 2, 3)},
+            {"_all_": (1, 2, 3), "a": (1, 2, 3), "b": (1,)},
+            id="two_fields_update_origin_mapping",
+        ),
+        pytest.param(
+            {"a": None},
+            (1, 2, 3),
+            {"_all_": (1, 2, 3), "a": (1, 2, 3)},
+            id="single_field_None",
+        ),
+        pytest.param(
+            {
+                "a": MockFieldInfo(axes=("I", "J")),
+                "b": MockFieldInfo(axes=("I", "J", "K")),
+            },
+            (1, 2, 3),
+            {"_all_": (1, 2, 3), "a": (1, 2), "b": (1, 2, 3)},
+            id="two_fields",
+        ),
+        pytest.param(
+            {
+                "field": MockFieldInfo(axes=("I", "J", "K")),
+                "table": MockFieldInfo(data_dims=(5,)),
+            },
+            (1, 2, 3),
+            {"_all_": (1, 2, 3), "field": (1, 2, 3), "table": (0,)},
+            id="field_and_table",
+        ),
+    ],
+)
+def test_compute_field_origins(field_info, origin, field_origins) -> None:
+    result = FrozenStencil._compute_field_origins(field_info, origin)
+    assert result == field_origins
+
+
+def copy_stencil(q_in: FloatField, q_out: FloatField):
+    with computation(PARALLEL), interval(...):
+        q_out = q_in
+
+
+@pytest.mark.parametrize("validate_args", [True, False])
+def test_copy_frozen_stencil(validate_args: bool) -> None:
+    backend = Backend.python()
+    rebuild = False
+    format_source = False
+    device_sync = False
+
+    config = get_stencil_config(
+        backend=backend,
+        rebuild=rebuild,
+        validate_args=validate_args,
+        format_source=format_source,
+        device_sync=device_sync,
+    )
+    stencil = FrozenStencil(
+        copy_stencil,
+        origin=(0, 0, 0),
+        domain=(3, 3, 3),
+        stencil_config=config,
+        externals={},
+    )
+    q_in = make_storage_from_shape((3, 3, 3), backend=backend)
+    q_in[:] = 1.0
+    q_out = make_storage_from_shape((3, 3, 3), backend=backend)
+    q_out[:] = 2.0
+    stencil(q_in, q_out)
+    np.testing.assert_array_equal(q_in, q_out)
+
+
+def test_frozen_stencil_raises_if_given_origin() -> None:
+    backend = Backend.python()
+    rebuild = False
+    format_source = False
+    device_sync = False
+
+    # only guaranteed when validating args
+    config = get_stencil_config(
+        backend=backend,
+        rebuild=rebuild,
+        validate_args=True,
+        format_source=format_source,
+        device_sync=device_sync,
+    )
+    stencil = FrozenStencil(
+        copy_stencil,
+        origin=(0, 0, 0),
+        domain=(3, 3, 3),
+        stencil_config=config,
+        externals={},
+    )
+    q_in = make_storage_from_shape((3, 3, 3), backend=backend)
+    q_out = make_storage_from_shape((3, 3, 3), backend=backend)
+    with pytest.raises(TypeError, match="origin"):
+        stencil(q_in, q_out, origin=(0, 0, 0))
+
+
+def test_frozen_stencil_raises_if_given_domain() -> None:
+    backend = Backend.python()
+    rebuild = False
+    format_source = False
+    device_sync = False
+
+    # only guaranteed when validating args
+    config = get_stencil_config(
+        backend=backend,
+        rebuild=rebuild,
+        validate_args=True,
+        format_source=format_source,
+        device_sync=device_sync,
+    )
+    stencil = FrozenStencil(
+        copy_stencil,
+        origin=(0, 0, 0),
+        domain=(3, 3, 3),
+        stencil_config=config,
+        externals={},
+    )
+    q_in = make_storage_from_shape((3, 3, 3), backend=backend)
+    q_out = make_storage_from_shape((3, 3, 3), backend=backend)
+    with pytest.raises(TypeError, match="domain"):
+        stencil(q_in, q_out, domain=(3, 3, 3))
+
+
+@pytest.mark.parametrize(
+    "rebuild, validate_args, format_source, device_sync",
+    [[False, False, False, False], [True, False, False, False]],
+)
+def test_frozen_stencil_kwargs_passed_to_init(
+    rebuild: bool,
+    validate_args: bool,
+    format_source: bool,
+    device_sync: bool,
+) -> None:
+    backend = Backend.python()
+
+    config = get_stencil_config(
+        backend=backend,
+        rebuild=rebuild,
+        validate_args=validate_args,
+        format_source=format_source,
+        device_sync=device_sync,
+    )
+    stencil_object = FrozenStencil(
+        copy_stencil,
+        origin=(0, 0, 0),
+        domain=(3, 3, 3),
+        stencil_config=config,
+        externals={},
+    ).stencil_object
+    mock_stencil = unittest.mock.MagicMock(return_value=stencil_object)
+    with mock_gtscript_stencil(mock_stencil):
+        FrozenStencil(
+            copy_stencil,
+            origin=(0, 0, 0),
+            domain=(3, 3, 3),
+            stencil_config=config,
+            externals={},
+        )
+    mock_stencil.assert_called_once_with(
+        definition=copy_stencil,
+        externals={},
+        **config.stencil_kwargs(func=copy_stencil),
+        build_info={},
+        dtypes={
+            # Mixed precision
+            float: Float,
+            int: Int,
+            # 2D temporaries
+            "FloatFieldIJ": FloatFieldIJ,
+            "FloatFieldIJ32": FloatFieldIJ32,
+            "FloatFieldIJ64": FloatFieldIJ64,
+            "IntFieldIJ": IntFieldIJ,
+            "IntFieldIJ32": IntFieldIJ32,
+            "IntFieldIJ64": IntFieldIJ64,
+            "BoolFieldIJ": BoolFieldIJ,
+        },
+    )
+
+
+def field_after_parameter_stencil(q_in: FloatField, param: float, q_out: FloatField):
+    with computation(PARALLEL), interval(...):
+        q_out = param * q_in
+
+
+def test_frozen_field_after_parameter() -> None:
+    config = get_stencil_config(
+        backend=Backend.python(),
+        rebuild=False,
+        validate_args=False,
+        format_source=False,
+        device_sync=False,
+    )
+    FrozenStencil(
+        field_after_parameter_stencil,
+        origin=(0, 0, 0),
+        domain=(3, 3, 3),
+        stencil_config=config,
+        externals={},
+    )
+
+
+@pytest.mark.parametrize("backend", (Backend.python(), Backend("st:gt:gpu:KJI")))
+def test_backend_options(backend: Backend) -> None:
+    rebuild = True
+    validate_args = True
+
+    expected_options = {
+        Backend.python(): {
+            "backend": "debug",
+            "rebuild": True,
+            "format_source": False,
+            "name": "tests.dsl.test_stencil_wrapper.copy_stencil",
+        },
+        "st:gt:gpu:KJI": {
+            "backend": "gt:gpu",
+            "rebuild": True,
+            "device_sync": False,
+            "format_source": False,
+            "name": "tests.dsl.test_stencil_wrapper.copy_stencil",
+        },
+    }
+
+    actual = get_stencil_config(
+        backend=backend, rebuild=rebuild, validate_args=validate_args
+    ).stencil_kwargs(func=copy_stencil)
+    expected = expected_options[backend]
+    assert actual == expected
+
+
+def test_illegal_backend_options() -> None:
+    unknown_backend = "bad:back:end:now"
+    with pytest.raises(ValueError, match=f"Unknown {unknown_backend}, options are:*"):
+        get_stencil_config(backend=Backend(unknown_backend))
+
+
+def get_mock_quantity():
+    return unittest.mock.MagicMock(spec=Quantity)
+
+
+def test_convert_quantities_to_storage_no_args() -> None:
+    args = []
+    kwargs = {}
+    _convert_quantities_to_storage(args, kwargs)
+    assert len(args) == 0
+    assert len(kwargs) == 0
+
+
+def test_convert_quantities_to_storage_one_arg_quantity() -> None:
+    quantity = get_mock_quantity()
+    args = [quantity]
+    kwargs = {}
+    _convert_quantities_to_storage(args, kwargs)
+    assert len(args) == 1
+    assert args[0][:] == quantity[:]
+    assert len(kwargs) == 0
+
+
+def test_convert_quantities_to_storage_one_kwarg_quantity() -> None:
+    quantity = get_mock_quantity()
+    args = []
+    kwargs = {"val": quantity}
+    _convert_quantities_to_storage(args, kwargs)
+    assert len(args) == 0
+    assert len(kwargs) == 1
+    assert kwargs["val"][:] == quantity[:]
+
+
+def test_convert_quantities_to_storage_one_arg_nonquantity() -> None:
+    non_quantity = unittest.mock.MagicMock(spec=tuple)
+    args = [non_quantity]
+    kwargs = {}
+    _convert_quantities_to_storage(args, kwargs)
+    assert len(args) == 1
+    assert args[0] == non_quantity
+    assert len(kwargs) == 0
+
+
+def test_convert_quantities_to_storage_one_kwarg_non_quantity() -> None:
+    non_quantity = unittest.mock.MagicMock(spec=tuple)
+    args = []
+    kwargs = {"val": non_quantity}
+    _convert_quantities_to_storage(args, kwargs)
+    assert len(args) == 0
+    assert len(kwargs) == 1
+    assert kwargs["val"] == non_quantity

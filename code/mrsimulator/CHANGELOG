@@ -1,0 +1,351 @@
+v1.0.0
+------
+
+What's new
+''''''''''
+
+**Features**
+
+- New feature supporting 2D sideband-sideband correlation simulations.
+- New feature supporting user defined two-angle orientations for powder averaging, with
+  added support of ASG triangular mesh integration.
+- Support for gamma angle averaging. `sim.config` now holds a new ``number_of_gamma_angles`` attribute.
+- Adds a new ``is_complex`` attribute to the ConfigSimulator class. Default value is True. When False,
+  only the real part of the spectral is simulated. It provides a faster computation speed for simulations
+  where imaginary part is always zero.
+- Support for quadrupolar-shielding cross frequency interactions. `freq_contrib` includes
+  new ``Quad_Shielding_cross_0``, ``Quad_Shielding_cross_2``, ``Quad_Shielding_cross_4`` literals.
+- Support for user-defined isotopes using the ``Isotope.register()`` method. See the simulation gallery for use cases and examples.
+- Shortcuts for frequency contributions, such as ``Shielding``, ``Isotropic``, and ``cross``.
+  Sets of contributions can also be excluded by placing an exclamation mark in front of the string, for example ``"!Shielding"`` excludes shielding interactions.
+- New functions for fitting Czjzek and Extended Czjzek tensor distribution models to experimental spectra.
+  See the examples gallery for more information.
+- A new ``DelayEvent`` added to the events library.
+- A collection of utility functions for converting Cartesian tensor to Haeberlen, Mehring, and
+  Maryland conventions and vice-versa.
+- Support for python 3.11, 3.12, and 3.13
+
+**Simulator**
+
+- New instance method for the `Simulator` class -- `.optimize()` -- which pre-computes transition pathways before least-squares minimization. This improves the efficiency of least-squares minimization.
+
+
+**Czjzek and Extended Czjzek**
+- The Czjzek model now uses an analytical expression for calculating the probability distribution greatly improving quality and calculation speed.
+
+**Bug Fixes**
+
+- Fixed bug where ``MixingEnum`` class had no attribute ``json`` (Issue [#260](https://github.com/deepanshs/mrsimulator/issues/260))
+- Fixed 0Hz crash issue in apodization.
+- Fix bug related to pydantic v2.0 validation.
+- Fix latex build error in pdf docs.
+- Fixed the bug where the csdm object origin offset was incorrectly set. The origin offset is now `w_ref`.
+- Fix bug when calculating ppm scale for large reference offsets.
+
+**Additional updates**
+
+- Dropped support for python 3.7, 3.8, and 3.9 because they reached the end of their lifetime.
+
+
+v0.7.0
+------
+
+What's new
+''''''''''
+
+**Features**
+
+- Support for complex amplitude simulation.
+- New isotropic interpolation schemes. Added ``isotropic_interpolation`` as a `sim.config` parameter.
+  Allowed values are ``linear`` and ``Gaussian``.
+- New ``larmor_freq(B0)`` function added to the `Isotope` class which returns the Larmor frequency
+  of the isotope, given a magnetic flux density. For example, `H1.larmor_freq(B0=9.40)`
+- New weak J and dipolar coupling enumerations added to `freq_contrib`.
+- New command-line interface (CLI) tools for mrsimulator.
+- Added 200+ NMR active isotopes to the library.
+- Support for python 3.10
+
+**Method**
+
+- New Event classes---``SpectralEvent`` and ``MixingEvent``. The MixingEvent controls the transition
+  amplitude mixing in a multi-event method.
+- New ``TotalMixing`` and ``NoMixing`` mixing query enumerations for quick scripting of common mixing
+  events.
+- New weights attribute for the ``TransitionPathway`` object, which holds the probability of
+  the transition pathway based on the mixing events defined within the method.
+- New ``plot()`` function in Method class, which generates a visual representation of the method's events,
+  transition pathways, rotor angle, etc.
+- Support for concurrent mixing events.
+- Support for negative spectral width in a spectral dimension.
+- Deprecated ``Method1D`` and ``Method2D`` classes. Use the generic ``mrsimulator.method.Method``
+  object for custom 1D and 2D methods.
+
+**SpinSystem**
+
+- New function ``simplify()`` to simplifies a spin system object to
+  a list of irreducible spin systems.
+- New function ``site_generator()`` added to the utility collection sub-module, which simplifies
+  the process of creating Site objects in bulk.
+- Added gyromagnetic ratio and quadrupole moment metadata for all isotopes, including unstable
+  isotopes.
+
+**SignalProcessor**
+
+- New `SkewGaussian`, `TopHat`, and `Mask` apodization functions were added to the signal processor module.
+
+**Documentation**
+
+- Restructured documentation layout
+- Improved troubleshooting section.
+- Added section *User Guide* detailing the use and attributes of most objects.
+- Added section *Method* demonstrating how to create custom **Method** objects.
+- Condensed simulation/fitting gallery by removing redundant examples.
+- New gallery demonstrating signal processing functions.
+
+Changes
+'''''''
+
+- `reduced_dict` function is deprecated, use `json(units=False)` instead.
+- The `mrsimulator.signal_processing` module is renamed to `mrsimulator.signal_processor`
+- Drop support for Python version 3.6
+- Added Channel validation for named methods #177
+- Optimized memory usage and performance of the `single_site_system_generator` utility function.
+
+Bug fixes
+'''''''''
+
+- Fixed bug where spectral interpolation resulted in a segmentation fault.
+- Fixed memory leak issue in the C code.
+- Fixed bug in query combination involving multiple quadrupolar queries. #188.
+- Fixed bug related to unsigned/signed integers crashing on M1 macs.
+
+
+Breaking changes
+''''''''''''''''
+
+**For most users**
+Mrsimulator is currently in development, and the new release includes breaking changes from v0.6.
+Please review these changes and make changes according.
+
+- The `mrsimulator.methods` module is renamed as `mrsimulator.method.lib`.
+- The `mrsimulator.signal_processing` module is renamed to `mrsimulator.signal_processor`.
+- The `data` attribute of `SignalProcessor.apply_operations(data=...)` is renamed to `dataset`.
+  Use `SignalProcessor.apply_operations(dataset=...)`
+- The `transition_query` attribute of the `mrsimulator.method.SpectralEvent` class
+  is renamed to `transition_queries`.
+- The `mrsimulator.method.query.RotationalQuery` class is renamed to
+  `mrsimulator.method.query.Rotation`
+
+**For advanced users**
+- Complete redesign of the `TransitionQuery` object. Please refer to the documentation for details.
+
+
+v0.6.0
+------
+
+What's new
+''''''''''
+
+- ⭐ Improved simulation performance. ⭐ See our :ref:`benchmark`.
+- Simulation of one-dimensional spectra of coupled spin systems. The frequency contributions
+  from the coupled sites include weak J-couplings and weak dipolar couplings.
+- New :class:`~mrsimulator.Coupling` class.
+- Added a new ``Sites`` class that holds a list of Site objects. The Sites class method,
+  ``to_pd()``, exports the sites as a pandas data frame.
+- A new method, ``sites()``, is added to the Simulator object, which returns a list of
+  unique ``Sites`` objects within the Simulator object across multiple spin systems.
+- Added three new arguments to the ``single_site_system_generator()`` method,
+  'site_labels', 'site_names', and 'site_descriptions'.
+
+Changes
+'''''''
+
+- The :meth:`~mrsimulator.SpinSystem.get_isotopes` method from the SpinSystem object,
+  will now return :class:`~mrsimulator.spin_system.isotope.Isotope` objects by default.
+  Use the `symbol=True` argument of the method to get a list of string isotopes.
+- The ``to_freq_dict()`` function is deprecated.
+- The `D` symmetry of `transition_query` attribute from `Method2D` method is now None by default.
+- `BlochDecayCTSpectrum` is an alias for `BlochDecayCentralTransitionSpectrum` class.
+
+Bug fixes
+'''''''''
+
+- Fixed a bug related to `get_spectral_dimensions()` utility method in cases when CSDM
+  dimension objects have negative increment.
+- Fixed a bug resulting in the non-conserved spectral area after a Gaussian apodization.
+- Fixed a bug in Gaussian apodization, which raised an error when the FWHM argument is a scalar.
+- Fixed bug causing multi-dataset fit to fail.
+
+v0.5.1
+------
+
+Bug fixes
+'''''''''
+
+- Fixed a bug that was causing incorrect spectral binning when the frequency
+  contribution is pure isotropic.
+
+Other changes
+'''''''''''''
+
+- The ``to_dict_with_units()`` method is deprecated and is replaced with ``json()``
+- The ``json()`` function returns a python dictionary object with minimal required keywords,
+  where the event keys are globally serialized at the root method object. In the case where
+  the event key value is different from the global value, the respective key is serialized
+  within the event object.
+- The ``json()`` function will no longer serialize the `transition_query` objects for the
+  named objects.
+
+v0.5.0
+------
+
+What's new
+''''''''''
+
+- ⭐ Improved simulation performance. ⭐ See our :ref:`benchmark`.
+
+The update introduces various two-dimensional methods for simulating NMR spectrum.
+
+- Introduces a generic one-dimensional method, :class:`~mrsimulator.method.lib.Method1D`.
+- Introduces a generic two-dimensional method, :class:`~mrsimulator.method.lib.Method2D`.
+- Specialized two-dimensional methods for multi-quantum variable-angle spinning
+  with build-in affine transformations.
+
+  - :class:`~mrsimulator.method.lib.ThreeQ_VAS`,
+  - :class:`~mrsimulator.method.lib.FiveQ_VAS`,
+  - :class:`~mrsimulator.method.lib.SevenQ_VAS`
+
+- Specialized two-dimensional methods for satellite-transition variable-angle spinning
+  with build-in affine transformations.
+
+  - :class:`~mrsimulator.method.lib.ST1_VAS`,
+  - :class:`~mrsimulator.method.lib.ST2_VAS`,
+
+- Specialized two-dimensional isotropic/anisotropic sideband correlation method,
+  :class:`~mrsimulator.method.lib.SSB2D`.
+
+Other changes
+'''''''''''''
+
+- The :meth:`~mrsimulator.Method.get_transition_pathways` method no longer return a
+  numpy array, instead a python list.
+- Renamed `mrsimulator.methods` module to `mrsimulator.method.lib`.
+
+v0.4.0
+------
+
+What's new!
+'''''''''''
+
+- ⭐ Improved simulation performance. ⭐ See our :ref:`benchmark`.
+- New :class:`~mrsimulator.models.CzjzekDistribution` and
+  :class:`~mrsimulator.models.ExtCzjzekDistribution` classes for generating Czjzek and
+  extended Czjzek second-rank symmetric tensor distribution models for use in simulating
+  amorphous materials.
+- New utility function, :func:`~mrsimulator.utils.collection.single_site_system_generator`,
+  for generating a list of single-site spin systems from a 1D list/array of respective
+  tensor parameters.
+
+v0.3.0
+------
+
+What's new!
+'''''''''''
+
+- ⭐ Improved simulation performance. ⭐ See our :ref:`benchmark`.
+- Removed the ``Dimension`` class and added a new ``Method`` class instead.
+- New methods for simulating the NMR spectrum:
+
+  - ``BlochDecaySpectrum`` and
+  - ``BlochDecayCentralTransitionSpectrum``.
+
+  The Bloch decay spectrum method simulates all p=Δm=-1 transition pathways, while the
+  Bloch decay central transition selective spectrum method simulates all transition
+  pathways with p=Δm=-1 and d=0.
+
+- New ``Isotope``, ``Transition``, and ``ZeemanState`` classes.
+- Every class now includes a ``reduced_dict()`` method. The reduced_dict method returns
+  a dictionary with minimal key-value pairs required to simulate the spectrum. Note,
+  this may cause metadata loss, if any.
+- Added a ``label`` and ``description`` attributes to the ``Site`` class.
+- Added a new ``label`` attribute to the ``SpinSystem`` class.
+- New ``SignalProcessor`` class for post-simulation signal processing.
+- Improved usage of least-squares minimization using python
+  `LMFIT <https://lmfit.github.io/lmfit-py/>`_ package.
+- Added a new ``get_spectral_dimensions`` utility function to extract the spectral
+  dimensions information from the CSDM object.
+
+Bug fixes
+'''''''''
+
+- Fixed bug resulting from the rotation of the fourth rank tensor with non-zero euler
+  angles.
+- Fixed bug causing a change in the spectral area as the sampling points change. Now the
+  area is constant.
+- Fixed bug resulting in an incorrect spectrum when non-coincidental quad and shielding
+  tensors are given.
+- Fixed bug causing incorrect generation of transition pathways when multiple events are
+  present.
+
+Other changes
+'''''''''''''
+
+- Renamed  the ``decompose`` attribute from the ``ConfigSimulator`` class to
+  ``decompose_spectrum``. The attribute is an enumeration with the following literals:
+
+  - ``none``: Computes a spectrum which is an integration of the spectra from all
+    spin systems.
+  - ``spin_system``: Computes a series of spectra each corresponding to a single
+    spin system.
+
+- Renamed ``Isotopomer`` class to ``SpinSystem``.
+- Renamed ``isotopomers`` attribute from ``Simulator`` class to ``spin_systems``.
+- Renamed ``dimensions`` attribute from ``Simulator`` class to ``methods``.
+- Changed the default value of ``name`` and ``description`` attribute from the
+  ``SpinSystem`` class from ``""`` to ``None``.
+
+v0.2.x
+------
+
+What's new!
+'''''''''''
+
+- Added more isotopes to the simulator. Source NMR Tables
+  (https://apps.apple.com/bn/app/nmr-tables/id1030899609?mt=12).
+- Added two new keywords: `atomic_number` and `quadrupole_moment`.
+- Added documentation for every class.
+- Added examples for simulating NMR quadrupolar spectrum.
+
+Bug fixes
+'''''''''
+
+- Fixed amplitude normalization. The spectral amplitude no longer change when the
+  `integration_density`, integration_volume`, or the `number_of_sidebands` attributes
+  change.
+
+Other changes
+'''''''''''''
+
+- Removed plotly-dash app to its own repository.
+- Renamed the class ``Spectrum`` to ``Dimension``
+
+v0.1.3
+------
+
+- Fixed missing files from source tar.
+
+v0.1.2
+------
+
+- Initial release on pypi.
+
+v0.1.1
+------
+
+- Added solid state quadrupolar spectrum simulation.
+- Added mrsimulator plotly-dash app.
+
+v0.1.0
+------
+
+- Solid state chemical shift anisotropy spectrum simulation.

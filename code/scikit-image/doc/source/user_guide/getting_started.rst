@@ -1,0 +1,62 @@
+Getting started
+---------------
+
+``scikit-image`` is an image processing Python package that works with
+:mod:`numpy` arrays. The package is imported as ``skimage``: ::
+
+    >>> import skimage as ski
+
+Most functions of ``skimage`` are found within submodules: ::
+
+    >>> camera = ski.data.camera()
+
+A list of submodules and functions is found on the `API reference
+<https://scikit-image.org/docs/stable/api/api.html>`_ webpage.
+
+Within scikit-image, images are represented as NumPy arrays, for
+example 2-D arrays for grayscale 2-D images ::
+
+    >>> type(camera)
+    <type 'numpy.ndarray'>
+    >>> # An image with 512 rows and 512 columns
+    >>> camera.shape
+    (512, 512)
+
+The :mod:`skimage.data` submodule provides a set of functions returning
+example images, that can be used to get started quickly on using
+scikit-image's functions: ::
+
+    >>> coins = ski.data.coins()
+    >>> threshold_value = ski.filters.threshold_otsu(coins)
+    >>> threshold_value
+    107
+
+Of course, it is also possible to load your own images as NumPy arrays
+from image files, using :func:`skimage.io.imread`: ::
+
+    >>> import os
+    >>> filename = os.path.join(ski.data_dir, 'moon.png')
+    >>> moon = ski.io.imread(filename)
+
+If you need more control over how images are loaded, you may want to
+consider using one of the many external Python libraries that can read
+images into NumPy arrays. For example, `imageio
+<https://imageio.readthedocs.io/en/stable/>`_ : ::
+
+    >>> import imageio.v3 as iio3
+    >>> filename = os.path.join(ski.data_dir, 'moon.png')
+    >>> moon = iio3.imread(filename)
+
+Use `natsort <https://pypi.org/project/natsort/>`_ to load multiple images ::
+
+    >>> import os
+    >>> from natsort import natsorted, ns
+    >>> list_files = os.listdir('.')
+    >>> list_files
+    ['01.png', '010.png', '0101.png', '0190.png', '02.png']
+    >>> list_files = natsorted(list_files)
+    >>> list_files
+    ['01.png', '02.png', '010.png', '0101.png', '0190.png']
+    >>> image_list = []
+    >>> for filename in list_files:
+    ...   image_list.append(ski.io.imread(filename))

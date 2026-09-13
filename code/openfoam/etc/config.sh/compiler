@@ -1,0 +1,82 @@
+#----------------------------------*-sh-*--------------------------------------
+# =========                 |
+# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+#  \\    /   O peration     | Website:  https://openfoam.org
+#   \\  /    A nd           | Copyright (C) 2011-2025 OpenFOAM Foundation
+#    \\/     M anipulation  |
+#------------------------------------------------------------------------------
+# License
+#     This file is part of OpenFOAM.
+#
+#     OpenFOAM is free software: you can redistribute it and/or modify it
+#     under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+#     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+#     for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+#
+# File
+#     etc/config.sh/compiler
+#
+# Description
+#     Startup file for custom compiler versions for OpenFOAM
+#     Sourced from OpenFOAM-<VERSION>/etc/config.sh/settings
+#
+#------------------------------------------------------------------------------
+
+case "$WM_COMPILER_TYPE" in
+OpenFOAM | ThirdParty)
+
+    # Default versions of GMP, MPFR and MPC, override as necessary
+    gmp_version=gmp-5.1.2
+    mpfr_version=mpfr-3.1.2
+    mpc_version=mpc-1.0.1
+
+    case "$WM_COMPILER" in
+    Gcc55)
+        gcc_version=gcc-5.5.0
+        ;;
+    Gcc65)
+        gcc_version=gcc-6.5.0
+        ;;
+    Gcc74)
+        gcc_version=gcc-7.4.0
+        ;;
+    Gcc82)
+        gcc_version=gcc-8.2.0
+        ;;
+    Gcc95)
+        gcc_version=gcc-9.5.0
+        ;;
+    Gcc111)
+        gcc_version=gcc-11.1.0
+        ;;
+    Gcc121)
+        gcc_version=gcc-12.1.0
+        ;;
+    Clang)
+        # Using clang - not gcc
+        export WM_CC='clang'
+        export WM_CXX='clang++'
+        clang_version=llvm-19.1.7
+        ;;
+    *)
+        /bin/cat <<USAGE 1>&2
+
+Warning in $WM_PROJECT_DIR/etc/config.sh/compiler:
+    Unknown OpenFOAM compiler type '$WM_COMPILER'
+    Please check your settings
+
+USAGE
+        ;;
+    esac
+    ;;
+esac
+
+#------------------------------------------------------------------------------

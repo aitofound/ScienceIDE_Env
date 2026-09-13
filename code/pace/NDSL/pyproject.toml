@@ -1,0 +1,152 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools >= 80", "setuptools-scm>=10"]
+
+[project]
+authors = [{name = "NOAA/NASA"}]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Atmospheric Science",
+  "Private :: Do Not Upload",
+  "Natural Language :: English",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13"
+]
+dynamic = ["dependencies", "version"]
+license = "Apache-2.0"
+license-files = ["LICENSE.txt", "ndsl/viz/fv3/README.md"]
+name = "ndsl"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+
+[project.optional-dependencies]
+cuda12 = ['cupy-cuda12x>=12.0']
+cuda13 = ['cupy-cuda13x>=14.0']
+demos = ["ipython", "ipykernel"]
+dev = [
+  "flake8-pyproject",
+  "ndsl[demos]",
+  "ndsl[docs]",
+  "ndsl[test]",
+  "pre-commit"
+]
+docs = ["zensical", "mkdocstrings[python]"]
+extras = ["ndsl[docs]", "ndsl[demos]", "ndsl[test]", "ndsl[dev]"]
+hmm-cuda12 = ['numpy_allocator', 'ndsl[cuda12]']
+hmm-cuda13 = ['numpy_allocator', 'ndsl[cuda13]']
+pyfms = ["pyfms @ git+https://github.com/noaa-gfdl/pyfms.git"]
+serialbox = ["serialbox @ git+https://github.com/FlorianDeconinck/serialbox.git@feature/data_ijkbuff#subdirectory=src/serialbox-python"]
+test = [
+  "pytest<9.1.0",  # starting with 9.1.0 we get issues with test detection
+  "coverage"
+]
+zarr = ["zarr<3"]
+
+[project.scripts]
+best_guess_diff = "ndsl.stencils.testing.best_guess_diff:entry_point"
+ndsl-gencode = "ndsl.boilerplate.generate_code:main"
+ndsl-serialbox_to_netcdf = "ndsl.stencils.testing.serialbox_to_netcdf:entry_point"
+
+[project.urls]
+Repository = "https://github.com/NOAA-GFDL/NDSL"
+
+[tool.aliases]
+
+[tool.black]
+target-version = ["py312", "py313"]
+
+[tool.coverage.run]
+branch = true
+omit = ["tests/*", "*gt_cache*", ".dacecache*", "external/*", "__init__.py"]
+parallel = true
+source_pkgs = ["ndsl"]
+
+[tool.flake8]
+exclude = ["docs"]
+extend-ignore = [
+  # Redundant with black formatter
+  "E302",  # Blank lines before function
+  "E501",  # Line too long
+  "E704",  # One statement per line
+  "W293",  # Blank line contains whitespace
+  "W503",  # Linebreak before binary operator
+  # Clashes with NDSL/stencil syntax
+  "E203",  # Space before ":", e.g. `field[1, :]`
+  "F841",  # Local variable assigned but unused
+  # other
+  "B019"  # We'd like to keep using functools.lru_cache
+]
+max-line-length = 88
+
+[tool.isort]
+default_section = "THIRDPARTY"
+known_third_party = "f90nml,pytest,xarray,numpy,mpi4py,gt4py,dace"
+profile = "black"
+sections = "FUTURE,STDLIB,THIRDPARTY,FIRSTPARTY,LOCALFOLDER"
+
+[tool.mypy]
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+# TODO: understand what's wrong with imports and fix
+ignore_missing_imports = true
+strict_equality = true
+strict_optional = true
+warn_redundant_casts = true
+warn_unreachable = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+ignore_errors = true
+module = [
+  # TODO: fix tests later
+  "tests.*"
+]
+
+[[tool.mypy.overrides]]
+disallow_incomplete_defs = false
+disallow_untyped_defs = false
+module = [
+  # TODO: fix issues and remove this override
+  "ndsl.grid.*",
+  "ndsl.viz.*",
+  # Unclear what happens to this module in the future
+  "ndsl.dsl.gt4py_utils",
+  # We don't fix legacy (unless we really need it)
+  "ndsl.restart._legacy_restart",
+  # translate test system is "beyond repair"
+  "ndsl.stencils.testing.translate",
+  "ndsl.stencils.testing.parallel_translate"
+]
+
+[[tool.mypy.overrides]]
+disallow_untyped_defs = false
+module = [
+  # Unclear what the state of these modules is
+  "ndsl.monitor.*",
+  "ndsl.stencils.testing.serialbox_to_netcdf"
+]
+
+[tool.pytest]
+markers = [
+  # tests running on a GPU (e.g. with cupy)
+  "gpu",
+  # tests relying on the optional pyFMS dependency
+  "pyfms",
+  # tests relying on at least two MPI processes
+  "parallel",
+  # tests relying on the optional zarr dependency
+  "zarr"
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["ndsl", "ndsl.*"]
+
+[tool.setuptools_scm]
+version_scheme = "no-guess-dev"
+tag.strict = "true"  # only consider tags with at least one dot (e.g. v1.0, 2025.06.03)

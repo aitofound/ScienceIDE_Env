@@ -1,0 +1,54 @@
+#!/bin/bash
+
+export TITLE=$(basename `pwd`) # Graphene
+export ESPRESSO=$(cd ../../../; pwd)
+export EXAMPLE=$(cd ../; pwd)
+
+export ESPRESSO_BIN=$ESPRESSO/bin
+export ESPRESSO_PSEUDO=$EXAMPLE/$TITLE/UPF
+export ESPRESSO_TMPDIR=$EXAMPLE/$TITLE/TMP
+export ESPRESSO_D3DIR=$EXAMPLE/$TITLE/TMP3
+export ESPRESSO_FILDRHO_DIR=$EXAMPLE/$TITLE/FILDRHO
+mkdir -p $ESPRESSO_D3DIR
+
+echo ================================================================
+
+bin="$ESPRESSO_BIN"
+pref="mpirun -np 4 "
+post="-npool 2 " 
+
+# STEP1: pw.x calculation, then ph.x calculation
+echo "pw calculation"
+$pref $bin/pw.x $post -in pw.in > pw.out
+echo "ph calculation"
+$pref $bin/ph.x $post -in ph.in > ph.out
+
+echo "starting d3 calculation"
+$pref $bin/d3q.x $post -in d3q.in > d3q.out 
+
+# cleanup:
+#rm -rf drhox_e* *out TMP* FIL* d3-*.in
+
+echo "computing 2-body force constants"
+$bin/d3_q2r.x < q2r.in > d3_q2r.out
+
+echo "computing 3-body force constants"
+ls FILD3DYN/anh* | $bin/d3_qq2rr.x 2 2 1 -o mat3R > d3_qq2rr.out
+
+echo "appying sum rules 3-body force constants"
+$bin/d3_asr3.x -i mat3R -o mat3R.asr -t 1.e-12 -n 10000 -p 1 > d3_asr3.out
+
+echo "preparing sparse representation of 3-body force constants"
+$bin/d3_sparse.x -i mat3R.asr -o mat3R.asr.sparse -t 0. -n 10000 > d3_sparse.out
+
+echo "doing linewidth dispersion calculation (path)"
+$pref $bin/d3_lw.x -in input.LW > output.LW
+gnuplot -persist plot-lw.gp
+
+echo "doing linewidth dispersion calculation (Brillouin zone)"
+$pref $bin/d3_lw.x -in input.LW-bz > output.LW-bz
+gnuplot -persist plot-bz.gp
+
+echo "doing SMA thermal conductivity calculation"
+$pref $bin/d3_tk.x -in input.TK-sma > output.TK-sma
+

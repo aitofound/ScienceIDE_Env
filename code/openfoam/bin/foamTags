@@ -1,0 +1,84 @@
+#!/bin/sh
+#------------------------------------------------------------------------------
+# =========                 |
+# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+#  \\    /   O peration     | Website:  https://openfoam.org
+#   \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+#    \\/     M anipulation  |
+#------------------------------------------------------------------------------
+# License
+#     This file is part of OpenFOAM.
+#
+#     OpenFOAM is free software: you can redistribute it and/or modify it
+#     under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+#     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+#     for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Script
+#     foamTags
+#
+# Description
+#     Build the tags files for all the .C and .H files
+#
+#     This script is designed for use with emacs
+#
+#     For use, download/install 'exuberant ctags'.  The executable for this
+#     package is called ctags, which conflicts with the 'standard' version
+#     of ctags found on most *nix systems.  Rename the exuberant ctags
+#     executable to ectags.
+#
+#------------------------------------------------------------------------------
+
+usage() {
+    cat <<USAGE
+
+Usage: ${0##*/}
+options:
+  -help | -h     print the usage
+
+Build the tags files for all the .C and .H files
+
+USAGE
+}
+
+while [ "$#" -gt 0 ]
+do
+    case "$1" in
+    -h | -help)
+        usage && exit 0
+        ;;
+    *)
+        usage && exit 1
+        ;;
+    esac
+done
+
+for cmd in etags ctags-exuberant
+do
+    command -v $cmd >/dev/null 2>&1 || {
+        echo "${0##*/} cannot build tag files: '$cmd' command not found"
+        exit 1
+    }
+done
+
+cd "$WM_PROJECT_DIR" || exit 1
+mkdir .tags 2>/dev/null
+
+#etagsCmd="etags --declarations -l c++ -o .tags/etags -"
+etagsCmd="ctags-exuberant -e --extra=+fq --file-scope=no --c-kinds=+p -o .tags/etags -L -"
+
+find -H "$WM_PROJECT_DIR" \
+     \( -name "*.[HC]" -o -name lnInclude -prune -o -name Doxygen -prune \) | \
+    $etagsCmd
+
+#gtags -i --gtagsconf bin/tools/gtagsrc .tags
+
+#------------------------------------------------------------------------------

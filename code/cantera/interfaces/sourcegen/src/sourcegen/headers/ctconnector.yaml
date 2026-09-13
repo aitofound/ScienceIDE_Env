@@ -1,0 +1,43 @@
+# This file is part of Cantera. See License.txt in the top-level directory or
+# at https://cantera.org/license.txt for license and copyright information.
+
+docstring: |-
+  Generated CLib API for Cantera's ConnectorNode class.
+prefix: connector
+base: ConnectorNode
+parents: []  # List of parent classes
+derived:  # Specialization/prefix dictionary
+  FlowDevice: flowdev
+  WallBase: wall
+  Wall: wall
+recipes:
+- name: new
+  wraps: newConnectorNode
+- name: type
+- name: name
+- name: setName
+# FlowDevice
+- name: setPrimary
+- name: massFlowRate
+- name: deviceCoefficient  # New in Cantera 3.2
+- name: setDeviceCoefficient  # New in Cantera 3.2
+- name: setPressureFunction
+  wraps: setPressureFunction(shared_ptr<Func1>)  # alternative is deprecated
+- name: setTimeFunction
+  wraps: setTimeFunction(shared_ptr<Func1>)  # alternative is deprecated
+# Wall
+- name: expansionRate
+- name: heatRate
+- name: area
+- name: setArea
+- name: setThermalResistance
+- name: setHeatTransferCoeff
+- name: setHeatFlux
+  wraps: setHeatFlux(shared_ptr<Func1>)  # alternative is deprecated
+- name: setExpansionRateCoeff
+- name: setVelocity
+  wraps: setVelocity(shared_ptr<Func1>)  # alternative is deprecated
+- name: setEmissivity
+# service functions
+- name: del
+- name: cabinetSize
