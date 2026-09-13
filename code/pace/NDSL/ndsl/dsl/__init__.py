@@ -1,0 +1,65 @@
+# Literal precision for both GT4Py & NDSL
+import os
+import sys
+from typing import Literal
+
+from ndsl import ndsl_log
+from ndsl.comm.mpi import MPI
+
+gt4py_config_module = "gt4py.cartesian.config"
+if gt4py_config_module in sys.modules:
+    raise RuntimeError(
+        "`GT4Py` config imported before `ndsl` imported."
+        " Please import `ndsl.dsl` or any `ndsl` module "
+        " before any `gt4py` imports."
+    )
+
+# Literal precision handling
+
+
+def _get_literal_precision(default: Literal["32", "64"] = "64") -> Literal["32", "64"]:
+    precision = os.getenv("NDSL_LITERAL_PRECISION", default)
+
+    expected: list[Literal["32", "64"]] = ["32", "64"]
+    if precision in expected:
+        return precision
+
+    ndsl_log.warning(
+        f"Unexpected literal precision '{precision}', falling back to '{default}'. Valid values are {expected}."
+    )
+    return default
+
+
+NDSL_GLOBAL_PRECISION: int = int(_get_literal_precision())
+os.environ["GT4PY_LITERAL_INT_PRECISION"] = str(NDSL_GLOBAL_PRECISION)
+os.environ["GT4PY_LITERAL_FLOAT_PRECISION"] = str(NDSL_GLOBAL_PRECISION)
+
+
+# Set cache names for default gt backends workflow
+import gt4py.cartesian.config  # noqa: E402
+
+if MPI is not None:
+    import os
+
+    gt4py.cartesian.config.cache_settings["dir_name"] = os.environ.get(
+        "GT_CACHE_DIR_NAME", f".gt_cache_{MPI.COMM_WORLD.Get_rank():06}"
+    )
+
+
+# Raise an error if DaCe backends aren't registered in GT4Py.
+import gt4py.cartesian.backend as gt_backend  # noqa: E402
+
+if not any([name.startswith("dace") for name in gt_backend.REGISTRY.names]):
+    raise RuntimeError(
+        "NDSL installation is incomplete: GT4Py was unable to load the DaCe backends."
+    )
+
+
+if not sys.argv[0].endswith("ndsl-gencode"):
+    ndsl_log.info(f"Literal precision: {NDSL_GLOBAL_PRECISION}")
+
+# We remove warnings from the compiler for higher level of logging
+NDSL_COMPILER_SILENCE = os.getenv("NDSL_COMPILER_SILENCE", "False").lower() == "true"
+if NDSL_COMPILER_SILENCE:
+    gt4py.cartesian.config.build_settings["extra_compile_args"]["cxx"].append("-w")
+    gt4py.cartesian.config.build_settings["extra_compile_args"]["cuda"].append("-w")
