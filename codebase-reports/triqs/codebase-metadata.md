@@ -36,14 +36,16 @@ Generated from the canonical JSON. Unknown values are visible; this report never
 
 | count | value | unit |
 |---|---:|---|
-| `test_files` | unknown | files |
+| `test_files` | 267 | files |
 | `test_definitions` | unknown | source-level test definitions |
 | `collected_items` | unknown | framework-collected items |
 | `inner_cases` | unknown | inner cases |
 
 ### Gaps and warnings
-- CLI: measurement.source_extensions is empty; source/implementation line totals remain unknown
-- CLI: repository/cache directory excluded from source accounting: .git
+- CLI: agent-authored classification_and_gaps section is absent; unknown values remain visible
+- CLI: agent-authored codebase section is absent; unknown values remain visible
+- CLI: agent-authored modules section is absent; unknown values remain visible
+- CLI: agent-authored shared_components section is absent; unknown values remain visible
 
 Artifacts: `codebase-metadata.json` (canonical) · `codebase-metadata.html` (self-contained detail)
 <!-- SCIACCEL_CODEBASE_METADATA_REPORT:END -->
