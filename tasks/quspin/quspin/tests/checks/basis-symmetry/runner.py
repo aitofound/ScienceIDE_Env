@@ -13,6 +13,7 @@ import os
 import subprocess
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 GROUPS = {
@@ -65,13 +66,20 @@ def main() -> int:
     test_root = Path(source) / "test"
     env = os.environ.copy()
     env.update({"PYTHONDONTWRITEBYTECODE": "1", "OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1"})
-    command = [sys.executable, "-m", "pytest", "-q", *(str(test_root / f) for f in files)]
     started = time.monotonic()
-    proc = subprocess.run(command, env=env, text=True, capture_output=True)
+    def run_one(filename):
+        return filename, subprocess.run(
+            [sys.executable, "-m", "pytest", "-q", str(test_root / filename)],
+            env=env, text=True, capture_output=True,
+        )
+    with ThreadPoolExecutor(max_workers=min(2, len(files))) as pool:
+        results = list(pool.map(run_one, files))
     elapsed = time.monotonic() - started
-    if proc.returncode:
-        sys.stderr.write(proc.stdout + proc.stderr)
-        return proc.returncode
+    failures = [(filename, proc) for filename, proc in results if proc.returncode]
+    if failures:
+        for filename, proc in failures:
+            sys.stderr.write(f"[{filename}]\n{proc.stdout}{proc.stderr}")
+        return 1
 
     # A compact physical calibration observable: the finite spin-chain ground
     # energy at the configured size/field.  The variant changes L, so it cannot
