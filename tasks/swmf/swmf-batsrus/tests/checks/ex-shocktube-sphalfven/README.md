@@ -8,11 +8,13 @@ A circularly polarised Alfven wave launched from a localised source and expandin
 
 `run.sh` installs and builds the pinned BATSRUS with `./Config.pl -default -e=Mhd -u=Waves -g=8,8,1 -ng=3`, creates a run directory with
 `make rundir`, runs `mpiexec -n 2 ./BATSRUS.exe` on the deck of `ic/<initial condition>/`, merges the
-per-processor pieces with `PostProc.pl`, and copies `final_z0.out`, `log.log` into the output directory. About 6 s
+per-processor pieces with `PostProc.pl`, and copies `final_z0.out`, `log.log` into the output directory. About 10 s
 of run time on the declared cores, plus the build, which the driver reports separately.
 
+Before the run ends, the graded `final_z0.out` series is rewritten by `SAB_PLOT_FRAMES` (default 10) to write window / SAB_PLOT_FRAMES frames instead of the upstream cadence; the run measured 11 frames of it, and `run.sh` prints `SAB_PLOT_FRAMES=<count>` (2026-09-13 window/frame revision).
+
 The knobs are `SAB_TIME_SCALE` (the end time of every `#STOP` block), `SAB_STEP_SCALE` (the iteration
-limit of every `#STOP` block that sets one), `SAB_MPI_RANKS` and `SAB_MAKE_JOBS`; `run.sh --help`
+limit of every `#STOP` block that sets one), `SAB_PLOT_FRAMES` (the graded series' target frame count), `SAB_MPI_RANKS` and `SAB_MAKE_JOBS`; `run.sh --help`
 lists them. The defaults are the graded values.
 
 Differences from the upstream test: upstream ships this deck as an example with no Makefile.test target and no reference output, so the pinned build generates the check's reference. Its Config.pl line is the comment on the deck's first line. The z=0 plot is written as idl_ascii instead of binary IDL. The graded end time is 1.0 rather than the upstream 4.0, exposed as SAB_TIME_SCALE=4: the calibration run showed that by t = 4 a four-ulp perturbation of the initial density has grown into sign changes of the current density jz in the low-amplitude cells (a relative spread of 2, an absolute spread of 2e-4 on a peak of 3.9), so the upstream window is past the point where two legitimate runs of this deck stay equivalent; at t = 1 the wave has crossed its own width and the comparison is still meaningful.

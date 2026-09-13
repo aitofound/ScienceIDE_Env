@@ -22,8 +22,9 @@
 # e.g. SAB_MAX_ITERATION=10 sab.py task selfcheck ...
 KNOB_HELP=""
 knob() { local name=$1 default=$2 desc=$3; [ -n "${!name:-}" ] || printf -v "$name" '%s' "$default"; export "$name"; KNOB_HELP+="$name=$default  $desc"$'\n'; }
-knob SAB_MAX_ITERATION "300" "steady iterations of the background run (#STOP MaxIteration of PARAM.in.restartsave)"
-knob SAB_SIMULATION_TIME "1.0" "physical seconds of the time-accurate impact run (#STOP tSimulationMax of PARAM.in.restartread); run time scales with it"
+knob SAB_MAX_ITERATION "50" "steady iterations of the background run (#STOP MaxIteration of PARAM.in.restartsave). Shortened 2026-09-13 from the upstream 300 (93 s once the frame rule below made both stages write frames instead of 1-2) under the 60 s window ruling"
+knob SAB_SIMULATION_TIME "0.15" "physical seconds of the time-accurate impact run (#STOP tSimulationMax of PARAM.in.restartread); run time scales with it. Shortened 2026-09-13 from the upstream 1.0 alongside SAB_MAX_ITERATION"
+knob SAB_PLOT_FRAMES "5" "minimum frames of the graded y=0 VAR tcp series in each stage before that stage ends; sets the RestartSave #SAVEPLOT cadence to SAB_MAX_ITERATION / SAB_PLOT_FRAMES steps and the RestartRead one to SAB_SIMULATION_TIME / SAB_PLOT_FRAMES seconds (floor 1 step / any positive seconds)"
 knob SAB_MPI_RANKS "2" "MPI ranks; 2 is the upstream test decomposition and the graded one"
 knob SAB_OMP_THREADS "1" "OpenMP threads per rank (upstream OMPIRUN default)"
 knob SAB_BUILD_JOBS "0" "parallel make jobs; 0 means one per available core. Build time only, never graded"
@@ -73,6 +74,32 @@ for index, line in enumerate(lines):
     break
 else:
     raise SystemExit("run.sh: #STOP occurrence %d not found in %s" % (occurrence, path))
+PY
+}
+
+# Rewrite one #SAVEPLOT StringPlot entry (occurrence-th line whose value equals
+# marker) to the given cadence: "Dn" rewrites DnSavePlot, "Dt" rewrites
+# DtSavePlot. So the graded window and SAB_PLOT_FRAMES still control how many
+# frames of that series get written, in either a steady-state or time-accurate stage.
+set_cadence() {
+  python3 - "$1" "$2" "$3" "$4" "$5" <<'PY'
+import sys
+path, occurrence, marker, which, value = sys.argv[1], int(sys.argv[2]), sys.argv[3], sys.argv[4], sys.argv[5]
+lines = open(path, encoding="utf-8").read().split("\n")
+seen = 0
+for index, line in enumerate(lines):
+    if line.split("\t", 1)[0].strip() != marker:
+        continue
+    seen += 1
+    if seen != occurrence:
+        continue
+    target = index + (1 if which == "Dn" else 2)
+    parts = lines[target].split("\t", 1)
+    lines[target] = value + ("\t" + parts[1] if len(parts) > 1 else "")
+    open(path, "w", encoding="utf-8").write("\n".join(lines))
+    break
+else:
+    raise SystemExit("run.sh: StringPlot %r occurrence %d not found in %s" % (marker, occurrence, path))
 PY
 }
 
@@ -127,11 +154,15 @@ postproc() { ( cd "$RUN" && ./PostProc.pl "$@" ) >> "$WORK/build.log" 2>&1 </dev
 # intends: PARAM.in.restartread reads the restart file PARAM.in.restartsave writes.
 cp "$CHECK_DIR/ic/$INPUTS/PARAM.in.restartsave" "$RUN/PARAM.in"
 set_stop "$RUN/PARAM.in" 1 MaxIteration "$SAB_MAX_ITERATION"
+CADENCE_SAVE=$(( SAB_MAX_ITERATION / SAB_PLOT_FRAMES )); [ "$CADENCE_SAVE" -ge 1 ] || CADENCE_SAVE=1
+set_cadence "$RUN/PARAM.in" 1 "y=0 VAR tcp" Dn "$CADENCE_SAVE"
 batsrus runlog_restartsave
 postproc -M -replace RESULTS/RestartSave
 
 cp "$CHECK_DIR/ic/$INPUTS/PARAM.in.restartread" "$RUN/PARAM.in"
 set_stop "$RUN/PARAM.in" 1 tSimulationMax "$SAB_SIMULATION_TIME"
+CADENCE_READ=$(python3 -c "print('%.10g' % ($SAB_SIMULATION_TIME / $SAB_PLOT_FRAMES))")
+set_cadence "$RUN/PARAM.in" 1 "y=0 VAR tcp" Dt "$CADENCE_READ"
 ( cd "$RUN" && ./Restart.pl -i RESULTS/RestartSave/RESTART ) >> "$WORK/build.log" 2>&1
 batsrus runlog_restartread
 postproc -M -replace RESULTS/RestartRead
@@ -140,3 +171,11 @@ cat $(ls -1 "$RUN"/RESULTS/RestartSave/GM/log_n*.log | LC_ALL=C sort) > "$OUT_DI
 cat $(ls -1 "$RUN"/RESULTS/RestartRead/GM/log_n*.log | LC_ALL=C sort) > "$OUT_DIR/log_impact.log"
 copy_last "$OUT_DIR/y0_background.dat" "$RUN"/RESULTS/RestartSave/GM/y=0_var_*.dat
 copy_last "$OUT_DIR/y0_impact.dat" "$RUN"/RESULTS/RestartRead/GM/y=0_var_*.dat
+
+# The frame rule: count each stage's graded series' actual saves (before
+# copy_last picks the last one) and fail if either stage did not yield enough.
+FRAMES_SAVE=$(ls -1 "$RUN"/RESULTS/RestartSave/GM/y=0_var_*.dat 2>/dev/null | wc -l | tr -d ' ')
+FRAMES_READ=$(ls -1 "$RUN"/RESULTS/RestartRead/GM/y=0_var_*.dat 2>/dev/null | wc -l | tr -d ' ')
+echo "SAB_PLOT_FRAMES=$FRAMES_SAVE,$FRAMES_READ"
+[ "$FRAMES_SAVE" -ge 5 ] || { echo "run.sh: only $FRAMES_SAVE frames of the graded y=0 VAR tcp series (RestartSave stage) were written (need >= 5)" >&2; exit 1; }
+[ "$FRAMES_READ" -ge 5 ] || { echo "run.sh: only $FRAMES_READ frames of the graded y=0 VAR tcp series (RestartRead stage) were written (need >= 5)" >&2; exit 1; }

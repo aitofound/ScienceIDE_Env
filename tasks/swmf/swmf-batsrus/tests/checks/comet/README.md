@@ -10,7 +10,9 @@ The deck is comet Halley: a Haser neutral coma of six species built from a gas p
 
 This forces the production path the module exists for: `srcUser/ModUserComet6Sp.f90` (the neutral coma, the six-species source terms and the point-implicit Jacobian) on top of `srcEquation/ModEquationMhdComet.f90` (multi-species MHD with six ion densities).
 
-Knobs (`run.sh --help`): `SAB_STEP_SCALE` multiplies the iteration limit, `SAB_TIME_SCALE` the simulation end time (this deck sets none, so it is a no-op), `SAB_MPI_RANKS` the number of MPI ranks, `SAB_MAKE_JOBS` the build parallelism. The defaults are the graded values.
+Knobs (`run.sh --help`): `SAB_STEP_SCALE` multiplies the iteration limit, `SAB_TIME_SCALE` the simulation end time (this deck sets none, so it is a no-op), `SAB_PLOT_FRAMES` (default 5) the minimum frames of the graded z=0/y=0 MHD idl_ascii series before the run ends, `SAB_MPI_RANKS` the number of MPI ranks, `SAB_MAKE_JOBS` the build parallelism. The defaults are the graded values. The graded run takes about 37 s (builds excluded).
+
+Window and frame rule (2026-09-13): the window is unchanged (30 steady-state iterations, `SAB_STEP_SCALE=1`); `run.sh` rewrites the z=0/y=0 `#SAVEPLOT` cadence to `window / SAB_PLOT_FRAMES` steps (previously every 30 steps, one save at the final step only; now every 6), counts the frames the series actually wrote, prints `SAB_PLOT_FRAMES=<count>`, and fails if it is below 5. The last frame graded is the same final step as before.
 
 ## The two initial conditions
 

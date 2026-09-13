@@ -13,12 +13,15 @@ upstream test uses (`./Config.pl -default -openmp -u=Mars -e=MhdMars -ng=2 -g=6,
 post-processes with `PostProc.pl`. Param/MARS/PARAM.in for the direct run, then Param/MARS/PARAM.in.restartsave (25 iterations, DoSaveRestart) and Param/MARS/PARAM.in.restartread (25 more, reading GM/restartIN through Restart.pl) in the same run directory with the same executable, exactly as the upstream restart target does. The graded log_all.log is built the way test_mars_restart_check builds it.
 
 The build is timed separately and printed as `SAB_BUILD_SECONDS`; it is not part
-of the suite budget. The graded run takes about 49 s on the declared
+of the suite budget. The graded run takes about 56 s on the declared
 resources.
 
 Runtime knobs (`run.sh --help`), whose defaults are the graded values:
 
 - `SAB_MAX_ITERATION=50` — iterations of the whole window; the restart splits it in half (25 + 25)
+- `SAB_PLOT_FRAMES=5` — minimum frames of the graded y=0 MHD tec series in the RestartRead stage before that stage ends; `run.sh` rewrites its `#SAVEPLOT` cadence to `(SAB_MAX_ITERATION / 2) / SAB_PLOT_FRAMES` steps (floor 1) and, after the run, counts the frames the series actually wrote and prints `SAB_PLOT_FRAMES=<count>`, failing if it is below 5
+
+Window and frame rule (2026-09-13): the window is unchanged (50 steps, 25 + 25); only the RestartRead stage's plot cadence was tightened, from every 5000 steps (the forced final dump only) to every 5, so the graded series writes 5 frames and the last one — the same restart-read final step as before — is graded, tunable via the two knobs above.
 
 ## The two initial conditions
 

@@ -8,11 +8,13 @@ The magnetised blast wave: a strong overpressure bump in a uniform diagonal fiel
 
 `run.sh` installs and builds the pinned BATSRUS with `./Config.pl -default -u=Default -e=MhdPe -ng=2 -g=8,8,1`, creates a run directory with
 `make rundir`, runs `mpiexec -n 2 ./BATSRUS.exe` on the deck of `ic/<initial condition>/`, merges the
-per-processor pieces with `PostProc.pl`, and copies `final_z0.out`, `log.log` into the output directory. About 30 s
+per-processor pieces with `PostProc.pl`, and copies `final_z0.out`, `log.log` into the output directory. About 18 s
 of run time on the declared cores, plus the build, which the driver reports separately.
 
+Before the run ends, the graded `final_z0.out` series is rewritten by `SAB_PLOT_FRAMES` (default 20) to write window / SAB_PLOT_FRAMES frames instead of the upstream cadence; the run measured 21 frames of it, and `run.sh` prints `SAB_PLOT_FRAMES=<count>` (2026-09-13 window/frame revision).
+
 The knobs are `SAB_TIME_SCALE` (the end time of every `#STOP` block), `SAB_STEP_SCALE` (the iteration
-limit of every `#STOP` block that sets one), `SAB_MPI_RANKS` and `SAB_MAKE_JOBS`; `run.sh --help`
+limit of every `#STOP` block that sets one), `SAB_PLOT_FRAMES` (the graded series' target frame count), `SAB_MPI_RANKS` and `SAB_MAKE_JOBS`; `run.sh --help`
 lists them. The defaults are the graded values.
 
 Differences from the upstream test: upstream ships this deck as an example with no Makefile.test target and no reference output, so the pinned build generates the check's reference. Its Config.pl line is derived from the deck: the #UNIFORMSTATE block lists a separate electron pressure, which selects the MhdPe equation set, and the block size 8x8x1 gives the 160x160 grid the 20x20 root blocks imply. The z=0 plot is written as idl_ascii instead of binary IDL.

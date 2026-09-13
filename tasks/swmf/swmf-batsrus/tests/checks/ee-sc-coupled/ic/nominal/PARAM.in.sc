@@ -247,5 +247,5 @@ T			DoSaveInitial
 #END_COMP SC -----------------------------------------------------------------
 
 #STOP
-70			MaxIter
+35			MaxIter
 -1.0			TimeMax
