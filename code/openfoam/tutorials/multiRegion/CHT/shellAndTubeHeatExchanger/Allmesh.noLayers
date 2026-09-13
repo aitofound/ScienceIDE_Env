@@ -1,0 +1,17 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # Run from this directory
+
+# Source tutorial run functions
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+
+# Create the initial block mesh and decompose
+runApplication blockMesh
+runApplication decomposePar -copyZero
+
+# Run snappy
+runParallel snappyHexMesh
+
+# Split the mesh into regions
+runParallel splitMeshRegions -cellZones all -defaultRegion solid
+
+#------------------------------------------------------------------------------

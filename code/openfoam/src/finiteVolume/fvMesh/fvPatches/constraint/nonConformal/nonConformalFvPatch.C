@@ -1,0 +1,124 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Copyright (C) 2021-2026 OpenFOAM Foundation
+     \\/     M anipulation  |
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenFOAM.
+
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+
+\*---------------------------------------------------------------------------*/
+
+#include "nonConformalFvPatch.H"
+#include "surfaceFields.H"
+
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
+
+namespace Foam
+{
+    defineTypeNameAndDebug(nonConformalFvPatch, 0);
+}
+
+
+// * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * * //
+
+Foam::nonConformalFvPatch::nonConformalFvPatch
+(
+    const fvPatch& patch
+)
+:
+    patch_(patch),
+    nonConformalPoly_(refCast<const nonConformalPolyPatch>(patch.poly())),
+    faceCells_()
+{}
+
+
+// * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
+
+Foam::nonConformalFvPatch::~nonConformalFvPatch()
+{}
+
+
+// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+
+const Foam::fvPatch& Foam::nonConformalFvPatch::patch() const
+{
+    return patch_;
+}
+
+
+const Foam::word& Foam::nonConformalFvPatch::origPatchName() const
+{
+    return nonConformalPoly_.origPatchName();
+}
+
+
+Foam::label Foam::nonConformalFvPatch::origPatchIndex() const
+{
+    return nonConformalPoly_.origPatchIndex();
+}
+
+
+const Foam::fvPatch& Foam::nonConformalFvPatch::origPatch() const
+{
+    return patch_.boundaryMesh()[origPatchIndex()];
+}
+
+
+const Foam::labelList& Foam::nonConformalFvPatch::polyFaces() const
+{
+    const fvMesh& mesh = patch_.mesh();
+
+    return
+        mesh.conformal()
+      ? labelList::null()
+      : mesh.polyFacesBf()[patch_.index()];
+}
+
+
+Foam::label Foam::nonConformalFvPatch::start() const
+{
+    if (size())
+    {
+        FatalErrorInFunction
+            << "The start face is not defined for a " << typeName
+            << " patch with a non-zero number of faces"
+            << exit(FatalError);
+    }
+
+    return patch_.poly().start();
+}
+
+
+Foam::label Foam::nonConformalFvPatch::size() const
+{
+    return polyFaces().size();
+}
+
+
+const Foam::labelUList& Foam::nonConformalFvPatch::faceCells() const
+{
+    const fvMesh& mesh = patch_.mesh();
+
+    return
+        mesh.conformal()
+      ? labelList::null()
+      : mesh.ownerBf()[patch_.index()];
+}
+
+
+// ************************************************************************* //

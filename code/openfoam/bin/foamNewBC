@@ -1,0 +1,229 @@
+#!/bin/sh
+#------------------------------------------------------------------------------
+# =========                 |
+# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+#  \\    /   O peration     | Website:  https://openfoam.org
+#   \\  /    A nd           | Copyright (C) 2015-2021 OpenFOAM Foundation
+#    \\/     M anipulation  |
+#------------------------------------------------------------------------------
+# License
+#     This file is part of OpenFOAM.
+#
+#     OpenFOAM is free software: you can redistribute it and/or modify it
+#     under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+#     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+#     for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Script
+#     foamNewBC
+#
+# Description
+#     Create directory of source and compilation files for a new BC
+#
+#------------------------------------------------------------------------------
+Script=${0##*/}
+dir="$FOAM_ETC/codeTemplates/BC"
+
+usage() {
+    cat<<USAGE
+Usage: $Script [OPTIONS] <base> <type> <boundaryConditionName>
+options:
+  -help  | -h         print the usage
+
+Create directory of source and compilation files for a new boundary condition
+  <boundaryConditionName> (dir)
+  - .C and .H source files
+  - Make (dir)
+    - files
+    - options
+  Compiles a library named lib<boundaryConditionName>.so in \$FOAM_USER_LIBBIN:
+  $FOAM_USER_LIBBIN
+
+<base> conditions:
+-f | -fixedValue    | fixedValue
+-m | -mixed         | mixed
+
+<type> options:
+-a | -all    | all  | template (creates a template class)
+-s | -scalar | scalar
+-v | -vector | vector
+-t | -tensor | tensor
+-symmTensor  | symmTensor
+-sphericalTensor | sphericalTensor
+
+USAGE
+    exit 1
+}
+
+error() {
+    while [ "$#" -ge 1 ]; do echo "$1"; shift; done
+    usage
+    exit 1
+}
+
+cap() {
+    echo "$1" | sed -e 's/^./\U&/'
+}
+
+# Implicitly covers a lone -help
+[ "$#" -gt 1 ] || usage
+
+case "$1" in
+(-h | -help)
+    usage && exit 0
+    ;;
+(-f | -fixedValue | fixedValue)
+    base=fixedValue
+    ;;
+(-m | -mixed | mixed )
+    base=mixed
+    ;;
+(*)
+    error "Unknown <base> condition '$1'"
+    ;;
+esac
+shift
+
+case "$1" in
+(-a | -all | all | template)
+    type=Type
+    unit='VALUE-or-(VALUE 0 0)'
+    ;;
+(-s | -scalar | scalar)
+    type=scalar
+    unit=VALUE
+    ;;
+(-v | -vector | vector)
+    type=vector
+    unit='(VALUE 0 0)'
+    ;;
+(-t | -tensor | tensor)
+    type=tensor
+    unit='(VALUE 0 0 0 0 0 0 0 0)'
+    ;;
+(-symmTensor | symmTensor)
+    type=symmTensor
+    unit='(VALUE 0 0 0 0 0)'
+    ;;
+(-sphericalTensor | sphericalTensor)
+    type=sphericalTensor
+    unit=VALUE
+    ;;
+(*)
+    error "Unknown <type> option '$1'"
+    ;;
+esac
+shift
+[ "$#" -eq 1 ] || error "Wrong number of arguments"
+name=$1
+
+# Prevents over-writing of existing directory
+[ -d "$name" ] && error "$name directory already exists, aborting..."
+echo "Creating $name directory" && mkdir "$name"
+
+# Establish meta template files to copy
+files=$(find "${dir}" -name "*.*" -type f -exec basename {} \;)
+[ "$type" = "Type" ] || \
+    files=$(find "${dir}" -name "BC.[CH]" -type f -exec basename {} \;)
+
+# Substitutions for meta-template files
+field="Field<${type}>"
+[ "$type" = "Type" ] || field=${type}Field
+
+fvpatchf=fvPatch$(cap $field)
+class=$name$(cap "$fvpatchf")
+parent=$base$(cap "$fvpatchf")
+construct=$(echo "$class" | sed 's/<Type>//g')
+year=$(date +%Y)
+
+# Create some example values for the Description
+n=0
+for N in zero one two three four
+do
+    eval $N="$(echo \"$unit\" | sed "s#VALUE#$n#g")"
+    n=$(( n + 1 ))
+done
+
+# Make substitutions to meta-template files
+for f in $files
+do
+    ext=$(echo "$f" | sed "s#BC##")
+    new_file=${construct}${ext}
+    echo "   Adding file ${new_file}..."
+
+    # Adds readScalar function when type = scalar
+    # shellcheck disable=SC2154
+    sed -e "s#TYPE#${type}#g" \
+        -e "s#NAME#${name}#g" \
+        -e "s#BASE#${base}#g" \
+        -e "s#CONSTRUCT#${construct}#g" \
+        -e "s#YEAR#${year}#g" \
+        -e "s#CLASS#${class}#g" \
+        -e "s#FIELD#${field}#g" \
+        -e "s#FVPATCHF#${fvpatchf}#g" \
+        -e "s#PARENT#${parent}#g" \
+        -e "s#ZERO#${zero}#g" \
+        -e "s#ONE#${one}#g" \
+        -e "s#TWO#${two}#g" \
+        -e "s#THREE#${three}#g" \
+        -e "s#FOUR#${four}#g" \
+        -e 's/>>/>>/g' \
+        "${dir}/${f}" > "${name}/${new_file}"
+
+    case $base in
+        fixedValue)
+            # refValue(), refGrad(), valueFraction() removed
+            # phip removed
+            sed -i \
+                -e '/refValue/d' \
+                -e '/refGrad/d' \
+                -e '/valueFraction/d' \
+                -e '/const scalarField\& phip/,/);/d' \
+                "${name}/${new_file}"
+            ;;
+        mixed)
+            # evaluate() removed
+            # operator== becomes refValue() =
+            sed -i \
+                -e '/evaluate/d' \
+                -e 's/operator==/refValue() =/g' \
+                "${name}/${new_file}"
+            ;;
+    esac
+
+    case $type in
+        Type)
+            # Build Macro removed (in ..Fields.C)
+            sed -i -e '/Build Macro/,/^}/d' \
+                "${name}/${new_file}"
+            ;;
+        *)
+            # template<class Type> removed
+            # this-> removed
+            # .template functionTemplate<...> becomes functionTemplate<...>
+            # template instantiation repository removed
+            sed -i \
+                -e '/^template<class Type>$/d' \
+                -e 's/this->//g' \
+                -e 's/\.template[\t ]*\([a-zA-Z]\)/\.\1/g' \
+                -e '/#ifdef NoRepository/,/\/\/ */d' \
+                "${name}/${new_file}"
+            ;;
+    esac
+done
+
+echo "Creating Make subdirectory" && cp -R "${dir}/Make" "${name}"
+
+# Get ...Fields.C for template class, otherwise ...Field.C
+compiled=$(find "${name}" -name "*.C" -exec basename {} \; | sort | tail -1)
+sed -i -e "s#NAME#${name}#g" -e "s#COMPILED.*#${compiled}#g" "${name}/Make/files"
+
+#------------------------------------------------------------------------------
