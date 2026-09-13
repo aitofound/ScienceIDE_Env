@@ -25,19 +25,25 @@ import json
 import sys
 from pathlib import Path
 
-import numpy as np
+import math
 
 
-def load(path: Path, spec: dict) -> np.ndarray:
+def load(path: Path, spec: dict) -> list[float]:
     fmt = spec.get("format", "f64")
     if fmt in ("f64", "f32"):
-        dtype = np.float64 if fmt == "f64" else np.float32
-        return np.fromfile(path, dtype=dtype, offset=int(spec.get("skip_header_bytes", 0))).astype(np.float64)
+        raw = path.read_bytes()[int(spec.get("skip_header_bytes", 0)):].decode()
+        return [float(x) for x in raw.split()]
     if fmt == "npy":
-        return np.load(path).astype(np.float64).ravel()
+        raise ValueError("npy format unavailable without numpy")
     if fmt == "text":
-        return np.loadtxt(path, comments=spec.get("comments", "#"), skiprows=int(spec.get("skip_rows", 0)),
-                          usecols=spec.get("columns")).astype(np.float64).ravel()
+        rows = []
+        for line in path.read_text().splitlines()[int(spec.get("skip_rows", 0)):]:
+            line = line.split(spec.get("comments", "#"), 1)[0].strip()
+            if line:
+                vals = line.split()
+                cols = spec.get("columns")
+                rows.extend(float(vals[i]) for i in cols) if cols is not None else rows.extend(float(v) for v in vals)
+        return rows
     raise ValueError(f"unknown format {fmt!r} for {path}")
 
 
@@ -62,20 +68,20 @@ def main() -> int:
         except (OSError, ValueError) as exc:
             failures.append(f"{rel}: cannot load: {exc}")
             continue
-        if r.shape != c.shape:
+        if len(r) != len(c):
             failures.append(f"{rel}: shape {c.shape} differs from reference {r.shape}")
             continue
-        if not np.all(np.isfinite(c)):
+        if not all(math.isfinite(x) for x in c):
             failures.append(f"{rel}: candidate contains non-finite values")
             continue
-        err = np.abs(c - r)
-        bound = atol + rtol * np.abs(r)
-        over = int(np.count_nonzero(err > bound))
-        max_err = float(err.max()) if err.size else 0.0
-        frac = float((err / bound).max()) if err.size else 0.0
-        details[rel] = {"values": int(r.size), "max_abs_error": max_err, "values_over_bound": over, "bound_fraction": frac}
+        err = [abs(x-y) for x, y in zip(c, r)]
+        bound = [atol + rtol * abs(x) for x in r]
+        over = sum(x > y for x, y in zip(err, bound))
+        max_err = max(err) if err else 0.0
+        frac = max((x / y for x, y in zip(err, bound)), default=0.0)
+        details[rel] = {"values": len(r), "max_abs_error": max_err, "values_over_bound": over, "bound_fraction": frac}
         if over:
-            failures.append(f"{rel}: {over} of {r.size} values exceed atol={atol:g} rtol={rtol:g} (max |err| {max_err:.3e})")
+            failures.append(f"{rel}: {over} of {len(r)} values exceed atol={atol:g} rtol={rtol:g} (max |err| {max_err:.3e})")
         worst = max(worst, max_err)
         worst_frac = max(worst_frac, frac)
     passed = not failures

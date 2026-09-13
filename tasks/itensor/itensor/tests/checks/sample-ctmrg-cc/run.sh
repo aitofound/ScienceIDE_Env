@@ -14,11 +14,12 @@ mkdir -p "$BUILD_DIR"
 BUILD_SECONDS=0
 if [ ! -f "$BUILD_DIR/build.ok" ] || [ ! -x "$BUILD_DIR/src/$SUBDIR/$TARGET" ]; then
   t0=$(date +%s)
+  mkdir -p "$BUILD_DIR/src"
   cp -R "$SOURCE_DIR/." "$BUILD_DIR/src"
-  printf '%s\n' 'CCCOM=g++ -std=c++17 -fPIC' 'PLATFORM=lapack' 'BLAS_LAPACK_LIBFLAGS=-llapack -lblas -lpthread' 'OPTIMIZATIONS=-O2 -DNDEBUG -Wall -Wno-unknown-pragmas' 'DEBUGFLAGS=-DDEBUG -g -Wall -Wno-unknown-pragmas -pedantic' 'ITENSOR_MAKE_DYLIB=0' > "$BUILD_DIR/src/options.mk"
-  if [ "$IC" = variant ]; then sed -i 's/Real beta = 1.1 \\* betac;/Real beta = 1.100001 * betac;/' "$BUILD_DIR/src/sample/ctmrg.cc"; fi
-  (cd "$BUILD_DIR/src" && make -j1)
-  (cd "$BUILD_DIR/src/$SUBDIR" && make -j1 "$TARGET")
+  printf '%s\n' 'CCCOM=g++ -std=c++17 -fPIC' 'PLATFORM=lapack' 'BLAS_LAPACK_LIBFLAGS=-llapack -lblas -lpthread' 'OPTIMIZATIONS=-O2 -DNDEBUG -Wall -Wno-unknown-pragmas' 'DEBUGFLAGS=-DDEBUG -g -Wall -Wno-unknown-pragmas -pedantic' "ITENSOR_INCLUDEFLAGS=-I$BUILD_DIR/src" 'ITENSOR_MAKE_DYLIB=0' > "$BUILD_DIR/src/options.mk"
+  printf 'THIS_DIR=%s\n' "$BUILD_DIR/src" > "$BUILD_DIR/src/this_dir.mk"
+  if [ "$IC" = variant ]; then sed -i 's/Real beta = 1.1 \* betac;/Real beta = 1.100001 * betac;/' "$BUILD_DIR/src/sample/ctmrg.cc"; fi
+  (cd "$BUILD_DIR/src/$SUBDIR" && make -j1 "$TARGET" PREFIX="$BUILD_DIR/src" ITENSOR_INCLUDEFLAGS="-I$BUILD_DIR/src" ITENSOR_LIBDIR="$BUILD_DIR/src/lib" ITENSOR_LIBFLAGS="-litensor -llapack -lblas -lpthread")
   touch "$BUILD_DIR/build.ok"; BUILD_SECONDS=$(( $(date +%s)-t0 )); [ "$BUILD_SECONDS" -gt 0 ] || BUILD_SECONDS=1
 fi
 echo SAB_BUILD_SECONDS=$BUILD_SECONDS
