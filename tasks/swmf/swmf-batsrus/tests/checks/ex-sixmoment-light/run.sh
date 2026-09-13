@@ -41,7 +41,13 @@ fi
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 SRC="$WORK/src"; RUN="$WORK/run"
 mkdir -p "$SRC"
-cp -R "$SOURCE_DIR/." "$SRC/"
+# The pinned source is the SWMF tree. The upstream standalone BATSRUS tests run in
+# the standalone layout: GM/BATSRUS with share/ and util/ beside it, which is exactly
+# what BATSRUS's own Config.pl -install clones into its root. Assemble that layout from
+# the pinned tree here; SOURCE_DIR itself is never modified.
+cp -R "$SOURCE_DIR/GM/BATSRUS/." "$SRC/"
+cp -R "$SOURCE_DIR/share" "$SRC/share"
+cp -R "$SOURCE_DIR/util" "$SRC/util"
 chmod -R u+w "$SRC"
 
 # Build. Config.pl -install writes Makefile.conf from share/build/Makefile.<OS>.gfortran
