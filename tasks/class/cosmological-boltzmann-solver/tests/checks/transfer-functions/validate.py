@@ -28,21 +28,21 @@ from pathlib import Path
 import math
 
 
-def load(path: Path, spec: dict) -> list[float]:
+def load(path: Path, spec: dict) -> list[list[float]]:
     fmt = spec.get("format", "text")
     if fmt != "text":
         raise ValueError(f"only text output is supported by this check: {fmt!r}")
     comments = spec.get("comments", "#")
     columns = spec.get("columns")
-    values = []
+    rows = []
     for raw in path.read_text(encoding="utf-8").splitlines()[int(spec.get("skip_rows", 0)):]:
         line = raw.strip()
         if not line or (comments and line.startswith(comments)):
             continue
         fields = line.split()
         selected = fields if columns is None else [fields[i] for i in columns]
-        values.extend(float(x) for x in selected)
-    return values
+        rows.append([float(x) for x in selected])
+    return rows
 
 
 def main() -> int:
@@ -67,19 +67,46 @@ def main() -> int:
             failures.append(f"{rel}: cannot load: {exc}")
             continue
         if len(r) != len(c):
-            failures.append(f"{rel}: length {len(c)} differs from reference {len(r)}")
+            failures.append(f"{rel}: row count {len(c)} differs from reference {len(r)}")
             continue
-        if not all(math.isfinite(x) for x in c):
+        if not all(math.isfinite(x) for row in c for x in row):
             failures.append(f"{rel}: candidate contains non-finite values")
             continue
-        errors = [abs(x - y) for x, y in zip(c, r)]
-        bounds = [atol + rtol * abs(x) for x in r]
-        over = sum(err > bound for err, bound in zip(errors, bounds))
+        if any(len(x) != len(y) for x, y in zip(r, c)):
+            failures.append(f"{rel}: column count differs between reference and candidate")
+            continue
+        groups = comparison.get("groups") or [{"name": "all", "columns": list(range(len(r[0]) if r else 0)), "atol": atol, "rtol": rtol}]
+        errors = []
+        over = 0
+        group_details = {}
+        for group in groups:
+            gname = group["name"]
+            gatol = float(group.get("atol", atol))
+            grtol = float(group.get("rtol", rtol))
+            gerrors = []
+            gover = 0
+            for row_r, row_c in zip(r, c):
+                for col in group["columns"]:
+                    err = abs(row_c[col] - row_r[col])
+                    bound = gatol + grtol * abs(row_r[col])
+                    errors.append(err)
+                    gerrors.append(err)
+                    if err > bound:
+                        gover += 1
+            over += gover
+            gmax = max(gerrors, default=0.0)
+            def fraction(row_r, row_c, col):
+                err = abs(row_c[col] - row_r[col])
+                bound = gatol + grtol * abs(row_r[col])
+                return 0.0 if bound == 0.0 and err == 0.0 else (math.inf if bound == 0.0 else err / bound)
+            gfrac = max((fraction(row_r, row_c, col)
+                         for row_r, row_c in zip(r, c) for col in group["columns"]), default=0.0)
+            group_details[gname] = {"columns": group["columns"], "values": len(gerrors), "max_abs_error": gmax, "values_over_bound": gover, "bound_fraction": gfrac, "atol": gatol, "rtol": grtol}
+            if gover:
+                failures.append(f"{rel}/{gname}: {gover} values exceed atol={gatol:g} rtol={grtol:g}")
         max_err = max(errors, default=0.0)
-        frac = max((err / bound for err, bound in zip(errors, bounds)), default=0.0)
-        details[rel] = {"values": len(r), "max_abs_error": max_err, "values_over_bound": over, "bound_fraction": frac}
-        if over:
-            failures.append(f"{rel}: {over} of {len(r)} values exceed atol={atol:g} rtol={rtol:g} (max |err| {max_err:.3e})")
+        frac = max((g["bound_fraction"] for g in group_details.values()), default=0.0)
+        details[rel] = {"values": sum(g["values"] for g in group_details.values()), "max_abs_error": max_err, "values_over_bound": over, "bound_fraction": frac, "groups": group_details}
         worst = max(worst, max_err)
         worst_frac = max(worst_frac, frac)
     passed = not failures
