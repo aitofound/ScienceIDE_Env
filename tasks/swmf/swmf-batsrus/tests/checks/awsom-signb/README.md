@@ -4,7 +4,15 @@ Upstream test: the Makefile.test target `test_awsom_signb`, whose PARAM file is 
 
 ## The test
 
-Config.pl -default -u=Awsom -e=AwsomSA -ng=2 -g=6,4,4; Param/CORONA/PARAM.in.Awsom.signb as PARAM.in; mpiexec -n 2; PostProc.pl -M -f=ascii. 50 steady-state iterations of the AWSoM corona in the AwsomSA (stream-aligned) equation set with the signed-B representation, then a time-accurate session. Graded: log.log, x0_var.outs, z0_var.outs.
+Config.pl -default -u=Awsom -e=AwsomSA -ng=2 -g=6,4,4; Param/CORONA/PARAM.in.Awsom.signb as PARAM.in; mpiexec -n 2; PostProc.pl -M -f=ascii. 24 steady-state iterations of the AWSoM corona in the AwsomSA (stream-aligned) equation set with the signed-B representation, then a time-accurate session to t = 25 s. Graded: log.log, x0_var.outs, z0_var.outs.
+
+The window was shortened on 2026-09-13 under the 60 s ruling: SAB_MAX_ITERATION
+50 -> 24 and SAB_TIME_SCALE 1.0 -> 0.25 (t = 25 s instead of 100 s), measured 25
+s of run time. The graded x=0/z=0 VAR idl series writes 5 snapshots over the
+shortened window; `run.sh` rewrites its cadence from SAB_MAX_ITERATION/
+SAB_TIME_SCALE and the new SAB_PLOT_FRAMES knob (default 8) and prints
+`SAB_PLOT_FRAMES=<count>` after the run. All three knobs are tunable in
+`run.sh` for later retuning.
 
 `run.sh --help` lists the runtime knobs; every default is the graded value. The check builds the pinned source itself, in a scratch copy, so the
 build is part of the check and never touches the source tree; `run.sh` prints

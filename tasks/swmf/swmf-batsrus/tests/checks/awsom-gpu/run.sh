@@ -20,9 +20,10 @@
 # e.g. SAB_MAX_ITERATION=5 sab.py task selfcheck ...
 KNOB_HELP=""
 knob() { local name=$1 default=$2 desc=$3; [ -n "${!name:-}" ] || printf -v "$name" '%s' "$default"; export "$name"; KNOB_HELP+="$name=$default  $desc"$'\n'; }
-knob SAB_MAX_ITERATION "200" "MaxIteration of the first (steady-state) session of PARAM.in; the graded default is 200; run time scales linearly with it"
+knob SAB_MAX_ITERATION "30" "MaxIteration of the first (steady-state) session of PARAM.in; the graded default was 200 until the 2026-09-13 window revision, now 30; run time scales linearly with it"
 knob SAB_SESSIONS "5" "how many of the PARAM.in sessions to run; the graded default 5 is every session of the upstream file"
-knob SAB_TIME_SCALE "1.0" "multiplies every positive tSimulationMax, so it shortens the time-accurate sessions; 1.0 is the graded value"
+knob SAB_TIME_SCALE "0.2" "multiplies every positive tSimulationMax, so it shortens the time-accurate sessions; the graded default was 1.0 until the 2026-09-13 window revision, now 0.2 (t=1,1.6,2,20 s instead of 5,8,10,100 s)"
+knob SAB_PLOT_FRAMES "8" "target number of times the graded x=0 VAR idl / shk VAR idl_ascii plot series is written over the graded window (>= 5 required); run.sh rewrites DnSavePlot (steady session) and DtSavePlot (time-accurate sessions) of those SAVEPLOT entries to window/SAB_PLOT_FRAMES; added in the 2026-09-13 window revision"
 knob SAB_MPI_RANKS "2" "MPI ranks of the graded run; the graded reference is produced with 2 (BATSRUS is rank-count independent only to round-off, so changing this changes the graded numbers)"
 knob SAB_MPI_EXTRA "" "extra arguments passed to mpiexec (for example --oversubscribe on a host with fewer slots than ranks); empty is the graded value and does not change the result"
 knob SAB_BUILD_JOBS "4" "make -j for the BATSRUS build; affects build time only, never the graded values"
@@ -240,9 +241,9 @@ make rundir RUNDIR="$WORK/src/run" COMPONENT=SC STANDALONE=YES GMDIR="$WORK/src"
 cp "$CHECK_DIR/ic/$INPUTS/PARAM.in" "$WORK/src/run/PARAM.in"
 
 # The knobs edit the copied PARAM.in only; at their defaults the file is unchanged.
-python3 - "$WORK/src/run/PARAM.in" "$SAB_MAX_ITERATION" "$SAB_SESSIONS" "$SAB_TIME_SCALE" <<'PY'
+python3 - "$WORK/src/run/PARAM.in" "$SAB_MAX_ITERATION" "$SAB_SESSIONS" "$SAB_TIME_SCALE" "$SAB_PLOT_FRAMES" <<'PY'
 import re, sys
-path, max_iter, sessions, time_scale = sys.argv[1:]
+path, max_iter, sessions, time_scale, plot_frames = sys.argv[1:]
 text = open(path, encoding="ascii", errors="replace").read()
 parts = re.split(r"(?m)^#RUN\b.*$", text)
 n = len(parts) if sessions == "all" else int(sessions)
@@ -259,17 +260,58 @@ def replace_value(line, value):
 
 
 seen = 0
+new_max_iter = None
+time_window = 0.0
 for i, ln in enumerate(lines):
     if ln.startswith("#STOP"):
         seen += 1
         if seen == 1 and max_iter != "upstream":
             lines[i + 1] = replace_value(lines[i + 1], max_iter)
+        if seen == 1:
+            new_max_iter = float(re.match(r"\s*(\S+)", lines[i + 1]).group(1))
         if float(time_scale) != 1.0:
             v = float(re.match(r"\s*(\S+)", lines[i + 2]).group(1))
             if v > 0:
                 lines[i + 2] = replace_value(lines[i + 2], repr(v * float(time_scale)))
+        v2 = float(re.match(r"\s*(\S+)", lines[i + 2]).group(1))
+        if v2 > 0:
+            time_window = v2
 if seen == 0:
     sys.exit("run.sh: no #STOP command in PARAM.in")
+
+# ---- graded plot cadence (2026-09-13 window revision) -----------------------
+# Rewrite DnSavePlot/DtSavePlot of the graded StringPlot entries so the window
+# above still yields at least SAB_PLOT_FRAMES saves of the graded series: Dn
+# from the steady-session iteration budget, Dt from the cumulative time-accurate
+# window, whichever axis a given occurrence already uses (>0).
+GRADED_SERIES = ('x=0 VAR idl', 'shk VAR idl_ascii')
+frames = int(plot_frames)
+occurrences = []
+for i, ln in enumerate(lines):
+    stripped = ln.rstrip("\n")
+    if any(re.match(r"^" + re.escape(s) + r"(\s|$)", stripped) for s in GRADED_SERIES):
+        dn_val = float(re.match(r"\s*(\S+)", lines[i + 1]).group(1))
+        dt_val = float(re.match(r"\s*(\S+)", lines[i + 2]).group(1))
+        occurrences.append((i, dn_val, dt_val))
+n_dn = sum(1 for _, dn, _ in occurrences if dn > 0)
+n_dt = sum(1 for _, _, dt in occurrences if dt > 0)
+if n_dn and n_dt:
+    frames_dn = max(2, round(frames * 0.4))
+    frames_dt = max(2, frames - frames_dn)
+elif n_dn:
+    frames_dn, frames_dt = frames, 0
+elif n_dt:
+    frames_dn, frames_dt = 0, frames
+else:
+    frames_dn = frames_dt = 0
+dn_new = max(1, int(new_max_iter) // frames_dn) if (new_max_iter and frames_dn > 0) else None
+dt_new = (time_window / frames_dt) if (time_window > 0 and frames_dt > 0) else None
+for i, dn_val, dt_val in occurrences:
+    if dn_val > 0 and dn_new is not None:
+        lines[i + 1] = replace_value(lines[i + 1], str(dn_new))
+    if dt_val > 0 and dt_new is not None:
+        lines[i + 2] = replace_value(lines[i + 2], repr(dt_new))
+
 open(path, "w", encoding="ascii").write("".join(lines))
 PY
 
@@ -277,6 +319,15 @@ PY
 cd "$WORK/src/run"
 mpiexec -n "$SAB_MPI_RANKS" ${SAB_MPI_EXTRA:-} ./BATSRUS.exe > runlog 2>&1 \
   || { echo "run.sh: BATSRUS.exe failed" >&2; tail -n 60 runlog >&2; exit 1; }
+# ---- frame count (2026-09-13 window revision) --------------------------
+# Count the graded x=0_var_1 series before PostProc.pl merges/replaces
+# the individual snapshots, so the count reflects what was actually written.
+SAB_PLOT_FRAMES_COUNT=$(ls SC/IO2/x=0_var_1_*.h 2>/dev/null | wc -l | tr -d ' ')
+echo "SAB_PLOT_FRAMES=$SAB_PLOT_FRAMES_COUNT"
+if [ "$SAB_PLOT_FRAMES_COUNT" -lt 5 ]; then
+  echo "run.sh: graded plot series x=0_var_1 wrote only $SAB_PLOT_FRAMES_COUNT frames, need >= 5" >&2
+  exit 1
+fi
 ./PostProc.pl -M -replace -f=ascii RESULTS > postproc.log 2>&1 \
   || { echo "run.sh: PostProc.pl failed" >&2; tail -n 40 postproc.log >&2; exit 1; }
 

@@ -4,16 +4,21 @@ Upstream test: `code/swmf/GM/BATSRUS/Makefile.test target test_outerheliopui, de
 
 ## The test
 
-`run.sh` builds the pinned source with the pickup-ion equation set with electron pressure (`-e=OuterHelioPUIPe`) and runs both halves of the upstream test in one go: 20 iterations of the start deck, `Restart.pl`, then 20 iterations of the continuation deck, and concatenates the two logs as the upstream check does. The knobs are `SAB_ITER_SCALE` (every `#STOP MaxIteration` and
-`tSimulationMax` of the deck), `SAB_MPI_RANKS` (ranks; the graded values are the
+`run.sh` builds the pinned source with the pickup-ion equation set with electron pressure (`-e=OuterHelioPUIPe`) and runs both halves of the upstream test in one go: 20 iterations of the start deck, `Restart.pl`, then 20 iterations of the continuation deck, and concatenates the two logs as the upstream check does. Since 2026-09-13, under the 60-s/>=5-frame ruling, the
+default `SAB_ITER_SCALE` is 0.35 instead of 1; the graded `y=0 MHD` and `y=0
+VAR` series each wrote 11 frames on the worker (the last of each is graded)
+and the log wrote 11 rows. The knobs are `SAB_ITER_SCALE` (every `#STOP MaxIteration` and
+`tSimulationMax` of the deck; set to 1 for the full upstream window), `SAB_PLOT_FRAMES` (rewrites the two plots'
+cadence, and the log's if it would otherwise be sparser, to window /
+`SAB_PLOT_FRAMES`, floor 5 saves), `SAB_MPI_RANKS` (ranks; the graded values are the
 2-rank results) and `SAB_MAKE_JOBS` (build parallelism); the defaults are the
-graded values, 51 s of run time declared on 4 cores, after a build of
+graded values, 42 s of run time declared on 4 cores, after a build of
 about 85 s that the budget does not count.
 
 ## The two initial conditions
 
 `ic/nominal` holds the upstream deck (or decks) of this test exactly as
-`code/swmf/GM/BATSRUS/Param/OUTERHELIO/` ships them, with the `y=0 MHD` and `y=0 VAR` plot entries of both decks switched to `idl_ascii` and to a single write at the end of the run (PostIDL then writes 11-digit text instead of a real4 binary record, and the graded snapshot is the final state). `ic/variant` is the same
+`code/swmf/GM/BATSRUS/Param/OUTERHELIO/` ships them, with the `y=0 MHD` and `y=0 VAR` plot entries of both decks switched to `idl_ascii` and, since 2026-09-13, to a periodic write (11 frames at the default window and `SAB_PLOT_FRAMES`; PostIDL then writes 11-digit text instead of a real4 binary record, and the graded snapshot is the last of these). `ic/variant` is the same
 deck (or decks) with the solar-wind proton density SWH_rho_dim of #SOLARWINDH, 0.00874 n/cc, in both decks multiplied by 1 + 2e-10. The two directories differ byte-wise, and
 the graded outputs differ: the nominal-versus-variant distance is what two runs of
 the same physics with a perturbation at the printed precision come out at, and it
