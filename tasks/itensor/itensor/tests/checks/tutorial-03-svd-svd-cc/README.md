@@ -1,19 +1,5 @@
 # tutorial-03-svd-svd-cc
 
-Upstream test: `code/itensor/tutorial/03_svd/svd.cc`. Policy: `pointwise`.
+Policy: `pointwise`.
 
-## The test
-
-<FILL: what run.sh executes and why this configuration was chosen: which production path of the module it forces, the resolution and window, the runtime knobs and their graded defaults, and how long it runs on how many cores.>
-
-## The two initial conditions
-
-<FILL: what ic/nominal is, and how ic/variant differs from it and why that exercises the pass policy (or why an identical copy is the only sensible variant); if run.sh accepts altbuild, one sentence on the alternative build it runs the nominal inputs on.>
-
-## The pass policy
-
-<FILL: one paragraph in plain language. The observable compared, the tolerance, why the bound is physical (which real fault crosses it) and achievable (the measured floor or spread between two legitimate runs, and the mechanism in the source, file and line, that sets that floor). If the policy is not the recommended shape, say why.>
-
-## Evidence
-
-<FILL: the numbers: floor or spread measurements with their commands, the calibration and final self-validation runs, and any wrong-implementation probe that was shown to fail. Never describe the reference outputs themselves.>
+This check runs the pinned ITensor official driver `svd` and grades SVD singular values and truncated reconstruction residual. The nominal and variant runs use the same source and driver; the variant changes matrix entry 0.10 to 0.100001. The output is parsed into `result.txt` as full-precision numeric observables. The tolerance is provisional until Docker calibration and a cross-platform build.
