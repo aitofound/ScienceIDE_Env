@@ -28,3 +28,10 @@ jobs:
         run: python3 skills/package-sciaccel-task/scripts/sab.py task build --task tasks/quspin/quspin
       - name: Run complete nominal and variant selfcheck
         run: python3 skills/package-sciaccel-task/scripts/sab.py task selfcheck --task tasks/quspin/quspin
+      - name: Upload selfcheck evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quspin-full-selfcheck-evidence
+          path: /home/runner/.sciaccel_pipeline/quspin
+          if-no-files-found: warn
