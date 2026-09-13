@@ -26,9 +26,15 @@ GATHER, in this order
   4. The overview, when the codebase state exists here (overview.md): what the
      code simulates, the build system, where the official tests and example
      problems live.
-  5. The official tests and example decks per proposed module, counted from the
-     tree: enough for at least four checks each, about thirty where the module
-     is of ordinary size. Then the numerics of the code, read from the source:
+  5. The official tests and example decks per proposed module: justified breadth,
+     task scope, runnable scientific value, explicit exclusions and practical
+     run/cost trade-offs, not a count target. Coverage ought to be exhaustive;
+     justified exclusions are allowed and non-exhaustiveness alone is not a
+     defect. For a single-module codebase, check whole-root scope and the
+     canonical codebase slug (or an honest narrow naming rationale), not an
+     internal subsystem relabeled as the whole. Multiple modules need genuinely
+     separable independent work with different physics.
+     Then the numerics of the code, read from the source:
      where randomness enters (seeds, samplers, per-rank streams), where a
      discrete choice rests on a floating-point comparison, which solvers are
      iterative and stop at a tolerance, what precision the outputs are stored

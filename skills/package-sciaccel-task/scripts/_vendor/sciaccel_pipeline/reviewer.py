@@ -366,7 +366,7 @@ def coverage_facts(leaf: Path, ctx: dict) -> list[str]:
     ts = leaf / "comment" / "pipeline" / "test-survey.json"
     rows = (read_json(ts).get("tests") or []) if ts.is_file() else None
     L = [f"**Coverage.** {len(infos)} checks: {len(upstream)} from an official test or example, {len(custom)} custom"
-         + (f" ({', '.join(custom)})" if custom else "") + f"; the skill's aim is at least {config.THIN}, about 30, fewer than 50."]
+         + (f" ({', '.join(custom)})" if custom else "") + "; assess official coverage, task scope and justified exclusions, not a count target."]
     if rows is None:
         L.append("  survey: comment/pipeline/test-survey.json is absent; coverage against the official tests cannot be read here.")
         return L

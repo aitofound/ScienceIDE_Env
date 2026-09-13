@@ -1,0 +1,268 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Copyright (C) 2011-2026 OpenFOAM Foundation
+     \\/     M anipulation  |
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenFOAM.
+
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+
+Class
+    Foam::probes
+
+Description
+    Set of locations to sample.
+
+    Call write() to sample and write files.
+
+SourceFiles
+    probes.C
+
+\*---------------------------------------------------------------------------*/
+
+#ifndef probes_H
+#define probes_H
+
+#include "functionObject.H"
+#include "HashPtrTable.H"
+#include "OFstream.H"
+#include "polyMesh.H"
+#include "pointField.H"
+#include "volFieldsFwd.H"
+#include "surfaceFieldsFwd.H"
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+namespace Foam
+{
+
+// Forward declaration of classes
+class Time;
+class objectRegistry;
+class dictionary;
+class fvMesh;
+class polyTopoChangeMap;
+
+/*---------------------------------------------------------------------------*\
+                           Class probes Declaration
+\*---------------------------------------------------------------------------*/
+
+class probes
+:
+    public functionObject
+{
+protected:
+
+    // Protected classes
+
+        //- Class used for grouping field types
+        template<class Type>
+        class fieldGroup
+        :
+            public DynamicList<word>
+        {
+        public:
+
+            //- Construct null
+            fieldGroup()
+            :
+                DynamicList<word>(0)
+            {}
+        };
+
+
+    // Protected Data
+
+        //- Const reference to fvMesh
+        const fvMesh& mesh_;
+
+
+        // Read from dictionary
+
+            //- Probe locations
+            pointField locations_;
+
+            //- Names of fields to probe
+            wordList fields_;
+
+            //- Fixed locations, default = yes
+            //  Note: set to false for moving mesh calculations where locations
+            //        should move with the mesh
+            bool fixedLocations_;
+
+            //- Interpolation scheme name
+            //  Note: only possible when fixedLocations_ is true
+            word interpolationScheme_;
+
+
+        // Calculated
+
+            //- Categorised scalar/vector/tensor vol fields
+            fieldGroup<scalar> scalarFields_;
+            fieldGroup<vector> vectorFields_;
+            fieldGroup<sphericalTensor> sphericalTensorFields_;
+            fieldGroup<symmTensor> symmTensorFields_;
+            fieldGroup<tensor> tensorFields_;
+
+            //- Categorised scalar/vector/tensor surf fields
+            fieldGroup<scalar> surfaceScalarFields_;
+            fieldGroup<vector> surfaceVectorFields_;
+            fieldGroup<sphericalTensor> surfaceSphericalTensorFields_;
+            fieldGroup<symmTensor> surfaceSymmTensorFields_;
+            fieldGroup<tensor> surfaceTensorFields_;
+
+            // Cells to be probed (obtained from the locations)
+            labelList cellList_;
+
+            // Faces to be probed
+            labelList faceList_;
+
+            //- Current open files
+            HashPtrTable<OFstream> probeFilePtrs_;
+
+
+    // Protected Member Functions
+
+        //- Clear old field groups
+        void clearFieldGroups();
+
+        //- Append fieldName to the appropriate group
+        label appendFieldGroup(const word& fieldName, const word& fieldType);
+
+        //- Classify field types, returns the number of fields
+        label classifyFields();
+
+        //- Find cells and faces containing probes
+        virtual void findElements(const fvMesh&);
+
+        //- Classify field type and Open/close file streams,
+        //  returns number of fields to sample
+        label prepare();
+
+
+private:
+
+        //- Sample and write a particular volume field
+        template<class Type>
+        void sampleAndWrite(const VolField<Type>&);
+
+        //- Sample and write a particular surface field
+        template<class Type>
+        void sampleAndWrite(const SurfaceField<Type>&);
+
+        //- Sample and write all the fields of the given type
+        template<class Type>
+        void sampleAndWrite(const fieldGroup<Type>&);
+
+        //- Sample and write all the surface fields of the given type
+        template<class Type>
+        void sampleAndWriteSurfaceFields(const fieldGroup<Type>&);
+
+        //- Sample a volume field at all locations
+        template<class Type>
+        tmp<Field<Type>> sample(const VolField<Type>&) const;
+
+        //- Sample a surface field at all locations
+        template<class Type>
+        tmp<Field<Type>> sample(const SurfaceField<Type>&) const;
+
+        //- Sample a single vol field on all sample locations
+        template<class Type>
+        tmp<Field<Type>> sample(const word& fieldName) const;
+
+        //- Sample a single surface field on all sample locations
+        template<class Type>
+        tmp<Field<Type>> sampleSurfaceFields(const word& fieldName) const;
+
+
+public:
+
+    //- Runtime type information
+    TypeName("probes");
+
+
+    // Constructors
+
+        //- Construct from Time and dictionary
+        probes
+        (
+            const word& name,
+            const Time& time,
+            const dictionary& dict,
+            const bool initialise = true
+        );
+
+        //- Disallow default bitwise copy construction
+        probes(const probes&) = delete;
+
+
+    //- Destructor
+    virtual ~probes();
+
+
+    // Member Functions
+
+        //- Return the list of fields required
+        virtual wordList fields() const;
+
+        //- Read the probes
+        bool read(const dictionary&, const bool initialise);
+
+        //- Read the probes
+        virtual bool read(const dictionary&);
+
+        //- Execute, currently does nothing
+        virtual bool execute();
+
+        //- Sample and write
+        virtual bool write();
+
+        //- Update topology using the given map
+        virtual void movePoints(const polyMesh&);
+
+        //- Update topology using the given map
+        virtual void topoChange(const polyTopoChangeMap&);
+
+        //- Update from another mesh using the given map
+        virtual void mapMesh(const polyMeshMap&);
+
+        //- Update using the given distribution map
+        virtual void distribute(const polyDistributionMap&);
+
+
+    // Member Operators
+
+        //- Disallow default bitwise assignment
+        void operator=(const probes&) = delete;
+};
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+} // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#ifdef NoRepository
+    #include "probesTemplates.C"
+#endif
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#endif
+
+// ************************************************************************* //
