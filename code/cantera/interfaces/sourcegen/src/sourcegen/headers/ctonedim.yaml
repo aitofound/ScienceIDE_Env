@@ -1,0 +1,39 @@
+# This file is part of Cantera. See License.txt in the top-level directory or
+# at https://cantera.org/license.txt for license and copyright information.
+
+docstring: |-
+  Generated CLib API for Cantera's Sim1D class.
+prefix: sim1D
+base: Sim1D
+parents: [OneDim, SteadyStateSystem]  # List of parent classes
+recipes:
+- name: newSim1D
+  uses: domain
+- name: setValue  # deprecated
+- name: setProfile  # deprecated
+- name: setFlatProfile  # deprecated
+- name: setInitialGuess  # deprecated
+- name: show
+- name: setTimeStep
+  wraps: setTimeStep(double, const vector<int>&)
+- name: getInitialSoln
+- name: solve
+- name: refine
+- name: setRefineCriteria
+- name: setGridMin
+- name: save
+  wraps: save(const string&, const string&, const string&, bool)
+- name: restore
+  wraps: _restore  # skips AnyMap return (not implemented in CLib)
+- name: writeStats
+- name: domainIndex
+- name: value  # deprecated
+- name: workValue  # deprecated
+- name: eval
+  wraps: eval(double*, double*, double, int)
+- name: setMaxJacAge
+  wraps: setJacAge
+- name: setFixedTemperature
+# service functions
+- name: del
+- name: cabinetSize

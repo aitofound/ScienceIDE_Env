@@ -1,0 +1,82 @@
+%% Rankine cycle
+%
+% Calculate the efficiency of a Rankine vapor power cycle using a pure fluid model
+% for water.
+%
+% Requires: cantera >= 3.2.0
+%
+% .. tags:: Matlab, thermodynamics, thermodynamic cycle, non-ideal fluid
+
+help rankine
+
+%%
+% Initialize parameters
+eta_pump = 0.6;
+eta_turbine = 0.8;
+p_max = 8.0 * ct.OneAtm;
+t1 = 300.0;
+
+%%
+% Create a saturated liquid water object at t1
+w = ct.Water();
+basis = 'mass';
+w.TQ = {t1, 0};
+h1 = w.H;
+p1 = w.P;
+
+%%
+% Pump it to p2
+pump_work = pump(w, p_max, eta_pump);
+h2 = w.H;
+
+%%
+% Heat to saturated vapor
+w.PQ = {p_max, 1.0};
+h3 = w.H;
+
+heat_added = h3 - h2;
+
+%%
+% Expand adiabatically back to the initial pressure
+turbine_work = expand(w, p1, eta_turbine);
+
+%%
+% Compute the efficiency
+efficiency = (turbine_work - pump_work) / heat_added;
+disp(sprintf('efficiency = %.2f%%', efficiency*100));
+
+%%
+% Local Functions
+% ---------------
+
+function work = pump(fluid, pfinal, eta)
+    % PUMP - Adiabatically pump a fluid to pressure pfinal, using a pump
+    % with isentropic efficiency eta.
+
+    fluid.basis = 'mass';
+    h0 = fluid.H;
+    s0 = fluid.S;
+    fluid.SP = {s0, pfinal};
+    h1s = fluid.H;
+    isentropic_work = h1s - h0;
+    actual_work = isentropic_work / eta;
+    h1 = h0 + actual_work;
+    fluid.HP = {h1, pfinal};
+    work = actual_work;
+end
+
+function work = expand(fluid, pfinal, eta)
+    % EXPAND - Adiabatically expand a fluid to pressure pfinal, using a
+    % turbine with isentropic efficiency eta.
+
+    fluid.basis = 'mass';
+    h0 = fluid.H;
+    s0 = fluid.S;
+    fluid.SP = {s0, pfinal};
+    h1s = fluid.H;
+    isentropic_work = h0 - h1s;
+    actual_work = isentropic_work * eta;
+    h1 = h0 - actual_work;
+    fluid.HP = {h1, pfinal};
+    work = actual_work;
+end
