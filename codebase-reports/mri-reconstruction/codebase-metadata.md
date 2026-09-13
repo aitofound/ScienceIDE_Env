@@ -13,7 +13,7 @@ Generated from the canonical JSON. Unknown values are visible; this report never
 
 ### Modules, differences, and official tests
 
-| module | approval | purpose / difference | owned files | owned text lines | collected tests | shared components |
+| module | approval | purpose / difference | owned files | owned text lines | projected pytest items | shared components |
 |---|---|---|---:|---:|---:|---|
 | `fista-reconstruction` | proposed-only | {"note": "No accelerator implementation is supplied in this vendor PR; later task work may choose an implementation while preserving the numerical observable.", "status": "unknown… | 5 | 942 | 30 | `fft-and-synthetic-fixtures` |
 
@@ -38,7 +38,7 @@ Generated from the canonical JSON. Unknown values are visible; this report never
 |---|---:|---|
 | `test_files` | 9 | files |
 | `test_definitions` | 74 | source-level test definitions |
-| `collected_items` | 74 | framework-collected items |
+| `collected_items` | 74 | statically projected pytest items (collection not run) |
 | `inner_cases` | 0 | inner cases |
 
 ### Gaps and warnings
