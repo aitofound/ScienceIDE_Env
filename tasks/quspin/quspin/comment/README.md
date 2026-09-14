@@ -10,7 +10,7 @@ QuSpin computes exact spectra and time evolution for finite spin, boson and ferm
 
 ## Build
 
-The image installs the pinned Python package and its published extension wheels in a virtual environment. Each check runs against a copied source tree and records zero source-build seconds; the final self-validation record will supply measured run times. The extension wheels remain an explicit provenance caveat for review.
+The image installs the pinned Python package and its published extension wheels in a virtual environment. Each check runs against a copied source tree and records zero source-build seconds; measured run times are in `comment/pipeline/self-validation.json`. The extension wheels remain an explicit provenance caveat for review.
 
 ## Tolerances
 
