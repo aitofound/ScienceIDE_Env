@@ -14,8 +14,14 @@ The image installs the pinned Python package and its published extension wheels 
 
 ## Tolerances
 
-The first self-validation is a calibration run with nominal and active two-ulp field variants. Its per-check spread will be copied into each rubric before the final self-validation; provisional bounds remain deliberately wider than the measured numerical floor and must be finalized by the curator. Per-check commands, observables and tolerance rationale live in each check README and rubric.
+Every check is graded as a two-ulp numerical calibration: nominal and variant differ only by a two-binary64-ulp change in the active field, with the physical model fixed. Measured spreads sit at 1e-14 or below against a 1e-8 bound, so the bound is a floating-point allowance rather than a physics allowance. Per-check commands, observables and tolerance rationale live in each check README and rubric.
 
-## Blind spots
+## Coverage and exclusions
 
-The initial leaf does not claim exhaustive coverage of every QuSpin test, example, extension workspace or platform-specific OpenMP build. Those omissions are explicit follow-up scope; the selected checks cover the core public basis, operator, sparse-eigensolver and dynamics paths.
+All 73 upstream `test_*.py` files are owned by a check: eight standalone baseline checks plus five grouped checks (`basis-symmetry`, `operators-projections`, `dynamics-utilities`, `entanglement-observables`, `models-crosschecks`). `comment/coverage-matrix.md` lists the file-to-check mapping.
+
+Two upstream files (`test_Op_shift_sector.py`, `test_gen_evolve.py`) carry top-level assertions and no pytest function; the runner detects them and executes them directly so their own assertions decide pass or fail.
+
+One upstream case is excluded and recorded: `test_quantum_operator.py::test_eigsh` compares two ARPACK `eigsh` outputs by position without sorting. The eigenvalue sets agree exactly but return in a platform-dependent order, so the assertion fails on some x86 builds. The other three cases in that file still run.
+
+Not covered by design: notebooks, generated docs, the separately released extension source repositories, and platform-specific OpenMP build behaviour. Those are not solver paths of this pinned package.
