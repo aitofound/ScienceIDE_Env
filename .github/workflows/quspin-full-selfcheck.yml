@@ -15,7 +15,7 @@ concurrency:
 jobs:
   full-selfcheck:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -37,5 +37,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: quspin-full-selfcheck-evidence
-          path: /home/runner/.sciaccel_pipeline/quspin
+          path: |
+            /home/runner/.sciaccel_pipeline/quspin
+            tasks/quspin/quspin/comment/pipeline
           if-no-files-found: warn
