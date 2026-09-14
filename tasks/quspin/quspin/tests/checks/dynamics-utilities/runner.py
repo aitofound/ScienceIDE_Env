@@ -99,8 +99,12 @@ def main() -> int:
             command = [sys.executable, str(target)]
         else:
             command = [sys.executable, "-m", "pytest", "-q", str(target)]
-            for case in DESELECT.get(filename, []):
-                command += ["--deselect", str(target) + case]
+            # Exclude by -k rather than --deselect: pytest does not match an
+            # absolute-path nodeid against the collected nodeid, so --deselect
+            # silently leaves the case running.
+            excluded = [case.lstrip(":") for case in DESELECT.get(filename, [])]
+            if excluded:
+                command += ["-k", " and ".join(f"not {case}" for case in excluded)]
         return filename, subprocess.run(
             command, env=env, text=True, capture_output=True,
         )
