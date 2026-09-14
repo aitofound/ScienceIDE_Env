@@ -48,8 +48,9 @@ could introduce.
 ## Blind spots
 
 Coverage concern flagged at STOP 1 and accepted by the human with the plan
-to close it via a `custom` check later (human approval: "批准，测试覆盖薄的问题后面
-用 custom check 补", recorded 2026-09-14): the codebase ships exactly one
+to close it via a `custom` check later (human approval: "Approved; the thin
+test-coverage issue will be addressed later with a custom check", recorded
+2026-09-14): the codebase ships exactly one
 official example (the `__main__` demo), no isolated unit tests. The one
 check here exercises the full online update path end to end but does not
 isolate `cost_p`, `_best_swap`, `_num_outliers` or `approx_cost`
