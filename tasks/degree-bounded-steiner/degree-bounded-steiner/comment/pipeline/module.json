@@ -1,0 +1,32 @@
+{
+  "module": {
+    "slug": "degree-bounded-steiner",
+    "title": "Degree-Bounded Network Design: Balanced Tree Partitioning and DB-GST-T Rounding",
+    "paths": [
+      "."
+    ],
+    "entrypoints": [
+      "paper2_degree_bounded_steiner.py (balanced_tree_partition_vertex/balanced_tree_partitioning/decomposition_depth; DBGSTSolver.solve; __main__ demo)"
+    ],
+    "expensive_path": "DBGSTSolver._solve_lp: builds and solves one scipy.optimize.linprog LP relaxation over all tree vertices (constraints (8)-(11) of Section 6), the one step whose cost scales with instance size rather than being O(n) combinatorial work.",
+    "rationale": "Single self-contained file implementing two results from one paper (Lemma 2.1 balanced tree partitioning; Theorem 1.2 DB-GST-T bicriteria rounding), sharing one module docstring, one license, one pin, no separate directories, no separate dependency sets, and no separate build. Part (A) is a thin combinatorial lemma (find one separator vertex, ~50 lines, no rich input/output contract of its own) that DB-GST-T's code does not call at runtime -- the two parts are demonstrated together in one __main__ block, not a pipeline stage. Neither part alone has enough independent scope to stand as its own repository-like module (SPEC.html's five-criteria test): whole-codebase default applies, same pattern as consistent-kmedian. Both parts are covered as separate checks of the same module at Step 3, not split into separate modules.",
+    "excluded": [
+      "No separate unit tests exist to exclude; only the single demo example is available as official coverage.",
+      "Theorem 1.1 (Degree-Bounded Directed Steiner Tree via state trees / a large LP over a super-tree T-circ) is explicitly not implemented by the source itself -- the module docstring states it is a quasi-polynomial-time construction not practical to reproduce as runnable code; there is nothing to package."
+    ],
+    "hazards": [
+      "No upstream repository or reference output: this is a self-authored, faithful simplification of the paper's algorithm, not a vendored third-party codebase.",
+      "Thin official-test surface: exactly one example script (the __main__ block) exercising each part once on one fixed random instance; no isolated unit tests of the LP construction, the power-of-2 rounding, the rescaling step, or the recursive randomized rounding individually.",
+      "DBGSTSolver.solve is randomized (self.rng = random.Random(seed), used in _recursive_round) and depends on scipy.optimize.linprog(method=\"highs\") for the LP relaxation; both are deterministic given a fixed seed and fixed problem in the native run (verified byte-identical across two runs), but the LP method choice is a numerical dependency worth flagging for the pointwise-vs-invariants decision at STOP 4.",
+      "balanced_tree_partitioning's decomposition_depth rebuilds an induced sub-tree by iterating a Python set (\"roots = [u for u in vertices if tree.parent.get(u) not in vertices]\" then \"sub.root = roots[0]\") -- for this module's tree shape there is exactly one such root so the choice is not actually order-dependent, but a differently-shaped future input could make it so; worth a source-reading note at STOP 4/review."
+    ]
+  },
+  "approval": {
+    "modules": [
+      "degree-bounded-steiner"
+    ],
+    "human_ref": "Approved as one whole-codebase module",
+    "at": "2026-09-14T04:53:34Z"
+  },
+  "shared_infrastructure": []
+}

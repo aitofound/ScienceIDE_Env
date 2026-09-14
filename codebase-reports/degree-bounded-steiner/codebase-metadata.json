@@ -1,0 +1,351 @@
+{
+  "schema_version": 1,
+  "report_type": "codebase-metadata",
+  "generated_at": "2026-09-14T04:57:11Z",
+  "informational": true,
+  "non_blocking": true,
+  "codebase": {
+    "id": "degree-bounded-steiner",
+    "title": "degree-bounded-steiner",
+    "source_root": "code/degree-bounded-steiner/",
+    "upstream_url": "<local path redacted>",
+    "upstream_pin": "4215571745635840e5e504c0a48ea02a777cfe6f",
+    "license": "MIT",
+    "languages": [
+      "Python"
+    ],
+    "domain": "computer-systems",
+    "owner": "Jiayi Xian",
+    "source_tree_fingerprint": "40550dafb7816b160510730fff47d9b72d34982c7daa89a552613f9c2cb6867c",
+    "fingerprint_algorithm": "SHA-256 over typed sorted regular-file paths+bytes and symlink paths+safe targets",
+    "measurement_source": "Step 1 investigation checkout intended for vendoring",
+    "agent_authored": {
+      "description": "Two self-contained, polynomial-time results from \"On Approximating Degree-Bounded Network Design Problems\" (Guo, Kortsarz, Laekhanukit, Li, Vaz, Xian, arXiv:1907.11404): Lemma 2.1 balanced tree partitioning, and Theorem 1.2's randomized bicriteria LP-rounding approximation for the Degree-Bounded Group Steiner Tree problem on trees.",
+      "evidence": [
+        "paper2_degree_bounded_steiner.py:1-26 (module docstring naming the paper, arXiv id, and which results are implemented)"
+      ]
+    }
+  },
+  "measurement": {
+    "scope": "Step 1 investigation checkout intended for vendoring",
+    "regular_file_rule": "all regular files below the source snapshot",
+    "physical_line_rule": "UTF-8/NUL-free bytes: newline count plus one final non-newline line",
+    "text_binary_rule": "NUL-containing or non-UTF-8 files are binary for line accounting",
+    "directory_rule": "count non-root directory ancestors containing an included regular file or symlink",
+    "symlink_rule": "count links without following them; external/parent targets are redacted",
+    "included_paths": [
+      "."
+    ],
+    "excluded_paths": [],
+    "source_extensions": [
+      ".py"
+    ],
+    "test_path_markers": [
+      "test",
+      "tests",
+      "tst"
+    ],
+    "test_count_units": [
+      "test_files",
+      "test_definitions",
+      "collected_items",
+      "inner_cases"
+    ],
+    "classification": "CLI-owned rules plus explicitly agent-authored source/test classification",
+    "agent_authored": {
+      "included_paths": [
+        "."
+      ],
+      "excluded_paths": [],
+      "source_extensions": [
+        ".py"
+      ],
+      "test_path_markers": [
+        "test",
+        "tests",
+        "tst"
+      ],
+      "generated_vendor_third_party_notes": "No vendored or generated files; single hand-written source file plus LICENSE."
+    }
+  },
+  "size": {
+    "tree_entries": 2,
+    "regular_files": 2,
+    "directories": 0,
+    "symlinks": 0,
+    "symlink_entries": [],
+    "payload_bytes": 15250,
+    "text_files": 2,
+    "text_physical_lines": 400,
+    "binary_files": 0,
+    "binary_bytes": 0,
+    "source_files": 1,
+    "source_physical_lines": 379,
+    "implementation_source_files": 1,
+    "implementation_source_physical_lines": 379,
+    "test_source_files": 0,
+    "test_source_physical_lines": 0,
+    "files_by_extension": [
+      {
+        "extension": ".py",
+        "files": 1,
+        "bytes": 14183,
+        "text_physical_lines": 379
+      },
+      {
+        "extension": "[no extension]",
+        "files": 1,
+        "bytes": 1067,
+        "text_physical_lines": 21
+      }
+    ],
+    "classification": "CLI-computed"
+  },
+  "approval": {
+    "proposed_modules": [
+      "degree-bounded-steiner"
+    ],
+    "approved_modules": [
+      "degree-bounded-steiner"
+    ],
+    "human_ref": "Approved as one whole-codebase module",
+    "approved_at": "2026-09-14T04:53:34Z",
+    "classification": "human-owned approval, CLI-copied"
+  },
+  "shared_components": [
+    {
+      "id": "shared-infrastructure",
+      "title": "Shared infrastructure",
+      "purpose": "",
+      "paths": [],
+      "used_by": [
+        "degree-bounded-steiner"
+      ],
+      "relationship": "runtime/build",
+      "evidence": [],
+      "classification": "agent-authored description; CLI-computed size",
+      "metrics": {
+        "regular_files": 0,
+        "bytes": 0,
+        "text_files": 0,
+        "text_physical_lines": 0
+      }
+    }
+  ],
+  "modules": [
+    {
+      "slug": "degree-bounded-steiner",
+      "title": "Degree-Bounded Network Design: Balanced Tree Partitioning and DB-GST-T Rounding",
+      "entrypoints": [
+        "paper2_degree_bounded_steiner.py (balanced_tree_partition_vertex/balanced_tree_partitioning/decomposition_depth; DBGSTSolver.solve; __main__ demo)"
+      ],
+      "expensive_path": "DBGSTSolver._solve_lp: builds and solves one scipy.optimize.linprog LP relaxation over all tree vertices (constraints (8)-(11) of Section 6), the one step whose cost scales with instance size rather than being O(n) combinatorial work.",
+      "rationale": "Single self-contained file implementing two results from one paper (Lemma 2.1 balanced tree partitioning; Theorem 1.2 DB-GST-T bicriteria rounding), sharing one module docstring, one license, one pin, no separate directories, no separate dependency sets, and no separate build. Part (A) is a thin combinatorial lemma (find one separator vertex, ~50 lines, no rich input/output contract of its own) that DB-GST-T's code does not call at runtime -- the two parts are demonstrated together in one __main__ block, not a pipeline stage. Neither part alone has enough independent scope to stand as its own repository-like module (SPEC.html's five-criteria test): whole-codebase default applies, same pattern as consistent-kmedian. Both parts are covered as separate checks of the same module at Step 3, not split into separate modules.",
+      "excluded": [
+        "No separate unit tests exist to exclude; only the single demo example is available as official coverage.",
+        "<local path redacted>"
+      ],
+      "hazards": [
+        "No upstream repository or reference output: this is a self-authored, faithful simplification of the paper's algorithm, not a vendored third-party codebase.",
+        "Thin official-test surface: exactly one example script (the __main__ block) exercising each part once on one fixed random instance; no isolated unit tests of the LP construction, the power-of-2 rounding, the rescaling step, or the recursive randomized rounding individually.",
+        "DBGSTSolver.solve is randomized (self.rng = random.Random(seed), used in _recursive_round) and depends on scipy.optimize.linprog(method=\"highs\") for the LP relaxation; both are deterministic given a fixed seed and fixed problem in the native run (verified byte-identical across two runs), but the LP method choice is a numerical dependency worth flagging for the pointwise-vs-invariants decision at STOP 4.",
+        "balanced_tree_partitioning's decomposition_depth rebuilds an induced sub-tree by iterating a Python set (\"roots = [u for u in vertices if tree.parent.get(u) not in vertices]\" then \"sub.root = roots[0]\") -- for this module's tree shape there is exactly one such root so the choice is not actually order-dependent, but a differently-shaped future input could make it so; worth a source-reading note at STOP 4/review."
+      ],
+      "approval_status": "approved",
+      "purpose": "Single self-contained file implementing two results from one paper (Lemma 2.1 balanced tree partitioning; Theorem 1.2 DB-GST-T bicriteria rounding), sharing one module docstring, one license, one pin, no separate directories, no separate dependency sets, and no separate build. Part (A) is a thin combinatorial lemma that DB-GST-T's code does not call at runtime; the two parts are demonstrated together in one __main__ block, not a pipeline stage. Whole-codebase default applies, same pattern as consistent-kmedian.",
+      "primary_inputs": [
+        "(A) BinaryTree: a rooted binary tree given as a root plus children/parent maps built via add_child",
+        "(B) DBGSTInstance: a rooted tree T-circ with per-vertex cost c_u, degree bound d_u, and k disjoint leaf groups O_1..O_k"
+      ],
+      "primary_outputs": [
+        "(A) balanced_tree_partition_vertex: one separator vertex v with n/3 < |descendants(v)| <= 2n/3+1; balanced_tree_partitioning: the (T1, T2) vertex-set split at v; decomposition_depth: the recursive decomposition height h",
+        "(B) DBGSTSolver.solve(): dict with V (chosen vertex set), cost, max_degree_violation_factor, groups_covered/groups_total, lp_value"
+      ],
+      "algorithm_stages": [
+        "(A) repeatedly descend to the heaviest child until the subtree size falls in (n/3, 2n/3+1] (balanced_tree_partition_vertex), then split the tree at that vertex (balanced_tree_partitioning), applied recursively (decomposition_depth)",
+        "(B) step 1: solve LP relaxation (7)-(12) via scipy.optimize.linprog(method=\"highs\"); step 2: round the LP solution to non-positive powers of 2; step 3: rescale by a level-dependent factor with threshold gamma (Section 6.1); step 4: repeat recursive randomized rounding M times and union the results"
+      ],
+      "unique_responsibilities": [
+        "(A) produces the single balanced-separator primitive the paper's O(log n)-depth decomposition tree is built from",
+        "(B) produces a vertex set that (whp) connects every group while bounding cost to O(log n log k) times the LP optimum and degree violation to O(log n), per Theorem 1.2"
+      ],
+      "not_responsible_for": [
+        "No separate unit tests exist to exclude; only the single demo example is available as official coverage.",
+        "Theorem 1.1 (Degree-Bounded Directed Steiner Tree via state trees and a large LP over a super-tree T-circ) is explicitly not implemented by the source itself -- the module docstring states it is a quasi-polynomial-time construction not practical to reproduce as runnable code; there is nothing to package."
+      ],
+      "shared_component_ids": [],
+      "depends_on_modules": [],
+      "differences": "not supplied",
+      "evidence": [
+        "paper2_degree_bounded_steiner.py:67-84 (balanced_tree_partition_vertex, Lemma 2.1)",
+        "paper2_degree_bounded_steiner.py:171-228 (DBGSTSolver._solve_lp, LP (7)-(12))",
+        "paper2_degree_bounded_steiner.py:273-285 (DBGSTSolver._recursive_round, Section 6.1)"
+      ],
+      "owned_paths": [
+        "."
+      ],
+      "classification": "agent-authored module card; CLI-computed size and approval status",
+      "metrics": {
+        "owned": {
+          "regular_files": 2,
+          "bytes": 15250,
+          "text_files": 2,
+          "text_physical_lines": 400
+        },
+        "shared": {
+          "regular_files": 0,
+          "bytes": 0,
+          "text_files": 0,
+          "text_physical_lines": 0
+        },
+        "overlap": {
+          "regular_files": 0,
+          "bytes": 0,
+          "text_files": 0,
+          "text_physical_lines": 0
+        }
+      }
+    }
+  ],
+  "official_tests": {
+    "frameworks": [],
+    "collection_commands": [],
+    "run_commands": [
+      "python3 paper2_degree_bounded_steiner.py"
+    ],
+    "counts": {
+      "test_files": {
+        "value": 0,
+        "unit": "files",
+        "semantics": "distinct official test files considered",
+        "classification": "agent-authored/evidenced"
+      },
+      "test_definitions": {
+        "value": 0,
+        "unit": "source-level test definitions",
+        "semantics": "source-level functions or methods, not collected cases",
+        "classification": "agent-authored/evidenced"
+      },
+      "collected_items": {
+        "value": 0,
+        "unit": "framework-collected items",
+        "semantics": "items collected after framework parametrization",
+        "classification": "agent-authored/evidenced"
+      },
+      "inner_cases": {
+        "value": null,
+        "unit": "inner cases",
+        "semantics": "optional cases inside one source-level definition that collection does not expose",
+        "classification": "agent-authored/evidenced"
+      }
+    },
+    "by_module": {
+      "degree-bounded-steiner": {
+        "sources": [
+          "paper2_degree_bounded_steiner.py:321-347 (__main__ part A demo: balanced tree partitioning on a 20-node random binary tree)",
+          "paper2_degree_bounded_steiner.py:349-379 (__main__ part B demo: DB-GST-T on a 30-node random tree, 5 leaf groups)"
+        ],
+        "selectors": [],
+        "counts": {
+          "test_files": {
+            "value": 0,
+            "unit": "files",
+            "semantics": "distinct official test files considered",
+            "classification": "agent-authored/evidenced"
+          },
+          "test_definitions": {
+            "value": 0,
+            "unit": "source-level test definitions",
+            "semantics": "source-level functions or methods, not collected cases",
+            "classification": "agent-authored/evidenced"
+          },
+          "collected_items": {
+            "value": 0,
+            "unit": "framework-collected items",
+            "semantics": "items collected after framework parametrization",
+            "classification": "agent-authored/evidenced"
+          },
+          "inner_cases": {
+            "value": null,
+            "unit": "inner cases",
+            "semantics": "optional cases inside one source-level definition that collection does not expose",
+            "classification": "agent-authored/evidenced"
+          }
+        },
+        "covers": [
+          "part A: balanced_tree_partition_vertex, balanced_tree_partitioning, decomposition_depth on one 20-node instance",
+          "part B: the full DBGSTSolver pipeline (LP relaxation, power-of-2 rounding, rescaling, recursive randomized rounding) on one 30-node, 5-group instance"
+        ],
+        "known_gaps": [
+          "no isolated unit tests for the LP construction, the power-of-2 rounding step, the rescaling step, or the recursive rounding step individually",
+          "no upstream reference output to compare against: self-authored code, no upstream repository"
+        ],
+        "execution": [
+          {
+            "command": "python3 paper2_degree_bounded_steiner.py",
+            "wall_time_s": 0.57,
+            "deterministic": true,
+            "notes": "cold run (first venv import of numpy/scipy) 5.7s, warm run 0.57s; two independent native runs on this machine are byte-identical stdout (random.seed(3) for part A's tree, random.Random(seed=7) inside DBGSTSolver, scipy.optimize.linprog(method=\"highs\") for the LP -- all reproduce exactly given the fixed seeds)"
+          }
+        ],
+        "classification": "agent-authored/evidenced, except any explicitly CLI-labelled counts"
+      }
+    },
+    "count_semantics": "test_files, source-level test_definitions, framework-collected items, and hidden inner cases are distinct units"
+  },
+  "classification_and_gaps": {
+    "buckets": {
+      "shared": {
+        "regular_files": 0,
+        "bytes": 0,
+        "text_files": 0,
+        "text_physical_lines": 0
+      },
+      "owned": {
+        "regular_files": 2,
+        "bytes": 15250,
+        "text_files": 2,
+        "text_physical_lines": 400
+      },
+      "overlapping_owned": {
+        "regular_files": 0,
+        "bytes": 0,
+        "text_files": 0,
+        "text_physical_lines": 0
+      },
+      "unclassified": {
+        "regular_files": 0,
+        "bytes": 0,
+        "text_files": 0,
+        "text_physical_lines": 0
+      }
+    },
+    "overlaps": [],
+    "overlaps_truncated": 0,
+    "unclassified_paths": [],
+    "unclassified_paths_truncated": 0,
+    "reconciliation": {
+      "regular_files": 2,
+      "classified_files": 2,
+      "reconciliation_ok": true
+    },
+    "not_packaged": [
+      "Theorem 1.1's quasi-polynomial-time Degree-Bounded Directed Steiner Tree construction: not implemented in the source (see module purpose/not_responsible_for)"
+    ],
+    "known_review_gaps": [
+      "thin official-test coverage: exactly one demo script exercising each part once, no isolated unit tests",
+      "no upstream repository or reference implementation to validate the pin or a future port against",
+      "DBGSTSolver depends on scipy.optimize.linprog(method=\"highs\"); worth a pointwise-vs-invariants read at STOP 4 given the LP solver is an external numerical dependency"
+    ],
+    "open_questions": [
+      "should later custom checks target the LP construction, power-of-2 rounding, rescaling, or recursive-rounding steps individually, or only end-to-end demo output for each part?"
+    ],
+    "classification": "CLI-computed accounting plus agent-authored gaps"
+  },
+  "warnings": [
+    "codebase.upstream_url: local/private absolute path redacted",
+    "modules.degree-bounded-steiner.excluded[1]: local/private absolute path redacted",
+    "repository/cache directory excluded from source accounting: .git"
+  ],
+  "notes": "Fill every field to best effort. Unknown is acceptable; this report is informational and non-blocking."
+}

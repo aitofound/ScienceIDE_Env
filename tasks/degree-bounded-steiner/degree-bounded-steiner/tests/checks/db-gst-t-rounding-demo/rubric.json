@@ -1,0 +1,34 @@
+{
+  "check": "db-gst-t-rounding-demo",
+  "policy": "pointwise",
+  "chaotic": false,
+  "upstream_test": "code/degree-bounded-steiner/paper2_degree_bounded_steiner.py",
+  "configuration": "The upstream __main__ part (B) demo, parametrized: a fixed 30-node tree instance (parent map, per-vertex cost, per-vertex degree bound, 5 leaf groups; the exact values random.seed(3) produces upstream, recorded literally in ic/nominal/config.json), eps_M_boost=8, DBGSTSolver seed=7. driver.py runs DBGSTSolver.solve() end to end: the LP relaxation (7)-(12) via scipy.optimize.linprog(method=\"highs\"), the power-of-2 rounding, the level-dependent rescaling, and M repetitions of recursive randomized rounding, unioned into the final vertex set.",
+  "observable": "the chosen vertex set V (Section 6's extended state / subtree, graded as a sorted set of vertex ids), the rounded solution cost, the LP relaxation value, and the max degree violation factor",
+  "expected_runtime_s": 1,
+  "default_vs_upstream": "upstream",
+  "knobs": "none: the fixed 30-node instance already runs in well under a second (a ~30-row LP relaxation plus 8 recursive-rounding repetitions); there is no configuration knob that would meaningfully shorten it further.",
+  "variant": "one vertex's cost (cost[\"n1\"]) is perturbed by two ULPs at binary64 precision (3.3705636425086625 -> 3.3705636425086634, delta 8.88e-16); every other input is byte-identical to ic/nominal. Verified: the perturbed cost propagates into the LP objective (_solve_lp, paper2_degree_bounded_steiner.py:177) and hence into the graded lp_value/cost, which differ at the last few digits (measured spread below), while the chosen set V, max_degree_violation_factor and groups_covered/groups_total are unchanged in this native run -- at this instance's scale the two discrete branch points flagged in modules.json (the power-of-2 rounding's math.ceil(math.log2(val)) boundary, and _rescale's strict x[v] < x[u] level comparison) are resolved by margins far larger than 2 ULPs, so only the continuous cost/LP-value observables show a nonzero (tiny) spread.",
+  "altbuild": "none: pure-Python source (numpy/scipy are runtime dependencies of the file, not compiled extensions of it) -- there is no legitimately different build of this module to run.",
+  "comparison": {
+    "atol": 1e-11,
+    "rtol": 3e-13,
+    "files": [
+      {
+        "path": "metrics.txt",
+        "format": "text"
+      },
+      {
+        "path": "chosen_set.txt",
+        "format": "text"
+      }
+    ]
+  },
+  "evidence": {
+    "floor": 7.105427357601002e-15,
+    "floor_how": "native (non-Docker) run of driver.py on ic/nominal vs ic/variant, this machine, Python 3.13.7 (scratch venv, numpy 2.5.3, scipy 1.18.1): `python3 driver.py --source-dir <src> --config ic/nominal/config.json --out <a>` and the same with ic/variant/config.json --out <b>, then diffed. Max absolute difference across both graded files: 7.105e-15 (cost and lp_value, which are equal at this LP-tight instance); max relative difference: 1.691e-16. max_degree_violation_factor, groups_covered/groups_total and chosen_set.txt were byte-identical between the two runs. This is the pre-Docker calibration measurement; Step 4 (STOP 4) revises these numbers from the Docker selfcheck's self_validation_spread once it runs.",
+    "self_validation_spread": 7.105427357601002e-15,
+    "self_validation_bound_fraction": 0.0003143571020817411
+  },
+  "warrant": "cost and lp_value are the paper's headline observables for Theorem 1.2 (Section 6): lp_value is the LP relaxation optimum and cost is the rounded solution's true cost, whose ratio the theorem bounds by O(log n log k); max_degree_violation_factor is the other half of the bicriteria guarantee (bounded by O(log n)). A wrong LP construction (paper2_degree_bounded_steiner.py:171-228), a broken power-of-2 modification or rescaling (232-269), or a broken recursive rounding (273-285) changes these by an order of magnitude or more, or changes which vertices are chosen -- the current atol=1e-11/rtol=3e-13 bound sits roughly three to four orders of magnitude above the measured two-ULP floor (7.1e-15 absolute, 1.7e-16 relative) and would be crossed immediately by any such fault, while still tolerating the summation-order noise scipy's LP solver could introduce on a differently-ordered but equivalent constraint matrix. Provisional pending the Docker selfcheck's own spread at STOP 4."
+}
