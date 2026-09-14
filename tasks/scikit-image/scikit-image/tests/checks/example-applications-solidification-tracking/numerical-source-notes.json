@@ -1,0 +1,130 @@
+{
+  "skimage.filters.gaussian": {
+    "implementation": {
+      "file": "src/skimage/_shared/filters.py",
+      "line": 19,
+      "end_line": 136
+    },
+    "description": "Multi-dimensional Gaussian filter.",
+    "calls": [
+      "np.any",
+      "convert_to_float",
+      "image.astype",
+      "ndi.gaussian_filter",
+      "isinstance",
+      "sigma.insert"
+    ],
+    "branches": [
+      {
+        "line": 120,
+        "expression": "np.any(np.asarray(sigma) < 0.0)"
+      },
+      {
+        "line": 122,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 132,
+        "expression": "out is not None and (not np.issubdtype(out.dtype, np.floating))"
+      },
+      {
+        "line": 124,
+        "expression": "not isinstance(sigma, Iterable)"
+      },
+      {
+        "line": 126,
+        "expression": "len(sigma) == image.ndim - 1"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.threshold_minimum": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 795,
+      "end_line": 883
+    },
+    "description": "Return threshold value based on minimum method.",
+    "calls": [
+      "RuntimeError",
+      "_validate_image_histogram",
+      "counts.astype",
+      "np.argmin",
+      "ndi.uniform_filter1d",
+      "find_local_maxima_idx",
+      "maximum_idxs.append"
+    ],
+    "branches": [
+      {
+        "line": 875,
+        "expression": "len(maximum_idxs) != 2"
+      },
+      {
+        "line": 872,
+        "expression": "len(maximum_idxs) < 3"
+      },
+      {
+        "line": 877,
+        "expression": "counter == max_num_iter - 1"
+      },
+      {
+        "line": 855,
+        "expression": "direction > 0"
+      },
+      {
+        "line": 856,
+        "expression": "hist[i + 1] < hist[i]"
+      },
+      {
+        "line": 860,
+        "expression": "hist[i + 1] > hist[i]"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.label": {
+    "implementation": {
+      "file": "src/skimage/measure/_label.py",
+      "line": 33,
+      "end_line": 125
+    },
+    "description": "Label connected regions of an integer array.",
+    "calls": [
+      "_label_bool",
+      "clabel"
+    ],
+    "branches": [
+      {
+        "line": 117,
+        "expression": "label_image.dtype == bool"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.restoration.denoise_tv_chambolle": {
+    "implementation": {
+      "file": "src/skimage/restoration/_denoise.py",
+      "line": 492,
+      "end_line": 608
+    },
+    "description": "Perform total variation denoising in nD.",
+    "calls": [
+      "_denoise_tv_chambolle_nd",
+      "_at",
+      "image.astype",
+      "img_as_float",
+      "functools.partial"
+    ],
+    "branches": [
+      {
+        "line": 591,
+        "expression": "not im_type.kind == 'f'"
+      },
+      {
+        "line": 598,
+        "expression": "channel_axis is not None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

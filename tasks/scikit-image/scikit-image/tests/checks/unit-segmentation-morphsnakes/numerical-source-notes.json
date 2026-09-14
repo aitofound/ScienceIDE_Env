@@ -1,0 +1,109 @@
+{
+  "skimage.segmentation.disk_level_set": {
+    "implementation": {
+      "file": "src/skimage/segmentation/morphsnakes.py",
+      "line": 114,
+      "end_line": 148
+    },
+    "description": "Create a disk level set with binary values.",
+    "calls": [
+      "np.int8",
+      "np.sqrt",
+      "slice",
+      "np.sum",
+      "min"
+    ],
+    "branches": [
+      {
+        "line": 138,
+        "expression": "center is None"
+      },
+      {
+        "line": 141,
+        "expression": "radius is None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.segmentation.inverse_gaussian_gradient": {
+    "implementation": {
+      "file": "src/skimage/segmentation/morphsnakes.py",
+      "line": 182,
+      "end_line": 211
+    },
+    "description": "Inverse of gradient magnitude.",
+    "calls": [
+      "ndi.gaussian_gradient_magnitude",
+      "np.sqrt"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.segmentation.morphological_chan_vese": {
+    "implementation": {
+      "file": "src/skimage/segmentation/morphsnakes.py",
+      "line": 214,
+      "end_line": 319
+    },
+    "description": "Morphological Active Contours without Edges (MorphACWE)",
+    "calls": [
+      "iter_callback",
+      "_init_level_set",
+      "_check_input",
+      "np.int8",
+      "np.gradient",
+      "np.abs(du).sum",
+      "(image * (1 - u)).sum",
+      "(image * u).sum",
+      "_curvop",
+      "np.abs",
+      "(1 - u).sum",
+      "u.sum"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.segmentation.morphological_geodesic_active_contour": {
+    "implementation": {
+      "file": "src/skimage/segmentation/morphsnakes.py",
+      "line": 322,
+      "end_line": 449
+    },
+    "description": "Morphological Geodesic Active Contours (MorphGAC).",
+    "calls": [
+      "np.gradient",
+      "iter_callback",
+      "_init_level_set",
+      "_check_input",
+      "np.int8",
+      "np.percentile",
+      "ndi.binary_dilation",
+      "_curvop",
+      "np.abs",
+      "ndi.binary_erosion"
+    ],
+    "branches": [
+      {
+        "line": 413,
+        "expression": "threshold == 'auto'"
+      },
+      {
+        "line": 419,
+        "expression": "balloon != 0"
+      },
+      {
+        "line": 428,
+        "expression": "balloon > 0"
+      },
+      {
+        "line": 432,
+        "expression": "balloon != 0"
+      },
+      {
+        "line": 430,
+        "expression": "balloon < 0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}
