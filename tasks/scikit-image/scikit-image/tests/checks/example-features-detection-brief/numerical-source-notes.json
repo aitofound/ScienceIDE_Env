@@ -1,0 +1,185 @@
+{
+  "skimage.color.rgb2gray": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 941,
+      "end_line": 984
+    },
+    "description": "Compute luminance of an RGB image.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.feature.BRIEF.extract": {
+    "implementation": {
+      "file": "src/skimage/feature/brief.py",
+      "line": 158,
+      "end_line": 216
+    },
+    "description": "Extract BRIEF binary descriptors for given keypoints in image.",
+    "calls": [
+      "np.ascontiguousarray",
+      "copy.deepcopy",
+      "_prepare_grayscale_input_2D",
+      "_mask_border_keypoints",
+      "_brief_loop",
+      "gaussian",
+      "samples[:desc_size * 2].reshape",
+      "samples[desc_size * 2:desc_size * 4].reshape",
+      "self.descriptors.view",
+      "rng.standard_normal",
+      "rng.integers",
+      "np.split"
+    ],
+    "branches": [
+      {
+        "line": 182,
+        "expression": "self.mode == 'normal'"
+      },
+      {
+        "line": 191,
+        "expression": "self.mode == 'uniform'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.feature.corner_harris": {
+    "implementation": {
+      "file": "src/skimage/feature/corner.py",
+      "line": 654,
+      "end_line": 731
+    },
+    "description": "Compute Harris corner measure response image.",
+    "calls": [
+      "structure_tensor"
+    ],
+    "branches": [
+      {
+        "line": 726,
+        "expression": "method == 'k'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.feature.corner_peaks": {
+    "implementation": {
+      "file": "src/skimage/feature/corner.py",
+      "line": 1126,
+      "end_line": 1238
+    },
+    "description": "Find peaks in corner measure response image.",
+    "calls": [
+      "np.isinf",
+      "peak_local_max",
+      "spatial.cKDTree",
+      "set",
+      "np.delete",
+      "tree.query_ball_point",
+      "candidates.remove",
+      "rejected_peaks_indices.update"
+    ],
+    "branches": [
+      {
+        "line": 1202,
+        "expression": "np.isinf(num_peaks)"
+      },
+      {
+        "line": 1218,
+        "expression": "len(coords)"
+      },
+      {
+        "line": 1232,
+        "expression": "indices"
+      },
+      {
+        "line": 1224,
+        "expression": "idx not in rejected_peaks_indices"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.feature.match_descriptors": {
+    "implementation": {
+      "file": "src/skimage/feature/match.py",
+      "line": 5,
+      "end_line": 103
+    },
+    "description": "Brute-force matching of descriptors.",
+    "calls": [
+      "np.argmin",
+      "cdist",
+      "np.arange",
+      "np.column_stack",
+      "np.finfo"
+    ],
+    "branches": [
+      {
+        "line": 60,
+        "expression": "descriptors1.shape[1] != descriptors2.shape[1]"
+      },
+      {
+        "line": 63,
+        "expression": "metric is None"
+      },
+      {
+        "line": 72,
+        "expression": "metric == 'minkowski'"
+      },
+      {
+        "line": 79,
+        "expression": "cross_check"
+      },
+      {
+        "line": 85,
+        "expression": "max_distance < np.inf"
+      },
+      {
+        "line": 90,
+        "expression": "max_ratio < 1.0"
+      },
+      {
+        "line": 64,
+        "expression": "np.issubdtype(descriptors1.dtype, bool)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.rotate": {
+    "implementation": {
+      "file": "src/skimage/transform/_warps.py",
+      "line": 346,
+      "end_line": 469
+    },
+    "description": "Rotate image by a certain angle around its center.",
+    "calls": [
+      "SimilarityTransform",
+      "warp",
+      "image.astype",
+      "tform.inverse",
+      "corners[:, 0].min",
+      "corners[:, 1].min",
+      "corners[:, 0].max",
+      "corners[:, 1].max",
+      "np.around",
+      "np.deg2rad"
+    ],
+    "branches": [
+      {
+        "line": 426,
+        "expression": "image.dtype == np.float16"
+      },
+      {
+        "line": 430,
+        "expression": "center is None"
+      },
+      {
+        "line": 440,
+        "expression": "resize"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

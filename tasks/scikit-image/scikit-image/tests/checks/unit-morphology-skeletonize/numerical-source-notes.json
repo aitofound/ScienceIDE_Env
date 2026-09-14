@@ -1,0 +1,169 @@
+{
+  "skimage.draw.line": {
+    "implementation": {
+      "file": "src/skimage/draw/draw.py",
+      "line": 363,
+      "end_line": 402
+    },
+    "description": "Generate line pixel coordinates.",
+    "calls": [
+      "_line"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.io.imread": {
+    "implementation": {
+      "file": "src/skimage/io/_io.py",
+      "line": 32,
+      "end_line": 97
+    },
+    "description": "Load an image from file.",
+    "calls": [
+      "hasattr",
+      "np.swapaxes",
+      "deprecate_parameter",
+      "isinstance",
+      "warnings.warn",
+      "str",
+      "fname.lower().endswith",
+      "file_or_url_context",
+      "_hide_plugin_deprecation_warnings",
+      "call_plugin",
+      "fname.resolve",
+      "rgb2gray",
+      "fname.lower",
+      "rgba2rgb"
+    ],
+    "branches": [
+      {
+        "line": 62,
+        "expression": "plugin is DEPRECATED"
+      },
+      {
+        "line": 64,
+        "expression": "plugin_args"
+      },
+      {
+        "line": 74,
+        "expression": "isinstance(fname, pathlib.Path)"
+      },
+      {
+        "line": 77,
+        "expression": "plugin is None and hasattr(fname, 'lower')"
+      },
+      {
+        "line": 84,
+        "expression": "not hasattr(img, 'ndim')"
+      },
+      {
+        "line": 87,
+        "expression": "img.ndim > 2"
+      },
+      {
+        "line": 78,
+        "expression": "fname.lower().endswith(('.tiff', '.tif'))"
+      },
+      {
+        "line": 88,
+        "expression": "img.shape[-1] not in (3, 4) and img.shape[-3] in (3, 4)"
+      },
+      {
+        "line": 92,
+        "expression": "as_gray"
+      },
+      {
+        "line": 93,
+        "expression": "img.shape[2] == 4"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology._skeletonize._generate_thin_luts": {
+    "implementation": {
+      "file": "src/skimage/morphology/_skeletonize.py",
+      "line": 176,
+      "end_line": 220
+    },
+    "description": "generate LUTs for thinning algorithm (for reference)",
+    "calls": [
+      "nabe",
+      "G1",
+      "min",
+      "G2",
+      "G3",
+      "G3p"
+    ],
+    "branches": [
+      {
+        "line": 186,
+        "expression": "not bits[i] and (bits[i + 1] or bits[(i + 2) % 8])"
+      },
+      {
+        "line": 196,
+        "expression": "bits[k] or bits[k - 1]"
+      },
+      {
+        "line": 198,
+        "expression": "bits[k] or bits[(k + 1) % 8]"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.skeletonize": {
+    "implementation": {
+      "file": "src/skimage/morphology/_skeletonize.py",
+      "line": 18,
+      "end_line": 96
+    },
+    "description": "Compute the skeleton of the input image via thinning.",
+    "calls": [
+      "image.astype",
+      "_skeletonize_zhang",
+      "_skeletonize_lee"
+    ],
+    "branches": [
+      {
+        "line": 82,
+        "expression": "method not in {'zhang', 'lee', None}"
+      },
+      {
+        "line": 86,
+        "expression": "image.ndim == 2 and (method is None or method == 'zhang')"
+      },
+      {
+        "line": 88,
+        "expression": "image.ndim == 3 and method == 'zhang'"
+      },
+      {
+        "line": 90,
+        "expression": "image.ndim == 3 or (image.ndim == 2 and method == 'lee')"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.thin": {
+    "implementation": {
+      "file": "src/skimage/morphology/_skeletonize.py",
+      "line": 256,
+      "end_line": 352
+    },
+    "description": "Perform morphological thinning of a binary image.",
+    "calls": [
+      "np.sum",
+      "np.asanyarray(image, dtype=bool).copy().view",
+      "skel.astype",
+      "np.asanyarray(image, dtype=bool).copy",
+      "ndi.correlate",
+      "np.take",
+      "np.asanyarray"
+    ],
+    "branches": [
+      {
+        "line": 337,
+        "expression": "n_pts_old != n_pts_new and num_iter < max_num_iter"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

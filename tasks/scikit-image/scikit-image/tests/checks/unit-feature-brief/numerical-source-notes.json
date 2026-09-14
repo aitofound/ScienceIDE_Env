@@ -1,0 +1,90 @@
+{
+  "skimage.feature.BRIEF.extract": {
+    "implementation": {
+      "file": "src/skimage/feature/brief.py",
+      "line": 158,
+      "end_line": 216
+    },
+    "description": "Extract BRIEF binary descriptors for given keypoints in image.",
+    "calls": [
+      "np.ascontiguousarray",
+      "copy.deepcopy",
+      "_prepare_grayscale_input_2D",
+      "_mask_border_keypoints",
+      "_brief_loop",
+      "gaussian",
+      "samples[:desc_size * 2].reshape",
+      "samples[desc_size * 2:desc_size * 4].reshape",
+      "self.descriptors.view",
+      "rng.standard_normal",
+      "rng.integers",
+      "np.split"
+    ],
+    "branches": [
+      {
+        "line": 182,
+        "expression": "self.mode == 'normal'"
+      },
+      {
+        "line": 191,
+        "expression": "self.mode == 'uniform'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.feature.corner_harris": {
+    "implementation": {
+      "file": "src/skimage/feature/corner.py",
+      "line": 654,
+      "end_line": 731
+    },
+    "description": "Compute Harris corner measure response image.",
+    "calls": [
+      "structure_tensor"
+    ],
+    "branches": [
+      {
+        "line": 726,
+        "expression": "method == 'k'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.feature.corner_peaks": {
+    "implementation": {
+      "file": "src/skimage/feature/corner.py",
+      "line": 1126,
+      "end_line": 1238
+    },
+    "description": "Find peaks in corner measure response image.",
+    "calls": [
+      "np.isinf",
+      "peak_local_max",
+      "spatial.cKDTree",
+      "set",
+      "np.delete",
+      "tree.query_ball_point",
+      "candidates.remove",
+      "rejected_peaks_indices.update"
+    ],
+    "branches": [
+      {
+        "line": 1202,
+        "expression": "np.isinf(num_peaks)"
+      },
+      {
+        "line": 1218,
+        "expression": "len(coords)"
+      },
+      {
+        "line": 1232,
+        "expression": "indices"
+      },
+      {
+        "line": 1224,
+        "expression": "idx not in rejected_peaks_indices"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

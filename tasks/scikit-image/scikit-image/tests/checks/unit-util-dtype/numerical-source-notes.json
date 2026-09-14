@@ -1,0 +1,240 @@
+{
+  "skimage._shared.dtype.numeric_dtype_min_max": {
+    "implementation": {
+      "file": "src/skimage/_shared/dtype.py",
+      "line": 29,
+      "end_line": 73
+    },
+    "description": "Return minimum and maximum representable value for a given dtype.",
+    "calls": [
+      "dtype.type",
+      "np.iinfo",
+      "np.finfo"
+    ],
+    "branches": [
+      {
+        "line": 60,
+        "expression": "np.issubdtype(dtype, np.integer)"
+      },
+      {
+        "line": 64,
+        "expression": "np.issubdtype(dtype, np.inexact)"
+      },
+      {
+        "line": 68,
+        "expression": "np.issubdtype(dtype, np.dtype(bool))"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.dtype._convert": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 209,
+      "end_line": 396
+    },
+    "description": "Convert an image to the requested data-type.",
+    "calls": [
+      "np.multiply",
+      "_scale",
+      "image.astype",
+      "np.iinfo",
+      "np.clip",
+      "_dtype_itemsize",
+      "np.maximum",
+      "image_out.astype",
+      "_dtype_bits",
+      "image.copy",
+      "dtype_in",
+      "dtype_out",
+      "np.rint",
+      "image.view",
+      "np.min",
+      "np.max",
+      "np.floor",
+      "np.add"
+    ],
+    "branches": [
+      {
+        "line": 261,
+        "expression": "dtype is np.floating"
+      },
+      {
+        "line": 281,
+        "expression": "np.issubdtype(dtype_in, dtype)"
+      },
+      {
+        "line": 286,
+        "expression": "not (dtype_in in _supported_types and dtype_out in _supported_types)"
+      },
+      {
+        "line": 289,
+        "expression": "kind_in in 'ui'"
+      },
+      {
+        "line": 292,
+        "expression": "kind_out in 'ui'"
+      },
+      {
+        "line": 297,
+        "expression": "kind_out == 'b'"
+      },
+      {
+        "line": 301,
+        "expression": "kind_in == 'b'"
+      },
+      {
+        "line": 308,
+        "expression": "kind_in == 'f'"
+      },
+      {
+        "line": 343,
+        "expression": "kind_out == 'f'"
+      },
+      {
+        "line": 372,
+        "expression": "kind_in == 'u'"
+      },
+      {
+        "line": 382,
+        "expression": "kind_out == 'u'"
+      },
+      {
+        "line": 389,
+        "expression": "itemsize_in > itemsize_out"
+      },
+      {
+        "line": 282,
+        "expression": "force_copy"
+      },
+      {
+        "line": 303,
+        "expression": "kind_out != 'f'"
+      },
+      {
+        "line": 309,
+        "expression": "kind_out == 'f'"
+      },
+      {
+        "line": 313,
+        "expression": "np.min(image) < -1.0 or np.max(image) > 1.0"
+      },
+      {
+        "line": 321,
+        "expression": "not uniform"
+      },
+      {
+        "line": 349,
+        "expression": "kind_in == 'u'"
+      },
+      {
+        "line": 373,
+        "expression": "kind_out == 'i'"
+      },
+      {
+        "line": 322,
+        "expression": "kind_out == 'u'"
+      },
+      {
+        "line": 331,
+        "expression": "kind_out == 'u'"
+      },
+      {
+        "line": 356,
+        "expression": "kind_in == 'i'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.dtype.convert": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 399,
+      "end_line": 407
+    },
+    "description": "",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 479,
+      "end_line": 505
+    },
+    "description": "Convert an image to floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float32": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 427,
+      "end_line": 450
+    },
+    "description": "Convert an image to single-precision (32-bit) floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float64": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 453,
+      "end_line": 476
+    },
+    "description": "Convert an image to double-precision (64-bit) floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_int": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 532,
+      "end_line": 554
+    },
+    "description": "Convert an image to 16-bit signed integer format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_ubyte": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 557,
+      "end_line": 578
+    },
+    "description": "Convert an image to 8-bit unsigned integer format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_uint": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 508,
+      "end_line": 529
+    },
+    "description": "Convert an image to 16-bit unsigned integer format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}
