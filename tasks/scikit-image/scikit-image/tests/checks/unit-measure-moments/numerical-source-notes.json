@@ -1,0 +1,216 @@
+{
+  "skimage.draw.ellipsoid": {
+    "implementation": {
+      "file": "src/skimage/draw/draw3d.py",
+      "line": 5,
+      "end_line": 62
+    },
+    "description": "Generate ellipsoid for given semi-axis lengths.",
+    "calls": [
+      "np.ceil",
+      "np.floor",
+      "np.arange",
+      "np.max"
+    ],
+    "branches": [
+      {
+        "line": 34,
+        "expression": "a <= 0 or b <= 0 or c <= 0"
+      },
+      {
+        "line": 57,
+        "expression": "not levelset"
+      },
+      {
+        "line": 44,
+        "expression": "(high[dim] - low[dim]) % 2 == 0"
+      },
+      {
+        "line": 47,
+        "expression": "0 not in num"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.centroid": {
+    "implementation": {
+      "file": "src/skimage/measure/_moments.py",
+      "line": 385,
+      "end_line": 414
+    },
+    "description": "Return the (weighted) centroid of an image.",
+    "calls": [
+      "moments_central",
+      "np.eye"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.inertia_tensor": {
+    "implementation": {
+      "file": "src/skimage/measure/_moments.py",
+      "line": 417,
+      "end_line": 470
+    },
+    "description": "Compute the inertia tensor of the input image.",
+    "calls": [
+      "np.diag",
+      "itertools.combinations",
+      "moments_central",
+      "np.eye",
+      "np.sum"
+    ],
+    "branches": [
+      {
+        "line": 446,
+        "expression": "mu is None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.inertia_tensor_eigvals": {
+    "implementation": {
+      "file": "src/skimage/measure/_moments.py",
+      "line": 473,
+      "end_line": 513
+    },
+    "description": "Compute the eigenvalues of the inertia tensor of the image.",
+    "calls": [
+      "np.linalg.eigvalsh",
+      "np.clip",
+      "sorted",
+      "inertia_tensor"
+    ],
+    "branches": [
+      {
+        "line": 505,
+        "expression": "T is None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.moments": {
+    "implementation": {
+      "file": "src/skimage/measure/_moments.py",
+      "line": 154,
+      "end_line": 198
+    },
+    "description": "Calculate all raw image moments up to a certain order.",
+    "calls": [
+      "moments_central"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.moments_central": {
+    "implementation": {
+      "file": "src/skimage/measure/_moments.py",
+      "line": 201,
+      "end_line": 277
+    },
+    "description": "Calculate all central image moments up to a certain order.",
+    "calls": [
+      "np.arange",
+      "image.astype",
+      "moments",
+      "moments_raw_to_central",
+      "np.einsum"
+    ],
+    "branches": [
+      {
+        "line": 250,
+        "expression": "center is None"
+      },
+      {
+        "line": 256,
+        "expression": "spacing is None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.moments_coords": {
+    "implementation": {
+      "file": "src/skimage/measure/_moments.py",
+      "line": 10,
+      "end_line": 48
+    },
+    "description": "Calculate all raw image moments up to a certain order.",
+    "calls": [
+      "moments_coords_central"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.moments_coords_central": {
+    "implementation": {
+      "file": "src/skimage/measure/_moments.py",
+      "line": 51,
+      "end_line": 151
+    },
+    "description": "Calculate all central image moments up to a certain order.",
+    "calls": [
+      "np.stack",
+      "isinstance",
+      "coords.reshape",
+      "np.sum",
+      "np.mean",
+      "coords.astype",
+      "np.moveaxis"
+    ],
+    "branches": [
+      {
+        "line": 114,
+        "expression": "isinstance(coords, tuple)"
+      },
+      {
+        "line": 123,
+        "expression": "center is None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.moments_hu": {
+    "implementation": {
+      "file": "src/skimage/measure/_moments.py",
+      "line": 342,
+      "end_line": 382
+    },
+    "description": "Calculate Hu's set of image moments (2D-only).",
+    "calls": [
+      "_moments_cy.moments_hu",
+      "nu.astype"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.moments_normalized": {
+    "implementation": {
+      "file": "src/skimage/measure/_moments.py",
+      "line": 280,
+      "end_line": 339
+    },
+    "description": "Calculate all normalized central image moments up to a certain order.",
+    "calls": [
+      "sum",
+      "np.any",
+      "min",
+      "itertools.product",
+      "mu.ravel"
+    ],
+    "branches": [
+      {
+        "line": 325,
+        "expression": "np.any(np.array(mu.shape) <= order)"
+      },
+      {
+        "line": 327,
+        "expression": "spacing is None"
+      },
+      {
+        "line": 333,
+        "expression": "sum(powers) < 2"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

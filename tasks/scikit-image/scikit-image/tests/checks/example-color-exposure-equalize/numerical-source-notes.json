@@ -1,0 +1,122 @@
+{
+  "skimage.exposure.cumulative_distribution": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 314,
+      "end_line": 356
+    },
+    "description": "Return cumulative distribution function (cdf) for the given image.",
+    "calls": [
+      "histogram",
+      "hist.cumsum",
+      "utils._supported_float_type",
+      "img_cdf.astype"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.equalize_adapthist": {
+    "implementation": {
+      "file": "src/skimage/exposure/_adapthist.py",
+      "line": 23,
+      "end_line": 91
+    },
+    "description": "Contrast Limited Adaptive Histogram Equalization (CLAHE).",
+    "calls": [
+      "rescale_intensity",
+      "adapt_rgb",
+      "img_as_uint",
+      "np.round(rescale_intensity(image, out_range=(0, NR_OF_GRAY - 1))).astype",
+      "_clahe",
+      "image.astype",
+      "np.min_scalar_type",
+      "isinstance",
+      "np.round",
+      "max"
+    ],
+    "branches": [
+      {
+        "line": 80,
+        "expression": "kernel_size is None"
+      },
+      {
+        "line": 82,
+        "expression": "isinstance(kernel_size, numbers.Number)"
+      },
+      {
+        "line": 84,
+        "expression": "len(kernel_size) != image.ndim"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.equalize_hist": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 359,
+      "end_line": 398
+    },
+    "description": "Return image after histogram equalization.",
+    "calls": [
+      "cumulative_distribution",
+      "np.interp",
+      "out.reshape",
+      "out.astype",
+      "utils._supported_float_type"
+    ],
+    "branches": [
+      {
+        "line": 389,
+        "expression": "mask is not None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.rescale_intensity": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 491,
+      "end_line": 607
+    },
+    "description": "Return image after stretching or shrinking its intensity levels.",
+    "calls": [
+      "map",
+      "np.clip",
+      "_output_dtype",
+      "intensity_range",
+      "np.any",
+      "np.isnan",
+      "utils.warn",
+      "(image * (omax - omin) + omin).astype",
+      "np.clip(image, omin, omax).astype"
+    ],
+    "branches": [
+      {
+        "line": 583,
+        "expression": "out_range in ['dtype', 'image']"
+      },
+      {
+        "line": 593,
+        "expression": "np.any(np.isnan([imin, imax, omin, omax]))"
+      },
+      {
+        "line": 603,
+        "expression": "imin != imax"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 479,
+      "end_line": 505
+    },
+    "description": "Convert an image to floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

@@ -1,0 +1,132 @@
+{
+  "skimage.feature.graycomatrix": {
+    "implementation": {
+      "file": "src/skimage/feature/texture.py",
+      "line": 15,
+      "end_line": 167
+    },
+    "description": "Calculate the gray-level co-occurrence matrix.",
+    "calls": [
+      "np.ascontiguousarray",
+      "image.max",
+      "_glcm_loop",
+      "np.any",
+      "np.transpose",
+      "P.astype",
+      "np.sum"
+    ],
+    "branches": [
+      {
+        "line": 119,
+        "expression": "np.issubdtype(image.dtype, np.floating)"
+      },
+      {
+        "line": 126,
+        "expression": "image.dtype not in (np.uint8, np.int8) and levels is None"
+      },
+      {
+        "line": 133,
+        "expression": "np.issubdtype(image.dtype, np.signedinteger) and np.any(image < 0)"
+      },
+      {
+        "line": 136,
+        "expression": "levels is None"
+      },
+      {
+        "line": 139,
+        "expression": "image_max >= levels"
+      },
+      {
+        "line": 156,
+        "expression": "symmetric"
+      },
+      {
+        "line": 161,
+        "expression": "normed"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.feature.graycoprops": {
+    "implementation": {
+      "file": "src/skimage/feature/texture.py",
+      "line": 170,
+      "end_line": 315
+    },
+    "description": "Calculate texture properties of a GLCM.",
+    "calls": [
+      "np.sum",
+      "np.sqrt",
+      "glcm_mean",
+      "P.astype",
+      "np.arange(num_level).reshape",
+      "np.abs",
+      "np.arange",
+      "np.log",
+      "weights.reshape"
+    ],
+    "branches": [
+      {
+        "line": 247,
+        "expression": "num_level != num_level2"
+      },
+      {
+        "line": 249,
+        "expression": "num_dist <= 0"
+      },
+      {
+        "line": 251,
+        "expression": "num_angle <= 0"
+      },
+      {
+        "line": 262,
+        "expression": "prop == 'contrast'"
+      },
+      {
+        "line": 274,
+        "expression": "prop == 'energy'"
+      },
+      {
+        "line": 264,
+        "expression": "prop == 'dissimilarity'"
+      },
+      {
+        "line": 277,
+        "expression": "prop == 'ASM'"
+      },
+      {
+        "line": 266,
+        "expression": "prop == 'homogeneity'"
+      },
+      {
+        "line": 279,
+        "expression": "prop == 'mean'"
+      },
+      {
+        "line": 268,
+        "expression": "prop in ['ASM', 'energy', 'correlation', 'entropy', 'variance', 'mean', 'std']"
+      },
+      {
+        "line": 281,
+        "expression": "prop == 'variance'"
+      },
+      {
+        "line": 284,
+        "expression": "prop == 'std'"
+      },
+      {
+        "line": 288,
+        "expression": "prop == 'entropy'"
+      },
+      {
+        "line": 292,
+        "expression": "prop == 'correlation'"
+      },
+      {
+        "line": 311,
+        "expression": "prop in ['contrast', 'dissimilarity', 'homogeneity']"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}
