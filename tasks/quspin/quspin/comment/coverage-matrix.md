@@ -119,3 +119,14 @@ conceptual group; the implementation must assign each file to one owner and
 record any deliberate merge or exclusion before the steward can be called
 complete. The duplicate rows above are intentional cross-reference markers,
 not additional tests.
+
+## Known upstream exclusions
+
+`test_quantum_operator.py` is owned by `operators-projections`, but its
+`test_eigsh` case is deselected: it compares two ARPACK `eigsh` outputs
+element-by-element without sorting the eigenvalues. The two runs return the same
+eigenvalue set in a platform-dependent order, so the assertion fails on some x86
+builds even though the spectra agree exactly (the observed error equals the
+swap of the two returned values). The remaining three cases in the same file
+still run. Every other upstream `test_*.py` file runs with its own assertions
+intact.
