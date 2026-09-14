@@ -7,7 +7,7 @@ pytest function) run directly so their own exit status decides pass or fail.
 
 The check also records a finite spin-chain ground energy as a physical
 calibration observable. Nominal uses `L=8,h=0.5`; variant changes the active
-longitudinal field by two binary64 ulps (`h=0.5000000000000001`) with the chain
+longitudinal field by two binary64 ulps (`h=0.5000000000000002`) with the chain
 length fixed, so the perturbation is a genuine numeric calibration rather than a
 change of physical model.
 
