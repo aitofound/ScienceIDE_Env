@@ -50,18 +50,36 @@ def parse_schema(path: Path) -> dict:
     etot = root.find(".//etot")
     if etot is not None and etot.text:
         groups["energy"] = [float(etot.text.strip())]
-    eigs: list[float] = []
+    # A ks_energies element is a physical block identified by its k point.
+    # QE does not promise that independent implementations traverse those
+    # blocks in the same storage order, so canonicalize the blocks before
+    # flattening them for the pointwise validator.  Bands at one k point are
+    # likewise a spectrum, rather than an iteration order.
+    eig_blocks: list[tuple[tuple[float, float, float, float], list[float]]] = []
     for ks in root.findall(".//ks_energies"):
         ev = floats_in("" if ks.findtext("eigenvalues") is None else ks.findtext("eigenvalues"))
         occ = floats_in("" if ks.findtext("occupations") is None else ks.findtext("occupations"))
         if not ev:
             continue
+        k_node = ks.find("k_point")
+        k_values = floats_in(None if k_node is None else k_node.text)
+        if len(k_values) < 3:
+            raise ValueError("ks_energies block has no three-component k_point key")
+        try:
+            weight = float(k_node.get("weight", "0")) if k_node is not None else 0.0
+        except ValueError as exc:
+            raise ValueError("ks_energies block has a non-numeric k-point weight") from exc
         if occ and len(occ) == len(ev):
-            eigs.extend(v for v, o in zip(ev, occ) if o > 1e-3)
+            occupied = [v for v, o in zip(ev, occ) if o > 1e-3]
         else:
-            eigs.extend(ev)
-    if eigs:
-        groups["eigenvalues"] = eigs
+            occupied = ev
+        eig_blocks.append(((k_values[0], k_values[1], k_values[2], weight), sorted(occupied)))
+    if eig_blocks:
+        groups["eigenvalues"] = [
+            value
+            for _, values in sorted(eig_blocks, key=lambda block: block[0])
+            for value in values
+        ]
     fermi: list[float] = []
     for name in ("fermi_energy", "highestOccupiedLevel"):
         el = root.find(f".//{name}")
@@ -139,9 +157,10 @@ def is_gamma(q: list[float]) -> bool:
 def parse_dynmat_stdout(text: str) -> dict:
     groups: dict = {}
     freqs: list[float] = []
-    ir: list[float] = []
-    raman: list[float] = []
-    depol: list[float] = []
+    # Keep every activity attached to the frequency that identifies its
+    # eigenmode.  The rows are canonicalized together below; sorting the four
+    # arrays independently would destroy their physical association.
+    activity_modes: list[tuple[float, float | None, float | None, float | None]] = []
     in_modes = False
     for line in text.splitlines():
         if "# mode" in line:
@@ -159,13 +178,12 @@ def parse_dynmat_stdout(text: str) -> dict:
             # IR-only tables have 4 columns; Raman tables have 6.
             if abs(fcm) > 1e-8:
                 try:
-                    if len(parts) >= 4:
-                        ir.append(float(parts[3]))
-                    if len(parts) >= 6:
-                        raman.append(float(parts[4]))
-                        depol.append(float(parts[5]))
+                    ir_value = float(parts[3]) if len(parts) >= 4 else None
+                    raman_value = float(parts[4]) if len(parts) >= 6 else None
+                    depol_value = float(parts[5]) if len(parts) >= 6 else None
                 except ValueError:
-                    pass
+                    continue
+                activity_modes.append((fcm, ir_value, raman_value, depol_value))
     if freqs:
         groups["dynmat_freqs"] = freqs
     polariz: list[float] = []
@@ -188,6 +206,12 @@ def parse_dynmat_stdout(text: str) -> dict:
                 grab = False
     if polariz:
         groups["polariz"] = polariz
+    activity_modes.sort(
+        key=lambda mode: tuple(float("inf") if value is None else value for value in mode)
+    )
+    ir = [mode[1] for mode in activity_modes if mode[1] is not None]
+    raman = [mode[2] for mode in activity_modes if mode[2] is not None]
+    depol = [mode[3] for mode in activity_modes if mode[3] is not None]
     if ir:
         groups["ir"] = ir
     if raman:
