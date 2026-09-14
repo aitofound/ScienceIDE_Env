@@ -1,0 +1,77 @@
+{
+  "skimage.filters.difference_of_gaussians": {
+    "implementation": {
+      "file": "src/skimage/filters/_gaussian.py",
+      "line": 9,
+      "end_line": 168
+    },
+    "description": "Find features between ``low_sigma`` and ``high_sigma`` in size.",
+    "calls": [
+      "gaussian",
+      "img_as_float",
+      "any"
+    ],
+    "branches": [
+      {
+        "line": 119,
+        "expression": "high_sigma is None"
+      },
+      {
+        "line": 124,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 129,
+        "expression": "len(low_sigma) != 1 and len(low_sigma) != spatial_dims"
+      },
+      {
+        "line": 134,
+        "expression": "len(high_sigma) != 1 and len(high_sigma) != spatial_dims"
+      },
+      {
+        "line": 143,
+        "expression": "any(high_sigma < low_sigma)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.window": {
+    "implementation": {
+      "file": "src/skimage/filters/_window.py",
+      "line": 10,
+      "end_line": 131
+    },
+    "description": "Return an n-dimensional window of a given size and dimensionality.",
+    "calls": [
+      "safe_as_int",
+      "np.isscalar",
+      "any",
+      "functools.reduce",
+      "get_window",
+      "np.reshape",
+      "np.meshgrid",
+      "np.sqrt",
+      "warp",
+      "np.arange"
+    ],
+    "branches": [
+      {
+        "line": 101,
+        "expression": "np.isscalar(shape)"
+      },
+      {
+        "line": 105,
+        "expression": "any((s < 0 for s in shape))"
+      },
+      {
+        "line": 109,
+        "expression": "ndim <= 0"
+      },
+      {
+        "line": 128,
+        "expression": "warp_kwargs is None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

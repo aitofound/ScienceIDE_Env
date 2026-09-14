@@ -1,0 +1,530 @@
+{
+  "skimage.color.rgb2gray": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 941,
+      "end_line": 984
+    },
+    "description": "Compute luminance of an RGB image.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.draw.disk": {
+    "implementation": {
+      "file": "src/skimage/draw/draw.py",
+      "line": 155,
+      "end_line": 216
+    },
+    "description": "Generate coordinates of pixels within circle.",
+    "calls": [
+      "ellipse"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.histogram": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 190,
+      "end_line": 276
+    },
+    "description": "Return histogram of image.",
+    "calls": [
+      "_histogram",
+      "utils.channel_as_last_axis",
+      "utils.warn",
+      "np.stack",
+      "_bincount_histogram_centers",
+      "_get_numpy_hist_range",
+      "_get_bin_edges",
+      "hist.append"
+    ],
+    "branches": [
+      {
+        "line": 246,
+        "expression": "len(sh) == 3 and sh[-1] < 4 and (channel_axis is None)"
+      },
+      {
+        "line": 254,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 259,
+        "expression": "np.issubdtype(image.dtype, np.integer)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters._multiotsu._get_multiotsu_thresh_indices": {
+    "implementation": {
+      "module": "skimage.filters._multiotsu",
+      "doc": "Finds the indices of Otsu thresholds according to the values\noccurrence probabilities."
+    },
+    "inspection": "Compiled entry point; inspect its linked extension source and official assertions."
+  },
+  "skimage.filters._multiotsu._get_multiotsu_thresh_indices_lut": {
+    "implementation": {
+      "module": "skimage.filters._multiotsu",
+      "doc": "Finds the indices of Otsu thresholds according to the values\noccurrence probabilities."
+    },
+    "inspection": "Compiled entry point; inspect its linked extension source and official assertions."
+  },
+  "skimage.filters.threshold_isodata": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 470,
+      "end_line": 584
+    },
+    "description": "Return threshold value(s) based on ISODATA method.",
+    "calls": [
+      "np.cumsum",
+      "_validate_image_histogram",
+      "counts.astype"
+    ],
+    "branches": [
+      {
+        "line": 533,
+        "expression": "len(bin_centers) == 1"
+      },
+      {
+        "line": 581,
+        "expression": "return_all"
+      },
+      {
+        "line": 534,
+        "expression": "return_all"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.threshold_li": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 642,
+      "end_line": 792
+    },
+    "description": "Compute threshold value by Li's iterative Minimum Cross Entropy method.",
+    "calls": [
+      "np.log",
+      "np.mean",
+      "iter_callback",
+      "np.min",
+      "abs",
+      "np.average",
+      "np.max",
+      "np.all",
+      "np.isfinite",
+      "callable",
+      "histogram",
+      "hist.astype",
+      "np.isnan",
+      "initial_guess",
+      "np.isscalar",
+      "image.reshape",
+      "image.dtype.type",
+      "np.diff",
+      "np.unique"
+    ],
+    "branches": [
+      {
+        "line": 696,
+        "expression": "image.size == 0"
+      },
+      {
+        "line": 701,
+        "expression": "np.all(image == image.flat[0])"
+      },
+      {
+        "line": 709,
+        "expression": "image.size == 0"
+      },
+      {
+        "line": 715,
+        "expression": "image.dtype.kind in 'iu'"
+      },
+      {
+        "line": 721,
+        "expression": "initial_guess is None"
+      },
+      {
+        "line": 749,
+        "expression": "iter_callback is not None"
+      },
+      {
+        "line": 757,
+        "expression": "image.dtype.kind in 'iu'"
+      },
+      {
+        "line": 723,
+        "expression": "callable(initial_guess)"
+      },
+      {
+        "line": 760,
+        "expression": "abs(t_next - t_curr) > tolerance"
+      },
+      {
+        "line": 777,
+        "expression": "abs(t_next - t_curr) > tolerance"
+      },
+      {
+        "line": 725,
+        "expression": "np.isscalar(initial_guess)"
+      },
+      {
+        "line": 768,
+        "expression": "mean_back == 0"
+      },
+      {
+        "line": 773,
+        "expression": "iter_callback is not None"
+      },
+      {
+        "line": 783,
+        "expression": "mean_back == 0.0"
+      },
+      {
+        "line": 788,
+        "expression": "iter_callback is not None"
+      },
+      {
+        "line": 728,
+        "expression": "not 0 < t_next < np.max(image)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.threshold_local": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 177,
+      "end_line": 277
+    },
+    "description": "Compute a threshold mask image based on local pixel neighborhood.",
+    "calls": [
+      "np.isscalar",
+      "any",
+      "image.astype",
+      "ndi.generic_filter",
+      "gaussian",
+      "ndi.uniform_filter",
+      "ndi.median_filter"
+    ],
+    "branches": [
+      {
+        "line": 243,
+        "expression": "np.isscalar(block_size)"
+      },
+      {
+        "line": 248,
+        "expression": "any((b % 2 == 0 for b in block_size))"
+      },
+      {
+        "line": 256,
+        "expression": "method == 'generic'"
+      },
+      {
+        "line": 245,
+        "expression": "len(block_size) != image.ndim"
+      },
+      {
+        "line": 260,
+        "expression": "method == 'gaussian'"
+      },
+      {
+        "line": 261,
+        "expression": "param is None"
+      },
+      {
+        "line": 267,
+        "expression": "method == 'mean'"
+      },
+      {
+        "line": 269,
+        "expression": "method == 'median'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.threshold_mean": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 886,
+      "end_line": 914
+    },
+    "description": "Return threshold value based on the mean of grayscale values.",
+    "calls": [
+      "np.mean"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.threshold_minimum": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 795,
+      "end_line": 883
+    },
+    "description": "Return threshold value based on minimum method.",
+    "calls": [
+      "RuntimeError",
+      "_validate_image_histogram",
+      "counts.astype",
+      "np.argmin",
+      "ndi.uniform_filter1d",
+      "find_local_maxima_idx",
+      "maximum_idxs.append"
+    ],
+    "branches": [
+      {
+        "line": 875,
+        "expression": "len(maximum_idxs) != 2"
+      },
+      {
+        "line": 872,
+        "expression": "len(maximum_idxs) < 3"
+      },
+      {
+        "line": 877,
+        "expression": "counter == max_num_iter - 1"
+      },
+      {
+        "line": 855,
+        "expression": "direction > 0"
+      },
+      {
+        "line": 856,
+        "expression": "hist[i + 1] < hist[i]"
+      },
+      {
+        "line": 860,
+        "expression": "hist[i + 1] > hist[i]"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.threshold_multiotsu": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 1233,
+      "end_line": 1339
+    },
+    "description": "Generate `classes`-1 threshold values to divide gray levels in `image`,",
+    "calls": [
+      "_validate_image_histogram",
+      "prob.astype",
+      "np.count_nonzero",
+      "np.flatnonzero",
+      "_get_multiotsu_thresh_indices_lut",
+      "_get_multiotsu_thresh_indices"
+    ],
+    "branches": [
+      {
+        "line": 1304,
+        "expression": "image is not None and image.ndim > 2 and (image.shape[-1] in (3, 4))"
+      },
+      {
+        "line": 1316,
+        "expression": "nvalues < classes"
+      },
+      {
+        "line": 1325,
+        "expression": "nvalues == classes"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.threshold_niblack": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 1063,
+      "end_line": 1123
+    },
+    "description": "Applies Niblack local threshold to an array.",
+    "calls": [
+      "_mean_std"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.threshold_otsu": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 336,
+      "end_line": 407
+    },
+    "description": "Return threshold value based on Otsu's method.",
+    "calls": [
+      "np.cumsum",
+      "_validate_image_histogram",
+      "np.argmax",
+      "np.all",
+      "image.reshape"
+    ],
+    "branches": [
+      {
+        "line": 376,
+        "expression": "image is not None and image.ndim > 2 and (image.shape[-1] in (3, 4))"
+      },
+      {
+        "line": 385,
+        "expression": "image is not None"
+      },
+      {
+        "line": 387,
+        "expression": "np.all(image == first_pixel)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.threshold_sauvola": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 1126,
+      "end_line": 1183
+    },
+    "description": "Applies Sauvola local threshold to an array. Sauvola is a",
+    "calls": [
+      "_mean_std",
+      "dtype_limits"
+    ],
+    "branches": [
+      {
+        "line": 1179,
+        "expression": "r is None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.threshold_triangle": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 917,
+      "end_line": 995
+    },
+    "description": "Return threshold value based on the triangle algorithm.",
+    "calls": [
+      "np.argmax",
+      "histogram",
+      "np.arange",
+      "np.sqrt",
+      "image.reshape",
+      "np.flatnonzero",
+      "image.ravel"
+    ],
+    "branches": [
+      {
+        "line": 960,
+        "expression": "arg_low_level == arg_high_level"
+      },
+      {
+        "line": 966,
+        "expression": "flip"
+      },
+      {
+        "line": 992,
+        "expression": "flip"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.threshold_yen": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 410,
+      "end_line": 467
+    },
+    "description": "Return threshold value based on Yen's method.",
+    "calls": [
+      "np.cumsum",
+      "_validate_image_histogram",
+      "np.log",
+      "counts.astype",
+      "counts.sum",
+      "crit.argmax"
+    ],
+    "branches": [
+      {
+        "line": 455,
+        "expression": "bin_centers.size == 1"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.thresholding._cross_entropy": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 593,
+      "end_line": 639
+    },
+    "description": "Compute cross-entropy between distributions above and below a threshold.",
+    "calls": [
+      "np.sum",
+      "np.log",
+      "np.histogram",
+      "np.convolve",
+      "np.flatnonzero"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.thresholding._mean_std": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 998,
+      "end_line": 1060
+    },
+    "description": "Return local mean and standard deviation of each pixel using a",
+    "calls": [
+      "integral_image",
+      "_correlate_sparse",
+      "_validate_window_size",
+      "np.pad",
+      "math.prod",
+      "m.astype",
+      "g2.astype",
+      "np.sqrt",
+      "isinstance",
+      "image.astype",
+      "itertools.product",
+      "np.clip",
+      "np.sum"
+    ],
+    "branches": [
+      {
+        "line": 1029,
+        "expression": "not isinstance(w, Iterable)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 479,
+      "end_line": 505
+    },
+    "description": "Convert an image to floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_ubyte": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 557,
+      "end_line": 578
+    },
+    "description": "Convert an image to 8-bit unsigned integer format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}
