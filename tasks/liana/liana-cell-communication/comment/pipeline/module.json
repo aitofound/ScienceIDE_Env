@@ -1,0 +1,101 @@
+{
+  "module": {
+    "slug": "liana-cell-communication",
+    "title": "LIANA+ — the complete cell-cell communication and spatial statistics environment (LRIC, spatial bivariate statistics, method ensemble, causal networks)",
+    "paths": [
+      "."
+    ],
+    "entrypoints": [
+      "liana.method.sp.lric — the annulus-binned ligand-receptor interaction curve; the owned segmented reduction",
+      "liana.method.sp.bivariate — the eight local and two global bivariate spatial statistics",
+      "liana.method.rank_aggregate and the individual scoring methods (cellphonedb, natmi, connectome, logfc, singlecellsignalr, cellchat, geometric_mean)",
+      "liana.method.fun.build_prior_network and find_causalnet — the causal-network layer over corneto",
+      "liana.utils and liana.plotting — the shared preprocessing, resource and plotting surface"
+    ],
+    "expensive_path": "Two owned numba kernels, and they are the only numba in the package. (1) src/liana/method/sp/_LRIC.py:287-315 _segment_weighted_sums, 29 lines: out[g,p] = sum over ordered spatial pairs (i,j) in group g of WL[i,p] * WR[j,p], a segmented weighted outer-product reduction over a spatial edge list, triple-loop chunked over ligand-receptor pairs, groups and edge blocks. (2) src/liana/method/sp/_bivariate/_local_functions.py:260-302 _wcorr (@nb.njit, 19 lines) and _masked_spearman (@nb.njit(parallel=True) with nb.prange, 22 lines). Together that is roughly 70 lines of owned kernel. Both sit on the same AnnData and MuData objects, the same ligand-receptor resources, the same spatial connectivity and the same preprocessing and output infrastructure.",
+    "rationale": "One whole-codebase module, per the curator's decision on PR #615 (2026-09-09T22:59:34Z). An earlier cut proposed two modules (spatial-lric and spatial-bivariate). Although the two methods produce different statistics, both operate on the same AnnData and MuData objects, ligand-receptor resources, spatial connectivity, preprocessing and output infrastructure. The split owned only 7 files and 2,559 lines while depending on 21 shared files and 2,058 lines, and left most of the codebase unclassified; two separate environment contracts would be thin and duplicative. A module must be an independently packageable, executable and optimisable component with its own public contract, and at this repository scale only the complete tracked tree meets that bar.",
+    "subsystems": [
+      {
+        "name": "spatial LRIC",
+        "paths": [
+          "src/liana/method/sp/_LRIC.py",
+          "src/liana/utils/_lric_helpers.py"
+        ],
+        "note": "the segmented weighted outer-product reduction, _LRIC.py:287-315"
+      },
+      {
+        "name": "spatial bivariate statistics",
+        "paths": [
+          "src/liana/method/sp/_bivariate/"
+        ],
+        "note": "eight local and two global statistics behind one dispatch registry and one (x_mat, y_mat, weight) convention"
+      },
+      {
+        "name": "method ensemble and rank aggregation",
+        "paths": [
+          "src/liana/method/sc/"
+        ],
+        "note": "the seven scoring methods and their consensus; numpy and pandas, no owned kernel"
+      },
+      {
+        "name": "causal networks",
+        "paths": [
+          "src/liana/method/fun/_causalnet.py"
+        ],
+        "note": "delegates the optimisation to corneto; see the dependency pin hazard"
+      },
+      {
+        "name": "shared infrastructure",
+        "paths": [
+          "src/liana/_common.py",
+          "src/liana/_constants.py",
+          "src/liana/_docs.py",
+          "src/liana/method/_pipe_utils/",
+          "src/liana/resource/",
+          "src/liana/utils/",
+          "src/liana/plotting/"
+        ],
+        "note": "the AnnData and MuData contract, resources, preprocessing and plotting shared by every subsystem; the reason neither spatial method is independently packageable"
+      }
+    ],
+    "excluded": [
+      "Nothing is excluded from the module boundary: paths is ['.'] and the module owns the complete tracked source tree.",
+      "No selective cap is imposed on the test surface. Every upstream pytest item and official example is in scope for the Step 2 survey; any item that cannot be carried into the task will be identified individually with its exact blocker for curator review.",
+      "src/liana/method/sp/_bivariate/ -- a different statistic (local bivariate spatial correlation over a kNN weight matrix) with its own entrypoint li.mt.bivariate and its own tests; proposed separately as spatial-bivariate",
+      "src/liana/method/sp/_inflow.py and _compute_global_specificity.py -- share the spatial-neighbours idea but not the annulus/edge-list machinery, and are mostly scipy-sparse hstack/dot delegation",
+      "src/liana/method/sp/_misty/ -- sklearn RandomForest/linear model delegation, no owned kernel",
+      "src/liana/method/sc/ and _pipe_utils/_get_mean_perms.py -- disqualified by the rapids-singlecell CUDA ligrec twin, see not_packaged",
+      "src/liana/utils/spatial_neighbors.py -- builds kNN/kernel connectivity for the bivariate and inflow paths; LRIC does not use it, it builds its own cKDTree",
+      "src/liana/multi/, src/liana/resource/, src/liana/method/fun/ -- IO, orthology, network inference; resource/ is also the package's only network surface",
+      "src/liana/utils/spatial_neighbors.py -- builds the connectivity weight matrix this module consumes; shared with inflow, so it is infrastructure rather than owned",
+      "src/liana/method/sp/_LRIC.py and its helpers -- the spatial-lric module",
+      "src/liana/plotting/ -- no bivariate-specific plot file",
+      "src/liana/method/sp/_misty/ -- sklearn delegation"
+    ],
+    "hazards": [
+      "FRESHNESS. LRIC landed AT the pin: commit f45f7ef is literally 'Merge pull request #253 from saezlab/lric_analytical', ~13 min before v1.10.0 was published. This is the youngest API in the package and upstream still carries origin/pcf and origin/lric_analytical branches, so the surface may churn. Good for novelty (no GPU port can exist yet), a risk for pin stability.",
+      "FLOATING-POINT REASSOCIATION IS THE REAL TOLERANCE DRIVER. _segment_weighted_sums reads float32 WL/WR but accumulates into float64 via .sum(axis=0, dtype=np.float64), and the loop nest (pair chunk -> group -> edge block, with edge_block = _EDGE_BLOCK_ELEMS // n_pairs_in_chunk) pins a specific summation order. Any GPU port reassociates that reduction. Tolerances must be derived for reassociation over ~n_edges terms, not from the two-ULP variant spread, which will badly understate it.",
+      "REMOVABLE SINGULARITIES / NaN SEMANTICS. The identity g = g_pcf * g_expr carries deliberate NaN: _expr_prop_mask NaNs out pairs below the expressing-cell threshold, and upstream's test_lric_pairwise_results_equals_g_pcf_times_g_expr explicitly asserts g == 0.0 exactly where g_expr is NaN but g is not. Validators must compare NaN masks as part of the graded object, not drop them, or a port that silently produces 0 where the reference produces NaN scores as correct.",
+      "STORED float32 VS float64 IDENTITY. Upstream comments that result columns are stored float32 while the factorisation identity holds in float64, so error tracks |g| (~1e-7 relative). Rubrics must be relative (rtol), not fixed-decimal absolute -- upstream itself switched that test from assert_array_almost_equal to assert_allclose(rtol=1e-5, atol=1e-6) for exactly this reason.",
+      "PLOTTING TESTS ARE WEAK CHECKS. 8 of the 57 collected tests (7 in test_lric_plot.py, 1 in test_annulus.py) are plotnine/matplotlib smoke tests returning Figure objects. They are real official tests but poor graded checks; the numeric mass is test_LRIC.py (40) plus test_lric_helpers.py (9). Count the module as ~40 genuinely gradeable, still far above the thin threshold.",
+      "THE cKDTree STEP IS DELEGATED. _support_edge_list calls scipy.spatial.cKDTree.sparse_distance_matrix (0.425 s, ~2.5%). A solver cannot port scipy, and must reproduce its exact half-open [inner, outer) binning and self-pair exclusion (I != J) or every downstream count shifts by a bin. Frame the acceleration check on _segment_weighted_sums, not on neighbour search.",
+      "ADJACENCY TO ARGUE EXPLICITLY IN THE SOURCE PR. rapids-singlecell ships _cuda/cooc/{cooc.cu,kernels_cooc.cuh}, a CUDA spatial co-occurrence kernel. It is NOT a twin -- it is cumulative-disc (dist_sq <= thresholds[r] with an inclusive scan), symmetrized (Y[i,j] and Y[j,i] both incremented), label-only with no expression term, and normalized as a conditional-probability ratio cond/col_sum rather than observed/expected pair counts per annulus. But it is close enough in spirit that a reviewer will raise it, so the distinction must be written down rather than left implicit.",
+      "use_raw DEFAULTS TO True. prep_check_adata raises ValueError('.raw is not initialized!') unless .raw is set or use_raw=False is passed. I hit this on the first profiling run. Any harness that synthesises an AnnData must set one or the other.",
+      "Investigation verdict for this codebase: GO-WITH-CAVEAT.",
+      "THE HOT OWNED PATH IS NOT THE DEFAULT PATH. Seven of the nine local statistics (_vectorized_pearson/_spearman/_cosine/_jaccard, _local_morans, _product, _norm_product) are 'weight @ x_mat' scipy-sparse matmuls, i.e. delegated. Only _masked_spearman is both owned and genuinely expensive, and it is the fallback, not the default -- the investigation measured it at 6.04 s warm on 8 threads at 5,000 spots x 300 pairs versus 0.476 s for the scipy-sparse _vectorized_spearman on identical input. An acceleration check would have to target a non-default code path, which is a weaker story than spatial-lr",
+      "PARTIAL GPU TWIN. rapids-singlecell ships squidpy_gpu/_moransi.py, _gearysc.py and _autocorr.py backed by _cuda/autocorr/, each with _run_permutations_dense/_run_permutations_sparse -- GPU Moran's I and Geary's C complete with permutation nulls. Liana's _local_morans is a bivariate local Moran (x against y across LR pairs) rather than squidpy's univariate per-gene autocorrelation, so it is a distinct statistic, but the acceleration technique (sparse weight matmul plus a permutation null on GPU) is already demonstrated upstream. This is the in-tree-partial-GPU-equivalent situation: acceptable, ",
+      "NUMBA SUMMATION WORKAROUNDS IN-TREE. Two NOTE comments (_local_functions.py:299 and :339) document deliberate deviations 'due to numpy/numba sum imprecision', citing numba issue 8749. The reference itself is therefore tuned around a specific accumulator behaviour, which makes bit-level agreement with a reimplementation fragile and complicates the warrant.",
+      "The kernels are declared with explicit float32 signatures (nb.float32[:,:](...)), so dtype handling is rigid and a port must match the float32 intermediate precision, not silently promote.",
+      "DEPENDENCY PIN, corneto: pyproject.toml:65 pins corneto==0.9.1-alpha.6 exactly. Installing a newer corneto (1.0.0rc5 was tried here) breaks the three test_causalnet.py items with AttributeError: module 'corneto' has no attribute 'methods', raised from corneto/__init__.py:45 where the pre-1.0 aliases were removed. The image must honour the exact pin.",
+      "The 'network' pytest marker is registered at pyproject.toml:171 but a bare pytest run does NOT skip the items carrying it; they run. Deselecting them requires an explicit -m 'not network'. Any claim of a pass and skip partition must name the command it was measured under."
+    ]
+  },
+  "approval": {
+    "modules": [
+      "liana-cell-communication"
+    ],
+    "human_ref": "Curator huangzesen on PR #615, 2026-09-09T22:59:34Z: 'Curator module decision: please revise LIANA+ as one whole-codebase module, rather than the current two-way split. Treat spatial LRIC and spatial-bivariate statistics as subsystems and check families within one complete LIANA+ environment... The current split owns only 7 files / 2,559 lines while depending on 21 shared files / 2,058 lines and leaving most of the codebase unclassified; two separate environment contracts would therefore be thin and duplicative. Please update the module plan, canonical metadata/report, and PR body to one module covering the complete tracked source tree (paths: [.]). The downstream test survey and task should provide full official test coverage: consider every upstream pytest test and official example, do not impose a selective count cap, and individually identify any item that truly cannot be included with its exact blocker for curator review. Please also correct the execution evidence in the regenerated report.' This approves the single-module source boundary only.",
+    "at": "2026-09-10T01:04:13Z"
+  },
+  "shared_infrastructure": []
+}
