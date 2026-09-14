@@ -19,7 +19,11 @@
       "make test_transfer",
       "make test_fourier",
       "make test_harmonic",
-      "make test_loops"
+      "make test_loops",
+      "make test_hyperspherical",
+      "make test_loops_omp",
+      "PYTHONPATH=python TEST_LEVEL=1 python -m unittest python/test_class.py",
+      "PYTHONPATH=python scripts/test_hmcode.py"
     ],
     "expensive_path": "The perturbation hierarchy and subsequent transfer, harmonic and Fourier integrations evolve many k modes and source functions; the work scales with precision, multipole cutoffs, k sampling and requested spectra and is the principal path whose acceleration would shorten cosmological inference and theory scans.",
     "rationale": "CLASS is a unified production solver: background, thermodynamics, perturbations, primordial spectra, transfer functions and output spectra share the same numerical state and are exercised through the command-line and wrapper entry points.  The latest pipeline guidance defaults to one whole-codebase module when the physics is not independently separable; this cut preserves the scientific dependency graph and allows checks to select distinct official stages without pretending they are standalone codebases.",
@@ -27,7 +31,7 @@
       "doc/ and the committed PDF/manual assets are documentation, not runnable production physics.",
       "notebooks/ and external/RealSpaceInterface are auxiliary analysis/UI material rather than the core CLASS solver path.",
       "output/ reference tables and external numerical data are inputs or generated artifacts; they are retained only where an official example needs them.",
-      "test/test_thermodynamics.c is excluded from the first survey as an upstream compile incompatibility at the pinned commit (removed index_th_tau_d member); it should be revisited after upstream clarification."
+      "cpp/ClassEngine.hh and cpp/testKlass.cc are dead code at the pinned commit: they forward-declare thermo/perturbs/transfers/spectra/nonlinear, which no longer exist, so the C++ example cannot build and is not referenced by the upstream Makefile or CI."
     ],
     "hazards": [
       "The upstream repository has no SPDX license file; README permission and citation language require maintainer confirmation before vendoring.",
