@@ -1,0 +1,416 @@
+{
+  "skimage.draw.ellipse": {
+    "implementation": {
+      "file": "src/skimage/draw/draw.py",
+      "line": 57,
+      "end_line": 152
+    },
+    "description": "Generate coordinates of pixels within ellipse.",
+    "calls": [
+      "abs",
+      "np.sin",
+      "np.cos",
+      "np.ceil(center - radii_rot).astype",
+      "np.floor(center + radii_rot).astype",
+      "_ellipse_in_shape",
+      "np.maximum",
+      "np.minimum",
+      "np.ceil",
+      "np.floor"
+    ],
+    "branches": [
+      {
+        "line": 139,
+        "expression": "shape is not None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.draw.ellipsoid": {
+    "implementation": {
+      "file": "src/skimage/draw/draw3d.py",
+      "line": 5,
+      "end_line": 62
+    },
+    "description": "Generate ellipsoid for given semi-axis lengths.",
+    "calls": [
+      "np.ceil",
+      "np.floor",
+      "np.arange",
+      "np.max"
+    ],
+    "branches": [
+      {
+        "line": 34,
+        "expression": "a <= 0 or b <= 0 or c <= 0"
+      },
+      {
+        "line": 57,
+        "expression": "not levelset"
+      },
+      {
+        "line": 44,
+        "expression": "(high[dim] - low[dim]) % 2 == 0"
+      },
+      {
+        "line": 47,
+        "expression": "0 not in num"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure._regionprops._inertia_eigvals_to_axes_lengths_3D": {
+    "implementation": {
+      "file": "src/skimage/measure/_regionprops.py",
+      "line": 262,
+      "end_line": 302
+    },
+    "description": "Compute ellipsoid axis lengths from inertia tensor eigenvalues.",
+    "calls": [
+      "sum",
+      "max",
+      "axis_lengths.append",
+      "sqrt"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.euler_number": {
+    "implementation": {
+      "file": "src/skimage/measure/_regionprops_utils.py",
+      "line": 285,
+      "end_line": 414
+    },
+    "description": "Calculate the Euler characteristic in binary image.",
+    "calls": [
+      "(image > 0).astype",
+      "np.pad",
+      "ndi.convolve",
+      "np.bincount",
+      "XF.ravel",
+      "NotImplementedError"
+    ],
+    "branches": [
+      {
+        "line": 372,
+        "expression": "connectivity is None"
+      },
+      {
+        "line": 378,
+        "expression": "image.ndim == 2"
+      },
+      {
+        "line": 411,
+        "expression": "image.ndim == 2"
+      },
+      {
+        "line": 380,
+        "expression": "connectivity == 1"
+      },
+      {
+        "line": 386,
+        "expression": "connectivity == 2"
+      },
+      {
+        "line": 399,
+        "expression": "connectivity == 1"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.perimeter": {
+    "implementation": {
+      "file": "src/skimage/measure/_regionprops_utils.py",
+      "line": 417,
+      "end_line": 481
+    },
+    "description": "Calculate total perimeter of all objects in binary image.",
+    "calls": [
+      "sqrt",
+      "image.astype",
+      "ndi.binary_erosion",
+      "ndi.convolve",
+      "np.bincount",
+      "NotImplementedError",
+      "perimeter_image.ravel"
+    ],
+    "branches": [
+      {
+        "line": 452,
+        "expression": "image.ndim != 2"
+      },
+      {
+        "line": 455,
+        "expression": "neighborhood == 4"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.perimeter_crofton": {
+    "implementation": {
+      "file": "src/skimage/measure/_regionprops_utils.py",
+      "line": 484,
+      "end_line": 586
+    },
+    "description": "Calculate total Crofton perimeter of all objects in binary image.",
+    "calls": [
+      "np.sqrt",
+      "(image > 0).astype",
+      "np.pad",
+      "ndi.convolve",
+      "np.bincount",
+      "NotImplementedError",
+      "XF.ravel"
+    ],
+    "branches": [
+      {
+        "line": 533,
+        "expression": "image.ndim != 2"
+      },
+      {
+        "line": 546,
+        "expression": "directions == 2"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.regionprops": {
+    "implementation": {
+      "file": "src/skimage/measure/_regionprops.py",
+      "line": 1163,
+      "end_line": 1471
+    },
+    "description": "Measure properties of labeled image regions.",
+    "calls": [
+      "ndi.find_objects",
+      "RegionProperties",
+      "regions.append"
+    ],
+    "branches": [
+      {
+        "line": 1424,
+        "expression": "label_image.ndim not in (2, 3)"
+      },
+      {
+        "line": 1427,
+        "expression": "not np.issubdtype(label_image.dtype, np.integer)"
+      },
+      {
+        "line": 1439,
+        "expression": "offset is None"
+      },
+      {
+        "line": 1428,
+        "expression": "np.issubdtype(label_image.dtype, bool)"
+      },
+      {
+        "line": 1443,
+        "expression": "offset_arr.ndim != 1 or offset_arr.size != label_image.ndim"
+      },
+      {
+        "line": 1454,
+        "expression": "sl is None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.regionprops_table": {
+    "implementation": {
+      "file": "src/skimage/measure/_regionprops.py",
+      "line": 973,
+      "end_line": 1160
+    },
+    "description": "Compute region properties and return them as a pandas-compatible table.",
+    "calls": [
+      "regionprops",
+      "_props_to_dict",
+      "out_d.items"
+    ],
+    "branches": [
+      {
+        "line": 1138,
+        "expression": "extra_properties is not None"
+      },
+      {
+        "line": 1140,
+        "expression": "len(regions) == 0"
+      },
+      {
+        "line": 1144,
+        "expression": "intensity_image is not None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.segmentation.slic": {
+    "implementation": {
+      "file": "src/skimage/segmentation/slic_superpixels.py",
+      "line": 105,
+      "end_line": 449
+    },
+    "description": "Segments image using k-means clustering in Color-(x,y,z) space.",
+    "calls": [
+      "np.ascontiguousarray",
+      "_slic_cython",
+      "np.isinf",
+      "isinstance",
+      "np.insert",
+      "utils.channel_as_last_axis",
+      "img_as_float",
+      "utils._supported_float_type",
+      "image.astype",
+      "image_values.min",
+      "image_values.max",
+      "np.isnan",
+      "np.isscalar",
+      "(sigma > 0).any",
+      "max",
+      "mask.view",
+      "_get_mask_centroids",
+      "_get_grid_centroids",
+      "gaussian",
+      "np.concatenate",
+      "_enforce_label_connectivity_cython",
+      "np.expand_dims",
+      "np.broadcast_to",
+      "rgb2lab",
+      "mask.sum",
+      "math.prod"
+    ],
+    "branches": [
+      {
+        "line": 256,
+        "expression": "image.ndim == 2 and channel_axis is not None"
+      },
+      {
+        "line": 269,
+        "expression": "mask is not None"
+      },
+      {
+        "line": 285,
+        "expression": "np.isnan(imin)"
+      },
+      {
+        "line": 287,
+        "expression": "np.isinf(imin) or np.isinf(imax)"
+      },
+      {
+        "line": 290,
+        "expression": "imax != imin"
+      },
+      {
+        "line": 299,
+        "expression": "image.ndim == 2"
+      },
+      {
+        "line": 311,
+        "expression": "multichannel and (convert2lab or convert2lab is None)"
+      },
+      {
+        "line": 317,
+        "expression": "start_label not in [0, 1]"
+      },
+      {
+        "line": 322,
+        "expression": "use_mask"
+      },
+      {
+        "line": 333,
+        "expression": "spacing is None"
+      },
+      {
+        "line": 363,
+        "expression": "np.isscalar(sigma)"
+      },
+      {
+        "line": 391,
+        "expression": "(sigma > 0).any()"
+      },
+      {
+        "line": 409,
+        "expression": "update_centroids"
+      },
+      {
+        "line": 435,
+        "expression": "enforce_connectivity"
+      },
+      {
+        "line": 446,
+        "expression": "is_2d"
+      },
+      {
+        "line": 272,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 303,
+        "expression": "image.ndim == 3 and multichannel"
+      },
+      {
+        "line": 312,
+        "expression": "image.shape[channel_axis] != 3 and convert2lab"
+      },
+      {
+        "line": 324,
+        "expression": "mask.ndim == 2"
+      },
+      {
+        "line": 326,
+        "expression": "mask.shape != image.shape[:3]"
+      },
+      {
+        "line": 335,
+        "expression": "isinstance(spacing, Iterable)"
+      },
+      {
+        "line": 366,
+        "expression": "isinstance(sigma, Iterable)"
+      },
+      {
+        "line": 436,
+        "expression": "use_mask"
+      },
+      {
+        "line": 307,
+        "expression": "image.ndim == 3 and (not multichannel)"
+      },
+      {
+        "line": 314,
+        "expression": "image.shape[channel_axis] == 3"
+      },
+      {
+        "line": 337,
+        "expression": "is_2d"
+      },
+      {
+        "line": 368,
+        "expression": "is_2d"
+      },
+      {
+        "line": 338,
+        "expression": "spacing.size != 2"
+      },
+      {
+        "line": 354,
+        "expression": "spacing.size != 3"
+      },
+      {
+        "line": 369,
+        "expression": "sigma.size != 2"
+      },
+      {
+        "line": 385,
+        "expression": "sigma.size != 3"
+      },
+      {
+        "line": 339,
+        "expression": "spacing.size == 3"
+      },
+      {
+        "line": 370,
+        "expression": "spacing.size == 3"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

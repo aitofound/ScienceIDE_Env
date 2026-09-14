@@ -1,0 +1,89 @@
+{
+  "skimage.morphology.skeletonize": {
+    "implementation": {
+      "file": "src/skimage/morphology/_skeletonize.py",
+      "line": 18,
+      "end_line": 96
+    },
+    "description": "Compute the skeleton of the input image via thinning.",
+    "calls": [
+      "image.astype",
+      "_skeletonize_zhang",
+      "_skeletonize_lee"
+    ],
+    "branches": [
+      {
+        "line": 82,
+        "expression": "method not in {'zhang', 'lee', None}"
+      },
+      {
+        "line": 86,
+        "expression": "image.ndim == 2 and (method is None or method == 'zhang')"
+      },
+      {
+        "line": 88,
+        "expression": "image.ndim == 3 and method == 'zhang'"
+      },
+      {
+        "line": 90,
+        "expression": "image.ndim == 3 or (image.ndim == 2 and method == 'lee')"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.thin": {
+    "implementation": {
+      "file": "src/skimage/morphology/_skeletonize.py",
+      "line": 256,
+      "end_line": 352
+    },
+    "description": "Perform morphological thinning of a binary image.",
+    "calls": [
+      "np.sum",
+      "np.asanyarray(image, dtype=bool).copy().view",
+      "skel.astype",
+      "np.asanyarray(image, dtype=bool).copy",
+      "ndi.correlate",
+      "np.take",
+      "np.asanyarray"
+    ],
+    "branches": [
+      {
+        "line": 337,
+        "expression": "n_pts_old != n_pts_new and num_iter < max_num_iter"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.invert": {
+    "implementation": {
+      "file": "src/skimage/util/_invert.py",
+      "line": 5,
+      "end_line": 74
+    },
+    "description": "Invert an image.",
+    "calls": [
+      "np.subtract",
+      "dtype_limits"
+    ],
+    "branches": [
+      {
+        "line": 62,
+        "expression": "image.dtype == 'bool'"
+      },
+      {
+        "line": 64,
+        "expression": "np.issubdtype(image.dtype, np.unsignedinteger)"
+      },
+      {
+        "line": 67,
+        "expression": "np.issubdtype(image.dtype, np.signedinteger)"
+      },
+      {
+        "line": 70,
+        "expression": "signed_float"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}
