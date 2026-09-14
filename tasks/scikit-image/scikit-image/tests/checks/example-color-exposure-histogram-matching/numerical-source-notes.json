@@ -1,0 +1,84 @@
+{
+  "skimage.exposure.cumulative_distribution": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 314,
+      "end_line": 356
+    },
+    "description": "Return cumulative distribution function (cdf) for the given image.",
+    "calls": [
+      "histogram",
+      "hist.cumsum",
+      "utils._supported_float_type",
+      "img_cdf.astype"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.histogram": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 190,
+      "end_line": 276
+    },
+    "description": "Return histogram of image.",
+    "calls": [
+      "_histogram",
+      "utils.channel_as_last_axis",
+      "utils.warn",
+      "np.stack",
+      "_bincount_histogram_centers",
+      "_get_numpy_hist_range",
+      "_get_bin_edges",
+      "hist.append"
+    ],
+    "branches": [
+      {
+        "line": 246,
+        "expression": "len(sh) == 3 and sh[-1] < 4 and (channel_axis is None)"
+      },
+      {
+        "line": 254,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 259,
+        "expression": "np.issubdtype(image.dtype, np.integer)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.match_histograms": {
+    "implementation": {
+      "file": "src/skimage/exposure/histogram_matching.py",
+      "line": 33,
+      "end_line": 93
+    },
+    "description": "Adjust an image so that its cumulative histogram matches that of another.",
+    "calls": [
+      "_match_cumulative_cdf",
+      "utils.channel_as_last_axis",
+      "utils._supported_float_type",
+      "matched.astype"
+    ],
+    "branches": [
+      {
+        "line": 67,
+        "expression": "image.ndim != reference.ndim"
+      },
+      {
+        "line": 72,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 89,
+        "expression": "matched.dtype.kind == 'f'"
+      },
+      {
+        "line": 73,
+        "expression": "image.shape[-1] != reference.shape[-1]"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

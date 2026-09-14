@@ -1,0 +1,60 @@
+{
+  "skimage.filters.median": {
+    "implementation": {
+      "file": "src/skimage/filters/_median.py",
+      "line": 9,
+      "end_line": 82
+    },
+    "description": "Return local median of an image.",
+    "calls": [
+      "ndi.median_filter",
+      "generic.median",
+      "ndi.generate_binary_structure",
+      "np.isclose"
+    ],
+    "branches": [
+      {
+        "line": 69,
+        "expression": "behavior == 'rank'"
+      },
+      {
+        "line": 78,
+        "expression": "footprint is None"
+      },
+      {
+        "line": 70,
+        "expression": "mode != 'nearest' or not np.isclose(cval, 0.0)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.rank.median": {
+    "implementation": {
+      "file": "src/skimage/filters/rank/generic.py",
+      "line": 905,
+      "end_line": 980
+    },
+    "description": "Return local median of an image.",
+    "calls": [
+      "np.asanyarray",
+      "ndi.generate_binary_structure",
+      "_apply_scalar_per_pixel",
+      "_apply_scalar_per_pixel_3D"
+    ],
+    "branches": [
+      {
+        "line": 957,
+        "expression": "footprint is None"
+      },
+      {
+        "line": 959,
+        "expression": "np_image.ndim == 2"
+      },
+      {
+        "line": 969,
+        "expression": "np_image.ndim == 3"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}
