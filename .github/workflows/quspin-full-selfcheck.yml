@@ -30,14 +30,35 @@ jobs:
           python-version: '3.12'
       - name: Install task tooling
         run: npm install --ignore-scripts
+      - name: Decide whether a fresh record already exists
+        id: freshness
+        run: |
+          python3 - <<'PYEOF' >> "$GITHUB_OUTPUT"
+          import json, sys
+          from pathlib import Path
+          sys.path.insert(0, 'skills/package-sciaccel-task/scripts')
+          from _vendor.sciaccel_pipeline.util import contract_fingerprint
+          leaf = Path('tasks/quspin/quspin')
+          current = contract_fingerprint(leaf)
+          try:
+              recorded = json.loads((leaf / 'comment/pipeline/self-validation.json').read_text()).get('contract_fingerprint')
+          except Exception:
+              recorded = None
+          fresh = current == recorded
+          print(f"needed={'false' if fresh else 'true'}")
+          print(f"reason={'record matches the current tree' if fresh else 'record missing or stale'}", file=sys.stderr)
+          PYEOF
       - name: Record CI run consent
+        if: steps.freshness.outputs.needed == 'true'
         run: |
           python3 skills/package-sciaccel-task/scripts/sab.py task consent \
             --task tasks/quspin/quspin --where local \
             --human-ref 'Requester authorized the full QuSpin steward nominal/variant selfcheck in CI.'
       - name: Build both task images
+        if: steps.freshness.outputs.needed == 'true'
         run: python3 skills/package-sciaccel-task/scripts/sab.py task build --task tasks/quspin/quspin
       - name: Run complete nominal and variant selfcheck
+        if: steps.freshness.outputs.needed == 'true'
         run: python3 skills/package-sciaccel-task/scripts/sab.py task selfcheck --task tasks/quspin/quspin
       - name: Upload selfcheck evidence
         if: always()
