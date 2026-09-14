@@ -1,0 +1,289 @@
+{
+  "topology": {
+    "nodes": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "root",
+      "6",
+      "7",
+      "8",
+      "9"
+    ],
+    "edges": [
+      [
+        "root",
+        "9"
+      ],
+      [
+        "9",
+        "8"
+      ],
+      [
+        "9",
+        "7"
+      ],
+      [
+        "7",
+        "6"
+      ],
+      [
+        "7",
+        "a"
+      ],
+      [
+        "6",
+        "b"
+      ],
+      [
+        "6",
+        "c"
+      ],
+      [
+        "8",
+        "e"
+      ],
+      [
+        "8",
+        "d"
+      ]
+    ]
+  },
+  "base_matrix": "base",
+  "matrices": {
+    "base": {
+      "columns": [
+        "x1",
+        "x2",
+        "x3"
+      ],
+      "rows": {
+        "a": [
+          1,
+          1,
+          0
+        ],
+        "b": [
+          1,
+          2,
+          0
+        ],
+        "c": [
+          1,
+          2,
+          1
+        ],
+        "d": [
+          2,
+          0,
+          0
+        ],
+        "e": [
+          2,
+          0,
+          2
+        ]
+      }
+    },
+    "modified_a": {
+      "columns": [
+        "x1",
+        "x2",
+        "x3"
+      ],
+      "rows": {
+        "a": [
+          0,
+          0,
+          0
+        ],
+        "b": [
+          1,
+          2,
+          0
+        ],
+        "c": [
+          1,
+          2,
+          1
+        ],
+        "d": [
+          2,
+          0,
+          0
+        ],
+        "e": [
+          2,
+          0,
+          2
+        ]
+      }
+    },
+    "modified_e": {
+      "columns": [
+        "x1",
+        "x2",
+        "x3"
+      ],
+      "rows": {
+        "a": [
+          1,
+          1,
+          0
+        ],
+        "b": [
+          1,
+          2,
+          0
+        ],
+        "c": [
+          1,
+          2,
+          1
+        ],
+        "d": [
+          2,
+          0,
+          0
+        ],
+        "e": [
+          1,
+          0,
+          0
+        ]
+      }
+    },
+    "six_cells": {
+      "columns": [
+        "x1",
+        "x2",
+        "x3"
+      ],
+      "rows": {
+        "a": [
+          1,
+          1,
+          0
+        ],
+        "b": [
+          1,
+          2,
+          0
+        ],
+        "c": [
+          1,
+          2,
+          1
+        ],
+        "d": [
+          2,
+          0,
+          0
+        ],
+        "e": [
+          1,
+          0,
+          0
+        ],
+        "f": [
+          2,
+          2,
+          2
+        ]
+      }
+    },
+    "four_characters": {
+      "columns": [
+        "x1",
+        "x2",
+        "x3",
+        "x4"
+      ],
+      "rows": {
+        "a": [
+          1,
+          1,
+          0,
+          1
+        ],
+        "b": [
+          1,
+          2,
+          0,
+          5
+        ],
+        "c": [
+          1,
+          2,
+          1,
+          6
+        ],
+        "d": [
+          2,
+          0,
+          0,
+          2
+        ],
+        "e": [
+          1,
+          0,
+          0,
+          3
+        ]
+      }
+    }
+  },
+  "program": [
+    {
+      "step": "initial",
+      "operation": "start"
+    },
+    {
+      "step": "add-modified-layer",
+      "operation": "set_layer",
+      "layer": "modified",
+      "matrix": "modified_a"
+    },
+    {
+      "step": "set-states-in-layer",
+      "operation": "set_character_states",
+      "layer": "modified",
+      "cell": "b",
+      "states": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "step": "solve-on-layer",
+      "operation": "solve_on_layer",
+      "layer": "modified",
+      "matrix": "modified_e",
+      "fresh": true
+    }
+  ],
+  "layer_probe": {
+    "layer": "modified",
+    "matrix": "modified_a",
+    "absent_layer": "never-written"
+  },
+  "outcome_probes": [
+    {
+      "id": "six_cell_layer",
+      "matrix": "six_cells",
+      "expected": "builtins.ValueError"
+    },
+    {
+      "id": "four_character_layer",
+      "matrix": "four_characters",
+      "expected": "accepted"
+    }
+  ],
+  "wide_probe": {
+    "layer": "modified",
+    "matrix": "four_characters"
+  }
+}
