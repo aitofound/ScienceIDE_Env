@@ -1,6 +1,12 @@
 # models-crosschecks
 
-Runs the grouped upstream model examples and cross-check tests listed in
-`tests/upstream_group.py`. The check also records a finite spin-chain ground
-energy. Nominal uses `L=8,h=0.5`; variant uses `L=10,h=0.55` so the active
-configuration changes a physical observable.
+Runs the grouped upstream QuSpin test files listed in `runner.py` for this
+module. Each listed file keeps its own upstream assertions: pytest-style files
+run under pytest, and the two script-style files (top-level assertions with no
+pytest function) run directly so their own exit status decides pass or fail.
+
+The check also records a finite spin-chain ground energy as a physical
+calibration observable. Nominal uses `L=8,h=0.5`; variant changes the active
+longitudinal field by two binary64 ulps (`h=0.5000000000000001`) with the chain
+length fixed, so the perturbation is a genuine numeric calibration rather than a
+change of physical model.
