@@ -26,7 +26,7 @@ come from. The 2 to 3 s declarations are the eight standalone checks, each of
 which solves one small Hamiltonian; 30 to 45 s are the light grouped replays and
 the notebook suite; 110 to 260 s are the four large grouped replays; 750 s is
 `examples-scripts`, which runs every official example deck. The declarations sum
-to 1574 s against the 6300 s `suite_budget_s`, and the measured nominal suite is
+to 1572 s against the 6300 s `suite_budget_s`, and the measured nominal suite is
 1092 s. The remaining gap to the budget is the allowance for a slow or contended
 host, and each run reports which side of the budget it landed on in the record's
 `budget` field.
