@@ -4,22 +4,17 @@ Upstream test: `code/swmf/GM/BATSRUS/Makefile.test target test_outerhelioawsom_r
 
 ## The test
 
-`run.sh` reproduces the restart half of the upstream AWSoM test, which needs two builds. It first builds `-e=OuterHelioAwsom` and runs the start iterations of the AWSoM deck (upstream: 30, cumulative 10/20/30), then rebuilds the same tree with `-e=OuterHelioAwsomPuiBin -nPui=10`, relinks the saved restart tree with `Restart.pl -i` and continues with the continuation deck (upstream: 10 more iterations). Since 2026-09-13, under the 60-s/>=5-frame ruling, both decks'
-`#STOP` windows are shortened directly in `ic/nominal` and `ic/variant` (not
-via `SAB_ITER_SCALE`, which stayed coupled to both stages and could not shrink
-the start stage further without taking the continuation below the 5-frame
-floor): the start run to 6 steps (cumulative 2/4/6) and the continuation to 6
-steps, the shortest continuation window that still lets its one graded series
-(`1d VAR idl_ascii`) reach 5 frames. Both builds are reported in `SAB_BUILD_SECONDS`; the graded window is the continuation only, as upstream grades it, and it wrote 6 frames on the worker (the last is graded) and a 6-row log. The knobs are `SAB_ITER_SCALE` (every `#STOP MaxIteration` and
-`tSimulationMax` of the deck, multiplying from the shortened baseline above; default 1), `SAB_PLOT_FRAMES` (rewrites the continuation plot's cadence, and the log's if it would otherwise be sparser, to window / `SAB_PLOT_FRAMES`, floor 5 saves), `SAB_MPI_RANKS` (ranks; the graded values are the
+`run.sh` reproduces the restart half of the upstream AWSoM test, which needs two builds. It first builds `-e=OuterHelioAwsom` and runs the start iterations of the AWSoM deck (upstream: 30, cumulative 10/20/30), then rebuilds the same tree with `-e=OuterHelioAwsomPuiBin -nPui=10`, relinks the saved restart tree with `Restart.pl -i` and continues with the continuation deck for 10 more iterations, both windows as upstream. Both builds are reported in `SAB_BUILD_SECONDS`; the graded window is the continuation only, as upstream grades it, and its one graded series (`1d VAR idl_ascii`) writes 5 frames (the last is graded) with a 10-row log.
+MEASURED 2026-09-15: the 2026-09-13 shortening was reverted. At the cut window the alternative build (Config.pl -O0, and -O1 as well) produced NaN in advance_explicit at iteration 5 of the start run cut to 2/4/6 iterations, while the -O3 build ran through; at the upstream window every build runs clean (the old outer-heliosphere leaf's -O0 floor was measured at this window). The window is therefore the upstream one and the check stays under the 300 s cap. The knobs are `SAB_ITER_SCALE` (every `#STOP MaxIteration` and
+`tSimulationMax` of both decks; default 1), `SAB_PLOT_FRAMES` (rewrites the continuation plot's cadence, and the log's if it would otherwise be sparser, to window / `SAB_PLOT_FRAMES`, floor 5 saves), `SAB_MPI_RANKS` (ranks; the graded values are the
 2-rank results) and `SAB_MAKE_JOBS` (build parallelism); the defaults are the
-graded values, 55 s of run time declared on 4 cores, after a build of
+graded values, 89 s of run time declared on 4 cores, after a build of
 about 134 s that the budget does not count.
 
 ## The two initial conditions
 
 `ic/nominal` holds the upstream deck (or decks) of this test exactly as
-`code/swmf/GM/BATSRUS/Param/OUTERHELIO/` ships them, with the `1d VAR` plot entry of the continuation deck switched to `idl_ascii` and, since 2026-09-13, to a periodic write (6 frames at the default window and `SAB_PLOT_FRAMES`; PostIDL then writes 11-digit text instead of a real4 binary record, and the graded snapshot is the last of these), and with both decks' `#STOP` windows shortened as described above. `ic/variant` is the same
+`code/swmf/GM/BATSRUS/Param/OUTERHELIO/` ships them, with the `1d VAR` plot entry of the continuation deck switched to `idl_ascii` and, since 2026-09-13, to a periodic write (5 frames at the upstream window and `SAB_PLOT_FRAMES`; PostIDL then writes 11-digit text instead of a real4 binary record, and the graded snapshot is the last of these), and with both decks' `#STOP` windows shortened as described above. `ic/variant` is the same
 deck (or decks) with the solar-wind proton density SWH_rho_dim of #SOLARWINDH, 7.866 n/cc, in both decks multiplied by 1 + 2e-10. The two directories differ byte-wise, and
 the graded outputs differ: the nominal-versus-variant distance is what two runs of
 the same physics with a perturbation at the printed precision come out at, and it
