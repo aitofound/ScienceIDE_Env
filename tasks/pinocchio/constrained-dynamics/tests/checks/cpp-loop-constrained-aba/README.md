@@ -13,7 +13,11 @@ no alternative build, for the reason in `rubric.json`.
 ## Inputs
 
 `ic/<ic>/model.json` holds the frozen closed-chain trident model of the upstream file -- a free-flyer root carrying three ten-joint revolute branches, 35 joints, nq = 40, nv = 39, written with 17 significant digits so
-that it round-trips binary64 exactly. `ic/<ic>/operands.json` holds the state
+that it round-trips binary64 exactly. The sample-model builder leaves the
+acceleration and jerk limits infinite; those four vectors are written as the
+number literal `1e999`, which is valid JSON syntax and reads as infinity in
+every parser (`strtod` in `model_io.hpp`, Python, JavaScript), where a bare
+`inf` token would not parse outside the C++ loader. `ic/<ic>/operands.json` holds the state
 vectors and two frozen pools: a scalar pool that stands in for every
 `Eigen::...::Random` right-hand side an upstream case draws, and an SE3 pool
 that stands in for every `SE3::Random` contact placement. Both are handed out in
