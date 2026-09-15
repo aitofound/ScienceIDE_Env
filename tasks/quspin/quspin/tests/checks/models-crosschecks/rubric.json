@@ -3,9 +3,9 @@
   "policy": "pointwise",
   "chaotic": false,
   "upstream_test": "code/quspin/test/test_Jordan_Wigner.py",
-  "configuration": "All basis/symmetry tests in tests/checks/models-crosschecks/runner.py under the models-crosschecks group.",
+  "configuration": "All upstream tests owned by models-crosschecks in tests/checks/models-crosschecks/runner.py under the models-crosschecks group.",
   "observable": "observable.json: ground_energy and upstream_passed.",
-  "variant": "identical upstream test set; the finite spin-chain calibration keeps the same physical system (L=8) and moves the active binary64 longitudinal field from h=0.5 to h=0.5000000000000002 (two ulps) before the Hamiltonian is built, so the measured spread is a numerical floor rather than a change of physics.",
+  "variant": "the same upstream test set; the finite spin-chain calibration keeps the same physical system (L=8) and moves the active binary64 bond coupling from J=1.0 to J=1.0000000000001 (450 ulps, dJ/J = 1e-13) before the Hamiltonian is built, while the longitudinal field stays at h=0.5.  In a fixed-magnetization sector that field term is exactly a constant times the identity, so moving it would not perturb the calibration observable at all; the coupling enters the off-diagonal elements, so the measured spread is a genuine spectral calibration rather than a change of physical model.  The step exceeds the two-ulp convention because a two-ulp coupling change is the same size as the repeat-to-repeat ARPACK noise floor and could not be distinguished from it.",
   "comparison": {
     "atol": 1e-08,
     "rtol": 1e-08,
@@ -22,7 +22,7 @@
   "evidence": {
     "floor": null,
     "floor_how": "Nominal/variant self-validation supplies the measured numerical spread.",
-    "self_validation_spread": 0.0,
-    "self_validation_bound_fraction": 0.0
+    "self_validation_spread": 1.0658141036401503e-14,
+    "self_validation_bound_fraction": 7.350578766802044e-08
   }
 }

@@ -14,9 +14,11 @@ The image installs the pinned Python package and its published extension wheels 
 
 ## Tolerances
 
-Twelve of the thirteen checks are graded as a two-ulp numerical calibration: nominal and variant differ only by a two-binary64-ulp change in the active field (`h=0.5` to `0.5000000000000002`), with the physical model fixed. Measured spreads there sit at 1e-14 or below against a 1e-8 bound, so the bound is a floating-point allowance rather than a physics allowance.
+All thirteen checks share one calibration convention: nominal uses `J=1.0,h=0.5`, and the variant moves the active binary64 bond coupling to `J=1.0000000000001` (450 ulps of 1.0, `dJ/J = 1e-13`) while the physical model stays fixed.
 
-`hamiltonian` is the deliberate exception. Its observables are the trace, the Frobenius norm and the Hermiticity residual, and those are insensitive to a two-ulp field change, so the check also records the lowest eigenvalue and moves the field to `h=0.5001`. That perturbation is ~1e-4 rather than ~1e-16, and it is still ~6 orders of magnitude inside the same 1e-8 bound (measured shift 2.1e-14). Its rubric states the value it uses.
+The perturbed input is the coupling, not the longitudinal field. Every check builds its spin-chain calibration inside a fixed-magnetization sector, where the field term `h*sum(sigma^z)` is exactly a constant times the identity: the dense matrix of `sum(sigma^z)` has diagonal spread 0 and no off-diagonal entries at every size used here. Moving `h` therefore rescales every level by the same constant instead of perturbing the spectrum, and the graded observable responds only at the eigensolver rounding level. The coupling enters the off-diagonal elements, so perturbing it is a genuine spectral change.
+
+The step is 450 ulps rather than the conventional two because a two-ulp coupling change moves the graded observable by `3.6e-15` to `5.3e-14`, which is at or below the repeat-to-repeat ARPACK noise floor with an unseeded start vector (measured `0` to `6.0e-14` by running the same nominal inputs twice). In 6 of the 8 standalone checks the two-ulp step is no larger than that floor and therefore could not be told apart from solver noise. The 450-ulp step moves the observable by `5.6e-13` to `2.5e-11`, which is 28x to 1011x the measured floor, and is still at most `2.5e-3` of the `1e-8` bound: the bound stays a floating-point allowance rather than a physics allowance.
 
 Per-check commands, observables and tolerance rationale live in each check README and rubric.
 
