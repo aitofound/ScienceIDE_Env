@@ -1,7 +1,9 @@
 # examples-scripts
 
-Runs every official QuSpin example script in `examples/scripts/` that matches
-the glob upstream's own `run_examples.sh` uses (`example*.py`).
+Runs every official QuSpin example script in `examples/scripts/`: the
+`example*.py` files upstream's own `run_examples.sh` runs, plus the three
+`user_basis_trivial-*.py` files that upstream documents as examples in
+`sphinx/source/examples/user-basis_example{0,1,2}.rst` but its glob skips.
 
 ## The test
 

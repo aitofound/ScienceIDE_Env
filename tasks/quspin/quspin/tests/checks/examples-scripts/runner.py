@@ -30,6 +30,14 @@ FILES = [
     "example17.py", "example18.py", "example19.py", "example20.py", "example21.py",
     "example22.py", "example23.py", "example24.py", "example25.py", "example26.py",
     "example27.py", "example28.py",
+    # Three more official examples live in this directory without matching the
+    # `example*.py` glob.  They are documented as examples in
+    # sphinx/source/examples/user-basis_example{0,1,2}.rst, which embeds each
+    # file with `literalinclude` and offers it as a download, so they are part
+    # of the published example set even though run_examples.sh skips them.
+    "user_basis_trivial-spin.py",
+    "user_basis_trivial-spinless_fermion.py",
+    "user_basis_trivial-boson.py",
 ]
 
 # example12.py indexes sys.argv[1] and [2]; upstream run_examples.sh passes the

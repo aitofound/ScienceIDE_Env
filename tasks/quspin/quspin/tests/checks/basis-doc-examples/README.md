@@ -2,7 +2,13 @@
 
 Runs every official QuSpin documentation example deck in
 `sphinx/doc_examples/` that matches the glob upstream's own `run_examples.sh`
-uses (`*example.py`).
+uses (`*example.py`), plus `measurements.py`.
+
+`measurements.py` carries no `-example` suffix and no `.rst` page references it,
+so it is not part of the published example set; it is still an official script
+of this codebase that drives `quspin.tools.measurements` end to end, so it runs
+here rather than being dropped. It is recorded separately in `observable.json`
+under `upstream_extra_scripts` so the two groups stay distinct.
 
 ## The test
 

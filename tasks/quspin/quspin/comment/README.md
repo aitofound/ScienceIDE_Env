@@ -41,7 +41,7 @@ All 73 upstream `test_*.py` files are owned by a check: eight standalone baselin
 
 Upstream's own `run_all_tests.sh` also runs two scriptable example suites, and the packaging skill counts an upstream example as an official test, so both are covered too:
 
-- `examples/scripts/` (`example*.py`, 31 decks) by the `examples-scripts` check;
+- `examples/scripts/` (the `example*.py` glob plus three `user_basis_trivial-*.py` files that upstream documents as examples but its glob skips; 32 run, 2 excluded) by the `examples-scripts` check;
 - `sphinx/doc_examples/` (`*example.py`, 33 decks) by the `basis-doc-examples` check;
 - `examples/notebooks/` (`*.py`, 6 scripts) by the `examples-notebooks` check.
 

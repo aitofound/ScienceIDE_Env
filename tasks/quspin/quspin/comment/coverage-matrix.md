@@ -162,12 +162,27 @@ add one spectrum-sensitive calibration observable.
 | suite | official glob | decks | check | status |
 |---|---|---|---|---|
 | examples/scripts | `example*.py` | 31 | examples-scripts | covered (29 run, 2 excluded) |
+| examples/scripts (documented) | `user_basis_trivial-*.py` | 3 | examples-scripts | covered |
 | sphinx/doc_examples | `*example.py` | 33 | basis-doc-examples | covered (all 33 run) |
+| sphinx/doc_examples (extra) | `measurements.py` | 1 | basis-doc-examples | covered |
 | examples/notebooks | `*.py` | 6 | examples-notebooks | covered (all 6 run) |
 
-`examples/scripts/outdated/` is a parked directory upstream never runs, and
+`examples/scripts/outdated/` is a parked directory upstream never runs.
+
 `sphinx/doc_examples/measurements.py` does not match upstream's `*example.py`
-glob; neither is part of the official suite.
+glob and no `.rst` page references it, so it is not part of the published example
+set. It is nevertheless an official script of this codebase that drives
+`quspin.tools.measurements` end to end (13 s in the pinned image), so the
+`basis-doc-examples` check runs it too and records it under
+`upstream_extra_scripts` rather than folding it into the deck count.
+
+Three files in `examples/scripts/` are official examples that upstream's own
+`example*.py` glob skips: `user_basis_trivial-spin.py`,
+`user_basis_trivial-spinless_fermion.py` and `user_basis_trivial-boson.py`. They
+are documented as examples in `sphinx/source/examples/user-basis_example{0,1,2}.rst`,
+which embeds each with `literalinclude` and offers it as a download, so they are
+part of the published example set. The check runs all three (12-16 s each in the
+pinned image) in addition to the 29 that match the glob.
 
 ### Exclusions in examples/scripts
 

@@ -12,7 +12,12 @@ from pathlib import Path
 # Keys whose values must match exactly on both sides.  A run that silently
 # dropped an example, or that changed which files it excluded, is a different
 # observation and must not pass as equivalent.
-IDENTITY_KEYS = ("group", "upstream_examples", "upstream_passed", "upstream_excluded")
+# Keys whose values must match exactly on both sides.  A run that silently
+# dropped a deck or extra script, or that changed which files it excluded, is a
+# different observation and must not pass as equivalent.  Keys absent from both
+# sides compare equal, so a check that has no extras needs no special case.
+IDENTITY_KEYS = ("group", "upstream_examples", "upstream_extra_scripts",
+                 "upstream_passed", "upstream_excluded")
 
 
 def load(root):
