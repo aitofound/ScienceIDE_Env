@@ -61,7 +61,10 @@ docker run --rm --network none -v "$WORK:/w" --entrypoint /bin/bash "$IMAGE" -c 
   bash /app/tests/test.sh produce /tmp/mutated /w/candidate nominal >/w/candidate.log 2>&1
   status=$?
   produced=$(find /w/candidate -name run.ok | wc -l | tr -d " ")
-  echo "candidate: $produced of 74 check(s) produced candidate output (produce exit $status)"
+  # Count the checks in the image rather than hard-coding the number,
+  # so adding a check cannot leave this line reporting a stale total.
+  total=$(find /app/tests/checks -maxdepth 1 -mindepth 1 -type d | wc -l | tr -d " ")
+  echo "candidate: $produced of $total check(s) produced candidate output (produce exit $status)"
   if [ "$produced" -eq 0 ]; then
     echo "no candidate output at all: the mutation broke the harness, not the physics" >&2
     exit 2
