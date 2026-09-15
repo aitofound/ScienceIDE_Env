@@ -1,0 +1,38 @@
+{
+  "groups": [
+    "energy",
+    "eigenvalues",
+    "fermi"
+  ],
+  "matdyn_freq_files": [],
+  "n_acoustic": 3,
+  "scf_prefixes": [
+    "aluminum"
+  ],
+  "steps": [
+    {
+      "exe": "pw.x",
+      "in": "al.scf.in"
+    },
+    {
+      "exe": "ph.x",
+      "in": "al.ph.in",
+      "wipe_ph0": true
+    },
+    {
+      "exe": "dvscf_q2r.x",
+      "in": "al.dvscfq2r.in"
+    },
+    {
+      "exe": "ph.x",
+      "in": "al.elph.in",
+      "wipe_ph0": true
+    },
+    {
+      "exe": "ph.x",
+      "in": "al.elph.interpol.in",
+      "wipe_ph0": false
+    }
+  ],
+  "testdir": "ph_interpol_metal"
+}
