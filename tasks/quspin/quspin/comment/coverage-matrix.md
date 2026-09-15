@@ -149,3 +149,53 @@ platforms, and the runner records `upstream_passed`, `upstream_verified` and
 instead of being folded into a pass count.
 
 No other upstream file carries an `xfail` or `skip` marker.
+
+## Official example decks
+
+Upstream's `run_all_tests.sh` runs four suites, not one: `test/`,
+`sphinx/doc_examples/`, `examples/scripts/` and `examples/notebooks/`. The
+package skill counts an upstream example as an official test, so the two
+scriptable example suites are covered by their own grouped checks. Both keep
+upstream's own pass condition, which is that the deck runs to completion, and
+add one spectrum-sensitive calibration observable.
+
+| suite | official glob | decks | check | status |
+|---|---|---|---|---|
+| examples/scripts | `example*.py` | 31 | examples-scripts | covered (29 run, 2 excluded) |
+| sphinx/doc_examples | `*example.py` | 33 | basis-doc-examples | covered (all 33 run) |
+
+`examples/scripts/outdated/` is a parked directory upstream never runs, and
+`sphinx/doc_examples/measurements.py` does not match upstream's `*example.py`
+glob; neither is part of the official suite.
+
+### Exclusions in examples/scripts
+
+- `example11.py`: a 2D exact-diagonalisation sweep whose runtime is dominated by
+  sparse matvecs; it does not finish inside the check window on the declared
+  cores.
+- `example27.py`: imports `sparse_dot_mkl`, which upstream declares only as an
+  optional developer dependency in `[tool.pdm.dev-dependencies]`.
+
+Both are recorded in the check's rubric and in its `observable.json`
+(`upstream_excluded`), so the omission is visible on every run rather than
+being a silent skip.
+
+### examples/notebooks: excluded
+
+The notebook suite is a Colab artefact. `quspin_colab.py` is generated from a
+Colab notebook and installs its own pinned conda environment at the URLs of the
+Colab runtime; `BHM.py`, `FHM.py`, `GPE.py`, `SSH.py` and
+`quspin_basics-tutorial.py` are script exports of the matching `.ipynb` files.
+The suite is a tutorial surface for a hosted notebook environment rather than a
+solver workload of this pinned package, so it is excluded by design and the
+exclusion is recorded here.
+
+### Why the example suites are not redundant
+
+The `test/` suite and the example deck suite exercise overlapping but not
+identical production paths. Six symbols are imported by the example decks and by
+no file under `test/`: `basis.photon.coherent_state`, `operators.commutator`,
+`operators.anti_commutator`, `tools.measurements.ED_state_vs_time`,
+`tools.measurements.project_op` and `tools.misc.get_matvec_function`. Two of
+those (`ED_state_vs_time`, `project_op`) do appear indirectly in a `test/` file,
+so the examples are the only direct exercise of the other four.
