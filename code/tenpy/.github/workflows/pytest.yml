@@ -1,0 +1,108 @@
+name: Run Pytest
+# Run the test suite using pytest
+
+# Note: The doctests (pieces of test in the docstrings) are run by doc-build.yml
+
+on:
+  # pushes to main
+  push:
+    branches:
+      - main
+  # PRs
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+
+jobs:
+  build:
+    if: github.event.pull_request.draft == false
+
+    runs-on: ubuntu-latest
+    env:
+      # make pytest output in color
+      PY_COLORS: 1
+    strategy:
+      matrix:
+        # reminder: when changing python versions, also look at the other workflows!
+        #           also check for new versions of pypa/cibuildwheel used in publish workflow!
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        compiled: [True]
+        include:
+          - python-version: "3.13"
+            compiled: False
+          - python-version: "3.14"
+            compiled: False
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v5
+      with:
+        fetch-depth: 0  # required to get all tags
+
+    - name: Fetch example I/O datasets
+      uses: actions/checkout@v5
+      with:
+        repository: tenpy/io_example_data
+        ref: main
+        path: io_example_data
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Move example I/O datasets
+      run: |
+        mv io_example_data/data tests/export_import_test
+
+    - name: Check for missing I/O datasets
+      run: |
+        any_missing=false
+        git tag | while read version; do
+          [[ $version != v* ]] && echo "Skipping non-version tag: $version" && continue
+          [[ $version == v0.* ]] && echo "Skipping: $version" && continue  # don't have data for all.
+          echo "Checking: $version"
+          bare_version=${version#v}
+          if [ ! -f "tests/export_import_test/data/exported_from_tenpy_$bare_version.pkl" ]; then
+            echo "  Pickle data missing!"
+            any_missing=true
+          fi
+          if [ ! -f "tests/export_import_test/data/exported_from_tenpy_$bare_version.hdf5" ]; then
+            echo "  HDF5 data missing!"
+            any_missing=true
+          fi
+        done
+        if $any_missing; then
+          {
+            echo "## Missing I/O data."
+            echo "Should update data in the [io_example_data](https://github.com/tenpy/io_example_data)."
+            echo "See its readme."
+          } >> $GITHUB_STEP_SUMMARY
+          exit 1
+        fi
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install --upgrade setuptools build
+
+    - name: Build and install tenpy
+      run: |
+        python -m build .
+        python -m pip install ".[test]"
+
+    - name: Set environment variable to disable the cython extension
+      if: ${{ matrix.compiled == false }}
+      run: |
+        echo "TENPY_NO_CYTHON=True" >> "$GITHUB_ENV"
+
+    - name: Show tenpy config
+      working-directory: ..
+      run: |
+        echo "TENPY_NO_CYTHON=$TENPY_NO_CYTHON"
+        python -c "import tenpy; tenpy.show_config()"
+
+    - name: Run pytest
+      working-directory: tests
+      run: pytest

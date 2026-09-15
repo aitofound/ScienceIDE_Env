@@ -1,0 +1,286 @@
+{
+  "skimage.color.label2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorlabel.py",
+      "line": 85,
+      "end_line": 156
+    },
+    "description": "Return an RGB image where color-coded labels are painted over the image.",
+    "calls": [
+      "np.moveaxis",
+      "_label2rgb_overlay",
+      "_label2rgb_avg"
+    ],
+    "branches": [
+      {
+        "line": 146,
+        "expression": "image is not None"
+      },
+      {
+        "line": 148,
+        "expression": "kind == 'overlay'"
+      },
+      {
+        "line": 152,
+        "expression": "kind == 'avg'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.rgb2gray": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 941,
+      "end_line": 984
+    },
+    "description": "Compute luminance of an RGB image.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.threshold_li": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 642,
+      "end_line": 792
+    },
+    "description": "Compute threshold value by Li's iterative Minimum Cross Entropy method.",
+    "calls": [
+      "np.log",
+      "np.mean",
+      "iter_callback",
+      "np.min",
+      "abs",
+      "np.average",
+      "np.max",
+      "np.all",
+      "np.isfinite",
+      "callable",
+      "histogram",
+      "hist.astype",
+      "np.isnan",
+      "initial_guess",
+      "np.isscalar",
+      "image.reshape",
+      "image.dtype.type",
+      "np.diff",
+      "np.unique"
+    ],
+    "branches": [
+      {
+        "line": 696,
+        "expression": "image.size == 0"
+      },
+      {
+        "line": 701,
+        "expression": "np.all(image == image.flat[0])"
+      },
+      {
+        "line": 709,
+        "expression": "image.size == 0"
+      },
+      {
+        "line": 715,
+        "expression": "image.dtype.kind in 'iu'"
+      },
+      {
+        "line": 721,
+        "expression": "initial_guess is None"
+      },
+      {
+        "line": 749,
+        "expression": "iter_callback is not None"
+      },
+      {
+        "line": 757,
+        "expression": "image.dtype.kind in 'iu'"
+      },
+      {
+        "line": 723,
+        "expression": "callable(initial_guess)"
+      },
+      {
+        "line": 760,
+        "expression": "abs(t_next - t_curr) > tolerance"
+      },
+      {
+        "line": 777,
+        "expression": "abs(t_next - t_curr) > tolerance"
+      },
+      {
+        "line": 725,
+        "expression": "np.isscalar(initial_guess)"
+      },
+      {
+        "line": 768,
+        "expression": "mean_back == 0"
+      },
+      {
+        "line": 773,
+        "expression": "iter_callback is not None"
+      },
+      {
+        "line": 783,
+        "expression": "mean_back == 0.0"
+      },
+      {
+        "line": 788,
+        "expression": "iter_callback is not None"
+      },
+      {
+        "line": 728,
+        "expression": "not 0 < t_next < np.max(image)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.label": {
+    "implementation": {
+      "file": "src/skimage/measure/_label.py",
+      "line": 33,
+      "end_line": 125
+    },
+    "description": "Label connected regions of an integer array.",
+    "calls": [
+      "_label_bool",
+      "clabel"
+    ],
+    "branches": [
+      {
+        "line": 117,
+        "expression": "label_image.dtype == bool"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.remove_objects_by_distance": {
+    "implementation": {
+      "file": "src/skimage/morphology/misc.py",
+      "line": 301,
+      "end_line": 509
+    },
+    "description": "Remove objects, in specified order, until remaining are a minimum distance apart.",
+    "calls": [
+      "np.argsort",
+      "ndi.generate_binary_structure",
+      "np.bincount",
+      "out.ravel",
+      "np.flatnonzero",
+      "np.unravel_index",
+      "cKDTree",
+      "_remove_objects_by_distance",
+      "label_image.copy",
+      "(ndi.maximum_filter(out, footprint=footprint) != ndi.minimum_filter(out, footprint=footprint)).ravel",
+      "out_raveled.reshape",
+      "np.all",
+      "np.can_cast",
+      "spacing.min",
+      "out_raveled.astype",
+      "ndi.maximum_filter",
+      "ndi.minimum_filter",
+      "np.amax"
+    ],
+    "branches": [
+      {
+        "line": 409,
+        "expression": "min_distance < 0"
+      },
+      {
+        "line": 411,
+        "expression": "not np.issubdtype(label_image.dtype, np.integer)"
+      },
+      {
+        "line": 415,
+        "expression": "out is None"
+      },
+      {
+        "line": 422,
+        "expression": "spacing is not None"
+      },
+      {
+        "line": 435,
+        "expression": "(spacing is None or np.all(spacing[0] == spacing)) and p_norm <= 2"
+      },
+      {
+        "line": 448,
+        "expression": "border_indices.size == 0"
+      },
+      {
+        "line": 458,
+        "expression": "priority is None"
+      },
+      {
+        "line": 467,
+        "expression": "smallest_id < 0"
+      },
+      {
+        "line": 490,
+        "expression": "spacing is not None"
+      },
+      {
+        "line": 506,
+        "expression": "out_raveled.base is not out"
+      },
+      {
+        "line": 417,
+        "expression": "out is not label_image"
+      },
+      {
+        "line": 424,
+        "expression": "spacing.shape != (out.ndim,) or spacing.min() <= 0"
+      },
+      {
+        "line": 459,
+        "expression": "not np.can_cast(out.dtype, np.intp, casting='safe')"
+      },
+      {
+        "line": 480,
+        "expression": "priority.shape != expected_shape"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.remove_small_objects": {
+    "implementation": {
+      "file": "src/skimage/morphology/misc.py",
+      "line": 60,
+      "end_line": 179
+    },
+    "description": "Remove objects smaller than the specified size.",
+    "calls": [
+      "deprecate_parameter",
+      "_check_dtype_supported",
+      "ar.copy",
+      "ndi.generate_binary_structure",
+      "ndi.label",
+      "np.bincount",
+      "ccs.ravel"
+    ],
+    "branches": [
+      {
+        "line": 140,
+        "expression": "out is None"
+      },
+      {
+        "line": 145,
+        "expression": "max_size == 0"
+      },
+      {
+        "line": 148,
+        "expression": "out.dtype == bool"
+      },
+      {
+        "line": 164,
+        "expression": "len(component_sizes) == 2 and out.dtype != bool"
+      },
+      {
+        "line": 170,
+        "expression": "min_size is not DEPRECATED"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

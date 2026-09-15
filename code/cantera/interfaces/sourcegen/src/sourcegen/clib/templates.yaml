@@ -1,0 +1,249 @@
+# Definitions used for Jinja template replacement.
+
+# This file is part of Cantera. See License.txt in the top-level directory or
+# at https://cantera.org/license.txt for license and copyright information.
+
+clib-macros: |-
+  {% macro render_lines(lines) %}
+  ## add lines used for CLib/C++ variable crosswalk
+  {% for line in lines %}
+  {{ line }}
+  {% endfor %}
+  {% endmacro %}
+
+  {% macro get_obj(base, cxx_base, handle) -%}
+  ## retrieve C++ object from handle (renders inline)
+  {%- if cxx_base == base -%}
+  {{ base }}Cabinet::at({{ handle }})
+  {%- else -%}
+  {{ base }}Cabinet::as<{{ cxx_base }}>({{ handle }})
+  {%- endif -%}
+  {%- endmacro %}
+
+  {% macro size_check(checks, c_func, c_args) %}
+  ## size checking
+  {% if checks %}
+  if (static_cast<size_t>({{ c_args[1] }}) < obj->{{ checks[0] }}()) {
+      throw ArraySizeError("{{ c_func }}", {{ c_args[1] }}, obj->{{ checks[0] }}());
+  }
+  {% else %}
+  // no size checking specified
+  {% endif %}
+  {% endmacro %}
+
+
+clib-param: |-
+  @param{{ '[' + par.direction + ']' if par.direction }} {{ par.name }}
+
+clib-comment: |-
+  {{ brief }}
+
+  {% if wraps %}
+  Wraps C++ {{ what }}: `{{ wraps }}`
+
+  {% endif %}
+  {% if uses %}
+  Uses:
+  {% for uu in uses %}
+  - `{{ uu }}`
+  {% endfor %}
+
+  {% endif %}
+  {% for par in params %}
+  {{ par }}
+  {% endfor %}
+  {% if returns %}
+  {{ '@returns' + 12*' ' + returns }}
+  {% endif %}
+  {% if params or returns %}
+  {% endif %}
+  {% if deprecated %}
+
+  @deprecated Per C++ annotation: {{ deprecated }}
+  {% endif %}
+
+clib-definition: |-
+  {{ annotations }}
+  {{ declaration }};
+
+clib-function: |-
+  // function: {{ cxx_wraps }}
+  try {
+      {{ render_lines(before) | indent(4) }}
+      {% if buffer %}
+      ## need to buffer a value returned by the C++ method
+      {% if buffer[0] %}
+      {{ buffer[0] }} = {{ cxx_name }}({{ ', '.join(cxx_args) }});
+      {% else %}
+      {{ cxx_name }}({{ ', '.join(cxx_args) }});
+      {% endif %}
+      {{ render_lines(after) | indent(4) }}
+      return {{ buffer[1] }};
+      {% else %}
+      ## value returned by the C++ method can be used directly
+      return {{ cxx_name }}({{ ', '.join(cxx_args) }});
+      {% endif %}
+  } catch (...) {
+      return handleAllExceptions({{ error[0] }}, {{ error[1] }});
+  }
+
+clib-variable-getter: |-
+  // variable (getter): {{ cxx_wraps }}
+  try {
+      {% if handle %}
+      ## access class member variable
+      {% if buffer and buffer[0] %}
+      {{ buffer[0] }} = {{ get_obj(base, cxx_base, handle )}}->{{ cxx_name }};
+      {{ render_lines(after) | indent(4) }}
+      return {{ buffer[1] }};
+      {% else %}{# not buffer[0] #}
+      ## no crosswalk needed
+      return {{ get_obj(base, cxx_base, handle )}}->{{ cxx_name }};
+      {% endif %}{# buffer[0] #}
+      {% else %}{# not handle #}
+      ## variable is defined in root namespace
+      {% if buffer and buffer[0] %}
+      ## CLib/C++ variable crosswalk needed
+      {{ buffer[0] }} = {{ cxx_name }};
+      {{ render_lines(after) | indent(4) }}
+      return {{ buffer[1] }};
+      {% else %}{# not buffer[0] #}
+      ## no crosswalk needed
+      return {{ cxx_name }};
+      {% endif %}{# buffer[0] #}
+      {% endif %}{# handle #}
+  } catch (...) {
+      return handleAllExceptions({{ error[0] }}, {{ error[1] }});
+  }
+
+clib-variable-setter: |-
+  // variable (setter): {{ cxx_wraps }}
+  try {
+      {{ render_lines(before) | indent(4) }}
+      {% if handle %}
+      ## access class member variable
+      {{ get_obj(base, cxx_base, handle )}}->{{ cxx_name }} = {{ cxx_args[0] }};
+      {% else %}{# not handle #}
+      ## variable is defined in root namespace
+      {{ cxx_name }} = {{ cxx_args[0] }};
+      {% endif %}{# handle #}
+      return 0;
+  } catch (...) {
+      return handleAllExceptions({{ error[0] }}, {{ error[1] }});
+  }
+
+clib-constructor: |-
+  ## CLib constructor template: instantiates new object
+  // constructor: {{ cxx_wraps }}
+  try {
+      {{ render_lines(before) | indent(4) }}
+      return {{ base }}Cabinet::add({{ cxx_name }}({{ ', '.join(cxx_args) }}));
+  } catch (...) {
+      return handleAllExceptions({{ error[0] }}, {{ error[1] }});
+  }
+
+clib-accessor: |-
+  ## CLib accessor template: exposes existing C++ object to CLib
+  // accessor: {{ cxx_wraps }}
+  try {
+      {{ render_lines(before) | indent(4) }}
+      {% if checks %}
+      ## accessor uses index checker (see: sol_adjacent)
+      if ({{ c_args[1] }} < 0 || static_cast<size_t>({{ c_args[1] }}) >= {{ base }}Cabinet::at({{ handle }})->{{ checks[0] }}()) {
+          throw IndexError("{{ c_func }}", "", {{ c_args[1] }}, {{ base }}Cabinet::at({{ handle }})->{{ checks[0] }}());
+      }
+      {% endif %}{# checks #}
+      return {{ cxx_rbase }}Cabinet::add({{ base }}Cabinet::at({{ handle }})->{{ cxx_name }}({{ ', '.join(cxx_args) }}));
+  } catch (...) {
+      return handleAllExceptions({{ error[0] }}, {{ error[1] }});
+  }
+
+clib-destructor: |-
+  ## CLib destructor template
+  // destructor
+  try {
+      {{ base }}Cabinet::del({{ handle }});
+      return 0;
+  } catch (...) {
+      return handleAllExceptions({{ error[0] }}, {{ error[1] }});
+  }
+
+clib-method: |-
+  ## CLib method template:
+  ## covers methods as well as getters and setters for scalars
+  // {{ what }}: {{ cxx_wraps }}
+  try {
+      {{ render_lines(before) | indent(4) }}
+      {% if buffer %}
+      ## need to buffer a value returned by the C++ method
+      {% if buffer[0] %}
+      {{ buffer[0] }} = {{ get_obj(base, cxx_base, handle )}}->{{ cxx_name }}({{ ', '.join(cxx_args) }});
+      {% else %}
+      {{ get_obj(base, cxx_base, handle )}}->{{ cxx_name }}({{ ', '.join(cxx_args) }});
+      {% endif %}
+      {{ render_lines(after) | indent(4) }}
+      return {{ buffer[1] }};
+      {% else %}
+      ## value returned by the C++ method can be used directly
+      return {{ get_obj(base, cxx_base, handle )}}->{{ cxx_name }}({{ ', '.join(cxx_args) }});
+      {% endif %}
+  } catch (...) {
+      return handleAllExceptions({{ error[0] }}, {{ error[1] }});
+  }
+
+clib-size-getter: |-
+  ## CLib template for methods returning sizes:
+  ## handles methods that return size_t in C++ and int32_t in CLib
+  // size getter: {{ cxx_wraps }}
+  try {
+      {{ render_lines(before) | indent(4) }}
+      return static_cast<int32_t>({{ get_obj(base, cxx_base, handle )}}->{{ cxx_name }}({{ ', '.join(cxx_args) }}));
+  } catch (...) {
+      return handleAllExceptions({{ error[0] }}, {{ error[1] }});
+  }
+
+clib-array-getter: |-
+  ## CLib array getter template
+  // array getter: {{ cxx_wraps }}
+  try {
+      auto{{ '&' if base == cxx_base else '' }} obj = {{ get_obj(base, cxx_base, handle )}};
+      {{ size_check(checks, c_func, c_args) | indent(4) }}
+      {% if buffer and buffer[0] %}
+      {{ buffer[0] }} = obj->{{ cxx_name }}({{ cxx_args[0] }});
+      {{ render_lines(after) | indent(4) }}
+      return {{ buffer[1] }};
+      {% else %}
+      obj->{{ cxx_name }}({{ cxx_args[0] }});
+      return 0;
+      {% endif %}
+  } catch (...) {
+      return handleAllExceptions({{ error[0] }}, {{ error[1] }});
+  }
+
+clib-array-setter: |-
+  ## CLib array setter template
+  // array setter: {{ cxx_wraps }}
+  try {
+      auto{{ '&' if base == cxx_base else '' }} obj = {{ get_obj(base, cxx_base, handle )}};
+      {{ size_check(checks, c_func, c_args) | indent(4) }}
+      obj->{{ cxx_name }}({{ cxx_args[0] }});
+      return 0;
+  } catch (...) {
+      return handleAllExceptions({{ error[0] }}, {{ error[1] }});
+  }
+
+clib-custom-code: |-
+  // {{ what }}: custom code
+  try {
+      // *************** begin custom code ***************
+      {{ render_lines(after) | indent(4) }}
+      // **************** end custom code ****************
+  } catch (...) {
+      return handleAllExceptions({{ error[0] }}, {{ error[1] }});
+  }
+
+clib-implementation: |-
+  {{ declaration }}
+  {
+      {{ body | indent(4) }}
+  }

@@ -1,0 +1,80 @@
+{
+  "skimage.morphology._convex_hull.possible_hull": {
+    "implementation": {
+      "module": "skimage.morphology._convex_hull",
+      "doc": "Return positions of pixels that possibly belong to the convex hull."
+    },
+    "inspection": "Compiled entry point; inspect its linked extension source and official assertions."
+  },
+  "skimage.morphology.convex_hull_image": {
+    "implementation": {
+      "file": "src/skimage/morphology/convex_hull.py",
+      "line": 74,
+      "end_line": 170
+    },
+    "description": "Compute the convex hull image of a binary image.",
+    "calls": [
+      "ConvexHull",
+      "np.reshape",
+      "unique_rows",
+      "np.count_nonzero",
+      "possible_hull",
+      "np.transpose",
+      "_offsets_diamond",
+      "(coords[:, np.newaxis, :] + offsets).reshape",
+      "grid_points_in_poly",
+      "_check_coords_in_hull",
+      "np.ascontiguousarray",
+      "np.nonzero",
+      "map"
+    ],
+    "branches": [
+      {
+        "line": 108,
+        "expression": "np.count_nonzero(image) == 0"
+      },
+      {
+        "line": 118,
+        "expression": "ndim == 2"
+      },
+      {
+        "line": 138,
+        "expression": "offset_coordinates"
+      },
+      {
+        "line": 159,
+        "expression": "ndim == 2"
+      },
+      {
+        "line": 122,
+        "expression": "offset_coordinates"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.convex_hull_object": {
+    "implementation": {
+      "file": "src/skimage/morphology/convex_hull.py",
+      "line": 173,
+      "end_line": 222
+    },
+    "description": "Compute the convex hull image of individual objects in a binary image.",
+    "calls": [
+      "label",
+      "convex_hull_image",
+      "np.logical_or",
+      "labeled_im.max"
+    ],
+    "branches": [
+      {
+        "line": 208,
+        "expression": "image.ndim > 2"
+      },
+      {
+        "line": 211,
+        "expression": "connectivity not in (1, 2)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}
