@@ -1,0 +1,232 @@
+{
+  "skimage.transform.iradon": {
+    "implementation": {
+      "file": "src/skimage/transform/radon_transform.py",
+      "line": 187,
+      "end_line": 323
+    },
+    "description": "Inverse radon transform.",
+    "calls": [
+      "convert_to_float",
+      "max",
+      "np.pad",
+      "_get_fourier_filter",
+      "np.real",
+      "np.linspace",
+      "_sinogram_circle_to_square",
+      "fft",
+      "np.arange",
+      "np.deg2rad",
+      "interpolant",
+      "ifft",
+      "partial",
+      "interp1d",
+      "np.floor",
+      "np.ceil",
+      "np.cos",
+      "np.sin",
+      "np.sqrt",
+      "np.log2"
+    ],
+    "branches": [
+      {
+        "line": 256,
+        "expression": "radon_image.ndim != 2"
+      },
+      {
+        "line": 259,
+        "expression": "theta is None"
+      },
+      {
+        "line": 263,
+        "expression": "angles_count != radon_image.shape[1]"
+      },
+      {
+        "line": 270,
+        "expression": "interpolation not in interpolation_types"
+      },
+      {
+        "line": 274,
+        "expression": "filter_name not in filter_types"
+      },
+      {
+        "line": 281,
+        "expression": "output_size is None"
+      },
+      {
+        "line": 288,
+        "expression": "circle"
+      },
+      {
+        "line": 319,
+        "expression": "circle"
+      },
+      {
+        "line": 283,
+        "expression": "circle"
+      },
+      {
+        "line": 311,
+        "expression": "interpolation == 'linear'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.iradon_sart": {
+    "implementation": {
+      "file": "src/skimage/transform/radon_transform.py",
+      "line": 385,
+      "end_line": 536
+    },
+    "description": "Inverse radon transform.",
+    "calls": [
+      "radon_image.astype",
+      "order_angles_golden_ratio",
+      "np.linspace",
+      "sart_projection_update",
+      "np.clip"
+    ],
+    "branches": [
+      {
+        "line": 467,
+        "expression": "radon_image.ndim != 2"
+      },
+      {
+        "line": 470,
+        "expression": "dtype is None"
+      },
+      {
+        "line": 490,
+        "expression": "theta is None"
+      },
+      {
+        "line": 500,
+        "expression": "image is None"
+      },
+      {
+        "line": 512,
+        "expression": "projection_shifts is None"
+      },
+      {
+        "line": 521,
+        "expression": "clip is not None"
+      },
+      {
+        "line": 471,
+        "expression": "radon_image.dtype.char in 'fd'"
+      },
+      {
+        "line": 480,
+        "expression": "np.dtype(dtype).char not in 'fd'"
+      },
+      {
+        "line": 492,
+        "expression": "len(theta) != radon_image.shape[1]"
+      },
+      {
+        "line": 502,
+        "expression": "image.shape != reconstructed_shape"
+      },
+      {
+        "line": 514,
+        "expression": "len(projection_shifts) != radon_image.shape[1]"
+      },
+      {
+        "line": 522,
+        "expression": "len(clip) != 2"
+      },
+      {
+        "line": 534,
+        "expression": "clip is not None"
+      },
+      {
+        "line": 507,
+        "expression": "image.dtype != dtype"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.radon": {
+    "implementation": {
+      "file": "src/skimage/transform/radon_transform.py",
+      "line": 16,
+      "end_line": 114
+    },
+    "description": "Calculates the radon transform of an image given specified",
+    "calls": [
+      "np.ceil",
+      "slice",
+      "convert_to_float",
+      "np.arange",
+      "min",
+      "((coords - img_shape // 2) ** 2).sum",
+      "np.any",
+      "np.pad",
+      "np.deg2rad",
+      "warp",
+      "rotated.sum",
+      "np.sqrt",
+      "max",
+      "np.cos",
+      "np.sin"
+    ],
+    "branches": [
+      {
+        "line": 59,
+        "expression": "image.ndim != 2"
+      },
+      {
+        "line": 61,
+        "expression": "theta is None"
+      },
+      {
+        "line": 66,
+        "expression": "circle"
+      },
+      {
+        "line": 98,
+        "expression": "padded_image.shape[0] != padded_image.shape[1]"
+      },
+      {
+        "line": 73,
+        "expression": "np.any(image[outside_reconstruction_circle])"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.rescale": {
+    "implementation": {
+      "file": "src/skimage/transform/_warps.py",
+      "line": 228,
+      "end_line": 343
+    },
+    "description": "Scale image by a certain factor.",
+    "calls": [
+      "channel_as_last_axis",
+      "np.atleast_1d",
+      "np.maximum",
+      "resize",
+      "np.round",
+      "np.concatenate"
+    ],
+    "branches": [
+      {
+        "line": 321,
+        "expression": "len(scale) > 1"
+      },
+      {
+        "line": 330,
+        "expression": "multichannel"
+      },
+      {
+        "line": 322,
+        "expression": "not multichannel and len(scale) != image.ndim or (multichannel and len(scale) != image.ndim - 1)"
+      },
+      {
+        "line": 326,
+        "expression": "multichannel"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

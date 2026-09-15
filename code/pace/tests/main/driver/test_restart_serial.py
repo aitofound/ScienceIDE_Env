@@ -1,0 +1,149 @@
+import os
+import shutil
+from datetime import datetime
+from pathlib import Path
+
+import numpy as np
+import xarray as xr
+import yaml
+
+from ndsl import (
+    CubedSphereCommunicator,
+    CubedSpherePartitioner,
+    Quantity,
+    QuantityFactory,
+    SubtileGridSizer,
+    TilePartitioner,
+)
+from ndsl.config import Backend
+from pace import (
+    AnalyticInit,
+    DriverConfig,
+    GeneratedGridConfig,
+    NullComm,
+    RestartConfig,
+)
+from pyshield import PHYSICS_PACKAGES
+from tests.paths import EXAMPLE_CONFIGS_DIR
+
+DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def test_default_save_restart():
+    restart_config = RestartConfig()
+    assert restart_config.save_restart is False
+
+
+def test_restart_save_to_disk():
+    try:
+        with open(EXAMPLE_CONFIGS_DIR / "baroclinic_c12_write_restart.yaml", "r") as f:
+            driver_config = DriverConfig.from_dict(yaml.safe_load(f))
+        backend = Backend("st:numpy:cpu:IJK")
+        mpi_comm = NullComm(rank=0, total_ranks=6, fill_value=0.0)
+        partitioner = CubedSpherePartitioner(TilePartitioner((1, 1)))
+        communicator = CubedSphereCommunicator(mpi_comm, partitioner)
+        sizer = SubtileGridSizer.from_tile_params(
+            nx_tile=12,
+            ny_tile=12,
+            nz=79,
+            n_halo=3,
+            layout=(1, 1),
+            tile_partitioner=partitioner.tile,
+            tile_rank=communicator.tile.rank,
+            backend=backend,
+        )
+        quantity_factory = QuantityFactory(sizer=sizer, backend=backend)
+
+        eta_file = Path(driver_config.grid_config.config.eta_file)
+        (
+            damping_coefficients,
+            driver_grid_data,
+            grid_data,
+        ) = GeneratedGridConfig(
+            eta_file=eta_file
+        ).get_grid(quantity_factory, communicator)
+        init = AnalyticInit(dycore_config=driver_config.dycore_config)
+        driver_state = init.get_driver_state(
+            quantity_factory=quantity_factory,
+            communicator=communicator,
+            damping_coefficients=damping_coefficients,
+            driver_grid_data=driver_grid_data,
+            grid_data=grid_data,
+            schemes=[PHYSICS_PACKAGES["GFS_microphysics"]],
+        )
+        time = datetime(2016, 1, 1, 0, 0, 0)
+
+        driver_config.restart_config.write_final_if_enabled(
+            state=driver_state,
+            comm=mpi_comm,
+            time=time,
+            driver_config=driver_config,
+            restart_path="RESTART",
+        )
+
+        restart_dycore = xr.open_dataset(
+            Path("RESTART") / f"restart_dycore_state_{mpi_comm.rank}.nc"
+        )
+        for var in driver_state.dycore_state.__dict__.keys():
+            if isinstance(driver_state.dycore_state.__dict__[var], Quantity):
+                np.testing.assert_allclose(
+                    driver_state.dycore_state.__dict__[var][:],
+                    restart_dycore[var].values,
+                )
+            else:
+                if var in restart_dycore.keys():
+                    raise KeyError(f"{var} is not a quantity and \
+                        should not be in dycore restart file")
+
+        # TODO: the physics state isn't actually needed in the restart folders as
+        # all prognostic state is in dycore state, we could refactor it out
+        restart_physics = xr.open_dataset(
+            Path("RESTART") / f"restart_physics_state_{mpi_comm.rank}.nc"
+        )
+        for var in driver_state.physics_state.__dict__.keys():
+            if isinstance(
+                driver_state.physics_state.__dict__[var], (np.ndarray, Quantity)
+            ):
+                np.testing.assert_allclose(
+                    driver_state.physics_state.__dict__[var][:],
+                    restart_physics[var].values,
+                )
+            else:
+                if var in restart_physics.keys():
+                    raise KeyError(f"{var} is not a storage and \
+                            should not be in physics restart file")
+        # test we can use the saved driver config in the restart to load it
+        with open(Path("RESTART") / "restart.yaml", "r") as f:
+            restart_config = DriverConfig.from_dict(yaml.safe_load(f))
+
+            (
+                damping_coefficients,
+                driver_grid_data,
+                grid_data,
+            ) = restart_config.get_grid(
+                communicator=communicator,
+            )
+
+            restart_state = restart_config.get_driver_state(
+                communicator=communicator,
+                damping_coefficients=damping_coefficients,
+                driver_grid_data=driver_grid_data,
+                grid_data=grid_data,
+            )
+            for var in driver_state.dycore_state.__dict__.keys():
+                before_restart = driver_state.dycore_state.__dict__[var]
+                after_restart = restart_state.dycore_state.__dict__[var]
+                if isinstance(before_restart, Quantity):
+                    np.testing.assert_allclose(
+                        before_restart.view[:],
+                        after_restart.view[:],
+                    )
+                else:
+                    np.testing.assert_allclose(
+                        before_restart,
+                        after_restart,
+                    )
+
+    finally:
+        os.sync()
+        shutil.rmtree("RESTART", ignore_errors=True)

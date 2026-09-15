@@ -1,0 +1,127 @@
+/*
+ * Copyright (C) 1998-2017 ALPS Collaboration. See COPYRIGHT.TXT
+ * All rights reserved. Use is subject to license terms. See LICENSE.TXT
+ * For use in publications, see ACKNOWLEDGE.TXT
+ */
+
+#pragma once
+
+// ALPSCore version (defined since 1.0.0.1)
+#cmakedefine ALPSCORE_VERSION ${ALPSCORE_VERSION}
+
+// Available ALPSCore components
+#cmakedefine ALPS_HAVE_ALPS_UTILITIES
+#cmakedefine ALPS_HAVE_ALPS_HDF5
+#cmakedefine ALPS_HAVE_ALPS_ACCUMULATORS
+#cmakedefine ALPS_HAVE_ALPS_PARAMS
+#cmakedefine ALPS_HAVE_ALPS_MC
+#cmakedefine ALPS_HAVE_ALPS_GF
+#cmakedefine ALPS_HAVE_ALPS_ALEA
+
+//
+// C headers
+//
+
+// Define to 1 if you have the <unistd.h> header file.
+#cmakedefine ALPS_HAVE_UNISTD_H 1
+
+//
+// Libraries
+//
+
+// Define to 1 if you have the MPI library
+#cmakedefine ALPS_HAVE_MPI 1
+
+//
+// Introduce [int,uint]*_t into alps namespace
+//
+
+#ifndef _USE_MATH_DEFINES // define const in math.h
+# define _USE_MATH_DEFINES
+#endif
+
+#include <boost/cstdint.hpp>
+
+namespace alps {
+
+using boost::int8_t;
+using boost::int_least8_t;
+using boost::int_fast8_t;
+using boost::uint8_t;
+using boost::uint_least8_t;
+using boost::uint_fast8_t;
+
+using boost::int16_t;
+using boost::int_least16_t;
+using boost::int_fast16_t;
+using boost::uint16_t;
+using boost::uint_least16_t;
+using boost::uint_fast16_t;
+
+using boost::int32_t;
+using boost::int_least32_t;
+using boost::int_fast32_t;
+using boost::uint32_t;
+using boost::uint_least32_t;
+using boost::uint_fast32_t;
+
+#ifndef BOOST_NO_INT64_T
+
+using boost::int64_t;
+using boost::int_least64_t;
+using boost::int_fast64_t;
+using boost::uint64_t;
+using boost::uint_least64_t;
+using boost::uint_fast64_t;
+
+#endif
+
+} // end namespace alps
+
+#include <boost/config.hpp>
+
+#ifdef BOOST_MSVC
+#define BOOST_NUMERIC_BINDINGS_USE_COMPLEX_STRUCT
+#endif
+
+// if defined, no threading libraries are included
+#define ALPS_SINGLE_THREAD
+
+// do not throw an error on accessing a not existing paht in a hdf5 file
+// #define ALPS_HDF5_READ_GREEDY
+
+// do not throw an error if closing a hdf5 gets dirty (e.g in Python)
+// #define ALPS_HDF5_CLOSE_GREEDY
+
+// blocksize in compressed hdf5. Default: 32
+#ifndef ALPS_HDF5_SZIP_BLOCK_SIZE
+    #define ALPS_HDF5_SZIP_BLOCK_SIZE 32
+#endif
+
+// maximal number of stack frames displayed in stacktrace. Default 63
+#ifndef ALPS_MAX_FRAMES
+    #define ALPS_MAX_FRAMES 63
+#endif
+
+// prevent the signal object from registering signals
+#ifdef BOOST_MSVC
+    #define ALPS_NO_SIGNALS
+#endif
+
+// do not print a stacktrace in error messages
+// we will always print stacktrace. This is how it was done in legacy ALPS:
+//#ifndef __GNUC__
+//    #define ALPS_NO_STACKTRACE
+//#endif
+
+// == Accumulator value types ==
+
+// Default accumulator types always defined:
+
+#define ALPS_ACCUMULATOR_BASIC_VALUE_TYPES float, double, long double, std::vector<float>, std::vector<double>, std::vector<long double>
+#define ALPS_ACCUMULATOR_BASIC_VALUE_TYPES_SIZE 6
+
+#define ALPS_ACCUMULATOR_VALUE_TYPES ALPS_ACCUMULATOR_BASIC_VALUE_TYPES
+#define ALPS_ACCUMULATOR_VALUE_TYPES_SIZE ALPS_ACCUMULATOR_BASIC_VALUE_TYPES_SIZE
+
+// #define ALPS_ACCUMULATOR_VALUE_TYPES double, std::vector<double>, alps::multi_array<double, 2>, alps::multi_array<double, 3>

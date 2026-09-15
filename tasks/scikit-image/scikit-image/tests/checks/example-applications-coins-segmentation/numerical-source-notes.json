@@ -1,0 +1,200 @@
+{
+  "skimage.color.label2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorlabel.py",
+      "line": 85,
+      "end_line": 156
+    },
+    "description": "Return an RGB image where color-coded labels are painted over the image.",
+    "calls": [
+      "np.moveaxis",
+      "_label2rgb_overlay",
+      "_label2rgb_avg"
+    ],
+    "branches": [
+      {
+        "line": 146,
+        "expression": "image is not None"
+      },
+      {
+        "line": 148,
+        "expression": "kind == 'overlay'"
+      },
+      {
+        "line": 152,
+        "expression": "kind == 'avg'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.histogram": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 190,
+      "end_line": 276
+    },
+    "description": "Return histogram of image.",
+    "calls": [
+      "_histogram",
+      "utils.channel_as_last_axis",
+      "utils.warn",
+      "np.stack",
+      "_bincount_histogram_centers",
+      "_get_numpy_hist_range",
+      "_get_bin_edges",
+      "hist.append"
+    ],
+    "branches": [
+      {
+        "line": 246,
+        "expression": "len(sh) == 3 and sh[-1] < 4 and (channel_axis is None)"
+      },
+      {
+        "line": 254,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 259,
+        "expression": "np.issubdtype(image.dtype, np.integer)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.feature.canny": {
+    "implementation": {
+      "file": "src/skimage/feature/_canny.py",
+      "line": 103,
+      "end_line": 262
+    },
+    "description": "Edge filter an image using the Canny algorithm.",
+    "calls": [
+      "ndi.sobel",
+      "_preprocess",
+      "np.sqrt",
+      "_nonmaximum_suppression_bilinear",
+      "ndi.label",
+      "np.unique",
+      "dtype_limits",
+      "np.percentile"
+    ],
+    "branches": [
+      {
+        "line": 201,
+        "expression": "np.issubdtype(image.dtype, np.int64) or np.issubdtype(image.dtype, np.uint64)"
+      },
+      {
+        "line": 207,
+        "expression": "low_threshold is None"
+      },
+      {
+        "line": 215,
+        "expression": "high_threshold is None"
+      },
+      {
+        "line": 223,
+        "expression": "high_threshold < low_threshold"
+      },
+      {
+        "line": 236,
+        "expression": "use_quantiles"
+      },
+      {
+        "line": 254,
+        "expression": "count == 0"
+      },
+      {
+        "line": 209,
+        "expression": "use_quantiles"
+      },
+      {
+        "line": 217,
+        "expression": "use_quantiles"
+      },
+      {
+        "line": 210,
+        "expression": "not 0.0 <= low_threshold <= 1.0"
+      },
+      {
+        "line": 218,
+        "expression": "not 0.0 <= high_threshold <= 1.0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.sobel": {
+    "implementation": {
+      "file": "src/skimage/filters/edges.py",
+      "line": 199,
+      "end_line": 253
+    },
+    "description": "Find edges in an image using the Sobel filter.",
+    "calls": [
+      "_generic_edge_filter",
+      "_mask_filter_result"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.remove_small_objects": {
+    "implementation": {
+      "file": "src/skimage/morphology/misc.py",
+      "line": 60,
+      "end_line": 179
+    },
+    "description": "Remove objects smaller than the specified size.",
+    "calls": [
+      "deprecate_parameter",
+      "_check_dtype_supported",
+      "ar.copy",
+      "ndi.generate_binary_structure",
+      "ndi.label",
+      "np.bincount",
+      "ccs.ravel"
+    ],
+    "branches": [
+      {
+        "line": 140,
+        "expression": "out is None"
+      },
+      {
+        "line": 145,
+        "expression": "max_size == 0"
+      },
+      {
+        "line": 148,
+        "expression": "out.dtype == bool"
+      },
+      {
+        "line": 164,
+        "expression": "len(component_sizes) == 2 and out.dtype != bool"
+      },
+      {
+        "line": 170,
+        "expression": "min_size is not DEPRECATED"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.segmentation.watershed": {
+    "implementation": {
+      "file": "src/skimage/segmentation/_watershed.py",
+      "line": 87,
+      "end_line": 243
+    },
+    "description": "Find watershed basins in an image flooded from given markers.",
+    "calls": [
+      "np.pad",
+      "_validate_inputs",
+      "_validate_connectivity",
+      "np.pad(mask, pad_width, mode='constant').ravel",
+      "_offsets_to_raveled_neighbors",
+      "np.flatnonzero",
+      "_watershed_cy.watershed_raveled",
+      "crop",
+      "image.ravel",
+      "output.ravel"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}
