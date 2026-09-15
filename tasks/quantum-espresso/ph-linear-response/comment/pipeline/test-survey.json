@@ -8,14 +8,14 @@
       "policy": "pointwise",
       "chaotic": false,
       "exercises": "2-D metallic TaS2: pw.x SCF then ph.x at Gamma. Covers 2-D Coulomb cutoff with a metallic occupancy in PHonon/PH/.",
-      "why": "Not selected. Measured sum 24.94 + 151.48 = 176.42 s, under the 180 s cap by 3.58 s; both steps Passed. The 10-12 target of CURATOR-DECISIONS section 7 is filled by other chains; ph_2d already covers 2-D DFPT (insulating BN, q2r/matdyn). Close to the native cap, so left out rather than labelled acceleration.",
+      "why": "Suitable. Added as check ph-2d-metal (revision 4, 2026-09-15). Measured sum 24.6 + 128.0 = 152.6 s on the x86 worker, over the leaf's 60 s check window; this deck reads a single explicit q vector (no ldisp grid), and a measured start_irr=1,last_irr=1 subset (22.7 s) never reaches ph.x's dynamical-matrix diagonalization, so no knob produces a gradable frequency under 60 s. Shipped as the full official chain; needs the curator's window ruling.",
       "resources": {
         "cpus": 8,
         "memory_gb": 8,
         "mpi_ranks": 1
       },
       "upstream_runtime_s": 176.42,
-      "suitable": false,
+      "suitable": true,
       "runtime_measured": true
     },
     {
@@ -43,14 +43,14 @@
       "policy": "pointwise",
       "chaotic": false,
       "exercises": "FCC Ni at X: collinear spin-polarised pw.x SCF then ph.x at q=(0,0,1) on USPP Ni.pbe-nd-rrkjus.UPF.",
-      "why": "Not selected, to keep ph_base at four checks per CURATOR-DECISIONS section 7. Measured sum 1.04 + 3.16 = 4.20 s; both steps Passed. USPP metal phonons at X; PAW magnetic DFPT is packaged as ph-insulator-paw-magn-o2 (Gamma, epsil=.true.), not as this USPP metal-at-X chain.",
+      "why": "Suitable. Added as check ph-base-ni-x (revision 4, 2026-09-15). Measured sum 1.0 + 3.2 = 4.2 s on the x86 worker. Ground-state-only after floor-dropping (allowed-mixing-beta-0.3 drives eigenvalues and phonon past their caps, consistent with ni.scf.in's looser conv_thr=1e-8 versus the other ph_base decks); energy, fermi and forces remain graded, matching the four already-shipped ground-state-only checks.",
       "resources": {
         "cpus": 8,
         "memory_gb": 8,
         "mpi_ranks": 1
       },
       "upstream_runtime_s": 4.2,
-      "suitable": false,
+      "suitable": true,
       "runtime_measured": true
     },
     {
@@ -131,14 +131,14 @@
       "policy": "pointwise",
       "chaotic": false,
       "exercises": "DFPT+U on metallic Fe USPP: collinear spin-polarised pw.x SCF then ph.x.",
-      "why": "Not selected. Measured sum 9.45 + 161.19 = 170.64 s, under the 180 s cap by 9.36 s; both steps Passed. DFPT+U metal is covered by the selected PAW Ni chain (ph-u-metal-paw-ni, 90.94 s). Close to the native cap.",
+      "why": "Suitable. Added as check ph-u-metal-us-fe (revision 4, 2026-09-15). Measured sum 8.4 + 148.0 = 156.4 s on the x86 worker, over the 60 s window; ph.x's own linear-response setup alone costs 50.9 s before any representation (measured), and this deck also reads a single explicit q (no ldisp grid), so no knob clears the window. Ground-state-only after floor-dropping (allowed-alpha-mix-0.3 drives phonon past its cap). Shipped as the full official chain; needs the curator's window ruling.",
       "resources": {
         "cpus": 8,
         "memory_gb": 8,
         "mpi_ranks": 1
       },
       "upstream_runtime_s": 170.64,
-      "suitable": false,
+      "suitable": true,
       "runtime_measured": true
     },
     {
@@ -184,14 +184,14 @@
       "policy": "pointwise",
       "chaotic": false,
       "exercises": "DFPT+U on insulating BN PAW: pw.x SCF, ph.x at Gamma with epsil=.true., ph.x at a finite q. PAW sibling of the selected US BN chain.",
-      "why": "Not selected. Measured sum 3.25 + 20.07 + 13.13 = 36.45 s; all steps Passed. DFPT+U insulator is covered by the selected US BN chain (ph-u-insulator-us-bn, 17.16 s); section 7 asks for one or two ph_U_* and the two selected already span insulator-US and metal-PAW.",
+      "why": "Suitable. Added as check ph-u-insulator-paw-bn (revision 4, 2026-09-15). Measured sum 3.3 + 33.2 = 36.5 s on the x86 worker. Drops phonon, phonon_acoustic and born under allowed-alpha-mix-0.3, matching the already-shipped USPP sibling ph-u-insulator-us-bn's identical drop pattern; energy, eigenvalues, forces, stress and dielectric remain graded.",
       "resources": {
         "cpus": 8,
         "memory_gb": 8,
         "mpi_ranks": 1
       },
       "upstream_runtime_s": 36.45,
-      "suitable": false,
+      "suitable": true,
       "runtime_measured": true
     },
     {
@@ -201,14 +201,14 @@
       "policy": "pointwise",
       "chaotic": false,
       "exercises": "Al electron-phonon interpolation: pw.x SCF, ph.x (ldisp), dvscf_q2r.x, ph.x elph simple, ph.x elph interpol keeping _ph0. Exercises dvscf_q2r.x, which is not a module entrypoint.",
-      "why": "Not selected. Measured sum 0.11 + 3.69 + 0.06 + 11.04 + 6.14 = 21.04 s; all steps Passed. Under 180 s. Section 7 allows interpol as an extra; the extra slot is used for ph-diag-direct (Sternheimer diagonalizer coverage). Electron-phonon interpolation is already represented by ph-metal-al-elph, which also runs lambda.x.",
+      "why": "Suitable. Added as check ph-interpol-metal (revision 4, 2026-09-15). Measured sum 0.1 + 3.7 + 0.1 + 11.0 + 6.1 = 21.0 s on the x86 worker. Ground-state-only after floor-dropping (allowed-alpha-mix-0.3 drives phonon/phonon_acoustic past their caps); the electron-phonon lambda/gamma values electron_phonon='simple' prints inline are not graded (no dedicated output block, documented exclusion). Exercises dvscf_q2r.x, an entrypoint no other check builds.",
       "resources": {
         "cpus": 8,
         "memory_gb": 8,
         "mpi_ranks": 1
       },
       "upstream_runtime_s": 21.04,
-      "suitable": false,
+      "suitable": true,
       "runtime_measured": true
     },
     {
@@ -218,14 +218,14 @@
       "policy": "pointwise",
       "chaotic": false,
       "exercises": "Diamond anharmonic (AHC) chain: pw.x SCF/NSCF, ph.x, q2r.x, matdyn.x, dvscf_q2r.x, ph.x electron_phonon=ahc, postahc.x. postahc.x is not a module entrypoint.",
-      "why": "Not selected. Measured sum 0.09 + 6.35 + 0.02 + 0.01 + 0.01 + 0.01 + 0.13 + 0.14 + 0.10 + 0.83 + 0.09 + 0.42 + 0.54 + 0.05 + 0.05 + 0.05 = 8.89 s; all steps Passed. Under 180 s. AHC/postahc.x is not a module entrypoint (entrypoints are ph.x dynmat.x q2r.x matdyn.x lambda.x); the extra slot is used for ph-diag-direct.",
+      "why": "Suitable. Added as check ph-ahc-diam (revision 4, 2026-09-15). Measured sum 8.9 s on the x86 worker (full 16-step official chain). Grades only phonon/phonon_acoustic from the upstream DFPT step: the official diam.nscf.in/diam.nscf.nosym.in share the scf step's prefix/outdir and overwrite data-file-schema.xml before extraction (measured); postahc.x's self-energy floor rounds to 2x the upstream postahc_selfen cap. Exercises dvscf_q2r.x and postahc.x in full.",
       "resources": {
         "cpus": 8,
         "memory_gb": 8,
         "mpi_ranks": 1
       },
       "upstream_runtime_s": 8.89,
-      "suitable": false,
+      "suitable": true,
       "runtime_measured": true
     },
     {
@@ -235,7 +235,7 @@
       "policy": "pointwise",
       "chaotic": false,
       "exercises": "BAs anharmonic (AHC) chain: pw.x SCF/NSCF, ph.x with epsil=.true. and ldisp, q2r.x, matdyn.x, dvscf_q2r.x, ph.x electron_phonon=ahc, postahc.x.",
-      "why": "Not selected. Measured sum 0.54 + 7.62 + 0.03 + 0.01 + 0.01 + 0.27 + 0.71 + 8.81 + 0.13 + 11.22 + 0.15 = 29.50 s; all steps Passed. Under 180 s. Same AHC reason as ph-ahc-diam; 29.50 s is just under the 30 s acceleration window but AHC is not an owned entrypoint.",
+      "why": "Not suitable (revision 4, 2026-09-15): probed on the x86 worker with the same nine-probe set as the other eight. All three candidate groups measure a computed bound past their upstream cap -- phonon (floor 0.712 cm^-1 from allowed-alpha-mix-0.3, computed 71.2 vs cap 2.0), phonon_acoustic (floor 32.6 cm^-1, computed 3264 vs cap 2.0), ahc_selfen (floor 3.0e-4 eV, computed 0.030 vs cap 5.0e-4) -- leaving nothing gradable. Probe evidence under comment/probes/ph-ahc-bas/.",
       "resources": {
         "cpus": 8,
         "memory_gb": 8,
@@ -359,14 +359,14 @@
       "policy": "pointwise",
       "chaotic": false,
       "exercises": "SiC Gamma restart: pw.x SCF, ph.x recover=.false. (wipes _ph0), then three ph.x recover=.true. steps that keep _ph0 (driver code 10).",
-      "why": "Not selected. Measured sum 0.19 + 0.30 + 0.35 + 0.32 + 0.24 = 1.40 s; all steps Passed. Restart coverage is a ph.x recover=.true. path, not an entrypoint; the extra slot is used for ph-diag-direct. Cheap (1.40 s) and available if STOP 4 wants it.",
+      "why": "Suitable. Added as check ph-restart-sic (revision 4, 2026-09-15). Measured sum 0.2 + 0.3 + 0.3 + 0.3 + 0.2 = 1.4 s on the x86 worker. All six candidate groups (energy, eigenvalues, dielectric, born, phonon, phonon_acoustic) survive with full headroom; the official deck's documented ph.x STOP 1 partial-convergence signal on its four niter_ph=5 restart calls is tolerated by this check's own run.sh copy, which still fails on a real CRASH file.",
       "resources": {
         "cpus": 8,
         "memory_gb": 8,
         "mpi_ranks": 1
       },
       "upstream_runtime_s": 1.4,
-      "suitable": false,
+      "suitable": true,
       "runtime_measured": true
     },
     {
@@ -376,14 +376,14 @@
       "policy": "pointwise",
       "chaotic": false,
       "exercises": "Two-chemical-potential phonons of Si: two pw.x+ph.x pairs, ph.x via driver code 11 (wipe _ph0, skip if CRASH).",
-      "why": "Not selected. Measured sum 0.11 + 0.80 + 0.23 + 1.28 = 2.42 s; all steps Passed. Two-chemical-potential is a niche occupancy path; the extra slot is used for ph-diag-direct.",
+      "why": "Suitable. Added as check ph-twochem (revision 4, 2026-09-15). Measured sum 0.1 + 0.9 + 0.2 + 1.2 = 2.4 s on the x86 worker. Both independent configurations (pair1, pair2) are ground-state-only after floor-dropping (allowed-mixing-beta-0.3/allowed-startingwfc-random drive eigenvalues and phonon/phonon_acoustic past their caps on both pairs); energy, forces and stress remain graded per pair. The official decks share QE's default prefix; this check's extract.py copy keys every group by pair identity instead of letting the second pair overwrite the first.",
       "resources": {
         "cpus": 8,
         "memory_gb": 8,
         "mpi_ranks": 1
       },
       "upstream_runtime_s": 2.42,
-      "suitable": false,
+      "suitable": true,
       "runtime_measured": true
     },
     {
