@@ -12,6 +12,14 @@ name: ITensor full-steward selfcheck
 # needed, then commit the refreshed comment/pipeline/ files it uploads.
 on:
   workflow_dispatch:
+  # A workflow that exists only on a pull-request branch is not dispatchable
+  # until GitHub has registered its path, and registration comes from a
+  # pull_request event that touches the file. The trigger runs a no-op check
+  # (the selfcheck step stays gated on workflow_dispatch), so the job is
+  # registered when the PR updates and can then be dispatched by hand.
+  pull_request:
+    paths:
+      - '.github/workflows/itensor-full-selfcheck.yml'
 
 concurrency:
   group: itensor-full-selfcheck-${{ github.ref }}
@@ -49,16 +57,16 @@ jobs:
           print(f"reason={'x86 record matches the current tree' if fresh else 'record missing, stale, or not x86'}", file=sys.stderr)
           PYEOF
       - name: Record CI run consent
-        if: steps.freshness.outputs.needed == 'true'
+        if: github.event_name == 'workflow_dispatch' && steps.freshness.outputs.needed == 'true'
         run: |
           python3 skills/package-sciaccel-task/scripts/sab.py task consent \
             --task tasks/itensor/itensor --where local \
             --human-ref 'Requester authorized the full ITensor steward nominal/variant/altbuild selfcheck in CI, including the x86 floor the task review asked for.'
       - name: Build both task images
-        if: steps.freshness.outputs.needed == 'true'
+        if: github.event_name == 'workflow_dispatch' && steps.freshness.outputs.needed == 'true'
         run: python3 skills/package-sciaccel-task/scripts/sab.py task build --task tasks/itensor/itensor
       - name: Run the complete selfcheck on x86
-        if: steps.freshness.outputs.needed == 'true'
+        if: github.event_name == 'workflow_dispatch' && steps.freshness.outputs.needed == 'true'
         run: python3 skills/package-sciaccel-task/scripts/sab.py task selfcheck --task tasks/itensor/itensor
       - name: Upload selfcheck evidence
         if: always()
