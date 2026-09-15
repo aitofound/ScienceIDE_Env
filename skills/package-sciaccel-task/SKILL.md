@@ -1,8 +1,8 @@
 ---
 name: package-sciaccel-task
-description: Turn one scientific codebase into ScienceAccelBench task environments with the sab.py CLI. Use it to brief the human on the whole pipeline first, register a pinned codebase, investigate it with short native runs, package it as one whole-codebase module by default (a multi-module cut is extraordinary and needs human approval), get the source PR merged, survey its official tests and examples exhaustively (one check per distinct official test by default, every omission written down with its reason, the human informed and never asked which checks to include), and then, per module, scaffold a Harbor-style task, author self-contained checks (test + pass policy, nominal and variant initial conditions), lint (every check under 300 s whenever possible, tunable in runtime and resources), obtain the human's consent to the run plan, build the Docker images, run the two-solve self-validation in a resource-aware solve, hand the human a review brief for the task PR, and, on the reviewer's side, brief the review of a source PR or a task PR in one fixed shape. The design is SPEC.html next to this file; the CLI validates structure but never writes or decides science, runs anything remotely, or merges.
-version: 5.14.2
-last_changed_at: "2026-09-16T03:00:00Z"
+description: Turn one scientific codebase into ScienceAccelBench task environments with the sab.py CLI. Use it to brief the human on the whole pipeline first, register a pinned codebase, investigate it, build it natively and actually run its tests and examples (Step 1.2, the record of the landscape and the pitfalls of running it), package it as one whole-codebase module by default (a multi-module cut is extraordinary and needs human approval), get the source PR merged, survey its official tests and examples exhaustively (one check per distinct official test by default, every omission written down with its reason, the human informed and never asked which checks to include), and then, per module, scaffold a Harbor-style task, author self-contained checks (test + pass policy, nominal and variant initial conditions), lint (every check under 300 s whenever possible, tunable in runtime and resources), obtain the human's consent to the run plan, build the Docker images, run the two-solve self-validation in a resource-aware solve, hand the human a review brief for the task PR, and, on the reviewer's side, brief the review of a source PR or a task PR in one fixed shape. The design is SPEC.html next to this file; the CLI validates structure but never writes or decides science, runs anything remotely, or merges.
+version: 5.16.0
+last_changed_at: "2026-09-16T05:00:00Z"
 ---
 
 # Package a ScienceAccelBench task
@@ -149,12 +149,16 @@ live in the source PR at `codebase-reports/<id>/`, outside `code/<source>/`.
 python3 sab.py brief [--codebase <id>]
 # Step 1: codebase -> approved modules
 python3 sab.py codebase init --codebase <id> --code-path <checkout> --repo-url … --pin … --license … --language … --arxiv <primary>,… --owner …   # --domain derives from the primary arXiv tag
-#   investigate: read the checkout, build it natively in a scratch copy, make dry or short runs of
-#   its official tests (never Docker, at most 3 minutes of wall time per test), write overview.md and modules.json
+#   investigate: read the checkout as a scientist would; write overview.md
+# Step 1.2: THE MOST IMPORTANT SUBSTEP: build it natively in a scratch copy, actually run a representative set of its
+#   tests and examples (never Docker, at most 3 minutes of wall time per run), record the landscape and every pitfall
+#   (missing parameters, data, flags, environment) in runs.json; then write modules.json
+python3 sab.py codebase build-and-run   --codebase <id>        # validates runs.json, prints the build-and-run summary; strongly advised against skipping
 python3 sab.py codebase propose-modules --codebase <id>        # validates modules.json, prints the table; records the single-module default itself, a multi-module cut is STOP 1
 python3 sab.py codebase approve-modules --codebase <id> --human-ref "<the human's words>"   # multi-module cuts only
 # Step 1.5: after module approval, write the informational, non-blocking metadata report (outside code/<source>/):
-python3 sab.py codebase report --codebase <id> [--metadata <agent-authored-json>]
+python3 sab.py codebase report --codebase <id> [--metadata <agent-authored-json>]   # prints the codebase page: present it
+python3 sab.py codebase present --codebase <id> [--markdown]   # the page again; --markdown is the source PR body
 #           then open the source PR that vendors the pinned tree under code/<id>/ (outside the CLI),
 #           report the link, and wait for the human to merge it (STOP 2). Then record the merge:
 python3 sab.py codebase source-merged --codebase <id> --human-ref "<the human's words>" [--pr <url>]
@@ -254,15 +258,27 @@ step remain available.
 
 ## Rules that the CLI cannot enforce
 
-- **Investigate with short native runs, never Docker.** Step 1 is not
-  reading alone: build the checkout natively in a scratch copy and make dry
-  runs or short runs of its official tests, at most three minutes of wall
-  time per test. Shorten the window or resolution with the test's own
-  settings where needed; a test that cannot be shortened below three minutes
-  is recorded as unmeasured, not run. Measure build time, per-test wall time,
-  whether the upstream reference is reproduced and to how many digits, output
-  formats and non-determinism; they inform the module cut and become the
-  measured runtimes of the survey. Docker starts only after STOP 3.
+- **Step 1.2, build and run, is the most important substep.** Getting the
+  codebase to build and run is the nontrivial part of every task, and the
+  cut, the report, the survey, the checks and the Dockerfiles all rest on
+  it. Before the module cut, the report and the source PR: build the pinned
+  checkout natively in a scratch copy (never Docker; Docker starts only
+  after STOP 3), actually run a representative set of its official tests
+  and example decks (real runs, the shortest first, across every family;
+  not necessarily all of them), and record `runs.json`: the build system,
+  commands, measured build time and its pitfalls; the landscape (every
+  suite and example family, how it runs, how many decks, whether references
+  ship); each run with its wall time, whether the upstream reference was
+  reproduced and to how many digits, its outputs and non-determinism; and
+  every pitfall met (a missing input parameter or data file in a deck, an
+  undocumented flag, an environment variable, a network or credential a
+  test wants), each with its workaround. At most three minutes of wall time
+  per run: shorten through the deck's own settings, and record a run that
+  cannot be shortened as not run, with the reason. `codebase build-and-run`
+  validates the record and prints the summary; `propose-modules` and
+  `survey-tests` warn when it is missing, the report and the source PR body
+  carry it as their own section, and `task scaffold` copies it beside the
+  checks. Skipping this substep is strongly advised against.
 - **STOP 1 exists only for a multi-module cut.** For the single-module
   default there is nothing to decide: `propose-modules` records the cut, and
   the codebase facts (what it simulates in two sentences, languages with
@@ -284,22 +300,20 @@ step remain available.
   licence or external dependency), and record their words with
   `approve-modules`. The same brief, updated with the approval, becomes the
   body of the source PR.
-- **The source PR body is the brief, facts first, report last.** A reviewer
-  has one minute; the body is headed Markdown with tables, in this order:
-  what it is (two sentences on what the code simulates and who uses it,
-  upstream URL, pin, licence); size (language, files, lines of code with a
-  total and the tool that counted, plus what is vendored beyond upstream and
-  its size); build and tests (build system, measured native build time, the
-  official suites and example decks with how they run, how many ran natively
-  and reproduced the upstream reference and to how many digits); the module
-  cut (the single-module default in one line, recorded by `propose-modules`;
-  or, for a multi-module cut, one row per module: slug, scientific and I/O
-  contract, entry point, owned paths and lines of code, expensive path, direct
-  official tests, the evidence for both conditions, approved or proposed-only,
-  then the human's approving words and date); shared infrastructure once with
-  its role and lines of code; everything left out with its reason; and last the bounded Markdown report under a rule when it exists,
-  or a line saying it does not, followed by the skill revision. A body that
-  is only the report or only a link is sent back.
+- **The source PR body is the codebase page.** `sab.py codebase present
+  --codebase <id> --markdown` prints it from the report, and the body is
+  that page verbatim (what the code does; the code split with production
+  lines first, then tests, examples, bundled third-party, other, per
+  language on a best-effort map; build and run from Step 1.2; the module
+  cut with the human's approving words for a multi-module one; what is
+  left out; the warnings), then a rule, then `codebase-metadata.md` for
+  information only, then the skill revision. Nothing hand-written goes
+  above the page: fill the report (description, `source_extensions`,
+  `example_path_markers`, `third_party_paths`) and rerun `codebase report`
+  until the page reads right. `codebase report` prints the same page in
+  text and that page, not the Markdown report, is what you present to the
+  human. A body that is prose instead of the page, only the report, or
+  only a link is sent back.
 - **Step 1.5 is a hard stop.** After the module cut is recorded, open the
   source PR and stop: report the link and wait for the human to review and
   merge it. Do not write the test survey, scaffold a task or author checks on
@@ -591,9 +605,14 @@ port can change); calibration validity (the variant moves every stream, the
 spread is from the target architecture, the altbuild changes something); the
 solver's side (what it sees, whether the acceleration target is real, what
 leaks); record integrity; blind spots; and the numbered decision table last.
-The codebase brief asks the same of the cut: the distinct official tests and
-examples per module that the checks will have to cover, and the numerical
-landscape read from the source. SOUND, THIN and BROKEN are evidence-backed
+The codebase review prints the codebase page first, from the PR's own
+`codebase-reports/<id>/codebase-metadata.json` (what the code does, the code
+split with production lines, build and run, the cut, what is left out), and
+the agent shows the human that page before any reading of the tree; the
+brief then asks for what the page cannot show: the tree against upstream,
+what it carries beyond source, the licence terms, the distinct official
+tests and examples per module that the checks will have to cover, and the
+numerical landscape read from the source. SOUND, THIN and BROKEN are evidence-backed
 human judgments, never inferred from the number of checks.
 
 Rules that hold while reviewing:

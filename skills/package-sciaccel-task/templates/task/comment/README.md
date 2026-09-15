@@ -1,7 +1,7 @@
 # {{TASK}}: authoring notes
 
 This directory is hidden at Harbor runtime and is not part of the contract.
-`comment/pipeline/` is written only by the CLI (module entry, test survey,
+`comment/pipeline/` is written only by the CLI (module entry, the Step 1.2 build-and-run record, test survey,
 self-validation and runtime records). This file is the human-readable story.
 
 ## Module

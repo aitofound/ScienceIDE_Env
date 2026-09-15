@@ -312,6 +312,16 @@ def cmd_review_codebase(a) -> None:
     up = upstream_diff(tree, Path(a.upstream).resolve()) if a.upstream else None
     page = codebase_page(cb_id, source, co, tree, cut, cut_from, up)
     text = "\n".join(page) + "\n"
+    from .present import build_page, render_page_text
+    report_path = config.ROOT / "codebase-reports" / cb_id / "codebase-metadata.json"
+    if report_path.is_file():
+        page_text = render_page_text(build_page(read_json(report_path)),
+                                     "merge, send back, or change the cut; show the human this page first, then the block below")
+    else:
+        page_text = (f"NO CODEBASE PAGE: this checkout has no codebase-reports/{cb_id}/codebase-metadata.json, so the PR carries no report "
+                     "and nothing here says what the code does, how big it is, or whether it was built and run. Ask for the report "
+                     "(skill 5.15.0 or later) before reading the tree.\n")
+    text = page_text + "\n" + text
     print(brief_text("preamble", what=f"{cb_id}  (STOP 2, the source PR)", decisions="merge, send back, or change the cut"))
     print(text)
     print(brief_text("codebase", codebase=cb_id, source=source))
