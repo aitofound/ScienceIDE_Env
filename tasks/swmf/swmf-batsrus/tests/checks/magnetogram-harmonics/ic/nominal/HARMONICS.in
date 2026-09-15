@@ -1,0 +1,62 @@
+! This command reads the new fileformat with coordinates and header
+! Default reads fitsfile.dat in the old fileformat
+#MAGNETOGRAMFILE
+dipole11uniform.out		NameFileIn
+3500.0				BrMax
+
+! Applies optional enhancement of the polar magnetic field with a factor
+!  1 + (PolarFactor-1)*abs(sin(Latitude))^PolarExponent
+CHANGEPOLARFIELD
+3.0			PolarFactor
+2.0                     PolarExponent
+
+! The observed magnetic field is increased
+! Br=sign(BrObserved)*min(BrFactor*|BrObserved|, BrMin + |BrObserved|)
+! Default BrFactor = 1.0, BrMin = 0.0 (no change)
+CHANGEWEAKFIELD
+3.75			BrFactor
+5.0			BrMin
+
+! Default output file name is harmonics.dat
+#OUTPUT
+harmonics11uniform.dat		NameFileOut
+
+! If the input MaxOrder is between [0, 180], then the maximum order of
+! spherical harmonics is the input value of MaxOrder. Otherwise the maximum
+! order is min(nTheta, MaxOrder). Please refer to the source code of
+! ModMagHarmonics.f90 for more details.
+! where nTheta is the number of latitude grid cells in the magnetogram,
+! while MaxOrder can be set below. Default value for MaxOrder is 180.
+#HARMONICS
+10			MaxOrder
+
+! Convert to uniform (co)latitude grid if the magnetogram is on a sin lat grid.
+! This is a requirement for accurate results.
+! Default is true and it should be left that way.
+#CHEBYSHEV
+T			UseChebyshevNode
+
+SUBGRID
+25			nSubGrid
+
+USEMAGNETOGRAMDATE
+T			UseMagnetogramDate
+
+#END
+
+The file is copied to subfolder SC in the run rirectory as HARMONICS.in. This is
+an input file for converting the magnetogram file into thhe list of harmonics
+amplitudes, using the command (from run directory):
+
+cd SC; ./HARMONICS.exe
+
+The name files for input (magnetogram file) or output (harmonics file) may be changed maanually or
+using a reaarl script. For example, the command (from run directory)
+
+cd SC; perl -i -pe \
+	's/dipole11uniform/map_01/; s/harmonics11uniform/endmagnetogram/; s/\d+(\s+MaxOrder)/30$$1/' \
+	HARMONICS.in
+
+changes the input magnetogram file name to map_01.out (the default output from remap_magnetogram.py),
+the output harmonics file to endmagnetogram.dat (the default input for real-time simulations) and reduces
+the harmonic number to 30.
