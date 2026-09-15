@@ -1,0 +1,293 @@
+#DESCRIPTION
+Param/ROSETTA/PARAM.in.fluids.all: multifluid comet CG simulation		StringDescription
+
+#PLANET
+NONE			NamePlanet
+
+#TIMEACCURATE
+F			IsTimeAccurate
+
+#STARTTIME
+2014			iYear
+8			iMonth
+23			iDay
+16			iHour
+0			iMinute
+0			iSecond
+0.0			FracSecond
+
+INCLUDE
+GM/restartIN/restart.H
+
+#GRID
+1			nRootBlock1
+1			nRootBlock2
+1			nRootBlock3
+-16.0			xMin
+ 16.0			xMax
+-16.0			yMin
+ 16.0			yMax
+-16.0			zMin
+ 16.0			zMax
+
+#GRIDBLOCKALL
+400			MaxBlock
+
+#GRIDLEVEL
+3			nLevel
+initial			StringShape
+
+#GRIDLEVEL
+3			nLevel
+shell0			StringShape
+0.5			RadiusInner
+4.0			Radius
+
+#GRIDLEVEL
+1			nLevel
+all			StringShape
+
+#SAVERESTART
+T			DoSaveRestart
+5000			DnSaveRestart
+-1			DtSaveRestart
+
+#BODY
+T			UseBody
+1.0e-6			rBody
+0.0			rCurrents
+1.0e-9			BodyNDim (1/cc)
+25.0			BodyTDim (K) temperature for fixed BC pressure
+1.0e-9			BodyNDim (1/cc)
+180.0			BodyTDim (K) temperature for fixed BC pressure
+1.0e-9			BodyNDim (1/cc)
+180.0			BodyTDim (K) temperature for fixed BC pressure
+
+#USERSWITCH
++init +ic		StringSwitch
+
+#USERINPUTBEGIN -----------------------------------
+
+#SHAPEFILE
+CG_MOC.bdf		NameShapeFile
+
+#USECGSHAPE
+T			DoUseCGShape
+2.0e3			rSphericalBodySi [m]
+
+#SUNDIRECTION
+ 43.57			LatSun
+  0.0			LonSun
+
+#COMETSTATE
+4.087536e20		ProductionRateMinSi [m^-2 s^-1]
+1.040419e21		ProductionRateMaxSi [m^-2 s^-1]
+57.5			SolarAngleMaxDim [degree]
+133.0			TempCometMinDim [K]
+182.1			TempCometMaxDim [K]
+136.1			TempComet75Dim [K]
+
+#IONIZATIONPARAM
+0.9			Heliocentric distance [AU]
+2.0E-6			Ionization frequency for cometary heavy ions
+15.0			Minimum ion temperature
+1e20			Total production rate [1/s]
+30.0			uhaser [m/s]
+
+#BODYBC
+solarwind		UseSwBC
+
+#MINIMUMNEUTEMPERATURE
+100.0			TneuMin
+
+#USERINPUTEND -------------------------------------
+
+#SOLARWIND
+ 1.0000000000000004			SwNDim [n/cc]      \
+100.0			SwTDim [K]          |
+ 0.0			SwUxDim [km/s]      |
+ 0.0			SwUyDim [km/s]      | 3.3 AU
+ 0.0			SwUzDim [km/s]      |
+ 0.0			SwBxDim [nT]        |
+ 0.0			SwByDim [nT]        |
+ 0.0			SwBzDim [nT]       /
+
+#INNERBOUNDARY
+ionosphere		TypeBcBody
+
+#BOXBOUNDARY
+user			TypeBc1
+user			TypeBc2
+user			TypeBc3
+user			TypeBc4
+user			TypeBc5
+user			TypeBc6
+
+#EXTRABOUNDARY
+T			UseExtraBoundary
+user			TypeExtraBoundary
+
+#MINIMUMPRESSURE
+1e-15			pMinDim
+1e-15			pMinDim
+1e-15			pMinDim
+1e-15			PeMinDim
+
+#MINIMUMDENSITY
+1e-15			RhoMinDim
+1e-15			RhoMinDim
+1e-15			RhoMinDim
+
+#MINIMUMTEMPERATURE
+100			TminDim
+100			TminDim
+100			TminDim
+100			TeMinDim
+
+#GAMMA
+5.0/3.0			Gamma
+8.0/6.0			Gamma
+8.0/6.0			Gamma
+5.0/3.0			GammaElectron
+
+#PLASMA
+1.0			FluidMass SWp [amu]
+18.0			FluidMass H2Op [amu]
+18.0			FluidMass Neutral [amu]
+1.0			IonCharge SWp [e]
+1.0			IonCharge H2Op [e]
+1.0			ElectronTemperatureRatio
+
+#MULTIION
+1e-8			LowDensityRatio
+1e-13			LowPressureRatio
+F			DoRestrictMultiIon
+
+#MULTIIONSTATE
+T			UseSingleIonVelocity
+F			UseSingleIonTemperature
+
+#SCHEME
+1			nOrder
+Linde			TypeFlux | only for nOrder=2
+
+#TIMESTEPPING
+1			nStage
+0.8			CflExpl
+
+#NEUTRALFLUID
+F			DoConserveNeutrals
+Linde			TypeFluxNeutral
+
+#POINTIMPLICIT
+F			UsePointImplicit
+
+#RESTARTOUTFILE
+one			StringRestartOutFile
+
+#NONCONSERVATIVE
+T			UseNonConservative
+
+#SAVELOGFILE
+T			DoSaveLogfile rest of parameters read if true
+VAR step date time		StringLog
+1			DnSaveLogfile
+-1.			DtSaveLogfile [sec]
+dtpnt rho Ux Uy Uz Bx By Bz p rhopnt Uxpnt Uypnt Uzpnt ppnt Pmin Pmax Neu1Rhoflx		NameLogVars
+3.0 4.0			StringLogRadii
+
+#SAVEINITIAL
+T			DoSaveInitial
+
+#SAVEPLOT
+4			nPlotFile
+x=0 MHD idl		StringPlot
+10			DnSavePlot
+-1.			DtSavePlot
+-1.			DxSavePlot
+y=0 MHD idl		StringPlot
+10			DnSavePlot
+-1.			DtSavePlot
+-1.			DxSavePlot
+z=0 MHD idl		StringPlot
+10			DnSavePlot
+-1.			DtSavePlot
+-1.			DxSavePlot
+3d MHD tec		StringPlot
+50000			DnSavePlot
+-1.			DtSavePlot
+
+#STOP
+80			MaxIteration
+-1.0			tSimulationMax
+
+#RUN ##########################################################################
+
+END
+
+#USERSWITCH
++source +update +perturb		StringSwitch
+
+#USERINPUTBEGIN -----------------------------------
+
+#BODYBC
+reflected		UseSwBC
+
+#USERINPUTEND -------------------------------------
+
+#SOLARWIND
+8.0			SwNDim [n/cc]
+1.e5			SwTDim [K]
+-371.			SwUxDim [km/s]
+0.0			SwUyDim [km/s]
+0.0			SwUzDim [km/s]
+-3.4			SwBxDim [nT]
+3.4			SwByDim [nT]
+0.0			SwBzDim [nT]
+
+#TIMESTEPPING
+1			nStage
+0.2			CflExpl
+
+#NEUTRALFLUID
+F			DoConserveNeutrals
+Linde			TypeFluxNeutral
+
+#POINTIMPLICIT
+T			UsePointImplicit
+1.0			BetaPointImplicit
+T			IsAsymmetric
+T			DoNormalizeCell
+
+#STOP
+100			MaxIteration
+-1.0			tSimulationMax
+
+#RUN ##########################################################################
+
+END
+
+#MULTIIONSTATE
+F			UseSingleIonVelocity
+F			UseSingleIonTemperature
+
+#POINTIMPLICIT
+T			UsePointImplicit
+1.0			BetaPointImplicit
+F			IsAsymmetric
+T			DoNormalizeCell
+
+#STOP
+150			MaxIteration
+-1.0			tSimulationMax
+
+#RUN ##########################################################################
+
+END
+
+#TIMEACCURATE
+T			IsTimeAccurate
+
+#STOP
+180			MaxIteration
+-1.0			tSimulationMax
