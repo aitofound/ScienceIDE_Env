@@ -1,0 +1,402 @@
+import abc
+import dataclasses
+import os
+import pathlib
+from datetime import datetime
+from typing import Callable, ClassVar, TypeVar
+
+import f90nml
+
+import pyfv3.initialization.analytic_init as analytic_init
+from ndsl import (
+    CompilationConfig,
+    DaceConfig,
+    QuantityFactory,
+    StencilConfig,
+    StencilFactory,
+)
+from ndsl.config import Backend
+from ndsl.grid import DampingCoefficients, DriverGridData, GridData
+from ndsl.stencils.testing import TranslateGrid, grid
+from ndsl.typing import Communicator
+from ndsl.utils import grid_params_from_f90nml
+from pace.registry import Registry
+from pace.state import DriverState, TendencyState, _restart_driver_state
+from pyfv3 import DycoreState, DynamicalCoreConfig
+from pyfv3.initialization.analytic_init import AnalyticCase
+from pyfv3.testing import TranslateFVDynamics
+from pyshield import PHYSICS_PACKAGES, PhysicsState
+
+
+class Initializer(abc.ABC):
+    @property
+    @abc.abstractmethod
+    def start_time(self) -> datetime: ...
+
+    @abc.abstractmethod
+    def get_driver_state(
+        self,
+        quantity_factory: QuantityFactory,
+        communicator: Communicator,
+        damping_coefficients: DampingCoefficients,
+        driver_grid_data: DriverGridData,
+        grid_data: GridData,
+        schemes: list[PHYSICS_PACKAGES],
+    ) -> DriverState: ...
+
+
+IT = TypeVar("IT", bound=type[Initializer])
+
+
+@dataclasses.dataclass
+class InitializerSelector(Initializer):
+    """
+    Dataclass for selecting the implementation of Initializer to use.
+
+    Used to circumvent the issue that dacite expects static class definitions,
+    but we would like to dynamically define which Initializer to use. Does this
+    by representing the part of the yaml specification that asks which initializer
+    to use, but deferring to the implementation in that initializer when called.
+    """
+
+    type: str
+    config: Initializer
+    registry: ClassVar[Registry] = Registry()
+
+    @classmethod
+    def register(cls, type_name) -> Callable[[IT], IT]:
+        return cls.registry.register(type_name)
+
+    @property
+    def start_time(self) -> datetime:
+        return self.config.start_time
+
+    def get_driver_state(
+        self,
+        quantity_factory: QuantityFactory,
+        communicator: Communicator,
+        damping_coefficients: DampingCoefficients,
+        driver_grid_data: DriverGridData,
+        grid_data: GridData,
+        schemes: list[PHYSICS_PACKAGES],
+    ) -> DriverState:
+        return self.config.get_driver_state(
+            quantity_factory=quantity_factory,
+            communicator=communicator,
+            damping_coefficients=damping_coefficients,
+            driver_grid_data=driver_grid_data,
+            grid_data=grid_data,
+            schemes=schemes,
+        )
+
+    @classmethod
+    def from_dict(cls, config: dict, hooks: dict | None = None):
+        if not hooks:
+            hooks = {}
+        instance = cls.registry.from_dict(config, hooks=hooks)
+        return cls(config=instance, type=config["type"])
+
+
+@InitializerSelector.register("analytic")
+@dataclasses.dataclass
+class AnalyticInit(Initializer):
+    """
+    Configuration for analytic initialization.
+    """
+
+    case: AnalyticCase = AnalyticCase.baroclinic_instability
+    start_time: datetime = datetime(2000, 1, 1)
+    dycore_config: DynamicalCoreConfig = dataclasses.field(
+        default_factory=DynamicalCoreConfig
+    )
+
+    def get_driver_state(
+        self,
+        quantity_factory: QuantityFactory,
+        communicator: Communicator,
+        damping_coefficients: DampingCoefficients,
+        driver_grid_data: DriverGridData,
+        grid_data: GridData,
+        schemes: list[PHYSICS_PACKAGES],
+    ) -> DriverState:
+        dycore_state = analytic_init.init_analytic_state(
+            analytic_init_case=self.case,
+            grid_data=grid_data,
+            quantity_factory=quantity_factory,
+            adiabatic=self.dycore_config.adiabatic,
+            hydrostatic=self.dycore_config.hydrostatic,
+            moist_phys=self.dycore_config.moist_phys,
+            sw_dynamics=self.dycore_config.sw_dynamics,
+            comm=communicator,
+        )
+        physics_state = PhysicsState.init_zeros(
+            quantity_factory=quantity_factory, schemes=schemes
+        )
+        tendency_state = TendencyState.init_zeros(
+            quantity_factory=quantity_factory,
+        )
+        return DriverState(
+            dycore_state=dycore_state,
+            physics_state=physics_state,
+            tendency_state=tendency_state,
+            grid_data=grid_data,
+            damping_coefficients=damping_coefficients,
+            driver_grid_data=driver_grid_data,
+        )
+
+
+@InitializerSelector.register("restart")
+@dataclasses.dataclass
+class RestartInit(Initializer):
+    """
+    Configuration for pace restart initialization.
+    """
+
+    path: str = "."
+    start_time: datetime = datetime(2000, 1, 1)
+
+    def get_driver_state(
+        self,
+        quantity_factory: QuantityFactory,
+        communicator: Communicator,
+        damping_coefficients: DampingCoefficients,
+        driver_grid_data: DriverGridData,
+        grid_data: GridData,
+        schemes: list[PHYSICS_PACKAGES],
+    ) -> DriverState:
+        state = _restart_driver_state(
+            self.path,
+            communicator.rank,
+            quantity_factory,
+            communicator,
+            damping_coefficients,
+            driver_grid_data,
+            grid_data,
+            schemes,
+        )
+
+        return state
+
+
+@InitializerSelector.register("fortran_restart")
+@dataclasses.dataclass
+class FortranRestartInit(Initializer):
+    """
+    Configuration for fortran restart initialization.
+    """
+
+    path: str = "."
+
+    @property
+    def start_time(self) -> datetime:
+        """Reads the last line in coupler.res to find the restart time"""
+        restart_files = os.listdir(self.path)
+
+        coupler_file = restart_files[
+            [fname.endswith("coupler.res") for fname in restart_files].index(True)
+        ]
+        restart_doc = pathlib.Path(self.path) / coupler_file
+        fl = open(restart_doc, "r")
+        contents = fl.readlines()
+        fl.close()
+        last_line = contents.pop(-1)
+        date = [
+            dt if len(dt) == 4 else "%02d" % int(dt) for dt in last_line.split()[:6]
+        ]
+        date_dt = datetime.strptime("".join(date), "%Y%m%d%H%M%S")
+        return date_dt
+
+    def get_driver_state(
+        self,
+        quantity_factory: QuantityFactory,
+        communicator: Communicator,
+        damping_coefficients: DampingCoefficients,
+        driver_grid_data: DriverGridData,
+        grid_data: GridData,
+        schemes: list[PHYSICS_PACKAGES],
+    ) -> DriverState:
+        state = _restart_driver_state(
+            self.path,
+            communicator.rank,
+            quantity_factory,
+            communicator,
+            damping_coefficients,
+            driver_grid_data,
+            grid_data,
+            schemes,
+        )
+
+        _update_fortran_restart_pe_peln(state)
+
+        # TODO
+        # follow what fortran does with restart data after reading it
+        # should eliminate small differences between restart input and
+        # serialized test data
+
+        return state
+
+
+@InitializerSelector.register("serialbox")
+@dataclasses.dataclass
+class SerialboxInit(Initializer):
+    """
+    Configuration for Serialbox initialization.
+    """
+
+    path: str
+    serialized_grid: bool
+
+    @property
+    def start_time(self) -> datetime:
+        return datetime(2000, 1, 1)
+
+    @property
+    def _f90_namelist(self) -> f90nml.Namelist:
+        return f90nml.read(self.path + "/input.nml")
+
+    @property
+    def _grid_params(self) -> dict:
+        return grid_params_from_f90nml(self._f90_namelist)
+
+    def _get_serialized_grid(
+        self,
+        communicator: Communicator,
+        backend: Backend,
+    ) -> grid.Grid:  # type: ignore
+        ser = self._serializer(communicator)
+        grid = TranslateGrid.new_from_serialized_data(
+            ser, communicator.rank, self._grid_params["layout"], backend
+        ).python_grid()
+        return grid
+
+    def _serializer(self, communicator: Communicator):
+        import serialbox
+
+        serializer = serialbox.Serializer(
+            serialbox.OpenModeKind.Read,
+            self.path,
+            "Generator_rank" + str(communicator.rank),
+        )
+        return serializer
+
+    def get_driver_state(
+        self,
+        quantity_factory: QuantityFactory,
+        communicator: Communicator,
+        damping_coefficients: DampingCoefficients,
+        driver_grid_data: DriverGridData,
+        grid_data: GridData,
+        schemes: list[PHYSICS_PACKAGES],
+    ) -> DriverState:
+        dycore_state = self._initialize_dycore_state(
+            communicator, quantity_factory.backend
+        )
+        physics_state = PhysicsState.init_zeros(
+            quantity_factory=quantity_factory,
+            schemes=schemes,
+        )
+        tendency_state = TendencyState.init_zeros(quantity_factory=quantity_factory)
+
+        return DriverState(
+            dycore_state=dycore_state,
+            physics_state=physics_state,
+            tendency_state=tendency_state,
+            grid_data=grid_data,
+            damping_coefficients=damping_coefficients,
+            driver_grid_data=driver_grid_data,
+        )
+
+    def _initialize_dycore_state(
+        self,
+        communicator: Communicator,
+        backend: Backend,
+    ) -> DycoreState:
+        grid = self._get_serialized_grid(communicator=communicator, backend=backend)
+
+        ser = self._serializer(communicator)
+        savepoint_in = ser.get_savepoint("Driver-In")[0]
+        dace_config = DaceConfig(
+            communicator,
+            backend,
+            tile_nx=self._grid_params["npx"],
+            tile_nz=self._grid_params["npz"],
+        )
+        stencil_config = StencilConfig(
+            compilation_config=CompilationConfig(
+                backend=backend, communicator=communicator
+            ),
+            dace_config=dace_config,
+        )
+        stencil_factory = StencilFactory(
+            config=stencil_config, grid_indexing=grid.grid_indexing
+        )
+        translate_object = TranslateFVDynamics(
+            grid, self._f90_namelist, stencil_factory
+        )
+        input_data = translate_object.collect_input_data(ser, savepoint_in)
+        dycore_state = translate_object.state_from_inputs(input_data)
+        return dycore_state
+
+
+@InitializerSelector.register("predefined")
+@dataclasses.dataclass
+class PredefinedStateInit(Initializer):
+    """
+    Configuration if the states are already defined.
+
+    Generally you will not want to use this class when initializing from yaml,
+    as it requires numpy array data to be part of the configuration dictionary
+    used to construct the class.
+    """
+
+    dycore_state: DycoreState
+    physics_state: PhysicsState
+    tendency_state: TendencyState
+    grid_data: GridData
+    damping_coefficients: DampingCoefficients
+    driver_grid_data: DriverGridData
+    start_time: datetime = datetime(2016, 8, 1)
+
+    def get_driver_state(
+        self,
+        quantity_factory: QuantityFactory,
+        communicator: Communicator,
+        damping_coefficients: DampingCoefficients,
+        driver_grid_data: DriverGridData,
+        grid_data: GridData,
+        schemes: list[PHYSICS_PACKAGES],
+    ) -> DriverState:
+        return DriverState(
+            dycore_state=self.dycore_state,
+            physics_state=self.physics_state,
+            tendency_state=self.tendency_state,
+            grid_data=self.grid_data,
+            damping_coefficients=self.damping_coefficients,
+            driver_grid_data=self.driver_grid_data,
+        )
+
+
+# TODO: refactor pyFV3 so that pe and peln are internal temporaries
+# of the dynamical core, computed automatically, so that this helper
+# can be eliminated from initialization
+def _update_fortran_restart_pe_peln(state: DriverState) -> None:
+    """
+    Fortran restart data don't have information on pressure interface values
+    and their logs.
+    This function takes the delp data (that is present in restart files), and
+    top level pressure to calculate pressure at interfaces and their log,
+    and updates the driver state with values.
+    """
+
+    ptop = state.grid_data.ak.view[0]
+    pe = state.dycore_state.pe
+    peln = state.dycore_state.peln
+    delp = state.dycore_state.delp
+
+    for level in range(pe.shape[2]):
+        pe[:, :, level] = ptop + delp.np.sum(delp[:, :, :level], 2)
+
+    peln[:] = pe.np.log(pe[:])
+
+    state.dycore_state.pe = pe
+    state.dycore_state.peln = peln

@@ -1,0 +1,137 @@
+{
+  "skimage.exposure.cumulative_distribution": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 314,
+      "end_line": 356
+    },
+    "description": "Return cumulative distribution function (cdf) for the given image.",
+    "calls": [
+      "histogram",
+      "hist.cumsum",
+      "utils._supported_float_type",
+      "img_cdf.astype"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.equalize_hist": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 359,
+      "end_line": 398
+    },
+    "description": "Return image after histogram equalization.",
+    "calls": [
+      "cumulative_distribution",
+      "np.interp",
+      "out.reshape",
+      "out.astype",
+      "utils._supported_float_type"
+    ],
+    "branches": [
+      {
+        "line": 389,
+        "expression": "mask is not None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.rank.equalize": {
+    "implementation": {
+      "file": "src/skimage/filters/rank/generic.py",
+      "line": 507,
+      "end_line": 566
+    },
+    "description": "Equalize image using local histogram.",
+    "calls": [
+      "np.asanyarray",
+      "_apply_scalar_per_pixel",
+      "_apply_scalar_per_pixel_3D"
+    ],
+    "branches": [
+      {
+        "line": 545,
+        "expression": "np_image.ndim == 2"
+      },
+      {
+        "line": 555,
+        "expression": "np_image.ndim == 3"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.ball": {
+    "implementation": {
+      "file": "src/skimage/morphology/footprints.py",
+      "line": 841,
+      "end_line": 911
+    },
+    "description": "Generates a ball-shaped footprint.",
+    "calls": [
+      "_nsphere_series_decomposition"
+    ],
+    "branches": [
+      {
+        "line": 896,
+        "expression": "decomposition is None"
+      },
+      {
+        "line": 904,
+        "expression": "not strict_radius"
+      },
+      {
+        "line": 907,
+        "expression": "decomposition == 'sequence'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.disk": {
+    "implementation": {
+      "file": "src/skimage/morphology/footprints.py",
+      "line": 508,
+      "end_line": 597
+    },
+    "description": "Generates a flat, disk-shaped footprint.",
+    "calls": [
+      "np.arange",
+      "np.meshgrid",
+      "_nsphere_series_decomposition",
+      "disk",
+      "_cross_decomposition"
+    ],
+    "branches": [
+      {
+        "line": 586,
+        "expression": "decomposition is None"
+      },
+      {
+        "line": 589,
+        "expression": "not strict_radius"
+      },
+      {
+        "line": 592,
+        "expression": "decomposition == 'sequence'"
+      },
+      {
+        "line": 594,
+        "expression": "decomposition == 'crosses'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_ubyte": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 557,
+      "end_line": 578
+    },
+    "description": "Convert an image to 8-bit unsigned integer format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

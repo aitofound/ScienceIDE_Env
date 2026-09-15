@@ -1,0 +1,913 @@
+/**
+ * @file    rebound.h
+ * @brief   REBOUND API definition.
+ * @author  Hanno Rein <hanno@hanno-rein.de>
+ * 
+ * @section     LICENSE
+ * Copyright (c) 2015 Hanno Rein, Shangfei Liu
+ *
+ * This file is part of rebound.
+ *
+ * rebound is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * rebound is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with rebound.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+#ifndef _MAIN_H
+#define _MAIN_H
+
+#define REB_API     // Public REBOUND API definitions
+
+// Helper macros for padding structures
+#if defined(_WIN64) || defined(_LP64)
+#define REB_PAD(s) // 64 bit pointers require no padding
+#else // 32 bit pointers
+#define REB_PAD_CONCAT(a, b) a ## b
+#define REB_PAD_EVAL(a, b) REB_PAD_CONCAT(a, b)
+#define REB_PAD(s) char REB_PAD_EVAL(_pad_, __LINE__)[s];
+#endif
+
+// The restrict keyword has different spellings in different compilers
+#if defined(_MSC_VER)
+#define REB_RESTRICT __restrict
+#pragma comment(lib, "legacy_stdio_definitions.lib") // for printf, etc
+#elif defined(__GNUC__) || defined(__clang__)
+#define REB_RESTRICT __restrict__
+#else
+#define REB_RESTRICT restrict
+#endif
+
+// Windows requires special treatment.
+#ifdef _WIN32
+#undef REB_API
+#define _USE_MATH_DEFINES // Windows (MVSC) does not include math constants by default.
+#ifdef BUILDINGLIBREBOUND // Windows needs different declarations depending on whether the library is built or used.
+#define REB_API __declspec(dllexport)
+#else
+#define REB_API __declspec(dllimport)
+#endif
+#endif // _WIN32
+
+#include <stdlib.h> // for size_t
+#include <stdint.h> // for integer types
+#include <stddef.h> // for offsetof
+
+// Maximum length string for most strings used by REBOUND,
+// including names of binary fields.
+#define REB_STRING_SIZE_MAX 256
+
+// Macros to generate enums whose name can also be read by python
+#define REB_AS_ENUM_MEMBER(prefix, value, name)  prefix ## _ ## name = value,
+#define REB_GENERATE_ENUM(LIST) LIST(REB_AS_ENUM_MEMBER,LIST)
+
+// Forward declarations
+struct reb_simulationarchive;   // Opaque pointer. Implemented in simulationarchive.h
+struct reb_server_data;         // Opaque pointer. Implemented in server.h
+struct reb_treecell;            // Opaque pointer. Implemented in tree.h
+struct reb_display_data;        // Opaque pointer. Implemented in display.h
+struct reb_particle_int;        // Opaque pointer. Implemented in integrator_janus.h
+struct reb_name_hash_item;      // Opaque pointer. Implemented in particle.h
+struct reb_simulation;          // Implemented below.
+struct reb_display_settings;    // Implemented below.
+struct reb_variational_configuration;  // Implemented below.
+struct reb_ode; // Implemented below.
+
+// Particle structure
+struct reb_particle {
+    double x;                   // Cartesian coordinates
+    double y;
+    double z;
+    double vx;
+    double vy;
+    double vz;
+    double ax;
+    double ay;
+    double az;
+    double m;                   // Mass in code units
+    double r;                   // Physical radius in code units
+    const char* name;           // Pointer to a NULL terminated string with the particle's name. Memory owned by simulation.
+    REB_PAD(4)
+    void* ap;                   // This pointer allows REBOUNDx to add additional properties to the particle.
+    REB_PAD(4)
+    struct reb_simulation* sim; // Pointer to the parent simulation.
+    REB_PAD(4)
+};
+
+// Possible datatypes for reb_binarydata_field.
+enum REB_BINARYDATA_DTYPE {
+    REB_FIELD_NOT_FOUND = 0,     // Special type used to throw error messages
+    REB_DOUBLE = 1,
+    REB_INT = 2,
+    REB_UINT = 3,                // Same as UINT32
+    REB_UINT32 = 4,
+    REB_INT64 = 5,
+    REB_UINT64 = 6,
+    REB_SIZE_T = 7,
+    REB_VEC3D = 8,
+    REB_PARTICLE = 9,
+    REB_POINTER = 10,
+    REB_POINTER_ALIGNED = 11,    // memory aligned to 64 bit boundary for AVX512
+    REB_OTHER = 12,              // Fields that need special treatment during input and/or output
+    REB_CHARP_LIST = 13,         // A list of NULL terminated strings (char**).
+    REB_FUNCTIONPOINTER = 14,    // A function pointer. Will not be saved to Simulationarchive.
+    REB_STRING = 20,             // NULL character terminated string
+};
+
+// Generic 3d vector
+struct reb_vec3d {
+    double x;
+    double y;
+    double z;
+};
+
+// Generic 6d vector
+struct reb_vec6d{
+    double x;
+    double y;
+    double z;
+    double vx;
+    double vy;
+    double vz;
+};
+
+// Structure representing one particle-particle collision
+struct reb_collision{
+    size_t p1;              // Index of first particle involved in collision
+    size_t p2;              // Index of second particle
+    struct reb_vec6d gb;    // Offset due to boundary conditions
+    size_t ri;              // Root cell index (MPI only)
+};
+
+// Dictionary element to provide human readable name for enums. Used by python.
+struct reb_binarydata_enum_descriptor{
+    int value;
+    char name[REB_STRING_SIZE_MAX];
+};
+
+// Binary field descriptors are used to identify data blobs in simulationarchives.
+struct reb_binarydata_field_descriptor {
+    char* documentation;             // Documentation of this field. Optional, can be NULL or "" for internal fields.
+    enum REB_BINARYDATA_DTYPE dtype; // Datatype (note: not the same as type)
+    char name[REB_STRING_SIZE_MAX];  // Null terminated, unique, human readable name.
+    size_t offset;                   // Offset of the storage location relative to the beginning of reb_simulation
+    size_t offset_N;                 // Offset of the storage location for the size relative to the beginning of reb_simulation
+    size_t element_size;             // Size in bytes of each element (only used for pointers, dp7, etc).
+    struct reb_binarydata_enum_descriptor* enum_descriptor; // Null terminated list that allows enums to be set/read by string in python.
+};
+
+// Generic integrator callbacks.
+// This can be used to implement a user provided integrator.
+struct reb_integrator {
+    char* documentation;    // Documentation of the integrator. Optional, can be NULL or "".
+    void (*step)(struct reb_simulation* r, void* p);        // Performs one timestep. Timestep should be r->dt for a non-adaptive integrator. Need to update r->t in this routine.
+    void (*synchronize)(struct reb_simulation* r, void* p); // Synchronizes particle state. Optional. Set to NULL if not used.
+    void* (*create)();                                      // Allocate memory for integrator and set default values. Return pointer to the new integrator state.
+    void (*free)(void* p);                                  // Free all memory owned by integrator. p points to the integrator's state.
+    void (*did_add_particle)(struct reb_simulation* r);                     // Gets called after a particle was added.
+    void (*will_remove_particle)(struct reb_simulation* r, size_t index);   // Gets called before a particle will be removed.
+    const struct reb_binarydata_field_descriptor* field_descriptor_list;    // Information on how to safe/load the integrator state from restart files for this integrator.
+};
+
+
+// A current integrator configuration. Internal use only.
+struct reb_integrator_configuration {
+    const char* name;
+    struct reb_integrator callbacks;
+    void* state;
+};
+
+// Available built-in integrators
+// See individual files for configuration options.
+#include "integrator_ias15.h"        /* IAS15 integrator, 15th order, non-symplectic (default)                             */
+#include "integrator_whfast.h"       /* WHFast integrator, symplectic, 2nd order, up to 11th order correctors              */
+#include "integrator_sei.h"          /* SEI integrator for shearing sheet simulations, symplectic, needs OMEGA variable    */
+#include "integrator_leapfrog.h"     /* LEAPFROG integrator, simple, 2nd order, symplectic                                 */
+#include "integrator_janus.h"        /* Bit-wise reversible JANUS integrator.                                              */
+#include "integrator_mercurius.h"    /* MERCURIUS integrator                                                               */
+#include "integrator_saba.h"         /* SABA integrator family (Laskar and Robutel 2001)                                   */
+#include "integrator_eos.h"          /* Embedded Operator Splitting (EOS) integrator family (Rein 2019)                    */
+#include "integrator_bs.h"           /* Gragg-Bulirsch-Stoer                                                               */
+#include "integrator_whfast512.h"    /* ASM version of WHFast512                                                           */
+#include "integrator_trace.h"        /* TRACE integrator (Lu, Hernandez and Rein 2024)                                     */
+extern const struct reb_integrator reb_integrator_none; /* Does nothing other than advance time. Defined in rebound.c      */
+
+// List of built-in integrators for X macros
+#define REB_BUILTIN_INTEGRATORS X(ias15) X(whfast) X(sei) X(leapfrog) X(janus) X(mercurius) X(saba) X(eos) X(bs) X(whfast512) X(trace) X(none) 
+
+
+// Available return values for collision resolve functions
+enum REB_COLLISION_RESOLVE_OUTCOME {
+    REB_COLLISION_RESOLVE_OUTCOME_REMOVE_NONE = 0,
+    REB_COLLISION_RESOLVE_OUTCOME_REMOVE_P1 = 1,
+    REB_COLLISION_RESOLVE_OUTCOME_REMOVE_P2 = 2,
+    REB_COLLISION_RESOLVE_OUTCOME_REMOVE_BOTH = 3,
+};
+
+// Possible return values of rebound_integrate
+enum REB_STATUS {
+    // Any status less than SINGLE_STEP get incremented once every timestep until SINGLE_STEP is reached.
+    REB_STATUS_SINGLE_STEP = -10, // Performing a single step, then switching to PAUSED.
+    REB_STATUS_SCREENSHOT_READY=-5,// Screenshot is ready, send back, then finish integration
+    REB_STATUS_SCREENSHOT = -4,   // Pause until visualization has taken a screenshot.
+    REB_STATUS_PAUSED = -3,       // Simulation is paused by visualization.
+    REB_STATUS_LAST_STEP = -2,    // Current timestep is the last one. Needed to ensure that t=tmax exactly.
+    REB_STATUS_RUNNING = -1,      // Simulation is current running, no error occurred.
+    REB_STATUS_SUCCESS = 0,       // Integration finished successfully.
+    REB_STATUS_GENERIC_ERROR = 1, // A generic error occurred and the integration was not successful.
+    REB_STATUS_NO_PARTICLES = 2,  // The integration ends early because no particles are left in the simulation.
+    REB_STATUS_ENCOUNTER = 3,     // The integration ends early because two particles had a close encounter (see exit_min_distance)
+    REB_STATUS_ESCAPE = 4,        // The integration ends early because a particle escaped (see exit_max_distance)  
+    REB_STATUS_USER = 5,          // User caused exit, simulation did not finish successfully.
+    REB_STATUS_SIGINT = 6,        // SIGINT received. Simulation stopped.
+    REB_STATUS_COLLISION = 7,     // The integration ends early because two particles collided. 
+};
+
+
+// Main REBOUND Simulation structure
+// Note: only variables that should be accessed by users are documented here.
+struct reb_simulation {
+    double  t;                      // Current simulation time. Default: 0.
+    double  G;                      // Gravitational constant. Default: 1.
+    double  softening;              // Gravitational softening. Default: 0.
+    double  OMEGA;                  // Epicyclic frequency
+    double  OMEGAZ;                 // Epicyclic frequency in z direction (if not set, use OMEGA)
+    double  dt;                     // Timestep. Default: 0.001.
+    double  dt_last_done;           // Last successful timestep.
+    uint64_t steps_done;            // Number of timesteps done.
+    unsigned int is_synchronized;   // Positions and velocities of particles are in inertial frame if 1. Otherwise call reb_simulation_synchronize().
+    unsigned int did_modify_particles; // Should be set to 1 if a particle got modified manually in-between timesteps.
+
+    // Main particles array
+    size_t  N;                      // Number of particles (includes variational particles). Default: 0.
+    size_t  N_allocated;            // Current maximum space allocated in the particles array on this node. 
+    struct reb_particle* particles; // Main particle array with active, variational, and test particles.
+
+    // Collision routines and some integrators can operate on only some particles.
+    // This array r->map defines which ones. Set to NULL to operate on all particles.
+    size_t N_map;                   // If map is not NULL, use map to operate on only N_map particles
+    size_t* map;                    // Note: memory not owned and thus not freed by simulation.
+
+    // Variational particles array
+    size_t  N_var;                  // Number of variational particles. Default 0.
+    struct reb_particle* particles_var;
+
+    size_t  N_var_config; 
+    struct  reb_variational_configuration* var_config;   // Configuration structs. These contain details on variational particles. 
+
+    size_t  N_active;               // Number of active (i.e. not test-particle) particles. Default: SIZE_MAX (all particles are active). 
+    int     testparticle_type;      // 0 (default): active particles do not feel test-particles, 1: active particles feel test-particles
+    int     testparticle_hidewarnings;
+    char**  name_list;              // List of names used to identify particles. Managed by REBOUND. Do not directly edit/access.
+    size_t  N_name_list;            // Number of entries in reb_name_list.
+    struct reb_name_hash_item*    name_hash_table;        // Internal use only. Speeds up name search.
+    struct reb_vec3d* gravity_cs; 
+    size_t N_allocated_gravity_cs;
+    struct reb_treecell** tree_root;// Pointer to the temporary tree structure.
+    double opening_angle2;          // Opening angle for tree-based gravity calculation. Default 0.25.
+    enum REB_STATUS status;         // Current simulation status
+    int     exact_finish_time;      // 1 (default): integrate exactly to the time requested and adjust timestep if needed, 0: may overshoot by one timestep
+
+    int force_is_velocity_dependent; // 0 (default): force only depends on position, 1: force also depends on velocities
+    enum {
+        REB_GRAVITY_IGNORE_TERMS_NONE = 0,              // Include all pairwise interactions in gravity calculations.
+        REB_GRAVITY_IGNORE_TERMS_BETWEEN_0_AND_1 = 1,   // Ignore interactions between particles 0 and 1 in gravity calculations (used for WHFast)
+        REB_GRAVITY_IGNORE_TERMS_INVOLVING_0 = 2,       // Ignore all interactions with particle 0 in gravity calculations (used for WHFast)
+    } gravity_ignore_terms;         // This flag determines which interactions are included in the gravity calculation.
+    double output_timing_last;      // Time when reb_simulation_output_timing() was called the last time. 
+
+    int save_messages;              // 0 (default): print messages on screen, 1: ignore messages (used in python interface).
+    char** messages;                // Array of strings containing last messages (only used if save_messages==1). 
+
+    // Flags to avoid repeated warning messages
+    int messages_var_rescale_warning;    
+    int messages_timestep_warning;    
+
+    double exit_max_distance;       // Exit simulation if a particle is this far away from the origin.
+    double exit_min_distance;       // Exit simulation if two particles come this close to each other.
+    double usleep;                  // Artificially slow down simulations by this many microseconds each timestep.
+    struct reb_display_settings* display_settings;// Optional. Will overwrite settings for visualization. If NULL, UI will determine settings.
+    struct reb_display_data* display_data; // Datastructure stores visualization related data. Does not have to be modified by the user. 
+    struct reb_server_data* server_data; // Datastructure stores server related data. Does not have to be modified by the user. 
+    int track_energy_offset;        // 0 (default): do not track energy offset due to merging/lost particles, 1: track offset
+    double energy_offset;           // Only used if track_energy_offset = 1
+    double walltime;                // Cumulative walltime of entire integration.
+    double walltime_last_step;      // Wall time of last step.
+    double walltime_last_steps;     // Average wall time of last step (updated every 0.1s).
+    double walltime_last_steps_sum;
+    int walltime_last_steps_N;
+    uint32_t python_unit_l;         // Only used when working with units in python.
+    uint32_t python_unit_m;         // Only used when working with units in python.
+    uint32_t python_unit_t;         // Only used when working with units in python.
+
+    // Simulation domain and ghost boxes 
+    double  root_size;              // Size of a root box. 
+    size_t  N_root_x;               // Number of ghost boxes in x direction. Do not change manually.
+    size_t  N_root_y;
+    size_t  N_root_z;
+    int  N_ghost_x;              // Number of ghost boxes in x direction.
+    int  N_ghost_y;
+    int  N_ghost_z;
+
+    // MPI Parallelization
+#ifdef MPI
+    int    mpi_id;                              // Unique id of this node (starting at 0). Used for MPI only.
+    int    mpi_num;                             // Number of MPI nodes. Used for MPI only.
+    struct reb_particle** particles_send;       // Send buffer for particles. There is one buffer per node.
+    int*   N_particles_send;                    // Current length of particle send buffer.
+    int*   N_particles_send_max;                // Maximal length of particle send buffer before realloc() is needed.
+    struct reb_particle** particles_recv;       // Receive buffer for particles. There is one buffer per node.
+    int*   N_particles_recv;                    // Current length of particle receive buffer.
+    int*   N_particles_recv_max;                // Maximal length of particle receive buffer before realloc() is needed. */
+
+    struct reb_treecell** tree_essential_send;  // Send buffer for cells. There is one buffer per node.
+    int*   N_tree_essential_send;               // Current length of cell send buffer.
+    int*   N_tree_essential_send_max;           // Maximal length of cell send buffer before realloc() is needed.
+    struct reb_treecell** tree_essential_recv;  // Receive buffer for cells. There is one buffer per node.
+    int*   N_tree_essential_recv;               // Current length of cell receive buffer.
+    int*   N_tree_essential_recv_max;           // Maximal length of cell receive buffer before realloc() is needed.
+#endif // MPI
+
+    // Collision related variables
+    struct reb_collision* collisions;       // Array of current collisions. Do not change manually
+    size_t N_allocated_collisions;
+    size_t N_collisions;                    // Number of collisions found during last collision search.
+    size_t N_targets;                       // Number of particles which can be a target in collisions. Default is SIZE_MAX, corresponding to r->N targets. There are always r->N projectiles.
+    double minimum_collision_velocity;      // Ensure relative velocity during collisions is at least this much (to avoid particles sinking into each other)
+    double collisions_plog;                 // Keeping track of momentum transfer in collisions (for ring simulations)
+    int64_t collisions_log_n;               // Cumulative number of collisions in entire simulation.
+
+    // MEGNO Chaos indicator. These variables should not be accessed directly. Use functions provided instead.
+    int calculate_megno;    // Do not change manually. Internal flag that determines if megno is calculated (default=0, but megno_init() sets it to the index of variational particles used for megno)
+    double megno_Ys;        // Running megno sum (internal use)
+    double megno_Yss;       // Running megno sum (internal use)
+    double megno_cov_Yt;    // covariance of MEGNO Y and t
+    double megno_var_t;     // variance of t 
+    double megno_mean_t;    // mean of t
+    double megno_mean_Y;    // mean of MEGNO Y
+    double megno_initial_t; // Time when MENGO was initialized
+    int64_t megno_n;        // number of covariance updates
+
+    unsigned int rand_seed; // seed for random number generator, used by MEGNO and other random number generators in REBOUND.
+
+    // Simulationarchive. These variables should not be accessed directly. Use functions provided instead. 
+    int    simulationarchive_version;               // Version of the SA binary format (1,2=legacy format, 3=modern format)
+    double simulationarchive_auto_interval;         // Current sampling cadence, in code units
+    double simulationarchive_auto_walltime;         // Current sampling cadence, in wall time
+    uint64_t simulationarchive_auto_step;           // Current sampling cadence, in time steps
+    double simulationarchive_next;                  // Next output time (simulation time or wall time, depending on whether auto_interval or auto_walltime is set)
+    uint64_t simulationarchive_next_step;           // Next output step (only used if auto_steps is set)
+    char*  simulationarchive_filename;              // Name of output file
+
+    // Available modules in REBOUND
+    enum {
+        REB_COLLISION_NONE = 0,         // Do not search for collisions (default)
+        REB_COLLISION_DIRECT = 1,       // Direct collision search O(N^2)
+        REB_COLLISION_TREE = 2,         // Tree based collision search O(N log(N))
+        REB_COLLISION_LINE = 4,         // Direct collision search O(N^2), looks for collisions by assuming a linear path over the last timestep
+        REB_COLLISION_LINETREE = 5,     // Tree-based collision search O(N log(N)), looks for collisions by assuming a linear path over the last timestep
+    } collision;
+    struct reb_integrator_configuration integrator;
+    enum {
+        REB_BOUNDARY_NONE = 0,          // Do not check for anything (default)
+        REB_BOUNDARY_OPEN = 1,          // Open boundary conditions. Removes particles if they leave the box 
+        REB_BOUNDARY_PERIODIC = 2,      // Periodic boundary conditions
+        REB_BOUNDARY_SHEAR = 3,         // Shear periodic boundary conditions, needs OMEGA variable
+    } boundary;
+    enum {
+        REB_GRAVITY_NONE = 0,           // Do not calculate graviational forces
+        REB_GRAVITY_BASIC = 1,          // Basic O(N^2) direct summation algorithm, choose this for shearing sheet and periodic boundary conditions
+        REB_GRAVITY_COMPENSATED = 2,    // Direct summation algorithm O(N^2) but with compensated summation, slightly slower than BASIC but more accurate
+        REB_GRAVITY_TREE = 3,           // Use the tree to calculate gravity, O(N log(N)), set opening_angle2 to adjust accuracy.
+        REB_GRAVITY_JACOBI = 5,         // Special gravity routine which includes the Jacobi terms for WH integrators 
+        REB_GRAVITY_CUSTOM = 7,         // Custom, user or integrator provided gravity routine
+    } gravity;
+
+    void (*gravity_custom) (struct reb_simulation* const r);  // Used with REB_GRAVITY_CUSTOM
+
+    // ODEs. Do not access these variables directly. Use functions provided instead.
+    struct reb_ode** odes;      // all ode sets (includes nbody if BS is set as integrator)
+    size_t N_odes;                 // number of ode sets
+    size_t N_allocated_odes;
+
+    // Callback functions
+    void (*additional_forces) (struct reb_simulation* const r);             // Implement any additional (non-gravitational) forces here.
+    void (*pre_timestep_modifications) (struct reb_simulation* const r);    // Executed just before eaach timestep. Used by REBOUNDx.
+    void (*post_timestep_modifications) (struct reb_simulation* const r);   // Executed just after each timestep. Used by REBOUNDx.
+    void (*heartbeat) (struct reb_simulation* r);                           // Executed at each timestep once. Use this to do extra output/work during a simulation.
+    int (*key_callback) (struct reb_simulation* r, int key);                // Used when SERVER or OPENGL visualization is on. Gets called after completed timestep and if a key has been pressed. Return 1 if you want to skip default key commands.
+    double (*coefficient_of_restitution) (const struct reb_simulation* const r, double v);  // Allows for a velocity dependent coefficient of restitution (used for ring simulations)
+    enum REB_COLLISION_RESOLVE_OUTCOME (*collision_resolve) (struct reb_simulation* const r, struct reb_collision);        // Determines what happens when two particles collide.
+    void (*free_particle_ap) (struct reb_particle* p);                      // Used by REBOUNDx.
+    void (*extras_cleanup) (struct reb_simulation* r);                      // Used by REBOUNDx.
+    void* extras;                                                           // Pointer to link to any additional (optional) libraries, e.g., REBOUNDx, ASSIST.
+};
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+// REBOUND API Functions
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Simulation life cycle
+
+// Allocates memory for reb_simulation and initializes it.
+REB_API struct reb_simulation* reb_simulation_create(void);
+// Create a simulation object from a file. Set snapshot=-1 to load last snapshot.
+REB_API struct reb_simulation* reb_simulation_create_from_file(char* filename, int64_t snapshot);
+// Create a simulation object from a simulationarchive. Set snapshot=-1 to load last snapshot.
+REB_API struct reb_simulation* reb_simulation_create_from_simulationarchive(struct reb_simulationarchive* sa, int64_t snapshot);
+// Free simulation and all associated memory.
+REB_API void reb_simulation_free(struct reb_simulation* const r);
+// Make a deep copy of simulation.
+REB_API struct reb_simulation* reb_simulation_copy(struct reb_simulation* r);
+// Compare r1 to r2. If exactly equal then 0 is returned, otherwise 1. No output if output_options=0. If output_option=1, then difference is also printed on screen.
+REB_API int reb_simulation_diff(struct reb_simulation* r1, struct reb_simulation* r2, int output_option);
+
+// Start webserver for visualization. Returns 0 on success.
+REB_API int reb_simulation_start_server(struct reb_simulation* r, int port);
+// Stop webserver.
+REB_API void reb_simulation_stop_server(struct reb_simulation* r);
+
+
+// Integrator selelection
+
+// This function sets the integrator of the simulation to the one with the matching name. 
+REB_API void* reb_simulation_set_integrator(struct reb_simulation* r, const char* name);
+// This function registers a user provided integrator with a unique name. A user provided integrator must be called before the integrator is set.
+REB_API void reb_integrator_register(const struct reb_integrator integrator, const char* name);
+
+
+// Errors, warnings
+
+// For fatal errors only. Print out an error message, then exit immediately and kill the process. Does no clean up memory.
+REB_API void reb_exit(const char* const msg);
+// Stop current integration in a nice way. Can be called from within heartbeat function.
+REB_API void reb_simulation_stop(struct reb_simulation* const r);
+// Print or store an info message, then continue.
+REB_API void reb_simulation_info(struct reb_simulation* const r, const char* const msg);
+// Print or store a warning message, then continue.
+REB_API void reb_simulation_warning(struct reb_simulation* const r, const char* const msg);
+// Print or store an error message, then continue.
+REB_API void reb_simulation_error(struct reb_simulation* const r, const char* const msg);
+
+
+// Output functions
+
+// Write the simulation to file (simulationarchive format). Appends a snapshot if file exists.
+REB_API void reb_simulation_save_to_file(struct reb_simulation* r, const char* filename);
+// Schedule regular outputs to a file based on simulation time.
+REB_API void reb_simulation_save_to_file_interval(struct reb_simulation* const r, const char* filename, double interval);
+// Schedule regular outputs to a file based on wall time.
+REB_API void reb_simulation_save_to_file_walltime(struct reb_simulation* const r, const char* filename, double walltime);
+// Schedule regular outputs to a file based on number of steps taken.
+REB_API void reb_simulation_save_to_file_step(struct reb_simulation* const r, const char* filename, uint64_t step);
+// Output timing data to file. Appends file if it exists.
+REB_API void reb_simulation_output_timing(struct reb_simulation* r, const double tmax);
+// Output orbits to file. Appends file if it exists.
+REB_API void reb_simulation_output_orbits(struct reb_simulation* r, char* filename);
+// Output cartesian coordinates to file. Appends file if it exists.
+REB_API void reb_simulation_output_ascii(struct reb_simulation* r, char* filename);
+// Output velocity dispersion tensor to file. Used for ring simulations. Appends file if it exists.
+REB_API void reb_simulation_output_velocity_dispersion(struct reb_simulation* r, char* filename);
+// Function to allow for periodic outputs in heartbeat function. See examples on how to use it.
+REB_API int reb_simulation_output_check(struct reb_simulation* r, double interval);
+// Write a screenshot of the current simulation to a file. Requires that a server was started with reb_simulation_start_server() and one client web browser is connected. Returns 0 if successful.
+REB_API int reb_simulation_output_screenshot(struct reb_simulation* r, const char* filename);
+
+
+// Timestepping
+
+// Advance simulation by N_steps timesteps.
+REB_API enum REB_STATUS reb_simulation_steps(struct reb_simulation* const r, size_t N_steps);
+// Integrate simulation to at least time tmax (see exact_finish_time).
+REB_API enum REB_STATUS reb_simulation_integrate(struct reb_simulation* const r, double tmax);
+// Synchronize simulation if safe_mode is turned off by integrator to get physical coordinates.
+REB_API void reb_simulation_synchronize(struct reb_simulation* r);
+
+
+// Functions to operate on simulations
+
+// Move the simulation to the heliocentric frame (particle with index 0 will be at the origin and at rest after calling this function).
+REB_API void reb_simulation_move_to_hel(struct reb_simulation* const r);
+// Move the simultion to the center of mass frame (the center of mass will be at the origin and at rest after calling this function).
+REB_API void reb_simulation_move_to_com(struct reb_simulation* const r);
+// Multiply x,y,z,vx,vy,vz of each particle in r with given scalars.
+REB_API void reb_simulation_imul(struct reb_simulation* r, double scalar_pos, double scalar_vel);
+// Add cartesian components of each particle of r2 to cartesian components in r. r2 and r must have same number of particles.
+REB_API int reb_simulation_iadd(struct reb_simulation* r, struct reb_simulation* r2);
+// Same as above but subtract r2 from r component wise.
+REB_API int reb_simulation_isub(struct reb_simulation* r, struct reb_simulation* r2);
+// Updates the acceleration of all particles but does not perform a step. Used by REBOUNDx.
+REB_API void reb_simulation_update_acceleration(struct reb_simulation* r);
+
+
+// Diangnostic functions
+
+// Return the sum of potential and kinetic energy
+REB_API double reb_simulation_energy(struct reb_simulation* const r);
+// Returns the angular momentum.
+REB_API struct reb_vec3d reb_simulation_angular_momentum(const struct reb_simulation* const r);
+// Returns the center of mass of a simulation.
+REB_API struct reb_particle reb_simulation_com(struct reb_simulation* r);
+// Returns the center of mass of two particles.
+REB_API struct reb_particle reb_particle_com_of_pair(struct reb_particle p1, struct reb_particle p2);
+// Returns the center of mass of particles in the simulation within a given range.
+REB_API struct reb_particle reb_simulation_com_range(struct reb_simulation* r, size_t first, size_t last);
+
+
+// Functions to add and initialize particles
+
+// Use this function to add particle pt to simulation r.
+REB_API void reb_simulation_add(struct reb_simulation* const r, struct reb_particle pt);
+// Use this function to add a particle to a simulation using orbital parameters or cartesian coordinates. See examples on usage.
+REB_API void reb_simulation_add_fmt(struct reb_simulation* r, const char* fmt, ...);
+// This function sets up a Plummer sphere, N=number of particles, M=total mass, R=characteristic radius. Particles get added to simulation.
+REB_API void reb_simulation_add_plummer(struct reb_simulation* r, size_t _N, double M, double R); 
+// Returns a particle given a set of orbital parameters. Also sets err to error code if initialization failed.
+REB_API struct reb_particle reb_particle_from_orbit_err(double G, struct reb_particle primary, double m, double a, double e, double i, double Omega, double omega, double f, int* err);
+// Same as above but without error code.
+REB_API struct reb_particle reb_particle_from_orbit(double G, struct reb_particle primary, double m, double a, double e, double i, double Omega, double omega, double f);
+// Returns a particle given a set of Pal orbital parameters.
+REB_API struct reb_particle reb_particle_from_pal(double G, struct reb_particle primary, double m, double a, double lambda, double k, double h, double ix, double iy);
+// Returns a reb_particle structure with fields/name/ptrs initialized to nan/0/NULL. 
+REB_API struct reb_particle reb_particle_nan(void);
+
+
+// Functions to access, remove, and operate on particles
+
+// Remove all particles
+REB_API void reb_simulation_remove_all_particles(struct reb_simulation* const r);
+// Remove one particle. Remaining particle will keep order. Returns 0 if successful.
+REB_API int reb_simulation_remove_particle(struct reb_simulation* const r, size_t index);
+// Remove one particle by name. If multiple particles share the name, one particle will be remove. Which one is undetermined. Returns 0 if successful.
+REB_API int reb_simulation_remove_particle_by_name(struct reb_simulation* r, const char* const name); 
+// Returns a particle's index in the simulation given a pointer to the particle. Returns -1 if not found. 
+REB_API int reb_simulation_particle_index(struct reb_particle* p); 
+// Returns a variational particle's index in the simulation given a pointer to the particle. Returns -1 if not found. 
+REB_API int reb_simulation_particle_var_index(struct reb_particle* p); 
+// Subtract particle p2 from p1
+REB_API void reb_particle_isub(struct reb_particle* p1, struct reb_particle* p2);
+// Add particle p2 to p1
+REB_API void reb_particle_iadd(struct reb_particle* p1, struct reb_particle* p2);
+// Multiply x,y,z,vx,vy,vz,m of p1 with given value.
+REB_API void reb_particle_imul(struct reb_particle* p1, double value);
+// Return the distance between particle p1 and p2
+REB_API double reb_particle_distance(struct reb_particle* p1, struct reb_particle* p2);
+// Compares two particles, ignoring pointers. Returns 1 if particles differ, 0 if they are exactly equal.
+REB_API int reb_particle_cmp(struct reb_particle p1, struct reb_particle p2); 
+// Sets a particle's name. This function should be used instead of directly setting the name in the particle's structure as it
+// registers the name, allowing for faster lookup and storing of name in binary files.
+REB_API void reb_particle_set_name(struct reb_particle* p, const char* const name);
+/// Register a string. This copies the string, returns the new pointer. REBOUND will manage the memory of the copy. Used by REBOUNDx.
+REB_API const char* reb_simulation_register_name(struct reb_simulation* r, const char* const name);
+// Returns a pointer to a particle given its name. Returns NULL if not found.
+REB_API struct reb_particle* reb_simulation_get_particle_by_name(struct reb_simulation* r, const char* const name);
+#ifdef MPI
+// When MPI is used, particles cannot be accessed by name. Need to use id instead.
+REB_API struct reb_particle reb_simulation_particle_by_id(struct reb_simulation* const r, size_t id);
+#endif // MPI
+
+
+
+// Chaos indicators
+
+// Turn on MEGNO/Lyapunov calculation. Uses random seen in simulation.
+REB_API void reb_simulation_init_megno(struct reb_simulation* const r);
+// Same as above but used given random seed. Useful to reproduce same results every time.
+REB_API void reb_simulation_init_megno_seed(struct reb_simulation* const r, unsigned int seed);
+// Returns the current MEGNO value,
+REB_API double reb_simulation_megno(struct reb_simulation* r);
+// Returns the largest Lyapunov characteristic number (LCN).
+REB_API double reb_simulation_lyapunov(struct reb_simulation* r);
+
+
+// Built in collision resolve functions
+
+REB_API enum REB_COLLISION_RESOLVE_OUTCOME reb_collision_resolve_halt(struct reb_simulation* const r, struct reb_collision c); // halts a simulation when a collision occurs
+REB_API enum REB_COLLISION_RESOLVE_OUTCOME reb_collision_resolve_hardsphere(struct reb_simulation* const r, struct reb_collision c);
+REB_API enum REB_COLLISION_RESOLVE_OUTCOME reb_collision_resolve_merge(struct reb_simulation* const r, struct reb_collision c);
+
+// Random sampling - These functions only use the simulation object for a seed. If r=NULL, time and PID are used as a seed.
+
+REB_API double reb_random_uniform(struct reb_simulation* r, double min, double max);
+REB_API double reb_random_powerlaw(struct reb_simulation* r, double min, double max, double slope);
+REB_API double reb_random_normal(struct reb_simulation* r, double variance);
+REB_API double reb_random_rayleigh(struct reb_simulation* r, double sigma);
+
+
+// Miscellaneous functions
+
+// Returns the angle f wrapped in the interval from 0 to 2*pi
+REB_API double reb_mod2pi(double f);
+// True anomaly for a given eccentricity and mean anomaly
+REB_API double reb_M_to_f(double e, double M);
+// True anomaly for a given eccentricity and eccentric anomaly
+REB_API double reb_E_to_f(double e, double M);
+// Eccentric anomaly for a given eccentricity and mean anomaly
+REB_API double reb_M_to_E(double e, double M);
+// Returns the hash for a given string. 
+REB_API uint32_t reb_hash(const char* c);
+
+
+// Simulationarchive
+
+// Allocate memory for a simulationarchive and initialize it with a file.
+REB_API struct reb_simulationarchive* reb_simulationarchive_create_from_file(const char* filename);
+// Free memory allocated by simulationarchive
+REB_API void reb_simulationarchive_free(struct reb_simulationarchive* sa);
+
+
+// Orbit calculation
+
+// Structure containing orbital elements for Keplerian orbits.
+struct reb_orbit {
+    double d;               // Radial distance from central object
+    double v;               // velocity relative to central object's velocity
+    double h;               // Specific angular momentum
+    double P;               // Orbital period
+    double n;               // Mean motion
+    double a;               // Semi-major axis
+    double e;               // Eccentricity
+    double inc;             // Inclination
+    double Omega;           // Longitude of ascending node
+    double omega;           // Argument of pericenter
+    double pomega;          // Longitude of pericenter
+    double f;               // True anomaly
+    double M;               // Mean anomaly
+    double l;               // Mean Longitude
+    double theta;           // True Longitude
+    double T;               // Time of pericenter passage
+    double rhill;           // Circular Hill radius 
+    double pal_h;           // Cartesian component of the eccentricity, h = e*sin(pomega) 
+    double pal_k;           // Cartesian component of the eccentricity, k = e*cos(pomega) 
+    double pal_ix;          // Cartesian component of the inclination, ix = 2*sin(i/2)*cos(Omega)
+    double pal_iy;          // Cartesian component of the inclination, ix = 2*sin(i/2)*sin(Omega)
+    struct reb_vec3d hvec;  // specific angular momentum vector
+    struct reb_vec3d evec;  // eccentricity vector (mag=ecc, points toward peri)
+};
+// Calculates all orbital elements of the particle p, assuming gravitational constant G and the given primary.
+REB_API struct reb_orbit reb_orbit_from_particle(double G, struct reb_particle p, struct reb_particle primary);
+// Same as above but returns sets an error code if not successful.
+REB_API struct reb_orbit reb_orbit_from_particle_err(double G, struct reb_particle p, struct reb_particle primary, int* err);
+
+
+// ODE functions
+
+// Defines one Ordinary Differential Equation (ODE) so that it can be integrated with REBOUND
+struct reb_ode{
+    unsigned int length;        // number of components / dimension
+    double* y;                  // Pointer to current state 
+    unsigned int needs_nbody;   // 1: ODE needs N-body particles to calculate RHS
+    void* ref;                  // Optional pointer to any additional data needed for derivative calculation
+    void (*derivatives)(struct reb_ode* const ode, double* const yDot, const double* const y, const double t);  // Function pointer to right hand side of ODE
+    void (*getscale)(struct reb_ode* const ode, const double* const y0, const double* const y1);                // Function pointer, sets scales for components (optional) 
+    void (*pre_timestep)(struct reb_ode* const ode, const double* const y0);                                    // Function pointer, gets called just before the ODE integration (optional)
+    void (*post_timestep)(struct reb_ode* const ode, const double* const y0);                                   // Function pointer, gets called just after the ODE integration (optional)
+
+    // Internal use
+    size_t N_allocated;   
+    double* scale;
+    double* C;                  // Temporary internal array (extrapolation) 
+    double** D;                 // Temporary internal array (extrapolation) 
+    double* y1;                 // Temporary internal array (state during the step) 
+    double* y0Dot;              // Temporary internal array (derivatives at beginning of step)
+    double* yDot;               // Temporary internal array (derivatives)
+    double* yTmp;               // Temporary internal array (midpoint method)
+    struct reb_simulation* r;   // weak reference to main simulation 
+};
+// Allocate memory for an ODE struct, initialize it, and attach it to the simulation. See examples for details on usage.
+REB_API struct reb_ode* reb_ode_create(struct reb_simulation* r, unsigned int length);
+// Free an ODE struct.
+REB_API void reb_ode_free(struct reb_ode* ode);
+
+
+// Variational equations
+
+// Struct describing the properties of a set of variational equations.
+// If testparticle is set to -1, then it is assumed that all particles are massive
+// and all particles influence all other particles. If testparticle is >=0 then 
+// the particle with that index is assumed to be a testparticle, i.e. it does not 
+// influence other particles. For second order variational equation, index_1st_order_a/b 
+// is the index in the particle array that corresponds to the 1st order variational 
+// equations.
+struct reb_variational_configuration{
+    struct reb_simulation* sim; // Reference to the simulation.
+    int order;                  // Order of the variational equation. 1 or 2. 
+    int index;                  // Index of the first variational particle in the particles array.
+    int testparticle;           // Is this variational configuration describe a test particle? -1 if not.
+    int index_1st_order_a;      // Used for 2nd order variational particles only: Index of the first order variational particle in the particles array.
+    int index_1st_order_b;      // Used for 2nd order variational particles only: Index of the first order variational particle in the particles array.
+    double lrescale;            // Accumulates the logarithm of rescalings
+};
+
+// Add and initialize a set of first order variational particles
+// If testparticle is >= 0, then only one variational particle (the test particle) will be added.
+// If testparticle is -1, one variational particle for each real particle will be added.
+// Returns the index of the first variational particle added
+REB_API int reb_simulation_add_variation_1st_order(struct reb_simulation* const r, int testparticle);
+
+// Add and initialize a set of second order variational particles
+// Note: a set of second order variational particles requires two sets of first order variational equations.
+// If testparticle is >= 0, then only one variational particle (the test particle) will be added.
+// If testparticle is -1, one variational particle for each real particle will be added.
+// index_1st_order_a is the index of the corresponding first variational particles.
+// index_1st_order_b is the index of the corresponding first variational particles.
+// Returns the index of the first variational particle added
+REB_API int reb_simulation_add_variation_2nd_order(struct reb_simulation* const r, int testparticle, size_t index_1st_order_a, size_t index_1st_order_b);
+
+// Rescale all sets of variational particles if their size gets too large (>1e100).
+// This can prevent an overflow in floating point numbers. The logarithm of the rescaling
+// factor is stored in the reb_variational_configuration's lrescale variable. 
+// This function is called automatically every timestep. To avoid automatic rescaling,
+// set the reb_variational_configuration's lrescale variable to -1.
+// For this function to work, the positions and velocities needs to be synchronized. 
+// A warning is presented if the integrator is not synchronized. 
+REB_API void reb_simulation_rescale_var(struct reb_simulation* const r);
+
+// These functions calculates the first/second derivative of a Keplerian orbit. 
+//   Derivatives of Keplerian orbits are required for variational equations, in particular
+//   for optimization problems. 
+//   The derivative is calculated with respect to the variables that appear in the function name.
+//   One variable implies that a first derivative is returned, two variables implies that a second
+//   derivate is returned. Classical orbital parameters and those introduced by Pal (2009) are 
+//   supported. Pal coordinates have the advantage of being analytical (i.e. infinite differentiable).
+//   Classical orbital parameters may have singularities, for example when e is close to 0.
+//   Note that derivatives with respect to Cartesian coordinates are trivial and therefore not
+//   implemented as separate functions. 
+//   The following variables are supported: a, e, inc, f, omega, Omega, h, k, ix, iy and m (mass). 
+// The functions return the derivative as a particle structure. Each structure element is a derivative.
+// The parameter po is the original particle for which the derivative is to be calculated.
+REB_API struct reb_particle reb_particle_derivative_lambda(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_h(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_k(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_k_k(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_h_h(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_lambda_lambda(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_k_lambda(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_h_lambda(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_k_h(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_a(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_a_a(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_ix(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_ix_ix(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_iy(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_iy_iy(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_k_ix(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_h_ix(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_lambda_ix(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_lambda_iy(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_h_iy(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_k_iy(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_ix_iy(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_a_ix(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_a_iy(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_a_lambda(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_a_h(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_a_k(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_m(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_m_a(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_m_lambda(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_m_h(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_m_k(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_m_ix(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_m_iy(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_m_m(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_e(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_e_e(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_inc(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_inc_inc(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_Omega(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_Omega_Omega(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_omega(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_omega_omega(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_f(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_f_f(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_a_e(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_a_inc(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_a_Omega(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_a_omega(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_a_f(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_e_inc(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_e_Omega(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_e_omega(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_e_f(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_m_e(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_inc_Omega(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_inc_omega(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_inc_f(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_m_inc(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_omega_Omega(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_Omega_f(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_m_Omega(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_omega_f(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_m_omega(double G, struct reb_particle primary, struct reb_particle po);
+REB_API struct reb_particle reb_particle_derivative_m_f(double G, struct reb_particle primary, struct reb_particle po);
+
+// Functions for Frequency Analysis, MFT, FMFT
+enum REB_FREQUENCY_ANALYSIS_TYPE {
+    REB_FREQUENCY_ANALYSIS_MFT = 0,
+    REB_FREQUENCY_ANALYSIS_FMFT = 1,
+    REB_FREQUENCY_ANALYSIS_FMFT2 = 2,
+};
+// Returns 0 on success
+REB_API int reb_frequency_analysis(double *output, size_t nfreq, double minfreq, double maxfreq, enum REB_FREQUENCY_ANALYSIS_TYPE type, double *input, size_t ndata);
+
+// Functions to convert between coordinate systems
+
+// Rotations
+
+// Rotation struct (implemented as a quaternion)
+struct reb_rotation {
+    double ix;
+    double iy;
+    double iz;
+    double r;
+};
+
+REB_API struct reb_rotation reb_rotation_inverse(const struct reb_rotation q);
+REB_API struct reb_rotation reb_rotation_mul(const struct reb_rotation p, const struct reb_rotation q);
+
+REB_API struct reb_rotation reb_rotation_identity();
+REB_API struct reb_rotation reb_rotation_normalize(const struct reb_rotation q);
+REB_API struct reb_rotation reb_rotation_conjugate(const struct reb_rotation q);
+REB_API struct reb_rotation reb_rotation_init_angle_axis(const double angle, struct reb_vec3d axis);
+REB_API struct reb_rotation reb_rotation_init_from_to(struct reb_vec3d from, struct reb_vec3d to);
+REB_API struct reb_rotation reb_rotation_init_orbit(const double Omega, const double inc, const double omega);
+REB_API struct reb_rotation reb_rotation_init_to_new_axes(struct reb_vec3d newz, struct reb_vec3d newx);
+REB_API struct reb_rotation reb_rotation_slerp(struct reb_rotation q1, struct reb_rotation q2, double t);
+
+// transformations to/from vec3d
+REB_API struct reb_vec3d reb_tools_spherical_to_xyz(const double mag, const double theta, const double phi);
+REB_API void reb_tools_xyz_to_spherical(struct reb_vec3d const xyz, double* mag, double* theta, double* phi);
+
+REB_API struct reb_vec3d reb_vec3d_mul(const struct reb_vec3d v, const double s);
+REB_API struct reb_vec3d reb_vec3d_add(const struct reb_vec3d v, const struct reb_vec3d w);
+REB_API double reb_vec3d_length_squared(const struct reb_vec3d v);
+REB_API double reb_vec3d_dot(const struct reb_vec3d a, const struct reb_vec3d b);
+REB_API struct reb_vec3d reb_vec3d_cross(const struct reb_vec3d a, const struct reb_vec3d b);
+REB_API struct reb_vec3d reb_vec3d_normalize(const struct reb_vec3d v);
+REB_API struct reb_vec3d reb_vec3d_rotate(struct reb_vec3d v, const struct reb_rotation q);
+REB_API void reb_vec3d_irotate(struct reb_vec3d *v, const struct reb_rotation q);
+REB_API void reb_particle_irotate(struct reb_particle* p, const struct reb_rotation q);
+REB_API void reb_simulation_irotate(struct reb_simulation* const sim, const struct reb_rotation q);
+
+REB_API void reb_rotation_to_orbital(struct reb_rotation q, double* Omega, double* inc, double* omega);
+
+#ifdef MPI
+void reb_mpi_init(struct reb_simulation* const r);
+void reb_mpi_finalize(struct reb_simulation* const r);
+#endif // MPI
+
+
+// The following structures are related to OpenGL/WebGL visualization.
+
+// Generic 3d vector
+struct reb_vec3df {
+    float x,y,z;
+};
+
+// Generic 4d matrix (single precision)
+struct reb_mat4df {
+    float m[16];
+};
+
+// Structures and functions used for programmatic animations.
+// Current display orientation, settings, etc
+struct reb_display_settings {
+    struct reb_mat4df view;
+    int spheres;                    // Switches between point sprite and real spheres.
+    int pause;                      // Pauses visualization, but keep simulation running
+    int wire;                       // Shows/hides orbit wires.
+    unsigned int breadcrumbs;       // Number of past particle positions.
+    int onscreentext;               // Shows/hides onscreen text.
+    int onscreenhelp;               // Shows/hides onscreen help.
+    int multisample;                // Turn off/on multisampling.
+    int ghostboxes;                 // Shows/hides ghost boxes.
+    size_t reference;                  // reb_particle used as a reference for centering.
+};
+
+// Display settings initialization. Overwrites user interactions.
+REB_API void reb_simulation_add_display_settings(struct reb_simulation* r);
+
+// Matrix/vector methods for single precision operations. Used for graphics only
+REB_API struct reb_mat4df reb_mat4df_identity();
+REB_API struct reb_mat4df reb_mat4df_scale(struct reb_mat4df m, float x, float y, float z);
+REB_API void reb_mat4df_print(struct reb_mat4df m);
+REB_API int reb_mat4df_eq(struct reb_mat4df A, struct reb_mat4df B);
+REB_API struct reb_vec3df reb_mat4df_get_scale(struct reb_mat4df m);
+REB_API struct reb_mat4df reb_mat4df_translate(struct reb_mat4df m, float x, float y, float z);
+REB_API struct reb_mat4df reb_mat4df_multiply(struct reb_mat4df A, struct reb_mat4df B);
+REB_API struct reb_mat4df reb_rotation_to_mat4df(struct reb_rotation A);
+REB_API struct reb_mat4df reb_mat4df_ortho(float l, float r, float b, float t, float n, float f);
+
+
+#endif // _MAIN_H

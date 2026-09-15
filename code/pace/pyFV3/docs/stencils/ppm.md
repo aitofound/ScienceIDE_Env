@@ -1,0 +1,3 @@
+# ppm
+
+::: stencils.ppm

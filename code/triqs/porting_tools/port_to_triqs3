@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+import glob
+import re
+
+# Ignore these files
+ignore_lst = [".git/", "port.py"]
+
+repl_dict = {
+        "pytriqs": "triqs",
+        r"triqs\.gf\.local": "triqs.gf",
+        r"triqs\.archive": "h5",
+        r"triqs\.archive\.hdf_archive": "h5.archive",
+        "hdf_archive_schemes": "formats",
+        "set_from_inverse_fourier": "set_from_fourier",
+        "make_gf_from_inverse_fourier": "make_gf_from_fourier",
+        "InverseFourier": "Fourier",
+        "triqs::h5": "h5",
+        r"triqs/h5/serialization\.hpp": "h5/serialization.hpp",
+        r"triqs/h5.*\.hpp": "h5/h5.hpp",
+        r"triqs/utility/variant\.hpp": "variant",
+        "<cpp2py.hpp>": "<cpp2py/cpp2py.hpp>",
+        "hdf5_scheme": "hdf5_format",
+        "TRIQS_HDF5_data_scheme": "Format",
+        r"#include <triqs/cpp2py_converters/h5\.hpp>\n": "",
+        "H5F_ACC_TRUNC": "'w'",
+        "H5F_ACC_RDWR": "'a'", 
+        "H5F_ACC_RDONLY": "'r'", 
+        "PYTHON_INTERPRETER": "PYTHON_EXECUTABLE",
+        # r"(\d)_j": r"\1i"
+        # --- Meshes Merge ---
+        "#include <triqs/gfs.hpp>\n(?!#include <triqs/mesh.hpp>)": "#include <triqs/gfs.hpp>\n#include <triqs/mesh.hpp>\n",
+        "#include <triqs/gfs/meshes/": "#include <triqs/mesh/",
+        "::variable_t": "::mesh_t",
+        "triqs/gfs/meshes.hpp": "triqs/mesh.hpp",
+        "cartesian_product": "prod",
+        "gf_mesh<brillouin_zone>": "gf_mesh<brzone>",
+        "gf<brillouin_zone": "gf<brzone",
+        "prod<brillouin_zone": "prod<brzone",
+        "cyclic_lattice": "cyclat",
+        "MeshBrillouinZone": "MeshBrZone",
+        "MeshCyclicLattice": "MeshCycLat",
+        "gf_closest_point": "closest_point",
+        "gf_mesh{": "mesh::prod{",
+        "gf_mesh<(.+?)>": r"mesh::\1", # really necessary?
+        "matsubara_mesh_opt": "imfreq::option",
+        "get_dimensions()": "dims()",
+        "locate_neighbours": "closest_index",
+        "linear_dims": "dims",
+        "latt_to_real_x": "lattice_to_real_coordinates",
+        # --- Stat Changes ---
+        "#include <triqs/statistics": "#include <triqs/stat",
+        "triqs::statistics": "triqs::stat",
+        "triqs.statistics": "triqs.stat",
+        # --- NDA Merge ---
+        "triqs/clef.hpp": "nda/clef.hpp",
+        "#include <triqs/arrays.hpp>": "#include <nda/nda.hpp>",
+        "#include <triqs/arrays/array.hpp>": "#include <nda/nda.hpp>",
+        "#include <triqs/arrays/linalg.*?.hpp>": "#include <nda/linalg.hpp>",
+        "#include <triqs/arrays/": "#include <nda/",
+        "clef/clef.hpp>": "clef.hpp>",
+        "TRIQS_CLEF_": "CLEF_",
+        r"\.memory_layout\(\)": ".data().stride_order()",
+        "memory_layout_t<(.*?)>": r"std::array<long,\1>",
+        "triqs::clef": "nda::clef",
+        "triqs::blas_lapack": "nda::blas_lapack",
+        "triqs::utility::mini_vector": "std::array",
+        "mini_vector": "std::array",
+        r"first_dim\((.*?\(.*?\))\)": r"\1.shape()[0]",
+        r"second_dim\((.*?\(.*?\))\)": r"\1.shape()[1]",
+        r"first_dim\((.*?)\)": r"\1.shape()[0]",
+        r"second_dim\((.*?)\)": r"\1.shape()[1]",
+        r"data_start\(\)": "data()",
+        "#include <triqs/arrays/blas_lapack/dot.hpp>": "#include <nda/blas/dot.hpp>",
+        "#include <triqs/arrays/linalg/eigenelements.hpp>": "#include <nda/linalg/eigenelements.hpp>",
+        "make_unit_matrix<": "nda::eye<",
+        "triqs::arrays::dot": "nda::blas::dot",
+        "triqs::arrays": "nda",
+        "conj_r": "conj",
+        # --- C++20 ---
+        "REQUIRES": "requires",
+        # --- triqs 3.2 ---
+        r"range\(\)": "range::all",
+        "range{}": "range::all",
+        r"\.linear_index\(\)": ".data_index()",
+        r"\.linear_index": ".data_index",
+        "is_product_v": "is_product",
+        r"for *\( *auto *(?:const)? *& *(.*?) *: *(.*?)mesh(.*?)\)": r"for (auto \1 : \2mesh\3)",
+        "h5_try_read": "h5::try_read",
+        r"x_min\(\)": "t_min()",
+        r"x_max\(\)": "t_max()",
+        r"omega_min\(\)": "w_min()",
+        r"omega_max\(\)": "w_max()",
+        r"domain\(\).beta": "beta()",
+        r"domain\(\).statistic": "statistic()",
+        "domain.beta": "beta()",
+        "domain.statistic": "statistic()",
+        "reshaped_view": "reshape",
+        }
+# :bufdo :%s#\(\w *\)/\( *[Nn0-9]\)#\1//\2#gc
+
+file_endings = [".py", ".py.in", ".ipynb", ".cpp", ".hpp", ".cxx", ".rst", ".txt"]
+
+# Choose the current working directory as the porting root dir
+port_root = os.getcwd()
+
+# Recurse over all subdirectories and files
+for root, dirs, files in os.walk(port_root):
+
+    for fname in files:
+        # Make sure that one of the file endings matches
+        if not any([fname.endswith(ending) for ending in file_endings]):
+            continue
+
+        # Make path absolute
+        fpath = os.path.join(root, fname)
+
+        # Ignore certain files / directories
+        if any(it in fpath for it in ignore_lst):
+            continue
+
+        if os.path.isfile(fpath):
+
+            # Replace port and APP4TRIQS in all files
+            with open(fpath, 'r') as f:
+                s = f.read()
+
+            # Execute all replacements
+            for old, new in list(repl_dict.items()):
+                s = re.sub(old, new, s)
+
+            # Write the updated file
+            with open(fpath, 'w') as f:
+                f.write(s)

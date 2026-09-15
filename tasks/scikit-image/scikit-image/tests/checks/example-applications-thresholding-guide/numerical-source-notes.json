@@ -1,0 +1,212 @@
+{
+  "skimage.filters.rank.otsu": {
+    "implementation": {
+      "file": "src/skimage/filters/rank/generic.py",
+      "line": 1554,
+      "end_line": 1619
+    },
+    "description": "Local Otsu's threshold value for each pixel.",
+    "calls": [
+      "np.asanyarray",
+      "_apply_scalar_per_pixel",
+      "_apply_scalar_per_pixel_3D"
+    ],
+    "branches": [
+      {
+        "line": 1598,
+        "expression": "np_image.ndim == 2"
+      },
+      {
+        "line": 1608,
+        "expression": "np_image.ndim == 3"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.threshold_local": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 177,
+      "end_line": 277
+    },
+    "description": "Compute a threshold mask image based on local pixel neighborhood.",
+    "calls": [
+      "np.isscalar",
+      "any",
+      "image.astype",
+      "ndi.generic_filter",
+      "gaussian",
+      "ndi.uniform_filter",
+      "ndi.median_filter"
+    ],
+    "branches": [
+      {
+        "line": 243,
+        "expression": "np.isscalar(block_size)"
+      },
+      {
+        "line": 248,
+        "expression": "any((b % 2 == 0 for b in block_size))"
+      },
+      {
+        "line": 256,
+        "expression": "method == 'generic'"
+      },
+      {
+        "line": 245,
+        "expression": "len(block_size) != image.ndim"
+      },
+      {
+        "line": 260,
+        "expression": "method == 'gaussian'"
+      },
+      {
+        "line": 261,
+        "expression": "param is None"
+      },
+      {
+        "line": 267,
+        "expression": "method == 'mean'"
+      },
+      {
+        "line": 269,
+        "expression": "method == 'median'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.threshold_mean": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 886,
+      "end_line": 914
+    },
+    "description": "Return threshold value based on the mean of grayscale values.",
+    "calls": [
+      "np.mean"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.threshold_minimum": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 795,
+      "end_line": 883
+    },
+    "description": "Return threshold value based on minimum method.",
+    "calls": [
+      "RuntimeError",
+      "_validate_image_histogram",
+      "counts.astype",
+      "np.argmin",
+      "ndi.uniform_filter1d",
+      "find_local_maxima_idx",
+      "maximum_idxs.append"
+    ],
+    "branches": [
+      {
+        "line": 875,
+        "expression": "len(maximum_idxs) != 2"
+      },
+      {
+        "line": 872,
+        "expression": "len(maximum_idxs) < 3"
+      },
+      {
+        "line": 877,
+        "expression": "counter == max_num_iter - 1"
+      },
+      {
+        "line": 855,
+        "expression": "direction > 0"
+      },
+      {
+        "line": 856,
+        "expression": "hist[i + 1] < hist[i]"
+      },
+      {
+        "line": 860,
+        "expression": "hist[i + 1] > hist[i]"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.threshold_otsu": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 336,
+      "end_line": 407
+    },
+    "description": "Return threshold value based on Otsu's method.",
+    "calls": [
+      "np.cumsum",
+      "_validate_image_histogram",
+      "np.argmax",
+      "np.all",
+      "image.reshape"
+    ],
+    "branches": [
+      {
+        "line": 376,
+        "expression": "image is not None and image.ndim > 2 and (image.shape[-1] in (3, 4))"
+      },
+      {
+        "line": 385,
+        "expression": "image is not None"
+      },
+      {
+        "line": 387,
+        "expression": "np.all(image == first_pixel)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.disk": {
+    "implementation": {
+      "file": "src/skimage/morphology/footprints.py",
+      "line": 508,
+      "end_line": 597
+    },
+    "description": "Generates a flat, disk-shaped footprint.",
+    "calls": [
+      "np.arange",
+      "np.meshgrid",
+      "_nsphere_series_decomposition",
+      "disk",
+      "_cross_decomposition"
+    ],
+    "branches": [
+      {
+        "line": 586,
+        "expression": "decomposition is None"
+      },
+      {
+        "line": 589,
+        "expression": "not strict_radius"
+      },
+      {
+        "line": 592,
+        "expression": "decomposition == 'sequence'"
+      },
+      {
+        "line": 594,
+        "expression": "decomposition == 'crosses'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_ubyte": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 557,
+      "end_line": 578
+    },
+    "description": "Convert an image to 8-bit unsigned integer format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

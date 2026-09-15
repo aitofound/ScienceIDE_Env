@@ -1,0 +1,112 @@
+{
+  "skimage.color.rgb2gray": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 941,
+      "end_line": 984
+    },
+    "description": "Compute luminance of an RGB image.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.montage": {
+    "implementation": {
+      "file": "src/skimage/util/_montage.py",
+      "line": 9,
+      "end_line": 157
+    },
+    "description": "Create a montage of several single- or multichannel images.",
+    "calls": [
+      "slice",
+      "utils.channel_as_last_axis",
+      "np.atleast_1d(fill).astype",
+      "arr_in.mean",
+      "divmod",
+      "np.ceil",
+      "exposure.rescale_intensity",
+      "np.atleast_1d",
+      "np.sqrt"
+    ],
+    "branches": [
+      {
+        "line": 98,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 103,
+        "expression": "arr_in.ndim != 4"
+      },
+      {
+        "line": 112,
+        "expression": "grid_shape"
+      },
+      {
+        "line": 118,
+        "expression": "rescale_intensity"
+      },
+      {
+        "line": 123,
+        "expression": "fill == 'mean'"
+      },
+      {
+        "line": 154,
+        "expression": "channel_axis is not None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.view_as_windows": {
+    "implementation": {
+      "file": "src/skimage/util/shape.py",
+      "line": 96,
+      "end_line": 247
+    },
+    "description": "Rolling window view of the input n-dimensional array.",
+    "calls": [
+      "isinstance",
+      "(arr_shape - window_shape < 0).any",
+      "(window_shape - 1 < 0).any",
+      "as_strided",
+      "slice"
+    ],
+    "branches": [
+      {
+        "line": 207,
+        "expression": "not isinstance(arr_in, np.ndarray)"
+      },
+      {
+        "line": 212,
+        "expression": "isinstance(window_shape, numbers.Number)"
+      },
+      {
+        "line": 214,
+        "expression": "not len(window_shape) == ndim"
+      },
+      {
+        "line": 217,
+        "expression": "isinstance(step, numbers.Number)"
+      },
+      {
+        "line": 221,
+        "expression": "len(step) != ndim"
+      },
+      {
+        "line": 227,
+        "expression": "(arr_shape - window_shape < 0).any()"
+      },
+      {
+        "line": 230,
+        "expression": "(window_shape - 1 < 0).any()"
+      },
+      {
+        "line": 218,
+        "expression": "step < 1"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

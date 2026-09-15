@@ -1,0 +1,120 @@
+{
+  "skimage.color.rgb2ycbcr": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 2067,
+      "end_line": 2106
+    },
+    "description": "RGB to YCbCr color space conversion.",
+    "calls": [
+      "channel_as_last_axis",
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.gaussian": {
+    "implementation": {
+      "file": "src/skimage/_shared/filters.py",
+      "line": 19,
+      "end_line": 136
+    },
+    "description": "Multi-dimensional Gaussian filter.",
+    "calls": [
+      "np.any",
+      "convert_to_float",
+      "image.astype",
+      "ndi.gaussian_filter",
+      "isinstance",
+      "sigma.insert"
+    ],
+    "branches": [
+      {
+        "line": 120,
+        "expression": "np.any(np.asarray(sigma) < 0.0)"
+      },
+      {
+        "line": 122,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 132,
+        "expression": "out is not None and (not np.issubdtype(out.dtype, np.floating))"
+      },
+      {
+        "line": 124,
+        "expression": "not isinstance(sigma, Iterable)"
+      },
+      {
+        "line": 126,
+        "expression": "len(sigma) == image.ndim - 1"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.threshold_local": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 177,
+      "end_line": 277
+    },
+    "description": "Compute a threshold mask image based on local pixel neighborhood.",
+    "calls": [
+      "np.isscalar",
+      "any",
+      "image.astype",
+      "ndi.generic_filter",
+      "gaussian",
+      "ndi.uniform_filter",
+      "ndi.median_filter"
+    ],
+    "branches": [
+      {
+        "line": 243,
+        "expression": "np.isscalar(block_size)"
+      },
+      {
+        "line": 248,
+        "expression": "any((b % 2 == 0 for b in block_size))"
+      },
+      {
+        "line": 256,
+        "expression": "method == 'generic'"
+      },
+      {
+        "line": 245,
+        "expression": "len(block_size) != image.ndim"
+      },
+      {
+        "line": 260,
+        "expression": "method == 'gaussian'"
+      },
+      {
+        "line": 261,
+        "expression": "param is None"
+      },
+      {
+        "line": 267,
+        "expression": "method == 'mean'"
+      },
+      {
+        "line": 269,
+        "expression": "method == 'median'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 479,
+      "end_line": 505
+    },
+    "description": "Convert an image to floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

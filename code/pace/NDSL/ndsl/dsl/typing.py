@@ -1,0 +1,107 @@
+from typing import TypeAlias
+
+import numpy as np
+import numpy.typing as npt
+from gt4py.cartesian import gtscript
+
+from ndsl.dsl import NDSL_GLOBAL_PRECISION
+
+# A Field
+Field = gtscript.Field
+"""A gt4py field"""
+
+# Axes
+IJK = gtscript.IJK
+IJ = gtscript.IJ
+IK = gtscript.IK
+JK = gtscript.JK
+I = gtscript.I  # noqa: E741
+J = gtscript.J  # noqa: E741
+K = gtscript.K  # noqa: E741
+
+# Union of valid data types (from gt4py.cartesian.gtscript)
+DTypes = bool | np.bool_ | int | np.int32 | np.int64 | float | np.float32 | np.float64
+
+
+# Default float and int types
+# Dev note: the `TypeAlias` of Float/Int depending on a switch has been giving
+#           us linting headaches. We revert to the previous version here that
+#           try to type hint directly. It will break. Good luck.
+#
+#           Past Florian.
+if NDSL_GLOBAL_PRECISION not in [32, 64]:
+    raise NotImplementedError(
+        f"{NDSL_GLOBAL_PRECISION} bit precision not implemented or tested."
+    )
+
+Float: TypeAlias = np.float64 if NDSL_GLOBAL_PRECISION == 64 else np.float32  # type: ignore
+Float64 = np.float64
+Float32 = np.float32
+FloatField = Field[gtscript.IJK, Float]
+FloatField64 = Field[gtscript.IJK, np.float64]
+FloatField32 = Field[gtscript.IJK, np.float32]
+FloatFieldI = Field[gtscript.I, Float]
+FloatFieldI64 = Field[gtscript.I, np.float64]
+FloatFieldI32 = Field[gtscript.I, np.float32]
+FloatFieldJ = Field[gtscript.J, Float]
+FloatFieldJ64 = Field[gtscript.J, np.float64]
+FloatFieldJ32 = Field[gtscript.J, np.float32]
+FloatFieldIJ = Field[gtscript.IJ, Float]
+FloatFieldIJ64 = Field[gtscript.IJ, np.float64]
+FloatFieldIJ32 = Field[gtscript.IJ, np.float32]
+FloatFieldK = Field[gtscript.K, Float]
+FloatFieldK64 = Field[gtscript.K, np.float64]
+FloatFieldK32 = Field[gtscript.K, np.float32]
+
+Int: TypeAlias = np.int64 if NDSL_GLOBAL_PRECISION == 64 else np.int32  # type: ignore
+Int64 = np.int64
+Int32 = np.int32
+IntField = Field[gtscript.IJK, Int]
+IntField64 = Field[gtscript.IJK, np.int64]
+IntField32 = Field[gtscript.IJK, np.int32]
+IntFieldI = Field[gtscript.I, Int]
+IntFieldI64 = Field[gtscript.I, np.int64]
+IntFieldI32 = Field[gtscript.I, np.int32]
+IntFieldJ = Field[gtscript.J, Int]
+IntFieldJ64 = Field[gtscript.J, np.int64]
+IntFieldJ32 = Field[gtscript.J, np.int32]
+IntFieldIJ = Field[gtscript.IJ, Int]
+IntFieldIJ64 = Field[gtscript.IJ, np.int64]
+IntFieldIJ32 = Field[gtscript.IJ, np.int32]
+IntFieldK = Field[gtscript.K, Int]
+IntFieldK64 = Field[gtscript.K, np.int64]
+IntFieldK32 = Field[gtscript.K, np.int32]
+
+Bool = np.bool_
+BoolField = Field[gtscript.IJK, Bool]
+BoolFieldI = Field[gtscript.I, Bool]
+BoolFieldJ = Field[gtscript.J, Bool]
+BoolFieldK = Field[gtscript.K, Bool]
+BoolFieldIJ = Field[gtscript.IJ, Bool]
+
+Index3D = tuple[int, int, int]
+
+
+def set_4d_field_size(n: int, dtype: type):  # type: ignore[no-untyped-def]
+    """
+    Defines a 4D field with a given size and type
+    The extra data dimension is not parallel
+    """
+    return Field[gtscript.IJK, (dtype, (n,))]
+
+
+def cast_to_index3d(val: tuple[int, ...]) -> Index3D:
+    if len(val) != 3:
+        raise ValueError(f"Expected 3d index, received {val}")
+    return val
+
+
+def is_float(dtype: npt.DTypeLike) -> bool:
+    """Expected floating point type"""
+    return dtype in [
+        Float,
+        float,
+        np.float16,
+        np.float32,
+        np.float64,
+    ]

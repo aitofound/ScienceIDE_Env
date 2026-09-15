@@ -1,0 +1,187 @@
+# Binary Format
+
+REBOUND comes with its own binary format.
+The binary format allows you to store a current simulation state to a file or to memory.
+The binary format is also used when you make a copy of a simulation or when you compare two simulations with each other.
+The Simulationarchive is an extension of the binary format which allows you to store multiple snapshots of a simulation in one file.
+This page explains the details of the binary format.
+It is mainly intended for people who wish to extend the built-in REBOUND functionality.
+You do not need to know those details if you're only working with binary files to save and load simulations.
+
+REBOUND uses two structures for the binary files:
+
+```c
+struct reb_binarydata_field {
+    uint64_t size_name; 
+    uint64_t size_data;
+};
+```
+
+and 
+
+```c
+struct reb_simulationarchive_blob {
+    int32_t index;
+    int32_t offset_prev;
+    int32_t offset_next;
+};
+```
+
+!!! note
+    Before version 3.18, the offset datatype was `int16_t`. This caused problems for simulations with a large number of particles and has since been change to `int32_t`.
+
+## Binary file (one snapshot)
+You create a binary file if you save a simulation
+=== "C"
+    ```c
+    struct reb_simulation* r = reb_simulation_create();
+    // ... setup simulation ...
+    reb_simulation_save_to_file(r, "snapshot.bin");
+    ```
+
+=== "Python"
+    ```python
+    sim = rebound.Simulation()
+    // ... setup simulation ...
+    sim.save_to_file("snapshot.bin")
+    ```
+Such a binary file with one snapshot is simply a set of `reb_binaryfield`s followed by one `reb_simulationarchive_blob` at the end, for example:
+
+```
+reb_binarydata_field:
+    size_name: 2 bytes
+    size_data: 8 bytes
+
+2 bytes representing the string "t" plus the NULL character
+8 bytes of data representing the value of DT
+
+reb_binarydata_field:
+    size_name: 10 bytes
+    size_data: 128 bytes
+
+10 bytes representing the string "particles" plus the NULL character
+128 bytes of data representing the values of PARTICLES
+
+...
+
+reb_binarydata_field:
+    size_name: 4 bytes
+    size_data: 0 bytes
+
+4 bytes representing the string "end" plus the NULL character
+
+reb_simulationarchive_blob:
+    index: 0
+    offset_prev: 0
+    offset_next: 0
+```
+
+Each of the binary fields provides the context (name and size) for the data that immediately follows the field.
+The type is a name which is defined in the `reb_binarydata_field_descriptor_list` (see below).
+The last binary field of type `end` indicates that the snapshot ends here. 
+
+!!! note
+    Before version 5.0 the field where encoded with an integer type rather than a string. 
+
+
+## Simulationarchive file (multiple snapshots)
+The binary file above can also be interpreted as a Simulationarchive with one snapshot. 
+You can append many (millions!) of snapshots to a binary file.
+REBOUND only stores data that has changed since the original snapshot (typically the particle data, time, etc).
+This allows for a very compact file size, while still maintaining bit-wise reproducibility. 
+
+Each snapshot is separated by a `reb_simulationarchive_blob`. 
+The blob contains the offset to the previous and next blobs. 
+This allows REBOUND to quickly jump from one blob in the archive to the next.
+Between the blobs are the same `reb_binarydata_field`s we already encountered for a binary file with one snapshot.
+Thus, a Simulationarchive file with multiple snapshots looks something like this:
+
+```
+reb_binarydata_field:
+    size_name: 2 bytes
+    size_data: 8 bytes
+
+2 bytes representing the string "t" plus the NULL character
+8 bytes of data representing the value of DT
+
+... more reb_binarydata_fields ...
+
+reb_binarydata_field:
+    size_name: 4 bytes
+    size_data: 0 bytes
+
+4 bytes representing the string "end" plus the NULL character
+
+reb_simulationarchive_blob:
+    index: 0
+    offset_prev: 0
+    offset_next: 256 (offset to the next blob)
+
+reb_binarydata_field:
+    size_name: 2 bytes
+    size_data: 8 bytes
+
+2 bytes representing the string "t" plus the NULL character
+8 bytes of data representing the value of DT
+
+... more reb_binarydata_fields ...
+
+reb_binarydata_field:
+    size_name: 4 bytes
+    size_data: 0 bytes
+
+4 bytes representing the string "end" plus the NULL character
+
+reb_simulationarchive_blob:
+    index: 1
+    offset_prev: 256 (offset to the previous blob)
+    offset_next: 256 (offset to the next blob)
+
+reb_binarydata_field:
+    size_name: 2 bytes
+    size_data: 8 bytes
+
+2 bytes representing the string "t" plus the NULL character
+8 bytes of data representing the value of DT
+
+... more reb_binarydata_fields ...
+
+reb_binarydata_field:
+    size_name: 4 bytes
+    size_data: 0 bytes
+
+4 bytes representing the string "end" plus the NULL character
+
+reb_simulationarchive_blob:
+    index: 2
+    offset_prev: 256 (offset to the previous blob)
+    offset_next: 0 
+```
+
+The offsets are also used as a sort of checksum to detect if a binary file has been corrupted (for example because a user ran out of disk space). 
+If a binary file is corrupted, REBOUND attempts some magic and will recover the last snapshot which does not appear corrupted.
+You will see a warning message when that happens and should proceed with caution (make a backup!). 
+
+
+## Binary Field Descriptor
+
+REBOUND maintains a list of fields it needs to input/output in order to restore a simulation. 
+This list is of type `struct reb_binarydata_field_descriptor[]` and defined in `binarydata.c` as `reb_binarydata_field_descriptor_list`.
+A single struct `reb_binarydata_field_descriptor` contains the information to input/output one REBOUND field, for example the current simulation time `t`:
+
+```c
+    struct reb_binarydata_field_descriptor fd_t = { "", REB_DOUBLE,       "t",                            offsetof(struct reb_simulation, t), 0, 0, 0};
+```
+The first parameter is an optional documentation string. Next is the type of data, in this case a single double precision floating point number. The third entry is the name of the field. This is used to identify field in the binary files. The name should be human-readable and correspond to the name of the parameter in the c structure. The next entry is the offset of where this variable is stored relative to the beginning of the simulation structure. 
+
+REBOUND also supports array like fields. For example consider the `particles` field:
+```c
+    struct reb_binarydata_field_descriptor fd_particles = { "", REB_POINTER,      "particles",                    offsetof(struct reb_simulation, particles), offsetof(struct reb_simulation, N), sizeof(struct reb_particle), 0};
+```
+
+The three last parameters are the offset of the a variable in the `reb_simulation` structure that determines the number of array elements. In this case the number of particles. The second to last entry is the size of a single element. In this case, the size of one `reb_particle`, the last entry is used to encode allowed enumeration values which is used for the python interface.
+
+If you add an additional field to the `reb_simulation` struct and you want to write it to a binary file and read it back in, then you need to add an entry to `reb_binarydata_field_descriptor_list`.
+
+Individual integrators define their own `reb_binarydata_field_descriptor` list of elements which they need to export/import. 
+
