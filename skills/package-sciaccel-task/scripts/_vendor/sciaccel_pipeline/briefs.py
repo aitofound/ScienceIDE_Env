@@ -194,14 +194,19 @@ STEP 2  Survey the official tests of every approved module.
   Mark tests known a priori to be chaotic. The proposal is a hypothesis; it is
   finalized with the human after the calibration run, with taste.
 
-  How many checks: there is no preset check-count target. Use justified
-  official-test and example coverage, task scope, runnable scientific value,
-  explicit exclusions and practical run/cost trade-offs. Coverage ought to be
-  exhaustive; this is an aim, not a requirement: justify exclusions and review substantial omissions;
-  non-exhaustiveness alone is not a defect. Survey graded stages, standalone
-  component-suite targets and official example decks as well as test targets.
-  Never split one run by output file to pad a count, or split a module to meet
-  a count ceiling. The human judges coverage from evidence, not a quota.
+  Which checks: the default is exhaustive. Every distinct official test and
+  example the module ships is listed here and every suitable one becomes a
+  check, deduplicated where two decks force the same path; there is no count
+  target in either direction. Best effort, never silent: a deck that cannot
+  run in the container, needs data the tree does not carry, or cannot be
+  shortened to a sane run time stays in this file with suitable: false and
+  its reason in why. Skipping this survey, or surveying a subset because the
+  whole looks large, is strongly advised against: the checks are the reward.
+  Survey graded stages, standalone component-suite targets and official
+  example decks as well as test targets. Never split one run by output file
+  to pad a count, or split a module to meet a count ceiling. Do not ask the
+  human which checks to include: survey-tests prints the coverage and the
+  omissions, and you show them that summary as information.
 
   The suite budget ({budget} s of RUN time by default, source builds excluded)
   is guidance, not a cap. Do not omit a valuable test merely to fit the default;
@@ -268,12 +273,26 @@ STEP 3  Author the checks of {task}.
   not be tightened mechanically to the tiny two-ULP spread. If no active input
   can be perturbed sensibly, an explicitly identical variant supplies no
   calibration evidence and the rubric says so.
-  Expose the settings that scale runtime as knobs in run.sh; the defaults are
-  the graded values. expected_runtime_s is the check's RUN time on the
-  declared cores, excluding its source build; run.sh prints
-  SAB_BUILD_SECONDS=<n> after the build so selfcheck can keep the two apart.
-  The suite budget ({budget} s of run time by default) is guidance: it never
-  justifies dropping a check; exceeding it is discussed with the human.
+  Run time and resources. Hold every check's graded run under 300 s on the
+  declared cores whenever possible (shorten the window or resolution through
+  its own knobs where the physics survives); a check that cannot be brought
+  under 300 s without losing what it grades is kept and says why in
+  rubric.json runtime_note, else lint refuses it. The suite total has no
+  cap; {budget} s of run time is strongly advised and never justifies dropping
+  a check; exceeding it is discussed with the human at STOP 3. Expose the
+  settings that scale runtime as knobs in run.sh, and one knob for the cores
+  the run uses (threads or MPI ranks); the defaults are the graded values,
+  and the resource knob's default is fixed at the declared per-check cpus,
+  never read from the host, since a thread or rank count can change the
+  summation order. expected_runtime_s is the check's RUN time on the declared
+  cores, excluding its source build; run.sh prints SAB_BUILD_SECONDS=<n>
+  after the build so selfcheck can keep the two apart. The stamped solve.sh
+  is resource aware: it packs as many checks at once as the host allowance
+  admits at the declared per-check share.
+  Whatever the window and the resources, compare only physically meaningful
+  production quantities: the state the science reads, fluxes, energies,
+  spectra, printed errors. Never a storage order, a step count, a timing, a
+  layout, a random draw or a sign convention.
 
   Policy type, tolerance, window and variant are hypotheses until the human
   finalizes them. The intended sequence: fill provisional values, `lint`,

@@ -28,10 +28,10 @@ GATHER, in this order
      problems live.
   5. The official tests and example decks per proposed module: justified breadth,
      task scope, runnable scientific value, explicit exclusions and practical
-     run/cost trade-offs, not a count target. Coverage ought to be exhaustive;
-     justified exclusions are allowed and non-exhaustiveness alone is not a
-     defect. For a single-module codebase, check whole-root scope and the
-     canonical codebase slug (or an honest narrow naming rationale), not an
+     run/cost trade-offs, not a count target. The checks to come are exhaustive
+     by default (one per distinct official test or example), so list here what
+     the task PR will have to cover. For a single-module codebase, check
+     whole-root scope and the canonical codebase slug (or an honest narrow naming rationale), not an
      internal subsystem relabeled as the whole; one module is the default and
      needs no justification. A multi-module cut is extraordinary and needs
      both: genuinely separate packages with different physics, and clean
