@@ -6,7 +6,7 @@ self-validation and runtime records). This file is the human-readable story.
 
 ## Module
 
-QuSpin computes exact spectra and time evolution for finite spin, boson and fermion many-body systems. This leaf owns the pinned cohesive package and exercises basis construction, operator assembly, symmetry sectors, sparse Lanczos, Floquet propagation and driven evolution. Documentation, notebooks and the separately released extension source repositories are excluded from runtime checks because they do not add independent solver paths to this pinned package.
+QuSpin computes exact spectra and time evolution for finite spin, boson and fermion many-body systems. This leaf owns the pinned cohesive package and exercises basis construction, operator assembly, symmetry sectors, sparse Lanczos, Floquet propagation and driven evolution. Documentation prose and the separately released extension source repositories are excluded from runtime checks because they do not add independent solver paths to this pinned package; the official example, documentation and notebook decks all run as checks.
 
 ## Build
 
@@ -16,7 +16,7 @@ Two packages are installed for the official example decks rather than for the li
 
 ## Runtime
 
-The declared `expected_runtime_s` values sum to 5040 s and `suite_budget_s` is 5400 s. Those
+The declared `expected_runtime_s` values sum to 5940 s and `suite_budget_s` is 6300 s. Those
 declarations are deliberately generous: the measured nominal suite is 688 s (CI run
 `34948002642`) on the declared 2 cores, of which `examples-scripts` and `basis-doc-examples`
 are the two largest checks because they run every official deck. The declared numbers exist so
@@ -42,7 +42,8 @@ All 73 upstream `test_*.py` files are owned by a check: eight standalone baselin
 Upstream's own `run_all_tests.sh` also runs two scriptable example suites, and the packaging skill counts an upstream example as an official test, so both are covered too:
 
 - `examples/scripts/` (`example*.py`, 31 decks) by the `examples-scripts` check;
-- `sphinx/doc_examples/` (`*example.py`, 33 decks) by the `basis-doc-examples` check.
+- `sphinx/doc_examples/` (`*example.py`, 33 decks) by the `basis-doc-examples` check;
+- `examples/notebooks/` (`*.py`, 6 scripts) by the `examples-notebooks` check.
 
 Both keep upstream's pass condition — the deck must run to completion — and add one spectrum-sensitive calibration observable. The example suites are not redundant with `test/`: four production symbols (`photon.coherent_state`, `operators.commutator`, `operators.anti_commutator`, `tools.misc.get_matvec_function`) are exercised only from the example decks.
 
@@ -50,4 +51,4 @@ Three upstream files are excluded and recorded, none silently: `test_quantum_ope
 
 Two upstream files (`test_Op_shift_sector.py`, `test_gen_evolve.py`) carry top-level assertions and no pytest function; the runner detects them and executes them directly so their own assertions decide pass or fail.
 
-Not covered by design: the `examples/notebooks/` Colab suite (a tutorial surface for a hosted notebook runtime that installs its own pinned conda environment, not a solver workload of this pinned package), generated documentation, the separately released extension source repositories, and platform-specific OpenMP build behaviour.
+Not covered by design: generated documentation prose, the separately released extension source repositories, and platform-specific OpenMP build behaviour. The notebook scripts are covered: the Colab installation block in `quspin_colab.py` is commented out upstream, so the file runs as an ordinary QuSpin script.
