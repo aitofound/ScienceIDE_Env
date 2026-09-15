@@ -77,7 +77,13 @@ def print_plan(plan: dict, leaf: Path) -> None:
     vals = " ".join(f"{v:.0f}" if v else "?" for v in plan["checks"].values())
     over = plan["suite_declared_s"] > plan["budget_s"]
     print(f"  suite       {len(plan['checks'])} checks; declared expected_runtime_s (run time, builds excluded): {vals} = {plan['suite_declared_s']:.0f} s per solve; "
-          f"budget {plan['budget_s']:.0f} s is guidance{' and is exceeded: agree the strategy with the human, never drop checks' if over else ''}")
+          f"budget {plan['budget_s']:.0f} s is strongly advised, not a cap{' and is exceeded: agree the strategy with the human, never drop checks' if over else ''}")
+    longs = [(c, v) for c, v in plan["checks"].items() if v and v > config.CHECK_RUNTIME_ADVISED_S]
+    if longs:
+        print(f"  per check   {len(longs)} check(s) declared above the {config.CHECK_RUNTIME_ADVISED_S} s per-check line: "
+              + ", ".join(f"{c} ({v:.0f} s)" for c, v in longs) + "; each rubric's runtime_note says why")
+    else:
+        print(f"  per check   every check declared under the {config.CHECK_RUNTIME_ADVISED_S} s per-check line")
     alt = plan.get("altbuild") or []
     n_solves = 3 if alt else 2
     est = 2 * plan["suite_declared_s"] + sum(plan["checks"].get(c) or 0 for c in alt)
