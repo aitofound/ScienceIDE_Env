@@ -1,0 +1,49 @@
+{
+  "check": "weighted-spearman",
+  "policy": "pointwise",
+  "chaotic": false,
+  "upstream_test": "code/liana/tests/method/sp/test_bivariate_funs.py::test_sp_vectorized",
+  "configuration": "原官方mats固定20×5 float32 x/y与20×20 float32 CSR权重；直接调用_vectorized_spearman，输出全部100个center/pair相关系数。SAB_PAIR_BLOCK=5只控制列块，全部pair始终计算。",
+  "observable": "完整20×5中心位置与feature pair的weighted Spearman相关系数",
+  "expected_runtime_s": 34,
+  "default_vs_upstream": "官方输入和独立函数入口不变；准备阶段物化mats并标记人工spot/pair身份，不运行candidate sampler，比较全100值而非仅官方第一行assert。",
+  "variant": "仅weight[0,0]朝+infinity两float32 ULP；x/y和全部输入identity不变。表达x[0,0]两ULP保持秩不变且无输出响应，因此不采用。当前variant只校准weights/reduction，不校准rank交换、并列或零方差分支。",
+  "altbuild": "none: 未配置或实测第二个合法构建；没有跨平台或GPU floor。",
+  "comparison": {
+    "atol": 1e-05,
+    "rtol": 1e-05,
+    "expected_centers": 20,
+    "expected_pairs": 5,
+    "files": [
+      {
+        "path": "correlations.csv",
+        "format": "spearman-csv"
+      }
+    ]
+  },
+  "evidence": {
+    "status": "provisional，等待人工正式校准；不是最终policy/bound批准",
+    "floor": null,
+    "floor_how": "同环境完整输入同步重排提供执行顺序敏感性证据，但不是跨平台floor；没有Docker selfcheck。",
+    "native_survey_weight_variant_max_abs": 2.2351741790771484e-08,
+    "native_survey_input_permutation_max_abs": 2.0489096641540527e-06,
+    "runtime_how": "一次原生完整run.sh nominal wall13.593529280秒减独立build/install1.828356266秒；含import/JIT/I/O，核心函数0.000695669秒另列。SAB_THREADS=1；任务模板资源不是实测或consent。",
+    "self_validation_spread": {
+      "value": 2.2351741790771484e-08,
+      "knob_overrides": {
+        "SAB_JOBS": "8"
+      }
+    },
+    "self_validation_bound_fraction": {
+      "value": 0.002004767725239045,
+      "knob_overrides": {
+        "SAB_JOBS": "8"
+      }
+    },
+    "third_leg_coverage": "**100 / 100 —— 全部受判值都有独立复算**（2026-09-13 新增；此前本 check 与同 leaf 其余多数一样是纯两侧比较、没有第三条腿）。判分器用**纯 Python** 重写 `_local_functions.py:_vectorized_correlations(method=\"spearman\")`，**不经 BLAS、不调 liana**，numpy 只用来解析 .npz。除 pearson 那几处外，还要照抄 `rankdata(..., axis=0)`——**按列**排秩、并列取**平均**秩。余量偏大是因为秩值量级大（1..20），float32 累加的绝对误差随之变大。 **实测与真实产物最大绝对差 1.33e-06，占 atol=1e-5 的 13.3%。** selfcheck 计分是跨 IC 的，所以对 nominal 与 variant 各算一份期望、任一份通过即可。",
+    "third_leg_rejects_two_sided_pollution": "已实证：把同一个值在两侧同样改掉，`over_bound` 仍为 0（逐项比较结构上拒不掉），而第三条腿把两侧都拒下。自检 `test_two_sided_pollution_is_caught_only_by_the_third_leg` 把这两件事一起断言。",
+    "selftest_baseline_was_synthetic": "**一处同时修掉的缺陷**：`test_validate.py` 原先用编造的小表做基线，只能测比较逻辑自己跟自己。已改为从 `ic/nominal` 独立重算的真实 20×5 表。",
+    "expected_runtime_s_measured": "2026-09-14 并发执行下实测 34 s（不含 build，SAB_JOBS = 声明核数）。原声明 11.7652 s 是串行时代的值；produce 循环改为并发后（形状取自已 merge 的 tasks/pluto/*），单条 check 的墙钟因争抢而上升，而整套的墙钟大幅下降。取实测值本身即可：告警阈值是 measured > 2 × declared，2× 余量已在规则里。"
+  },
+  "warrant": "本检查比较src/liana/method/sp/_bivariate/_local_functions.py:305-350的完整weighted Spearman。它先在全spot范围逐列rankdata(axis=0)，用默认average处理ties，再进行加权相关；不同于mask后ordinal ranking的_masked_spearman。本机rankdata返回float32，后续加权差分、方差<=1e-6*ss归零及float32 clip决定误差，最终float64 out不等于float64算术。源码说明约五位小数准确性，且原生合法输入全轴重排实测max_abs=2.0489096641540527e-6，明显高于weight两ULP的2.2351741790771484e-8，因此暂拟atol=1e-5、rtol=1e-5，不能按小variant距离继续收紧。完整原生producer的合法输入重排达到最大bound_fraction=0.18421060687487784，仍通过但余量有限，不能宣称已获得宽裕跨平台floor。绕过ranking和替换weight的真实源码修改均成功生成100行后因有限数值越界被拒绝，max_abs分别为0.15331952925771475与0.2998112253844738；源码返回处取abs也成功产出后以max_abs=0.5494298934936523被拒，分类为source-return-transform而非输出文件代理。按人工center/pair身份对齐全100值，不锁存储顺序，拒非有限值；原fixture每列20distinct且未覆盖ties/零方差，人工小算例只作开发自测，不算新增graded coverage。最终bounds仍由人工校准决定。"
+}
