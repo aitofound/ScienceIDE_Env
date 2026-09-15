@@ -1,0 +1,66 @@
+{
+  "skimage.color.label2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorlabel.py",
+      "line": 85,
+      "end_line": 156
+    },
+    "description": "Return an RGB image where color-coded labels are painted over the image.",
+    "calls": [
+      "np.moveaxis",
+      "_label2rgb_overlay",
+      "_label2rgb_avg"
+    ],
+    "branches": [
+      {
+        "line": 146,
+        "expression": "image is not None"
+      },
+      {
+        "line": 148,
+        "expression": "kind == 'overlay'"
+      },
+      {
+        "line": 152,
+        "expression": "kind == 'avg'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.sobel": {
+    "implementation": {
+      "file": "src/skimage/filters/edges.py",
+      "line": 199,
+      "end_line": 253
+    },
+    "description": "Find edges in an image using the Sobel filter.",
+    "calls": [
+      "_generic_edge_filter",
+      "_mask_filter_result"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.segmentation.watershed": {
+    "implementation": {
+      "file": "src/skimage/segmentation/_watershed.py",
+      "line": 87,
+      "end_line": 243
+    },
+    "description": "Find watershed basins in an image flooded from given markers.",
+    "calls": [
+      "np.pad",
+      "_validate_inputs",
+      "_validate_connectivity",
+      "np.pad(mask, pad_width, mode='constant').ravel",
+      "_offsets_to_raveled_neighbors",
+      "np.flatnonzero",
+      "_watershed_cy.watershed_raveled",
+      "crop",
+      "image.ravel",
+      "output.ravel"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}
