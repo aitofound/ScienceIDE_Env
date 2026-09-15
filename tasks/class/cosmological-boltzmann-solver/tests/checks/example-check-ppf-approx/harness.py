@@ -18,10 +18,16 @@ def dump_cl(cl):
     return {k: [float(x) for x in v] for k, v in cl.items()}
 
 
-def dump_perturbations(pts):
-    # pts is a list (one dict per k_output_values entry); each dict's values
-    # are per-time arrays for that k.
-    return [{k: [float(x) for x in v] for k, v in ptk.items()} for ptk in pts]
+# get_perturbations() samples each k_output_values request on CLASS's own
+# adaptive conformal-time grid (perturbations.c's accumulating step loop),
+# which shifts discretely with a cosmological-parameter change -- a live
+# omega_b variant moves index i of the array to a different physical time in
+# the nominal run than in the variant run, so grading it pointwise compares
+# unrelated samples (confirmed on the class-rev728-final3 calibration run:
+# needed absolute tolerances up to 1e4 to pass a value that is a genuinely
+# different physical quantity, not a numerical-noise floor). Deferred to a
+# follow-up revision that resamples onto a fixed time grid per README.md;
+# this check grades only the fixed-l Cl arrays for now.
 
 
 def main() -> int:
@@ -55,10 +61,7 @@ def main() -> int:
             "use_ppf": use_ppf,
         })
         cl = c.raw_cl()
-        entry = {"cl": dump_cl(cl)}
-        if M in ("PPF1", "FLD1"):
-            entry["perturbations"] = dump_perturbations(c.get_perturbations()["scalar"])
-        block1[M] = entry
+        block1[M] = {"cl": dump_cl(cl)}
         c.struct_cleanup()
         c.empty()
 
@@ -90,11 +93,7 @@ def main() -> int:
                     })
                     cosmo[M] = c
                 key = f"Omega_k={Omega_K},gauge={gauge}"
-                out[key] = {
-                    M: {"cl": dump_cl(cosmo[M].raw_cl()),
-                        "perturbations": dump_perturbations(cosmo[M].get_perturbations()["scalar"])}
-                    for M in models_23
-                }
+                out[key] = {M: {"cl": dump_cl(cosmo[M].raw_cl())} for M in models_23}
                 for M in models_23:
                     cosmo[M].struct_cleanup()
                     cosmo[M].empty()

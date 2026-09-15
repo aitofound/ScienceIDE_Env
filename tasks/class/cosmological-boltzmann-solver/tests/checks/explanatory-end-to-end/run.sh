@@ -35,10 +35,37 @@ WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 # Within a run, please reuse the build to the best effort: when the module must be compiled, try to reuse
 # the build an earlier check of this run already made; this script nevertheless stays self-contained and
 # builds for itself when there is nothing to reuse. Say how in comment/README.md under "## Build".
-cp -R "$SOURCE_DIR/." "$WORK/src"
 BUILD_START=$(date +%s)
 MAKE_ARGS=()
-[ "$IC" = altbuild ] && MAKE_ARGS+=("OPTFLAG=-O2")
+CONFIG=default
+if [ "$IC" = altbuild ]; then MAKE_ARGS+=("OPTFLAG=-O2"); CONFIG=O2; fi
+# Cross-check build cache (best-effort, per skill "reuse to the best effort"): keyed by
+# build configuration only (default vs. the -O2 altbuild), NOT by initial condition or by
+# this check's own target, so every plain "make <target>" check in this leaf shares one
+# populate step per configuration per selfcheck. Populated once via the consolidating
+# "libclass.a" target (TOOLS+SOURCE+EXTERNAL, the object files every C-driver target needs);
+# each check still runs its own "make <target>" on the copy afterward to compile and link
+# whatever that target additionally needs (usually a few seconds). Installed atomically
+# (build in a uniquely-named scratch dir, then rename into place) so a corrupted partial
+# copy can never be read as a hit; touch after copy defeats cp's fresh mtimes so make does
+# not think the copied .o files are stale relative to the copied .c files. Self-contained:
+# builds straight from SOURCE_DIR when SAB_BUILD_CACHE is unset (a solo/lint run).
+if [ -n "${SAB_BUILD_CACHE:-}" ]; then
+  CACHE_DIR="$SAB_BUILD_CACHE/$CONFIG"
+  if [ ! -f "$CACHE_DIR/.sab-ready" ]; then
+    TMP_BUILD="$SAB_BUILD_CACHE/.building-$CONFIG-$$"
+    rm -rf "$TMP_BUILD"
+    cp -R "$SOURCE_DIR/." "$TMP_BUILD"
+    make -C "$TMP_BUILD" -j2 libclass.a "${MAKE_ARGS[@]}" >/dev/null
+    touch "$TMP_BUILD/.sab-ready"
+    rm -rf "$CACHE_DIR"
+    mv "$TMP_BUILD" "$CACHE_DIR"
+  fi
+  cp -R "$CACHE_DIR/." "$WORK/src"
+  touch "$WORK/src/build/"* "$WORK/src/libclass.a" 2>/dev/null || true
+else
+  cp -R "$SOURCE_DIR/." "$WORK/src"
+fi
 make -C "$WORK/src" -j2 class "${MAKE_ARGS[@]}" >/dev/null
 echo "SAB_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))"
 cp "$CHECK_DIR/ic/$INPUTS/explanatory.ini" "$WORK/src/explanatory.ini"
