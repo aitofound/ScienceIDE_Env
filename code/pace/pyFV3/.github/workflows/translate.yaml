@@ -1,0 +1,134 @@
+name: "pyFV3 translate tests (subset)"
+
+# Run these these whenever ...
+on:
+  workflow_call: # ... called from a downstream repo
+    inputs:
+      component_trigger:
+        type: boolean
+        default: false
+        required: false
+      component_name:
+        type: string
+        default: ''
+        required: false
+      python_version:
+        type: string
+        default: ''
+        required: false
+  pull_request: # ... a PR is opened / updated
+  merge_group: # ... the PR is added to the merge queue
+  push:
+    branches:
+      - main # ... when merging into the main branch
+
+# cancel running jobs if theres a newer push
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pyFV3_translate_tests:
+    runs-on: ubuntu-latest
+    env:
+      DATA_PATH: ./test_data/8.1.3/c12_6ranks_standard/dycore
+      DATA_URL: "https://portal.nccs.nasa.gov/datashare/astg/smt/pace-regression-data/8.1.3_c12_6ranks_standard.tar.gz"
+      python_default: '3.12'
+
+    steps:
+      - name: 'Setup Python ${{ inputs.python_version && inputs.python_version || env.python_default }}'
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ inputs.python_version && inputs.python_version || env.python_default }}
+
+      - name: Install mpi
+        run: pip install openmpi
+
+      - name: External trigger Checkout pyFV3
+        if: ${{inputs.component_name}}
+        uses: actions/checkout@v7
+        with:
+          repository: NOAA-GFDL/pyFV3
+          path: pyFV3
+
+      - name: Checkout hash that triggered CI
+        uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+          path: pyFV3/${{inputs.component_name}}
+
+      - name: External trigger install NDSL packages
+        if: ${{inputs.component_name}}
+        run: |
+          cd ${GITHUB_WORKSPACE}/pyFV3/${{inputs.component_name}}
+          pip install .
+          cd ${GITHUB_WORKSPACE}/pyFV3
+          pip install .[test]
+
+      - name: Install pyFV3 packages
+        if: ${{ ! inputs.component_name }}
+        run: |
+          cd ${GITHUB_WORKSPACE}/pyFV3
+          pip install .[ndsl,test]
+
+      # Only restore (don't save) caches on PRs. New caches created from PRs won't be
+      # accessible from other PRs, see workflows/create_cache.yaml.
+      - name: Restore test_data (if cached)
+        id: cache-restore
+        uses: actions/cache/restore@v5
+        with:
+          key: ${{ env.DATA_PATH }}
+          path: pyFV3/test_data
+
+      - name: Download test_data (if not cached)
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p pyFV3/test_data  && cd pyFV3/test_data
+          wget ${{ env.DATA_URL }}
+          tar -xzvf 8.1.3_c12_6ranks_standard.tar.gz
+
+      - name: NumPy FvTp2d
+        run: |
+          cd ${GITHUB_WORKSPACE}/pyFV3
+          coverage run --rcfile=pyproject.toml -m pytest \
+              -v -s --data_path=${{ env.DATA_PATH }} \
+              --backend=st:numpy:cpu:IJK \
+              --which_modules=FvTp2d \
+              --threshold_overrides_file=./tests/savepoint/translate/overrides/standard.yaml \
+              ./tests/savepoint
+
+      - name: Numpy D_SW
+        run: |
+          cd ${GITHUB_WORKSPACE}/pyFV3
+          coverage run --rcfile=pyproject.toml -m pytest \
+               -v -s --data_path=${{ env.DATA_PATH }} \
+               --backend=st:numpy:cpu:IJK \
+               --which_modules=D_SW \
+               --threshold_overrides_file=./tests/savepoint/translate/overrides/standard.yaml \
+               ./tests/savepoint
+
+      - name: Numpy Remapping
+        run: |
+          cd ${GITHUB_WORKSPACE}/pyFV3
+          coverage run --rcfile=pyproject.toml -m pytest \
+              -v -s --data_path=${{ env.DATA_PATH }} \
+              --backend=st:numpy:cpu:IJK \
+              --which_modules=Remapping \
+              --threshold_overrides_file=./tests/savepoint/translate/overrides/standard.yaml \
+              ./tests/savepoint
+
+      - name: Orchestrated dace-cpu Acoustics
+        run: |
+          cd ${GITHUB_WORKSPACE}/pyFV3
+          export FV3_DACEMODE=BuildAndRun
+          export NDSL_LITERAL_PRECISION=64
+          export OMP_NUM_THREADS=1
+          export NDSL_LOGLEVEL=Debug
+          mpiexec -np 6 --oversubscribe coverage run --rcfile=pyproject.toml -m mpi4py -m pytest \
+            -v -s --data_path=${{ env.DATA_PATH }} \
+            --backend=orch:dace:cpu:KIJ \
+            -m parallel \
+            --which_rank=0 \
+            --which_modules=DynCore \
+            --threshold_overrides_file=./tests/savepoint/translate/overrides/standard.yaml \
+            ./tests/savepoint

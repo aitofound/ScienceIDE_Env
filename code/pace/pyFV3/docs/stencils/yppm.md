@@ -1,0 +1,3 @@
+# yppm
+
+::: stencils.yppm

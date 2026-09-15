@@ -1,0 +1,127 @@
+name: "PySHiELD translate tests"
+
+# Run these these whenever ...
+on:
+  workflow_call: # ... called from a downstream repo
+    inputs:
+      component_trigger:
+        type: boolean
+        default: false
+        required: false
+      component_name:
+        type: string
+        default: ''
+        required: false
+      python_version:
+        type: string
+        default: ''
+        required: false
+  pull_request: # ... a PR is opened / updated
+  merge_group: # ... the PR is added to the merge queue
+  push:
+    branches:
+      - main # ... when merging into the main branch
+
+# cancel running jobs if theres a newer push
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pyshield_translate_tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+    env:
+      TEST_DATA_PATH: "./test_data/8.1.3/c12_6ranks_baroclinic/physics"
+      TEST_DATA_URL: "https://portal.nccs.nasa.gov/datashare/astg/smt/pace-regression-data/8.1.3_c12_6ranks_baroclinic.physics.tar.gz"
+      python_default: '3.12'
+
+    steps:
+      - name: External trigger Checkout pySHiELD
+        if: ${{inputs.component_name}}
+        uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+          repository: NOAA-GFDL/pySHiELD
+          path: pySHiELD
+
+      - name: 'Setup Python ${{ inputs.python_version && inputs.python_version || env.python_default }}'
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ inputs.python_version && inputs.python_version || env.python_default }}
+
+      - name: Install mpi
+        run: pip install openmpi
+
+      - name: External trigger remove existing component in pySHiELD/develop
+        if: ${{ inputs.component_name }}
+        run: rm -rf ${GITHUB_WORKSPACE}/pySHiELD/${{inputs.component_name}}
+
+      - name: Checkout hash that triggered CI
+        uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+          path: pySHiELD/${{inputs.component_name}}
+
+      - name: external trigger Install packages for FV3 component
+        if: ${{contains(inputs.component_name, 'FV3')}}
+        run: |
+          cd ${GITHUB_WORKSPACE}/pySHiELD/${{inputs.component_name}}
+          pip install .
+          cd ${GITHUB_WORKSPACE}/pySHiELD
+          pip install .[ndsl,test]
+
+
+      - name: external trigger Install packages for NDSL component
+        if: ${{contains(inputs.component_name, 'NDSL')}}
+        run: |
+          cd ${GITHUB_WORKSPACE}/pySHiELD/${{inputs.component_name}}
+          pip install .
+          cd ${GITHUB_WORKSPACE}/pySHiELD
+          pip install .[pyfv3,test]
+
+      - name: Install pySHiELD packages
+        if: ${{ !inputs.component_name}}
+        run: |
+          cd ${GITHUB_WORKSPACE}/pySHiELD
+          pip install .[ndsl,pyfv3,test]
+
+      # Only restore (don't save) caches on PRs. New caches created from PRs won't be
+      # accessible from other PRs, see workflows/create_cache.yaml.
+      - name: Restore test_data (if cached)
+        id: cache-restore
+        uses: actions/cache/restore@v5
+        with:
+          key: ${{ env.TEST_DATA_PATH }}
+          path: pySHiELD/test_data
+
+      - name: Download data (if not cached)
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p pySHiELD/test_data && cd pySHiELD/test_data
+          wget ${{ env.TEST_DATA_URL }}
+          tar -xzvf 8.1.3_c12_6ranks_baroclinic.physics.tar.gz
+
+      - name: Numpy Translate Test
+        run: |
+          cd ${GITHUB_WORKSPACE}/pySHiELD
+          pytest \
+            -v -s --data_path=${{ env.TEST_DATA_PATH }} \
+            --backend=st:numpy:cpu:IJK \
+            --threshold_overrides_file=./tests/savepoint/translate/overrides/standard.yaml \
+            ./tests/savepoint
+
+      - name: Orchestrated dace:cpu Translate Test
+        run: |
+          cd ${GITHUB_WORKSPACE}/pySHiELD
+          export FV3_DACEMODE=BuildAndRun
+          export NDSL_LITERAL_PRECISION=64
+          export OMP_NUM_THREADS=10
+          export NDSL_LOGLEVEL=Debug
+          pytest \
+            -vvv -x -s --data_path=${{ env.TEST_DATA_PATH }} \
+            --backend=orch:dace:cpu:KIJ \
+            --threshold_overrides_file=./tests/savepoint/translate/overrides/standard.yaml \
+            ./tests/savepoint

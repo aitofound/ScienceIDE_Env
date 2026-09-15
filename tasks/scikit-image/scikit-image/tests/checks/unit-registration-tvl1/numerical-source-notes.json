@@ -1,0 +1,124 @@
+{
+  "skimage.registration.optical_flow_tvl1": {
+    "implementation": {
+      "file": "src/skimage/registration/_optical_flow.py",
+      "line": 166,
+      "end_line": 265
+    },
+    "description": "Coarse to fine optical flow estimator.",
+    "calls": [
+      "partial",
+      "_coarse_to_fine"
+    ],
+    "branches": [
+      {
+        "line": 261,
+        "expression": "np.dtype(dtype) != _supported_float_type(dtype)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.warp": {
+    "implementation": {
+      "file": "src/skimage/transform/_warps.py",
+      "line": 780,
+      "end_line": 1058
+    },
+    "description": "Warp an image according to a given coordinate transformation.",
+    "calls": [
+      "isinstance",
+      "_warp_fast[ctype]",
+      "_validate_interpolation_order",
+      "_clip_warp_output",
+      "convert_to_float",
+      "safe_as_int",
+      "_to_ndimage_mode",
+      "ndi.map_coordinates",
+      "image.astype",
+      "matrix.astype",
+      "ProjectiveTransform",
+      "warp_coords",
+      "inverse_map",
+      "hasattr",
+      "np.linalg.inv",
+      "np.dstack",
+      "get_bound_method_class",
+      "dims.append"
+    ],
+    "branches": [
+      {
+        "line": 931,
+        "expression": "map_args is None"
+      },
+      {
+        "line": 934,
+        "expression": "image.size == 0"
+      },
+      {
+        "line": 939,
+        "expression": "order > 0"
+      },
+      {
+        "line": 946,
+        "expression": "output_shape is None"
+      },
+      {
+        "line": 953,
+        "expression": "order == 2"
+      },
+      {
+        "line": 966,
+        "expression": "order in (1, 3) and (not map_args)"
+      },
+      {
+        "line": 1014,
+        "expression": "warped is None"
+      },
+      {
+        "line": 941,
+        "expression": "image.dtype == np.float16"
+      },
+      {
+        "line": 971,
+        "expression": "isinstance(inverse_map, np.ndarray) and inverse_map.shape == (3, 3)"
+      },
+      {
+        "line": 987,
+        "expression": "matrix is not None"
+      },
+      {
+        "line": 1017,
+        "expression": "isinstance(inverse_map, np.ndarray) and inverse_map.shape == (3, 3)"
+      },
+      {
+        "line": 1022,
+        "expression": "isinstance(inverse_map, np.ndarray)"
+      },
+      {
+        "line": 975,
+        "expression": "isinstance(inverse_map, HOMOGRAPHY_TRANSFORMS)"
+      },
+      {
+        "line": 990,
+        "expression": "image.ndim == 2"
+      },
+      {
+        "line": 1030,
+        "expression": "image.ndim < 2 or image.ndim > 3"
+      },
+      {
+        "line": 1040,
+        "expression": "len(input_shape) == 3 and len(output_shape) == 2"
+      },
+      {
+        "line": 979,
+        "expression": "hasattr(inverse_map, '__name__') and inverse_map.__name__ == 'inverse' and (get_bound_method_class(inverse_map) in HOMOGRAPHY_TRANSFORMS)"
+      },
+      {
+        "line": 999,
+        "expression": "image.ndim == 3"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}
