@@ -70,6 +70,11 @@ def main() -> int:
     worst, worst_frac, failures, details = 0.0, 0.0, [], {}
     for spec in comparison["files"]:
         rel = spec["path"]
+        # A file may carry its own bound: the printed L2 errors are written at six
+        # significant digits even when the field beside them is eight-digit, so they
+        # cannot share the field's rtol without sitting below one printed unit.
+        f_atol = float(spec.get("atol", atol))
+        f_rtol = float(spec.get("rtol", rtol))
         ref_path, cand_path = reference / rel, candidate / rel
         if not ref_path.is_file() or not cand_path.is_file():
             failures.append(f"{rel}: missing on {'reference' if not ref_path.is_file() else 'candidate'}")
@@ -90,16 +95,17 @@ def main() -> int:
             failures.append(f"{rel}: candidate contains non-finite values")
             continue
         err = np.abs(c - r)
-        bound = atol + rtol * np.abs(r)
+        bound = f_atol + f_rtol * np.abs(r)
         with np.errstate(divide="ignore", invalid="ignore"):
             frac = float(np.nanmax(np.where(bound > 0, err / bound, np.where(err > 0, np.inf, 0.0))))
         over = int(np.count_nonzero(err > bound))
         max_err = float(err.max())
         details[rel] = {"values": int(r.size), "max_abs_error": max_err,
-                        "values_over_bound": over, "bound_fraction": frac}
+                        "values_over_bound": over, "bound_fraction": frac,
+                        "atol": f_atol, "rtol": f_rtol}
         if over:
-            failures.append(f"{rel}: {over} of {r.size} values exceed atol={atol:g} "
-                            f"rtol={rtol:g} (max |err| {max_err:.3e})")
+            failures.append(f"{rel}: {over} of {r.size} values exceed atol={f_atol:g} "
+                            f"rtol={f_rtol:g} (max |err| {max_err:.3e})")
         worst = max(worst, max_err)
         worst_frac = max(worst_frac, frac)
     passed = not failures
