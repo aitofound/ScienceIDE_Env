@@ -9,11 +9,6 @@ name: QuSpin full-steward selfcheck
 # needed, then commit the refreshed comment/pipeline/ files it uploads.
 on:
   workflow_dispatch:
-    inputs:
-      probe_example11:
-        description: 'Time examples/scripts/example11.py natively and stop'
-        type: boolean
-        default: false
 
 concurrency:
   group: quspin-full-selfcheck-${{ github.ref }}
@@ -30,22 +25,6 @@ jobs:
           python-version: '3.12'
       - name: Install task tooling
         run: npm install --ignore-scripts
-      - name: Probe example11 natively (timing only)
-        if: inputs.probe_example11
-        run: |
-          python -m venv /tmp/venv
-          /tmp/venv/bin/pip install --quiet --no-cache-dir setuptools wheel \
-            quspin==1.0.1 parallel-sparse-tools==0.2.5 matplotlib networkx
-          cd code/quspin/examples/scripts
-          export KMP_DUPLICATE_LIB_OK=TRUE OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 MPLBACKEND=Agg
-          for f in example11.py example1.py example2.py; do
-            s=$(date +%s)
-            timeout 1800 /tmp/venv/bin/python "$f" >/tmp/o 2>&1
-            rc=$?
-            e=$(date +%s)
-            echo "PROBE $f rc=$rc elapsed=$((e-s))s"
-          done
-          exit 1
       - name: Decide whether a fresh record already exists
         id: freshness
         run: |

@@ -20,6 +20,7 @@ import json
 import os
 import signal
 import subprocess
+import time
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -35,7 +36,8 @@ FILES = [
 # most of the public API), so they dominate this check's wall time.  A hung
 # script must fail the check rather than hang the suite, and several spawn
 # worker processes, so run each in its own process group and kill the group.
-PER_SCRIPT_TIMEOUT_S = int(os.environ.get("SAB_EXAMPLE_TIMEOUT_S", "600"))
+PER_TIMEOUT_S = int(os.environ.get("SAB_EXAMPLE_TIMEOUT_S", "1500"))
+TOTAL_BUDGET_S = int(os.environ.get("SAB_EXAMPLE_TOTAL_BUDGET_S", "1500"))
 
 
 def run_script(filename: str, workdir: Path, env: dict, timeout: int):
@@ -68,9 +70,17 @@ def main() -> int:
                 # display; a non-interactive backend keeps them headless.
                 "MPLBACKEND": "Agg"})
 
+    deadline = time.monotonic() + TOTAL_BUDGET_S
+
     def run_one(filename):
-        rc, o, e = run_script(filename, workdir, env, PER_SCRIPT_TIMEOUT_S)
-        return filename, rc, o, e
+        # Shrink each file's cap to whatever is left of the total budget, so the
+        # check reports a verdict inside the workflow rather than timing out as
+        # a job.  A file started after the budget is spent fails immediately.
+        left = deadline - time.monotonic()
+        if left <= 0:
+            return filename, f"SKIPPED: {TOTAL_BUDGET_S}s total budget exhausted", "", ""
+        rc, out, err = run_script(filename, workdir, env, min(PER_TIMEOUT_S, int(left)))
+        return filename, rc, out, err
 
     with ThreadPoolExecutor(max_workers=min(2, len(FILES))) as pool:
         results = list(pool.map(run_one, FILES))

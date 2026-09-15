@@ -161,11 +161,25 @@ add one spectrum-sensitive calibration observable.
 
 | suite | official glob | decks | check | status |
 |---|---|---|---|---|
-| examples/scripts | `example*.py` | 31 | examples-scripts | covered (29 run, 2 excluded) |
+| examples/scripts | `example*.py` | 31 | examples-scripts | covered (30 run, 1 excluded) |
 | examples/scripts (documented) | `user_basis_trivial-*.py` | 3 | examples-scripts | covered |
 | sphinx/doc_examples | `*example.py` | 33 | basis-doc-examples | covered (all 33 run) |
 | sphinx/doc_examples (extra) | `measurements.py` | 1 | basis-doc-examples | covered |
 | examples/notebooks | `*.py` | 6 | examples-notebooks | covered (all 6 run) |
+
+`example11.py` was excluded in an earlier revision of this change as "a 2D
+exact-diagonalisation sweep that does not finish inside the check window". That
+measurement was taken on an arm64 host under qemu emulation and never on the x86
+target. Timed natively on the target image it runs in **14 s**, so the exclusion
+was wrong and the file is now covered.
+
+Three files in `examples/scripts/` are official examples that upstream's own
+`example*.py` glob skips: `user_basis_trivial-spin.py`,
+`user_basis_trivial-spinless_fermion.py` and `user_basis_trivial-boson.py`. They
+are documented as examples in `sphinx/source/examples/user-basis_example{0,1,2}.rst`,
+which embeds each with `literalinclude` and offers it as a download, so they are
+part of the published example set. The check runs all three (12-16 s each in the
+pinned image) in addition to the glob matches.
 
 `examples/scripts/outdated/` is a parked directory upstream never runs and no
 script or `.rst` page references. Its four files that are not underscore-disabled
@@ -189,19 +203,10 @@ set. It is nevertheless an official script of this codebase that drives
 `basis-doc-examples` check runs it too and records it under
 `upstream_extra_scripts` rather than folding it into the deck count.
 
-Three files in `examples/scripts/` are official examples that upstream's own
-`example*.py` glob skips: `user_basis_trivial-spin.py`,
-`user_basis_trivial-spinless_fermion.py` and `user_basis_trivial-boson.py`. They
-are documented as examples in `sphinx/source/examples/user-basis_example{0,1,2}.rst`,
-which embeds each with `literalinclude` and offers it as a download, so they are
-part of the published example set. The check runs all three (12-16 s each in the
-pinned image) in addition to the 29 that match the glob.
 
-### Exclusions in examples/scripts
 
-- `example11.py`: a 2D exact-diagonalisation sweep whose runtime is dominated by
-  sparse matvecs; it does not finish inside the check window on the declared
-  cores.
+### Exclusion in examples/scripts
+
 - `example27.py`: drives its solver through the optional `sparse_dot_mkl`
   accelerator, which needs a system MKL runtime (`libmkl_rt`) that the task
   image does not carry.  The package installs, but importing it raises

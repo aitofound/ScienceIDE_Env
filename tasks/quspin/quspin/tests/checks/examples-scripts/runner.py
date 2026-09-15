@@ -45,17 +45,14 @@ FILES = [
 ARGV_NEEDS_TWO = {"example12.py": ["2", "2"]}
 
 # example27.py drives its solver through the optional sparse_dot_mkl
-# accelerator, which needs a system MKL runtime the image does not carry;
-# example11.py performs a 2D
-# exact-diagonalisation sweep that does not finish inside the check window on
-# the declared cores.  Both are recorded in comment/coverage-matrix.md rather
+# accelerator, which needs a system MKL runtime the image does not carry, so it
+# cannot run here at all.  It is recorded in comment/coverage-matrix.md rather
 # than silently skipped.
-# example1.py, example1_original.py and example2.py each run a long adaptive
-# ramp sweep (example1.py defaults to n_real=100 disorder realisations) and are
-# the three that dominate this check's wall time; they still run, with the cap
-# below applied.
+# example1.py and example2.py run long adaptive ramp sweeps and dominate this
+# check's wall time.  Measured natively on the target image they take 438 s and
+# 25 s; example1_original.py is the same sweep at n_real=20 rather than 100, so
+# it is bounded by example1.py's figure.  All run, with the caps below applied.
 EXCLUDED = {
-    "example11.py": "2D sweep exceeds the check window on the declared cores",
     "example27.py": "requires a system MKL runtime for sparse_dot_mkl",
 }
 
@@ -63,7 +60,15 @@ EXCLUDED = {
 # suite.  subprocess.run(timeout=) kills only the direct child: several examples
 # spawn joblib workers, and an orphaned worker keeps the CPU and outlives the
 # run.  Start each example in its own process group and kill the whole group.
-PER_EXAMPLE_TIMEOUT_S = int(os.environ.get("SAB_EXAMPLE_TIMEOUT_S", "600"))
+#
+# Two caps, because they answer different questions.  PER_EXAMPLE_TIMEOUT_S
+# catches one stuck file and is set well above the slowest legitimate one
+# (example1.py measures 438 s natively, so 1500 s is 3.4x headroom).  The total
+# budget catches the case where many files are slow at once: with 32 files and
+# two workers, a per-file cap alone would allow 400 minutes, which would blow
+# the workflow's 180-minute timeout before any check reports a verdict.
+PER_EXAMPLE_TIMEOUT_S = int(os.environ.get("SAB_EXAMPLE_TIMEOUT_S", "1500"))
+TOTAL_BUDGET_S = int(os.environ.get("SAB_EXAMPLE_TOTAL_BUDGET_S", "1500"))
 
 
 def run_example(filename: str, workdir: Path, env: dict, timeout: int):
@@ -94,8 +99,16 @@ def main() -> int:
     env.update({"PYTHONDONTWRITEBYTECODE": "1", "OMP_NUM_THREADS": "1",
                 "OPENBLAS_NUM_THREADS": "1", "KMP_DUPLICATE_LIB_OK": "TRUE"})
 
+    deadline = time.monotonic() + TOTAL_BUDGET_S
+
     def run_one(filename):
-        rc, out, err = run_example(filename, workdir, env, PER_EXAMPLE_TIMEOUT_S)
+        # Shrink each file's cap to whatever is left of the total budget, so the
+        # check reports a verdict inside the workflow rather than timing out as
+        # a job.  A file started after the budget is spent fails immediately.
+        left = deadline - time.monotonic()
+        if left <= 0:
+            return filename, f"SKIPPED: {TOTAL_BUDGET_S}s total budget exhausted", "", ""
+        rc, out, err = run_example(filename, workdir, env, min(PER_EXAMPLE_TIMEOUT_S, int(left)))
         return filename, rc, out, err
 
     ran = [f for f in FILES if f not in EXCLUDED]
