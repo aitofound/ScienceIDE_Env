@@ -1,0 +1,41 @@
+{
+  "proposal": {
+    "check": "unit-feature-template",
+    "observable": "case_00000__value",
+    "rtol": 2e-05,
+    "atol": 0.0002
+  },
+  "tests": [
+    {
+      "name": "same-input-float64",
+      "expected_passed": true,
+      "result": {
+        "passed": true,
+        "distance": 0.00010255230584859873,
+        "bound_fraction": 0.5124397734951173,
+        "reason": "All 330569 physical values satisfy their named policies"
+      }
+    },
+    {
+      "name": "uniform-0.001-correlation-bias",
+      "expected_passed": false,
+      "result": {
+        "passed": false,
+        "distance": 0.0010000000000000009,
+        "bound_fraction": 4.999998671119455,
+        "reason": "Out-of-policy observables: case_00000__value"
+      }
+    },
+    {
+      "name": "one-pixel-response-shift",
+      "expected_passed": false,
+      "result": {
+        "passed": false,
+        "distance": 0.4577491863165051,
+        "bound_fraction": 2189.362752675587,
+        "reason": "Out-of-policy observables: case_00000__value"
+      }
+    }
+  ],
+  "basis": "The same stored float32 operands promoted to float64 reveal 0.000102553 maximum correlation difference. The proposed absolute bound has about 1.95x headroom over this legitimate source-precision choice and rejects a 0.001 uniform bias and a one-pixel response-map displacement. This is native evidence, not a Docker altbuild floor."
+}

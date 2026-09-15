@@ -1,0 +1,205 @@
+{
+  "skimage.morphology.closing": {
+    "implementation": {
+      "file": "src/skimage/morphology/gray.py",
+      "line": 364,
+      "end_line": 438
+    },
+    "description": "Return grayscale morphological closing of an image.",
+    "calls": [
+      "pad_footprint",
+      "dilation",
+      "erosion",
+      "mirror_footprint"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.dilation": {
+    "implementation": {
+      "file": "src/skimage/morphology/gray.py",
+      "line": 174,
+      "end_line": 284
+    },
+    "description": "Return grayscale morphological dilation of an image.",
+    "calls": [
+      "_min_max_to_constant_mode",
+      "pad_footprint",
+      "mirror_footprint",
+      "_iterate_gray_func",
+      "_footprint_is_sequence"
+    ],
+    "branches": [
+      {
+        "line": 260,
+        "expression": "out is None"
+      },
+      {
+        "line": 263,
+        "expression": "mode not in _SUPPORTED_MODES"
+      },
+      {
+        "line": 265,
+        "expression": "mode == 'ignore'"
+      },
+      {
+        "line": 273,
+        "expression": "not _footprint_is_sequence(footprint)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.disk": {
+    "implementation": {
+      "file": "src/skimage/morphology/footprints.py",
+      "line": 508,
+      "end_line": 597
+    },
+    "description": "Generates a flat, disk-shaped footprint.",
+    "calls": [
+      "np.arange",
+      "np.meshgrid",
+      "_nsphere_series_decomposition",
+      "disk",
+      "_cross_decomposition"
+    ],
+    "branches": [
+      {
+        "line": 586,
+        "expression": "decomposition is None"
+      },
+      {
+        "line": 589,
+        "expression": "not strict_radius"
+      },
+      {
+        "line": 592,
+        "expression": "decomposition == 'sequence'"
+      },
+      {
+        "line": 594,
+        "expression": "decomposition == 'crosses'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.erosion": {
+    "implementation": {
+      "file": "src/skimage/morphology/gray.py",
+      "line": 65,
+      "end_line": 171
+    },
+    "description": "Return grayscale morphological erosion of an image.",
+    "calls": [
+      "_min_max_to_constant_mode",
+      "pad_footprint",
+      "_iterate_gray_func",
+      "_footprint_is_sequence"
+    ],
+    "branches": [
+      {
+        "line": 150,
+        "expression": "out is None"
+      },
+      {
+        "line": 153,
+        "expression": "mode not in _SUPPORTED_MODES"
+      },
+      {
+        "line": 155,
+        "expression": "mode == 'ignore'"
+      },
+      {
+        "line": 160,
+        "expression": "not _footprint_is_sequence(footprint)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.isotropic_closing": {
+    "implementation": {
+      "file": "src/skimage/morphology/isotropic.py",
+      "line": 211,
+      "end_line": 274
+    },
+    "description": "Return binary morphological closing of an image.",
+    "calls": [
+      "isotropic_dilation",
+      "isotropic_erosion"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.isotropic_dilation": {
+    "implementation": {
+      "file": "src/skimage/morphology/isotropic.py",
+      "line": 77,
+      "end_line": 142
+    },
+    "description": "Return binary morphological dilation of an image.",
+    "calls": [
+      "ndi.distance_transform_edt",
+      "np.less_equal",
+      "np.logical_not"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.isotropic_erosion": {
+    "implementation": {
+      "file": "src/skimage/morphology/isotropic.py",
+      "line": 9,
+      "end_line": 74
+    },
+    "description": "Return binary morphological erosion of an image.",
+    "calls": [
+      "ndi.distance_transform_edt",
+      "np.greater"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.isotropic_opening": {
+    "implementation": {
+      "file": "src/skimage/morphology/isotropic.py",
+      "line": 145,
+      "end_line": 208
+    },
+    "description": "Return binary morphological opening of an image.",
+    "calls": [
+      "isotropic_erosion",
+      "isotropic_dilation"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.opening": {
+    "implementation": {
+      "file": "src/skimage/morphology/gray.py",
+      "line": 287,
+      "end_line": 361
+    },
+    "description": "Return grayscale morphological opening of an image.",
+    "calls": [
+      "pad_footprint",
+      "erosion",
+      "dilation",
+      "mirror_footprint"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_bool": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 581,
+      "end_line": 602
+    },
+    "description": "Convert an image to boolean format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

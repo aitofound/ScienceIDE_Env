@@ -1,0 +1,651 @@
+{
+  "skimage.color.combine_stains": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 1743,
+      "end_line": 1812
+    },
+    "description": "Stain to RGB color space conversion.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray",
+      "np.exp",
+      "np.clip",
+      "np.log"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.convert_colorspace": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 76,
+      "end_line": 156
+    },
+    "description": "Convert an image array to a new color space.",
+    "calls": [
+      "fromspace.lower",
+      "tospace.lower",
+      "todict[tospace]",
+      "fromdict[fromspace]",
+      "fromdict.keys",
+      "todict.keys"
+    ],
+    "branches": [
+      {
+        "line": 147,
+        "expression": "fromspace not in fromdict"
+      },
+      {
+        "line": 150,
+        "expression": "tospace not in todict"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.gray2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 1028,
+      "end_line": 1049
+    },
+    "description": "Create an RGB representation of a gray-level image.",
+    "calls": [
+      "np.stack"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.gray2rgba": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 987,
+      "end_line": 1025
+    },
+    "description": "Create a RGBA representation of a gray-level image.",
+    "calls": [
+      "np.stack",
+      "dtype_limits",
+      "np.errstate",
+      "np.broadcast_to"
+    ],
+    "branches": [
+      {
+        "line": 1012,
+        "expression": "alpha is None"
+      },
+      {
+        "line": 1016,
+        "expression": "not np.array_equal(alpha_arr, alpha)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.hed2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 1623,
+      "end_line": 1664
+    },
+    "description": "Haematoxylin-Eosin-DAB (HED) to RGB color space conversion.",
+    "calls": [
+      "channel_as_last_axis",
+      "combine_stains"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.hsv2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 350,
+      "end_line": 416
+    },
+    "description": "HSV to RGB color space conversion.",
+    "calls": [
+      "np.stack",
+      "channel_as_last_axis",
+      "_prepare_colorarray",
+      "np.floor",
+      "np.choose",
+      "np.stack([hi, hi, hi], axis=-1).astype"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.lab2lch": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 1815,
+      "end_line": 1873
+    },
+    "description": "Convert image in CIE-LAB to CIE-LCh color space.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_lab_array",
+      "_cart2polar_2pi"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.lab2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 1283,
+      "end_line": 1339
+    },
+    "description": "Convert image in CIE-LAB to sRGB color space.",
+    "calls": [
+      "channel_as_last_axis",
+      "_lab2xyz",
+      "xyz2rgb"
+    ],
+    "branches": [
+      {
+        "line": 1333,
+        "expression": "n_invalid != 0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.lab2xyz": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 1129,
+      "end_line": 1189
+    },
+    "description": "Convert image in CIE-LAB to XYZ color space.",
+    "calls": [
+      "channel_as_last_axis",
+      "_lab2xyz"
+    ],
+    "branches": [
+      {
+        "line": 1183,
+        "expression": "n_invalid != 0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.lch2lab": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 1886,
+      "end_line": 1946
+    },
+    "description": "Convert image in CIE-LCh to CIE-LAB color space.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_lab_array",
+      "np.cos",
+      "np.sin"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.luv2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 1553,
+      "end_line": 1577
+    },
+    "description": "Luv to RGB color space conversion.",
+    "calls": [
+      "channel_as_last_axis",
+      "xyz2rgb",
+      "luv2xyz"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.luv2xyz": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 1438,
+      "end_line": 1512
+    },
+    "description": "CIE-Luv to XYZ color space conversion.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray(luv, channel_axis=-1).copy",
+      "L.copy",
+      "np.power",
+      "xyz_tristimulus_values",
+      "np.concatenate",
+      "np.finfo",
+      "_prepare_colorarray"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.rgb2gray": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 941,
+      "end_line": 984
+    },
+    "description": "Compute luminance of an RGB image.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.rgb2hed": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 1580,
+      "end_line": 1620
+    },
+    "description": "RGB to Haematoxylin-Eosin-DAB (HED) color space conversion.",
+    "calls": [
+      "channel_as_last_axis",
+      "separate_stains"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.rgb2hsv": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 260,
+      "end_line": 347
+    },
+    "description": "RGB to HSV color space conversion.",
+    "calls": [
+      "np.seterr",
+      "channel_as_last_axis",
+      "_prepare_colorarray",
+      "arr.max",
+      "np.ptp",
+      "np.isnan",
+      "np.squeeze"
+    ],
+    "branches": [
+      {
+        "line": 303,
+        "expression": "input_is_one_pixel"
+      },
+      {
+        "line": 344,
+        "expression": "input_is_one_pixel"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.rgb2lab": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 1234,
+      "end_line": 1280
+    },
+    "description": "Conversion from the sRGB color space (IEC 61966-2-1:1999)",
+    "calls": [
+      "channel_as_last_axis",
+      "xyz2lab",
+      "rgb2xyz"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.rgb2luv": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 1515,
+      "end_line": 1550
+    },
+    "description": "RGB to CIE-Luv color space conversion.",
+    "calls": [
+      "channel_as_last_axis",
+      "xyz2luv",
+      "rgb2xyz"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.rgb2rgbcie": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 860,
+      "end_line": 897
+    },
+    "description": "RGB to RGB CIE color space conversion.",
+    "calls": [
+      "channel_as_last_axis",
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.rgb2xyz": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 810,
+      "end_line": 857
+    },
+    "description": "RGB to XYZ color space conversion.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray(rgb, channel_axis=-1).copy",
+      "np.power",
+      "xyz_from_rgb.T.astype",
+      "_prepare_colorarray"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.rgb2ycbcr": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 2067,
+      "end_line": 2106
+    },
+    "description": "RGB to YCbCr color space conversion.",
+    "calls": [
+      "channel_as_last_axis",
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.rgb2ydbdr": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 2109,
+      "end_line": 2145
+    },
+    "description": "RGB to YDbDr color space conversion.",
+    "calls": [
+      "channel_as_last_axis",
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.rgb2yiq": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 2005,
+      "end_line": 2031
+    },
+    "description": "RGB to YIQ color space conversion.",
+    "calls": [
+      "channel_as_last_axis",
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.rgb2ypbpr": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 2034,
+      "end_line": 2064
+    },
+    "description": "RGB to YPbPr color space conversion.",
+    "calls": [
+      "channel_as_last_axis",
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.rgb2yuv": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 1967,
+      "end_line": 2002
+    },
+    "description": "RGB to YUV color space conversion.",
+    "calls": [
+      "channel_as_last_axis",
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.rgba2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 187,
+      "end_line": 257
+    },
+    "description": "RGBA to RGB conversion using alpha blending [1]_.",
+    "calls": [
+      "np.any",
+      "slice_at_axis",
+      "slice",
+      "np.asanyarray",
+      "_validate_channel_axis",
+      "np.ravel(background).astype",
+      "reshape_nd",
+      "np.clip",
+      "dtype.img_as_float32",
+      "dtype.img_as_float64",
+      "np.ravel"
+    ],
+    "branches": [
+      {
+        "line": 230,
+        "expression": "arr.shape[channel_axis] != 4"
+      },
+      {
+        "line": 238,
+        "expression": "float_dtype == np.float32"
+      },
+      {
+        "line": 244,
+        "expression": "len(background) != 3"
+      },
+      {
+        "line": 249,
+        "expression": "np.any(background < 0) or np.any(background > 1)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.rgbcie2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 900,
+      "end_line": 938
+    },
+    "description": "RGB CIE to RGB color space conversion.",
+    "calls": [
+      "channel_as_last_axis",
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.separate_stains": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 1667,
+      "end_line": 1740
+    },
+    "description": "RGB to stain color space conversion.",
+    "calls": [
+      "np.maximum",
+      "np.log",
+      "channel_as_last_axis",
+      "_prepare_colorarray"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.xyz2lab": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 1052,
+      "end_line": 1126
+    },
+    "description": "XYZ to CIE-LAB color space conversion.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray",
+      "xyz_tristimulus_values",
+      "np.cbrt",
+      "np.concatenate"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.xyz2luv": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 1342,
+      "end_line": 1435
+    },
+    "description": "XYZ to CIE-Luv color space conversion.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray",
+      "xyz_tristimulus_values",
+      "np.stack",
+      "np.finfo",
+      "np.squeeze",
+      "np.cbrt",
+      "fu",
+      "fv"
+    ],
+    "branches": [
+      {
+        "line": 1396,
+        "expression": "input_is_one_pixel"
+      },
+      {
+        "line": 1432,
+        "expression": "input_is_one_pixel"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.xyz2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 757,
+      "end_line": 807
+    },
+    "description": "XYZ to RGB color space conversion.",
+    "calls": [
+      "channel_as_last_axis",
+      "_convert",
+      "np.clip",
+      "np.power"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.ycbcr2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 2237,
+      "end_line": 2276
+    },
+    "description": "YCbCr to RGB color space conversion.",
+    "calls": [
+      "channel_as_last_axis",
+      "ycbcr.copy",
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.ydbdr2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 2279,
+      "end_line": 2314
+    },
+    "description": "YDbDr to RGB color space conversion.",
+    "calls": [
+      "channel_as_last_axis",
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.yiq2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 2175,
+      "end_line": 2201
+    },
+    "description": "YIQ to RGB color space conversion.",
+    "calls": [
+      "channel_as_last_axis",
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.ypbpr2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 2204,
+      "end_line": 2234
+    },
+    "description": "YPbPr to RGB color space conversion.",
+    "calls": [
+      "channel_as_last_axis",
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.yuv2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 2148,
+      "end_line": 2172
+    },
+    "description": "YUV to RGB color space conversion.",
+    "calls": [
+      "channel_as_last_axis",
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 479,
+      "end_line": 505
+    },
+    "description": "Convert an image to floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float32": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 427,
+      "end_line": 450
+    },
+    "description": "Convert an image to single-precision (32-bit) floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_ubyte": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 557,
+      "end_line": 578
+    },
+    "description": "Convert an image to 8-bit unsigned integer format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

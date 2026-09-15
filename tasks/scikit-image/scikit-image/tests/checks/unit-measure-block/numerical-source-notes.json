@@ -1,0 +1,45 @@
+{
+  "skimage.measure.block_reduce": {
+    "implementation": {
+      "file": "src/skimage/measure/block.py",
+      "line": 5,
+      "end_line": 94
+    },
+    "description": "Downsample image by applying function `func` to local blocks.",
+    "calls": [
+      "np.isscalar",
+      "np.any",
+      "view_as_blocks",
+      "func",
+      "pad_width.append",
+      "np.pad"
+    ],
+    "branches": [
+      {
+        "line": 63,
+        "expression": "np.isscalar(block_size)"
+      },
+      {
+        "line": 70,
+        "expression": "func_kwargs is None"
+      },
+      {
+        "line": 87,
+        "expression": "np.any(np.asarray(pad_width))"
+      },
+      {
+        "line": 65,
+        "expression": "len(block_size) != image.ndim"
+      },
+      {
+        "line": 75,
+        "expression": "block_size[i] < 1"
+      },
+      {
+        "line": 81,
+        "expression": "image.shape[i] % block_size[i] != 0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}
