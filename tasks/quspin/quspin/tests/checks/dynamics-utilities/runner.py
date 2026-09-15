@@ -117,6 +117,15 @@ def main() -> int:
             sys.stderr.write(f"[{filename}]\n{proc.stdout}{proc.stderr}")
         return 1
 
+    # A file whose only case is marked xfail exits 0 without asserting anything.
+    # Count it as executed but not as verification, so the record cannot read as
+    # stronger evidence than it is.
+    xfail_only = sorted(
+        filename for filename, proc in results
+        if "xfailed" in proc.stdout and "passed" not in proc.stdout
+    )
+    verified = [f for f in files if f not in xfail_only]
+
     # A compact physical calibration observable: the finite spin-chain ground
     # energy at the configured size/field.  The variant changes L, so it cannot
     # silently reuse the nominal result while the upstream suite still runs.
@@ -135,6 +144,8 @@ def main() -> int:
         "group": group,
         "upstream_files": files,
         "upstream_passed": len(files),
+        "upstream_verified": len(verified),
+        "upstream_xfail_only": xfail_only,
         "ground_energy": ground,
         "L": L,
         "h": h,

@@ -14,6 +14,8 @@ atol = float(q['comparison']['atol']); rtol = float(q['comparison'].get('rtol', 
 failures = []
 if r.get('group') != c.get('group'): failures.append('group differs')
 if r.get('upstream_passed') != c.get('upstream_passed'): failures.append('upstream pass count differs')
+if r.get('upstream_verified') != c.get('upstream_verified'): failures.append('verified upstream count differs')
+if r.get('upstream_xfail_only') != c.get('upstream_xfail_only'): failures.append('xfail-only file list differs')
 for key in ('ground_energy',):
     x, y = float(r[key]), float(c[key])
     if not (math.isfinite(x) and math.isfinite(y)) or abs(x-y) > atol + rtol*abs(x): failures.append(f'{key} differs')
