@@ -1,0 +1,139 @@
+{
+  "skimage.color.rgb2gray": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 941,
+      "end_line": 984
+    },
+    "description": "Compute luminance of an RGB image.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.rescale_intensity": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 491,
+      "end_line": 607
+    },
+    "description": "Return image after stretching or shrinking its intensity levels.",
+    "calls": [
+      "map",
+      "np.clip",
+      "_output_dtype",
+      "intensity_range",
+      "np.any",
+      "np.isnan",
+      "utils.warn",
+      "(image * (omax - omin) + omin).astype",
+      "np.clip(image, omin, omax).astype"
+    ],
+    "branches": [
+      {
+        "line": 583,
+        "expression": "out_range in ['dtype', 'image']"
+      },
+      {
+        "line": 593,
+        "expression": "np.any(np.isnan([imin, imax, omin, omax]))"
+      },
+      {
+        "line": 603,
+        "expression": "imin != imax"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.restoration.unwrap_phase": {
+    "implementation": {
+      "file": "src/skimage/restoration/unwrap.py",
+      "line": 10,
+      "end_line": 116
+    },
+    "description": "Recover the original from a wrapped phase image.",
+    "calls": [
+      "np.ma.isMaskedArray",
+      "isinstance",
+      "np.require",
+      "np.ma.getdata",
+      "unwrap_1d",
+      "np.ma.array",
+      "hasattr",
+      "np.ma.getmaskarray",
+      "unwrap_2d",
+      "bool",
+      "unwrap_3d"
+    ],
+    "branches": [
+      {
+        "line": 71,
+        "expression": "image.ndim not in (1, 2, 3)"
+      },
+      {
+        "line": 73,
+        "expression": "isinstance(wrap_around, bool)"
+      },
+      {
+        "line": 86,
+        "expression": "image.ndim == 1"
+      },
+      {
+        "line": 91,
+        "expression": "image.ndim in (2, 3) and 1 in image.shape"
+      },
+      {
+        "line": 98,
+        "expression": "np.ma.isMaskedArray(image)"
+      },
+      {
+        "line": 106,
+        "expression": "image.ndim == 1"
+      },
+      {
+        "line": 113,
+        "expression": "np.ma.isMaskedArray(image)"
+      },
+      {
+        "line": 75,
+        "expression": "hasattr(wrap_around, '__getitem__') and (not isinstance(wrap_around, str))"
+      },
+      {
+        "line": 87,
+        "expression": "np.ma.isMaskedArray(image)"
+      },
+      {
+        "line": 89,
+        "expression": "wrap_around[0]"
+      },
+      {
+        "line": 108,
+        "expression": "image.ndim == 2"
+      },
+      {
+        "line": 76,
+        "expression": "len(wrap_around) != image.ndim"
+      },
+      {
+        "line": 110,
+        "expression": "image.ndim == 3"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 479,
+      "end_line": 505
+    },
+    "description": "Convert an image to floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

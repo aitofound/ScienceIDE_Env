@@ -1,0 +1,174 @@
+# This file is part of Cantera. See License.txt in the top-level directory or
+# at https://cantera.org/license.txt for license and copyright information.
+
+docstring: |-
+  Generated CLib API for Cantera's ThermoPhase class.
+prefix: thermo
+base: ThermoPhase
+parents: [Phase]  # List of parent classes
+derived: {SurfPhase: surf}  # Specialization/prefix dictionary
+recipes:
+- name: name  # Renamed in Cantera 3.2 (previously getName)
+- name: setName
+- name: type  # Renamed in Cantera 3.2 (previously getEosType)
+- name: nElements
+- name: nSpecies
+- name: temperature
+- name: setTemperature
+- name: pressure
+- name: setPressure
+- name: density
+- name: setDensity
+- name: molarDensity
+- name: meanMolecularWeight
+- name: moleFraction
+  wraps: moleFraction(size_t)
+- name: massFraction
+  wraps: massFraction(size_t)
+- name: getMoleFractions
+  uses: nSpecies
+- name: getMassFractions
+  uses: nSpecies
+- name: setMoleFractions
+  uses: nSpecies
+- name: setMassFractions
+  uses: nSpecies
+- name: setMoleFractionsByName
+  wraps: setMoleFractionsByName(const string&)
+- name: setMassFractionsByName
+  wraps: setMassFractionsByName(const string&)
+- name: atomicWeights  # Renamed in Cantera 3.2 (previously getAtomicWeights)
+  uses: nElements
+- name: getMolecularWeights
+  uses: nSpecies
+- name: getCharges
+  uses: nElements
+- name: elementName  # Renamed in Cantera 3.2 (previously getElementName)
+- name: speciesName  # Renamed in Cantera 3.2 (previously getSpeciesName)
+- name: elementIndex
+  # temporary custom code due to changing C++ API: replaceable by
+  # wraps: elementIndex(const string&)
+  # with implicit `raise=true` default after Cantera 3.2
+  brief: Return the index of element named 'name'.
+  what: method
+  declaration: int32_t thermo_elementIndex(int32_t handle, const char* name)
+  parameters:
+    handle: Handle to queried Phase object.
+    name: Name of the element
+  uses: elementIndex(const string&, bool)
+  code: |-
+    return static_cast<int32_t>(ThermoPhaseCabinet::as<Phase>(handle)->elementIndex(name, true));
+- name: speciesIndex
+  # temporary custom code due to changing C++ API: replaceable by
+  # wraps: speciesIndex(const string&)
+  # with implicit `raise=true` default after Cantera 3.2
+  brief: Returns the index of a species named 'name' within the Phase object.
+  what: method
+  declaration: int32_t thermo_speciesIndex(int32_t handle, const char* name)
+  parameters:
+    handle: Handle to queried Phase object.
+    name: String name of the species. It may also be in the form phaseName:speciesName
+  uses: speciesIndex(const string&, bool)
+  code: |-
+    return static_cast<int32_t>(ThermoPhaseCabinet::as<Phase>(handle)->speciesIndex(name, true));
+- name: nAtoms
+- name: addElement
+- name: refPressure
+- name: minTemp
+- name: maxTemp
+- name: enthalpy_mole
+- name: enthalpy_mass
+- name: entropy_mole
+- name: entropy_mass
+- name: intEnergy_mole
+- name: intEnergy_mass
+- name: gibbs_mole
+- name: gibbs_mass
+- name: cp_mole
+- name: cp_mass
+- name: cv_mole
+- name: cv_mass
+- name: getChemPotentials  # Renamed in Cantera 3.2 (previously chemPotentials)
+- name: getElectrochemPotentials  # Renamed in Cantera 3.2 (previously electroChemPotentials)
+- name: electricPotential
+- name: setElectricPotential
+- name: thermalExpansionCoeff
+- name: isothermalCompressibility
+- name: getPartialMolarEnthalpies
+- name: getPartialMolarEntropies
+- name: getPartialMolarIntEnergies
+- name: getPartialMolarCp
+- name: getPartialMolarVolumes
+- name: setState_TPX  # New in Cantera 3.2
+  wraps: setState_TPX(double, double, const double*)
+- name: setState_TPX_byName  # New in Cantera 3.2
+  wraps: setState_TPX(double, double, const string&)
+- name: setState_TPY  # New in Cantera 3.2
+  wraps: setState_TPY(double, double, const double*)
+- name: setState_TPY_byName  # New in Cantera 3.2
+  wraps: setState_TPY(double, double, const string&)
+- name: setState_TP  # Renamed in Cantera 3.2 (previously set_TP)
+- name: setState_TD  # Renamed in Cantera 3.2 (previously set_TD)
+- name: setState_DP  # Renamed in Cantera 3.2 (previously set_DP)
+- name: setState_HP  # Renamed in Cantera 3.2 (previously set_HP)
+  wraps: setState_HP(double, double)
+- name: setState_UV  # Renamed in Cantera 3.2 (previously set_UV)
+  wraps: setState_UV(double, double)
+- name: setState_SV  # Renamed in Cantera 3.2 (previously set_SV)
+  wraps: setState_SV(double, double)
+- name: setState_SP  # Renamed in Cantera 3.2 (previously set_SP)
+  wraps: setState_SP(double, double)
+- name: setState_ST  # Renamed in Cantera 3.2 (previously set_ST)
+  wraps: setState_ST(double, double)
+- name: setState_TV  # Renamed in Cantera 3.2 (previously set_TV)
+  wraps: setState_TV(double, double)
+- name: setState_PV  # Renamed in Cantera 3.2 (previously set_PV)
+  wraps: setState_PV(double, double)
+- name: setState_UP  # Renamed in Cantera 3.2 (previously set_UP)
+  wraps: setState_UP(double, double)
+- name: setState_VH  # Renamed in Cantera 3.2 (previously set_VH)
+  wraps: setState_VH(double, double)
+- name: setState_TH  # Renamed in Cantera 3.2 (previously set_TH)
+  wraps: setState_TH(double, double)
+- name: setState_SH  # Renamed in Cantera 3.2 (previously set_SH)
+  wraps: setState_SH(double, double)
+- name: equilibrate
+  wraps:
+    ThermoPhase::equilibrate(const string&, const string&, double, int, int, int)
+- name: critTemperature
+- name: critPressure
+- name: critDensity
+- name: vaporFraction
+- name: satTemperature
+- name: satPressure
+- name: setState_Psat
+- name: setState_Tsat
+- name: getCoverages
+- name: setCoverages
+- name: getConcentrations  # Changed in Cantera 3.2 (previously used 'surf' prefix')
+- name: setConcentrations  # Changed in Cantera 3.2 (previously used 'surf' prefix')
+- name: siteDensity
+- name: setSiteDensity
+- name: setCoveragesByName
+  wraps: setCoveragesByName(const string&)
+- name: setEquivalenceRatio
+  wraps: setEquivalenceRatio(double, const string&, const string&)
+- name: report
+- name: print
+  brief: Print a summary of the state of the phase to the logger.
+  what: method
+  declaration: int32_t thermo_print(int32_t handle, int32_t showThermo, double threshold)
+  parameters:
+    handle: Handle to queried ThermoPhase object.
+    showThermo: If true, extra information is printed out about the thermodynamic state of the system.
+    threshold: Show information about species with mole fractions greater than
+  returns: Zero for success or -1 for exception handling.
+  uses:
+  - virtual string ThermoPhase::report(bool, double)
+  code: |-
+    bool show = (showThermo != 0);
+    writelog(ThermoPhaseCabinet::at(handle)->report(show, threshold));
+    return 0;
+# service functions
+- name: del
+- name: cabinetSize
