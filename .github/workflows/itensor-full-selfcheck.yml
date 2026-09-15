@@ -41,6 +41,18 @@ jobs:
       - name: Install task tooling
         if: github.event_name == 'workflow_dispatch'
         run: npm install --ignore-scripts
+      - name: Free disk the runner does not need, and record what is left
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          # Three solves copy the prebuilt tree 22 times each and the
+          # alternative build doubles it, so the first x86 run of that shape
+          # died in the tenth check with "No space left on device". tests/
+          # Dockerfile now ships only what a check links; these are the
+          # runner's preinstalled toolchains this job never touches.
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /usr/local/share/boost
+          docker image prune -af || true
+          docker builder prune -af || true
+          df -h /
       - name: Decide whether a fresh x86 record already exists
         if: github.event_name == 'workflow_dispatch'
         id: freshness
