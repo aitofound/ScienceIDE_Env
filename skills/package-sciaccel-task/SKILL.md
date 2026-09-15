@@ -1,8 +1,8 @@
 ---
 name: package-sciaccel-task
-description: Turn one scientific codebase into ScienceAccelBench task environments with the sab.py CLI. Use it to brief the human on the whole pipeline first, register a pinned codebase, investigate it with short native runs, decide whether it is one whole-codebase module or a few repository-like modules with human approval, get the source PR merged, survey its official tests, and then, per module, scaffold a Harbor-style task, author self-contained checks (test + pass policy, nominal and variant initial conditions), lint, obtain the human's consent to the run plan, build the Docker images, run the two-solve self-validation, hand the human a review brief for the task PR, and, on the reviewer's side, brief the review of a source PR or a task PR in one fixed shape. The design is SPEC.html next to this file; the CLI validates structure but never writes or decides science, runs anything remotely, or merges.
-version: 5.11.13
-last_changed_at: "2026-09-13T02:30:00Z"
+description: Turn one scientific codebase into ScienceAccelBench task environments with the sab.py CLI. Use it to brief the human on the whole pipeline first, register a pinned codebase, investigate it with short native runs, package it as one whole-codebase module by default (a multi-module cut is extraordinary and needs human approval), get the source PR merged, survey its official tests, and then, per module, scaffold a Harbor-style task, author self-contained checks (test + pass policy, nominal and variant initial conditions), lint, obtain the human's consent to the run plan, build the Docker images, run the two-solve self-validation, hand the human a review brief for the task PR, and, on the reviewer's side, brief the review of a source PR or a task PR in one fixed shape. The design is SPEC.html next to this file; the CLI validates structure but never writes or decides science, runs anything remotely, or merges.
+version: 5.12.0
+last_changed_at: "2026-09-15T23:30:00Z"
 ---
 
 # Package a ScienceAccelBench task
@@ -36,45 +36,38 @@ A task is an RL environment. Its reward is a suite of **checks** derived from
 the codebase's official tests that a coding agent must keep passing while it
 carries out a generic statement: port the module to every active target.
 
-**A module is a repository-like scientific and task unit inside the codebase,
-not merely a cluster of related code.** Start from one whole-codebase module:
-the entire codebase source root is vendored as one unit and its module scope is
-`paths: ["."]`, not an arbitrary internal subsystem relabeled as the codebase.
-Use the canonical codebase name normalized to lower-kebab-case as the strong
-default module/task slug (for example `tasks/demo/demo/`). A genuine narrow
-naming exception belongs in the rationale; do not invent a subsystem identity
-or rename existing tasks to satisfy this guidance. The CLI preserves approved
-slugs and validates structure, not scientific independence or naming rationale.
+**The default cut is the whole codebase, one module.** A typical scientific
+codebase (about a hundred thousand lines, one build, one test suite, one
+community of users) is vendored as one unit and packaged as one task: its
+module scope is `paths: ["."]` and its slug is the canonical codebase name in
+lower-kebab-case (for example `tasks/demo/demo/`). This needs no human
+decision: `propose-modules` records the single-module cut itself, and the
+human reads it in the source PR body at STOP 2. Do not relabel an internal
+subsystem as the codebase, and do not rename an existing task to fit this
+guidance; a genuine narrow naming exception is stated in the rationale.
 
-Use multiple modules only for genuinely separable parts doing independent work
-with different physics. Split only when every candidate would still look like
-an independent package or repository if the shared infrastructure were treated
-as a common dependency. Size or manageability alone is not a reason to split.
-Each candidate needs all of these:
+**A multi-module cut is extraordinary.** It is for a repository that is
+really a container of several separate packages, and it needs both of these
+at once:
 
-- a complete scientific responsibility and a coherent input/output contract;
-- an identifiable entry point and execution path;
-- substantial implementation that it owns, rather than a thin wrapper around
-  a sibling module or third-party dependency;
-- a direct official-test or official-example surface; and
-- enough independent behaviour to support its own task and reward contract
-  without requiring the agent to redesign sibling modules at the same time.
+- *genuinely modularised code*: each candidate is a package in its own
+  right, with its own, different physics or scientific responsibility, its
+  own equations and state, its own entry point, its own official tests or
+  example decks, and a coherent input/output contract, so that it could carry
+  its own task and reward without the solver redesigning a sibling; and
+- *well separated in the tree*: each candidate owns its own directories and
+  tests, and what the candidates share reads as a common dependency (grids,
+  meshes, I/O, build system, time integrators, a base solver layer), listed
+  once.
 
-Substantial shared infrastructure is allowed. Common grids, meshes, I/O, build
-systems, time integrators and base solver/framework code do not make otherwise
-independent modules one module. PLUTO's HD, MHD and RHD regimes are the positive
-example: they share much of the solver stack, but each has its own equations and
-state, configuration, official problems and task objective. Record the shared
-layer once and judge what remains on each side of it; do not use a shared-lines
-or cross-call threshold.
-
-Algorithm stages in one pipeline, consecutive stages of one end-to-end
-workflow, alternative methods or statistics over the same substrate, backend
-choices, directories and check families are not modules by themselves. A large
-codebase, many tests, different physics labels or one expensive routine are
-reasons to investigate a split, not evidence that the split is repository-like.
-When the evidence is mixed, keep one whole-codebase module and use subsystems or
-check families inside it.
+PLUTO's HD, MHD and RHD regimes and SWMF's component models are the positive
+examples. Size, many tests, many physics labels, one expensive routine,
+algorithm or workflow stages, alternative methods over the same substrate,
+backend choices, directories and check families are never a reason to
+split. When in doubt, it is one module; internal variety becomes subsystems
+or check families inside it. Only a multi-module proposal is a stop: bring
+the evidence for both conditions per module, and the human approves all, a
+subset, or merges the candidates back into one.
 
 **Acceleration** is wider than a GPU port. It means two things at once:
 making the code run faster, and making scientific discovery faster by
@@ -157,8 +150,8 @@ python3 sab.py brief [--codebase <id>]
 python3 sab.py codebase init --codebase <id> --code-path <checkout> --repo-url … --pin … --license … --language … --arxiv <primary>,… --owner …   # --domain derives from the primary arXiv tag
 #   investigate: read the checkout, build it natively in a scratch copy, make dry or short runs of
 #   its official tests (never Docker, at most 3 minutes of wall time per test), write overview.md and modules.json
-python3 sab.py codebase propose-modules --codebase <id>        # validates modules.json, prints the table, STOP 1
-python3 sab.py codebase approve-modules --codebase <id> --human-ref "<the human's words>"
+python3 sab.py codebase propose-modules --codebase <id>        # validates modules.json, prints the table; records the single-module default itself, a multi-module cut is STOP 1
+python3 sab.py codebase approve-modules --codebase <id> --human-ref "<the human's words>"   # multi-module cuts only
 # Step 1.5: after module approval, write the informational, non-blocking metadata report (outside code/<source>/):
 python3 sab.py codebase report --codebase <id> [--metadata <agent-authored-json>]
 #           then open the source PR that vendors the pinned tree under code/<id>/ (outside the CLI),
@@ -265,27 +258,27 @@ step remain available.
   whether the upstream reference is reproduced and to how many digits, output
   formats and non-determinism; they inform the module cut and become the
   measured runtimes of the survey. Docker starts only after STOP 3.
-- **STOP 1 is a brief, not two files.** Present the module cut as one page
-  the human reads in a minute, drawn from `overview.md` and `modules.json`.
-  Begin with the proposed choice: one whole-codebase module, or multiple
-  repository-like modules. Show the codebase (what it simulates in two
-  sentences, languages with lines of code and the tool that counted them,
-  licence, build system and measured build time) and the tests (suites and
-  example decks found, how they run, how many ran natively and reproduced the
-  upstream reference). Then give one row per module: its scientific and I/O
-  contract, entry point, owned paths and lines of code, expensive path, direct
-  official tests, independent task/reward boundary, hazards, and the concrete
-  reason it is repository-like rather than a stage, method or check family.
-  List the shared infrastructure once with its role and lines of code; sharing
-  it is allowed and is not scored by a threshold. State everything left out
-  with its reason. For a multi-module cut, ask first whether every row is a
-  genuinely repository-like unit; if not, merge the candidates into one
-  whole-codebase module. Then ask the human to approve all, a subset, or send
-  the cut back, plus any decision it depends on (a data download, duplicated
-  codebase, licence or external dependency). `propose-modules` prints the
-  structural module table; the independence judgment is yours to evidence and
-  the human's to decide. The same brief, updated with the approval, becomes
-  the body of the source PR.
+- **STOP 1 exists only for a multi-module cut.** For the single-module
+  default there is nothing to decide: `propose-modules` records the cut, and
+  the codebase facts (what it simulates in two sentences, languages with
+  lines of code and the tool that counted them, licence, build system and
+  measured build time; the suites and example decks found, how they run, how
+  many ran natively and reproduced the upstream reference) go straight into
+  the source PR body, where the human reads them at STOP 2. For an
+  extraordinary multi-module proposal, present one page the human reads in a
+  minute, drawn from `overview.md` and `modules.json`: the codebase facts
+  above, then one row per module with its scientific and I/O contract, entry
+  point, owned paths and lines of code, expensive path, direct official
+  tests, hazards, and the evidence for both conditions (a package in its own
+  right; well separated in the tree); the shared infrastructure once with its
+  role and lines of code; everything left out with its reason. Ask yourself
+  first whether every row passes both conditions; if not, merge the
+  candidates into one whole-codebase module and there is no stop. Then ask
+  the human to approve all, a subset, or merge the candidates back into one,
+  plus any decision the cut depends on (a data download, duplicated codebase,
+  licence or external dependency), and record their words with
+  `approve-modules`. The same brief, updated with the approval, becomes the
+  body of the source PR.
 - **The source PR body is the brief, facts first, report last.** A reviewer
   has one minute; the body is headed Markdown with tables, in this order:
   what it is (two sentences on what the code simulates and who uses it,
@@ -294,13 +287,12 @@ step remain available.
   its size); build and tests (build system, measured native build time, the
   official suites and example decks with how they run, how many ran natively
   and reproduced the upstream reference and to how many digits); the module
-  cut (whether it is whole-codebase or multi-module, then one row per module:
-  slug, scientific and I/O contract, entry point, owned paths and lines of
-  code, expensive path, direct official tests, independent task/reward
-  boundary, why it is repository-like, approved or proposed-only, then the
-  human's approving words and date); shared infrastructure once with its role
-  and lines of code; everything left out with its
-  reason; and last the bounded Markdown report under a rule when it exists,
+  cut (the single-module default in one line, recorded by `propose-modules`;
+  or, for a multi-module cut, one row per module: slug, scientific and I/O
+  contract, entry point, owned paths and lines of code, expensive path, direct
+  official tests, the evidence for both conditions, approved or proposed-only,
+  then the human's approving words and date); shared infrastructure once with
+  its role and lines of code; everything left out with its reason; and last the bounded Markdown report under a rule when it exists,
   or a line saying it does not, followed by the skill revision. A body that
   is only the report or only a link is sent back.
 - **Step 1.5 is a hard stop.** After the module cut is approved, open the

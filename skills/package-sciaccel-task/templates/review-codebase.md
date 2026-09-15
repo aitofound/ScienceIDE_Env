@@ -32,8 +32,10 @@ GATHER, in this order
      justified exclusions are allowed and non-exhaustiveness alone is not a
      defect. For a single-module codebase, check whole-root scope and the
      canonical codebase slug (or an honest narrow naming rationale), not an
-     internal subsystem relabeled as the whole. Multiple modules need genuinely
-     separable independent work with different physics.
+     internal subsystem relabeled as the whole; one module is the default and
+     needs no justification. A multi-module cut is extraordinary and needs
+     both: genuinely separate packages with different physics, and clean
+     separation in the tree; say whether the PR shows both for every module.
      Then the numerics of the code, read from the source:
      where randomness enters (seeds, samplers, per-rank streams), where a
      discrete choice rests on a floating-point comparison, which solvers are

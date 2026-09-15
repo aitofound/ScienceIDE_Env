@@ -52,22 +52,27 @@ STEP 1  Investigate the codebase, then propose the module cut.
   the build system and measured build time, the test suites and example decks
   with what the investigation runs showed, the licence and its pin.
 
-  Then write {state}/modules.json. Start from one whole-codebase module:
-  vendor the entire codebase source root as one unit, with paths ["."]. Do not
-  relabel an arbitrary internal subsystem as the whole codebase. The strong
-  default module/task slug is the canonical codebase name in lower-kebab-case
-  ({cb}); explain any genuine narrow naming exception in rationale. Existing
-  approved slugs and task directories are not renamed.
+  Then write {state}/modules.json. The default is one whole-codebase module:
+  the entire source root as one unit, paths ["."], slug = the canonical
+  codebase name in lower-kebab-case ({cb}). A typical codebase (about a
+  hundred thousand lines, one build, one test suite) is this case, and it
+  needs no human decision: propose-modules records the cut itself. Do not
+  relabel an internal subsystem as the whole codebase; explain a genuine
+  narrow naming exception in rationale. Existing approved slugs and task
+  directories are not renamed.
 
-  Multiple modules are exceptional: genuinely separable parts doing independent
-  work with different physics. Each must be repository-like, with its own
-  scientific/I-O contract, entry point, substantial owned implementation,
-  direct official tests/examples and independent task/reward boundary. Shared
-  solver infrastructure is allowed; list it once. Size or manageability alone
-  is not a reason to split, nor are stages, methods, backends or check families.
-  The example below is the whole-codebase default. For a real multi-module cut,
-  give each module its own slug and owned paths instead. The CLI checks the
-  structure; evidence and human review decide independence and naming.
+  A multi-module cut is extraordinary: a repository that is really a container
+  of several separate packages. It needs both at once: genuinely modularised
+  code (each candidate has its own, different physics, its own equations and
+  state, entry point, official tests or examples and I/O contract, so it can
+  carry its own task and reward) AND clean separation in the tree (its own
+  directories and tests; what is shared reads as a common dependency, listed
+  once). Size, many tests, physics labels, stages, methods, backends,
+  directories and check families are not a reason to split. When in doubt,
+  one module. The example below is the whole-codebase default. For a real
+  multi-module cut, give each module its own slug and owned paths and put the
+  evidence for both conditions in its rationale; the CLI checks the structure
+  and the human decides that cut at STOP 1.
 
   {{
     "codebase": "{cb}",
@@ -88,9 +93,11 @@ STEP 1  Investigate the codebase, then propose the module cut.
   }}
 
   Run `propose-modules` again to validate the file; it prints the module table.
+  For the single-module default it also records the approval and there is no
+  stop: the codebase facts below go into the source PR body (Step 1.5).
 
-  Then present STOP 1 as one brief the human reads in a minute, drawn from
-  overview.md and modules.json, never the two raw files:
+  For a multi-module cut only, present STOP 1 as one brief the human reads in
+  a minute, drawn from overview.md and modules.json, never the two raw files:
 
     Codebase   <name> at <pin>: what it simulates, in two sentences; language(s)
                with lines of code (cloc, or `wc -l` over the source tree; say
@@ -100,12 +107,12 @@ STEP 1  Investigate the codebase, then propose the module cut.
                reference, and to how many digits.
     Modules    one row per proposed module: slug | title | what it computes |
                owned paths | lines of code | expensive path | official tests
-               that exercise it | hazards.
+               that exercise it | evidence for both conditions | hazards.
     Shared     the shared infrastructure, listed once, with its lines of code.
     Left out   every not_packaged entry with its reason.
-    Ask        approve all, approve a subset, or send it back; and any decision
-               the cut depends on (a data download, a duplicated codebase, a
-               licence, an external dependency).
+    Ask        approve all, approve a subset, or merge them back into one
+               module; and any decision the cut depends on (a data download, a
+               duplicated codebase, a licence, an external dependency).
 
   Then STOP. The human approves with `approve-modules --human-ref "<their words>"`.
   The same brief, updated with their approval, is the body of the source PR
