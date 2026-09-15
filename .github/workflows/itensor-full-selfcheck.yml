@@ -31,12 +31,18 @@ jobs:
     timeout-minutes: 240
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      # On a pull_request event this job only has to exist, so GitHub registers
+      # the workflow path and the dispatch below becomes available. Everything
+      # past this point is dispatch-only.
+      - if: github.event_name == 'workflow_dispatch'
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - name: Install task tooling
+        if: github.event_name == 'workflow_dispatch'
         run: npm install --ignore-scripts
       - name: Decide whether a fresh x86 record already exists
+        if: github.event_name == 'workflow_dispatch'
         id: freshness
         run: |
           python3 - <<'PYEOF' >> "$GITHUB_OUTPUT"
@@ -69,7 +75,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && steps.freshness.outputs.needed == 'true'
         run: python3 skills/package-sciaccel-task/scripts/sab.py task selfcheck --task tasks/itensor/itensor
       - name: Upload selfcheck evidence
-        if: always()
+        if: always() && github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: itensor-full-selfcheck-evidence
