@@ -1,0 +1,92 @@
+name: "Create GHA cache"
+
+# GitHub puts the following restrictions on cache sharing. PRs can access
+#
+# - caches that were created by the PR / earlier runs of the PR
+# - caches that were created on the target branch
+#
+# To get effective cache sharing between PRs, we create caches on the `develop`
+# branch (which is where almost all PRs merge into).
+
+on:
+  workflow_call: # when called from a downstream repo
+    inputs:
+      # GHA doesn't seem to provide a simple way to detect workflow_call events
+      # so we are using an extra input (which is only available when this workflow
+      # is called from another workflow) with a default value (such that we don't
+      # have to set it every time)
+      external-call:
+        type: boolean
+        default: true
+        required: false
+  push:
+    branches: [develop]
+
+# Cancel running jobs if there's a newer push
+concurrency:
+  group: pyfv3-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # GitHub Actions cache of the pre-commit environment
+  pre-commit:
+    # Downstream repos have their own pre-commit environment
+    if: ${{!inputs.external-call}}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - uses: actions/cache@v5
+        id: cache
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit_${{ env.pythonLocation }}_${{ hashFiles('.pre-commit-config.yaml') }}
+          lookup-only: true  # don't actually download the cache
+
+      - name: Populate pre-commit environment (if not cached)
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          pip install pre-commit
+          pre-commit install --install-hooks
+
+  # GitHub Actions cache of the translate test data
+  test-data:
+    runs-on: ubuntu-latest
+    env:
+      TEST_DATA_PATH: ./test_data/8.1.3/c12_6ranks_standard/dycore
+      TEST_DATA_URL: "https://portal.nccs.nasa.gov/datashare/astg/smt/pace-regression-data/8.1.3_c12_6ranks_standard.tar.gz"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - uses: actions/cache@v5
+        id: cache
+        with:
+          path: pyFV3/test_data
+          key: ${{ env.TEST_DATA_PATH }}
+          lookup-only: true  # don't actually download the cache
+
+      - name: Download test_data (if not already cached)
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p pyFV3/test_data  && cd pyFV3/test_data
+          wget ${{ env.TEST_DATA_URL }}
+          tar -xzvf 8.1.3_c12_6ranks_standard.tar.gz
+          rm 8.1.3_c12_6ranks_standard.tar.gz
+
+  pySHiELD-test-data:
+    # Downstream calls may not need this. If so, they should fetch it explicitly.
+    if: ${{!inputs.external-call}}
+    uses: NOAA-GFDL/pySHiELD/.github/workflows/create_cache.yaml@develop

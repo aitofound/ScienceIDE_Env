@@ -1361,6 +1361,24 @@ class TestCassiopeiaTree(unittest.TestCase):
         for u in cas_tree.nodes:
             self.assertEqual(cas_tree.get_time(u), expected_times[u])
 
+    def test_collapse_unifurcations_source_with_leaf_child(self):
+        """A source's only terminal child must not be collapsed away."""
+        tree = nx.DiGraph()
+        tree.add_edges_from(
+            [("node0", "node1"), ("node1", "node2")]
+        )
+        cas_tree = cas.data.CassiopeiaTree(tree=tree)
+        cas_tree.set_times({"node0": 0.0, "node1": 1.0, "node2": 2.0})
+
+        cas_tree.collapse_unifurcations(source="node1")
+
+        self.assertEqual(
+            set(cas_tree.edges),
+            {("node0", "node1"), ("node1", "node2")},
+        )
+        self.assertEqual(set(cas_tree.leaves), {"node2"})
+        self.assertEqual(cas_tree.get_time("node2"), 2.0)
+
     def test_collapse_unifurcations(self):
         """Tests a general case with unifurcations throughout the tree."""
         tree = nx.DiGraph()
