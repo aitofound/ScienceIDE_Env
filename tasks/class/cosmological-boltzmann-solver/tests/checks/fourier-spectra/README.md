@@ -27,6 +27,9 @@ numerical-sensitivity evidence.
 
 ## Evidence
 
-The nominal/variant calibration is run through `solution/solve.sh` and
-`tests/test.sh`; it measured a `9.0e-6` spread. The candidate bound is
-`atol=5e-5`, leaving more than fivefold headroom.
+Calibration is measured by `sab.py task selfcheck`'s altbuild solve (the same
+pinned source rebuilt with `OPTFLAG=-O2`, nominal inputs) against the nominal
+solve, graded with this check's own `validate.py`; the measured spread and
+bound fraction are written into `rubric.json`'s `evidence` block by the CLI,
+not hand-entered. This revision's x86 numbers are pending the rerun that
+follows the Part A/B fixes.
