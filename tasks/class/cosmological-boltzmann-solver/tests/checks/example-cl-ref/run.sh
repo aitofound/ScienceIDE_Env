@@ -33,7 +33,7 @@ WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 # pin, so both ship under ic/, byte-identical to the pinned upstream files. Measured on the x86 worker at 2 cpus:
 # 505 s wall, peak RSS 5.33 GB -- this task's expensive path; see the acceleration label note in README.md.)
 BUILD_START=$(date +%s)
-MAKE_ARGS=()
+MAKE_ARGS=("CLASSDIR=$SOURCE_DIR")
 CONFIG=default
 if [ "$IC" = altbuild ]; then MAKE_ARGS+=("OPTFLAG=-O2"); CONFIG=O2; fi
 # Cross-check build cache (best-effort, per skill "reuse to the best effort"): keyed by

@@ -27,7 +27,7 @@ WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 # documented in external/external_Pk/README.md. explanatory.ini is not vendored under
 # code/class/ at this pin; ic/ ships the two decks (scalar/tensor generator) already wired.
 BUILD_START=$(date +%s)
-MAKE_ARGS=()
+MAKE_ARGS=("CLASSDIR=$SOURCE_DIR")
 CONFIG=default
 if [ "$IC" = altbuild ]; then MAKE_ARGS+=("OPTFLAG=-O2"); CONFIG=O2; fi
 # Cross-check build cache (best-effort, per skill "reuse to the best effort"): keyed by

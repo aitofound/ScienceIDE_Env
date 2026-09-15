@@ -19,7 +19,7 @@ set -euo pipefail
 IC="${1:?usage: run.sh <nominal|variant|altbuild> | run.sh --help}"
 : "${SOURCE_DIR:?}" "${OUT_DIR:?}" "${CHECK_DIR:?}"
 INPUTS="$IC"
-MAKE_ARGS=()
+MAKE_ARGS=("CLASSDIR=$SOURCE_DIR")
 if [ "$IC" = altbuild ]; then
   [ -n "$ALTBUILD" ] || { echo "run.sh: this check declares no alternative build" >&2; exit 2; }
   INPUTS=nominal

@@ -24,7 +24,7 @@ WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 
 # Upstream test this check reproduces: code/class/test/test_loops.c
 BUILD_START=$(date +%s)
-MAKE_ARGS=()
+MAKE_ARGS=("CLASSDIR=$SOURCE_DIR")
 CONFIG=default
 if [ "$IC" = altbuild ]; then MAKE_ARGS+=("OPTFLAG=-O2"); CONFIG=O2; fi
 # Cross-check build cache (best-effort, per skill "reuse to the best effort"): keyed by

@@ -36,7 +36,7 @@ WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 # the build an earlier check of this run already made; this script nevertheless stays self-contained and
 # builds for itself when there is nothing to reuse. Say how in comment/README.md under "## Build".
 BUILD_START=$(date +%s)
-MAKE_ARGS=()
+MAKE_ARGS=("CLASSDIR=$SOURCE_DIR")
 CONFIG=default
 if [ "$IC" = altbuild ]; then MAKE_ARGS+=("OPTFLAG=-O2"); CONFIG=O2; fi
 # Cross-check build cache (best-effort, per skill "reuse to the best effort"): keyed by

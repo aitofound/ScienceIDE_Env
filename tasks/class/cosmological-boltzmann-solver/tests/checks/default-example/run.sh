@@ -25,7 +25,7 @@ WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 # Upstream test this check reproduces: default.ini (an official upstream example deck;
 # not vendored under code/class/ at this pin -- see README.md -- so it ships under ic/).
 BUILD_START=$(date +%s)
-MAKE_ARGS=()
+MAKE_ARGS=("CLASSDIR=$SOURCE_DIR")
 CONFIG=default
 if [ "$IC" = altbuild ]; then MAKE_ARGS+=("OPTFLAG=-O2"); CONFIG=O2; fi
 # Cross-check build cache (best-effort, per skill "reuse to the best effort"): keyed by

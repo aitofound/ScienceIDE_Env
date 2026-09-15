@@ -9,9 +9,9 @@ IC="${1:?usage: run.sh <nominal|variant|altbuild> | run.sh --help}"
 case "$IC" in nominal|variant|altbuild) ;; *) exit 2;; esac
 if [ "$IC" = altbuild ]; then
   IC=nominal
-  MAKE_ARGS=("OPTFLAG=-O2")
+  MAKE_ARGS=("OPTFLAG=-O2" "CLASSDIR=$SOURCE_DIR")
 else
-  MAKE_ARGS=()
+  MAKE_ARGS=("CLASSDIR=$SOURCE_DIR")
 fi
 : "${SOURCE_DIR:?}" "${OUT_DIR:?}" "${CHECK_DIR:?}"
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT

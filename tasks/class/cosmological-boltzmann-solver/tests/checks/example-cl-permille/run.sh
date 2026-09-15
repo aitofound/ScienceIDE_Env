@@ -26,7 +26,7 @@ WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 # (documented in the upstream README; explanatory.ini and cl_permille.pre are not vendored under code/class/ at this pin, so
 # both ship under ic/, byte-identical to the pinned upstream files.)
 BUILD_START=$(date +%s)
-MAKE_ARGS=()
+MAKE_ARGS=("CLASSDIR=$SOURCE_DIR")
 CONFIG=default
 if [ "$IC" = altbuild ]; then MAKE_ARGS+=("OPTFLAG=-O2"); CONFIG=O2; fi
 # Cross-check build cache (best-effort, per skill "reuse to the best effort"): keyed by
