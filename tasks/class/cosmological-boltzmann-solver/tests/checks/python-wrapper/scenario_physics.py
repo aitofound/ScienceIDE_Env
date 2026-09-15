@@ -49,6 +49,7 @@ def scenario_observables(scenario):
         return None, f"{type(exc).__name__}: {exc}"
     out = {}
     elems = scenario.get("output", "").split()
+    density_ell_written = False
     for elem in elems:
         if elem in CL_DICT:
             is_density_cl = elem in ("nCl", "sCl")
@@ -56,14 +57,18 @@ def scenario_observables(scenario):
             for cl_type in CL_DICT[elem]:
                 if cl_type not in cl:
                     continue
-                if is_density_cl and cl_type != "ell":
+                value = cl[cl_type]
+                if isinstance(value, dict):
                     # density_cl's non-'ell' entries are themselves dicts keyed by
-                    # bin-pair name (e.g. 'dens[1]-dens[1]'), one array per pair.
-                    out[f"raw_{elem}_{cl_type}"] = {
-                        pair: [float(x) for x in cl[cl_type][pair]] for pair in cl[cl_type]
-                    }
+                    # bin-pair name (e.g. 'dens[1]-dens[1]'): flatten one level,
+                    # one array per inner key, in sorted key order.
+                    for pair in sorted(value):
+                        out[f"raw_{elem}_{cl_type}_{pair}"] = [float(x) for x in value[pair]]
                 else:
-                    out[f"raw_{elem}_{cl_type}"] = [float(x) for x in cl[cl_type]]
+                    out[f"raw_{elem}_{cl_type}"] = [float(x) for x in value]
+            if is_density_cl and "ell" in cl and not density_ell_written:
+                out["raw_density_ell"] = [float(x) for x in cl["ell"]]
+                density_ell_written = True
     if "lensing" in scenario and any(e in ("tCl", "pCl") for e in elems):
         try:
             lensed = cosmo.lensed_cl(100)
