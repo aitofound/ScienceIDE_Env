@@ -29,15 +29,23 @@ differs on every process.
 
 The remaining documented exclusions:
 
-- `tutorial/01_one_site`, `02_two_site`, `04_mps` and `05_gates` still carry
-  TODO / "Your code here" blocks. Measured confirmation for `05_gates`: the
-  binary prints the unchanged Neel-state energy -4.75 because the gate is never
-  applied.
-- `tutorial/06_DMRG` prints only sweep and bond progress lines, and
-  `project_template/myappname.cc` is a build skeleton with no physics.
-- `tutorial/finiteT/mettts` and `metts_solution` draw states with
-  `Global::random()`; `ancilla` needs the Makefile `app=` variable and an
-  external input deck. These stay as documented follow-ups.
+- `tutorial/01_one_site`, `02_two_site`, `04_mps` and `05_gates` are unfinished
+  exercises: each compiles and runs to exit 0, but the physics the tutorial
+  teaches is a TODO / "Your code here" block the shipped binary never executes.
+  Measured: `01_one_site` prints an unallocated tensor, `02_two_site` prints only
+  its uncovered initial energy (-0.25 at beta=0.0), `04_mps` prints a converged
+  transverse-field Ising energy while the magnetisation it exists to teach is
+  absent, and `05_gates` prints the unchanged Neel-state energy -4.75 because the
+  gate is never applied.
+- `tutorial/06_DMRG` compiles and runs over 990 lines of output that are all
+  sweep/bond progress lines, with no energy or other numeric quantity, and
+  `project_template/myappname.cc` is a build skeleton whose Makefile points
+  `LIBRARY_DIR` at `$(HOME)/itensor` and whose only output is an unseeded
+  `T.randomize()` draw.
+- `tutorial/finiteT/ancilla`, `metts` and `metts_solution` do not build against
+  the pinned tree: `S2.h`, which all three include, calls the unqualified
+  `format()` that v3 exposes only as `tinyformat::format` (`make app=ancilla`
+  reports `S2.h:20:19: error: 'format' was not declared in this scope`).
 - `unittest/bondgate`, `iqtensor` and `webpage` include headers the pinned v3
   tree does not ship (`bondgate.h`, `itensor/iqtensor.h`, `itensor.h`), verified
   with `g++ -fsyntax-only`; `spectrum_test` uses the v2 `Site` tag and a
@@ -58,21 +66,13 @@ Earlier revisions of this leaf carried other exclusions, now superseded:
   materialising inputs instead of grading the assertion bit.
 - ~~`sample/hubbard_2d` and `hubbard_2d_conserve_momentum` exceeded the budget~~
   — the drivers take `[Nx] [Ny] [U]`, so the lattice is a knob.
-- `tutorial/01_one_site`, `02_two_site`, `04_mps` and `05_gates` still carry
-  TODO / "Your code here" blocks. Measured confirmation for `05_gates`: the
-  binary prints the unchanged Neel-state energy -4.75 because the gate is never
-  applied.
-- `tutorial/06_DMRG` prints only sweep and bond progress lines, and
-  `project_template/myappname.cc` is a build skeleton with no physics.
-- `tutorial/finiteT/mettts` and `metts_solution` draw states with
-  `Global::random()`; `ancilla` needs the Makefile `app=` variable and an
-  external input deck. These stay as documented follow-ups.
-- `sample/hubbard_2d` and `hubbard_2d_conserve_momentum` exceeded the
-  investigation budget: the native run reached sweep 10/15 with link dimension
-  3000 after 88 s and was stopped at 180 s.
-- `unittest/bondgate`, `iqtensor`, `spectrum` and `webpage` sit under
-  commented-out `SOURCES` lines in the pinned `unittest/Makefile`, so the
-  official `make test-g` never compiles them.
+- ~~`tutorial/01_one_site`, `02_two_site`, `04_mps` and `05_gates` are TODO
+  skeletons~~ — they are, but the reason is now measured per driver rather than
+  asserted from the TODO comment.
+- ~~`tutorial/finiteT` needs the Makefile `app=` variable~~ — the real obstacle
+  is that `S2.h` does not compile against the pinned tree.
+- ~~`unittest/bondgate`, `iqtensor`, `spectrum` and `webpage` were listed as
+  exclusions by name only~~ — each now carries its measured compile error above.
 
 The `acceleration` label sits on `sample-mixedspin-cc` because that is the
 module's most expensive workload (98 s measured under one CPU, against 1-17 s
@@ -101,9 +101,9 @@ fresh self-validation record.
 
 ## Blind spots
 
-The leaf does not cover HDF5 serialization, the incomplete tutorial skeletons,
-the random METTS drivers, or the default 2D Hubbard workloads that exceeded the
-three-minute native investigation budget. These are visible follow-up
+The leaf does not cover HDF5 serialization, the unfinished tutorial skeletons
+and their non-building `finiteT` siblings, or the default 2D Hubbard workloads
+that exceeded the three-minute native investigation budget. These are visible follow-up
 candidates rather than silently omitted paths. Cross-platform BLAS and
 Linux/x86 source-build behavior remain review items, and no check declares an
 alternative build.
