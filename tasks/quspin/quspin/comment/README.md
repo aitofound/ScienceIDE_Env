@@ -16,12 +16,20 @@ Four packages are installed for the official example decks rather than for the l
 
 ## Runtime
 
-The declared `expected_runtime_s` values sum to 5940 s and `suite_budget_s` is 6300 s. Those
-declarations are deliberately generous: the measured nominal suite is 1092 s (CI run
-`34968374447`) on the declared 2 cores, of which the three example checks
-dominate because they run every official deck. The declared numbers exist so
-the plan shows the honest worst case for a slow or contended host rather than the best case
-measured on CI.
+Every `expected_runtime_s` is that check's measured nominal run time on the
+record's host (2 docker cores, `comment/pipeline/self-validation.json`) plus
+about 40 percent of headroom, so the declaration and the measurement stay in
+the same band in both directions: the reviewer flags a declaration that is
+more than twice the measured value, and `selfcheck` warns when the measurement
+is more than twice the declaration. Read the file for the host those numbers
+come from. The 2 to 3 s declarations are the eight standalone checks, each of
+which solves one small Hamiltonian; 30 to 45 s are the light grouped replays and
+the notebook suite; 110 to 260 s are the four large grouped replays; 750 s is
+`examples-scripts`, which runs every official example deck. The declarations sum
+to 1574 s against the 6300 s `suite_budget_s`, and the measured nominal suite is
+1092 s. The remaining gap to the budget is the allowance for a slow or contended
+host, and each run reports which side of the budget it landed on in the record's
+`budget` field.
 
 ## Tolerances
 
@@ -38,6 +46,17 @@ Per-check commands, observables and tolerance rationale live in each check READM
 ## Coverage and exclusions
 
 All 73 upstream `test_*.py` files are owned by a check: eight standalone baseline checks plus five grouped checks (`basis-symmetry`, `operators-projections`, `dynamics-utilities`, `entanglement-observables`, `models-crosschecks`). `comment/coverage-matrix.md` lists the file-to-check mapping.
+
+The two families grade differently and the rubrics say so. Each of the eight
+baseline checks adapts its upstream file into a self-contained numerical
+observable: it builds the same production path the file exercises and grades a
+deterministic vector such as a low-lying spectrum or an evolution trace, and its
+`default_vs_upstream` states the adaptation. The other 65 `test_*.py` files are
+replayed verbatim inside the five grouped checks, under their own upstream
+assertions, with the group's calibration energy as the graded value;
+`test_basis_particle_sectors.py` is the one file that carries both roles, as the
+subject of the `basis-particle-sectors` baseline check and as a member of the
+`basis-symmetry` group.
 
 Upstream's own `run_all_tests.sh` also runs two scriptable example suites, and the packaging skill counts an upstream example as an official test, so both are covered too:
 
