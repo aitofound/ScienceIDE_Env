@@ -9,9 +9,16 @@
 //
 //   probe <group> [--variant]
 //
-// The variant arm moves one input by two units in the last place, so the
-// nominal-versus-variant pair measures the numerical floor of the group's
-// ratio rather than re-running an identical input.
+// The variant arm is generic numerical-noise calibration: the nominal-versus-
+// variant pair measures the numerical floor of the group's ratio rather than
+// re-running an identical input. Where the group takes a real-valued input the
+// arm moves it by a measured step (two units in the last place, or more where a
+// smaller step was measured to be absorbed by the graded aggregate). Where every
+// input is discrete - a dimension, a prime level, a tag, a QNum value, an integer
+// search array - no such step exists, the arm is an explicitly identical copy and
+// the rubric says so; it then supplies no noise-calibration evidence.
+//
+// A group's exact step is stated in its check's rubric.json.
 #include "detinput.h"
 
 #include <cstdio>

@@ -122,6 +122,100 @@ VARIANTS = {
     ),
 }
 
+# What evidence.floor_how says once the calibration has actually run. Before
+# that it is the "pending" sentence; afterwards the number is the measurement,
+# which selfcheck writes into evidence itself, so this is only the fallback text
+# for a rubric that has never been calibrated.
+# One sentence per group for the generated check README, because the arm is not
+# the same everywhere: five groups take only discrete inputs and declare an
+# identical copy, tensor and contraction step 4 ULP because 2 was measured to be
+# absorbed, and local-operator moves every stored element for the same reason.
+IDENTICAL_GROUPS = ("algorithm-utilities", "index-and-indexval", "indexset",
+                    "quantum-numbers", "siteset")
+
+VARIANT_README_DEFAULT = (
+    "differ by two units in the last place on one materialised input, which measures this "
+    "check's numerical floor rather than re-running an identical input."
+)
+VARIANT_README = {
+    "algorithm-utilities": (
+        "are an explicitly identical copy: every graded quantity comes from an integer search array, so "
+        "there is no unit in the last place to move. It therefore supplies no numerical-noise calibration "
+        "evidence."
+    ),
+    "index-and-indexval": (
+        "are an explicitly identical copy: index dimensions and prime levels are integers, so there is no "
+        "unit in the last place to move. It therefore supplies no numerical-noise calibration evidence."
+    ),
+    "indexset": (
+        "are an explicitly identical copy: the set members are distinguished by dimension and tag, both "
+        "discrete, so there is no unit in the last place to move. It therefore supplies no numerical-noise calibration evidence."
+    ),
+    "quantum-numbers": (
+        "are an explicitly identical copy: every graded QNum and QN value is an integer, so there is no "
+        "unit in the last place to move. It therefore supplies no numerical-noise calibration evidence."
+    ),
+    "siteset": (
+        "are an explicitly identical copy: the site count and the graded dimensions are integers and the "
+        "operator norms follow from them exactly, so there is no unit in the last place to move. It "
+        "therefore supplies no numerical-noise calibration evidence."
+    ),
+    "tensor": (
+        "differ by four units in the last place on one materialised input; two was measured to be "
+        "absorbed by the graded aggregate, so the step is larger than the usual two. It measures this "
+        "check's numerical floor rather than re-running an identical input."
+    ),
+    "contraction": (
+        "differ by four units in the last place on one matrix element; two was measured to be absorbed by "
+        "the graded aggregate, so the step is larger than the usual two. It measures this check's "
+        "numerical floor rather than re-running an identical input."
+    ),
+    "local-operator": (
+        "differ by two units in the last place on every stored element of the input state; nudging a "
+        "single element was measured to be absorbed by the contraction, so the whole input moves. This "
+        "measures the check's numerical floor rather than re-running an identical input."
+    ),
+    "infarray": (
+        "differ by four units in the last place on the fill value and on one list element, which the "
+        "graded sums read, rather than on the integer sizes. This measures the check's numerical floor "
+        "rather than re-running an identical input."
+    ),
+}
+
+FLOOR_HOW = {
+    g: "pending nominal-versus-variant Docker calibration on the pinned source"
+    for g in ["tensor", "decompose", "contraction", "sparse-contract", "itensor-core",
+              "mps", "mpo", "autompo", "matrix", "index-and-indexval", "indexset",
+              "quantum-numbers", "infarray", "args", "real-and-lognum", "siteset",
+              "local-operator", "iterative-solvers", "regression", "algorithm-utilities"]
+}
+
+
+def read_prior_evidence(path: Path) -> dict:
+    """The evidence selfcheck measured, so regeneration cannot erase it.
+
+    A regeneration after calibration that dropped self_validation_spread would
+    leave a record the contract no longer matches, which reads as a stale
+    calibration rather than a re-derived one.
+    """
+    if not path.is_file():
+        return {}
+    try:
+        return (json.loads(path.read_text()) or {}).get("evidence") or {}
+    except (ValueError, OSError):
+        return {}
+
+
+def read_prior_variant(path: Path) -> str:
+    """Keep a per-check variant sentence a human finalised by hand."""
+    if not path.is_file():
+        return ""
+    try:
+        return (json.loads(path.read_text()) or {}).get("variant") or ""
+    except (ValueError, OSError):
+        return ""
+
+
 HERE = Path(__file__).resolve().parent
 VALIDATE = HERE / "validate-template.py"
 # The verifier requires every check to be self-contained: a run.sh may not
@@ -166,10 +260,12 @@ def write_check(leaf: Path, group: str, upstream: list[str], observable: str,
         f"pass/fail bits; a check may not grade those, so the probe calls the same\n"
         f"public API on materialised inputs and reports the numeric observables as a\n"
         f"flat float64 vector. `comment/tools/README.md` records the input adaptation.\n\n"
-        f"The nominal and variant arms differ by two units in the last place on one\n"
-        f"input, which measures this check's numerical floor rather than re-running an\n"
-        f"identical input. The bound in `rubric.json` is finalised from that measured\n"
-        f"spread plus the headroom the warrant states.\n"
+        + f"The nominal and variant arms {VARIANT_README.get(group, VARIANT_README_DEFAULT)}\n"
+        + (f"The bound in `rubric.json` is set by the physics, because an identical arm\n"
+           f"supplies no spread to size it from.\n"
+           if group in IDENTICAL_GROUPS else
+           f"The bound in `rubric.json` is finalised from that measured spread plus the\n"
+           f"headroom the warrant states.\n")
     )
 
     rubric = {
@@ -190,7 +286,11 @@ def write_check(leaf: Path, group: str, upstream: list[str], observable: str,
             "four units in the last place on one materialised input; the graded "
             "observables move, which measures the check's numerical floor.",
         ),
-        "altbuild": "none: no alternative build declared before cross-platform calibration",
+        "altbuild": (
+            "none: this calibration uses the one pinned Docker compiler and BLAS/LAPACK "
+            "configuration the image ships (g++ 14.2.0); a separate -O0 or cross-compiler "
+            "floor is not declared, so no build-to-build floor is claimed here."
+        ),
         "comparison": {
             "atol": 1e-09,
             "rtol": 0.0,
@@ -198,7 +298,7 @@ def write_check(leaf: Path, group: str, upstream: list[str], observable: str,
         },
         "evidence": {
             "floor": None,
-            "floor_how": "pending nominal-versus-variant Docker calibration on the pinned source",
+            "floor_how": FLOOR_HOW[group],
             "self_validation_spread": None,
             "self_validation_bound_fraction": None,
         },
@@ -210,6 +310,10 @@ def write_check(leaf: Path, group: str, upstream: list[str], observable: str,
             f"floor. No assertion pass/fail bit, storage order, or timing is graded."
         ),
     }
+    prior = read_prior_evidence(check / "rubric.json")
+    if prior:
+        rubric["evidence"].update({k: v for k, v in prior.items() if v is not None})
+        rubric["variant"] = read_prior_variant(check / "rubric.json") or rubric["variant"]
     (check / "rubric.json").write_text(json.dumps(rubric, indent=2, sort_keys=True) + "\n")
 
 
