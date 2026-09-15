@@ -1,0 +1,224 @@
+# Copyright (c) 2013-2018 Commissariat à l'énergie atomique et aux énergies alternatives (CEA)
+# Copyright (c) 2013-2018 Centre national de la recherche scientifique (CNRS)
+# Copyright (c) 2018-2023 Simons Foundation
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You may obtain a copy of the License at
+#     https:#www.gnu.org/licenses/gpl-3.0.txt
+#
+# Authors: John Bonini, Michel Ferrero, Olivier Parcollet, Nils Wentzell
+
+
+r"""
+Hilbert transform of a self-energy against a density of states.
+"""
+
+from triqs.gfs import *
+import types, string, inspect, itertools
+from triqs.dos import DOS, DOSFromFunction
+import triqs.utility.mpi as mpi
+import numpy
+
+class HilbertTransform:
+    r"""
+    Hilbert transform of a Green's function against a density of states.
+
+    Computes the matrix-valued integral
+
+    .. math::
+
+       \int_{-\infty}^{\infty} d\epsilon\, \rho(\epsilon)
+       \Bigl[ (\omega + \mu + i\eta)\,\mathbf{1}
+              - \hat\varepsilon(\epsilon) - \text{field} - \Sigma(\epsilon)
+       \Bigr]^{-1}
+
+    on the mesh of a supplied Green's function, given a DOS
+    :math:`\rho` and a self-energy :math:`\Sigma`.
+
+    Parameters
+    ----------
+    rho : DOS
+        Density of states used as the integration weight. May be a plain
+        :class:`DOS` or a :class:`DOSFromFunction`; the latter enables
+        adaptive grid refinement via :meth:`__call__`.
+
+    Attributes
+    ----------
+    dos : DOS
+        The DOS supplied at construction.
+    """
+    def __init__(self, rho):
+        self.dos  = rho
+        assert isinstance(rho, DOS),  "See Doc. rho must be a DOS"
+        self.__normalize()
+
+    #-------------------------------------------------------------
+
+    def __reduce__(self):
+        return self.__class__, (self.rho)
+
+    #-------------------------------------------------------------
+
+    def __normalize(self):
+        # normalisation. dos is not the value of the function, is the weight of the integrals
+        R = numpy.array(self.dos.rho, copy=True)
+        self.rho_for_sum = R
+        eps = self.dos.eps
+        R[0]  *= (eps[1] - eps[0])
+        R[-1] *= (eps[-1] - eps[-2])
+        for i in range(1, eps.shape[0] - 1):
+            R[i] *=  (eps[i+1] - eps[i])/2+(eps[i] - eps[i-1])/2
+        R /= numpy.sum(R)
+
+    #-------------------------------------------------------------
+
+    def __call__ (self, Sigma, mu=0, eta=0, field=None, epsilon_hat=None, result=None,
+                  n_points_integral=None, test_convergence=None):
+        r"""
+        Evaluate the Hilbert transform with the given self-energy.
+
+        Parameters
+        ----------
+        Sigma : Gf or callable
+            Either a Green's function block, or a single-argument callable
+            ``f(epsilon)`` returning a Green's function block.
+        mu : float, optional
+            Chemical potential. Default 0.
+        eta : float, optional
+            Imaginary broadening :math:`\eta`. Default 0.
+        field : optional
+            Anything that can be added to ``Sigma`` (e.g. a matrix-shaped
+            ndarray or another Green's function block). Default ``None``.
+        epsilon_hat : callable, optional
+            Function taking a 1D array ``eps`` and returning a 3D array
+            ``eps_hat[i, :, :]`` whose ``[:, :]`` slice matches the target
+            shape of ``Sigma``. Defaults to ``eps[i] * I``. Used only when
+            ``self.dos`` is a :class:`DOSFromFunction`.
+        result : Gf, optional
+            Pre-allocated output. If given, the result is computed in place.
+            If ``None`` (default), a fresh copy of the model is returned.
+        n_points_integral : int, optional
+            Number of mesh points to use. Defaults to the value passed at
+            :class:`DOSFromFunction` construction. Only valid when
+            ``self.dos`` is a :class:`DOSFromFunction`.
+        test_convergence : float, optional
+            Refinement tolerance. When set, the mesh is doubled iteratively
+            (up to 10 times) until the result changes by less than this
+            tolerance. Only valid when ``self.dos`` is a
+            :class:`DOSFromFunction`.
+
+        Returns
+        -------
+        Gf
+            The Hilbert transform on the mesh of ``Sigma``. Returned as
+            ``result`` when that argument is provided, otherwise a fresh
+            copy.
+        """
+
+        # we suppose here that self.eps, self.rho_for_sum such that
+        # H(z) = \sum_i self.rho_for_sum[i] * (z- self.eps[i])^-1
+
+        # Check Sigma
+        # case 1) Sigma is a Gf
+        if Sigma.__class__.__name__[0:2] == 'Gf':
+            model = Sigma
+            Sigma_fnt = False
+        # case 2) Sigma is a function returning a Gf
+        else:
+            assert callable(Sigma), "If Sigma is not a Gf it must be a function"
+            assert len(inspect.getfullargspec(Sigma)[0]) == 1, "Sigma must be a function of a single variable"
+            model = Sigma(self.dos.eps[0])
+            Sigma_fnt = True
+
+        # Check that Sigma is square
+        N1, N2 = model.target_shape
+        assert N1 == N2, "Sigma must be a square Gf"
+
+        # Check result
+        if result:
+            assert result.target_shape == (N1, N2), "Size of result and Sigma mismatch"
+        else:
+            result = model.copy()
+
+        if not(isinstance(self.dos, DOSFromFunction)):
+            assert n_points_integral==None and test_convergence == None, " Those parameters can only be used with an dos_from_function"
+        if field !=None:
+            try:
+                result += field
+            except:
+                assert 0, "field cannot be added to the Green function blocks !. Cf Doc"
+
+        def HT(res):
+            import triqs.utility.mpi as mpi
+            # First compute the eps_hat array
+            eps_hat = epsilon_hat(self.dos.eps) if epsilon_hat else numpy.array( [ x* numpy.identity (N1) for x in self.dos.eps] )
+            assert eps_hat.shape[0] == self.dos.eps.shape[0], "epsilon_hat function behaves incorrectly"
+            assert eps_hat.shape[1] == eps_hat.shape[2], "epsilon_hat function behaves incorrectly (result not a square matrix)"
+            assert N1 == eps_hat.shape[1], "Size of Sigma and of epsilon_hat mismatch"
+
+            res.zero()
+
+            # Perform the sum over eps[i]
+            tmp, tmp2 = res.copy(), res.copy()
+            tmp << iOmega_n + mu + eta * 1j
+            if not(Sigma_fnt):
+                tmp -= Sigma
+            if field != None: tmp -= field
+
+            # I slice all the arrays on the node. Cf reduce operation below.
+            for d, e_h, e in zip(*[mpi.slice_array(A) for A in [self.rho_for_sum, eps_hat, self.dos.eps]]):
+                tmp2.copy_from(tmp)
+                tmp2 -= e_h
+                if Sigma_fnt: tmp2 -= Sigma(e)
+                tmp2.invert()
+                tmp2 *= d
+                res += tmp2
+            # sum the res GF of all nodes and returns the results on all nodes...
+            # Cf Boost.mpi.python, collective communicator for documentation.
+            # The point is that res is pickable, hence can be transmitted between nodes without further code...
+            res << mpi.all_reduce(res)
+            mpi.barrier()
+        # END of HT
+
+        def test_distance(G1, G2, dist):
+            def f(G1, G2):
+                dS = max(abs(G1.data - G2.data).flatten())
+                aS = max(abs(G1.data).flatten())
+                return dS <= aS*dist
+            #return reduce(lambda x, y: x and y, [f(g1, g2) for (i1, g1), (i2, g2) in izip(G1, G2)])
+            return f(G1, G2) # for block function, the previous one is for GF functions
+
+        if isinstance (self.dos, DOSFromFunction):
+
+            if not(n_points_integral): # if not defined, use the defaults given at construction of the dos
+                n_points_integral=  len(self.dos.eps)
+            else:
+                self.dos._DOS__f(n_points_integral)
+                self.__normalize()
+
+            HT(result)
+
+            nloop, test = 1, 0
+            while test_convergence and nloop < 10 and (nloop == 1 or test > test_convergence):
+                if nloop>1:
+                    self.dos._DOS__f(n_points_integral)
+                    self.__normalize()
+
+                result_old = result.copy()
+                result = DOS.HilbertTransform(self, Sigma, mu, eta, epsilon_hat, result)
+                test = test_distance(result, result_old, test_convergence)
+                n_points_integral *=2
+
+        else:  # Ordinary DOS
+            HT(result)
+
+        return result

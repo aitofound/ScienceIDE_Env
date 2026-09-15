@@ -1,0 +1,451 @@
+"""Time Dependant Variational Principle (TDVP) with MPS (finite version only).
+
+The TDVP MPS algorithm was first proposed by :cite:`haegeman2011`. However the stability of the
+algorithm was later improved in :cite:`haegeman2016`, that we are following in this implementation.
+The general idea of the algorithm is to project the quantum time evolution in the manyfold of MPS
+with a given bond dimension. Compared to e.g. TEBD, the algorithm has several advantages:
+e.g. it conserves the unitarity of the time evolution and the energy (for the single-site version),
+and it is suitable for time evolution of Hamiltonian with arbitrary long range in the form of MPOs.
+We have implemented:
+
+1. The one-site formulation following the TDVP principle in :class:`SingleSiteTDVPEngine`,
+   which **does not** allow for growth of the bond dimension.
+
+2. The two-site algorithm in the :class:`TwoSiteTDVPEngine`, which does allow the bond
+   dimension to grow - but requires truncation as in the TEBD case, and is no longer strictly TDVP,
+   i.e. it does *not* strictly preserve the energy.
+
+Much of the code is very similar to DMRG, and also based on the
+:class:`~tenpy.algorithms.mps_common.Sweep` class.
+
+.. versionchanged :: 0.10.0
+    The interface changed compared to version 0.9.0:
+    Just :class:`TDVPEngine` will result in a error.
+    Use :class:`SingleSiteTDVPEngine` or :class:`TwoSiteTDVPEngine` instead.
+
+
+.. todo ::
+    extend code to infinite MPS
+
+.. todo ::
+    allow for increasing bond dimension in SingleSiteTDVPEngine, similar to DMRG Mixer
+"""
+# Copyright (C) TeNPy Developers, Apache license
+
+import logging
+import warnings
+
+from ..linalg import np_conserved as npc
+from ..linalg.krylov_based import ArnoldiEvolution, LanczosEvolution
+from ..linalg.sparse import SumNpcLinearOperator
+from ..linalg.truncation import TruncationError, svd_theta
+from ..tools.misc import consistency_check
+from ..tools.params import asConfig
+from .algorithm import TimeDependentHAlgorithm, TimeEvolutionAlgorithm
+from .mps_common import OneSiteH, Sweep, TwoSiteH, ZeroSiteH
+
+logger = logging.getLogger(__name__)
+
+__all__ = [
+    'TDVPEngine',
+    'SingleSiteTDVPEngine',
+    'TwoSiteTDVPEngine',
+    'TimeDependentSingleSiteTDVP',
+    'TimeDependentTwoSiteTDVP',
+]
+
+
+class TDVPEngine(TimeEvolutionAlgorithm, Sweep):
+    """Time dependent variational principle algorithm for MPS.
+
+    This class contains all methods that are generic between
+    :class:`SingleSiteTDVPEngine` and :class:`TwoSiteTDVPEngine`.
+    Use the latter two classes for actual TDVP runs.
+
+    .. versionchanged :: 1.1
+        Previously had separate `lanczos_options`, which have been renamed to `lanczos_params`
+        for consistency with the Sweep class.
+
+    Parameters
+    ----------
+    psi, model, options, **kwargs:
+        Same as for :class:`~tenpy.algorithms.algorithm.Algorithm`.
+
+    Options
+    -------
+    .. cfg:config :: TDVPEngine
+        :include: TimeEvolutionAlgorithm, Sweep
+
+        Krylov_params : dict
+            Krylov options as described in :meth:`prepare_evolve`.
+        max_dt : float | None
+            Threshold for raising errors on too large time steps. Default ``1.0``.
+            See :meth:`~tenpy.tools.misc.consistency_check`.
+            For large time steps, the projection to the MPS manifold that is the main building block
+            of TDVP, can not be a good approximation anymore. We raise in that case.
+            Can be downgraded to a warning by setting this option to ``None``.
+        lanczos_params : dict
+            Parameters for the local Krylov subspace time evolution (passed to
+            :class:`~tenpy.linalg.krylov_based.LanczosEvolution` or
+            :class:`~tenpy.linalg.krylov_based.ArnoldiEvolution`). Supports all options
+            of :cfg:config:`KrylovBased`, plus:
+
+            hermitian : bool
+                If ``True`` (default), use :class:`~tenpy.linalg.krylov_based.LanczosEvolution`,
+                which assumes `H` is Hermitian and builds a tridiagonal Krylov projection.
+                Set to ``False`` to use :class:`~tenpy.linalg.krylov_based.ArnoldiEvolution`,
+                which handles non-Hermitian `H` via full Gram-Schmidt orthogonalization and
+                eigendecomposition of the Hessenberg projection.
+            normalize : bool or None
+                Passed to the ``normalize`` argument of the evolution ``run()`` method.
+                If ``None`` (default), each solver class uses its own default.
+
+    Attributes
+    ----------
+    Krylov_params : :class:`~tenpy.tools.params.Config`
+        Parameters for subspace expansion in :meth:`prepare_evolve`.
+
+    """
+
+    EffectiveH = None
+
+    def __init__(self, psi, model, options, **kwargs):
+        if self.__class__.__name__ == 'TDVPEngine':
+            msg = (
+                'TDVP interface changed. \n'
+                'The new TDVPEngine has subclasses SingleSiteTDVPEngine'
+                ' and TwoSiteTDVPEngine that you can use.\n'
+            )
+            raise NameError(msg)
+        if psi.bc != 'finite':
+            raise NotImplementedError('Only finite TDVP is implemented')
+        assert psi.bc == model.lat.bc_MPS
+        options = asConfig(options, self.__class__.__name__)
+        options.deprecated_alias(
+            'lanczos_options', 'lanczos_params', 'See also https://github.com/tenpy/tenpy/issues/459'
+        )
+        super().__init__(psi, model, options, **kwargs)
+        self.Krylov_params = options.subconfig('Krylov_params')
+
+    # run() from TimeEvolutionAlgorithm
+
+    def _krylov_evolve(self, H, theta, dt):
+        """Apply ``exp(dt * H)`` to `theta` using Lanczos or Arnoldi.
+
+        Selects :class:`~tenpy.linalg.krylov_based.LanczosEvolution` (default, Hermitian H) or
+        :class:`~tenpy.linalg.krylov_based.ArnoldiEvolution` (non-Hermitian H) based on the
+        ``hermitian`` key in :attr:`lanczos_params`.
+        """
+        hermitian = self.lanczos_params.get('hermitian', True, bool)
+        cls = LanczosEvolution if hermitian else ArnoldiEvolution
+        normalize = self.lanczos_params.get('normalize', None)
+        return cls(H, theta, self.lanczos_params).run(dt, normalize=normalize)
+
+    @property
+    def lanczos_options(self):
+        """Deprecated alias of :attr:`lanczos_params`."""
+        warnings.warn(
+            'Accessing deprecated alias TDVPEngine.lanczos_options instead of lanczos_params',
+            FutureWarning,
+            stacklevel=2,
+        )
+        return self.lanczos_params
+
+    def prepare_evolve(self, dt):
+        """Expand the basis using Krylov or random vectors using the algorithm from :cite:`yang2020`.
+
+        The action of this function is specified by the 'Krylov_params' options passed when constructing the
+        TDVP engine.
+
+        Options
+        -------
+        .. cfg:config :: TDVP_Krylov_params
+            Krylov_expansion_dim: int
+                How many additional vectors do we use to expand the basis; > 1 is sufficient for random extension.
+                Defaults to 0, which does no expansion.
+            mpo:
+                What MPO do we use for expanion? If none is specified, we use the Hamiltonian.
+                If 'None' is specified, we do random extension.
+                If a list is given, one applies multiple MPOs to get the next Krylov vector,
+                 e.g. with WII and a higher order time step.
+            trunc_params: dict
+                Standard dictionary for truncation settings, e.g.
+                chi_max=max number of states that are added on each site.
+                svd_min=cutoff for kept sqrt(eigenvalues) of the RDM.
+            apply_mpo_options: dict
+                How do we apply the MPO to the MPS; e.g. SVD, zip_up, variational and associated parameters.
+        """
+        Krylov_expansion_dim = self.Krylov_params.get('expansion_dim', 0)
+        if Krylov_expansion_dim > 0:  # Do some basis expansion
+            # Need to clear out left and right environments since the bond dimensions no longer match.
+            # So we will need to recalculate the H envs for the next TDVP step
+            # Do this before expanding the basis of psi to save RAM.
+            self.env.clear()
+
+            logger.info(f'Original bond dimension: {self.psi.chi}.')
+            # Get the MPO A that will be used to generate Krylov vectors; {A^k |psi>}
+            # We might want to use the WII MPO or (1 - itH) rather than H
+            Krylov_mpo = self.Krylov_params.get('mpo', self.model.H_MPO)
+            # How do we truncate the RDMs when extending?
+            Krylov_trunc_params = self.Krylov_params.subconfig('trunc_params', self.trunc_params)
+            if Krylov_mpo is None:  # Random expansion
+                extension_err = self.psi.subspace_expansion(expand_into=[], trunc_par=Krylov_trunc_params)
+            else:  # Expansion by MPO application
+                # Cast to list to allow for multiple mpos (i.e. W2 with order > 1)
+                Krylov_mpo = [Krylov_mpo] if not isinstance(Krylov_mpo, list) else Krylov_mpo
+                # First generate Krylov basis
+                Krylov_apply_mpo_options = self.Krylov_options.subconfig('apply_mpo_options')
+                # Needs to contain 'compression_method' and options for doing the MPO application
+                Krylov_extended_basis = []
+                new_psi = self.psi.copy()
+                for i in range(Krylov_expansion_dim):
+                    for krylov_mpo in Krylov_mpo:
+                        krylov_mpo.apply(new_psi, Krylov_apply_mpo_options)
+                    Krylov_extended_basis.append(new_psi.copy())
+                extension_err = self.psi.subspace_expansion(
+                    expand_into=Krylov_extended_basis, trunc_par=Krylov_trunc_params
+                )
+            logger.info(f'Extended bond dimension: {self.psi.chi}. Extension error: {extension_err}')
+        return
+
+    def evolve(self, N_steps, dt):
+        """Evolve by ``N_steps * dt``.
+
+        Parameters
+        ----------
+        N_steps : int
+            The number of steps to evolve.
+
+        """
+        consistency_check(
+            dt, self.options, 'max_dt', 1.0, 'dt > ``max_dt`` is unreasonably large for TDVP.', compare='abs()<='
+        )
+        self.dt = dt
+        trunc_err = TruncationError()
+        for _ in range(N_steps):
+            self.sweep()
+            for eps in self.trunc_err_list:
+                trunc_err += TruncationError(eps, 1 - 2 * eps)
+        self.evolved_time = self.evolved_time + N_steps * self.dt
+        return trunc_err
+
+
+class TwoSiteTDVPEngine(TDVPEngine):
+    """Engine for the two-site TDVP algorithm.
+
+    Parameters
+    ----------
+    psi, model, options, **kwargs:
+        Same as for :class:`~tenpy.algorithms.algorithm.Algorithm`.
+
+    Options
+    -------
+    .. cfg:config :: TwoSiteTDVPEngine
+        :include: TDVPEngine
+
+    """
+
+    EffectiveH = TwoSiteH
+
+    def __init__(self, psi, model, options, **kwargs):
+        super().__init__(psi, model, options, **kwargs)
+
+    def get_sweep_schedule(self):
+        """Slightly different sweep schedule than DMRG"""
+        L = self.psi.L
+        if self.finite:
+            i0s = list(range(0, L - 2)) + list(range(L - 2, -1, -1))
+            move_right = [True] * (L - 2) + [False] * (L - 2) + [None]
+            update_LP_RP = [[True, False]] * (L - 2) + [[False, True]] * (L - 2) + [[False, False]]
+        else:
+            raise NotImplementedError('Only finite TDVP is implemented')
+        return zip(i0s, move_right, update_LP_RP)
+
+    def update_local(self, theta, **kwargs):
+        i0 = self.i0
+        L = self.psi.L
+
+        dt = -0.5j * self.dt
+        if i0 == L - 2:
+            dt = 2.0 * dt  # instead of updating the last pair of sites twice, we double the time
+        # update two-site wavefunction
+        theta, N = self._krylov_evolve(self.eff_H, theta, dt)
+        if self.combine:
+            theta.itranspose(['(vL.p0)', '(p1.vR)'])  # shouldn't do anything
+        else:
+            theta = theta.combine_legs([['vL', 'p0'], ['p1', 'vR']], new_axes=[0, 1], qconj=[+1, -1])
+        qtotal_i0 = self.psi.get_B(i0, form=None).qtotal
+        U, S, VH, err, renorm = svd_theta(
+            theta,
+            self.trunc_params,
+            qtotal_LR=[qtotal_i0, None],
+            inner_labels=['vR', 'vL'],
+        )
+        self.psi.norm *= renorm
+        B0 = U.split_legs(['(vL.p0)']).replace_label('p0', 'p')
+        B1 = VH.split_legs(['(p1.vR)']).replace_label('p1', 'p')
+
+        self.psi.set_B(i0, B0, form='A')  # left-canonical
+        self.psi.set_B(i0 + 1, B1, form='B')  # right-canonical
+        self.psi.set_SR(i0, S)
+        update_data = {'err': err, 'N': N, 'U': U, 'VH': VH}
+        # earlier update of environments, since they are needed for the one_site_update()
+        super().update_env(**update_data)  # new environments, e.g. LP[i0+1] on right move.
+
+        if self.move_right:
+            # note that i0 == L-2 is left-moving
+            self.one_site_update(i0 + 1, 0.5j * self.dt)
+        elif self.move_right is False:
+            self.one_site_update(i0, 0.5j * self.dt)
+        # for the last update of the sweep, where move_right is None, there is no one_site_update
+
+        return update_data
+
+    def update_env(self, **update_data):
+        """Do nothing; super().update_env() is called explicitly in :meth:`update_local`."""
+        pass
+
+    def one_site_update(self, i, dt):
+        H1 = OneSiteH(self.env, i, combine=False)
+        if hasattr(self.env, 'H') and self.env.H.explicit_plus_hc:
+            H1 = SumNpcLinearOperator(H1, H1.adjoint())
+        theta = self.psi.get_theta(i, n=1, cutoff=self.S_inv_cutoff)
+        theta = H1.combine_theta(theta)
+        theta, _ = self._krylov_evolve(H1, theta, dt)
+        self.psi.set_B(i, theta.replace_label('p0', 'p'), form='Th')
+
+
+class SingleSiteTDVPEngine(TDVPEngine):
+    """Engine for the single-site TDVP algorithm.
+
+    Parameters
+    ----------
+    psi, model, options, **kwargs:
+        Same as for :class:`~tenpy.algorithms.algorithm.Algorithm`.
+
+    Options
+    -------
+    .. cfg:config :: SingleSiteTDVPEngine
+        :include: TDVPEngine
+
+    """
+
+    EffectiveH = OneSiteH
+
+    def get_sweep_schedule(self):
+        """Slightly different sweep schedule than DMRG"""
+        L = self.psi.L
+        if self.finite:
+            i0s = list(range(0, L - 1)) + list(range(L - 1, -1, -1))
+            move_right = [True] * (L - 1) + [False] * (L - 1) + [None]
+            update_LP_RP = [[True, False]] * (L - 1) + [[False, True]] * (L - 1) + [[False, False]]
+        else:
+            raise NotImplementedError('Only finite TDVP is implemented')
+        return zip(i0s, move_right, update_LP_RP)
+
+    def update_local(self, theta, **kwargs):
+        i0 = self.i0
+        L = self.psi.L
+
+        dt = -0.5j * self.dt
+        if i0 == L - 1:
+            dt = 2.0 * dt  # instead of updating the last site twice, we double the time
+
+        # update one-site wavefunction
+        theta, N = self._krylov_evolve(self.eff_H, theta, dt)
+        if self.move_right:
+            self.right_moving_update(i0, theta)
+        else:
+            # note: left_moving_update() also covers the "non-moving" case move_right=None
+            # of the last update in a sweep
+            self.left_moving_update(i0, theta)
+        return {}  # no truncation error in single-site TDVP!
+
+    def right_moving_update(self, i0, theta):
+        if self.combine:
+            theta.itranspose(['(vL.p0)', 'vR'])
+        else:
+            theta = theta.combine_legs(['vL', 'p0'], qconj=+1, new_axes=0)
+        U, S, VH = npc.svd(theta, qtotal_LR=[theta.qtotal, None], inner_labels=['vR', 'vL'])
+        # no truncation; track norm decay for non-Hermitian evolution
+        renorm = npc.norm(S)
+        S /= renorm
+        self.psi.norm *= renorm
+        A0 = U.split_legs(['(vL.p0)']).replace_label('p0', 'p')
+        self.psi.set_B(i0, A0, form='A')  # left-canonical
+        self.psi.set_SR(i0, S)
+
+        if True:  # note that i0 == L - 1 is left moving, so we always do a zero-site update
+            super().update_env(U=U)
+            theta = VH.scale_axis(S, 'vL')
+            theta, H0 = self.zero_site_update(i0 + 1, theta, 0.5j * self.dt)
+            next_B = self.psi.get_B(i0 + 1, form='B')
+            next_th = npc.tensordot(theta, next_B, axes=['vR', 'vL'])
+            self.psi.set_B(i0 + 1, next_th, form='Th')  # used and updated for next i0
+
+    def left_moving_update(self, i0, theta):
+        if self.combine:
+            theta.itranspose(['vL', '(p0.vR)'])
+        else:
+            theta = theta.combine_legs(['p0', 'vR'], qconj=-1, new_axes=1)
+        U, S, VH = npc.svd(theta, qtotal_LR=[None, theta.qtotal], inner_labels=['vR', 'vL'])
+        # no truncation; track norm decay for non-Hermitian evolution
+        renorm = npc.norm(S)
+        S /= renorm
+        self.psi.norm *= renorm
+        if i0 == 0:
+            assert U.shape == (1, 1)
+            VH *= U[0, 0]  # just a global phase, but better keep it!
+        B1 = VH.split_legs(['(p0.vR)']).replace_label('p0', 'p')
+        self.psi.set_B(i0, B1, form='B')  # right-canonical
+        self.psi.set_SL(i0, S)
+
+        if i0 != 0:  # left-moving, but not the last site of the update
+            super().update_env(VH=VH)  # note: no update needed if i0=0!
+            theta = U.iscale_axis(S, 'vR')
+            theta, H0 = self.zero_site_update(i0, theta, 0.5j * self.dt)
+            next_A = self.psi.get_B(i0 - 1, form='A')
+            next_th = npc.tensordot(next_A, theta, axes=['vR', 'vL'])
+            self.psi.set_B(i0 - 1, next_th, form='Th')  # used and updated for next i0
+            # note: this zero-site update can change the singular values on the bond left of i0.
+            # however, we *don't* save them in psi: it turns out that the right singular
+            # values for correct expectation values/entropies are the ones set before the if above.
+            # (Believe me - I had that coded up and spent days looking for the bug...)
+
+    def update_env(self, **update_data):
+        """Do nothing; super().update_env() is called explicitly in :meth:`update_local`."""
+        pass
+
+    def zero_site_update(self, i, theta, dt):
+        """Zero-site update on the left of site `i`."""
+        H0 = ZeroSiteH(self.env, i)
+        if hasattr(self.env, 'H') and self.env.H.explicit_plus_hc:
+            H0 = SumNpcLinearOperator(H0, H0.adjoint())
+        theta, _ = self._krylov_evolve(H0, theta, dt)
+        return theta, H0
+
+    def post_update_local(self, **update_data):
+        self.trunc_err_list.append(0.0)  # avoid error in return of sweep()
+
+
+class TimeDependentSingleSiteTDVP(TimeDependentHAlgorithm, SingleSiteTDVPEngine):
+    """Variant of :class:`SingleSiteTDVPEngine` that can handle time-dependent Hamiltonians.
+
+    See details in :class:`~tenpy.algorithms.algorithm.TimeDependentHAlgorithm` as well.
+    """
+
+    def reinit_model(self):
+        # recreate model
+        TimeDependentHAlgorithm.reinit_model(self)
+        # and reinitialize environment accordingly
+        self.init_env(self.model)
+
+
+class TimeDependentTwoSiteTDVP(TimeDependentHAlgorithm, TwoSiteTDVPEngine):
+    """Variant of :class:`TwoSiteTDVPEngine` that can handle time-dependent Hamiltonians.
+
+    See details in :class:`~tenpy.algorithms.algorithm.TimeDependentHAlgorithm` as well.
+    """
+
+    def reinit_model(self):
+        TimeDependentSingleSiteTDVP.reinit_model(self)

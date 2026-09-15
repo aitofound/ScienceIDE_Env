@@ -1,0 +1,56 @@
+name: Linting
+# Run linter (flake8) and custom linting script (tests/linting.py)
+
+on:
+  # pushes to main
+  push:
+    branches:
+      - main
+  # PRs
+  pull_request:
+
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.13
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install --upgrade setuptools build
+
+    - name: Build and install tenpy
+      # needed to run custom linting script, which imports tenpy
+      run: |
+        python -m build .
+        python -m pip install ".[lint]"
+
+    - name: Lint python code
+      # uses options from pyproject.toml
+      run: |
+        ruff check
+
+    - name: Lint docs
+      # we run flake8 only for RST rules of docstrings in .py files
+      # config in .flake8
+      run: |
+        flake8 --select RST
+        sphinx-lint -e all doc -i doc/toycodes -i doc/notebooks --max-line-length=1000 -d default-role
+
+    - name: Run autoformatter
+      # uses options from pyproject.toml
+      run: |
+        ruff format --diff
+
+    - name: Run custom linting script
+      run: |
+        python ./tests/linting.py

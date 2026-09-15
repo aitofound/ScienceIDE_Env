@@ -1,0 +1,50 @@
+/**
+ * A very simple test problem
+ * 
+ * We first create a REBOUND simulation, then we add 
+ * two particles and integrate the system until infinity.
+ * You can cancel the simulation by pressing CTRL-C
+ * or `q` when the visualization is enabled.
+ */
+#include "rebound.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+int main(int argc, char* argv[]) {
+    struct reb_simulation* r = reb_simulation_create();
+    
+    // Starting the REBOUND visualization server. This
+    // allows you to visualize the simulation by pointing 
+    // your web browser to http://localhost:1234
+    reb_simulation_start_server(r, 1234);
+
+    reb_simulation_add_fmt(r, "m", 1.);                // Central object
+    reb_simulation_add_fmt(r, "m a e", 1e-3, 1., 0.1); // Jupiter mass planet
+    reb_simulation_add_fmt(r, "a e", 1.4, 0.1);        // Massless test particle 
+
+    // Move simulation to center of mass frame
+    reb_simulation_move_to_com(r);
+
+    // First integrate for 100 time units. 
+    reb_simulation_integrate(r,100.);
+
+    // Then output some coordinates and orbital elements. 
+    for (int i=0; i<r->N; i++){
+        struct reb_particle p = r->particles[i];
+        printf("%f %f %f\n", p.x, p.y, p.z);
+    }
+    struct reb_particle primary = r->particles[0];
+    for (int i=1; i<r->N; i++){
+        struct reb_particle p = r->particles[i];
+        struct reb_orbit o = reb_orbit_from_particle(r->G, p, primary);
+        printf("%f %f %f\n", o.a, o.e, o.f);
+    }
+
+    // Then keep running forever.
+    reb_simulation_integrate(r, INFINITY);
+
+    // Cleanup 
+    reb_simulation_free(r);
+}
+
