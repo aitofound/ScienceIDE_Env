@@ -142,10 +142,13 @@ STEP 1.5  The source PR (outside this CLI). HARD STOP.
                    test suites and example decks (how many, how they run);
                    how many ran natively in the investigation and reproduced
                    the upstream reference, to how many digits.
-    Module cut     a table, one row per module: slug | title | what it
+    Module cut     the single-module default in one line (the whole codebase,
+                   one module, recorded by propose-modules); for a multi-module
+                   cut a table, one row per module: slug | title | what it
                    computes | owned paths | lines of code | expensive path |
-                   official tests that exercise it | approved or proposed-only;
-                   below it the human's approving words and date.
+                   official tests that exercise it | evidence for both
+                   conditions | approved or proposed-only; below it the human's
+                   approving words and date.
     Shared         the shared infrastructure, listed once, with lines of code.
     Left out       every not_packaged entry with its reason.
     Report         the bounded Markdown report (codebase-metadata.md) pasted
@@ -208,13 +211,15 @@ STEP 2  Survey the official tests of every approved module.
   human which checks to include: survey-tests prints the coverage and the
   omissions, and you show them that summary as information.
 
-  The suite budget ({budget} s of RUN time by default, source builds excluded)
-  is guidance, not a cap. Do not omit a valuable test merely to fit the default;
-  scientific or practical exclusions remain allowed when justified. For a long
-  test, shorten the window or resolution only where the physics survives and
-  expose that setting. Where the suite still exceeds the default, the human
-  decides the strategy (raise the task's budget, shorten windows, more cores)
-  at STOP 3.
+  Run time. Each check's graded run is held under 300 s whenever possible:
+  for a test whose upstream runtime is above that (survey-tests flags them),
+  shorten the window or resolution only where the physics survives and
+  expose that setting as a knob; a test that cannot be brought under 300 s
+  is still a check and its rubric's runtime_note says why. The suite total
+  has no cap; {budget} s of RUN time (source builds excluded) is strongly
+  advised and never a reason to omit a valuable test. Where the suite still
+  exceeds it, the human decides the strategy (raise the task's budget,
+  shorten windows, more cores) at STOP 3.
 
   {{
     "codebase": "{cb}",

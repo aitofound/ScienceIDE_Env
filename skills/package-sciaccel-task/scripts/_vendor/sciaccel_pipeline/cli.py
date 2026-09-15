@@ -37,7 +37,8 @@ Exactly four refusals: `survey-tests` and `task scaffold` refuse until the
 source PR is merged and recorded (`codebase source-merged`), unless the human
 bypasses that gate with `--allow-unmerged-source --human-ref`, which warns
 and records the bypass; `task scaffold`
-refuses a module the human has not approved; `task build` and `task selfcheck`
+refuses a module whose cut is not recorded (the single-module default by
+`propose-modules`, a multi-module cut by the human's `approve-modules`); `task build` and `task selfcheck`
 refuse without a consent record for the current run plan (`task plan`, then
 `task consent`); and `task selfcheck` refuses a leaf that fails lint.
 Everything else runs when asked and leaves evidence that `status` reports.

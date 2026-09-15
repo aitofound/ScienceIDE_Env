@@ -6,11 +6,11 @@ self-validation and runtime records). This file is the human-readable story.
 
 ## Module
 
-<FILL: one paragraph: what the module computes, which source paths it owns, what was deliberately excluded and why.>
+<FILL: one paragraph: what the module computes, which source paths it owns, which distinct official tests and examples became checks, which were left out and why (the default is exhaustive), and what was deliberately excluded from the module and why.>
 
 ## Build
 
-<FILL: whether the source is compiled at solve time and, if so, how the checks of one run reuse the build an earlier check made, or why each compiles its own; with the record's build and run seconds.>
+<FILL: whether the source is compiled at solve time and, if so, how the checks of one run reuse the build an earlier check made, or why each compiles its own; with the record's build and run seconds, and how many containers the resource-aware solve packed on the consented host.>
 
 ## Tolerances
 
