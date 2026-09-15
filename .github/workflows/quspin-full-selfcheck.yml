@@ -1,20 +1,14 @@
 name: QuSpin full-steward selfcheck
 
+# Manual only. The repository has no per-task workflow and every merged task PR
+# touches no .github/ path; this job exists solely because the QuSpin image is
+# linux/amd64 and its full selfcheck is impractical on an arm64 host under
+# emulation. Nothing here runs automatically: `validate` already fails when the
+# committed self-validation record goes stale, so a contract change is caught
+# without this job. Use the Run workflow button when a fresh x86 record is
+# needed, then commit the refreshed comment/pipeline/ files it uploads.
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      # Contract files only: these change the fingerprint and require a fresh
-      # x86 self-validation record. Documentation under comment/ does not.
-      - 'tasks/quspin/quspin/task.toml'
-      - 'tasks/quspin/quspin/instruction.md'
-      - 'tasks/quspin/quspin/tests/**'
-      - 'tasks/quspin/quspin/solution/**'
-      - 'tasks/quspin/quspin/environment/**'
-      - 'tasks/quspin/quspin/target/**'
-      - 'code/quspin/**'
-      # Deliberately not skills/package-sciaccel-task/**: that path is shared by
-      # every task, so listening on it would run this job on other people's PRs.
 
 concurrency:
   group: quspin-full-selfcheck-${{ github.ref }}
