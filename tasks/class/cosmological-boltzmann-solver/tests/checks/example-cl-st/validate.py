@@ -31,14 +31,20 @@ def main() -> int:
     rubric = json.loads(Path(a.rubric).read_text(encoding="utf-8"))
     atol = float(rubric["comparison"].get("atol", 0.0))
     rtol = float(rubric["comparison"].get("rtol", 1e-6))
+    # scale_rtol: a scale-aware absolute term, scale_rtol * max|reference array|, added to the
+    # bound of every element of a numeric array, so an oscillating quantity is not graded at
+    # an unbounded relative precision where it crosses zero (0 keeps the pure relative bound).
+    scale_rtol = float(rubric["comparison"].get("scale_rtol", 0.0))
     r, c = load(a.reference), load(a.candidate)
 
     failures: list[str] = []
     worst_err = 0.0
     worst_frac = 0.0
 
+    current_scale = 0.0
+
     def walk(path: str, rv, cv) -> None:
-        nonlocal worst_err, worst_frac
+        nonlocal worst_err, worst_frac, current_scale
         if isinstance(rv, dict) and isinstance(cv, dict):
             if set(rv) != set(cv):
                 failures.append(f"{path}: key set differs ({sorted(rv)} vs {sorted(cv)})")
@@ -51,6 +57,8 @@ def main() -> int:
                 failures.append(f"{path}: length {len(cv)} != reference {len(rv)}")
                 worst_frac = max(worst_frac, math.inf)
                 return
+            if rv and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in rv):
+                current_scale = max((abs(float(x)) for x in rv if math.isfinite(float(x))), default=0.0)
             for i, (rx, cx) in enumerate(zip(rv, cv)):
                 walk(f"{path}[{i}]", rx, cx)
         elif isinstance(rv, (int, float)) and not isinstance(rv, bool):
@@ -63,7 +71,7 @@ def main() -> int:
                 worst_frac = max(worst_frac, math.inf)
                 return
             err = abs(cv - rv)
-            bound = atol + rtol * abs(rv)
+            bound = atol + rtol * abs(rv) + scale_rtol * current_scale
             worst_err = max(worst_err, err)
             frac = 0.0 if bound == 0.0 and err == 0.0 else (math.inf if bound == 0.0 else err / bound)
             worst_frac = max(worst_frac, frac)
