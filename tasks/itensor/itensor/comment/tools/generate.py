@@ -66,6 +66,62 @@ GROUPS: list[tuple[str, list[str], str, int]] = [
      "detail::binaryFind positions and their agreement with a linear scan", 10),
 ]
 
+# Per-group variant prose. Five groups take only discrete inputs - index
+# dimensions, prime levels, tag strings, QNum values, an integer search array -
+# so no unit in the last place exists to move and the arm is an explicitly
+# identical copy, the case the skill documents and the merged CLASS task records
+# for its fixed-input C driver. Every other group's arm moves a real-valued
+# input, and each step size below is measured, not assumed: two ULP was absorbed
+# by the contraction in tensor, contraction and local-operator.
+VARIANTS = {
+    "algorithm-utilities": (
+        "identical: the search array and every graded quantity are integers, so "
+        "there is no unit in the last place to move; this arm is an explicitly "
+        "identical copy and supplies no numerical-noise calibration evidence."
+    ),
+    "index-and-indexval": (
+        "identical: index dimensions, prime levels and IndexVal values are all "
+        "integers, so there is no unit in the last place to move; this arm is an "
+        "explicitly identical copy and supplies no numerical-noise calibration "
+        "evidence."
+    ),
+    "indexset": (
+        "identical: the set members are distinguished by dimension and tag, both "
+        "discrete, so there is no unit in the last place to move; this arm is an "
+        "explicitly identical copy and supplies no numerical-noise calibration "
+        "evidence."
+    ),
+    "quantum-numbers": (
+        "identical: every graded QNum and QN value is an integer, so there is no "
+        "unit in the last place to move; this arm is an explicitly identical copy "
+        "and supplies no numerical-noise calibration evidence."
+    ),
+    "siteset": (
+        "identical: the site count and every graded dimension are integers and "
+        "the operator norms follow from them exactly, so there is no unit in the "
+        "last place to move; this arm is an explicitly identical copy and supplies "
+        "no numerical-noise calibration evidence."
+    ),
+    "infarray": (
+        "four units in the last place on the fill value and on one list element, "
+        "which the graded sums read; the observables move, which measures the "
+        "check's numerical floor."
+    ),
+    "local-operator": (
+        "two units in the last place on every stored element of the input state, "
+        "which the graded norm reads; nudging a single element was measured to be "
+        "absorbed by the contraction."
+    ),
+    "tensor": (
+        "four units in the last place on one materialised input; two was measured "
+        "to be absorbed, so the step is larger than the usual two."
+    ),
+    "contraction": (
+        "four units in the last place on one matrix element; two was measured to "
+        "be absorbed, so the step is larger than the usual two."
+    ),
+}
+
 HERE = Path(__file__).resolve().parent
 VALIDATE = HERE / "validate-template.py"
 # The verifier requires every check to be self-contained: a run.sh may not
@@ -129,9 +185,10 @@ def write_check(leaf: Path, group: str, upstream: list[str], observable: str,
         "observable": observable,
         "expected_runtime_s": runtime,
         "default_vs_upstream": "upstream, with stored inputs as probed in README",
-        "variant": (
-            "two units in the last place on one materialised input; the graded "
-            "observables move, which measures the check's numerical floor."
+        "variant": VARIANTS.get(
+            group,
+            "four units in the last place on one materialised input; the graded "
+            "observables move, which measures the check's numerical floor.",
         ),
         "altbuild": "none: no alternative build declared before cross-platform calibration",
         "comparison": {
