@@ -1,0 +1,307 @@
+{
+  "skimage.feature.canny": {
+    "implementation": {
+      "file": "src/skimage/feature/_canny.py",
+      "line": 103,
+      "end_line": 262
+    },
+    "description": "Edge filter an image using the Canny algorithm.",
+    "calls": [
+      "ndi.sobel",
+      "_preprocess",
+      "np.sqrt",
+      "_nonmaximum_suppression_bilinear",
+      "ndi.label",
+      "np.unique",
+      "dtype_limits",
+      "np.percentile"
+    ],
+    "branches": [
+      {
+        "line": 201,
+        "expression": "np.issubdtype(image.dtype, np.int64) or np.issubdtype(image.dtype, np.uint64)"
+      },
+      {
+        "line": 207,
+        "expression": "low_threshold is None"
+      },
+      {
+        "line": 215,
+        "expression": "high_threshold is None"
+      },
+      {
+        "line": 223,
+        "expression": "high_threshold < low_threshold"
+      },
+      {
+        "line": 236,
+        "expression": "use_quantiles"
+      },
+      {
+        "line": 254,
+        "expression": "count == 0"
+      },
+      {
+        "line": 209,
+        "expression": "use_quantiles"
+      },
+      {
+        "line": 217,
+        "expression": "use_quantiles"
+      },
+      {
+        "line": 210,
+        "expression": "not 0.0 <= low_threshold <= 1.0"
+      },
+      {
+        "line": 218,
+        "expression": "not 0.0 <= high_threshold <= 1.0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.sobel": {
+    "implementation": {
+      "file": "src/skimage/filters/edges.py",
+      "line": 199,
+      "end_line": 253
+    },
+    "description": "Find edges in an image using the Sobel filter.",
+    "calls": [
+      "_generic_edge_filter",
+      "_mask_filter_result"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.label": {
+    "implementation": {
+      "file": "src/skimage/measure/_label.py",
+      "line": 33,
+      "end_line": 125
+    },
+    "description": "Label connected regions of an integer array.",
+    "calls": [
+      "_label_bool",
+      "clabel"
+    ],
+    "branches": [
+      {
+        "line": 117,
+        "expression": "label_image.dtype == bool"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.metrics.adapted_rand_error": {
+    "implementation": {
+      "file": "src/skimage/metrics/_adapted_rand_error.py",
+      "line": 7,
+      "end_line": 103
+    },
+    "description": "Compute Adapted Rand error as defined by the SNEMI3D contest. [1]_",
+    "calls": [
+      "p_ij.sum",
+      "p_ij.sum(axis=1).ravel",
+      "p_ij.sum(axis=0).ravel",
+      "check_shape_equality",
+      "contingency_table",
+      "a_i.sum",
+      "b_i.sum"
+    ],
+    "branches": [
+      {
+        "line": 68,
+        "expression": "image_test is not None and image_true is not None"
+      },
+      {
+        "line": 71,
+        "expression": "table is None"
+      },
+      {
+        "line": 82,
+        "expression": "alpha < 0.0 or alpha > 1.0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.metrics.variation_of_information": {
+    "implementation": {
+      "file": "src/skimage/metrics/_variation_of_information.py",
+      "line": 9,
+      "end_line": 44
+    },
+    "description": "Return symmetric conditional entropies associated with the VI. [1]_",
+    "calls": [
+      "_vi_tables",
+      "h1g0.sum",
+      "h0g1.sum"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.remove_small_objects": {
+    "implementation": {
+      "file": "src/skimage/morphology/misc.py",
+      "line": 60,
+      "end_line": 179
+    },
+    "description": "Remove objects smaller than the specified size.",
+    "calls": [
+      "deprecate_parameter",
+      "_check_dtype_supported",
+      "ar.copy",
+      "ndi.generate_binary_structure",
+      "ndi.label",
+      "np.bincount",
+      "ccs.ravel"
+    ],
+    "branches": [
+      {
+        "line": 140,
+        "expression": "out is None"
+      },
+      {
+        "line": 145,
+        "expression": "max_size == 0"
+      },
+      {
+        "line": 148,
+        "expression": "out.dtype == bool"
+      },
+      {
+        "line": 164,
+        "expression": "len(component_sizes) == 2 and out.dtype != bool"
+      },
+      {
+        "line": 170,
+        "expression": "min_size is not DEPRECATED"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.segmentation.inverse_gaussian_gradient": {
+    "implementation": {
+      "file": "src/skimage/segmentation/morphsnakes.py",
+      "line": 182,
+      "end_line": 211
+    },
+    "description": "Inverse of gradient magnitude.",
+    "calls": [
+      "ndi.gaussian_gradient_magnitude",
+      "np.sqrt"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.segmentation.mark_boundaries": {
+    "implementation": {
+      "file": "src/skimage/segmentation/boundaries.py",
+      "line": 185,
+      "end_line": 240
+    },
+    "description": "Return image with boundaries between labeled regions highlighted.",
+    "calls": [
+      "img_as_float",
+      "marked.astype",
+      "find_boundaries",
+      "gray2rgb",
+      "ndi.zoom",
+      "dilation",
+      "footprint_rectangle"
+    ],
+    "branches": [
+      {
+        "line": 225,
+        "expression": "marked.ndim == 2"
+      },
+      {
+        "line": 227,
+        "expression": "mode == 'subpixel'"
+      },
+      {
+        "line": 236,
+        "expression": "outline_color is not None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.segmentation.morphological_geodesic_active_contour": {
+    "implementation": {
+      "file": "src/skimage/segmentation/morphsnakes.py",
+      "line": 322,
+      "end_line": 449
+    },
+    "description": "Morphological Geodesic Active Contours (MorphGAC).",
+    "calls": [
+      "np.gradient",
+      "iter_callback",
+      "_init_level_set",
+      "_check_input",
+      "np.int8",
+      "np.percentile",
+      "ndi.binary_dilation",
+      "_curvop",
+      "np.abs",
+      "ndi.binary_erosion"
+    ],
+    "branches": [
+      {
+        "line": 413,
+        "expression": "threshold == 'auto'"
+      },
+      {
+        "line": 419,
+        "expression": "balloon != 0"
+      },
+      {
+        "line": 428,
+        "expression": "balloon > 0"
+      },
+      {
+        "line": 432,
+        "expression": "balloon != 0"
+      },
+      {
+        "line": 430,
+        "expression": "balloon < 0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.segmentation.watershed": {
+    "implementation": {
+      "file": "src/skimage/segmentation/_watershed.py",
+      "line": 87,
+      "end_line": 243
+    },
+    "description": "Find watershed basins in an image flooded from given markers.",
+    "calls": [
+      "np.pad",
+      "_validate_inputs",
+      "_validate_connectivity",
+      "np.pad(mask, pad_width, mode='constant').ravel",
+      "_offsets_to_raveled_neighbors",
+      "np.flatnonzero",
+      "_watershed_cy.watershed_raveled",
+      "crop",
+      "image.ravel",
+      "output.ravel"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 479,
+      "end_line": 505
+    },
+    "description": "Convert an image to floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}
