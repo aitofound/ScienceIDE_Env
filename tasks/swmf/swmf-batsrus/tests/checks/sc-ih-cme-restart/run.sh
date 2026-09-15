@@ -21,7 +21,9 @@ cpus_allowed() { local q p; if [ -r /sys/fs/cgroup/cpu.max ] && read -r q p < /s
 KNOB_HELP=""
 knob() { local name=$1 default=$2 desc=$3; [ -n "${!name:-}" ] || printf -v "$name" '%s' "$default"; export "$name"; KNOB_HELP+="$name=$default  $desc"$'\n'; }
 knob SAB_STOP_SCALE "1" "multiplies every positive MaxIter and every positive tSimulationMax of every #STOP block of every stage deck; 1 reproduces the upstream window unchanged and is the graded value here. UNRESOLVED (2026-09-13): scaling the CME and restart stages' tSimulationMax independently (tried 0.08) breaks restart continuity -- the restart stage aborted with \"ERROR: Fix #STARTTIME command in PARAM.in\", a StartTimeCheck/tSimulationCheck mismatch between SC's and IH's carried-over restart state, most likely because IH's restart (carried from the start stage) and SC's restart (written by the independently-scaled CME stage) no longer agree on elapsed simulated time. Getting this right needs consistent time accounting across all three stages, which was not achieved with confidence in the time available, so this check ships at the correct, unscaled upstream window rather than a shortened but possibly-wrong one; see rubric.json and README.md for the finding"
-knob SAB_PLOT_FRAMES "5" "how many times each graded restart-stage plot series (SC x=0/y=0/z=0/los, IH x=0/y=0/z=0/shl) is written across its own session's #STOP window; run.sh rewrites each from that window / this knob, requesting the finest practical cadence, but MEASURED EXCEPTION: like the sibling sc-ih-gpu-cme, sc-ih-cme and sc-ih-threadbc-restart checks, the SC series' adaptive time step ramps to a handful of large, expensive steps regardless of the requested cadence (measured 3 real frames at the full, unscaled window; IH reaches 5); the floor below is set to 3, not 5, as a documented exception (flagged for the curator)"
+knob SAB_PLOT_FRAMES "5" "how many times each primary graded restart-stage plot series (the SC x=0/y=0/z=0 VAR idl cuts) is written across its session's #STOP window; run.sh rewrites each from that window / this knob, requesting the finest practical cadence, but MEASURED EXCEPTION: like the sibling sc-ih-gpu-cme, sc-ih-cme and sc-ih-threadbc-restart checks, the adaptive time step ramps to a handful of large steps regardless of the requested cadence (measured 3 real frames at the unscaled window); the floor below is 3, not 5, as a documented exception; the IH series are written once at the end of the stage and the prerequisite stages' plots once (plotframes.py and losonce.py below)"
+knob SAB_LOS_INSTRUMENTS "soho:c2" "the instruments of the restart stage's white-light images (the deck lists six; only soho:c2 is graded and is the default); the restart deck's own 10 s cadence is kept (SC is switched off in the last session, so the images cannot wait for the final save); each c2 image costs about 5 s on 2 ranks (measured 2026-09-14); the start and CME stages' images are dropped, those stages are ungraded prerequisites (see losonce.py below)"
+knob SAB_AMR "F" "adaptive mesh refinement of the SC-IH start deck (its #DOAMR blocks: SC every 4 steps, IH every 3, refining the current sheet and the Earth and CME cones to 0.35-0.7 degrees); F, the graded value since 2026-09-14, keeps the deck's initial grids (SC 128 blocks, IH at its 4.0 initial resolution) through the whole 20-iteration bootstrap; T restores the upstream refinement. Measured on the worker at 2 ranks: with refinement the SC step costs 10-20 s and each EUV image 80 s once the grid has refined, and the start stage alone takes 440-700 s; without it the whole start stage takes about 130 s and an EUV image 45 s"
 knob SAB_MPI_RANKS "2" "MPI ranks of the graded run; the upstream test and the graded reference use 2 (the SWMF is rank-count independent only to round-off, so changing this changes the graded numbers)"
 knob SAB_MPI_EXTRA "" "extra arguments passed to mpiexec (for example --oversubscribe on a host with fewer slots than ranks); empty is the graded value and does not change the result"
 knob SAB_MAKE_JOBS "$(cpus_allowed)" "parallel jobs for the build of the pinned source (default: the CPUs allowed to this container); it changes build time only, never the graded run"
@@ -43,17 +45,27 @@ fi
 # mpiexec forwards standard input to rank 0 and drains it; the produce driver feeds
 # its own check list on standard input, so take stdin away here.
 exec < /dev/null
-WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 # A solve runs all checks sequentially in one fresh container. Reuse only an exact
 # configuration/build-mode snapshot, and copy it into this check's private work tree
 # so make rundir and any stage-specific rebuild cannot mutate the shared snapshot.
 BUILD_PROFILE=sc-ih-gm-awesom-anisopi-fdips
 BUILD_MODE=stock
 [ "$IC" = altbuild ] && BUILD_MODE=o0
+# The SWMF tree records its absolute path in every Makefile.def and Makefile.conf
+# and in absolute symlinks (the data links, FDIPS.exe, pyfits), so a cached build
+# snapshot only works at the path it was built at: one fixed work path per
+# configuration and build mode. Checks run one at a time inside a solve container,
+# and parallel probes use separate containers with their own /tmp.
+WORK="${TMPDIR:-/tmp}/sab-swmf-$BUILD_PROFILE-$BUILD_MODE"; rm -rf "$WORK"; mkdir -p "$WORK"; trap 'rm -rf "$WORK"' EXIT
 BUILD_CACHE_ROOT="${SAB_BUILD_CACHE_ROOT:-${TMPDIR:-/tmp}}/sciaccel-swmf-batsrus-multi-build-cache-v2"
 BUILD_CACHE_DIR="$BUILD_CACHE_ROOT/$BUILD_PROFILE-$BUILD_MODE-${SAB_SOURCE_FINGERPRINT:-nofingerprint}"
 mkdir -p "$BUILD_CACHE_ROOT"
 BUILD_CACHE_HIT=0
+# A snapshot built at another path (an older layout of this cache) cannot be reused
+# and is removed so the fresh build can be published in its place.
+if [ -f "$BUILD_CACHE_DIR/complete" ] && ! grep -q "^DIR *= *$WORK/src\$" "$BUILD_CACHE_DIR/src/Makefile.def" 2>/dev/null; then
+  rm -rf "$BUILD_CACHE_DIR"
+fi
 if [ -f "$BUILD_CACHE_DIR/complete" ] && [ -d "$BUILD_CACHE_DIR/src" ]; then
   cp -a "$BUILD_CACHE_DIR/src" "$WORK/src"
   BUILD_CACHE_HIT=1
@@ -160,23 +172,48 @@ PY
 # above, find each session's LOCAL #STOP window (the delta from the previous
 # cumulative target of the same kind: MaxIter or tSimulationMax -- #STOP
 # values are cumulative absolute targets across sessions, not per-session
-# deltas) and rewrite the named #SAVEPLOT StringPlot entries so whichever of
-# DnSavePlot/DtSavePlot is that entry's own active positive trigger equals its
-# own session's window / SAB_PLOT_FRAMES; only the named entries are touched.
+# deltas) and rewrite the named #SAVEPLOT StringPlot entries (the primary graded
+# series) so whichever of DnSavePlot/DtSavePlot is that entry's own active
+# positive trigger equals its own session's window / SAB_PLOT_FRAMES. Every
+# other #SAVEPLOT entry is written exactly once (PLOT_ONCE, set per stage
+# below): measured 2026-09-14, stopscale.py had scaled every DnSavePlot=10 to 1,
+# so the IH spherical-shell plot (a 170 MB ASCII file, about 10 s each) and
+# every cut were written at every iteration and cost more than the MHD steps.
 cat > "$WORK/plotframes.py" <<'PY'
-import re, sys
+import os, re, sys
 src, dst, frames = sys.argv[1], sys.argv[2], float(sys.argv[3])
+# targets: the primary graded series, retimed to window / frames. A target may be
+# qualified by component ("SC:x=0 VAR idl_ascii") or plain (every component).
 targets = set(sys.argv[4:])
+# PLOT_ONCE: how every OTHER #SAVEPLOT entry is written exactly once, per
+# component, as "COMP=spec [COMP=spec ...]"; spec is "end" (DnSavePlot = -1 and
+# DtSavePlot = -1: BATSRUS's final save writes a file whose two cadences are
+# both negative unless it was already written at the last step, so the entry is
+# written once, at the end of the run; only for a component still on at the
+# end), "session=K" (once at session K's cumulative #STOP target of the entry's
+# kind, sessions numbered from 1 as in the decks, for a component switched off
+# after session K), "dn=N" or "dt=T"
+# (explicit). Components not listed use "end".
+once = {}
+for item in os.environ.get("PLOT_ONCE", "").split():
+    comp, spec = item.split("=", 1)
+    once[comp] = spec
 lines = open(src, encoding="ascii", errors="replace").read().split("\n")
 # Assign every line to a session index. #RUN is the command that actually ends
 # a session (a following "Begin session <n>" is only a descriptive comment
 # some decks include and is not present in every deck), so the session
-# increments right after each #RUN line.
-session_of = []
-session_id = 0
+# increments right after each #RUN line. The component of a line is the one of
+# the enclosing #BEGIN_COMP block (none outside).
+session_of, comp_of = [], []
+session_id, comp = 0, ""
 for line in lines:
-    session_of.append(session_id)
-    if line.split(None, 1)[:1] == ["#RUN"] or line.lstrip().startswith("#RUN"):
+    f = line.split()
+    if f[:1] == ["#BEGIN_COMP"] and len(f) > 1:
+        comp = f[1]
+    session_of.append(session_id); comp_of.append(comp)
+    if f[:1] == ["#END_COMP"]:
+        comp = ""
+    if f[:1] == ["#RUN"]:
         session_id += 1
 # Each session's own #STOP (positive MaxIter and/or positive tSimulationMax);
 # if a session has more than one #STOP the last one wins.
@@ -211,49 +248,145 @@ for sid in sorted(session_stop):
         w_tm = tm - prev_tm if tm > prev_tm else tm
         prev_tm = tm
     local_window[sid] = {"it": w_it, "tm": w_tm}
-def rewrite(idx, integer, window):
+def setval(idx, value, integer):
     parts = lines[idx].split(None, 1)
     tail = "\t\t\t" + parts[1] if len(parts) > 1 else ""
-    new = max(1, int(round(window / frames))) if integer else (window / frames)
-    lines[idx] = (("%d" % new) if integer else ("%.10g" % new)) + tail
+    lines[idx] = (("%d" % value) if integer else ("%.10g" % value)) + tail
+def rewrite(idx, integer, window):
+    setval(idx, max(1, int(round(window / frames))) if integer else (window / frames), integer)
 for i, line in enumerate(lines):
     # the StringPlot name (e.g. "y=0 MHD idl") itself contains spaces, so the
     # tag is found from the right, not the left.
     parts = line.rsplit(None, 1)
     if len(parts) != 2 or parts[1] != "StringPlot":
         continue
-    if parts[0].strip() not in targets:
-        continue
+    name, comp = parts[0].strip(), comp_of[i]
     dn_i, dt_i = i + 1, i + 2
     try:
         dn = float(lines[dn_i].split()[0]); dt = float(lines[dt_i].split()[0])
     except (IndexError, ValueError):
         continue
-    win = local_window.get(session_of[i], {})
-    # whichever field is this entry's own active positive trigger gets the new
-    # cadence, from its own session's LOCAL window of the same kind; if that
-    # session's #STOP does not set that kind (a step-cadence plot inside a
-    # purely time-limited session, or vice versa) the window is unknowable
-    # analytically, so this entry is left untouched.
-    if dt > 0 and win.get("tm"):
-        rewrite(dt_i, False, win["tm"])
-    elif dn > 0 and win.get("it"):
-        rewrite(dn_i, True, win["it"])
+    if name in targets or (comp + ":" + name) in targets:
+        win = local_window.get(session_of[i], {})
+        # whichever field is this entry's own active positive trigger gets the
+        # new cadence, from its own session's LOCAL window of the same kind; if
+        # that session's #STOP does not set that kind (a step-cadence plot inside
+        # a purely time-limited session, or vice versa) the window is unknowable
+        # analytically, so this entry is left untouched.
+        if dt > 0 and win.get("tm"):
+            rewrite(dt_i, False, win["tm"])
+        elif dn > 0 and win.get("it"):
+            rewrite(dn_i, True, win["it"])
+        continue
+    # every other entry: once
+    spec = once.get(comp, "end")
+    if spec.startswith("session="):
+        it, tm = session_stop.get(int(spec[8:]) - 1, (None, None))   # sessions are numbered from 1 as in the decks
+        if it is not None: spec = "dn=%d" % it
+        elif tm is not None: spec = "dt=%.10g" % tm
+        else: sys.exit("plotframes.py: session %s has no #STOP target" % spec[8:])
+    if spec == "end":
+        setval(dn_i, -1, True); setval(dt_i, -1.0, False)
+    elif spec.startswith("dn="):
+        setval(dn_i, int(float(spec[3:])), True); setval(dt_i, -1.0, False)
+    elif spec.startswith("dt="):
+        setval(dn_i, -1, True); setval(dt_i, float(spec[3:]), False)
+    else:
+        sys.exit("plotframes.py: unknown PLOT_ONCE spec " + spec)
 open(dst, "w", encoding="ascii").write("\n".join(lines))
-
+PY
+# Synthetic line-of-sight images. Every `los` #SAVEPLOT entry of the installed deck
+# is rewritten by losonce.py according to LOS_MODE (set per stage below):
+#   drop      the entry is removed and nPlotFile decremented: the stage is an ungraded
+#             prerequisite and its images are never read;
+#   once      DnSavePlot = -1 and DtSavePlot = -1: BATSRUS's final save writes a plot
+#             file whose two cadences are both negative unless it was already written
+#             at the last step, so each instrument yields exactly one image, at the
+#             final state of the run (the component must still be on at the end);
+#   dn=N|dt=T the image is written at that cumulative step or simulation time (used
+#             where the component is switched off before the end of the run);
+#   keep      the deck's own cadence, as scaled above.
+# LOS_INSTRUMENTS, when set, replaces the entry's StringsInstrument list (the knob
+# SAB_LOS_INSTRUMENTS above; the graded instruments by default). LOS_GENERIC=drop
+# also removes the generic (observer-position) los entries, which are never graded.
+# Measured 2026-09-14 on the worker (2 ranks, refined SC grid): one EUV image
+# (aia, euvi; 512 px) costs about 80 s, one white-light coronagraph image 5 s
+# (c2, c3) to 30 s (cor1, cor2); on the scaled cadence the images were written at
+# every iteration and cost an order of magnitude more than the MHD steps.
+cat > "$WORK/losonce.py" <<'PY'
+import os, sys
+p, mode = sys.argv[1], sys.argv[2]
+ins = os.environ.get("LOS_INSTRUMENTS", "")
+generic = os.environ.get("LOS_GENERIC", "keep")   # "drop": remove generic (non-instrument) los entries too
+lines = open(p, encoding="ascii", errors="replace").read().split("\n")
+out, i, dropped = [], 0, 0
+saveplot = None   # index in out of the nPlotFile line of the current #SAVEPLOT block
+while i < len(lines):
+    line = lines[i]; f = line.split()
+    if f[:1] == ["#SAVEPLOT"]:
+        out.append(line); saveplot = len(out); out.append(lines[i + 1]); i += 2; continue
+    if len(f) >= 2 and f[0] == "los" and "StringPlot" in line:
+        # an instrument entry (los ins ...) is StringPlot, DnSavePlot, DtSavePlot,
+        # StringsInstrument; any other los entry (los LGQ ..., observer position and
+        # image geometry lines) only has its two cadence lines rewritten
+        is_ins = f[1].lower() == "ins"
+        if is_ins:
+            n = 4
+        else:                            # up to the next entry or the end of the block
+            n = 1
+            while i + n < len(lines) and lines[i + n].split() and not lines[i + n].rstrip().endswith("StringPlot"):
+                n += 1
+        block = lines[i:i + n]
+        i += n
+        if not is_ins and generic != "drop":
+            out.extend(block); continue
+        if mode == "drop" or not is_ins:
+            n = int(out[saveplot].split()[0]) - 1
+            out[saveplot] = "%d\t\t\tnPlotFile" % n
+            dropped += 1
+            continue
+        if mode == "once":
+            dn, dt = "-1", "-1.0"
+        elif mode.startswith("dn="):
+            dn, dt = mode[3:], "-1.0"
+        elif mode.startswith("dt="):
+            dn, dt = "-1", mode[3:]
+        elif mode == "keep":
+            dn, dt = block[1].split()[0], block[2].split()[0]
+        else:
+            sys.exit("losonce.py: unknown mode " + mode)
+        block[1] = dn + "\t\t\tDnSavePlot"
+        block[2] = dt + "\t\t\tDtSavePlot"
+        if ins and is_ins:
+            block[3] = ins + "\t\t\tStringsInstrument"
+        out.extend(block); continue
+    out.append(line); i += 1
+open(p, "w", encoding="ascii").write("\n".join(out))
 PY
 install_deck() {   # install_deck <deck file name under ic/<inputs>/> [<StringPlot series to retime>...]
   local deck="$1"; shift
   [ -f "$CHECK_DIR/ic/$INPUTS/$deck" ] || { echo "run.sh: ic/$INPUTS/$deck is missing" >&2; exit 2; }
   python3 "$WORK/stopscale.py" "$CHECK_DIR/ic/$INPUTS/$deck" "$WORK/run/PARAM.in.stopscaled" "$SAB_STOP_SCALE"
-  if [ "$#" -gt 0 ]; then
-    python3 "$WORK/plotframes.py" "$WORK/run/PARAM.in.stopscaled" "$WORK/run/PARAM.in" "$SAB_PLOT_FRAMES" "$@"
-  else
-    mv "$WORK/run/PARAM.in.stopscaled" "$WORK/run/PARAM.in"
-  fi
+  # with no primary series named (a prerequisite stage) every entry is written once
+  python3 "$WORK/plotframes.py" "$WORK/run/PARAM.in.stopscaled" "$WORK/run/PARAM.in" "$SAB_PLOT_FRAMES" "$@"
   # Upstream runs TestParam.pl -F on every deck it installs and ignores its exit
   # status (the leading '-' of the Makefile rule); it rewrites nothing when the
   # deck is valid for this configuration.
+  # SAB_AMR: the start deck's adaptive refinement (every #DOAMR block) is switched off
+  # unless the knob is T; the later stages carry no #DOAMR of their own that is on.
+  if [ -n "${AMR_KNOB_STAGE:-}" ] && [ "$SAB_AMR" != T ]; then
+    python3 - "$WORK/run/PARAM.in" <<'PY'
+import sys
+p = sys.argv[1]
+lines = open(p, encoding="ascii", errors="replace").read().split("\n")
+for i, line in enumerate(lines):
+    if line.split()[:1] == ["#DOAMR"] and i + 1 < len(lines):
+        parts = lines[i + 1].split(None, 1)
+        lines[i + 1] = "F" + ("\t\t\t" + parts[1] if len(parts) > 1 else "")
+open(p, "w", encoding="ascii").write("\n".join(lines))
+PY
+  fi
+  LOS_INSTRUMENTS="${SAB_LOS_INSTRUMENTS:-}" python3 "$WORK/losonce.py" "$WORK/run/PARAM.in" "${LOS_MODE:-keep}"
   ( cd "$WORK/src" && ./Scripts/TestParam.pl -F "$WORK/run/PARAM.in" ) >> "$WORK/testparam.log" 2>&1 || true
   rm -f "$WORK/run/PARAM.in_orig_"
 }
@@ -340,20 +473,20 @@ perl -i -pe 's/#(CHANGEPOLARFIELD)/$1/; s/20/90/ if /n(Theta|Phi)/' "$WORK/run/S
   || { echo "run.sh: FDIPS.exe failed" >&2; tail -n 40 "$WORK/run/SC/runlog_fdips" >&2; exit 1; }
 
 # ---- run ---------------------------------------------------------------------
-install_deck PARAM.in.start
+AMR_KNOB_STAGE=1 LOS_MODE=drop PLOT_ONCE="SC=session=4" install_deck PARAM.in.start
 run_swmf runlog
 ( cd "$WORK/run" && ./PostProc.pl -m -f=ascii RESULTS/run_start ) >> "$WORK/postproc.log" 2>&1 \
   || { echo "run.sh: PostProc.pl failed" >&2; tail -n 40 "$WORK/postproc.log" >&2; exit 1; }
 ( cd "$WORK/run" && ./Restart.pl -i RESULTS/run_start/RESTART ) >> "$WORK/restart.log" 2>&1 \
   || { echo "run.sh: Restart.pl failed after the start stage" >&2; tail -n 40 "$WORK/restart.log" >&2; exit 1; }
-install_deck PARAM.in.cme
+LOS_MODE=drop install_deck PARAM.in.cme
 run_swmf runlog
 ( cd "$WORK/run" && ./PostProc.pl  -f=ascii RESULTS/run_cme ) >> "$WORK/postproc.log" 2>&1 \
   || { echo "run.sh: PostProc.pl failed" >&2; tail -n 40 "$WORK/postproc.log" >&2; exit 1; }
 cp -r "$WORK/run/RESULTS/run_start/RESTART/IH" "$WORK/run/RESULTS/run_cme/RESTART/"
 ( cd "$WORK/run" && ./Restart.pl -i RESULTS/run_cme/RESTART ) >> "$WORK/restart.log" 2>&1 \
   || { echo "run.sh: Restart.pl failed after the CME stage" >&2; tail -n 40 "$WORK/restart.log" >&2; exit 1; }
-install_deck PARAM.in.restart "x=0 VAR idl" "y=0 VAR idl" "z=0 VAR idl" "los ins idl_ascii" "shl VAR idl_ascii"
+PLOT_ONCE="SC=session=2" install_deck PARAM.in.restart "SC:x=0 VAR idl" "SC:y=0 VAR idl" "SC:z=0 VAR idl"
 run_swmf runlog
 ( cd "$WORK/run" && ./PostProc.pl -m -f=ascii RESULTS/run_restart ) >> "$WORK/postproc.log" 2>&1 \
   || { echo "run.sh: PostProc.pl failed" >&2; tail -n 40 "$WORK/postproc.log" >&2; exit 1; }
@@ -376,8 +509,7 @@ grab ih_shl_var.out RESULTS/run_restart/IH/shl_var_*.out
 
 # ---- graded-series frame count ------------------------------------------------
 FSC=$(count_frames sc_x0_var.out RESULTS/run_restart/SC/x=0_var_*.out)
-FIH=$(count_frames ih_x0_var.out RESULTS/run_restart/IH/x=0_var_*.out)
-FRAMES=$FSC; [ "$FIH" -lt "$FRAMES" ] && FRAMES=$FIH
+FRAMES=$FSC   # the IH series are written once, at the end of the stage (PLOT_ONCE above)
 if [ "$FRAMES" -lt 3 ]; then
   echo "run.sh: a graded plot series wrote only $FRAMES frames (< 3, the documented floor) [sc_x0=$FSC ih_x0=$FIH]" >&2; exit 1
 fi
