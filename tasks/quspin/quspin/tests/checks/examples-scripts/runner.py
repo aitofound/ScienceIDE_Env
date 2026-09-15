@@ -36,8 +36,9 @@ FILES = [
 # OMP thread count twice for exactly that reason.
 ARGV_NEEDS_TWO = {"example12.py": ["2", "2"]}
 
-# example27.py imports sparse_dot_mkl, an optional accelerator that upstream
-# declares only in [tool.pdm.dev-dependencies]; example11.py performs a 2D
+# example27.py drives its solver through the optional sparse_dot_mkl
+# accelerator, which needs a system MKL runtime the image does not carry;
+# example11.py performs a 2D
 # exact-diagonalisation sweep that does not finish inside the check window on
 # the declared cores.  Both are recorded in comment/coverage-matrix.md rather
 # than silently skipped.
@@ -47,7 +48,7 @@ ARGV_NEEDS_TWO = {"example12.py": ["2", "2"]}
 # below applied.
 EXCLUDED = {
     "example11.py": "2D sweep exceeds the check window on the declared cores",
-    "example27.py": "requires the optional sparse_dot_mkl accelerator",
+    "example27.py": "requires a system MKL runtime for sparse_dot_mkl",
 }
 
 # A hung or pathologically slow example must fail this check, not hang the whole

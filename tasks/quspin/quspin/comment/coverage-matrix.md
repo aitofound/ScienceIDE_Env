@@ -173,8 +173,10 @@ glob; neither is part of the official suite.
 - `example11.py`: a 2D exact-diagonalisation sweep whose runtime is dominated by
   sparse matvecs; it does not finish inside the check window on the declared
   cores.
-- `example27.py`: imports `sparse_dot_mkl`, which upstream declares only as an
-  optional developer dependency in `[tool.pdm.dev-dependencies]`.
+- `example27.py`: drives its solver through the optional `sparse_dot_mkl`
+  accelerator, which needs a system MKL runtime (`libmkl_rt`) that the task
+  image does not carry.  The package installs, but importing it raises
+  `ImportError: Unable to load the MKL libraries through libmkl_rt`.
 
 Both are recorded in the check's rubric and in its `observable.json`
 (`upstream_excluded`), so the omission is visible on every run rather than
