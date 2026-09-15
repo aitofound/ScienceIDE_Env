@@ -25,7 +25,7 @@ def pipeline_tokens(codebase: str, module: str, allow_unmerged: bool = False, hu
     d = state_dir(codebase)
     mdoc = read_json(d / "modules.json") if (d / "modules.json").is_file() else None
     if module not in approved_modules(mdoc):
-        die(f"module {module!r} is not approved for {codebase!r}; finish `sab.py codebase approve-modules` first")
+        die(f"module {module!r} has no recorded cut for {codebase!r}; `sab.py codebase propose-modules` records the single-module default, `approve-modules` a multi-module cut")
     require_source_merged(codebase, cb, allow_unmerged, human_ref)
     mod = next(m for m in mdoc["modules"] if m["slug"] == module)
     rows: list[dict] = []

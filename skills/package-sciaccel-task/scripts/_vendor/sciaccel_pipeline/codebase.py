@@ -293,7 +293,7 @@ def validate_tests(cb: str, doc: dict, source: Path, approved: list[str]) -> tup
                 s["max_mpi_ranks"] = max(s["max_mpi_ranks"], int(res.get("mpi_ranks", 0) or 0))
                 s["estimated"] += int(t.get("runtime_measured") is not True)
                 s["chaotic"] += int(bool(t.get("chaotic")))
-                if rt > config.DEFAULT_BUDGET_S:
+                if rt > config.CHECK_RUNTIME_ADVISED_S:
                     s["over_budget"].append(tid)
                 s["rows"].append(t)
             else:
@@ -378,7 +378,7 @@ def cmd_codebase_survey(a) -> None:
         if s["estimated"]:
             notes.append(f"{s['estimated']} runtime estimated")
         if s["over_budget"]:
-            notes.append(f"over the {config.DEFAULT_BUDGET_S}s budget upstream: {', '.join(s['over_budget'])}")
+            notes.append(f"above the {config.CHECK_RUNTIME_ADVISED_S} s per-check line upstream, shorten through a knob or give runtime_note: {', '.join(s['over_budget'])}")
         print(f"{m:28} {s['tests']:>5} {s['suitable']:>5} {s['chaotic']:>6} {s['runtime_s']:>8.0f}s {s['max_cpus']:>4} "
               f"{s['max_memory_gb']:>6.1f}  {verdict(s)}{'; ' + '; '.join(notes) if notes else ''}")
     print_coverage(summary, mods, doc)

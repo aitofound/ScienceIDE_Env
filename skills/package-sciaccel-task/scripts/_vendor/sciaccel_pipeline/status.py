@@ -94,7 +94,7 @@ def cmd_status(a) -> None:
         if not line["overview"] or mdoc is None:
             nxt = f"Step 1: sab.py codebase propose-modules --codebase {cb_id}"
         elif not approved:
-            nxt = f"STOP: human approval of the module cut (sab.py codebase approve-modules --codebase {cb_id} --human-ref ...)"
+            nxt = f"STOP 1: a multi-module cut awaits the human's approval (sab.py codebase approve-modules --codebase {cb_id} --human-ref ...); a single-module cut is recorded by propose-modules"
         elif not (cb.get("source_pr") or {}).get("human_ref") and cb.get("source_gate_bypass"):
             byp = cb["source_gate_bypass"]
             line["source_gate_bypassed"] = byp
