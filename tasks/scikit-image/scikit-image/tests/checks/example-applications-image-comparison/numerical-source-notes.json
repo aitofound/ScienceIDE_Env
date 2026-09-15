@@ -1,0 +1,100 @@
+{
+  "skimage.exposure.equalize_hist": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 359,
+      "end_line": 398
+    },
+    "description": "Return image after histogram equalization.",
+    "calls": [
+      "cumulative_distribution",
+      "np.interp",
+      "out.reshape",
+      "out.astype",
+      "utils._supported_float_type"
+    ],
+    "branches": [
+      {
+        "line": 389,
+        "expression": "mask is not None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.rotate": {
+    "implementation": {
+      "file": "src/skimage/transform/_warps.py",
+      "line": 346,
+      "end_line": 469
+    },
+    "description": "Rotate image by a certain angle around its center.",
+    "calls": [
+      "SimilarityTransform",
+      "warp",
+      "image.astype",
+      "tform.inverse",
+      "corners[:, 0].min",
+      "corners[:, 1].min",
+      "corners[:, 0].max",
+      "corners[:, 1].max",
+      "np.around",
+      "np.deg2rad"
+    ],
+    "branches": [
+      {
+        "line": 426,
+        "expression": "image.dtype == np.float16"
+      },
+      {
+        "line": 430,
+        "expression": "center is None"
+      },
+      {
+        "line": 440,
+        "expression": "resize"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.compare_images": {
+    "implementation": {
+      "file": "src/skimage/util/compare.py",
+      "line": 29,
+      "end_line": 99
+    },
+    "description": "Return an image showing the differences between two images.",
+    "calls": [
+      "img_as_float",
+      "np.abs",
+      "np.full",
+      "product"
+    ],
+    "branches": [
+      {
+        "line": 68,
+        "expression": "image1.shape != image0.shape"
+      },
+      {
+        "line": 74,
+        "expression": "method == 'diff'"
+      },
+      {
+        "line": 76,
+        "expression": "method == 'blend'"
+      },
+      {
+        "line": 78,
+        "expression": "method == 'checkerboard'"
+      },
+      {
+        "line": 79,
+        "expression": "img1.ndim != 2"
+      },
+      {
+        "line": 89,
+        "expression": "(i + j) % 2 == 0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "skimage.segmentation.find_boundaries": {
+    "implementation": {
+      "file": "src/skimage/segmentation/boundaries.py",
+      "line": 48,
+      "end_line": 182
+    },
+    "description": "Return bool array where boundaries between labeled regions are True.",
+    "calls": [
+      "ndi.generate_binary_structure",
+      "dilation",
+      "erosion",
+      "label_img.astype",
+      "_find_boundaries_subpixel",
+      "np.iinfo"
+    ],
+    "branches": [
+      {
+        "line": 159,
+        "expression": "label_img.dtype == 'bool'"
+      },
+      {
+        "line": 163,
+        "expression": "mode != 'subpixel'"
+      },
+      {
+        "line": 165,
+        "expression": "mode == 'inner'"
+      },
+      {
+        "line": 168,
+        "expression": "mode == 'outer'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.segmentation.mark_boundaries": {
+    "implementation": {
+      "file": "src/skimage/segmentation/boundaries.py",
+      "line": 185,
+      "end_line": 240
+    },
+    "description": "Return image with boundaries between labeled regions highlighted.",
+    "calls": [
+      "img_as_float",
+      "marked.astype",
+      "find_boundaries",
+      "gray2rgb",
+      "ndi.zoom",
+      "dilation",
+      "footprint_rectangle"
+    ],
+    "branches": [
+      {
+        "line": 225,
+        "expression": "marked.ndim == 2"
+      },
+      {
+        "line": 227,
+        "expression": "mode == 'subpixel'"
+      },
+      {
+        "line": 236,
+        "expression": "outline_color is not None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}
