@@ -17,21 +17,21 @@ Two packages are installed for the official example decks rather than for the li
 ## Runtime
 
 The declared `expected_runtime_s` values sum to 5940 s and `suite_budget_s` is 6300 s. Those
-declarations are deliberately generous: the measured nominal suite is 688 s (CI run
-`34948002642`) on the declared 2 cores, of which `examples-scripts` and `basis-doc-examples`
-are the two largest checks because they run every official deck. The declared numbers exist so
+declarations are deliberately generous: the measured nominal suite is 1051 s (CI run
+`34956872647`) on the declared 2 cores, of which the three example checks
+dominate because they run every official deck. The declared numbers exist so
 the plan shows the honest worst case for a slow or contended host rather than the best case
 measured on CI.
 
 ## Tolerances
 
-All fifteen checks share one calibration convention: nominal uses `J=1.0,h=0.5`, and the variant moves the active binary64 bond coupling to `J=1.0000000000001` (450 ulps of 1.0, `dJ/J = 1e-13`) while the physical model stays fixed.
+All sixteen checks share one calibration convention: nominal uses `J=1.0,h=0.5`, and the variant moves the active binary64 bond coupling to `J=1.0000000000001` (450 ulps of 1.0, `dJ/J = 1e-13`) while the physical model stays fixed.
 
 The perturbed input is the coupling, not the longitudinal field. Every check builds its spin-chain calibration inside a fixed-magnetization sector, where the field term `h*sum(sigma^z)` is exactly a constant times the identity: the dense matrix of `sum(sigma^z)` has diagonal spread 0 and no off-diagonal entries at every size used here. Moving `h` therefore rescales every level by the same constant instead of perturbing the spectrum, and the graded observable responds only at the eigensolver rounding level. The coupling enters the off-diagonal elements, so perturbing it is a genuine spectral change.
 
 The step is 450 ulps rather than the conventional two. A local probe in the pinned image ran each check three ways — nominal, nominal again, and the variant — and found that a two-ulp coupling change moves the graded observable by `3.6e-15` to `5.3e-14`, at or below the repeat-to-repeat ARPACK noise floor with an unseeded start vector (measured `0` to `6.0e-14` by running the same nominal inputs twice). In 6 of the 8 standalone checks the two-ulp step is no larger than that floor, so it could not be told apart from solver noise. The 450-ulp step moves the observable by `5.6e-13` to `2.5e-11`, which is 28x to 1011x that floor.
 
-The bound stays a floating-point allowance rather than a physics allowance. Across all fifteen checks the recorded spreads are `5.6e-13` to `2.5e-11` (CI run `34948002642`), and each check's worst value uses at most `6.2e-5` of its own `atol + rtol*|x|` bound; the review table's margin column prints the reciprocal of that fraction.
+The bound stays a floating-point allowance rather than a physics allowance. Across all sixteen checks the recorded spreads are `5.6e-13` to `2.5e-11` (CI run `34956872647`), and each check's worst value uses at most `6.2e-5` of its own `atol + rtol*|x|` bound; the review table's margin column prints the reciprocal of that fraction.
 
 Per-check commands, observables and tolerance rationale live in each check README and rubric.
 
