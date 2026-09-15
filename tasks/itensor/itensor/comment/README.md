@@ -127,6 +127,16 @@ contraction, sweep or update exceed the bound. No bound is set from the two-ULP
 spread alone, and every later change to the contract requires a fresh
 self-validation record.
 
+## Declared run times
+
+`expected_runtime_s` in each rubric is an upper bound, not a prediction: it is
+what a reviewer reads to plan a run, so it errs high. Every check's measured run
+time in the shipped x86 record is below its declaration, and the widest gaps are
+`sample-exthubbard-cc` (2 s measured against 35 s declared) and
+`sample-mixedspin-cc` (70 s against 150 s on the acceleration check). No check
+is under-declared, which is the failure mode the review's item 4 named: a
+declaration below the real cost makes the suite budget a fiction.
+
 ## Alternative build
 
 Every one of the 22 checks declares one, and it is a build of the whole pinned
