@@ -2,7 +2,10 @@
 set -euo pipefail
 CHECK_DIR=$(cd "$(dirname "$0")" && pwd -P)
 IC=${1:-}
-if [ "$IC" = "--help" ]; then echo 'SAB_ITENSOR_THREADS=1'; exit 0; fi
+if [ "$IC" = "--help" ]; then
+  printf '%s\n' 'SAB_ITENSOR_THREADS=1  BLAS threads the driver may use'
+  exit 0
+fi
 SOURCE_DIR=$SOURCE_DIR
 OUT_DIR=$OUT_DIR
 case "$IC" in nominal|variant) ;; *) exit 2;; esac
@@ -23,7 +26,7 @@ if [ ! -f "$BUILD_DIR/build.ok" ] || [ ! -x "$BUILD_DIR/src/$SUBDIR/$TARGET" ]; 
   touch "$BUILD_DIR/build.ok"; BUILD_SECONDS=$(( $(date +%s)-t0 )); [ "$BUILD_SECONDS" -gt 0 ] || BUILD_SECONDS=1
 fi
 echo SAB_BUILD_SECONDS=$BUILD_SECONDS
-export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+export OMP_NUM_THREADS="${SAB_ITENSOR_THREADS:-1}" OPENBLAS_NUM_THREADS="${SAB_ITENSOR_THREADS:-1}" MKL_NUM_THREADS="${SAB_ITENSOR_THREADS:-1}"
 LOG=$BUILD_DIR/run.log
 "$BUILD_DIR/src/$SUBDIR/$TARGET" >"$LOG" 2>&1
 python3 - "$MODE" "$LOG" "$OUT_DIR/result.txt" <<'PY'

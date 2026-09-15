@@ -2,7 +2,7 @@
 
 This directory is author-side tooling. `comment/` is hidden at Harbor runtime
 and sits outside the contract fingerprint, so nothing here is graded — it
-exists so the thirty unit-test checks can be regenerated and reviewed instead of
+exists so the twelve unit-test checks can be regenerated and reviewed instead of
 hand-maintained one at a time.
 
 | file | role |
@@ -59,8 +59,13 @@ is the single place the per-group wording lives:
 
 | arm | groups | step |
 |---|---|---|
-| real-valued input | the fifteen groups that take one | 2 ULP, or 4 ULP where 2 was measured to be absorbed (`tensor`, `contraction`); `local-operator` moves every stored element because a single element's last bit is absorbed |
-| discrete input only | `algorithm-utilities`, `index-and-indexval`, `indexset`, `quantum-numbers`, `siteset` | explicitly identical, with the rubric stating that it supplies no noise-calibration evidence |
+| real-valued input | all twelve remaining groups | 2 ULP, except `tensor` and `contraction` at 4 ULP and `local-operator`, which moves every stored element, because two ULP was measured to be absorbed in those three |
+
+Every group that remains takes a real-valued input, so no arm is an identical
+copy any more. The five groups whose whole input surface was discrete
+(`algorithm-utilities`, `index-and-indexval`, `indexset`, `quantum-numbers`,
+`siteset`) are documented exclusions rather than checks: see
+`comment/README.md` for why.
 
 A step that cannot move the graded output is not calibration. The selfcheck
 reports every such arm (`nominal and variant outputs are byte-identical although

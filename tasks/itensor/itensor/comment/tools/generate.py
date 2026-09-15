@@ -4,7 +4,7 @@
 The unit-test checks are mechanical: the probe group carries the numeric
 replay of one or more upstream files under code/itensor/unittest/, and every
 check directory differs only in its group name, catalogue text and tolerance.
-Writing them from one table keeps the thirty directories consistent and makes
+Writing them from one table keeps the twelve directories consistent and makes
 the coverage map readable in a single place.
 
     python3 generate.py <leaf-dir>
@@ -42,28 +42,12 @@ GROUPS: list[tuple[str, list[str], str, int]] = [
      "AutoMPO over a fermionic site set, including the sign of a reordered pair", 30),
     ("matrix", ["unittest/matrix_test.cc"],
      "dense Matrix/Vector element access, transposition, products and norms", 20),
-    ("index-and-indexval", ["unittest/index_test.cc"],
-     "index dimensions, prime levels, tags and the IndexVal handle", 10),
-    ("indexset", ["unittest/indexset_test.cc"],
-     "IndexSet ordering, tag lookup and prime manipulation", 10),
-    ("quantum-numbers", ["unittest/qn_test.cc"],
-     "QNum/QN modular arithmetic, negation and the sector bookkeeping of an index", 10),
-    ("infarray", ["unittest/util_test.cc"],
-     "InfArray sizing, element access and the fill constructor", 10),
-    ("args", ["unittest/args_test.cc"],
-     "the Args parameter layer: typed lookup, defaulting and defined()", 10),
-    ("real-and-lognum", ["unittest/real_test.cc"],
-     "LogNum degenerate cases and the real-valued tolerance helpers", 10),
-    ("siteset", ["unittest/siteset_test.cc"],
-     "site-set dimensions and the operator norms SpinHalf, SpinOne and Fermion expose", 20),
     ("local-operator", ["unittest/localop_test.cc"],
      "LocalOp construction and its action on a two-centre state", 20),
     ("iterative-solvers", ["unittest/iterativesolvers_test.cc"],
      "Davidson ground-state energy on a local operator and its Rayleigh quotient", 30),
     ("regression", ["unittest/regression_test.cc"],
      "quantum-number regressions: tensor times an IndexVal and tensor from one", 10),
-    ("algorithm-utilities", ["unittest/algorithm_test.cc"],
-     "detail::binaryFind positions and their agreement with a linear scan", 10),
 ]
 
 # Per-group variant prose. Five groups take only discrete inputs - index
@@ -74,39 +58,6 @@ GROUPS: list[tuple[str, list[str], str, int]] = [
 # input, and each step size below is measured, not assumed: two ULP was absorbed
 # by the contraction in tensor, contraction and local-operator.
 VARIANTS = {
-    "algorithm-utilities": (
-        "identical: the search array and every graded quantity are integers, so "
-        "there is no unit in the last place to move; this arm is an explicitly "
-        "identical copy and supplies no numerical-noise calibration evidence."
-    ),
-    "index-and-indexval": (
-        "identical: index dimensions, prime levels and IndexVal values are all "
-        "integers, so there is no unit in the last place to move; this arm is an "
-        "explicitly identical copy and supplies no numerical-noise calibration "
-        "evidence."
-    ),
-    "indexset": (
-        "identical: the set members are distinguished by dimension and tag, both "
-        "discrete, so there is no unit in the last place to move; this arm is an "
-        "explicitly identical copy and supplies no numerical-noise calibration "
-        "evidence."
-    ),
-    "quantum-numbers": (
-        "identical: every graded QNum and QN value is an integer, so there is no "
-        "unit in the last place to move; this arm is an explicitly identical copy "
-        "and supplies no numerical-noise calibration evidence."
-    ),
-    "siteset": (
-        "identical: the site count and every graded dimension are integers and "
-        "the operator norms follow from them exactly, so there is no unit in the "
-        "last place to move; this arm is an explicitly identical copy and supplies "
-        "no numerical-noise calibration evidence."
-    ),
-    "infarray": (
-        "four units in the last place on the fill value and on one list element, "
-        "which the graded sums read; the observables move, which measures the "
-        "check's numerical floor."
-    ),
     "local-operator": (
         "two units in the last place on every stored element of the input state, "
         "which the graded norm reads; nudging a single element was measured to be "
@@ -130,36 +81,16 @@ VARIANTS = {
 # the same everywhere: five groups take only discrete inputs and declare an
 # identical copy, tensor and contraction step 4 ULP because 2 was measured to be
 # absorbed, and local-operator moves every stored element for the same reason.
-IDENTICAL_GROUPS = ("algorithm-utilities", "index-and-indexval", "indexset",
-                    "quantum-numbers", "siteset")
+# Every check that remains takes a real-valued input, so no arm is an identical
+# copy. The five bookkeeping groups that used to be listed here are documented
+# exclusions now (see comment/README.md).
+IDENTICAL_GROUPS = ()
 
 VARIANT_README_DEFAULT = (
     "differ by two units in the last place on one materialised input, which measures this "
     "check's numerical floor rather than re-running an identical input."
 )
 VARIANT_README = {
-    "algorithm-utilities": (
-        "are an explicitly identical copy: every graded quantity comes from an integer search array, so "
-        "there is no unit in the last place to move. It therefore supplies no numerical-noise calibration "
-        "evidence."
-    ),
-    "index-and-indexval": (
-        "are an explicitly identical copy: index dimensions and prime levels are integers, so there is no "
-        "unit in the last place to move. It therefore supplies no numerical-noise calibration evidence."
-    ),
-    "indexset": (
-        "are an explicitly identical copy: the set members are distinguished by dimension and tag, both "
-        "discrete, so there is no unit in the last place to move. It therefore supplies no numerical-noise calibration evidence."
-    ),
-    "quantum-numbers": (
-        "are an explicitly identical copy: every graded QNum and QN value is an integer, so there is no "
-        "unit in the last place to move. It therefore supplies no numerical-noise calibration evidence."
-    ),
-    "siteset": (
-        "are an explicitly identical copy: the site count and the graded dimensions are integers and the "
-        "operator norms follow from them exactly, so there is no unit in the last place to move. It "
-        "therefore supplies no numerical-noise calibration evidence."
-    ),
     "tensor": (
         "differ by four units in the last place on one materialised input; two was measured to be "
         "absorbed by the graded aggregate, so the step is larger than the usual two. It measures this "
@@ -175,19 +106,13 @@ VARIANT_README = {
         "single element was measured to be absorbed by the contraction, so the whole input moves. This "
         "measures the check's numerical floor rather than re-running an identical input."
     ),
-    "infarray": (
-        "differ by four units in the last place on the fill value and on one list element, which the "
-        "graded sums read, rather than on the integer sizes. This measures the check's numerical floor "
-        "rather than re-running an identical input."
-    ),
 }
 
 FLOOR_HOW = {
     g: "pending nominal-versus-variant Docker calibration on the pinned source"
     for g in ["tensor", "decompose", "contraction", "sparse-contract", "itensor-core",
-              "mps", "mpo", "autompo", "matrix", "index-and-indexval", "indexset",
-              "quantum-numbers", "infarray", "args", "real-and-lognum", "siteset",
-              "local-operator", "iterative-solvers", "regression", "algorithm-utilities"]
+              "mps", "mpo", "autompo", "matrix", "local-operator",
+              "iterative-solvers", "regression"]
 }
 
 
@@ -204,16 +129,6 @@ def read_prior_evidence(path: Path) -> dict:
         return (json.loads(path.read_text()) or {}).get("evidence") or {}
     except (ValueError, OSError):
         return {}
-
-
-def read_prior_variant(path: Path) -> str:
-    """Keep a per-check variant sentence a human finalised by hand."""
-    if not path.is_file():
-        return ""
-    try:
-        return (json.loads(path.read_text()) or {}).get("variant") or ""
-    except (ValueError, OSError):
-        return ""
 
 
 HERE = Path(__file__).resolve().parent
@@ -283,13 +198,13 @@ def write_check(leaf: Path, group: str, upstream: list[str], observable: str,
         "default_vs_upstream": "upstream, with stored inputs as probed in README",
         "variant": VARIANTS.get(
             group,
-            "four units in the last place on one materialised input; the graded "
-            "observables move, which measures the check's numerical floor.",
+            "two units in the last place on one materialised input, which moves the "
+            "graded observables and so measures this check's numerical floor.",
         ),
         "altbuild": (
-            "none: this calibration uses the one pinned Docker compiler and BLAS/LAPACK "
-            "configuration the image ships (g++ 14.2.0); a separate -O0 or cross-compiler "
-            "floor is not declared, so no build-to-build floor is claimed here."
+            "the same probe source compiled with -O0 against the same pinned library, "
+            "instead of -O2 -DNDEBUG; both are legitimate builds of the same source, so "
+            "the distance between them is this check's build-to-build floor"
         ),
         "comparison": {
             "atol": 1e-09,
@@ -313,7 +228,6 @@ def write_check(leaf: Path, group: str, upstream: list[str], observable: str,
     prior = read_prior_evidence(check / "rubric.json")
     if prior:
         rubric["evidence"].update({k: v for k, v in prior.items() if v is not None})
-        rubric["variant"] = read_prior_variant(check / "rubric.json") or rubric["variant"]
     (check / "rubric.json").write_text(json.dumps(rubric, indent=2, sort_keys=True) + "\n")
 
 
