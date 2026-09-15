@@ -589,11 +589,11 @@
         "memory_gb": 4.0,
         "mpi_ranks": 1
       },
-      "upstream_runtime_s": 52,
+      "upstream_runtime_s": 505,
       "runtime_measured": true,
       "suitable": true,
-      "why": "Official precision file; measured natively at 52s wall (886 CPU-seconds) on a host whose class binary ran up to 17x parallel (1704% CPU) -- a 2-cpu container is estimated in the several-hundred-second range, plausibly under the ~900s brief guidance but not confirmed on 2 cpus. A candidate for the acceleration label if it fits once measured on x86; the true 2-cpu number is deferred to the x86 rerun. Not packaged as a check in this revision: follow-up work.",
-      "proposed_check": "not yet scaffolded"
+      "why": "Official precision file, the upstream README's most expensive documented configuration. Measured directly on the x86 worker at the task's declared 2 cpus (a plain docker run, not a selfcheck): a first attempt at a 4 GB container limit was killed (exit 137, cgroup OOM); a second attempt at 16 GB completed at 505 s wall, peak resident set 5.33 GB. Packaged in this revision as example-cl-ref, carrying the acceleration label (moved off explanatory-end-to-end); memory_gb moved from 4 to 8 in task.toml because of the measured peak.",
+      "proposed_check": "example-cl-ref"
     },
     {
       "id": "external-pk-example",
