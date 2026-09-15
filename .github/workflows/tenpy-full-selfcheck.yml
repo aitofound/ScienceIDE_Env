@@ -70,20 +70,17 @@ jobs:
           print(f"needed={'false' if fresh else 'true'}")
           print(f"reason={'x86 record matches the current tree' if fresh else 'record missing, stale, or not x86'}", file=sys.stderr)
           PYEOF
+      - name: Record CI run consent
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          python3 skills/package-sciaccel-task/scripts/sab.py task consent \
+            --task tasks/tenpy/tenpy --where local \
+            --human-ref 'Requester authorized the full TeNPy steward nominal/variant selfcheck in CI so the record is measured on the graded x86 target.'
       - name: Probe one check twice (inputs.probe_check)
         if: github.event_name == 'workflow_dispatch' && inputs.probe_check != ''
         run: |
-          python3 - <<'PYEOF'
-          import json, subprocess, sys, os
-          from pathlib import Path
-          leaf = Path('tasks/tenpy/tenpy')
-          name = os.environ['PROBE']
-          contract = json.loads((leaf / 'tests' / 'checks' / name / 'check.json').read_text())
-          print(f"probe: {name}")
-          subprocess.run([sys.executable, 'skills/package-sciaccel-task/scripts/sab.py',
-                          'task', 'build', '--task', str(leaf)], check=True)
-          PYEOF
-          echo "image built; running the check twice"
+          python3 skills/package-sciaccel-task/scripts/sab.py task build --task tasks/tenpy/tenpy --which tests
+          echo "image built; running $PROBE twice" 
           for run in 1 2; do
             docker run --rm --entrypoint bash sciaccel-quspin-oracle -c "
               cd /app/tests/checks/$PROBE && \
@@ -93,12 +90,6 @@ jobs:
           exit 1
         env:
           PROBE: ${{ inputs.probe_check }}
-      - name: Record CI run consent
-        if: github.event_name == 'workflow_dispatch' && steps.freshness.outputs.needed == 'true'
-        run: |
-          python3 skills/package-sciaccel-task/scripts/sab.py task consent \
-            --task tasks/tenpy/tenpy --where local \
-            --human-ref 'Requester authorized the full TeNPy steward nominal/variant selfcheck in CI so the record is measured on the graded x86 target.'
       - name: Build both task images
         if: github.event_name == 'workflow_dispatch' && steps.freshness.outputs.needed == 'true'
         run: python3 skills/package-sciaccel-task/scripts/sab.py task build --task tasks/tenpy/tenpy
