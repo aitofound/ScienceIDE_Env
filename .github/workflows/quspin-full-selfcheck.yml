@@ -9,6 +9,11 @@ name: QuSpin full-steward selfcheck
 # needed, then commit the refreshed comment/pipeline/ files it uploads.
 on:
   workflow_dispatch:
+    inputs:
+      probe_example11:
+        description: 'Time examples/scripts/example11.py natively and stop'
+        type: boolean
+        default: false
 
 concurrency:
   group: quspin-full-selfcheck-${{ github.ref }}
@@ -25,6 +30,26 @@ jobs:
           python-version: '3.12'
       - name: Install task tooling
         run: npm install --ignore-scripts
+      - name: Probe example11 natively (timing only)
+        if: inputs.probe_example11
+        run: |
+          npm install --ignore-scripts
+          python3 skills/package-sciaccel-task/scripts/sab.py task build --task tasks/quspin/quspin --which tests
+          cd tasks/quspin/quspin
+          docker run --rm --platform linux/amd64 \
+            -e PATH=/opt/venv/bin:/usr/local/bin:/usr/bin:/bin \
+            -e KMP_DUPLICATE_LIB_OK=TRUE -e OMP_NUM_THREADS=2 -e OPENBLAS_NUM_THREADS=2 \
+            -e MPLBACKEND=Agg \
+            --entrypoint bash sciaccel-quspin-oracle -c '
+              cd /workspace/code/examples/scripts
+              s=$(date +%s); timeout 1800 python3 example11.py >/tmp/o 2>&1; rc=$?; e=$(date +%s)
+              echo "example11.py rc=$rc elapsed=$((e-s))s"
+              tail -4 /tmp/o
+              for f in example1.py example2.py; do
+                s=$(date +%s); timeout 1800 python3 "$f" >/dev/null 2>&1; rc=$?; e=$(date +%s)
+                echo "$f rc=$rc elapsed=$((e-s))s"
+              done'
+          exit 1
       - name: Decide whether a fresh record already exists
         id: freshness
         run: |
