@@ -313,6 +313,7 @@ run_cached_build() {
     if cache_entry_valid; then
       if (configure_source && resolve_bindir && restore_cache); then
         echo "SAB_BUILD_CACHE=hit group=$BUILD_GROUP stage=$BUILD_STAGE fingerprint=$BUILD_FINGERPRINT variant=$IC altbuild=$BUILD_MODE"
+        resolve_bindir   # the subshell above kept BINDIR to itself; the run below needs it (measured 2026-09-15: outerhelio2d's INTERPOLATE.exe)
         STAGE_BUILD_SECONDS=0
         CACHE_HIT=1
       else
