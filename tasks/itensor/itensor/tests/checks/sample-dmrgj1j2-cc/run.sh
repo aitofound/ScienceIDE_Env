@@ -43,6 +43,9 @@ if mode in ('ctmrg','trg'):
     if mode=='ctmrg': vals+=one(r'^m\s*=\s*('+num+r')')
 elif mode in ('dmrg','dmrg-table','dmrgj1j2'):
     vals=one(r'Ground State Energy\s*=\s*('+num+r')')+one(r'Using inner\s*=\s*('+num+r')')
+    if mode=='dmrgj1j2':
+        # the driver also prints S.S on every bond; it is physics, so it is graded
+        vals+=one(r'^S\.S b \d+\s*=\s*('+num+r')')
 elif mode=='exthubbard':
     vals=one(r'Ground State Energy\s*=\s*('+num+r')')
     sec=text.split('Total Density:',1)[1].split('Ground State Energy',1)[0]
