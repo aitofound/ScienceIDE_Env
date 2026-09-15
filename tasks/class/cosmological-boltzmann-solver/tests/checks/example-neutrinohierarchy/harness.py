@@ -10,11 +10,22 @@ density parameters at all and relies on CLASS's own defaults).
     python3 harness.py PARAMS_JSON OUT_JSON
 """
 import json
+import os
 import sys
 
 import numpy as np
 from scipy.optimize import fsolve
 from classy import Class
+
+# SAB_MASS_SUMS (run-time knob, run.sh --help): how many of the script's
+# three total-neutrino-mass sums to iterate, taken from the front of its own
+# tuple (0.1, 0.115, 0.13). Each sum runs two N_ncdm=3 Class() computations
+# (normal and inverted hierarchy), the expensive part of this check (a
+# three-species phase-space integration under ncdm_fluid_approximation);
+# default 1 (about 55s measured) keeps this check under this leaf's
+# 60s-per-check cap, with 3 (all three sums, the upstream script's own full
+# run) as the documented tunable.
+MASS_SUMS = (0.1, 0.115, 0.13)[: int(os.environ.get("SAB_MASS_SUMS", "1"))]
 
 
 def get_masses(delta_m_squared_atm, delta_m_squared_sol, sum_masses, hierarchy):
@@ -57,7 +68,7 @@ def main() -> int:
 
     kvec = np.geomspace(1e-4, 3, num=100)
     result = {"masses": {}, "pk": {}}
-    for sum_masses in (0.1, 0.115, 0.13):
+    for sum_masses in MASS_SUMS:
         key = f"{sum_masses:g}"
         m1n, m2n, m3n = get_masses(2.45e-3, 7.50e-5, sum_masses, "NH")
         NH = Class()
