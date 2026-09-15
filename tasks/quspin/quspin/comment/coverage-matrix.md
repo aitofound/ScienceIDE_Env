@@ -161,7 +161,7 @@ add one spectrum-sensitive calibration observable.
 
 | suite | official glob | decks | check | status |
 |---|---|---|---|---|
-| examples/scripts | `example*.py` | 31 | examples-scripts | covered (30 run, 1 excluded) |
+| examples/scripts | `example*.py` | 31 | examples-scripts | covered (all 31 run) |
 | examples/scripts (documented) | `user_basis_trivial-*.py` | 3 | examples-scripts | covered |
 | sphinx/doc_examples | `*example.py` | 33 | basis-doc-examples | covered (all 33 run) |
 | sphinx/doc_examples (extra) | `measurements.py` | 1 | basis-doc-examples | covered |
@@ -205,16 +205,15 @@ set. It is nevertheless an official script of this codebase that drives
 
 
 
-### Exclusion in examples/scripts
+### examples/scripts: no exclusions
 
-- `example27.py`: drives its solver through the optional `sparse_dot_mkl`
-  accelerator, which needs a system MKL runtime (`libmkl_rt`) that the task
-  image does not carry.  The package installs, but importing it raises
-  `ImportError: Unable to load the MKL libraries through libmkl_rt`.
-
-Both are recorded in the check's rubric and in its `observable.json`
-(`upstream_excluded`), so the omission is visible on every run rather than
-being a silent skip.
+Every file the official glob matches runs. `example27.py` was excluded in earlier
+revisions of this change as needing "a system MKL runtime the image does not
+carry". That was too pessimistic: the `mkl` distribution ships `libmkl_rt.so`
+inside the virtual environment, and `sparse_dot_mkl` only needs `MKL_RT` pointed
+at it because its ctypes loader does not search the venv's lib directory. With
+the `mkl` wheel installed and `MKL_RT` exported by the check, `example27.py`
+completes in 42 s on the target image. Both Dockerfiles install the wheel.
 
 ### examples/notebooks
 

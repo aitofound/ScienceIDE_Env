@@ -45,16 +45,16 @@ FILES = [
 ARGV_NEEDS_TWO = {"example12.py": ["2", "2"]}
 
 # example27.py drives its solver through the optional sparse_dot_mkl
-# accelerator, which needs a system MKL runtime the image does not carry, so it
-# cannot run here at all.  It is recorded in comment/coverage-matrix.md rather
-# than silently skipped.
+# accelerator.  That needs libmkl_rt, which the `mkl` distribution ships inside
+# the virtual environment, but sparse_dot_mkl does not search the venv's lib
+# directory by itself: with MKL_RT pointed at the installed shared object the
+# file runs in 35 s.  MKL_RT is exported below, so no file of this suite is
+# excluded.
 # example1.py and example2.py run long adaptive ramp sweeps and dominate this
 # check's wall time.  Measured natively on the target image they take 438 s and
 # 25 s; example1_original.py is the same sweep at n_real=20 rather than 100, so
 # it is bounded by example1.py's figure.  All run, with the caps below applied.
-EXCLUDED = {
-    "example27.py": "requires a system MKL runtime for sparse_dot_mkl",
-}
+EXCLUDED: dict[str, str] = {}
 
 # A hung or pathologically slow example must fail this check, not hang the whole
 # suite.  subprocess.run(timeout=) kills only the direct child: several examples
@@ -98,6 +98,15 @@ def main() -> int:
     env = os.environ.copy()
     env.update({"PYTHONDONTWRITEBYTECODE": "1", "OMP_NUM_THREADS": "1",
                 "OPENBLAS_NUM_THREADS": "1", "KMP_DUPLICATE_LIB_OK": "TRUE"})
+    # sparse_dot_mkl loads libmkl_rt through ctypes and does not search the
+    # virtual environment's lib directory, so example27.py fails with
+    # "libmkl_rt not found" unless MKL_RT names the shared object explicitly.
+    # The path is discovered rather than hardcoded so the check survives a
+    # different mkl build layout.
+    if "MKL_RT" not in env:
+        for cand in (Path(sys.prefix) / "lib").glob("libmkl_rt.so*"):
+            env["MKL_RT"] = str(cand)
+            break
 
     deadline = time.monotonic() + TOTAL_BUDGET_S
 
