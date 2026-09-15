@@ -218,9 +218,9 @@ grab sc_log.log RESULTS/SC/log_n*.log
 grab ih_log.log RESULTS/IH/log_n*.log
 # The SC cuts at the end of the run (eleven significant digits): the two-ulp
 # variant never shows in the six-digit logs, it does in these (measured 2026-09-15).
-grab sc_x0_var.outs RESULTS/SC/x=0_var_*.outs
-grab sc_y0_var.outs RESULTS/SC/y=0_var_*.outs
-grab sc_z0_var.outs RESULTS/SC/z=0_var_*.outs
+grab sc_x0_var.outs RESULTS/SC/x=0_var_*.out RESULTS/SC/x=0_var_*.outs
+grab sc_y0_var.outs RESULTS/SC/y=0_var_*.out RESULTS/SC/y=0_var_*.outs
+grab sc_z0_var.outs RESULTS/SC/z=0_var_*.out RESULTS/SC/z=0_var_*.outs
 
 # ---- graded-series frame count ------------------------------------------------
 # The graded cuts are written once, at the end of the run (plotonce.py above;
