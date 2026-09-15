@@ -1,0 +1,249 @@
+{
+  "check": "parameter-estimators",
+  "policy": "pointwise",
+  "chaotic": false,
+  "upstream_test": "code/cassiopeia/test/tools_tests/parameter_estimators_test.py",
+  "configuration": "4科学方法20原顺序调用，8 scalar与12完整missing tuple，共32科学量；每个方法重新创建官方两树，保留原branch-length更新和tree.parameters赋值时序。第5方法的5异常调用仅记账。",
+  "observable": "逐固定调用的missing/mutated比例、continuous/discrete mutation rate及完整(stochastic missing probability, heritable missing rate) tuple",
+  "expected_runtime_s": 11,
+  "default_vs_upstream": "upstream",
+  "variant": "仅c08显式heritable_missing_rate从binary64 0.25向+Inf移动两个ULP到0.2500000000000001；所有树、矩阵、branch-length、布尔模型/root选项及之后tree.parameters赋值均不变。已实测c08的求解stochastic分量变化4.996003610813204e-16，返回的known heritable分量变化1.1102230246251565e-16；其余30分量不变。",
+  "altbuild": "none: 科学路径为Python/NumPy计数、均值、幂、log/exp；没有已验证且实际改变此路径的合法替代构建，无关C++/JIT重编不算floor。",
+  "comparison": {
+    "atol": 1e-12,
+    "rtol": 1e-10,
+    "files": [
+      {
+        "path": "results.npz",
+        "format": "npz"
+      }
+    ],
+    "measurements": [
+      {
+        "call_id": "c00",
+        "observable": "mutated_proportion",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c01",
+        "observable": "missing_proportion",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c02",
+        "observable": "mutated_proportion",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c03",
+        "observable": "missing_proportion",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c04",
+        "observable": "mutation_rate",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c05",
+        "observable": "mutation_rate",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c06",
+        "observable": "mutation_rate",
+        "domain": "rate"
+      },
+      {
+        "call_id": "c07",
+        "observable": "mutation_rate",
+        "domain": "rate"
+      },
+      {
+        "call_id": "c08",
+        "observable": "stochastic_missing_probability",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c08",
+        "observable": "heritable_missing_rate",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c09",
+        "observable": "stochastic_missing_probability",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c09",
+        "observable": "heritable_missing_rate",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c10",
+        "observable": "stochastic_missing_probability",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c10",
+        "observable": "heritable_missing_rate",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c11",
+        "observable": "stochastic_missing_probability",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c11",
+        "observable": "heritable_missing_rate",
+        "domain": "rate"
+      },
+      {
+        "call_id": "c12",
+        "observable": "stochastic_missing_probability",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c12",
+        "observable": "heritable_missing_rate",
+        "domain": "rate"
+      },
+      {
+        "call_id": "c13",
+        "observable": "stochastic_missing_probability",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c13",
+        "observable": "heritable_missing_rate",
+        "domain": "rate"
+      },
+      {
+        "call_id": "c14",
+        "observable": "stochastic_missing_probability",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c14",
+        "observable": "heritable_missing_rate",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c15",
+        "observable": "stochastic_missing_probability",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c15",
+        "observable": "heritable_missing_rate",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c16",
+        "observable": "stochastic_missing_probability",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c16",
+        "observable": "heritable_missing_rate",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c17",
+        "observable": "stochastic_missing_probability",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c17",
+        "observable": "heritable_missing_rate",
+        "domain": "rate"
+      },
+      {
+        "call_id": "c18",
+        "observable": "stochastic_missing_probability",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c18",
+        "observable": "heritable_missing_rate",
+        "domain": "rate"
+      },
+      {
+        "call_id": "c19",
+        "observable": "stochastic_missing_probability",
+        "domain": "probability"
+      },
+      {
+        "call_id": "c19",
+        "observable": "heritable_missing_rate",
+        "domain": "rate"
+      }
+    ]
+  },
+  "evidence": {
+    "floor": null,
+    "floor_how": "无有效alternative build；原生证据不是Docker/selfcheck。",
+    "self_validation_spread": {
+      "value": 4.996003610813204e-16,
+      "knob_overrides": {
+        "SAB_JOBS": "4"
+      }
+    },
+    "self_validation_bound_fraction": {
+      "value": 8.077371107302793e-05,
+      "knob_overrides": {
+        "SAB_JOBS": "4"
+      }
+    },
+    "native_measurements": {
+      "not_selfcheck": true,
+      "official_methods_passed": 5,
+      "scientific_methods": 4,
+      "scientific_calls": 20,
+      "graded_values": 32,
+      "official_wall_seconds": 2.4777719974517822,
+      "nominal_build_seconds": 14.473442316,
+      "nominal_run_seconds": 3.2506561279849855,
+      "variant_build_seconds": 14.031404257,
+      "variant_run_seconds": 3.2629232404822996,
+      "distance": 4.996003610813204e-16,
+      "bound_fraction": 8.077371107302793e-05,
+      "active_solved_component": "c08/stochastic_missing_probability",
+      "public_selftest_methods": 13,
+      "legal_tree_ordering_and_state_recoding_distance": 0.0,
+      "rejected_api_faults": [
+        "wrong_mutation_denominator",
+        "missing_bias",
+        "continuous_as_discrete",
+        "discrete_as_continuous",
+        "omit_implicit_root",
+        "tree_parameter_corruption",
+        "tuple_swap",
+        "known_component_corruption"
+      ],
+      "fault_proxy_evidence_scope": {
+        "output_proxy": [
+          "wrong_mutation_denominator",
+          "missing_bias",
+          "tuple_swap",
+          "known_component_corruption"
+        ],
+        "input_configuration_proxy": [
+          "continuous_as_discrete",
+          "discrete_as_continuous",
+          "omit_implicit_root",
+          "tree_parameter_corruption"
+        ],
+        "interpretation": "rejected_api_faults列出的8项都是API边界代理：4项先由真实API计算再调整返回，名称模拟内部错误但未替换内部实现；4项改变调用model/root配置或tree.parameters fallback，原函数代码不变。8项均完成32量NPZ后由validator拒绝，仅证明能拒绝这些错误输出/配置，不证明源码内部mutation已执行或完整mutation coverage。",
+        "excluded_tool_failures": "早期v1/v2 wrapper错误未产出科学NPZ，只记实验工具失败，不计入8项科学拒绝证据。"
+      },
+      "how": "两个独立scratch离线wheel+--target运行nominal/variant，再用本check validate.py比较；官方unittest、原始AST及实际参数快照交叉校验，合法变换、输出/输入配置代理及可移植selftest独立运行；代理实验未改源内实现。"
+    },
+    "expected_runtime_s_measured": "2026-09-15 并发执行下实测 10 s（不含 build，SAB_JOBS=4）。原声明 10 s。取目前观测到的最大值：实测值随节点负载在 3 倍范围内波动（本条历史上出现过 12 / 14 / 10 s），而告警阈值是 measured > 2 × declared，按最大值声明才稳定。",
+    "third_leg_coverage": "**32 / 32（100%），gap 0.0（逐位相同）**（2026-09-14 新增）。四个估计量全部从 `ic/inputs.json` 独立重算，不 import cassiopeia，也不用 networkx/pandas。逐条对齐 `tools/parameter_estimators.py`：missing/mutated 两个比例直接在字符矩阵上计数（:13, :53）；mutation rate 走闭式 `1−(1−p)^(1/mean_depth)`（离散）或 `−ln(1−p)/mean_time`（连续）（:99）；缺失率两个方向各一条闭式（:185）。20 个调用、32 个受判值全部逐位重现。",
+    "details_read_from_the_source_not_guessed": "① `_get_node_depths`（`CassiopeiaTree.py:1326`）用的是**时间**（分支长度累加）而不是边数——默认分支长度为 1.0，所以在未设长度的树上二者恰好相等，但公式必须按时间写，否则一改长度就错。② `assume_root_implicit_branch` 只在**根的孩子数 ≠ 1** 时才加那一段。③ 参数优先级是「显式 kwarg > `tree.parameters` > 现算」，IC 的 `updates_before` 正是往 `tree.parameters` 里写；`fresh_fixture_before_method` 会把它清空。",
+    "third_leg_rejection_evidence": "两侧同污染时逐点比较不越界，第三条腿两侧都拒：两侧同乘 1.001、两个 mutation_rate 互换。**这两条拒绝用例顺带抓出一个潜伏 bug**：`gap` 是 numpy 标量，`json.dumps` 编码不了，但只在**失败路径**才会走到序列化那一步——成功时 `max(0.0, np.float64(0.0))` 返回的是前者那个 Python float，恰好躲过。已在 recompute 的每个返回值上加 `float()` 强转。夹具也从合成的 a/b 三值（0.1/0.25/0.5）换成 rubric 的真实身份表 + 独立重算值；顺带修了两条硬编码旧夹具形状的用例（`[[2,1,0]]` 只取 3 行、`nextafter(0.1)`）。"
+  },
+  "warrant": "临时pointwise比较固定科学调用和参数名绑定的全部32个binary64值，|c-r|<=1e-12+1e-10|r|。parameter_estimators.py:44–50以全部cell×character为missing分母，84–96仅用nonmissing分母估计mutation；159–182用离散幂或连续log及树深度/时间反演mutation，299–308优先显式非None参数并在缺省时读tree.parameters，340–413反演两种missing机制并返回完整tuple。官方树的有限小规模均值与远离0/1极端的已知参数没有迭代随机放大，容差给binary64归约及log/exp跨实现舍入留出余量，不用两ULP spread机械收紧；错分母、把连续模型当离散、漏implicit-root项、破坏参数状态或交换tuple分量是远大于舍入的科学错误。case ID只标识固定输入配置，参数值绝不作为身份。实际两个独立native build的两ULP求解分量最大差4.996003610813204e-16，合法树/矩阵存储重排与一致状态编码改变距离0；4个先由真实API计算再调整返回的输出代理，以及4个改变model/root配置或tree.parameters fallback的输入配置代理，均完成32量NPZ后被拒绝，偏差从0.001到0.5；其名称模拟可能的内部错误，但未替换源内实现。这仅证明拒绝这些错误输出/配置，不证明做过源码内部mutation或完整mutation coverage；无产物的v1/v2工具失败不计。原生运行不是selfcheck，也没有有效altbuild floor，最终bound仍需后续校准和人工复核。"
+}
