@@ -82,7 +82,7 @@ jobs:
           python3 skills/package-sciaccel-task/scripts/sab.py task build --task tasks/tenpy/tenpy --which tests
           echo "image built; running $PROBE twice" 
           for run in 1 2; do
-            docker run --rm --entrypoint bash sciaccel-quspin-oracle -c "
+            docker run --rm --entrypoint bash sciaccel-tenpy-oracle -c "
               cd /app/tests/checks/$PROBE && \
               SOURCE_DIR=/workspace/code OUT_DIR=/tmp/o CHECK_DIR=/app/tests/checks/$PROBE SAB_IC=nominal \
               bash ./run.sh nominal >/tmp/log 2>&1; rc=\$?; echo \"  run $run rc=\$rc\"; tail -3 /tmp/log"
