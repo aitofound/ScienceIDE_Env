@@ -11,7 +11,8 @@ timed near 300 s of run time rather than capped at 60 s. SAB_MAX_ITERATION was
 reduced from 10 to 5 (the pinned 10-iteration deck measured 618 s, so 5 targets
 about half that, near 300 s). The graded x=0 VAR idl series writes 5 snapshots
 over this window via the new SAB_PLOT_FRAMES knob (default 5, one save per
-iteration). Measured on the worker: 470-472 s of run time, but the worker was
+iteration). Measured on the worker: 230 s of run time in the 2026-09-14 probe (five checks in parallel,
+host load about 25); an earlier measurement gave 470-472 s while the worker was
 heavily loaded by many other sessions' containers at measurement time (dozens
 of unrelated `docker ps` entries, each container throttled to about 200% of its
 8-cpu allocation); the 618 s baseline this scaling is anchored to was measured

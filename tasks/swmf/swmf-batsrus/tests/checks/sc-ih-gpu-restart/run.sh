@@ -43,17 +43,27 @@ fi
 # mpiexec forwards standard input to rank 0 and drains it; the produce driver feeds
 # its own check list on standard input, so take stdin away here.
 exec < /dev/null
-WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 # A solve runs all checks sequentially in one fresh container. Reuse only an exact
 # configuration/build-mode snapshot, and copy it into this check's private work tree
 # so make rundir and any stage-specific rebuild cannot mutate the shared snapshot.
 BUILD_PROFILE=sc-ih-gpu-compatible
 BUILD_MODE=stock
 [ "$IC" = altbuild ] && BUILD_MODE=o0
+# The SWMF tree records its absolute path in every Makefile.def and Makefile.conf
+# and in absolute symlinks (the data links, FDIPS.exe, pyfits), so a cached build
+# snapshot only works at the path it was built at: one fixed work path per
+# configuration and build mode. Checks run one at a time inside a solve container,
+# and parallel probes use separate containers with their own /tmp.
+WORK="${TMPDIR:-/tmp}/sab-swmf-$BUILD_PROFILE-$BUILD_MODE"; rm -rf "$WORK"; mkdir -p "$WORK"; trap 'rm -rf "$WORK"' EXIT
 BUILD_CACHE_ROOT="${SAB_BUILD_CACHE_ROOT:-${TMPDIR:-/tmp}}/sciaccel-swmf-batsrus-multi-build-cache-v2"
 BUILD_CACHE_DIR="$BUILD_CACHE_ROOT/$BUILD_PROFILE-$BUILD_MODE-${SAB_SOURCE_FINGERPRINT:-nofingerprint}"
 mkdir -p "$BUILD_CACHE_ROOT"
 BUILD_CACHE_HIT=0
+# A snapshot built at another path (an older layout of this cache) cannot be reused
+# and is removed so the fresh build can be published in its place.
+if [ -f "$BUILD_CACHE_DIR/complete" ] && ! grep -q "^DIR *= *$WORK/src\$" "$BUILD_CACHE_DIR/src/Makefile.def" 2>/dev/null; then
+  rm -rf "$BUILD_CACHE_DIR"
+fi
 if [ -f "$BUILD_CACHE_DIR/complete" ] && [ -d "$BUILD_CACHE_DIR/src" ]; then
   cp -a "$BUILD_CACHE_DIR/src" "$WORK/src"
   BUILD_CACHE_HIT=1
