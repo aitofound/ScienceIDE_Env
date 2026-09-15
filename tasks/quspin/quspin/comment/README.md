@@ -17,8 +17,8 @@ Four packages are installed for the official example decks rather than for the l
 ## Runtime
 
 The declared `expected_runtime_s` values sum to 5940 s and `suite_budget_s` is 6300 s. Those
-declarations are deliberately generous: the measured nominal suite is 1051 s (CI run
-`34956872647`) on the declared 2 cores, of which the three example checks
+declarations are deliberately generous: the measured nominal suite is 1092 s (CI run
+`34968374447`) on the declared 2 cores, of which the three example checks
 dominate because they run every official deck. The declared numbers exist so
 the plan shows the honest worst case for a slow or contended host rather than the best case
 measured on CI.
@@ -31,7 +31,7 @@ The perturbed input is the coupling, not the longitudinal field. Every check bui
 
 The step is 450 ulps rather than the conventional two. A local probe in the pinned image ran each check three ways — nominal, nominal again, and the variant — and found that a two-ulp coupling change moves the graded observable by `3.6e-15` to `5.3e-14`, at or below the repeat-to-repeat ARPACK noise floor with an unseeded start vector (measured `0` to `6.0e-14` by running the same nominal inputs twice). In 6 of the 8 standalone checks the two-ulp step is no larger than that floor, so it could not be told apart from solver noise. The 450-ulp step moves the observable by `5.6e-13` to `2.5e-11`, which is 28x to 1011x that floor.
 
-The bound stays a floating-point allowance rather than a physics allowance. Across all sixteen checks the recorded spreads are `5.6e-13` to `2.5e-11` (CI run `34956872647`), and each check's worst value uses at most `6.2e-5` of its own `atol + rtol*|x|` bound; the review table's margin column prints the reciprocal of that fraction.
+The bound stays a floating-point allowance rather than a physics allowance. Across all sixteen checks the recorded spreads are `5.7e-13` to `2.5e-11` (CI run `34968374447`), and each check's worst value uses at most `6.2e-5` of its own `atol + rtol*|x|` bound; the review table's margin column prints the reciprocal of that fraction.
 
 Per-check commands, observables and tolerance rationale live in each check README and rubric.
 
