@@ -12,10 +12,15 @@
 //     mutation with another.
 //   * test_get_frame_jacobian and test_compute_frame_jacobian loop upstream
 //     over every joint of the model with a fresh random configuration, velocity
-//     and frame placement per joint. Both call the same per-column code path
-//     for every joint index, so this adapter runs the identity once, on the
-//     frozen model's rarm2_joint, with the frozen q and v. What is lost is
-//     repetition of the same check, not coverage of a different code path.
+//     and frame placement per joint. This adapter keeps the loop, over every
+//     joint of the frozen model (indices 1..njoints-1, so the free-flyer root
+//     and every limb are covered, not one representative revolute joint), but
+//     reuses the frozen q, v and the single frozen se3_get_frame_jacobian /
+//     se3_compute_frame_jacobian placement for every iteration instead of
+//     drawing a fresh configuration and placement each time: the identity
+//     these cases assert holds for any fixed placement, so a frozen one serves
+//     as well as a random one. Each joint's Jacobians are recorded under a
+//     name carrying that joint's index and name.
 //   * test_supported_inertia_and_force upstream builds a second, deterministic
 //     model with buildModels::humanoid and its own random q, v, a, then locks
 //     one joint of it into a frame with buildReducedModel. That identity holds
@@ -50,6 +55,7 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <cstdio>
 #include <cstdlib>
 #include <memory>
 #include <string>
@@ -61,6 +67,15 @@ std::string env_or_die(const char * name)
   const char * v = std::getenv(name);
   if (!v || !*v) throw std::runtime_error(std::string("official: ") + name + " is not set");
   return v;
+}
+
+// A record-name suffix carrying a joint's identity: its index, zero-padded to
+// two digits (this leaf's frozen model has 27 joints), and its name.
+std::string joint_tag(const pinocchio::Model & model, pinocchio::JointIndex idx)
+{
+  char buf[8];
+  std::snprintf(buf, sizeof(buf), "%02u", (unsigned)idx);
+  return std::string(buf) + "_" + model.names[idx];
 }
 
 // A frame placement upstream would draw from SE3::Random, frozen as 9 rotation
@@ -454,93 +469,104 @@ BOOST_AUTO_TEST_CASE(test_frame_getters)
 }
 
 // Upstream loops test_get_frame_jacobian_impl over every joint with a fresh
-// random configuration, velocity and frame placement each time; every
-// iteration calls the same per-column code path, so this adapter runs it once,
-// on the frozen model's rarm2_joint, with the frozen q and v.
+// random configuration, velocity and frame placement each time. This adapter
+// keeps the loop, over every joint of the frozen model (indices 1..njoints-1,
+// covering the free-flyer root and every limb), but reuses the frozen q, v and
+// se3_get_frame_jacobian placement for each iteration instead of drawing a
+// fresh one: the identity holds for any fixed placement. Each joint's
+// Jacobians are recorded under a name carrying that joint's index and name.
 BOOST_AUTO_TEST_CASE(test_get_frame_jacobian)
 {
   using namespace Eigen;
   using namespace pinocchio;
-  Model model = fx().model;
+  const Model & model0 = fx().model;
   const sab::Operands & ops = fx().ops;
 
-  JointIndex joint_idx = rarm2_or_last(model);
-  const std::string & frame_name = std::string(model.names[joint_idx] + "_frame");
   const SE3 & framePlacement = load_se3(ops, "se3_get_frame_jacobian");
-  auto frame_idx = model.addFrame(Frame(frame_name, joint_idx, 0, framePlacement, OP_FRAME));
+  const VectorXd q = ops.sized("q", model0.nq);
+  const VectorXd v = ops.sized("v", model0.nv);
 
-  pinocchio::Data data(model);
-  pinocchio::Data data_ref(model);
+  for (JointIndex joint_idx = 1; joint_idx < (JointIndex)model0.njoints; ++joint_idx)
+  {
+    Model model(model0);
+    const std::string & frame_name = std::string(model.names[joint_idx] + "_frame");
+    auto frame_idx = model.addFrame(Frame(frame_name, joint_idx, 0, framePlacement, OP_FRAME));
 
-  const VectorXd q = ops.sized("q", model.nq);
-  const VectorXd v = ops.sized("v", model.nv);
+    pinocchio::Data data(model);
+    pinocchio::Data data_ref(model);
 
-  computeJointJacobians(model, data, q);
-  updateFramePlacement(model, data, frame_idx);
+    computeJointJacobians(model, data, q);
+    updateFramePlacement(model, data, frame_idx);
 
-  forwardKinematics(model, data_ref, q, v);
-  updateFramePlacement(model, data_ref, frame_idx);
+    forwardKinematics(model, data_ref, q, v);
+    updateFramePlacement(model, data_ref, frame_idx);
 
-  Data::Matrix6x J_local(Data::Matrix6x::Zero(6, model.nv));
-  getFrameJacobian(model, data, frame_idx, LOCAL, J_local);
-  auto frame_velocity_local = getFrameVelocity(model, data_ref, frame_idx, LOCAL);
-  BOOST_CHECK((J_local * v).isApprox(frame_velocity_local.toVector()));
+    Data::Matrix6x J_local(Data::Matrix6x::Zero(6, model.nv));
+    getFrameJacobian(model, data, frame_idx, LOCAL, J_local);
+    auto frame_velocity_local = getFrameVelocity(model, data_ref, frame_idx, LOCAL);
+    BOOST_CHECK((J_local * v).isApprox(frame_velocity_local.toVector()));
 
-  Data::Matrix6x J_world(Data::Matrix6x::Zero(6, model.nv));
-  getFrameJacobian(model, data, frame_idx, WORLD, J_world);
-  auto frame_velocity_world = getFrameVelocity(model, data_ref, frame_idx, WORLD);
-  BOOST_CHECK((J_world * v).isApprox(frame_velocity_world.toVector()));
+    Data::Matrix6x J_world(Data::Matrix6x::Zero(6, model.nv));
+    getFrameJacobian(model, data, frame_idx, WORLD, J_world);
+    auto frame_velocity_world = getFrameVelocity(model, data_ref, frame_idx, WORLD);
+    BOOST_CHECK((J_world * v).isApprox(frame_velocity_world.toVector()));
 
-  Data::Matrix6x J_lwa(Data::Matrix6x::Zero(6, model.nv));
-  getFrameJacobian(model, data, frame_idx, LOCAL_WORLD_ALIGNED, J_lwa);
-  auto frame_velocity_lwa = getFrameVelocity(model, data_ref, frame_idx, LOCAL_WORLD_ALIGNED);
-  BOOST_CHECK((J_lwa * v).isApprox(frame_velocity_lwa.toVector()));
+    Data::Matrix6x J_lwa(Data::Matrix6x::Zero(6, model.nv));
+    getFrameJacobian(model, data, frame_idx, LOCAL_WORLD_ALIGNED, J_lwa);
+    auto frame_velocity_lwa = getFrameVelocity(model, data_ref, frame_idx, LOCAL_WORLD_ALIGNED);
+    BOOST_CHECK((J_lwa * v).isApprox(frame_velocity_lwa.toVector()));
 
-  fx().rec->matrix("get_frame_jacobian_local", J_local);
-  fx().rec->matrix("get_frame_jacobian_world", J_world);
-  fx().rec->matrix("get_frame_jacobian_local_world_aligned", J_lwa);
+    const std::string tag = joint_tag(model, joint_idx);
+    fx().rec->matrix("get_frame_jacobian_local_" + tag, J_local);
+    fx().rec->matrix("get_frame_jacobian_world_" + tag, J_world);
+    fx().rec->matrix("get_frame_jacobian_local_world_aligned_" + tag, J_lwa);
+  }
 }
 
-// Same reduction as test_get_frame_jacobian, for computeFrameJacobian.
+// Same treatment as test_get_frame_jacobian, for computeFrameJacobian.
 BOOST_AUTO_TEST_CASE(test_compute_frame_jacobian)
 {
   using namespace Eigen;
   using namespace pinocchio;
-  Model model = fx().model;
+  const Model & model0 = fx().model;
   const sab::Operands & ops = fx().ops;
 
-  JointIndex joint_idx = rarm2_or_last(model);
-  const std::string & frame_name = std::string(model.names[joint_idx] + "_frame");
   const SE3 & framePlacement = load_se3(ops, "se3_compute_frame_jacobian");
-  auto frame_idx = model.addFrame(Frame(frame_name, joint_idx, 0, framePlacement, OP_FRAME));
+  const VectorXd q = ops.sized("q", model0.nq);
+  const VectorXd v = ops.sized("v", model0.nv);
 
-  pinocchio::Data data(model);
-  pinocchio::Data data_ref(model);
+  for (JointIndex joint_idx = 1; joint_idx < (JointIndex)model0.njoints; ++joint_idx)
+  {
+    Model model(model0);
+    const std::string & frame_name = std::string(model.names[joint_idx] + "_frame");
+    auto frame_idx = model.addFrame(Frame(frame_name, joint_idx, 0, framePlacement, OP_FRAME));
 
-  const VectorXd q = ops.sized("q", model.nq);
-  const VectorXd v = ops.sized("v", model.nv);
+    pinocchio::Data data(model);
+    pinocchio::Data data_ref(model);
 
-  forwardKinematics(model, data_ref, q, v);
-  updateFramePlacement(model, data_ref, frame_idx);
+    forwardKinematics(model, data_ref, q, v);
+    updateFramePlacement(model, data_ref, frame_idx);
 
-  Data::Matrix6x J_local(Data::Matrix6x::Zero(6, model.nv));
-  computeFrameJacobian(model, data, q, frame_idx, LOCAL, J_local);
-  auto frame_velocity_local = getFrameVelocity(model, data_ref, frame_idx, LOCAL);
-  BOOST_CHECK((J_local * v).isApprox(frame_velocity_local.toVector()));
+    Data::Matrix6x J_local(Data::Matrix6x::Zero(6, model.nv));
+    computeFrameJacobian(model, data, q, frame_idx, LOCAL, J_local);
+    auto frame_velocity_local = getFrameVelocity(model, data_ref, frame_idx, LOCAL);
+    BOOST_CHECK((J_local * v).isApprox(frame_velocity_local.toVector()));
 
-  Data::Matrix6x J_world(Data::Matrix6x::Zero(6, model.nv));
-  computeFrameJacobian(model, data, q, frame_idx, WORLD, J_world);
-  auto frame_velocity_world = getFrameVelocity(model, data_ref, frame_idx, WORLD);
-  BOOST_CHECK((J_world * v).isApprox(frame_velocity_world.toVector()));
+    Data::Matrix6x J_world(Data::Matrix6x::Zero(6, model.nv));
+    computeFrameJacobian(model, data, q, frame_idx, WORLD, J_world);
+    auto frame_velocity_world = getFrameVelocity(model, data_ref, frame_idx, WORLD);
+    BOOST_CHECK((J_world * v).isApprox(frame_velocity_world.toVector()));
 
-  Data::Matrix6x J_lwa(Data::Matrix6x::Zero(6, model.nv));
-  computeFrameJacobian(model, data, q, frame_idx, LOCAL_WORLD_ALIGNED, J_lwa);
-  auto frame_velocity_lwa = getFrameVelocity(model, data_ref, frame_idx, LOCAL_WORLD_ALIGNED);
-  BOOST_CHECK((J_lwa * v).isApprox(frame_velocity_lwa.toVector()));
+    Data::Matrix6x J_lwa(Data::Matrix6x::Zero(6, model.nv));
+    computeFrameJacobian(model, data, q, frame_idx, LOCAL_WORLD_ALIGNED, J_lwa);
+    auto frame_velocity_lwa = getFrameVelocity(model, data_ref, frame_idx, LOCAL_WORLD_ALIGNED);
+    BOOST_CHECK((J_lwa * v).isApprox(frame_velocity_lwa.toVector()));
 
-  fx().rec->matrix("compute_frame_jacobian_local", J_local);
-  fx().rec->matrix("compute_frame_jacobian_world", J_world);
-  fx().rec->matrix("compute_frame_jacobian_local_world_aligned", J_lwa);
+    const std::string tag = joint_tag(model, joint_idx);
+    fx().rec->matrix("compute_frame_jacobian_local_" + tag, J_local);
+    fx().rec->matrix("compute_frame_jacobian_world_" + tag, J_world);
+    fx().rec->matrix("compute_frame_jacobian_local_world_aligned_" + tag, J_lwa);
+  }
 }
 
 BOOST_AUTO_TEST_CASE(test_frame_jacobian_time_variation)
