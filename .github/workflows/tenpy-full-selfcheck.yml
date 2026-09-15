@@ -14,6 +14,12 @@ name: TeNPy full-steward selfcheck
 
 on:
   workflow_dispatch:
+    inputs:
+      probe_check:
+        description: 'Run one named check nominal twice in the built image, then stop'
+        type: string
+        required: false
+        default: ''
   # A workflow that exists only on a pull-request branch is not dispatchable
   # until GitHub has registered its path, and registration comes from a
   # pull_request event that touches the file. The trigger runs a no-op check
@@ -64,6 +70,29 @@ jobs:
           print(f"needed={'false' if fresh else 'true'}")
           print(f"reason={'x86 record matches the current tree' if fresh else 'record missing, stale, or not x86'}", file=sys.stderr)
           PYEOF
+      - name: Probe one check twice (inputs.probe_check)
+        if: github.event_name == 'workflow_dispatch' && inputs.probe_check != ''
+        run: |
+          python3 - <<'PYEOF'
+          import json, subprocess, sys, os
+          from pathlib import Path
+          leaf = Path('tasks/tenpy/tenpy')
+          name = os.environ['PROBE']
+          contract = json.loads((leaf / 'tests' / 'checks' / name / 'check.json').read_text())
+          print(f"probe: {name}")
+          subprocess.run([sys.executable, 'skills/package-sciaccel-task/scripts/sab.py',
+                          'task', 'build', '--task', str(leaf)], check=True)
+          PYEOF
+          echo "image built; running the check twice"
+          for run in 1 2; do
+            docker run --rm --entrypoint bash sciaccel-quspin-oracle -c "
+              cd /app/tests/checks/$PROBE && \
+              SOURCE_DIR=/workspace/code OUT_DIR=/tmp/o CHECK_DIR=/app/tests/checks/$PROBE SAB_IC=nominal \
+              bash ./run.sh nominal >/tmp/log 2>&1; rc=\$?; echo \"  run $run rc=\$rc\"; tail -3 /tmp/log"
+          done
+          exit 1
+        env:
+          PROBE: ${{ inputs.probe_check }}
       - name: Record CI run consent
         if: github.event_name == 'workflow_dispatch' && steps.freshness.outputs.needed == 'true'
         run: |
