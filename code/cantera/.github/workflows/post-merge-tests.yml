@@ -1,0 +1,425 @@
+name: Post-merge Tests
+on:
+  workflow_dispatch:  # allow manual triggering of this workflow
+    inputs:
+      outgoing_ref:
+        description: "The ref to be built. Can be a tag, commit hash, or branch name"
+        required: true
+        default: "main"
+  push:
+    # Run when the main branch is pushed to
+    branches:
+      - main
+  # Run on pull requests when this file is modified
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/post-merge-tests.yml
+
+permissions:
+  contents: read
+
+env:
+  UV_INDEX: https://pypi.anaconda.org/scientific-python-nightly-wheels/simple
+  REQUIREMENTS_TXT_FILE: "platform/ci_support/post_merge_reqs.txt"
+
+jobs:
+  prerelease-dependencies:
+    name: Pre-release ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        name: [cython, eigen, libfmt, SUNDIALS, yaml-cpp, HighFive, SCons]
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v5
+      name: Checkout the repository
+      with:
+        submodules: recursive
+        persist-credentials: false
+    - name: Setup Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: 3.13
+    - name: Install uv
+      uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7.1.2
+      with:
+        python-version: 3.13
+        cache-dependency-glob: |
+          ${{ env.REQUIREMENTS_TXT_FILE }}
+        enable-cache: true
+    - name: Install Apt dependencies
+      run: |
+        sudo apt update
+        sudo apt install libboost-dev libopenblas-dev libhdf5-dev doxygen
+    - name: Install Python dependencies
+      run: |
+        uv venv --python 3.13 --seed
+        uv pip install -r "${REQUIREMENTS_TXT_FILE}"
+    - name: Install pre-release Cython
+      if: matrix.name == 'cython'
+      run: |
+        uv pip uninstall cython
+        uv pip install --prerelease=allow --only-binary=":all:" cython
+    - name: Install pre-release Eigen
+      if: matrix.name == 'eigen'
+      run: |
+        git fetch origin
+        git reset --hard origin/HEAD
+      working-directory: ext/eigen
+    - name: Build prerelease libfmt
+      if: matrix.name == 'libfmt'
+      run: |
+        echo "system_fmt = 'y'" >> cantera.conf
+        echo "extra_inc_dirs = 'fmt/install/include'" >> cantera.conf
+        echo "extra_lib_dirs = 'fmt/install/lib'" >> cantera.conf
+        git clone https://github.com/fmtlib/fmt
+        mkdir fmt/build
+        cd fmt/build
+        cmake -DCMAKE_INSTALL_PREFIX=../install -DBUILD_SHARED_LIBS=Y ..
+        make -j4
+        make install
+    - name: Build prerelease SUNDIALS
+      if: matrix.name == 'SUNDIALS'
+      run: |
+        echo "system_sundials = 'y'" >> cantera.conf
+        echo "extra_inc_dirs = 'sundials/install/include'" >> cantera.conf
+        echo "extra_lib_dirs = 'sundials/install/lib'" >> cantera.conf
+        git clone https://github.com/LLNL/sundials
+        cd sundials
+        git switch develop
+        mkdir build
+        cd build
+        cmake -DCMAKE_INSTALL_PREFIX=../install -DBUILD_SHARED_LIBS=Y ..
+        make -j4
+        make install
+    - name: Build prerelease yaml-cpp
+      if: matrix.name == 'yaml-cpp'
+      run: |
+        echo "system_yamlcpp = 'y'" >> cantera.conf
+        echo "extra_inc_dirs = 'yaml-cpp/install/include'" >> cantera.conf
+        echo "extra_lib_dirs = 'yaml-cpp/install/lib'" >> cantera.conf
+        git clone https://github.com/jbeder/yaml-cpp
+        cd yaml-cpp
+        mkdir build
+        cd build
+        cmake -DCMAKE_INSTALL_PREFIX=../install -DBUILD_SHARED_LIBS=Y ..
+        make -j4
+        make install
+    - name: Build prerelease HighFive
+      if: matrix.name == 'HighFive'
+      run: |
+        echo "system_highfive = 'y'" >> cantera.conf
+        echo "extra_inc_dirs = 'highfive/install/include'" >> cantera.conf
+        git clone --recursive https://github.com/highfive-devs/highfive
+        cd highfive
+        mkdir build
+        cd build
+        cmake -DCMAKE_INSTALL_PREFIX=../install -DHIGHFIVE_EXAMPLES=N \
+            -DHIGHFIVE_UNIT_TESTS=N -DHIGHFIVE_BUILD_DOCS=N ..
+        make
+        make install
+    - name: Install prerelease SCons
+      if: matrix.name == 'SCons'
+      run: |
+        uv pip uninstall scons
+        git clone https://github.com/SCons/scons
+        cd scons
+        uv pip install -e .
+    - name: Build Cantera
+      run: uv run scons build env_vars=all f90_interface=n -j4 debug=n
+        --debug=time logging=debug python_package=y
+    - name: Build Tests
+      run: uv run scons -j4 build-tests
+    - name: Run compiled tests
+      run: uv run scons test-gtest test-legacy --debug=time
+    - name: Run Python tests
+      run: uv run pytest -raP -v -n auto --durations=50 test/python
+      env:
+        LD_LIBRARY_PATH: "${LD_LIBRARY_PATH}:build/lib"
+        PYTHONPATH: build/python
+
+  debuntu-docker:
+    name: Docker '${{ matrix.image }}' image with Sundials MPI ${{ matrix.mpi }}
+    strategy:
+      matrix:
+        include:
+        - image: "ubuntu:devel"
+          options: ""
+          mpi: override  # fall back to bundled Sundials (system_sundials=default)
+        - image: "ubuntu:rolling"
+          options: "system_sundials=y CC=mpicc CXX=mpicxx FORTRAN=mpifort"
+          mpi: enabled  # use MPI compiler wrappers
+        - image: "debian:stable"
+          options: "system_sundials=y CC=mpicc CXX=mpicxx FORTRAN=mpifort"
+          mpi: enabled  # use MPI compiler wrappers
+        - image: "debian:testing"
+          options: "system_sundials=y CC=mpicc CXX=mpicxx FORTRAN=mpifort"
+          mpi: enabled  # use MPI compiler wrappers
+        - image: "debian:unstable"
+          options: "system_sundials=y CC=mpicc CXX=mpicxx FORTRAN=mpifort"
+          mpi: enabled  # use MPI compiler wrappers
+      fail-fast: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    container:
+      image: ${{ matrix.image }} # zizmor: ignore[unpinned-images]
+    steps:
+    - name: Install git on ${{ matrix.image }}
+      run: |
+        apt update -y
+        apt install -y --no-install-recommends git ca-certificates
+        git config --global init.defaultBranch main
+        git config --global --add safe.directory /__w/cantera/cantera
+    - uses: actions/checkout@v5
+      name: Checkout the repository
+      with:
+        submodules: recursive
+        persist-credentials: false
+    - name: Install Apt dependencies
+      # Use packages from ubuntu image when possible
+      run: |
+        apt install -y --no-install-recommends python3 python3-pip pipenv scons \
+        build-essential libboost-dev gfortran libopenmpi-dev libpython3-dev \
+        libblas-dev liblapack-dev libhdf5-dev libfmt-dev libyaml-cpp-dev \
+        libgtest-dev libgmock-dev libeigen3-dev libsundials-dev \
+        openmpi-bin libopenmpi-dev \
+        cython3 python3-numpy python3-pandas python3-pint python3-graphviz \
+        python3-ruamel.yaml python3-setuptools python3-wheel python3-pytest \
+        python3-pytest-xdist doxygen python3-jinja2
+        gcc --version
+    - name: Install Python dependencies
+      run: |
+        pipenv install pytest-github-actions-annotate-failures
+    - name: Build Cantera
+      run: |
+        scons build env_vars=all -j4 debug=n --debug=time logging=debug \
+        system_eigen=y system_fmt=y ${{ matrix.options }} \
+        system_yamlcpp=y system_blas_lapack=y hdf_support=y \
+        cc_flags=-D_GLIBCXX_ASSERTIONS python_package=y f90_interface=y
+    - name: Build Tests
+      run: scons -j4 build-tests
+    - name: Run compiled tests
+      run: scons test-gtest test-legacy --debug=time
+    - name: Run Python tests
+      run: python3 -m pytest -raP -v -n auto --durations=50 test/python
+      env:
+        LD_LIBRARY_PATH: "${LD_LIBRARY_PATH}:build/lib"
+        PYTHONPATH: build/python
+
+  fedora-docker:
+    name: Docker 'fedora:${{ matrix.image }}' image
+    strategy:
+      matrix:
+        image: [rawhide, latest]
+      fail-fast: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    container:
+      image: fedora:${{ matrix.image }}
+    steps:
+    - name: Install git on fedora:${{ matrix.image }}
+      run: |
+        dnf install -y git
+        git config --global init.defaultBranch main
+        git config --global --add safe.directory /__w/cantera/cantera
+    - uses: actions/checkout@v5
+      name: Checkout the repository
+      with:
+        persist-credentials: false
+    - name: Install dependencies
+      # Use packages from Fedora
+      run: |
+        dnf install -y boost-devel eigen3-devel fmt-devel gcc gcc-c++ \
+        gcc-fortran gmock-devel gtest-devel python3 python3-cython \
+        python3-devel python3-numpy python3-pandas python3-pint python3-pip \
+        python3-pytest python3-pytest-xdist python3-ruamel-yaml python3-scipy \
+        python3-scons python3-wheel sundials-devel yaml-cpp-devel hdf5-devel \
+        highfive-devel python3-graphviz python3-packaging python3-setuptools \
+        python3-jinja2 doxygen
+    - name: Build Cantera
+      run: |
+        scons build -j4 debug=n --debug=time logging=debug python_package=y \
+        f90_interface=y extra_inc_dirs=/usr/include/eigen3 libdirname=/usr/lib64 \
+        system_eigen=y system_fmt=y system_blas_lapack=y system_sundials=y \
+        system_yamlcpp=y system_blas_lapack=y hdf_support=y
+      # note: 'system_highfive=y' is omitted as the current packaged version is too old;
+      # once newer version is available in 'latest', this should be tested as well
+    - name: Build Tests
+      run: scons -j4 build-tests
+    - name: Run compiled tests
+      run: scons test-gtest test-legacy --debug=time
+    - name: Run Python tests
+      run: python3 -m pytest -raP -v -n auto --durations=50 test/python
+      env:
+        LD_LIBRARY_PATH: build/lib
+        PYTHONPATH: build/python
+
+  ubuntu-python-prerelease:
+    name: ${{ matrix.os }} with Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        python-version: ['3.14']
+        os: ['ubuntu-22.04', 'ubuntu-24.04']
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v5
+      name: Checkout the repository
+      with:
+        submodules: recursive
+        persist-credentials: false
+    - name: Setup Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ matrix.python-version }}
+        allow-prereleases: true
+    - name: Install uv
+      uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7.1.2
+      with:
+        python-version: ${{ matrix.python-version }}
+        enable-cache: true
+        cache-dependency-glob: |
+          ${{ env.REQUIREMENTS_TXT_FILE }}
+    - name: Install Apt dependencies
+      run: |
+        sudo apt update
+        sudo apt install libboost-dev gfortran libopenmpi-dev \
+        libblas-dev liblapack-dev libhdf5-dev libfmt-dev doxygen \
+        libopenblas-dev
+        gcc --version
+    - name: Install Python dependencies
+      run: |
+        uv venv --python ${{ matrix.python-version }} --seed
+        sed -i 's/cython.*\|pandas\|numpy\|scipy//g' "${REQUIREMENTS_TXT_FILE}"
+        uv pip install -r "${REQUIREMENTS_TXT_FILE}"
+        uv pip install --prerelease=allow numpy cython pandas scipy
+    - name: Build Cantera
+      run: |
+        uv run scons build env_vars=all -j4 debug=n --debug=time logging=debug \
+        system_fmt=y system_blas_lapack=y hdf_support=y cc_flags=-D_GLIBCXX_ASSERTIONS \
+        python_package=y
+    - name: Build Tests
+      run: uv run scons -j4 build-tests
+    - name: Run compiled tests
+      run: uv run scons test-gtest test-legacy --debug=time
+    - name: Run Python tests
+      run: uv run pytest -raP -v -n auto --durations=50 test/python
+      env:
+        LD_LIBRARY_PATH: "${LD_LIBRARY_PATH}:build/lib"
+        PYTHONPATH: build/python
+
+  macos-homebrew:
+    name: Homebrew Python/GCC on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      matrix:
+        os: ['macos-14', 'macos-15']
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v5
+      name: Checkout the repository
+      with:
+        submodules: recursive
+        persist-credentials: false
+    - name: Setup uv
+      uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7.1.2
+      with:
+        enable-cache: true
+        cache-dependency-glob: |
+          ${{ env.REQUIREMENTS_TXT_FILE }}
+    # - NumPy is installed here for the Python custom rate tests.
+    # - Do not install brew SUNDIALS because it requires open-mpi and the brew open-mpi
+    #   package uses the system Clang to provide mpicc/mpicxx.
+    # - Do not install brew dependencies for C++ because these are built with libc++
+    #   while GCC will use libstdc++, and combining these will lead to linker errors
+    - name: Install Brew dependencies
+      run:
+        brew install --display-times boost libomp hdf5 python numpy doxygen gcc eigen
+    # This is necessary because of PEP 668 https://peps.python.org/pep-0668/
+    # PEP 668 prohibits installation to system Python packages via pip
+    - name: Create a virtualenv for dependencies
+      run: |
+        uv venv --python "$(brew --prefix)/bin/python3" --seed
+    - name: Install Python dependencies
+      # SCons must be installed into the virtualenv because packaging is a dependency
+      # and we can't install packaging for the homebrew Python
+      run: |
+        uv pip install -r "${REQUIREMENTS_TXT_FILE}"
+    - name: Build Cantera
+      run: |
+        BREW_PREFIX=`brew --prefix`
+        GCC_VER=`brew info gcc --json | jq -r '.[0]["installed"][0]["version"] | split(".")[0]'`
+        echo "CC = '$BREW_PREFIX/bin/gcc-$GCC_VER'" >> cantera.conf
+        echo "CXX = '$BREW_PREFIX/bin/g++-$GCC_VER'" >> cantera.conf
+        echo "AR = '$BREW_PREFIX/bin/gcc-ar-$GCC_VER'" >> cantera.conf
+        echo "extra_inc_dirs = '${BREW_PREFIX}/include'" >> cantera.conf
+        echo "extra_lib_dirs = '${BREW_PREFIX}/lib'" >> cantera.conf
+        uv run scons build env_vars=all -j3 debug=n --debug=time logging=debug \
+            python_package=y system_eigen=y
+    - name: Build Tests
+      run: uv run scons -j3 build-tests
+    - name: Run compiled tests
+      run: uv run scons test-gtest test-legacy --debug=time
+    - name: Run Python tests
+      run: uv run pytest -raP -v -n auto --durations=50 test/python
+      env:
+        DYLD_LIBRARY_PATH: "${DYLD_LIBRARY_PATH}:build/lib"
+        PYTHONPATH: build/python
+
+  macos-sporadic-failures:
+    # exact clone of 'macos-multiple-pythons' runner on main.yml
+    # used to test status of GH issue Cantera/cantera#1916
+    name: ${{ matrix.macos-version }} with Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.macos-version }}
+    timeout-minutes: 90
+    strategy:
+      matrix:
+        macos-version: ['macos-15-intel']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v5
+      name: Checkout the repository
+      with:
+        submodules: recursive
+        persist-credentials: false
+    - name: Write dependencies to a file for caching
+      run: |
+        echo "scons ruamel.yaml numpy cython!=3.1.2 pandas pytest pytest-xdist pytest-github-actions-annotate-failures pint graphviz Jinja2" | tr " " "\n" > requirements.txt
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: pip
+        cache-dependency-path: requirements.txt
+        allow-prereleases: true
+    - name: Install Brew dependencies
+      run: brew install --display-times boost libomp hdf5 doxygen
+    - name: Set Include folder
+      run:
+        echo "BOOST_INC_DIR=$(brew --prefix)/include" >> $GITHUB_ENV
+    - name: Upgrade pip
+      run: python -m pip install -U pip setuptools wheel
+    - name: Install Python dependencies
+      run: python -m pip install -r requirements.txt
+    - name: Build Cantera with legacy CLib
+      run: scons build env_vars=all -j3 debug=n --debug=time
+        boost_inc_dir=${BOOST_INC_DIR} clib_legacy=y
+    - name: Build Tests
+      run: scons -j3 build-tests --debug=time
+    - name: Run compiled tests
+      run: scons test-gtest test-legacy --debug=time
+    - name: Run Python tests
+      run: |
+        export DYLD_LIBRARY_PATH=build/lib
+        python3 -m pytest -raP -v -n auto --durations=50 test/python
+    - name: Rebuild Cantera with generated CLib
+      run: |
+        scons build clib_legacy=n -j3
+    - name: Run googletests for generated CLib
+      run: scons test-clib --debug=time

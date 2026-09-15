@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "source_pin": "ee0a7a3ebd9ac8c2602f40e55bc015a3c8a81ae8",
+  "source": "doc/examples/segmentation/plot_rag_merge.py",
+  "calls": [
+    {
+      "api": "skimage.segmentation.slic",
+      "inputs": {
+        "args": {
+          "tuple": [
+            {
+              "array": "a_ec4931bdac7ec4cbfd851992",
+              "shape": [
+                400,
+                600,
+                3
+              ],
+              "dtype": "|u1"
+            }
+          ]
+        },
+        "kwargs": {
+          "dict": {
+            "compactness": 30,
+            "n_segments": 400,
+            "start_label": 1
+          }
+        }
+      },
+      "output_schema": {
+        "shape": [
+          400,
+          600
+        ],
+        "dtype": "<i8",
+        "finite": true
+      },
+      "native_call_seconds": 0.12461643400001776,
+      "sites": [
+        {
+          "source": "doc/examples/segmentation/plot_rag_merge.py",
+          "selector": "doc/examples/segmentation/plot_rag_merge.py",
+          "caller": "doc/examples/segmentation/plot_rag_merge.py",
+          "line": 65
+        }
+      ],
+      "implementation": {
+        "file": "src/skimage/segmentation/slic_superpixels.py",
+        "line": 105,
+        "doc": "Segments image using k-means clustering in Color-(x,y,z) space.",
+        "end_line": 449
+      }
+    },
+    {
+      "api": "skimage.color.label2rgb",
+      "inputs": {
+        "args": {
+          "tuple": [
+            {
+              "array": "a_a28a9e8b561dbdbb8e2b1245",
+              "shape": [
+                400,
+                600
+              ],
+              "dtype": "<i8"
+            },
+            {
+              "array": "a_ec4931bdac7ec4cbfd851992",
+              "shape": [
+                400,
+                600,
+                3
+              ],
+              "dtype": "|u1"
+            }
+          ]
+        },
+        "kwargs": {
+          "dict": {
+            "kind": "avg",
+            "bg_label": 0
+          }
+        }
+      },
+      "output_schema": {
+        "shape": [
+          400,
+          600,
+          3
+        ],
+        "dtype": "|u1",
+        "finite": true
+      },
+      "native_call_seconds": 0.026181992999909198,
+      "sites": [
+        {
+          "source": "doc/examples/segmentation/plot_rag_merge.py",
+          "selector": "doc/examples/segmentation/plot_rag_merge.py",
+          "caller": "doc/examples/segmentation/plot_rag_merge.py",
+          "line": 78
+        }
+      ],
+      "implementation": {
+        "file": "src/skimage/color/colorlabel.py",
+        "line": 85,
+        "doc": "Return an RGB image where color-coded labels are painted over the image.",
+        "end_line": 156
+      }
+    },
+    {
+      "api": "skimage.segmentation.mark_boundaries",
+      "inputs": {
+        "args": {
+          "tuple": [
+            {
+              "array": "a_ecdd1434db44f28bd535792d",
+              "shape": [
+                400,
+                600,
+                3
+              ],
+              "dtype": "|u1"
+            },
+            {
+              "array": "a_a28a9e8b561dbdbb8e2b1245",
+              "shape": [
+                400,
+                600
+              ],
+              "dtype": "<i8"
+            },
+            {
+              "tuple": [
+                0,
+                0,
+                0
+              ]
+            }
+          ]
+        },
+        "kwargs": {
+          "dict": {}
+        }
+      },
+      "output_schema": {
+        "shape": [
+          400,
+          600,
+          3
+        ],
+        "dtype": "<f8",
+        "finite": true
+      },
+      "native_call_seconds": 0.007187967999925604,
+      "sites": [
+        {
+          "source": "doc/examples/segmentation/plot_rag_merge.py",
+          "selector": "doc/examples/segmentation/plot_rag_merge.py",
+          "caller": "doc/examples/segmentation/plot_rag_merge.py",
+          "line": 79
+        }
+      ],
+      "implementation": {
+        "file": "src/skimage/segmentation/boundaries.py",
+        "line": 185,
+        "doc": "Return image with boundaries between labeled regions highlighted.",
+        "end_line": 240
+      }
+    }
+  ],
+  "original_call_count": 3,
+  "adaptations": [],
+  "input_shards": {},
+  "input_archives": [
+    "inputs-000.npz"
+  ]
+}

@@ -108,8 +108,6 @@ def presentation(leaf: Path, allow_custom_drivers: bool) -> tuple[list[str], dic
     ts_path = pipeline / "test-survey.json"
     if ts_path.is_file():
         suitable = sum(1 for x in (read_json(ts_path).get("tests") or []) if x.get("suitable"))
-        if suitable < config.THIN:
-            flags.append(f"THIN ({suitable} suitable official tests)")
     customs = [i["name"] for i in infos if "custom" in (i.get("labels") or [])]
     if customs:
         flags.append("custom: " + ", ".join(customs))
@@ -133,7 +131,7 @@ def presentation(leaf: Path, allow_custom_drivers: bool) -> tuple[list[str], dic
         f"**Suite.** run time {(sv or {}).get('suite_seconds_nominal') if sv else '-'} s, builds {str((sv or {}).get('build_seconds_nominal')) + ' s' if isinstance((sv or {}).get('build_seconds_nominal'), (int, float)) else 'not reported'}, against {budget:.0f} s (guidance) on {cpus} declared cpus; {(sv or {}).get('budget') or '-'}.",
         f"**Host and consent.** {host.get('hostname') or '-'} ({host.get('arch') or '-'}, {host.get('docker_cpus') or '-'} docker cpus) under consent where={cons.get('where') or '-'} at {cons.get('at') or '-'}.",
         f"**Lint and record.** lint {len(errs)} error(s), {len(warns)} warning(s); record {'fresh' if fresh else 'STALE'}; freshness gate {'ok' if fresh and sv and sv.get('result') == 'passed' else 'not ok'}; CI: see the PR checks.",
-        f"**Flags.** {'; '.join(flags) if flags else 'none (not THIN, no custom checks)'}.",
+        f"**Flags.** {'; '.join(flags) if flags else 'none (no custom checks)'}.",
         f"**Since the previous round.** {changed}.",
     ]
     check_rows = [check_row(leaf, i, rows, times, run_times, builds) for i in infos]
@@ -179,7 +177,7 @@ def cmd_task_review(a) -> None:
         rows_t = (read_json(ts).get("tests") or [])
         suitable = sum(1 for t in rows_t if t.get("suitable"))
         customs = [i["name"] for i in infos if "custom" in (i.get("labels") or [])]
-        lines += ["", f"Survey: {suitable} suitable official test(s) for this module{' (THIN, fewer than ' + str(config.THIN) + ')' if suitable < config.THIN else ''}; "
+        lines += ["", f"Survey: {suitable} suitable official test(s) for this module; "
                   f"custom checks: {customs or 'none'}."]
     lines += ["", "## 2. The catalogue (task.toml equivalence_explanation) against the rubrics", "", (meta.get("equivalence_explanation") or "").strip(), "",
               "## 3. Warrants and variants, per check", ""]

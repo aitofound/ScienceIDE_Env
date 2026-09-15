@@ -1,0 +1,153 @@
+{
+  "skimage.morphology.h_maxima": {
+    "implementation": {
+      "file": "src/skimage/morphology/extrema.py",
+      "line": 49,
+      "end_line": 175
+    },
+    "description": "Determine all maxima of the image with height >= h.",
+    "calls": [
+      "grayreconstruct.reconstruction",
+      "(residue_img >= h).astype",
+      "np.ptp",
+      "_subtract_constant_clip",
+      "type",
+      "image.astype",
+      "image.dtype.type",
+      "np.abs",
+      "np.finfo"
+    ],
+    "branches": [
+      {
+        "line": 118,
+        "expression": "h > np.ptp(image)"
+      },
+      {
+        "line": 137,
+        "expression": "np.issubdtype(type(h), np.floating) and np.issubdtype(image.dtype, np.integer)"
+      },
+      {
+        "line": 149,
+        "expression": "h == 0"
+      },
+      {
+        "line": 152,
+        "expression": "np.issubdtype(image.dtype, np.floating)"
+      },
+      {
+        "line": 138,
+        "expression": "h % 1 != 0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.h_minima": {
+    "implementation": {
+      "file": "src/skimage/morphology/extrema.py",
+      "line": 178,
+      "end_line": 272
+    },
+    "description": "Determine all minima of the image with depth >= h.",
+    "calls": [
+      "grayreconstruct.reconstruction",
+      "(residue_img >= h).astype",
+      "np.ptp",
+      "_add_constant_clip",
+      "type",
+      "image.astype",
+      "image.dtype.type",
+      "np.abs",
+      "np.finfo"
+    ],
+    "branches": [
+      {
+        "line": 244,
+        "expression": "h > np.ptp(image)"
+      },
+      {
+        "line": 247,
+        "expression": "np.issubdtype(type(h), np.floating) and np.issubdtype(image.dtype, np.integer)"
+      },
+      {
+        "line": 259,
+        "expression": "h == 0"
+      },
+      {
+        "line": 262,
+        "expression": "np.issubdtype(image.dtype, np.floating)"
+      },
+      {
+        "line": 248,
+        "expression": "h % 1 != 0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.local_maxima": {
+    "implementation": {
+      "file": "src/skimage/morphology/extrema.py",
+      "line": 275,
+      "end_line": 438
+    },
+    "description": "Find local maxima of n-dimensional array.",
+    "calls": [
+      "_util._set_border_values",
+      "np.nonzero",
+      "any",
+      "np.pad",
+      "_util._resolve_neighborhood",
+      "_util._offsets_to_raveled_neighbors",
+      "crop",
+      "flags.view",
+      "_local_maxima",
+      "image.min",
+      "image.ravel",
+      "flags.ravel"
+    ],
+    "branches": [
+      {
+        "line": 384,
+        "expression": "image.size == 0"
+      },
+      {
+        "line": 392,
+        "expression": "allow_borders"
+      },
+      {
+        "line": 402,
+        "expression": "any((s < 3 for s in image.shape))"
+      },
+      {
+        "line": 428,
+        "expression": "allow_borders"
+      },
+      {
+        "line": 435,
+        "expression": "indices"
+      },
+      {
+        "line": 386,
+        "expression": "indices"
+      },
+      {
+        "line": 419,
+        "expression": "image.dtype == np.float16"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.local_minima": {
+    "implementation": {
+      "file": "src/skimage/morphology/extrema.py",
+      "line": 441,
+      "end_line": 549
+    },
+    "description": "Find local minima of n-dimensional array.",
+    "calls": [
+      "local_maxima",
+      "invert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

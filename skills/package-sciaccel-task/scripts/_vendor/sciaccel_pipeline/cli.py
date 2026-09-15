@@ -76,10 +76,10 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = ap.add_subparsers(dest="mode", required=True)
 
-    cbp = sub.add_parser("codebase", help="Steps 1 and 2: register, decompose, approve, survey").add_subparsers(dest="cmd", required=True)
+    cbp = sub.add_parser("codebase", help="Steps 1 and 2: register, propose modules, approve, survey").add_subparsers(dest="cmd", required=True)
     p = cbp.add_parser("init")
-    p.add_argument("--codebase", required=True)
-    p.add_argument("--code-path", required=True, help="local checkout to read in Step 1")
+    p.add_argument("--codebase", required=True, help="canonical codebase name normalized to lower-kebab-case")
+    p.add_argument("--code-path", required=True, help="whole codebase source root to read in Step 1, not an internal subsystem")
     p.add_argument("--source", help="directory name under code/ (default: the codebase id)")
     for f in ("title", "repo-url", "pin", "license", "language", "domain", "owner", "notes"):
         p.add_argument(f"--{f}")
@@ -106,7 +106,7 @@ def main() -> None:
     tp = sub.add_parser("task", help="Step 3: scaffold, add checks, lint, plan, consent, build, selfcheck, review").add_subparsers(dest="cmd", required=True)
     p = tp.add_parser("scaffold")
     p.add_argument("--codebase", required=True)
-    p.add_argument("--module", required=True)
+    p.add_argument("--module", required=True, help="approved slug; for one whole-codebase module, prefer the canonical codebase id")
     p.add_argument("--force", action="store_true")
     p.add_argument("--allow-unmerged-source", action="store_true", help="bypass the Step 1.5 merge gate with a warning (needs --human-ref)")
     p.add_argument("--human-ref", help="the human's words authorising the bypass")
