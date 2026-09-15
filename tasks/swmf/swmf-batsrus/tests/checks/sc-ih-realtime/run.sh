@@ -216,10 +216,17 @@ run_swmf runlog
 cd "$WORK/run"
 grab sc_log.log RESULTS/SC/log_n*.log
 grab ih_log.log RESULTS/IH/log_n*.log
+# The SC cuts at the end of the run (eleven significant digits): the two-ulp
+# variant never shows in the six-digit logs, it does in these (measured 2026-09-15).
+grab sc_x0_var.outs RESULTS/SC/x=0_var_*.outs
+grab sc_y0_var.outs RESULTS/SC/y=0_var_*.outs
+grab sc_z0_var.outs RESULTS/SC/z=0_var_*.outs
 
 # ---- graded-series frame count ------------------------------------------------
-# No #SAVEPLOT is graded here; the graded series is each log's data rows (two
-# header lines, then one row per saved iteration at DnSaveLogfile=1).
+# The graded cuts are written once, at the end of the run (plotonce.py above;
+# the deck has no #STOP window to retime them over), so the frame rule is
+# carried by the logs: each log's data rows (two header lines, then one row
+# per saved iteration at DnSaveLogfile=1).
 count_log_rows() { local n; n=$(( $(wc -l < "$1") - 2 )); [ "$n" -ge 0 ] || n=0; echo "$n"; }
 FSC=$(count_log_rows "$OUT_DIR/sc_log.log")
 FIH=$(count_log_rows "$OUT_DIR/ih_log.log")
