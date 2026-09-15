@@ -140,13 +140,28 @@ checks copy it into their scratch build, the probes compile against it and link
 `evidence.floor` is the distance between two legitimate builds of the same
 source, not a spread induced by moving an input. Both trees are pre-built in the
 image for the same reason: a check recompiles one driver or probe and links the
-library that is already there, so the alternative build costs a nominal build
-in compilation, and an unoptimised library is 3 to 5 times slower to run.
+library that is already there, so the alternative build costs less than a
+nominal one in compilation (45 s across the 22 checks against 61 s) and 3.9
+times more in run time (689 s of check time against 176 s, the most expensive
+single check 270 s against 76 s). The suite budget is read from the nominal
+solve only, 114.6 s of 900 s in the shipped record; the alternative solve is
+self-validation, not a grading run.
 
 Only the oracle image carries the second tree; the solver environment has none
 and `run.sh altbuild` exits 2 there with a message saying so. That is the
 meep/athena convention (`-O0` tree pre-built in the oracle image), applied here
 because the library and not the driver is what this task ports.
+
+**Measured floors, x86-64 record of 2026-09-15.** Every check passes its own
+rule on the alternative build, so all 22 floors are a pass and not a calibration
+failure. Twenty-one of them are exactly `0.0` with `identical: true`: on
+baseline x86-64 `g++` there is no contraction or reassociation to change between
+`-O2 -DNDEBUG` and `-O0`, and the heavy kernels live in the distro BLAS and
+LAPACK that neither tree recompiles. The exception is `unittest-mps-cc` at
+3.55e-15, 3.55e-06 of its 1e-9 bound. A floor of zero here means the alternative
+build computed the same thing on this host — it is not a claim that every
+mathematically equivalent summation order lands on the same digits, which is
+what the bounds are for.
 
 ## The operand contract, and one bound the review flagged
 
@@ -175,11 +190,12 @@ final sweeps run with noise zero, so the graded energy is the converged
 variational minimum — reproducible to all printed digits across runs, as the
 record shows. What a second *build* does to a 10-decimal print is now measured
 rather than assumed: the check declares an alternative build, and that
-measurement is its `evidence.floor`. A floor of zero there is a statement about
-this build pair on this host, not a guarantee against every mathematically
-equivalent summation order, so if a reviewer wants more room the move is to
-widen the bound toward what the printed precision can resolve, not to tighten
-it.
+measurement is its `evidence.floor`, 0.0 with `identical: true` in the x86
+record — both graded values come out bit for bit the same from the `-O2` and the
+`-O0` build of the same source. That is a statement about this build pair on
+this host, not a guarantee against every mathematically equivalent summation
+order, so if a reviewer wants more room the move is to widen the bound toward
+what the printed precision can resolve, not to tighten it.
 
 ## Cross-architecture floor: arm64 against x86
 
