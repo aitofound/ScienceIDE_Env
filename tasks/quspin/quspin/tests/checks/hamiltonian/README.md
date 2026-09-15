@@ -10,7 +10,7 @@ half-filled sector.
 
 ## The two initial conditions
 
-The variant changes the active longitudinal field by two binary64 ulps before the solve.
+Nominal uses `h=0.5`. The variant uses `h=0.5001`, a ~1e-4 perturbation rather than a two-ulp one, because this check's matrix observables need a field change large enough to move the lowest eigenvalue.
 
 ## The pass policy
 

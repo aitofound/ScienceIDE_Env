@@ -14,7 +14,11 @@ The image installs the pinned Python package and its published extension wheels 
 
 ## Tolerances
 
-Every check is graded as a two-ulp numerical calibration: nominal and variant differ only by a two-binary64-ulp change in the active field, with the physical model fixed. Measured spreads sit at 1e-14 or below against a 1e-8 bound, so the bound is a floating-point allowance rather than a physics allowance. Per-check commands, observables and tolerance rationale live in each check README and rubric.
+Twelve of the thirteen checks are graded as a two-ulp numerical calibration: nominal and variant differ only by a two-binary64-ulp change in the active field (`h=0.5` to `0.5000000000000002`), with the physical model fixed. Measured spreads there sit at 1e-14 or below against a 1e-8 bound, so the bound is a floating-point allowance rather than a physics allowance.
+
+`hamiltonian` is the deliberate exception. Its observables are the trace, the Frobenius norm and the Hermiticity residual, and those are insensitive to a two-ulp field change, so the check also records the lowest eigenvalue and moves the field to `h=0.5001`. That perturbation is ~1e-4 rather than ~1e-16, and it is still ~6 orders of magnitude inside the same 1e-8 bound (measured shift 2.1e-14). Its rubric states the value it uses.
+
+Per-check commands, observables and tolerance rationale live in each check README and rubric.
 
 ## Coverage and exclusions
 
