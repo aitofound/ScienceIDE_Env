@@ -1,0 +1,192 @@
+{
+  "skimage.color.label2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorlabel.py",
+      "line": 85,
+      "end_line": 156
+    },
+    "description": "Return an RGB image where color-coded labels are painted over the image.",
+    "calls": [
+      "np.moveaxis",
+      "_label2rgb_overlay",
+      "_label2rgb_avg"
+    ],
+    "branches": [
+      {
+        "line": 146,
+        "expression": "image is not None"
+      },
+      {
+        "line": 148,
+        "expression": "kind == 'overlay'"
+      },
+      {
+        "line": 152,
+        "expression": "kind == 'avg'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.rgb2gray": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 941,
+      "end_line": 984
+    },
+    "description": "Compute luminance of an RGB image.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.rescale_intensity": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 491,
+      "end_line": 607
+    },
+    "description": "Return image after stretching or shrinking its intensity levels.",
+    "calls": [
+      "map",
+      "np.clip",
+      "_output_dtype",
+      "intensity_range",
+      "np.any",
+      "np.isnan",
+      "utils.warn",
+      "(image * (omax - omin) + omin).astype",
+      "np.clip(image, omin, omax).astype"
+    ],
+    "branches": [
+      {
+        "line": 583,
+        "expression": "out_range in ['dtype', 'image']"
+      },
+      {
+        "line": 593,
+        "expression": "np.any(np.isnan([imin, imax, omin, omax]))"
+      },
+      {
+        "line": 603,
+        "expression": "imin != imax"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.label": {
+    "implementation": {
+      "file": "src/skimage/measure/_label.py",
+      "line": 33,
+      "end_line": 125
+    },
+    "description": "Label connected regions of an integer array.",
+    "calls": [
+      "_label_bool",
+      "clabel"
+    ],
+    "branches": [
+      {
+        "line": 117,
+        "expression": "label_image.dtype == bool"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.h_maxima": {
+    "implementation": {
+      "file": "src/skimage/morphology/extrema.py",
+      "line": 49,
+      "end_line": 175
+    },
+    "description": "Determine all maxima of the image with height >= h.",
+    "calls": [
+      "grayreconstruct.reconstruction",
+      "(residue_img >= h).astype",
+      "np.ptp",
+      "_subtract_constant_clip",
+      "type",
+      "image.astype",
+      "image.dtype.type",
+      "np.abs",
+      "np.finfo"
+    ],
+    "branches": [
+      {
+        "line": 118,
+        "expression": "h > np.ptp(image)"
+      },
+      {
+        "line": 137,
+        "expression": "np.issubdtype(type(h), np.floating) and np.issubdtype(image.dtype, np.integer)"
+      },
+      {
+        "line": 149,
+        "expression": "h == 0"
+      },
+      {
+        "line": 152,
+        "expression": "np.issubdtype(image.dtype, np.floating)"
+      },
+      {
+        "line": 138,
+        "expression": "h % 1 != 0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.local_maxima": {
+    "implementation": {
+      "file": "src/skimage/morphology/extrema.py",
+      "line": 275,
+      "end_line": 438
+    },
+    "description": "Find local maxima of n-dimensional array.",
+    "calls": [
+      "_util._set_border_values",
+      "np.nonzero",
+      "any",
+      "np.pad",
+      "_util._resolve_neighborhood",
+      "_util._offsets_to_raveled_neighbors",
+      "crop",
+      "flags.view",
+      "_local_maxima",
+      "image.min",
+      "image.ravel",
+      "flags.ravel"
+    ],
+    "branches": [
+      {
+        "line": 384,
+        "expression": "image.size == 0"
+      },
+      {
+        "line": 392,
+        "expression": "allow_borders"
+      },
+      {
+        "line": 402,
+        "expression": "any((s < 3 for s in image.shape))"
+      },
+      {
+        "line": 428,
+        "expression": "allow_borders"
+      },
+      {
+        "line": 435,
+        "expression": "indices"
+      },
+      {
+        "line": 386,
+        "expression": "indices"
+      },
+      {
+        "line": 419,
+        "expression": "image.dtype == np.float16"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

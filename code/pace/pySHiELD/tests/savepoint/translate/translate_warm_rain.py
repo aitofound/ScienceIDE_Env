@@ -1,0 +1,148 @@
+from ndsl import StencilFactory
+from pyshield.stencils.gfdl_cld_microphysics import GFDLCloudMPConfig
+from pyshield.stencils.gfdl_cld_microphysics.warm_rain import WarmRain
+from tests.savepoint.translate.translate_physics import TranslatePhysicsFortranData2Py
+
+
+class TranslateWarmRain(TranslatePhysicsFortranData2Py):
+    def __init__(
+        self,
+        grid,
+        config,
+        stencil_factory: StencilFactory,
+    ):
+        super().__init__(grid, config, stencil_factory)
+        self.in_vars["data_vars"] = {
+            "qvapor": {"serialname": "wr_qv", "shield": True},
+            "qliquid": {"serialname": "wr_ql", "shield": True},
+            "qrain": {"serialname": "wr_qr", "shield": True},
+            "qice": {"serialname": "wr_qi", "shield": True},
+            "qsnow": {"serialname": "wr_qs", "shield": True},
+            "qgraupel": {"serialname": "wr_qg", "shield": True},
+            "temperature": {"serialname": "wr_pt", "shield": True},
+            "delp": {"serialname": "wr_delp", "shield": True},
+            "density": {"serialname": "wr_den", "shield": True},
+            "density_factor": {"serialname": "wr_denfac", "shield": True},
+            "vterminal_water": {"serialname": "wr_vtw", "shield": True},
+            "vterminal_rain": {"serialname": "wr_vtr", "shield": True},
+            "cloud_condensation_nuclei": {"serialname": "wr_ccn", "shield": True},
+            "reevap": {"serialname": "wr_reevap", "shield": True},
+            "h_var": {"serialname": "wr_h_var", "shield": True},
+        }
+
+        self.in_vars["parameters"] = [
+            "dt",
+        ]
+
+        self.out_vars = {
+            "qvapor": {"serialname": "wr_qv", "kend": self.config.npz, "shield": True},
+            "qliquid": {"serialname": "wr_ql", "kend": self.config.npz, "shield": True},
+            "qrain": {"serialname": "wr_qr", "kend": self.config.npz, "shield": True},
+            "qice": {"serialname": "wr_qi", "kend": self.config.npz, "shield": True},
+            "qsnow": {"serialname": "wr_qs", "kend": self.config.npz, "shield": True},
+            "qgraupel": {
+                "serialname": "wr_qg",
+                "kend": self.config.npz,
+                "shield": True,
+            },
+            "temperature": {
+                "serialname": "wr_pt",
+                "kend": self.config.npz,
+                "shield": True,
+            },
+            "cloud_condensation_nuclei": {
+                "serialname": "wr_ccn",
+                "kend": self.config.npz,
+                "shield": True,
+            },
+            "reevap": {
+                "serialname": "wr_reevap",
+                "kend": self.config.npz,
+                "shield": True,
+            },
+        }
+
+        self.max_error = 5.0e-13  # only qrain in evaporate_rain
+
+        self.stencil_factory = stencil_factory
+        self.grid_indexing = self.stencil_factory.grid_indexing
+        self.mpconfig = GFDLCloudMPConfig(
+            dt_full=self.config.dt_atmos,
+            hydrostatic=self.config.hydrostatic,
+            npx=self.config.npx,
+            npy=self.config.npy,
+            npz=self.config.npz,
+            nwat=self.config.nwat,
+            do_qa=self.config.do_qa,
+            do_inline_mp=self.config.do_inline_mp,
+            c_cracw=self.config.c_cracw,
+            c_paut=self.config.c_paut,
+            c_pgacs=self.config.c_pgacs,
+            c_psaci=self.config.c_psaci,
+            ccn_l=self.config.ccn_l,
+            ccn_o=self.config.ccn_o,
+            const_vg=self.config.const_vg,
+            const_vi=self.config.const_vi,
+            const_vr=self.config.const_vr,
+            const_vs=self.config.const_vs,
+            vs_fac=self.config.vs_fac,
+            vg_fac=self.config.vg_fac,
+            vi_fac=self.config.vi_fac,
+            vr_fac=self.config.vr_fac,
+            de_ice=self.config.de_ice,
+            layout=self.config.layout,
+            tau_imlt=self.config.tau_imlt,
+            tau_i2s=self.config.tau_i2s,
+            tau_g2v=self.config.tau_g2v,
+            tau_v2g=self.config.tau_v2g,
+            ql_mlt=self.config.ql_mlt,
+            qs_mlt=self.config.qs_mlt,
+            t_sub=self.config.t_sub,
+            qi_gen=self.config.qi_gen,
+            qi_lim=self.config.qi_lim,
+            qi0_max=self.config.qi0_max,
+            rad_snow=self.config.rad_snow,
+            rad_rain=self.config.rad_rain,
+            dw_ocean=self.config.dw_ocean,
+            dw_land=self.config.dw_land,
+            tau_l2v=self.config.tau_l2v,
+            c2l_ord=self.config.c2l_ord,
+            do_sedi_heat=self.config.do_sedi_heat,
+            do_sedi_w=self.config.do_sedi_w,
+            fast_sat_adj=self.config.fast_sat_adj,
+            qc_crt=self.config.qc_crt,
+            fix_negative=self.config.fix_negative,
+            irain_f=self.config.irain_f,
+            mp_time=self.config.mp_time,
+            prog_ccn=self.config.prog_ccn,
+            qi0_crt=self.config.qi0_crt,
+            qs0_crt=self.config.qs0_crt,
+            rh_inc=self.config.rh_inc,
+            rh_inr=self.config.rh_inr,
+            rthresh=self.config.rthresh,
+            sedi_transport=self.config.sedi_transport,
+            use_ppm=self.config.use_ppm,
+            vg_max=self.config.vg_max,
+            vi_max=self.config.vi_max,
+            vr_max=self.config.vr_max,
+            vs_max=self.config.vs_max,
+            z_slope_ice=self.config.z_slope_ice,
+            z_slope_liq=self.config.z_slope_liq,
+            tice=self.config.tice,
+            alin=self.config.alin,
+            clin=self.config.clin,
+        )
+        self.mpconfig.do_mp_table_emulation = True
+
+    def compute(self, inputs):
+        self.make_storage_data_input_vars(inputs)
+
+        compute_func = WarmRain(
+            self.stencil_factory,
+            self.mpconfig,
+            timestep=inputs.pop("dt"),
+        )
+
+        compute_func(**inputs)
+
+        return self.slice_output(inputs)

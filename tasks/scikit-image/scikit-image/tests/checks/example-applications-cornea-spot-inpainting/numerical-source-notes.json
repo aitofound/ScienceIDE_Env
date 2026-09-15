@@ -1,0 +1,272 @@
+{
+  "skimage.color.label2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorlabel.py",
+      "line": 85,
+      "end_line": 156
+    },
+    "description": "Return an RGB image where color-coded labels are painted over the image.",
+    "calls": [
+      "np.moveaxis",
+      "_label2rgb_overlay",
+      "_label2rgb_avg"
+    ],
+    "branches": [
+      {
+        "line": 146,
+        "expression": "image is not None"
+      },
+      {
+        "line": 148,
+        "expression": "kind == 'overlay'"
+      },
+      {
+        "line": 152,
+        "expression": "kind == 'avg'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.threshold_local": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 177,
+      "end_line": 277
+    },
+    "description": "Compute a threshold mask image based on local pixel neighborhood.",
+    "calls": [
+      "np.isscalar",
+      "any",
+      "image.astype",
+      "ndi.generic_filter",
+      "gaussian",
+      "ndi.uniform_filter",
+      "ndi.median_filter"
+    ],
+    "branches": [
+      {
+        "line": 243,
+        "expression": "np.isscalar(block_size)"
+      },
+      {
+        "line": 248,
+        "expression": "any((b % 2 == 0 for b in block_size))"
+      },
+      {
+        "line": 256,
+        "expression": "method == 'generic'"
+      },
+      {
+        "line": 245,
+        "expression": "len(block_size) != image.ndim"
+      },
+      {
+        "line": 260,
+        "expression": "method == 'gaussian'"
+      },
+      {
+        "line": 261,
+        "expression": "param is None"
+      },
+      {
+        "line": 267,
+        "expression": "method == 'mean'"
+      },
+      {
+        "line": 269,
+        "expression": "method == 'median'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.find_contours": {
+    "implementation": {
+      "file": "src/skimage/measure/_find_contours.py",
+      "line": 10,
+      "end_line": 152
+    },
+    "description": "Find iso-valued contours in a 2D array for a given level value.",
+    "calls": [
+      "_get_contour_segments",
+      "_assemble_contours",
+      "mask.astype",
+      "image.astype",
+      "np.can_cast",
+      "np.nanmin",
+      "np.nanmax"
+    ],
+    "branches": [
+      {
+        "line": 125,
+        "expression": "fully_connected not in _param_options"
+      },
+      {
+        "line": 129,
+        "expression": "positive_orientation not in _param_options"
+      },
+      {
+        "line": 133,
+        "expression": "image.shape[0] < 2 or image.shape[1] < 2"
+      },
+      {
+        "line": 135,
+        "expression": "image.ndim != 2"
+      },
+      {
+        "line": 137,
+        "expression": "mask is not None"
+      },
+      {
+        "line": 143,
+        "expression": "level is None"
+      },
+      {
+        "line": 150,
+        "expression": "positive_orientation == 'high'"
+      },
+      {
+        "line": 138,
+        "expression": "mask.shape != image.shape"
+      },
+      {
+        "line": 140,
+        "expression": "not np.can_cast(mask.dtype, bool, casting='safe')"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.diamond": {
+    "implementation": {
+      "file": "src/skimage/morphology/footprints.py",
+      "line": 342,
+      "end_line": 396
+    },
+    "description": "Generates a flat, diamond-shaped footprint.",
+    "calls": [
+      "np.abs",
+      "np.arange",
+      "np.meshgrid",
+      "diamond",
+      "_decompose_size"
+    ],
+    "branches": [
+      {
+        "line": 384,
+        "expression": "decomposition is None"
+      },
+      {
+        "line": 390,
+        "expression": "decomposition == 'sequence'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.dilation": {
+    "implementation": {
+      "file": "src/skimage/morphology/gray.py",
+      "line": 174,
+      "end_line": 284
+    },
+    "description": "Return grayscale morphological dilation of an image.",
+    "calls": [
+      "_min_max_to_constant_mode",
+      "pad_footprint",
+      "mirror_footprint",
+      "_iterate_gray_func",
+      "_footprint_is_sequence"
+    ],
+    "branches": [
+      {
+        "line": 260,
+        "expression": "out is None"
+      },
+      {
+        "line": 263,
+        "expression": "mode not in _SUPPORTED_MODES"
+      },
+      {
+        "line": 265,
+        "expression": "mode == 'ignore'"
+      },
+      {
+        "line": 273,
+        "expression": "not _footprint_is_sequence(footprint)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.opening": {
+    "implementation": {
+      "file": "src/skimage/morphology/gray.py",
+      "line": 287,
+      "end_line": 361
+    },
+    "description": "Return grayscale morphological opening of an image.",
+    "calls": [
+      "pad_footprint",
+      "erosion",
+      "dilation",
+      "mirror_footprint"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.restoration.inpaint_biharmonic": {
+    "implementation": {
+      "file": "src/skimage/restoration/inpaint.py",
+      "line": 197,
+      "end_line": 340
+    },
+    "description": "Inpaint masked points in image with biharmonic equations.",
+    "calls": [
+      "np.sum",
+      "_inpaint_biharmonic_single_region",
+      "slice",
+      "utils.channel_as_last_axis",
+      "np.ma.isMaskedArray",
+      "skimage.img_as_float",
+      "utils._supported_float_type",
+      "image.astype",
+      "mask.astype",
+      "np.copy",
+      "_get_neigh_coef",
+      "np.clip",
+      "known_points.min",
+      "known_points.max",
+      "ndi.generate_binary_structure",
+      "ndi.binary_dilation",
+      "label",
+      "ndi.find_objects",
+      "out[roi_sl].copy",
+      "max",
+      "min"
+    ],
+    "branches": [
+      {
+        "line": 247,
+        "expression": "image.ndim < 1"
+      },
+      {
+        "line": 252,
+        "expression": "img_baseshape != mask.shape"
+      },
+      {
+        "line": 255,
+        "expression": "np.ma.isMaskedArray(image)"
+      },
+      {
+        "line": 265,
+        "expression": "not multichannel"
+      },
+      {
+        "line": 287,
+        "expression": "split_into_regions"
+      },
+      {
+        "line": 337,
+        "expression": "not multichannel"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

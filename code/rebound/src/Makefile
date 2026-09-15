@@ -1,0 +1,53 @@
+include Makefile.defs
+
+SOURCES=rebound.c tree.c particle.c gravity.c integrator_whfast.c integrator_whfast512.c integrator_saba.c integrator_ias15.c integrator_sei.c integrator_bs.c integrator_leapfrog.c integrator_mercurius.c integrator_trace.c integrator_eos.c boundary.c binarydata.c output.c collision.c communication_mpi.c display.c tools.c rotations.c simulation.c derivatives.c simulationarchive.c glad.c integrator_janus.c transformations.c fmemopen.c server.c frequency_analysis.c
+OBJECTS=$(SOURCES:.c=.$(OBJFILEEXT))
+HEADERS=$(SOURCES:.c=.h) rebound_internal.h
+
+all: $(SOURCES) $(LIBREBOUND)
+
+ifneq ($(OS),Windows_NT) 
+# Linux, MacOS
+%.$(OBJFILEEXT): %.c $(HEADERS)
+	@echo "Compiling source file $< ..."
+	$(CC) -c $(OPT) $(OPTLIB) $(PREDEF) -o $@ $<
+
+integrator_whfast512.asm_o: integrator_whfast512.s
+	@echo "Assembling source file integrator_asm512.s ..."
+	$(AS)
+
+$(LIBREBOUND): $(OBJECTS) $(OBJECTS_ASM)
+	@echo ""        
+	@echo "Linking shared library $@ ..."
+	$(CC) $(OPT) $(OPTLIB) -shared $(OBJECTS) $(OBJECTS_ASM) $(LIB) -o $@ 
+	
+	@echo ""        
+	@echo "The shared library $< has been created successfully."
+else
+# Windows
+%.$(OBJFILEEXT): %.c $(HEADERS)
+	@echo "Compiling source file $< ..."
+	$(CC) -c  /DBUILDINGLIBREBOUND $(OPT) $(OPTLIB) $(PREDEF) /Fo:$@ $<
+
+integrator_whfast512_asm.$(OBJFILEEXT): integrator_whfast512.s
+	@echo "Assembling source file integrator_asm512.s ..."
+	$(AS)
+
+$(LIBREBOUND): $(OBJECTS) $(OBJECTS_ASM)
+	@echo ""        
+	@echo "Linking shared library $@ ..."
+	$(CC) /D_USRDLL /D_WINDLL $(OBJECTS) $(OBJECTS_ASM) /link /DLL /OUT:$@ 
+	
+	@echo ""        
+	@echo "The shared library $< has been created successfully."
+endif
+	
+	
+clean:
+	@echo "Removing object files *.$(OBJFILEEXT) ..."
+	@-$(RM) *.$(OBJFILEEXT)
+	@echo "Removing shared library $(LIBREBOUND) ..."
+	@-$(RM) *.so
+	@echo "Removing coverage files ..."
+	@-$(RM) *.gcda
+	@-$(RM) *.gcno
