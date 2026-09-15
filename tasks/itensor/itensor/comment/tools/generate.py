@@ -202,9 +202,10 @@ def write_check(leaf: Path, group: str, upstream: list[str], observable: str,
             "graded observables and so measures this check's numerical floor.",
         ),
         "altbuild": (
-            "the same probe source compiled with -O0 against the same pinned library, "
-            "instead of -O2 -DNDEBUG; both are legitimate builds of the same source, so "
-            "the distance between them is this check's build-to-build floor"
+            "the same probe and the same pinned library compiled at -O0 instead of "
+            "-O2 -DNDEBUG by the same g++ from the second tree the oracle image "
+            "pre-builds at $SOURCE_DIR-alt, a build a correct port could plausibly "
+            "ship while iterating"
         ),
         "comparison": {
             "atol": 1e-09,
