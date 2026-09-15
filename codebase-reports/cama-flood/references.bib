@@ -1,0 +1,111 @@
+% CaMa-Flood bibliography, ordered by relevance: core model, routing methods,
+% routing extensions, then the optional upstream water-temperature subsystem.
+% Verified on 2026-09-12 against upstream-owned documentation at pin
+% 25b9caab93dc809d2d5580781c6bff31f185ebf8 and publisher-deposited Crossref records.
+%
+% Coverage audit at ScienceAccelBench commit
+% 9b9ac0eea13712f2e40d25e28ac4c4b49a07c761:
+% - No shipped files exist under tasks/cama-flood/ in the Git tree.
+% - The supplied scienceaccel_inventory.json maps no open/pending PRs here.
+% - gh inspection confirms source PR #429 is merged (2026-09-06):
+%   https://github.com/aitofound/ScienceAccelBench/pull/429
+%   It defines one planned river-floodplain-routing module, including
+%   bifurcation and levees; that plan is not a shipped task or coverage claim.
+% - The existing codebase report is retained without backfilling unknowns.
+%
+% Core model: explicitly requested by the pinned upstream README.
+% https://github.com/global-hydrodynamics/CaMa-Flood_v4/blob/25b9caab93dc809d2d5580781c6bff31f185ebf8/README.md
+% Metadata: https://api.crossref.org/works/10.1029/2010WR009726
+% W04501 is the article locator given in the pinned manual's bibliography:
+% https://github.com/global-hydrodynamics/CaMa-Flood_v4/blob/25b9caab93dc809d2d5580781c6bff31f185ebf8/doc/Manual_CaMa-Flood_v420.docx
+@article{Yamazaki2011CaMaFlood,
+  author = {Yamazaki, Dai and Kanae, Shinjiro and Kim, Hyungjun and Oki, Taikan},
+  title = {A physically based description of floodplain inundation dynamics in a global river routing model},
+  journal = {Water Resources Research},
+  year = {2011},
+  volume = {47},
+  number = {4},
+  pages = {W04501},
+  doi = {10.1029/2010WR009726},
+  url = {https://doi.org/10.1029/2010WR009726}
+}
+
+% Local-inertial routing and vector river networks: also explicitly requested
+% by the pinned upstream README; directly relevant to the routing module.
+% Metadata: https://api.crossref.org/works/10.1002/wrcr.20552
+@article{Yamazaki2013LocalInertialRouting,
+  author = {Yamazaki, Dai and de Almeida, Gustavo A. M. and Bates, Paul D.},
+  title = {Improving computational efficiency in global river models by implementing the local inertial flow equation and a vector-based river network map},
+  journal = {Water Resources Research},
+  year = {2013},
+  volume = {49},
+  number = {11},
+  pages = {7221--7235},
+  doi = {10.1002/wrcr.20552},
+  url = {https://doi.org/10.1002/wrcr.20552}
+}
+
+% Bifurcation: model-description reference [2014a] in the pinned v4.20 manual,
+% which describes the LPTHOUT bifurcation-flow scheme. Relevant to the
+% routing module's src/cmf_calc_pthout_mod.F90 ownership.
+% Metadata: https://api.crossref.org/works/10.1002/2014GL059744
+% Underlying local-inertial formulation used by CaMa-Flood's routing solver;
+% cited in the pinned v4.20 manual alongside the implementation-specific paper.
+% Metadata: https://api.crossref.org/works/10.1016/j.jhydrol.2010.03.027
+@article{Bates2010LocalInertial,
+  author = {Bates, Paul D. and Horritt, Matthew S. and Fewtrell, Timothy J.},
+  title = {A simple inertial formulation of the shallow water equations for efficient two-dimensional flood inundation modelling},
+  journal = {Journal of Hydrology},
+  year = {2010},
+  volume = {387},
+  number = {1--2},
+  pages = {33--45},
+  doi = {10.1016/j.jhydrol.2010.03.027},
+  url = {https://doi.org/10.1016/j.jhydrol.2010.03.027}
+}
+
+@article{Yamazaki2014Bifurcation,
+  author = {Yamazaki, Dai and Sato, Tomoko and Kanae, Shinjiro and Hirabayashi, Yukiko and Bates, Paul D.},
+  title = {Regional flood dynamics in a bifurcating mega delta simulated in a global river model},
+  journal = {Geophysical Research Letters},
+  year = {2014},
+  volume = {41},
+  number = {9},
+  pages = {3127--3135},
+  doi = {10.1002/2014GL059744},
+  url = {https://doi.org/10.1002/2014GL059744}
+}
+
+% Levees: explicitly named as the CaMa-Flood levee-scheme reference in:
+% https://github.com/global-hydrodynamics/CaMa-Flood_v4/blob/25b9caab93dc809d2d5580781c6bff31f185ebf8/doc/levee.md
+% Relevant to src/cmf_ctrl_levee_mod.F90; citing the method does not establish
+% levee execution coverage, which remains unmeasured in the existing report.
+% Metadata: https://api.crossref.org/works/10.1029/2024WR039790
+@article{Zhao2025LeveeModule,
+  author = {Zhao, Gang and Yamazaki, Dai and Tanaka, Yoshiaki and Zhou, Xudong and Li, Shuping and Hu, Yang and Hirabayashi, Yukiko and Neal, Jeff and Bates, Paul},
+  title = {Developing a Levee Module for Global Flood Modeling With a Reach-Level Parameterization Approach},
+  journal = {Water Resources Research},
+  year = {2025},
+  volume = {61},
+  number = {8},
+  pages = {e2024WR039790},
+  doi = {10.1029/2024WR039790},
+  url = {https://doi.org/10.1029/2024WR039790}
+}
+
+% Optional upstream subsystem: the pinned README requests this citation when
+% using the river water-temperature model. Thermodynamics is present upstream
+% but explicitly outside the report's approved routing module; this entry
+% does not imply a shipped thermal task or full coupled-model validation.
+% Metadata: https://api.crossref.org/works/10.1029/2018WR023083
+@article{Tokuda2019RiverWaterTemperature,
+  author = {Tokuda, Daisuke and Kim, Hyungjun and Yamazaki, Dai and Oki, Taikan},
+  title = {Development of a Global River Water Temperature Model Considering Fluvial Dynamics and Seasonal Freeze-Thaw Cycle},
+  journal = {Water Resources Research},
+  year = {2019},
+  volume = {55},
+  number = {2},
+  pages = {1366--1383},
+  doi = {10.1029/2018WR023083},
+  url = {https://doi.org/10.1029/2018WR023083}
+}

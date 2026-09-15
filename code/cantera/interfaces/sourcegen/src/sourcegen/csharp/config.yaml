@@ -1,0 +1,114 @@
+# Configuration for C# code generation.
+
+# This file is part of Cantera. See License.txt in the top-level directory or
+# at https://cantera.org/license.txt for license and copyright information.
+
+# Ignore these files entirely:
+ignore_files:
+  - ctonedim.yaml
+  - ctdomain.yaml
+  - ctrdiag.yaml
+
+# Ignore these specific functions:
+ignore_funcs:
+  ct.yaml:
+    - setLogWriter
+  ctfunc.yaml:
+    - new_advanced
+
+# C type crosswalks;
+# map C type names to C# type names where they differ
+c_type_crosswalk:
+  const char*: string
+  const double*: ReadOnlySpan<double>
+  const int32_t*: ReadOnlySpan<int>
+  char*: Span<byte>
+  double*: Span<double>
+  int32_t*: Span<int>
+  int32_t: int
+  double: double
+  const int32_t: int
+  const double: double
+  LogCallback: LogCallback
+
+# Span type crosswalks;
+# map Span type used in interop call to appropriate return type
+span_type_crosswalk:
+  Span<byte>: string
+  Span<double>: double[]
+
+# **************************************************************************************
+#  TODO: Some of the following crosswalks can be automated based on available header
+#  file information.
+# **************************************************************************************
+
+# Replaces the name as determined by the C function prefix
+# with the name of the class that function is designed to expose
+class_crosswalk:
+  flowdev: FlowDevice
+  kin: Kinetics
+  mix: Mixture
+  reactor: Reactor
+  reactornet: ReactorNet
+  reactorsurface: ReactorSurface
+  sol: Solution
+  surf: Surface
+  thermo: ThermoPhase
+  trans: Transport
+  wall: Wall
+  func1: Func1
+  connector: Connector
+  rxn: Reaction
+
+# Provides information on instance methods that return instances
+# of other C# classes.
+class_accessors:
+  sol_thermo: ThermoPhaseHandle
+  sol_kinetics: KineticsHandle
+  sol_transport: TransportHandle
+  thermo_parent: SolutionHandle
+  kin_parent: SolutionHandle
+  trans_parent: SolutionHandle
+
+# Functions that are typed to take an array of ints, but are really
+# supposed to take an array of handles
+handle_array_takers:
+  sol_newInterface: SolutionHandle
+  reactornet_new: ReactorHandle
+
+# Handles for which there is no special delete function,
+# so we need to generate them manually because we can't
+# discover the type name from the delete.
+# Declare these as
+#  Derived: Base
+derived_handles:
+  SurfaceHandle: ThermoPhaseHandle
+  WallHandle: ConnectorHandle
+  FlowDeviceHandle: ConnectorHandle
+  ReactorSurfaceHandle: ReactorHandle
+
+# Provides info for scaffolding higher-level idiomatic C# classes
+# At this stage, we can scaffold simple properties that follow the
+# naming conventions _prop, _setProp for scalars and
+# _getProp, _setProp for array-likes (string, double[]).
+# The C# class name will be determine by the class crosswalk above.
+# The C# property names are the values for the CLib "property" keys.
+wrapper_classes:
+  thermo:
+  # scalars
+    density: Density
+    electricPotential: ElectricPotential
+    meanMolecularWeight: MeanMolecularWeight
+    molarDensity: MolarDensity
+    pressure: Pressure
+    temperature: Temperature
+    enthalpy_mass: MassEnthalpy
+    enthalpy_mole: MolarEnthalpy
+    entropy_mass: MassEntropy
+    entropy_mole: MolarEntropy
+    cp_mole: MolarCp
+    cv_mole: MolarCv
+    cp_mass: MassCp
+    cv_mass: MassCv
+  # strings
+    name: Name

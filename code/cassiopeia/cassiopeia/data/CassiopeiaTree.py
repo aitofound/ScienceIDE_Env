@@ -1694,6 +1694,8 @@ class CassiopeiaTree:
                 successors = self.children(node)
                 if len(successors) == 1:
                     child = successors[0]
+                    if self.is_leaf(child):
+                        continue
                     t = self.get_branch_length(node, child)
                     for grandchild in self.children(child):
                         t_ = self.get_branch_length(child, grandchild)
