@@ -167,7 +167,20 @@ add one spectrum-sensitive calibration observable.
 | sphinx/doc_examples (extra) | `measurements.py` | 1 | basis-doc-examples | covered |
 | examples/notebooks | `*.py` | 6 | examples-notebooks | covered (all 6 run) |
 
-`examples/scripts/outdated/` is a parked directory upstream never runs.
+`examples/scripts/outdated/` is a parked directory upstream never runs and no
+script or `.rst` page references. Its four files that are not underscore-disabled
+were still checked by running them against the pinned build rather than trusting
+the directory name: `boson_MBL.py` does not finish inside a 180 s window and
+`real_vs_cpx_valued_ODE.py` fails to import `evolve` from
+`quspin.tools.measurements`, which the pinned version no longer exports, so it is
+stale against its own codebase. `example11_old.py` and `mag_field.py` do run, but
+are superseded copies (`example11_old.py` is the predecessor of the covered
+`example11.py`) and upstream neither ships nor runs them. The directory is
+therefore excluded as a whole, on measured grounds rather than on its name.
+
+`code/quspin/docs/downloads/` is not a source surface either: all 39 of its `.py`
+files are byte-identical copies that the documentation build fetched, and each
+one is already covered at its original path.
 
 `sphinx/doc_examples/measurements.py` does not match upstream's `*example.py`
 glob and no `.rst` page references it, so it is not part of the published example
