@@ -1,0 +1,96 @@
+{
+  "skimage.exposure.rescale_intensity": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 491,
+      "end_line": 607
+    },
+    "description": "Return image after stretching or shrinking its intensity levels.",
+    "calls": [
+      "map",
+      "np.clip",
+      "_output_dtype",
+      "intensity_range",
+      "np.any",
+      "np.isnan",
+      "utils.warn",
+      "(image * (omax - omin) + omin).astype",
+      "np.clip(image, omin, omax).astype"
+    ],
+    "branches": [
+      {
+        "line": 583,
+        "expression": "out_range in ['dtype', 'image']"
+      },
+      {
+        "line": 593,
+        "expression": "np.any(np.isnan([imin, imax, omin, omax]))"
+      },
+      {
+        "line": 603,
+        "expression": "imin != imax"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.feature.hog": {
+    "implementation": {
+      "file": "src/skimage/feature/_hog.py",
+      "line": 48,
+      "end_line": 341
+    },
+    "description": "Extract Histogram of Oriented Gradients (HOG) for a given image.",
+    "calls": [
+      "np.arange",
+      "_hog_channel_gradient",
+      "utils.channel_as_last_axis",
+      "np.atleast_2d",
+      "utils._supported_float_type",
+      "image.astype",
+      "g_row.astype",
+      "g_col.astype",
+      "_hoghistogram.hog_histograms",
+      "np.sqrt",
+      "g_magn.argmax",
+      "np.meshgrid",
+      "normalized_blocks.ravel",
+      "np.hypot",
+      "np.sin",
+      "np.cos",
+      "_hog_normalize_block",
+      "min",
+      "draw.line"
+    ],
+    "branches": [
+      {
+        "line": 170,
+        "expression": "ndim_spatial != 2"
+      },
+      {
+        "line": 187,
+        "expression": "transform_sqrt"
+      },
+      {
+        "line": 200,
+        "expression": "multichannel"
+      },
+      {
+        "line": 272,
+        "expression": "visualize"
+      },
+      {
+        "line": 311,
+        "expression": "n_blocks_col <= 0 or n_blocks_row <= 0"
+      },
+      {
+        "line": 335,
+        "expression": "feature_vector"
+      },
+      {
+        "line": 338,
+        "expression": "visualize"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

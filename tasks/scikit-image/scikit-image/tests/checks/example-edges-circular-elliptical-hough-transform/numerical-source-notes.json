@@ -1,0 +1,172 @@
+{
+  "skimage.color.gray2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 1028,
+      "end_line": 1049
+    },
+    "description": "Create an RGB representation of a gray-level image.",
+    "calls": [
+      "np.stack"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.rgb2gray": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 941,
+      "end_line": 984
+    },
+    "description": "Compute luminance of an RGB image.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.draw.circle_perimeter": {
+    "implementation": {
+      "file": "src/skimage/draw/draw.py",
+      "line": 525,
+      "end_line": 585
+    },
+    "description": "Generate circle perimeter coordinates.",
+    "calls": [
+      "_circle_perimeter"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.draw.ellipse_perimeter": {
+    "implementation": {
+      "file": "src/skimage/draw/draw.py",
+      "line": 649,
+      "end_line": 717
+    },
+    "description": "Generate ellipse perimeter coordinates.",
+    "calls": [
+      "_ellipse_perimeter"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.feature.canny": {
+    "implementation": {
+      "file": "src/skimage/feature/_canny.py",
+      "line": 103,
+      "end_line": 262
+    },
+    "description": "Edge filter an image using the Canny algorithm.",
+    "calls": [
+      "ndi.sobel",
+      "_preprocess",
+      "np.sqrt",
+      "_nonmaximum_suppression_bilinear",
+      "ndi.label",
+      "np.unique",
+      "dtype_limits",
+      "np.percentile"
+    ],
+    "branches": [
+      {
+        "line": 201,
+        "expression": "np.issubdtype(image.dtype, np.int64) or np.issubdtype(image.dtype, np.uint64)"
+      },
+      {
+        "line": 207,
+        "expression": "low_threshold is None"
+      },
+      {
+        "line": 215,
+        "expression": "high_threshold is None"
+      },
+      {
+        "line": 223,
+        "expression": "high_threshold < low_threshold"
+      },
+      {
+        "line": 236,
+        "expression": "use_quantiles"
+      },
+      {
+        "line": 254,
+        "expression": "count == 0"
+      },
+      {
+        "line": 209,
+        "expression": "use_quantiles"
+      },
+      {
+        "line": 217,
+        "expression": "use_quantiles"
+      },
+      {
+        "line": 210,
+        "expression": "not 0.0 <= low_threshold <= 1.0"
+      },
+      {
+        "line": 218,
+        "expression": "not 0.0 <= high_threshold <= 1.0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.hough_circle": {
+    "implementation": {
+      "file": "src/skimage/transform/hough_transform.py",
+      "line": 81,
+      "end_line": 123
+    },
+    "description": "Perform a circular Hough transform.",
+    "calls": [
+      "np.atleast_1d",
+      "_hough_circle",
+      "radius.astype"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.hough_circle_peaks": {
+    "implementation": {
+      "file": "src/skimage/transform/hough_transform.py",
+      "line": 305,
+      "end_line": 423
+    },
+    "description": "Return peaks in a circle Hough transform.",
+    "calls": [
+      "np.argsort",
+      "label_distant_points",
+      "_prominent_peaks",
+      "r.extend",
+      "cx.extend",
+      "cy.extend",
+      "accum.extend"
+    ],
+    "branches": [
+      {
+        "line": 394,
+        "expression": "normalize"
+      },
+      {
+        "line": 410,
+        "expression": "min_xdistance == 1 and min_ydistance == 1 or len(accum_sorted) == 0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_ubyte": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 557,
+      "end_line": 578
+    },
+    "description": "Convert an image to 8-bit unsigned integer format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}
