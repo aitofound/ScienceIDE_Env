@@ -1,0 +1,137 @@
+{
+  "skimage.metrics.peak_signal_noise_ratio": {
+    "implementation": {
+      "file": "src/skimage/metrics/simple_metrics.py",
+      "line": 115,
+      "end_line": 171
+    },
+    "description": "Compute the peak signal to noise ratio (PSNR) for an image.",
+    "calls": [
+      "check_shape_equality",
+      "_as_floats",
+      "mean_squared_error",
+      "np.log10",
+      "np.min",
+      "np.max"
+    ],
+    "branches": [
+      {
+        "line": 148,
+        "expression": "data_range is None"
+      },
+      {
+        "line": 149,
+        "expression": "image_true.dtype != image_test.dtype"
+      },
+      {
+        "line": 156,
+        "expression": "true_max > dmax or true_min < dmin"
+      },
+      {
+        "line": 161,
+        "expression": "true_min >= 0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.restoration.denoise_nl_means": {
+    "implementation": {
+      "file": "src/skimage/restoration/non_local_means.py",
+      "line": 14,
+      "end_line": 187
+    },
+    "description": "Perform non-local means denoising on 2D-4D grayscale or RGB images.",
+    "calls": [
+      "NotImplementedError",
+      "utils.channel_as_last_axis",
+      "convert_to_float",
+      "dict",
+      "np.ascontiguousarray",
+      "nlm_func"
+    ],
+    "branches": [
+      {
+        "line": 152,
+        "expression": "channel_axis is None"
+      },
+      {
+        "line": 159,
+        "expression": "ndim_no_channel < 2 or ndim_no_channel > 4"
+      },
+      {
+        "line": 166,
+        "expression": "not image.flags.c_contiguous"
+      },
+      {
+        "line": 170,
+        "expression": "ndim_no_channel == 2"
+      },
+      {
+        "line": 172,
+        "expression": "ndim_no_channel == 3"
+      },
+      {
+        "line": 173,
+        "expression": "multichannel and (not fast_mode)"
+      },
+      {
+        "line": 175,
+        "expression": "fast_mode"
+      },
+      {
+        "line": 181,
+        "expression": "ndim_no_channel == 4"
+      },
+      {
+        "line": 182,
+        "expression": "fast_mode"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.restoration.estimate_sigma": {
+    "implementation": {
+      "file": "src/skimage/restoration/_denoise.py",
+      "line": 1049,
+      "end_line": 1125
+    },
+    "description": "Robust wavelet-based estimator of the (Gaussian) noise standard deviation.",
+    "calls": [
+      "pywt.dwtn",
+      "_sigma_est_dwt",
+      "functools.partial",
+      "ImportError",
+      "estimate_sigma",
+      "np.mean",
+      "_at"
+    ],
+    "branches": [
+      {
+        "line": 1106,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 1113,
+        "expression": "average_sigmas"
+      },
+      {
+        "line": 1116,
+        "expression": "image.shape[-1] <= 4"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 479,
+      "end_line": 505
+    },
+    "description": "Convert an image to floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

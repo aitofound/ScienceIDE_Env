@@ -1,0 +1,128 @@
+{
+  "skimage.morphology.dilation": {
+    "implementation": {
+      "file": "src/skimage/morphology/gray.py",
+      "line": 174,
+      "end_line": 284
+    },
+    "description": "Return grayscale morphological dilation of an image.",
+    "calls": [
+      "_min_max_to_constant_mode",
+      "pad_footprint",
+      "mirror_footprint",
+      "_iterate_gray_func",
+      "_footprint_is_sequence"
+    ],
+    "branches": [
+      {
+        "line": 260,
+        "expression": "out is None"
+      },
+      {
+        "line": 263,
+        "expression": "mode not in _SUPPORTED_MODES"
+      },
+      {
+        "line": 265,
+        "expression": "mode == 'ignore'"
+      },
+      {
+        "line": 273,
+        "expression": "not _footprint_is_sequence(footprint)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.disk": {
+    "implementation": {
+      "file": "src/skimage/morphology/footprints.py",
+      "line": 508,
+      "end_line": 597
+    },
+    "description": "Generates a flat, disk-shaped footprint.",
+    "calls": [
+      "np.arange",
+      "np.meshgrid",
+      "_nsphere_series_decomposition",
+      "disk",
+      "_cross_decomposition"
+    ],
+    "branches": [
+      {
+        "line": 586,
+        "expression": "decomposition is None"
+      },
+      {
+        "line": 589,
+        "expression": "not strict_radius"
+      },
+      {
+        "line": 592,
+        "expression": "decomposition == 'sequence'"
+      },
+      {
+        "line": 594,
+        "expression": "decomposition == 'crosses'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.restoration.inpaint_biharmonic": {
+    "implementation": {
+      "file": "src/skimage/restoration/inpaint.py",
+      "line": 197,
+      "end_line": 340
+    },
+    "description": "Inpaint masked points in image with biharmonic equations.",
+    "calls": [
+      "np.sum",
+      "_inpaint_biharmonic_single_region",
+      "slice",
+      "utils.channel_as_last_axis",
+      "np.ma.isMaskedArray",
+      "skimage.img_as_float",
+      "utils._supported_float_type",
+      "image.astype",
+      "mask.astype",
+      "np.copy",
+      "_get_neigh_coef",
+      "np.clip",
+      "known_points.min",
+      "known_points.max",
+      "ndi.generate_binary_structure",
+      "ndi.binary_dilation",
+      "label",
+      "ndi.find_objects",
+      "out[roi_sl].copy",
+      "max",
+      "min"
+    ],
+    "branches": [
+      {
+        "line": 247,
+        "expression": "image.ndim < 1"
+      },
+      {
+        "line": 252,
+        "expression": "img_baseshape != mask.shape"
+      },
+      {
+        "line": 255,
+        "expression": "np.ma.isMaskedArray(image)"
+      },
+      {
+        "line": 265,
+        "expression": "not multichannel"
+      },
+      {
+        "line": 287,
+        "expression": "split_into_regions"
+      },
+      {
+        "line": 337,
+        "expression": "not multichannel"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

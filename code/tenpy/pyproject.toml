@@ -1,0 +1,181 @@
+[build-system]
+requires = ["setuptools>=77.0.3", "numpy", "scipy", "Cython>0.29"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "physics-tenpy"
+dynamic = ["version"]
+description = "Simulation of quantum many-body systems with tensor networks in Python"
+readme = {file = "README.rst", content-type = "text/x-rst"}
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [
+    {name = "TeNPy Developer Team"},
+]
+maintainers = [
+    {name = "Johannes Hauschild", email="tenpy@johannes-hauschild.de"},
+    {name = "Jakob Unfried", email="jakob.unfried@tum.de"},
+]
+keywords = ["tensor networks", "matrix product states"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Programming Language :: C",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Operating System :: Unix",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+    "numpy",
+    "scipy",
+]
+
+[project.optional-dependencies]
+plot = ["matplotlib"]
+io = ["h5py", "pyyaml"]
+memory = ["psutil"]
+extra = ["bottleneck"]
+docbuild = [
+    "Sphinx",
+    "sphinx-rtd-theme",
+    "sphinxcontrib-bibtex",
+    "matplotlib",
+    "ipykernel",
+    "nbsphinx",
+    "pandoc",
+    "sphinx_copybutton",
+]
+test = ["pytest>=6.0", "physics_tenpy[io, memory]"]
+lint = ["ruff", "pre-commit", "flake8", "flake8-rst-docstrings", "sphinx-lint"]
+all = ["physics_tenpy[plot, io, test, lint, extra, docbuild]"]
+
+
+[project.urls]
+"Homepage" = "https://github.com/tenpy/tenpy"
+"Documentation" = "https://tenpy.readthedocs.io/"
+"Source" = "https://github.com/tenpy/tenpy"
+"User Forum" = "https://tenpy.johannes-hauschild.de"
+"Bug Tracker" = "https://github.com/tenpy/tenpy/issues"
+
+
+[project.scripts]
+tenpy-run = "tenpy:console_main"
+
+
+[tool.setuptools.packages.find]
+include = ['tenpy*']
+
+
+[tool.setuptools.dynamic]
+version = {attr = "tenpy.__version__"}
+
+
+[tool.cibuildwheel]
+# Disable building 32bit windows wheels (h5py does not support it)
+# Disable musllinux : would need to install BLAS/LAPACK
+# Disable free-threaded python 3.14 (h5py not yet supported), see issue 570
+#   (https://github.com/tenpy/tenpy/issues/570)
+skip = "*-win32 *-musllinux_* cp314t-*"
+# Build separate wheels for macOS's different architectures.
+macos.archs = ["x86_64", "arm64"]
+# Build only on Linux architectures that don't need qemu emulation.
+linux.archs = ["x86_64"]
+# Run the test suite after each build.
+test-requires = ["pytest>=6.0", "h5py", "pyyaml", "psutil"]
+test-command = "pytest {project}/tests"
+
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "error",  # consider all unfiltered warnings error. they should be handled or filtered.
+    "ignore:Couldn't load compiled cython code. Code will run a bit slower.:UserWarning",
+    "ignore::tenpy.BetaWarning"
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "example: marks tests as example (deselect with '-m \"not example\"')",
+]
+#{slow = "marks tests as slow (deselect with `-m 'not slow'`)"}
+log_level = "INFO"
+log_format = "%(asctime)s %(levelname)-8s %(filename)-16s%(lineno)4d: %(message)s"
+testpaths = ["tests"]
+
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+exclude = ["doc/sphinx_ext/*", "doc/toycodes", "doc/notebooks"]
+
+[tool.ruff.lint]
+# Note: we use flake8 to lint docstrings, see .flake8
+# Full list of rules: https://docs.astral.sh/ruff/rules/
+select = [
+    "F",  # Pyflakes
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "I",  # isort (sort import statements)
+    "UP",  # pyupgrade
+    "ISC",  # implicit-str-concat
+    "LOG",  # logging
+    "INP",  # no-pep420 (implicit namespace packages)
+    "D",  # pydocstyle
+    "FIX001",  # Line contains "FIX" + "ME" (avoided full spelling here -> doesnt match full text search)
+]
+ignore = [
+    "F403", "F405",  # star imports
+    "E741",  # ambiguous variable names like l
+    "F541",  # f-string without any placeholders
+    "UP015",  # Unnecessary mode argument
+    "UP008",  # Use `super()` instead of `super(__class__, self)`
+    "D101",  # Missing docstring in public class
+    "D102",  # Missing docstring in public method
+    "D103",  # Missing docstring in public function
+    "D105",  # Missing docstring in magic method
+    "D107",  # Missing docstring in __init__
+    "D400",  # First line should end with a period
+    "D401",  # First line of docstring should be in imperative mood
+    "D404",  # First word of the docstring should not be "This"
+    "D415",  # First line should end with a period, question mark, or exclamation point
+    "D417",  # Missing argument description
+    "D203",  # We use D211 instead (we put no blank line before class docstring)
+    "D213",  # We use D214 instead (our multi-line docs start in the first line)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"setup.py" = [
+    "D",  # docstrings
+]
+"__init__.py" = [
+    "F401",  # imported but unused
+]
+"examples/*.py" = [
+    "INP001",  # is part of an implicit namespace package
+]
+"tests/*.py" = [
+    "E501",  # line too long
+    "F841",  # Local variable is assigned to but never used
+    "INP001",  # is part of an implicit namespace package
+    "D",  # pydocstyle
+]
+"doc/conf.py" = [
+    "D",  # docstrings
+    "E402",  # Module level import not at top of file
+    "E501",  # line too long
+    "UP009",  # UTF-8 encoding declaration is unnecessary
+]
+
+[tool.ruff.format]
+quote-style = "single"
+docstring-code-format = true
