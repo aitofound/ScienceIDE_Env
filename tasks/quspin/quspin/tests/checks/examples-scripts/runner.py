@@ -139,7 +139,7 @@ def main() -> int:
     from quspin.basis import spin_basis_1d
     from quspin.operators import hamiltonian
 
-    L = int(config.get("L", 8))
+    L = int(os.environ.get("SAB_L", config.get("L", 8)))
     h = float(config.get("h", 0.5))
     J = float(config.get("J", 1.0))
     basis = spin_basis_1d(L, Nup=L // 2)
