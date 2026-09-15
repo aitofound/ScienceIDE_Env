@@ -1,0 +1,277 @@
+#COMPONENTMAP
+IH  0 -1  1		CompMap runs on all PEs
+OH  0 -1  1		CompMap runs on all PEs
+
+#DESCRIPTION
+Param/PARAM.in.test.IHOH.CoupleSphToXyz: launch a blob in IH, advect to OH, calculate error		StringDescription
+
+#SAVERESTART
+F			DoSaveRestart
+
+#TEST
+OH_fill_buffer_only		StringTest
+
+#BEGIN_COMP IH ---------------------------------------------------------------
+
+#COORDSYSTEM
+HGI			TypeCoordSystem
+
+#GRAVITY
+F			UseGravity (rest of parameters read if true)
+
+#CORONA
+50.0			rCorona (Rs)
+1e3			CoronaNDim [/cc] number density for ions
+1E5			CoronaTDim [K] temperature for ions
+
+#USERINPUTBEGIN -----------------------------------
+
+#USERPROBLEM
+AdvectSphere
+
+#USERINPUTUNITX
+T
+rSun
+
+#ADVECTSPHERE
+T			DoInitSphere
+1e3			NumDensBackgrndIo
+1e-5			pBackgrndIo
+20000.0			uBackgrndIo
+90.0			FlowAngleTheta (Deg)
+0.0			FlowAnglePhi (Deg)
+400.0			rSphere  (Rs)
+3500.0000000000009			NumDensSphereIo
+550.0			xSphereCenterInitIo
+0.0			ySphereCenterInitIo
+0.0			zSphereCenterInitIo
+
+#ANALYTIC
+T
+
+#USERINPUTEND -------------------------------------
+
+#OUTERBOUNDARY
+float			TypeBc1
+float			TypeBc2
+float			TypeBc3
+float			TypeBc4
+float			TypeBc5
+float			TypeBc6
+
+#GRIDGEOMETRY
+spherical		TypeGeometry
+
+Allow resolution change around the axis
+#UNIFORMAXIS
+F			UseUniformAxis
+
+#GRID
+1			nRootBlock1
+2			nRootBlock2
+1			nRootBlock3
+-1290.0			xMin
+ 2600.0			xMax
+-1290.0			yMin
+ 1290.0			yMax
+-1290.0			zMin
+ 1290.0			zMax
+
+#GRIDBLOCKALL
+3000			MaxBlock
+
+#LIMITRADIUS
+50.			rMin
+2580.			rMax
+
+#GRIDLEVEL
+3			nLevel
+initial			StringShape
+
+#GRIDLEVEL
+1			nLevel
+all			StringShape
+
+#GRIDLEVEL
+3			nLevel
+box_gen			StringShape
+50.0			Coord1MinBox
+320.			Coord2MinBox
+-40.			Coord3MinBox
+2600.			Coord1MaxBox
+360.			Coord2MaxBox
+40.			Coord3MaxBox
+
+#GRIDLEVEL
+3			nLevel
+box_gen			StringShape
+50.0			Coord1MinBox
+0.			Coord2MinBox
+-40.			Coord3MinBox
+2600.			Coord1MaxBox
+40.			Coord2MaxBox
+40.			Coord3MaxBox
+
+#TIMESTEPPING
+2			nStage
+0.8			CflExpl
+
+#SCHEME
+2			nOrder
+Rusanov			TypeFlux
+mc			TypeLimiter
+2.0			LimiterBeta
+
+#SAVEINITIAL
+T			DoSaveInitial
+
+#SAVELOGFILE
+T			DoSaveLogfile
+RAW			StringLog
+-1			DnSaveLogfile
+1.			DtSaveLogfile
+
+#SAVEPLOT
+1			nPlotFile
+z=0 VAR idl		StringPlot
+-1			DnSavePlot
+350.			DtSavePlot
+-1.			DxSavePlot
+rho ux uy uz mach p rhoexact rhoerr		NameVars
+g rbody			NamePars
+
+#END_COMP IH -----------------------------------------------------------------
+
+#BEGIN_COMP OH ---------------------------------------------------------------
+
+#COORDSYSTEM
+HGI			TypeCoordSystem
+
+#CORONA
+3.0			rCorona (AU)
+1e3			CoronaNDim [/cc] number density for ions
+1E5			CoronaTDim [K] temperature for ions
+
+#GRAVITY
+F			UseGravity (rest of parameters read if true)
+
+#USERINPUTBEGIN -----------------------------------
+
+#USERPROBLEM
+AdvectSphere
+
+#USERINPUTUNITX
+T
+rSun
+
+#ADVECTSPHERE
+F			DoInitSphere
+1e3			NumDensBackgrndIo
+1e-5			pBackgrndIo
+20000.0			uBackgrndIo
+90.0			FlowAngleTheta (Deg)
+0.0			FlowAnglePhi   (Deg)
+400.0			rSphere  (Rs)
+3500.0000000000009			NumDensSphereIo
+550.0			xSphereCenterInitIo
+0.0			ySphereCenterInitIo
+0.0			zSphereCenterInitIo
+
+#ANALYTIC
+T
+
+#USERINPUTEND -------------------------------------
+
+#GRID
+1			nRootBlock1
+1			nRootBlock2
+1			nRootBlock3
+-7.			xMin
+12.			xMax
+-7.			yMin
+7.			yMax
+-7.			zMin
+7.			zMax
+
+#GRIDBLOCKALL
+3000			MaxBlock
+
+#GRIDLEVEL
+3			nLevel
+initial			StringShape
+
+#GRIDLEVEL
+1			nLevel
+all			StringShape
+
+#GRIDLEVEL
+3			nLevel
+box			StringShape
+0.			xMinBox
+-3.			yMinBox
+-3.			zMinBox
+12.			xMaxBox
+3.			yMaxBox
+3.			zMaxBox
+
+#INNERBOUNDARY
+buffergrid		TypeBcBody
+
+#BUFFERGRID
+2			nRBuff
+90			nLonBuff
+45			nLatBuff
+4.0			RBuffMin
+5.2			RBuffMax
+0.0			LonBuffMin
+360.			LonBuffMax
+-90.			LatBuffMin
+90.			LatBuffMax
+
+#OUTERBOUNDARY
+float			TypeBc1
+float			TypeBc2
+float			TypeBc3
+float			TypeBc4
+float			TypeBc5
+float			TypeBc6
+
+#SCHEME
+2			nOrder
+Rusanov			TypeFlux
+mc			TypeLimiter
+2.0			LimiterBeta
+
+#TIMESTEPPING
+2			nStage
+0.80			CflExpl
+
+#SAVELOGFILE
+T			DoSaveLogfile
+RAW			StringLog
+1			DnSaveLogfile
+-1.			DtSaveLogfile
+
+#SAVEINITIAL
+T			DoSaveInitial
+
+#SAVEPLOT
+1			nPlotFile
+z=0 VAR idl		StringPlot
+-1			DnSavePlot
+350.			DtSavePlot
+-1.			DxSavePlot
+rho ux uy uz mach p rhoexact rhoerr		NameVars
+g rbody			NamePars
+
+#END_COMP OH -----------------------------------------------------------------
+
+#COUPLE1
+IH			NameSource
+OH			NameTarget
+-1			DnCouple
+70.			DtCouple
+
+#STOP
+-1			MaxIter
+50000.0			TimeMax
