@@ -1,0 +1,199 @@
+{
+  "check": "binary-distance-family",
+  "policy": "pointwise",
+  "chaotic": false,
+  "upstream_test": "code/pynndescent/pynndescent/tests/test_distances.py::test_binary_check[jaccard], [matching], [dice], [rogerstanimoto], [russellrao], [sokalmichener], [sokalsneath], [yule], ::test_bit_hamming, ::test_bit_jaccard",
+  "configuration": "Ten complete pairwise distance matrices produced by the pinned kernels themselves. The eight binary metrics run over the frozen 12x20 boolean fixture, whose last two rows are all zero; bit_hamming and bit_jaccard run over the frozen 10x100 uint8 array the two bit nodes build inline. Every kernel is called pair by pair exactly as the upstream nodes call it.",
+  "observable": "Ten complete distance matrices: eight 12x12 and two 10x10",
+  "expected_runtime_s": 12,
+  "default_vs_upstream": "Original fixtures at original size, all eight metrics, both bit kernels, nothing dropped. SAB_THREADS defaults to 1 for Numba and BLAS/OpenMP environment settings are 1, and it does NOT constrain every pool: rp_trees.py:2909 hard-codes n_jobs=-1. 12 seconds is a measured cold-process wall, almost all of it import and lazy JIT: the ten matrices themselves take 0.69 seconds.",
+  "why_pointwise": "Every one of the ten is a deterministic pure function of a frozen input. There is no seed, no graph, no approximation and no recall. Nine of the ten reproduce the recomputed truth to an absolute error of exactly 0.0.",
+  "graded_against_the_source_rules_not_against_scipy": {
+    "what_upstream_does": "test_binary_check compares the kernels against sklearn and then PATCHES the reference where the two disagree - non-finite entries to 0.0 for jaccard, dice, sokalsneath and yule, and additionally dist_matrix[10, 11] and [11, 10] to 0.0 for russellrao.",
+    "what_this_check_does": "recomputes each distance from the rule in distances.py and grades against that. Every rule was verified against the compiled kernel on every pair before being written down.",
+    "agreement": "For seven of the eight binary metrics the two agree to 0.0. The eighth is russellrao."
+  },
+  "russellrao_is_not_scipys": {
+    "the_rule": "distances.py:451 returns 0.0 whenever num_true_true equals both row sums - that is, whenever the two vectors have exactly the SAME set of true positions. scipy has no such case and returns (n - ntt) / n.",
+    "measured_on_the_real_fixture": "the two definitions differ on exactly 14 of the 144 pairs: the twelve diagonal entries and the two all-zero cross pairs (10, 11) and (11, 10)",
+    "the_divergence_is_general_not_about_empty_rows": "for two identical vectors with five of twenty positions true, pynndescent returns 0.0 where the scipy rule gives 0.75. Measured directly.",
+    "why_upstream_never_sees_it": "sklearn zeroes the diagonal and the fixture contains exactly one off-diagonal identical pair, which upstream patches by hand. The general case never arises there.",
+    "verified": "an answer computing the scipy formula was built and driven through validate.py: 14 entries rejected, bound fraction 1000000."
+  },
+  "the_two_bit_kernels_report_in_their_own_spaces": {
+    "bit_hamming": "a RAW COUNT of differing bits, not a fraction. Measured: dividing by the 800-bit width reproduces the sklearn hamming distance EXACTLY, max abs 0.0, and the raw values run 0 to 422. Upstream divides by that width itself at test_distances.py:414.",
+    "bit_jaccard": "-ln(similarity). UPSTREAM STATES THE RECOVERY ITSELF at test_distances.py:430, which writes 1.0 - np.exp(-dist.bit_jaccard(...)). Measured agreement of that recovery with the sklearn jaccard distance: 2.8e-08.",
+    "verified": "a normalized bit_hamming and an ordinary-space bit_jaccard were both built and rejected, at bound fractions 996389 and 221542."
+  },
+  "an_upstream_quirk_recorded": "Both bit nodes build their data with np.random.randint(0, 255, ...). The high bound is exclusive, so 255 never appears and no byte ever has all eight bits set; the measured maximum is 254. Reproduced as written rather than corrected.",
+  "variant": "identical, and NECESSARILY so. The inputs are a boolean array and a uint8 array: there is no floating-point unit in the last place to step, so a two-ULP variant does not merely fail to be informative here, it does not exist. The two complete run.sh outputs are byte-identical, as they must be. No numerical-noise calibration evidence comes from this check.",
+  "altbuild": "none: no second compiler or dependency build has been validated for this check.",
+  "comparison": {
+    "file": "distances.npz",
+    "schema": {
+      "<metric>_matrix": "float32-or-float64[12,12] for the eight binary metrics",
+      "bit_hamming_matrix": "float32-or-float64[10,10], a raw bit count",
+      "bit_jaccard_matrix": "float32-or-float64[10,10], -ln(similarity)",
+      "metrics": [
+        "jaccard",
+        "matching",
+        "dice",
+        "rogerstanimoto",
+        "russellrao",
+        "sokalmichener",
+        "sokalsneath",
+        "yule"
+      ],
+      "members": 10
+    },
+    "atol": 1e-06,
+    "rtol": 1e-06,
+    "identity": "Row i column j is the distance between sample i and sample j of that matrix's own frozen array. Nothing is permutable.",
+    "symmetry": "Every matrix must be symmetric within the same tolerance. Asymmetry is reported per matrix rather than raised, so the message still names which distance is wrong; a genuinely wrong implementation computes d(i, j) from a formula and is wrong symmetrically anyway.",
+    "status": "provisional only in the sense that no human has signed it off; the tolerance follows the nine dense-* siblings and nine of the ten matrices reproduce exactly"
+  },
+  "evidence": {
+    "floor": null,
+    "floor_how": "Not applicable: this is a pointwise comparison against recomputed distances, not a quality floor.",
+    "native_complete_check": {
+      "scope": "Actual new run.sh nominal and variant outputs; not Docker selfcheck and not an altbuild",
+      "output_bytes": 13484,
+      "max_absolute_error_by_matrix": {
+        "jaccard": 0.0,
+        "matching": 0.0,
+        "dice": 0.0,
+        "rogerstanimoto": 0.0,
+        "russellrao": 0.0,
+        "sokalmichener": 0.0,
+        "sokalsneath": 0.0,
+        "yule": 0.0,
+        "bit_hamming": 0.0,
+        "bit_jaccard": 8.098652370946979e-08
+      },
+      "overall_bound_fraction": 0.03948591061300163,
+      "nine_of_ten_reproduce_exactly": true,
+      "ranges": {
+        "jaccard": [
+          0.0,
+          1.0
+        ],
+        "matching": [
+          0.0,
+          0.6
+        ],
+        "dice": [
+          0.0,
+          1.0
+        ],
+        "rogerstanimoto": [
+          0.0,
+          0.75
+        ],
+        "russellrao": [
+          0.0,
+          1.0
+        ],
+        "sokalmichener": [
+          0.0,
+          0.75
+        ],
+        "sokalsneath": [
+          0.0,
+          1.0
+        ],
+        "yule": [
+          0.0,
+          2.0
+        ],
+        "bit_hamming": [
+          0.0,
+          422.0
+        ],
+        "bit_jaccard": [
+          -0.0,
+          1.170808554
+        ]
+      },
+      "complete_run_sh_wall_seconds": {
+        "nominal": 11.804902,
+        "variant": 11.73789
+      },
+      "per_matrix_seconds": {
+        "jaccard": 0.069835,
+        "matching": 0.067292,
+        "dice": 0.074317,
+        "rogerstanimoto": 0.068063,
+        "russellrao": 0.16863,
+        "sokalmichener": 0.067233,
+        "sokalsneath": 0.074996,
+        "yule": 0.09511,
+        "bit_hamming": 0.000149,
+        "bit_jaccard": 9.1e-05,
+        "all_ten": 0.685717,
+        "import_and_input": 10.586561,
+        "note": "the wall is almost entirely import and lazy JIT; the arithmetic is under a second"
+      },
+      "nominal_and_variant_outputs_byte_identical": true,
+      "resources": "Externally launched under single-CPU taskset affinity; task code does not impose that boundary"
+    },
+    "the_failures_this_check_exists_to_catch": {
+      "scipy_russellrao_instead_of_the_pinned_rule": {
+        "verdict": "rejected",
+        "wrong_entries": 14,
+        "bound_fraction": 1000000.0
+      },
+      "bit_hamming_normalized_instead_of_a_raw_count": {
+        "verdict": "rejected",
+        "wrong_entries": 90,
+        "bound_fraction": 996388.9
+      },
+      "bit_jaccard_in_ordinary_space": {
+        "verdict": "rejected",
+        "wrong_entries": 90,
+        "bound_fraction": 221541.7
+      },
+      "one_metric_swapped_for_another": {
+        "verdict": "rejected",
+        "construction": "rogerstanimoto replaced by sokalsneath",
+        "wrong_entries": 130
+      }
+    },
+    "tolerance_discrimination": {
+      "scope": "A uniform additive perturbation of the jaccard matrix, swept across the bound. The bound is atol + rtol * |truth| and that matrix has zeros, so the smallest bound in it is exactly atol.",
+      "perturbation_and_verdict": {
+        "0": "pass",
+        "1e-09": "pass",
+        "1e-06": "pass, exactly on the boundary",
+        "2e-06": "fail",
+        "1e-03": "fail"
+      },
+      "note": "The expectation was derived from the bound rather than guessed; an earlier run of the adjudication guessed that 1e-06 would fail and it does not, because a value is rejected when it EXCEEDS the bound, not when it reaches it."
+    },
+    "adjudicated_cases": {
+      "scope": "16 constructions driven through validate.py, not runs of modified source; all 16 verdicts agreed with the expectation",
+      "accepted_byte_identical_variant": true,
+      "accepted_float32_matrices": true,
+      "rejected_scipy_russellrao": true,
+      "rejected_normalized_bit_hamming": true,
+      "rejected_ordinary_space_bit_jaccard": true,
+      "rejected_a_swapped_metric": true,
+      "rejected_nan_entry": true,
+      "rejected_asymmetric_entry": true,
+      "rejected_missing_member": true,
+      "rejected_extra_member": true
+    },
+    "self_validation_spread": {
+      "value": 8.098652370946979e-08,
+      "knob_overrides": {
+        "SAB_JOBS": "8"
+      }
+    },
+    "self_validation_bound_fraction": {
+      "value": 0.03948591061300163,
+      "knob_overrides": {
+        "SAB_JOBS": "8"
+      }
+    }
+  },
+  "warrant": "This is the binary half of the distance surface: the eight set-theoretic metrics of test_binary_check plus the two bit-packed kernels, ten complete matrices, every one a deterministic pure function of a frozen input, which is why the policy is pointwise and why nine of the ten reproduce the recomputed truth to an absolute error of exactly zero. The tenth, bit_jaccard, lands at 8.1e-08 because its kernel works in float32 logarithms. What makes the check worth building carefully is that two of these ten do not mean what their names suggest, and one of them disagrees with scipy. bit_hamming returns a raw count of differing bits rather than a fraction - upstream divides it by the bit width itself - and bit_jaccard returns the negative logarithm of the similarity, which upstream recovers with 1 - exp(-d) in its own assertion; both were measured, and a normalized hamming and an ordinary-space jaccard were built and rejected. russellrao is the substantive one: distances.py:451 returns zero whenever the two vectors have exactly the same set of true positions, which scipy never does, and on the real fixture the two definitions differ on fourteen of the hundred and forty-four pairs. The divergence is not about empty rows - for two identical vectors with five of twenty positions true, pynndescent gives zero where scipy gives 0.75 - but upstream only ever meets one off-diagonal instance and patches that single matrix entry by hand. This check grades the rule instead, verified against the compiled kernel on every pair, and the scipy formula was built and rejected. One last thing is stated rather than hidden: the variant here is identical and necessarily so, because the inputs are boolean and uint8 and there is no unit in the last place to step."
+}

@@ -1,0 +1,46 @@
+{
+  "groups": [
+    "energy",
+    "eigenvalues",
+    "dielectric",
+    "born",
+    "phonon",
+    "phonon_acoustic"
+  ],
+  "matdyn_freq_files": [],
+  "n_acoustic": 3,
+  "scf_prefixes": [
+    "SiC"
+  ],
+  "steps": [
+    {
+      "exe": "pw.x",
+      "in": "SiC.scf.in"
+    },
+    {
+      "exe": "ph.x",
+      "in": "SiC.phG.restart1.in",
+      "wipe_ph0": true,
+      "allow_nonzero": true
+    },
+    {
+      "exe": "ph.x",
+      "in": "SiC.phG.restart2.in",
+      "wipe_ph0": false,
+      "allow_nonzero": true
+    },
+    {
+      "exe": "ph.x",
+      "in": "SiC.phG.restart3.in",
+      "wipe_ph0": false,
+      "allow_nonzero": true
+    },
+    {
+      "exe": "ph.x",
+      "in": "SiC.phG.restart4.in",
+      "wipe_ph0": false,
+      "allow_nonzero": true
+    }
+  ],
+  "testdir": "ph_restart"
+}

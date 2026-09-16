@@ -74,10 +74,18 @@ C
       WRITE(20,'(1PE24.16)') DIFF1
       WRITE(20,'(1PE24.16)') DIFF2
       CLOSE(20)
+C     transformed.txt: real and imaginary parts of the first forward
+C     transform, one row per grid point (J outer, I inner, as before), two
+C     columns (real, imaginary), full double precision (17 significant
+C     digits) so the printed value never floors the pointwise bound
+C     (pitfall output-precision-floors-the-bound). The magnitude alone (the
+C     prior column) cannot separate a wrong sign, a swapped real/imaginary
+C     pair or a transposed axis from a correct value, so both parts are
+C     written.
       OPEN(30,FILE='transformed.txt',STATUS='UNKNOWN')
       DO J=1,M
       DO I=1,L
-         WRITE(30,'(1PE24.16)') ABS(CFWD(I,J))
+         WRITE(30,'(2(1PE24.16,1X))') REAL(CFWD(I,J)), AIMAG(CFWD(I,J))
       END DO
       END DO
       CLOSE(30)

@@ -70,9 +70,16 @@ C
       WRITE(20,'(1PE24.16)') DIFF1
       WRITE(20,'(1PE24.16)') DIFF2
       CLOSE(20)
+C     transformed.txt: real and imaginary parts of the first forward
+C     transform, one row per element, two columns (real, imaginary), full
+C     double precision (17 significant digits) so the printed value never
+C     floors the pointwise bound (pitfall output-precision-floors-the-bound).
+C     The magnitude alone (the prior column) cannot separate a wrong sign or
+C     a swapped real/imaginary pair from a correct value, so both parts are
+C     written.
       OPEN(30,FILE='transformed.txt',STATUS='UNKNOWN')
       DO I=1,N
-         WRITE(30,'(1PE24.16)') ABS(CFWD(I))
+         WRITE(30,'(2(1PE24.16,1X))') REAL(CFWD(I)), AIMAG(CFWD(I))
       END DO
       CLOSE(30)
       STOP
