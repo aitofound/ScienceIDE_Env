@@ -1,0 +1,51 @@
+{
+  "groups": [
+    "energy",
+    "eigenvalues",
+    "fermi"
+  ],
+  "matdyn_freq_files": [
+    "Al444.freq"
+  ],
+  "n_acoustic": 0,
+  "scf_prefixes": [
+    "aluminum"
+  ],
+  "steps": [
+    {
+      "exe": "pw.x",
+      "in": "al.scf.fit.in"
+    },
+    {
+      "exe": "pw.x",
+      "in": "al.scf.in"
+    },
+    {
+      "exe": "ph.x",
+      "in": "al.elph.in",
+      "wipe_ph0": true
+    },
+    {
+      "exe": "ph.x",
+      "in": "al.elph.notrans.in",
+      "wipe_ph0": false
+    },
+    {
+      "exe": "q2r.x",
+      "in": "q2r.in"
+    },
+    {
+      "exe": "matdyn.x",
+      "in": "matdyn.in.freq"
+    },
+    {
+      "exe": "matdyn.x",
+      "in": "matdyn.in.dos"
+    },
+    {
+      "exe": "lambda.x",
+      "in": "lambda.in"
+    }
+  ],
+  "testdir": "ph_metal"
+}

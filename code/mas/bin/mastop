@@ -1,0 +1,268 @@
+#!/usr/bin/env python
+import argparse
+import sys
+import numpy as np
+
+#############################################################################
+## argument parsing##########################################################
+#############################################################################
+def argParsing():
+
+    parser = argparse.ArgumentParser(description='')
+
+    parser.add_argument('-nr',
+                        type=int,
+                        help='r resolution.',
+                        required=True)
+
+    parser.add_argument('-nt',
+                        type=int,
+                        help='theta resolution.',
+                        required=True)
+
+    parser.add_argument('-np',
+                        type=int,
+                        help='phi resolution.',
+                        required=True)
+
+    parser.add_argument('-cpn',
+                        type=int,
+                        help='Cores per node: Number of MPI ranks to use per node.',
+                        required=True)
+
+    parser.add_argument('-ppd',
+                        type=int,
+                        help='Points per dim:  The desired number of grid points for each dimension of local mesh (default 25).',
+                        default=25,
+                        required=False)
+
+    parser.add_argument('-nrank_r',
+                        type=int,
+                        help='Fix # of ranks in r.',
+                        default=-1,
+                        required=False)
+
+    parser.add_argument('-nrank_t',
+                        type=int,
+                        help='Fix # of ranks in t.',
+                        default=-1,
+                        required=False)
+
+    parser.add_argument('-nrank_p',
+                        type=int,
+                        help='Fix # of ranks in p.',
+                        default=-1,
+                        required=False)
+
+    parser.add_argument('-setnds',
+                        type=int,
+                        help='Specify exact number of nodes to run on (disabled by default).  Setting this will cause ppd to be ignored.',
+                        default=-1,
+                        required=False)
+
+    parser.add_argument('-quiet',
+                        help='Output ideal topology only (usefull for scripts)',
+                        action='store_true',
+                        default=False,
+                        required=False)
+
+    parser.add_argument('--version',
+                         action='version',
+                         version='%(prog)s 1.2.0')
+
+    if len(sys.argv)==1:
+        parser.print_help()
+        sys.exit(1)
+
+    return parser.parse_args()
+
+
+#############################################################################
+## main #####################################################################
+#############################################################################
+
+#
+# ### Get the command line arguments:
+#
+
+args = argParsing()
+
+factors=[]
+rank_factors=[]
+nperrank=[]
+penalty=[]
+
+max_ranks_per_dim=70
+
+#
+# ### Set maximum number of ranks:
+#
+
+if args.setnds != -1:
+    nproc=args.cpn*args.setnds
+
+if args.setnds != -1:
+    #
+    # ### Get factors
+    #
+    i=1
+    while i <= nproc:
+        if nproc % i == 0:
+            factors.append(i)
+        i=i+1
+
+    num_fac=len(factors)
+
+#
+# ### Set penalty function parameters and any fixed dimensions
+# ### based on which dimensions are to be autoset.
+#
+
+a1=1.0
+a2=1.0
+a3=1.0
+a12=1.0
+a13=1.0
+a23=1.0
+
+if args.nrank_r != -1:
+    fr=args.nrank_r
+    a1=0.0
+    a12=0.0
+    a13=0.0
+if args.nrank_t != -1:
+    ft=args.nrank_t
+    a2=0.0
+    a12=0.0
+    a23=0.0
+if args.nrank_p != -1:
+    fp=args.nrank_p
+    a3=0.0
+    a13=0.0
+    a23=0.0
+
+#
+# ### Loop over all combinations of factors and save those that
+# ### yield the correct number of MPI ranks into rank_factors array.
+#
+num_rank_fac=0
+if args.setnds == -1:
+    for i in range(1,max_ranks_per_dim):
+        for j in range(1,max_ranks_per_dim):
+            for k in range(1,max_ranks_per_dim):
+                if (np.mod(i*j*k,args.cpn)==0):
+                    rank_factors.append([i,j,k])
+                    num_rank_fac=num_rank_fac+1
+else:
+    for k in range(0,num_fac):
+        for j in range(0,num_fac):
+            for i in range(0,num_fac):
+                if args.nrank_r==-1: fr=factors[i]
+                if args.nrank_t==-1: ft=factors[j]
+                if args.nrank_p==-1: fp=factors[k]
+                if (fr*ft*fp == nproc):
+                    rank_factors.append([fr,ft,fp])
+                    num_rank_fac=num_rank_fac+1
+
+rank_factors = np.asarray(rank_factors)
+
+if num_rank_fac == 0:
+    if args.quiet:
+         print('-1,-1,-1')
+    else:
+        print('### ERROR in MASTOP:')
+        print('### Processor topology specification error.')
+        print('No valid topologies found for selected options.')
+    sys.exit(1)
+
+#
+# ### Get number of grid points per rank for each dimension.
+#
+
+nperrank = 0*rank_factors.astype(float)
+
+nperrank[0:,0] = np.divide(float(args.nr),rank_factors[0:,0])
+nperrank[0:,1] = np.divide(float(args.nt),rank_factors[0:,1])
+nperrank[0:,2] = np.divide(float(args.np),rank_factors[0:,2])
+
+#
+# ### Compute penalty function.
+#
+bigval = np.finfo(float).max
+penalty = bigval*np.ones(num_rank_fac)
+
+if args.setnds == -1:
+    penalty = np.add(np.add(a1*(np.power(np.subtract(nperrank[0:,0],float(args.ppd)),2)),
+                            a2*(np.power(np.subtract(nperrank[0:,1],float(args.ppd)),2))),
+                            a3*(np.power(np.subtract(nperrank[0:,2],float(args.ppd)),2)))
+else:
+    penalty = np.add(np.add(a12*(np.power(np.subtract(nperrank[0:,0],nperrank[0:,1]),2)),
+                            a23*(np.power(np.subtract(nperrank[0:,1],nperrank[0:,2]),2))),
+                            a13*(np.power(np.subtract(nperrank[0:,2],nperrank[0:,0]),2)))
+
+#
+# ### Eliminate any choices that yield less than a minimum number
+# ### of grid points per rank.
+#
+
+for i in range(0,num_rank_fac):
+    if (nperrank[i,0]<4): penalty[i]=bigval
+    if (nperrank[i,1]<4): penalty[i]=bigval
+    if (nperrank[i,2]<3): penalty[i]=bigval
+
+#
+# ### Find optimal topology.
+#
+
+best_idx = np.argmin(penalty)
+
+if penalty[best_idx] == bigval:
+    if args.quiet:
+         print('-1,-1,-1')
+    else:
+        print('### ERROR in MASTOP:')
+        print('### Processor topology specification error.')
+        print('No valid topologies found for selected options')
+        print('with selected grid.')
+        print('It is likely you are using too many MPI ranks.')
+    sys.exit(1)
+#
+# ### Set optimal topology.
+#
+opt_nr = rank_factors[best_idx,0]
+opt_nt = rank_factors[best_idx,1]
+opt_np = rank_factors[best_idx,2]
+
+nr_per_proc = np.divide(float(args.nr),float(opt_nr))
+nt_per_proc = np.divide(float(args.nt),float(opt_nt))
+np_per_proc = np.divide(float(args.np),float(opt_np))
+
+n_per_grid_min = np.multiply(np.multiply(np.floor(nr_per_proc),np.floor(nt_per_proc)),np.floor(np_per_proc))
+n_per_grid_max = np.multiply(np.multiply(np.floor(nr_per_proc)+1,np.floor(nt_per_proc))+1,np.floor(np_per_proc)+1)
+
+max_imbalance = 100.0*np.subtract(1.0,np.divide(n_per_grid_min,n_per_grid_max))
+
+nprocs = opt_nr*opt_nt*opt_np
+nnodes = np.divide(nprocs,args.cpn)
+
+if args.quiet:
+    print('%d,%d,%d' % (opt_nr,opt_nt,opt_np))
+else:
+    print(' ')
+    print('>> Optimal run parameters ------------------------------ <<')
+    print(' ')
+    print('%43s %d %d %d' % ('Optimal topology (r,t,p): ',opt_nr,opt_nt,opt_np))
+    print('%43s %d' % ('Total number of NODES: ',nnodes))
+    print('%43s %d' % ('Total number of CORES: ',nprocs))
+    print('%43s %d' % ('Cores per node (-cpn): ',args.cpn))
+    print(' ')
+    print('>> Run Information ------------------------------------- <<')
+    print(' ')
+    print('%43s %d %d %d' % ('Grid resolution  (r,t,p): ',args.nr,args.nt,args.np))
+    if args.setnds==0:
+        print('%43s %d' % ('Max number of available nodes (-maxnds): ',args.maxnds))
+        print('%43s %d' % ('Target grid points per dimension (-ppd): ',args.ppd))
+    print('%43s %.2f %.2f %.2f' % ('Actual grid points per dimension (r,t,p): ',nr_per_proc,nt_per_proc,np_per_proc))
+    print('%43s %.2f %1s' % ('Estimated load imbalance: ',max_imbalance,'%'))
+    print(' ')
+

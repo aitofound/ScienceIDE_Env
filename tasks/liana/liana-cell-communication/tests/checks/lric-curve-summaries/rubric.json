@@ -1,0 +1,71 @@
+{
+  "check": "lric-curve-summaries",
+  "policy": "pointwise",
+  "chaotic": false,
+  "upstream_test": "code/liana/tests/utils/test_lric_helpers.py",
+  "configuration": "官方module fixture（generate_toy_spatial + sample_resource(n_lrs=5, seed=42) + cross_pcf/lric，max_radius=100、radius_step=20）留在.uns里的三张g(r)曲线表已物化：cross_pcf 225行、lric_ag 25行、lric_ct 2250行，共享半径网格[0,40,60,80,100]，g为float32。六个AUC case与四个散度case各调用一次真实 get_lric_auc / get_lric_divergence。",
+  "observable": "六个AUC case的全部 case/identity 摘要（score 与 peak_radius，共410行820个数）、每个case通过min_bins门的interaction计数，以及四个散度case的 divergence/r_star/delta_star/direction",
+  "expected_runtime_s": 28,
+  "default_vs_upstream": "官方那十项断言的参数逐字保留（max_dist=60、min_bins=2、min_bins=99的空窗、置零g的floored与strict对照、跨condition的log2对照与不pin condition的平均）；上游只做列名、非空、单调递减、集合归属与近似1.0这些定性断言，本项对每个score/peak_radius/散度分量逐值评分。",
+  "variant": "仅 cross_pcf 曲线表第0行的 g 朝+infinity两float32 ULP，其余两张表与所有身份不变；触达1个AUC score，最大绝对变化1.249167513317495e-07。",
+  "altbuild": "none: 未配置或实测另一合法构建，无跨平台/GPU floor。",
+  "comparison": {
+    "atol": 1e-06,
+    "rtol": 1e-06,
+    "expected_auc_cases": 6,
+    "files": [
+      {
+        "path": "auc.csv",
+        "format": "case-identity-score-peak-csv"
+      },
+      {
+        "path": "support.csv",
+        "format": "case-count-csv"
+      },
+      {
+        "path": "divergence.csv",
+        "format": "case-divergence-csv"
+      }
+    ]
+  },
+  "evidence": {
+    "status": "provisional，最终数值界限待人工校准",
+    "floor": null,
+    "floor_how": "同机单元素两ULP与输入排列证据，不是跨平台floor。",
+    "native_probe_variant_max_abs": 1.249167513317495e-07,
+    "native_probe_variant_touched_auc_scores": 1,
+    "native_probe_input_permutation_max_abs": 0.0,
+    "float32_input_note": "官方 .uns 帧把 g 存为 float32。下界的推导有三段，缺任何一段都复现不出实测值：(1) 两 float32 ULP——被扰动的 g=1.37677801，np.spacing 给 1.1920928955078125e-07；(2) log2 的放大 1/(g·ln2) = 1.047878；(3) **端点梯形权重 1/2**——被扰动的是 cross_pcf 第 0 行，radius=0，而 max_dist=60 的窗口内只有 {0, 40} 两个 bin，梯形面积 0.5·(y0+y1)·40 再除以跨度 40 之后，端点系数恰好是 1/2。2 × 1.1920928955078125e-07 × 1.047878 × 0.5 = 1.249e-07，与实测 1.249167513317495e-07 吻合到 6 位；漏掉第 (3) 段会算成 2.498e-07，正好是实测的两倍。这个量级来自**输入的存储精度**，不是摘要算术本身的误差（摘要在 float64 里做，机制误差约 1e-15 相对）。",
+    "runtime_how": "本项原生nominal wall 14.240605秒减独立package build/install 2.034095049秒，含import/JIT/I/O与三个CSV写出；core 0.023539351秒（十次摘要调用之和）不当完整check成本。SAB_THREADS=1非资源consent。",
+    "self_validation_spread": {
+      "value": 1.249167513317495e-07,
+      "knob_overrides": {
+        "SAB_JOBS": "8"
+      }
+    },
+    "self_validation_bound_fraction": {
+      "value": 0.08815152512249212,
+      "knob_overrides": {
+        "SAB_JOBS": "8"
+      }
+    },
+    "expected_runtime_s_includes_full_jit": {
+      "ruling": "人工/team-lead 裁定 (a)：保持现状，expected_runtime_s 含 JIT，不拆到 build 栏。",
+      "statement": "本 check 的 expected_runtime_s 含每次评分进程内的【全额 numba 编译】，因为 run.sh 每次用 mktemp -d 新建 NUMBA_CACHE_DIR、缓存从不跨进程复用。按 SKILL 的概念口径 JIT 属编译阶段，但本 check 的执行方式使它落在观测窗口内，**故不拆**。",
+      "do_not_subtract": "给后来者：不要把编译秒数从这个字段里减掉「修正」它。这个字段必须描述 harness 实际观测到的时间。减掉后声明值会变成 5~8 s，而 harness 实测仍是 13.8~17.5 s——从虚高一倍翻成低估一倍，方向反过来但错得一样多。只有在 run.sh 改用 build 期预热的持久缓存之后，拆分才成立；那是执行计划变更，属人工停点。",
+      "measured_seconds": {
+        "declared_expected_runtime_s": 12.206905,
+        "wall_s": 14.241345394868404,
+        "compile_s": 6.559990711975843,
+        "import_liana_s": 3.8968150396831334,
+        "kernel_min_s": 0.04052051901817322
+      },
+      "reference": "commands/cost-table.json"
+    },
+    "third_leg_coverage": "**842 / 842 —— 410 行 AUC 的 score 与 peak_radius、6 个支持计数、4 个散度 case 的三个数与 direction 标签，全部逐位相同（0.0）**（2026-09-14 新增）。本 check 的输入**本身就是曲线**，所以 `get_lric_auc` 与 `get_lric_divergence` 是它们的纯函数——这里把两个 helper 用 numpy/pandas 重写，**不 import liana**。判分器耗时 0.45 s。",
+    "what_the_recomputation_reproduces": "`get_lric_auc`（`_lric_helpers.py:20-120`）：`transform_fn` 默认 `log2(max(g,0.05))`；梯形积分**只在相邻两格都 keep 的区间上**累加；`span = 最大 keep 半径 − 最小 keep 半径`；`score = area/span`；`peak_radius = argmax |Y|`（只在 keep 处）；`keep 计数 < min_bins` 或 `span == 0` 的 interaction 整条丢弃——`support.csv` 数的就是活下来的条数。`get_lric_divergence`（:123-200）：两条曲线按半径取均值（同半径重复行先平均），`delta` 去掉 ±inf/NaN，`divergence = trapezoid(|delta|, r)/(r[-1]-r[0])`。两处按源码钉死：`g` 先以 **float32** 读入再升 float64；`zeroed()` 与 `conditions` 两个派生表按**字典序**而不是存储顺序挑 interaction。",
+    "third_leg_rejects_two_sided_pollution": "三条已实证，后两条是这条腿的独有价值：(1) 把一个 AUC `score` 在两侧同样 +0.01，逐值比较 0 超界，第三条腿把两侧都拒下；(2) 把一个 `direction` **字符串标签**在两侧同样翻转——比较只看两侧是否相同，放行，仍由独立期望拒下；(3) 把一个支持计数在两侧同样 +1，同理。",
+    "expected_runtime_s_measured": "2026-09-14 并发执行下实测 27 s（不含 build，SAB_JOBS = 声明核数）。原声明 12.2069 s 是串行时代的值；produce 循环改为并发后（形状取自已 merge 的 tasks/pluto/*），单条 check 的墙钟因争抢而上升，而整套的墙钟大幅下降。取实测值本身即可：告警阈值是 measured > 2 × declared，2× 余量已在规则里。"
+  },
+  "warrant": "比较 _lric_helpers.py:15-229 的真实路径：get_lric_auc 把结果按id列factorize成(n_groups, n_radii)宽矩阵，对g施加transform_fn（默认log2且g在0.05处取下限，所以空bin保持有限约-4.32），只保留有限且在max_dist窗口内的bin，做mask感知梯形积分（一段只有两端都保留才计入），再除以首末保留bin之间的跨度得到score；peak_radius取|transform(g)|最大的那个半径；min_bins与span>0是支持门，全被门掉时返回空表但列名完整。get_lric_divergence 用同一个transform取两条曲线的按半径平均，做差后丢掉非有限值，divergence=trapezoid(|Δ|)/(x[-1]-x[0])，r_star与delta_star取|Δ|最大处，direction按delta_star符号取三值。这些都是确定性的归约，没有随机来源。暂拟atol=1e-6/rtol=1e-6由两处共同定：下界必须容得下float32存储的g带来的约1.25e-07两ULP响应；上界要远小于真实故障的量级（下面两个纯数值source故障的距离为1.51与168.56），因此至少有六个数量级的余量；实测variant只占用界限的8.8%。interaction计数与direction是精确合同而非数值比较：前者钉住min_bins门与strict log2丢bin的行为（含那个必须为空的case），后者是三值分类。把log2的0.05下限去掉、把mask感知梯形换成整段梯形、以及不做跨度归一化，三者都已作为真实source故障在完整成功产物后被拒：第一个改变了min_bins门的通过计数（410行降到40行）因而被精确的interaction计数合同拒绝，后两个分别401/410与410/410超界，距离1.514与168.56。全部832个摘要数值（410行AUC各2个数，加4个散度case各3个数）按 case/identity 对齐评分，case本身是身份的一部分，不同case的同名interaction不得互换。本项只覆盖由已冻结曲线表到摘要这一段，不覆盖 cross_pcf/lric 本身如何算出g（那由 lric-pairwise 与其它check另行覆盖），也不覆盖adata/uns_key读取分支、非默认max_dist以外的窗口与 expr_prop 掩码的成因；人工小例仅开发用途，最终bounds由人工决定。"
+}
