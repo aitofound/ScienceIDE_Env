@@ -184,20 +184,20 @@
   },
   "evidence": {
     "floor": 0.09867985999881057,
-    "floor_how": "measured by selfcheck on 2026-09-16: run.sh altbuild (same pinned source with OPTFLAG=-O2) against run.sh nominal, graded with the check's own validate.py: cl.txt/tt_spectrum: 2730 values exceed atol=0 rtol=1e-06; cl.txt/ee_spectrum: 2815 values exceed atol=0 rtol=1e-06; cl.txt/te_spectrum: 3229 values exceed atol=0 rtol=1e-06; cl.txt/tp_spectrum: 3222 values exceed atol=0 rtol=1e-06; cl.txt/ep_spectrum: 3112 values exceed atol=0 rtol=1e-06; cl_lensed.txt/tt_spectrum: 1787 values exceed atol=0 rtol=1e-06; cl_lensed.txt/ee_spectrum: 1956 values exceed atol=0 rtol=1e-06; cl_lensed.txt/te_spectrum: 2220 values exceed atol=0 rtol=1e-06",
+    "floor_how": "measured by selfcheck on 2026-09-16: run.sh altbuild (same pinned source with OPTFLAG=-O2) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
     "self_validation_spread": 0.0,
     "self_validation_bound_fraction": 0.0,
     "altbuild": {
       "what": "same pinned source with OPTFLAG=-O2",
       "distance": 0.09867985999881057,
-      "bound_fraction": 60807.53896005776,
+      "bound_fraction": 0.03472938152380882,
       "identical": false,
       "graded_identical": false,
-      "passed": false,
-      "reason": "cl.txt/tt_spectrum: 2730 values exceed atol=0 rtol=1e-06; cl.txt/ee_spectrum: 2815 values exceed atol=0 rtol=1e-06; cl.txt/te_spectrum: 3229 values exceed atol=0 rtol=1e-06; cl.txt/tp_spectrum: 3222 values exceed atol=0 rtol=1e-06; cl.txt/ep_spectrum: 3112 values exceed atol=0 rtol=1e-06; cl_lensed.txt/tt_spectrum: 1787 values exceed atol=0 rtol=1e-06; cl_lensed.txt/ee_spectrum: 1956 values exceed atol=0 rtol=1e-06; cl_lensed.txt/te_spectrum: 2220 values exceed atol=0 rtol=1e-06",
-      "at": "2026-09-16T10:33:26Z"
+      "passed": true,
+      "reason": "all graded values within bound",
+      "at": "2026-09-16T11:22:20Z"
     },
-    "floor_bound_fraction": 60807.53896005776
+    "floor_bound_fraction": 0.03472938152380882
   },
   "warrant": "cl_permille.pre is one of the three precision files the upstream README documents running explanatory.ini against ('./class explanatory.ini cl_permille.pre'), tightening specific precision parameters (grid sampling, truncation thresholds, integration tolerances) to reach the accuracy the comment at the top of the file states. Every output file the run writes is graded (unlensed/lensed Cl, P(k)) at atol=0, rtol=1e-6, tracking the driver's own high-precision print format. A regression in any of the tightened precision parameters, or a wrong adaptive-sampling implementation that only shows up at high resolution, will move at least one graded column beyond its bound; this is independent coverage from the default-precision explanatory-end-to-end check. The same-input -O2 build supplies the numerical-floor evidence. Second architecture (2026-09-16, arm64, Colima on the curator's Mac, gcc -O2, which contracts multiply-adds where x86-64 without -mfma cannot): the -O2 build moved this check's graded values by up to 4.7e-04 relative on values above one percent of their column's peak (cl_lensed.txt column 3) and by up to 1.6e-05 of the column peak in absolute terms; the x86 -O2 build of the same day was bit-identical. The bound is judged against this floor."
 }
