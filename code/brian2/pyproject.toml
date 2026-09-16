@@ -1,0 +1,95 @@
+[project]
+name = "Brian2"
+authors = [
+    {name = 'Marcel Stimberg'},
+    {name = 'Dan Goodman'},
+    {name = 'Benjamin Evans'},
+    {name = 'Romain Brette'}
+]
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.0.0",
+    'cython>=0.29.21,<3.1.4',
+    'sympy>=1.2',
+    'pyparsing>=3,!=3.2.4',
+    'jinja2>=2.7',
+    'py-cpuinfo;platform_system=="Windows"',
+    'setuptools>=61',
+    'packaging',
+]
+dynamic = ["version", "readme"]
+description = 'A clock-driven simulator for spiking neural networks'
+keywords = ['computational neuroscience', 'simulation', 'neural networks', 'spiking neurons', 'biological neural networks', 'research']
+classifiers = [
+    'Development Status :: 5 - Production/Stable',
+    'Intended Audience :: Science/Research',
+    'Natural Language :: English',
+    'Operating System :: OS Independent',
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 3',
+    'Topic :: Scientific/Engineering :: Bio-Informatics'
+]
+license = 'CECILL-2.1'
+license-files = ["LICENSE", "AUTHORS", "CONTRIBUTORS"]
+
+[project.optional-dependencies]
+test = ['pytest>=8', 'pytest-xdist>=1.22.3', 'pytest-cov>=2.0', 'pytest-timeout']
+docs = ['sphinx>=7', 'ipython>=5', 'sphinx-tabs']
+
+[project.urls]
+Homepage = 'https://briansimulator.org'
+Documentation ='https://brian2.readthedocs.io/'
+Source = 'https://github.com/brian-team/brian2'
+Tracker = 'https://github.com/brian-team/brian2/issues'
+
+[tool.setuptools]
+zip-safe = false
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["brian2*"]
+
+[tool.setuptools.dynamic]
+readme = {file = 'README.md', content-type = "text/markdown"}
+
+[tool.setuptools_scm]
+version_scheme = 'post-release'
+local_scheme = 'no-local-version'
+write_to = 'brian2/_version.py'
+tag_regex = '^(?P<version>\d+(?:\.\d+){0,2}[^\+]*(?:\+.*)?)$'
+fallback_version = 'unknown'
+
+[build-system]
+requires = [
+    "setuptools>=61",
+    # By building against numpy 2.0, we make sure that the wheel is compatible with
+    # both numpy 2.0 and numpy>=1.23
+    "numpy>=2.0.0rc1",
+    "wheel",
+    "Cython",
+    "setuptools_scm[toml]>=6.2"
+]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # isort
+    "I",
+]
+# Lambda functions are ok (E731),
+# long lines are already handled by the formatter (E501)
+# For LaTeX code, percent format or `.format` is often the most readable (UP031, UP032)
+# TODO: Would be good practice to set stacklevel for warnings (B028)
+# False positives when using a name to test for its existence (B018)
+extend-ignore = ["E731", "E501", "UP031", "UP032", "B028", "B018"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"

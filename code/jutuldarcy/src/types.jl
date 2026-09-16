@@ -1,0 +1,803 @@
+abstract type AbstractPhase end
+
+"""
+Abstract supertype for all multiphase flow systems.
+"""
+abstract type MultiPhaseSystem <: JutulSystem end
+"""
+Abstract supertype for multicomponent systems, i.e. flow systems where the
+number of components is decoupled from the number of phases.
+"""
+abstract type MultiComponentSystem <: MultiPhaseSystem end
+const DarcyFlowModel = SimulationModel{<:Any, <:MultiPhaseSystem, <:Any, <:Any}
+
+abstract type CompositionalSystem <: MultiComponentSystem end
+const CompositionalModel = SimulationModel{D, S, F, C} where {D, S<:CompositionalSystem, F, C}
+
+abstract type BlackOilSystem <: MultiComponentSystem end
+
+abstract type PhaseVariables <: VectorVariables end
+abstract type ComponentVariables <: VectorVariables end
+
+abstract type CompositionalSystemLV <: CompositionalSystem end
+struct MultiPhaseCompositionalSystemLV{E, T, O, R, N} <: CompositionalSystemLV where T<:Tuple
+    phases::T
+    components::Vector{String}
+    equation_of_state::E
+    rho_ref::R
+    reference_phase_index::Int
+end
+
+function MultiPhaseCompositionalSystemLV{R, T, O, D, N}(phases, c, equation_of_state, reference_densities) where {R, T, O, D, N}
+    reference_phase_index = get_reference_phase_index(phases)
+    return MultiPhaseCompositionalSystemLV{R, T, O, D, N}(phases, c, equation_of_state, reference_densities, reference_phase_index)
+end
+
+const LVCompositional2PhaseSystem = MultiPhaseCompositionalSystemLV{<:Any, <:Any, Nothing, <:Any, <:Any}
+const LVCompositional3PhaseSystem = MultiPhaseCompositionalSystemLV{<:Any, <:Any, <:AbstractPhase, <:Any, <:Any}
+
+const LVCompositionalModel = SimulationModel{D, S, F, C} where {D, S<:MultiPhaseCompositionalSystemLV{<:Any, <:Any, <:Any, <:Any, <:Any}, F, C}
+const LVCompositionalModel2Phase = SimulationModel{D, S, F, C} where {D, S<:LVCompositional2PhaseSystem, F, C}
+const LVCompositionalModel3Phase = SimulationModel{D, S, F, C} where {D, S<:LVCompositional3PhaseSystem, F, C}
+
+"""
+    MultiPhaseCompositionalSystemLV(equation_of_state)
+    MultiPhaseCompositionalSystemLV(equation_of_state, phases = (LiquidPhase(), VaporPhase()); reference_densities = ones(length(phases)), other_name = "Water")
+
+Set up a compositional system for a given `equation_of_state` from
+`MultiComponentFlash` with two or three phases. If three phases are provided,
+the phase that is not a liquid or a vapor phase will be treated as immiscible in
+subsequent simulations and given the name from `other_name` when listed as a
+component.
+"""
+function MultiPhaseCompositionalSystemLV(
+        equation_of_state,
+        phases = (LiquidPhase(), VaporPhase());
+        reference_densities = ones(length(phases)),
+        other_name = "Water",
+        reference_phase_index = get_reference_phase_index(phases)
+    )
+    c = copy(MultiComponentFlash.component_names(equation_of_state))
+    N = length(c)
+    phases = tuple(phases...)
+    T = typeof(phases)
+    nph = length(phases)
+    @assert nph == 2 || nph == 3
+    reference_densities = tuple(reference_densities...)
+    @assert length(reference_densities) == nph
+    if nph == 3
+        other = only(filter(x -> !(isa(x, LiquidPhase) || isa(x, VaporPhase)), phases))
+        O = typeof(other)
+        push!(c, other_name)
+    else
+        O = Nothing
+    end
+    only(findall(isequal(LiquidPhase()), phases))
+    only(findall(isequal(VaporPhase()), phases))
+    return MultiPhaseCompositionalSystemLV{typeof(equation_of_state), T, O, typeof(reference_densities), N}(phases, c, equation_of_state, reference_densities, reference_phase_index)
+end
+
+function Base.show(io::IO, sys::MultiPhaseCompositionalSystemLV)
+    components = copy(sys.components)
+    n = number_of_components(sys)
+    if has_other_phase(sys)
+        name = "(three-phase)"
+        components[end] = "and $(components[end]) as immiscible phase"
+        n = n - 1
+    else
+        name = "(two-phase)"
+    end
+    eos = sys.equation_of_state
+    cnames = join(components, ", ")
+    print(io, "MultiPhaseCompositionalSystemLV $name with $(MultiComponentFlash.eostype(eos)) EOS with $n EOS components: $cnames")
+end
+
+struct StandardBlackOilSystem{D, V, W, R, F, T, P, Num} <: BlackOilSystem
+    rs_max::D
+    rv_max::V
+    rho_ref::R
+    phase_indices::T
+    phases::P
+    saturated_chop::Bool
+    keep_bubble_flag::Bool
+    rs_eps::Num
+    rv_eps::Num
+    s_eps::Num
+    reference_phase_index::Int
+end
+
+"""
+    StandardBlackOilSystem(; rs_max = nothing,
+                             rv_max = nothing,
+                             phases = (AqueousPhase(), LiquidPhase(), VaporPhase()),
+                             reference_densities = [786.507, 1037.84, 0.969758])
+
+Set up a standard black-oil system. Keyword arguments `rs_max` and `rv_max` can
+either be nothing or callable objects / functions for the maximum Rs and Rv as a
+function of pressure. `phases` can be specified together with
+`reference_densities` for each phase.
+
+NOTE: For the black-oil model, the reference densities significantly impact many
+aspects of the PVT behavior. These should generally be set consistently with the
+other properties.
+"""
+function StandardBlackOilSystem(;
+        rs_max = nothing,
+        rv_max = nothing,
+        phases = (AqueousPhase(), LiquidPhase(), VaporPhase()),
+        reference_densities = [786.507, 1037.84, 0.969758], 
+        saturated_chop = false,
+        keep_bubble_flag = true,
+        eps_s = 1e-10,
+        eps_rs = nothing,
+        eps_rv = nothing,
+        formulation::Symbol = :varswitch,
+        reference_phase_index = missing
+    )
+    rs_max = region_wrap(rs_max)
+    rv_max = region_wrap(rv_max)
+    RS = typeof(rs_max)
+    RV = typeof(rv_max)
+    phases = tuple(phases...)
+    if ismissing(reference_phase_index)
+        reference_phase_index = get_reference_phase_index(phases)
+    end
+    reference_phase_index::Int
+    nph = length(phases)
+    if nph == 2 && length(reference_densities) == 3
+        reference_densities = reference_densities[2:3]
+    end
+    reference_densities = tuple(reference_densities...)
+    @assert LiquidPhase() in phases
+    @assert VaporPhase() in phases
+    @assert nph == 2 || nph == 3
+    @assert length(reference_densities) == nph
+    phase_ind = zeros(Int64, nph)
+    has_water = nph == 3
+    phase_ind = generate_phase_indices(phases)
+    if isnothing(eps_rs)
+        if isnothing(rs_max)
+            eps_rs = eps_s
+        else
+            F_rs = first(rs_max).F
+            eps_rs = max(1e-6*F_rs[end]/length(F_rs), 1e-12)
+        end
+    end
+    if isnothing(eps_rv)
+        if isnothing(rv_max)
+            eps_rv = eps_s
+        else
+            F_rv = first(rv_max).F
+            eps_rv = max(1e-6*F_rv[end]/length(F_rv), 1e-12)
+        end
+    end
+    @assert formulation == :varswitch || formulation == :zg
+    return StandardBlackOilSystem{RS, RV, has_water, typeof(reference_densities), formulation, typeof(phase_ind), typeof(phases), Float64}(rs_max, rv_max, reference_densities, phase_ind, phases, saturated_chop, keep_bubble_flag, eps_rs, eps_rv, eps_s, reference_phase_index)
+end
+
+@inline function rs_max_function(sys::StandardBlackOilSystem, region = 1)
+    return table_by_region(sys.rs_max, region)
+end
+
+@inline function rv_max_function(sys::StandardBlackOilSystem, region = 1)
+    return table_by_region(sys.rv_max, region)
+end
+
+function has_other_phase(sys::StandardBlackOilSystem{A, B, W}) where {A, B, W}
+    return W
+end
+
+function Base.show(io::IO, d::StandardBlackOilSystem)
+    print(io, "StandardBlackOilSystem with $(d.phases)")
+end
+
+const BlackOilVariableSwitchingSystem = StandardBlackOilSystem{<:Any, <:Any, <:Any, <:Any, :varswitch, <:Any, <:Any}
+const BlackOilVariableSwitchingSystemWithWater = StandardBlackOilSystem{<:Any, <:Any, true, <:Any, :varswitch, <:Any, <:Any}
+const BlackOilVariableSwitchingSystemWithoutWater = StandardBlackOilSystem{<:Any, <:Any, false, <:Any, :varswitch, <:Any, <:Any}
+
+const BlackOilGasFractionSystem = StandardBlackOilSystem{<:Any, <:Any, <:Any, <:Any, :zg, <:Any, <:Any}
+
+const DisgasBlackOilSystem = StandardBlackOilSystem{<:Any, Nothing, <:Any, <:Any, <:Any, <:Any, <:Any}
+const VapoilBlackOilSystem = StandardBlackOilSystem{Nothing, <:Any, <:Any, <:Any, <:Any, <:Any, <:Any}
+
+const BlackOilModelVariableSwitching = SimulationModel{<:Any, BlackOilVariableSwitchingSystem, <:Any, <:Any}
+const BlackOilModelGasFraction       = SimulationModel{<:Any, BlackOilGasFractionSystem,        <:Any, <:Any}
+const StandardBlackOilModel          = SimulationModel{<:Any, <:StandardBlackOilSystem, <:Any, <:Any}
+const VapoilBlackOilModel            = SimulationModel{<:Any, <:VapoilBlackOilSystem, <:Any, <:Any}
+const DisgasBlackOilModel            = SimulationModel{<:Any, <:DisgasBlackOilSystem, <:Any, <:Any}
+
+const StandardBlackOilModelWithWater = SimulationModel{<:Any, <:StandardBlackOilSystem{<:Any, <:Any, true, <:Any, <:Any, <:Any, <:Any}, <:Any, <:Any}
+
+struct ImmiscibleSystem{T, F} <: MultiPhaseSystem where {T<:Tuple, F<:NTuple}
+    phases::T
+    rho_ref::F
+    reference_phase_index::Int
+end
+
+"""
+    ImmiscibleSystem(phases; reference_densities = ones(length(phases)))
+    ImmiscibleSystem(:wog)
+    ImmiscibleSystem((LiquidPhase(), VaporPhase()), reference_densities = (1000.0, 700.0))
+
+Immiscible flow system: Each component exists only in a single phase, and the
+number of components equal the number of phases.
+
+Set up an immiscible system for the given phases with optional reference
+densitites. This system is easy to specify with [Pressure](@ref) and
+[Saturations](@ref) as the default primary variables. Immiscible system assume
+that there is no mass transfer between phases and that a phase is uniform in
+composition.
+"""
+function ImmiscibleSystem(phases; reference_densities = ones(length(phases)), reference_phase_index = missing)
+    if phases isa Symbol
+        if phases == :og || phases == :lv
+            phases = (LiquidPhase(), VaporPhase())
+        elseif phases == :wo || phases == :al
+            phases = (AqueousPhase(), LiquidPhase())
+        elseif phases == :wg || phases == :av
+            phases = (AqueousPhase(), VaporPhase())
+        elseif phases == :w || phases == :a
+            phases = (AqueousPhase(), )
+        elseif phases == :o || phases == :l
+            phases = (LiquidPhase(), )
+        elseif phases == :g || phases == :v
+            phases = (VaporPhase(), )
+        elseif phases == :wog || phases == :alv
+            phases = (AqueousPhase(), LiquidPhase(), VaporPhase())
+        else
+            error("Unknown immiscible system symbol: $phases")
+        end
+    end
+    for ph in phases
+        ph isa AbstractPhase || error("Phase $ph was not a phase?")
+    end
+    phases = tuple(phases...)
+    if ismissing(reference_phase_index)
+        reference_phase_index = get_reference_phase_index(phases)
+    end
+    reference_densities = tuple(reference_densities...)
+    return ImmiscibleSystem(phases, reference_densities, reference_phase_index)
+end
+
+Base.show(io::IO, t::ImmiscibleSystem) = print(io, "ImmiscibleSystem with $(join([typeof(p) for p in t.phases], ", "))")
+
+
+struct SinglePhaseSystem{P, F} <: MultiPhaseSystem where {P, F<:AbstractFloat}
+    phase::P
+    rho_ref::F
+end
+
+const ImmiscibleModel = SimulationModel{D, S, F, C} where {D, S<:ImmiscibleSystem, F, C}
+
+"""
+    SinglePhaseSystem(phase = LiquidPhase(); reference_density = 1.0)
+
+A single-phase system that only solves for pressure.
+"""
+function SinglePhaseSystem(phase = LiquidPhase(); reference_density = 1.0)
+    if reference_density isa Real
+        reference_density = (reference_density, )
+    end
+    return SinglePhaseSystem{typeof(phase), typeof(reference_density)}(phase, reference_density)
+end
+
+const SinglePhaseModel = SimulationModel{D, S, F, C} where {D, S<:SinglePhaseSystem, F, C}
+
+number_of_components(sys::SinglePhaseSystem) = 1
+
+abstract type AbstractPhaseRelativePermeability{T, N} end
+
+struct PhaseRelativePermeability{T, N} <: AbstractPhaseRelativePermeability{T, N}
+    k::T
+    label::Symbol
+    "Connate saturation"
+    connate::N
+    "The saturation at which rel. perm. becomes positive"
+    critical::N
+    "Maximum saturation at which rel. perm. is k_max"
+    s_max::N
+    "Largest value of rel. perm."
+    k_max::N
+    "Largest s value in input saturations"
+    input_s_max::N
+end
+
+
+"""
+    PhaseRelativePermeability(s, k; label = :w, connate = s[1], epsilon = 1e-16)
+
+Type that stores a sorted phase relative permeability table (given as vectors of
+equal length `s` and `k`):
+
+``K_r = K(S)``
+
+Optionally, a label for the phase, the connate saturation and a small epsilon
+value used to avoid extrapolation can be specified. The return type holds both
+the table, the phase context, the autodetected critical and maximum relative
+permeability values and can be passed saturation values to evaluate the
+underlying function:
+
+```jldoctest
+s = range(0, 1, 50)
+k = s.^2
+kr = PhaseRelativePermeability(s, k)
+round(kr(0.5), digits = 2)
+
+# output
+
+0.25
+```
+"""
+function PhaseRelativePermeability(s, k; label = :w, connate = s[1], epsilon = 1e-16)
+    s = collect(s)
+    k = collect(k)
+    msg(i) = "k = $(k[i]) at entry $i corresponding to saturation $(s[i])"
+    s, k = saturation_table_handle_defaults(s, k)
+    for i in eachindex(s)
+        if i == 1
+            if s[1] == 0.0
+                k[i] == 0.0 || throw(ArgumentError("Rel. perm. must be zero for s = 0, was $(k[i])"))
+            end
+        else
+            s[i] >= s[i-1] || throw(ArgumentError("Saturations must be increasing: $(msg(i))"))
+            k[i] >= k[i-1] || throw(ArgumentError("Rel. Perm. function must be increasing: $(msg(i))"))
+            if k[i] > 1.0
+                @warn "Rel. Perm. $label has value larger than 1.0: $(msg(i))"
+            end
+        end
+    end
+    s_max_table = s[end]
+    k_max, ix = findmax(k)
+    s_max = s[ix]
+    # Last immobile point in table
+    crit_ix = findfirst(x -> x > eps(Float64), k) - 1
+    crit = s[crit_ix]
+    s, k = JutulDarcy.add_missing_endpoints(s, k)
+    JutulDarcy.ensure_endpoints!(s, k, epsilon)
+    kr = get_1d_interpolator(s, k, cap_endpoints = false, constant_dx = false)
+    return PhaseRelativePermeability(kr, label, connate, crit, s_max, k_max, s_max_table)
+end
+
+(kr::PhaseRelativePermeability)(S) = kr.k(S)
+
+function Base.show(io::IO, t::MIME"text/plain", kr::PhaseRelativePermeability)
+    println(io, "PhaseRelativePermeability for $(kr.label):")
+    println(io, "  .k: Internal representation: $(kr.k)")
+    println(io, "  Connate saturation = $(kr.connate)")
+    println(io, "  Critical saturation = $(kr.critical)")
+    println(io, "  Maximum rel. perm = $(kr.k_max) at $(kr.s_max)")
+end
+
+"""
+MassSource: Source is directly interpreted as component masses.
+StandardVolumeSource: Source is volume at standard/surface conditions. References densities are used to convert into mass sources.
+VolumeSource: Source is volume at in-situ / reservoir conditions.
+"""
+@enum FlowSourceType begin
+    MassSource
+    StandardVolumeSource
+    VolumeSource
+end
+
+struct SourceTerm{I, F, T} <: JutulForce
+    cell::I
+    value::F
+    fractional_flow::T
+    type::FlowSourceType
+end
+
+"""
+    FlowBoundaryCondition
+
+Boundary condition for prescribed pressure/temperature flow across a reservoir
+boundary. Optional `fractional_flow`, `density`, and `enthalpy` values can be
+used to specify the injected stream.
+
+If `enthalpy` is left as `nothing`, thermal inflow falls back to
+the local reservoir-state enthalpy at the boundary cell: `Enthalpy` when
+available, otherwise a saturation-weighted value from `FluidEnthalpy`.
+"""
+struct FlowBoundaryCondition{I, F, T} <: JutulForce
+    cell::I
+    pressure::F
+    temperature::F
+    trans_flow::F
+    trans_thermal::F
+    fractional_flow::T
+    density::Union{F, Nothing}
+    enthalpy::Union{F, Nothing}
+end
+
+abstract type PorousMediumDomain <: JutulMesh end
+abstract type ReservoirGrid <: PorousMediumDomain end
+
+"""
+Abstract supertype for all well domains.
+"""
+abstract type WellDomain <: PorousMediumDomain
+    # Wells are not porous themselves per se, but they are discretizing
+    # part of a porous medium.
+end
+
+function Base.show(io::IO, w::WellDomain)
+    if w isa SimpleWell
+        nseg = 0
+        nn = 1
+        n = "SimpleWell"
+    else
+        nseg = size(w.neighborship, 2)
+        nn = w.num_nodes
+        n = "MultiSegmentWell"
+    end
+    print(io, "$n [$(w.name)] ($(nn) nodes, $(nseg) segments, $(length(w.perforations.reservoir)) perforations)")
+end
+
+struct SimpleWell{SC, P} <: WellDomain where {SC, P}
+    perforations::P
+    surface::SC
+    name::Symbol
+    explicit_dp::Bool
+    # reference_depth::V
+end
+
+Jutul.dim(w::DataDomain{<:WellDomain}) = size(w[:cell_centroids], 1)
+Jutul.mesh_z_is_depth(w::DataDomain{<:WellDomain}) = true
+
+"""
+    SimpleWell(reservoir_cells; <keyword arguments>)
+
+Set up a simple well.
+
+# Note
+
+[`setup_vertical_well`](@ref) or [`setup_well`](@ref) are the recommended
+way of setting up wells.
+
+# Fields
+
+$FIELDS
+
+"""
+function SimpleWell(
+        reservoir_cells;
+        name = :Well,
+        explicit_dp = true,
+        surface_conditions = default_surface_cond(),
+    )
+    nr = length(reservoir_cells)
+    perf = (self = ones(Int64, nr), reservoir = vec(reservoir_cells))#, WI = WI, WIth = WIth, gdz = gdz)
+    return SimpleWell(
+        perf,
+        surface_conditions,
+        name,
+        explicit_dp
+    )
+end
+
+struct MultiSegmentWell{P, N, SC, S} <: WellDomain
+    type::Symbol
+    num_nodes::Int
+    num_segments::Int
+    num_perforations::Int
+    "(self -> local cells, reservoir -> reservoir cells)"
+    perforations::P
+    "Well cell connectivity (connections between nodes)"
+    neighborship::N
+    "End node(s) for the well"
+    end_nodes::Vector{Int64}
+    "pressure and temperature conditions at surface"
+    surface::SC
+    "Name of the well as a Symbol"
+    name::Symbol
+    "Pressure drop model for seg well segment"
+    segment_models::S
+end
+
+"""
+    MultiSegmentWell(reservoir_cells;
+        name = :Well,
+        top_node = false,
+    )
+
+Create well perforated in a vector of `reservoir_cells`. This constructor
+assumes that the well is vertical and that the cells are ordered from top to
+bottom. If `top_node = true`, an additional node is added at the top of the
+well to represent the surface node. The well will then have one more node than
+perforations.
+
+# Note
+
+[`setup_vertical_well`](@ref) or [`setup_well`](@ref) are the recommended
+way of setting up wells.
+
+# Fields
+
+$FIELDS
+
+"""
+function MultiSegmentWell(reservoir_cells; top_node = false, kwarg...)
+    numperf = length(reservoir_cells)
+    pix = 1:numperf
+    if top_node
+        numnodes = numperf + 1
+        neighbors = vcat(pix', (2:numnodes)')
+        self_cells = collect(2:numnodes)
+    else
+        neighbors = vcat(pix[1:end-1]', pix[2:end]')
+        self_cells = collect(pix)
+    end
+    return MultiSegmentWell(neighbors, reservoir_cells, self_cells; kwarg...)
+end
+
+"""
+    MultiSegmentWell(neighbors::AbstractMatrix, perforation_cells_reservoir, perforation_cells_self;
+        end_nodes = missing,
+        type = :ms,
+        name = :Well,
+        segment_models = nothing,
+        surface_conditions = default_surface_cond(),
+    )
+
+Create a multisegment well from a connectivity matrix `neighbors` and vectors
+of perforation cells in the reservoir and the well. The connectivity matrix
+must have two rows, where the first row contains the "from" node and the second
+row contains the "to" node. The nodes are numbered from 1 to the maximum node
+number. The vectors `perforation_cells_reservoir` and `perforation_cells_self`
+must have the same length, and contain the cell indices in the reservoir grid
+and the local well grid, respectively, where the well is perforated. The
+optional argument `end_nodes` can be used to specify which nodes are end nodes
+of the well. If not provided, these are automatically detected as nodes that
+are not "from" nodes in the connectivity matrix. The optional argument
+`segment_models` can be used to provide a vector of segment pressure drop
+models, one per segment. If not provided, a default `SegmentWellBoreFrictionHB`
+model is used for all segments.
+"""
+function MultiSegmentWell(neighbors::AbstractMatrix, perforation_cells_reservoir, perforation_cells_self;
+        end_nodes = missing,
+        type = :ms,
+        name = :Well,
+        segment_models = nothing,
+        surface_conditions = default_surface_cond(),
+    )
+    size(neighbors, 1) == 2 || throw(ArgumentError("Connectivity matrix for multisegment well must have two rows"))
+    num_nodes = maximum(neighbors, init = 1)
+    num_segments = size(neighbors, 2)
+    num_perf = length(perforation_cells_self)
+    maximum(perforation_cells_self) <= num_nodes || throw(ArgumentError("Perforation cells (self) must be less than or equal to number of nodes $(num_nodes), was $(maximum(perforation_cells_self))"))
+    if ismissing(end_nodes)
+        from_nodes = unique(neighbors[1, :])
+        to_nodes = unique(neighbors[2,:])
+        end_nodes = setdiff(to_nodes, from_nodes)
+        if isempty(end_nodes)
+            @assert num_nodes == 1 "Failed to determine end_nodes from connectivity matrix, please provide explicitly."
+            end_nodes = [1]
+        end
+    end
+    if isnothing(segment_models)
+        segment_models = [SegmentWellBoreFrictionHB() for _ in 1:num_segments]
+    else
+        segment_models::AbstractVector
+        length(segment_models) == num_segments || throw(ArgumentError("If segment models are provided, there must be one per segment. Was $(length(segment_models)), expected $num_segments"))
+    end
+    perf = (self = perforation_cells_self, reservoir = perforation_cells_reservoir)
+    return MultiSegmentWell(
+        type,
+        num_nodes,
+        num_segments,
+        num_perf,
+        perf,
+        neighbors,
+        end_nodes,
+        surface_conditions,
+        name,
+        segment_models,
+    )
+end
+
+
+struct WellResults
+    "Vector of time offsets that the reports are given at"
+    time::Vector{Float64}
+    "Dict-of-dicts that contains the well outputs"
+    wells::Dict{Symbol, AbstractDict}
+    "Start date for t = 0"
+    start_date::Union{Date, Nothing}
+    function WellResults(time, well_results, start_date = nothing)
+        return new(time, well_results, start_date)
+    end
+end
+
+Base.pairs(wr::WellResults) = pairs(wr.wells)
+
+struct ReservoirSimResult
+    "Well results as a Dict (output from [`full_well_outputs`](@ref))"
+    wells::WellResults
+    "Reservoir states for each time-step"
+    states::AbstractVector
+    "Summary result (sparse data)"
+    summary::AbstractDict
+    "The time the states and well solutions are given at"
+    time::AbstractVector
+    "Raw simulation results with more detailed well results and reports of solution progress"
+    result::Jutul.SimResult
+    "Dict for holding additional useful data connected to the simulation"
+    extra::AbstractDict
+end
+
+"""
+    ReservoirSimResult(model, result::Jutul.SimResult, forces, extra = Dict(); kwarg...)
+
+Create a specific reservoir simulation results that contains well curves,
+reservoir states, and so on. This is the return type from `simulate_reservoir`.
+
+A `ReservoirSimResult` can be unpacked into well solutions, reservoir states and
+reporting times:
+
+```julia
+res_result::ReservoirSimResult
+ws, states, t = res_result
+```
+
+# Fields
+
+$FIELDS
+"""
+function ReservoirSimResult(model, result::Jutul.SimResult, forces, extra = Dict(); start_date = nothing, kwarg...)
+    for (k, v) in kwarg
+        extra[k] = v
+    end
+    states, dt, report_ix = Jutul.expand_to_ministeps(result)
+    report_time = cumsum(dt)
+    res_states = map(x -> x[:Reservoir], states)
+    if forces isa Vector
+        forces = forces[report_ix]
+    end
+    wells = full_well_outputs(model, states, forces)
+    well_result = WellResults(report_time, wells, start_date)
+    summary = summary_result(model, well_result, states, :si, start_date = start_date)
+    return ReservoirSimResult(well_result, res_states, summary, report_time, result, extra)
+end
+
+function ReservoirSimResult(case::JutulCase, result::Jutul.SimResult, extra = Dict(); kwarg...)
+    return ReservoirSimResult(case.model, result, case.forces, extra; kwarg...)
+end
+
+struct TopConditions{N, R}
+    density::SVector{N, R}
+    volume_fractions::SVector{N, R}
+    function TopConditions(density::SVector{N, R}, volume_fractions::SVector{N, R}) where {N, R}
+        return new{N, R}(density, volume_fractions)
+    end
+end
+
+function TopConditions(n::Int, R::DataType = Float64; density = missing, volume_fractions = missing)
+    if !ismissing(density)
+        R = promote_type(map(typeof, density)..., R)
+    end
+    if !ismissing(volume_fractions)
+        R = promote_type(map(typeof, volume_fractions)..., R)
+    end
+    return TopConditions(Val(n), Val(R), density, volume_fractions)
+end
+
+function TopConditions(::Val{n}, ::Val{R}, density, volume_fractions) where {n, R}
+    function internal_convert(x::Missing)
+        x = @SVector ones(R, n)
+        return x./n
+    end
+    function internal_convert(x)
+        return convert(SVector{n, R}, x)
+    end
+    density = internal_convert(density)
+    volume_fractions = internal_convert(volume_fractions)
+    return TopConditions(density, volume_fractions)
+end
+
+function JutulDarcy.TopConditions{N, T}(tc::JutulDarcy.TopConditions{N, F}) where {N, T, F}
+    density = map(T, tc.density)
+    volume_fractions = map(T, tc.volume_fractions)
+    return TopConditions(density, volume_fractions)
+end
+
+function Base.convert(::Type{TopConditions{N, R}}, tc::TopConditions{N, Float64}) where {N, R}
+    return TopConditions(convert.(R, tc.density), convert.(R, tc.volume_fractions))
+end
+
+struct SurfaceWellConditions{T, R} <: ScalarVariable
+    storage::T
+    separator_conditions::Vector{NamedTuple{(:p, :T), Tuple{R, R}}}
+    separator_targets::Vector{Tuple{Int, Int}}
+    function SurfaceWellConditions(S::T, c, t, R::DataType = Float64) where T
+        new{T, R}(S, c, t)
+    end
+end
+
+function SurfaceWellConditions(sys::JutulSystem; kwarg...)
+    s = Dict{Type, Any}()
+    S_t = typeof(default_surface_cond())
+    cond = S_t[]
+    targets = Tuple{Int, Int}[]
+    return SurfaceWellConditions(s, cond, targets)
+end
+
+struct PrepareStepWellSolver end
+
+
+struct PhasePotentials <: PhaseVariables
+
+end
+
+struct AdjustedCellDepths <: ScalarVariable
+
+end
+
+struct CriticalKrPoints <: ScalarVariable end
+
+struct MaxRelPermPoints <: ScalarVariable end
+
+struct LETCoefficients <: JutulVariables end
+
+struct CoreyExponentKrPoints <: ScalarVariable end
+
+struct NonNeighboringConnections{R}
+    cells::Vector{Tuple{Int, Int}}
+    trans_flow::Vector{R}
+    trans_thermal::Vector{R}
+end
+
+export setup_nnc_connections
+
+function setup_nnc_connections(mesh::JutulMesh, left::Vector{Int}, right::Vector{Int}, trans::Vector, arg...)
+    length(left) == length(right) || throw(ArgumentError("Left and right neighbor vectors must have the same length"))
+    neighbors = [(left[i], right[i]) for i in eachindex(left)]
+    return setup_nnc_connections(mesh, neighbors, trans, arg...)
+end
+
+function setup_nnc_connections(mesh::JutulMesh, neighbors::Matrix{Int}, trans::Vector, arg...)
+    size(neighbors, 1) == 2 || throw(ArgumentError("Neighbors matrix must have two rows"))
+    tupl_neighbors = [(neighbors[1, i], neighbors[2, i]) for i in axes(neighbors, 2)]
+    return setup_nnc_connections(mesh, tupl_neighbors, trans, arg...)
+end
+
+"""
+    setup_nnc_connections(mesh::JutulMesh, neighbors::Vector{Tuple{Int, Int}}, trans::Vector, trans_thermal = missing)
+    setup_nnc_connections(m, left::Vector{Int}, right::Vector{Int}, trans, trans_thermal)
+    setup_nnc_connections(m, neighbors::Matrix{Int}, trans, trans_thermal)
+
+Set up a NNC connection structure for the given `mesh`, list of `neighbors` (as
+tuples of left and right cell indices or a matrix with one column per
+connection), flow transmissibilities `trans` and thermal transmissibilities
+`trans_thermal`. If `trans_thermal` is not provided, it will be defaulted to
+zeros (no heat conduction).
+
+This object can then be passed to [`reservoir_domain`](@ref) to include NNCs in the
+simulation.
+"""
+function setup_nnc_connections(mesh::JutulMesh, neighbors::Vector{Tuple{Int, Int}}, trans::Vector{T}, trans_thermal = missing) where T
+    if ismissing(trans_thermal)
+        trans_thermal = similar(trans)
+        trans_thermal .= 0.0
+    end
+    nc = number_of_cells(mesh)
+    for (i, (l, r)) in enumerate(neighbors)
+        l > 0 || throw(ArgumentError("Left neighbor index $l at connection $i must be positive"))
+        r > 0 || throw(ArgumentError("Right neighbor index $r at connection $i must be positive"))
+        l <= nc || throw(ArgumentError("Left neighbor index $l at connection $i exceeds number of cells $nc"))
+        r <= nc || throw(ArgumentError("Right neighbor index $r at connection $i exceeds number of cells $nc"))
+    end
+    nf = length(neighbors)
+    nt_f = length(trans)
+    nt_t = length(trans_thermal)
+    nt_f == nf || throw(ArgumentError("Length of flow transmissibilities ($nt_f) must match number of connections"))
+    nt_t == nf || throw(ArgumentError("Length of thermal transmissibilities ($nt_t) must match number of connections"))
+    F = eltype(trans_thermal)
+    R = promote_type(T, F)
+    if T != R
+        trans = R.(trans)
+    end
+    if F != R
+        trans_thermal = R.(trans_thermal)
+    end
+    return NonNeighboringConnections{R}(neighbors, trans, trans_thermal)
+end
+
