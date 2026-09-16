@@ -1,0 +1,739 @@
+
+ ### Input file contents:
+
+!
+! *** Grid resolution.
+!
+&topology
+  nr = 41
+  nt = 31
+  np = 61
+/
+&data
+!
+! *** Use the new style output text files.
+!
+  legacy_output_filenames = .false.
+!
+! *** Radial domain.
+!
+  r0 = 1.0
+  r1 = 20.0
+!
+! *** Time domain.
+!
+  tmax = 0.1
+  ntmax = 20
+!
+! *** Grid specifications.
+!
+  rfrac    = 0.0,0.005,1.0
+  drratio  = 1.5,250.0
+  nfrmesh  = 5
+  tfrac    = 0.0,0.34,0.46,1.0
+  dtratio  = 0.025,1.0,40.0
+  nftmesh  = 5
+  pfrac    = 0.0,0.04,0.24,0.76,0.96
+  dpratio  = 1.0,40.0,1.0,0.025,1.0
+  nfpmesh  = 5
+  phishift = 5.45
+!
+! *** Time step specifications.
+!
+  dtmax = 0.001
+  dtmin = 0.000001
+  dt_init = 0.0
+!
+! *** Output options.
+!
+  plotlist = 'br'
+  tpltxint = 0.0
+  ipltxint = 1
+  slice_plotlist = ''
+  slice_tp_radii = 0.0
+  slice_txint = 0.0
+  trace_txint = 0.0
+  hdf32 = .false.
+  rs_final = .false.
+  trsdump = 0.0
+!
+! *** Model specification.
+!
+  advance_a    = .true.
+  advance_v    = .true.
+  advance_t    = .false.
+  advance_rho  = .false.
+  advance_pw   = .false.
+  advance_zw   = .false.
+  advance_fcs  = .false.
+  trace_particles = .false.
+  slund = 1.e5
+  visc = 1.e-3
+  gamma = 1.666666666666667
+  g0 = 0.0
+  br00 = 1.0
+  rho0 = 1.0
+  tbc0    = 20000.
+  tchromo = 20000.
+  tfloor  = 20000.
+  char_bc0 = .false.
+  char_bc1 = .false.
+  ubzero = .false.
+  filter_poles = .false.
+  zero_v_parallel=.true.
+! *** Thermal conduction:
+  advance_tc = .false.
+  tcond = 0.0
+  alpha_nocoll = 0.0
+  t_cutoff1 = 500000.0
+  nfilt_kappa = 0
+!
+! *** Initial condition.
+!
+  initial_field = 'POTENTIAL_FIELD'
+  bnfile = 'br_map_input.h5'
+  zb_rho_profile = 'READ_FROM_FILE'
+  zb_rho_file = 'rho_bastille_test_reduced.h5'
+  tdm_preserve_br0 = .true.
+! *** FR1: along E-W segment of PIL
+  tdm_fluxrope(1)%add = .true.
+  tdm_fluxrope(1)%rope_type = 'hollow_nonff'
+  tdm_fluxrope(1)%origin_t = 1.27450
+  tdm_fluxrope(1)%origin_p = 5.40750
+  tdm_fluxrope(1)%normal_t = -0.952424
+  tdm_fluxrope(1)%normal_p = -0.304776
+  tdm_fluxrope(1)%tilt_from_vertical = 0.
+  tdm_fluxrope(1)%apex_height = 0.03
+  tdm_fluxrope(1)%footpoint_halfdistance = 0.064
+  tdm_fluxrope(1)%b_poloidal = 36.0
+  tdm_fluxrope(1)%handedness = -1
+  tdm_fluxrope(1)%minor_radius = 0.023
+  tdm_fluxrope(1)%delta = 0.1
+! *** FR2: along western (right) N-S segment of PIL
+  tdm_fluxrope(2)%add = .true.
+  tdm_fluxrope(2)%rope_type= 'hollow'
+  tdm_fluxrope(2)%origin_t = 1.224
+  tdm_fluxrope(2)%origin_p = 5.4725
+  tdm_fluxrope(2)%normal_t = 0.609711
+  tdm_fluxrope(2)%normal_p = -0.792624
+  tdm_fluxrope(2)%tilt_from_vertical = 0.0
+  tdm_fluxrope(2)%apex_height = 0.02
+  tdm_fluxrope(2)%footpoint_halfdistance = 0.026
+  tdm_fluxrope(2)%b_poloidal = 36.0
+  tdm_fluxrope(2)%handedness = -1
+  tdm_fluxrope(2)%minor_radius = 0.02
+  tdm_fluxrope(2)%delta = 0.1
+! *** FR3: along eastern (left) N-S segment of PIL
+  tdm_fluxrope(3)%add = .true.
+  tdm_fluxrope(3)%rope_type = 'parabolic'
+  tdm_fluxrope(3)%origin_t = 1.2685
+  tdm_fluxrope(3)%origin_p = 5.324
+  tdm_fluxrope(3)%normal_t = -0.853704
+  tdm_fluxrope(3)%normal_p = 0.520759
+  tdm_fluxrope(3)%tilt_from_vertical = 0.0
+  tdm_fluxrope(3)%apex_height = 0.025
+  tdm_fluxrope(3)%footpoint_halfdistance = 0.039
+  tdm_fluxrope(3)%b_poloidal = 60.0
+  tdm_fluxrope(3)%handedness = -1
+  tdm_fluxrope(3)%minor_radius = 0.018
+  tdm_fluxrope(3)%delta = 0.1
+  initial_plasma = 'ZERO-BETA'
+!
+! *** Numerical algorithm options.
+!
+  cfl = 0.6
+  use_sts_visc = .false.
+  use_sts_tc   = .false.
+  visc_auto_subcycle = .false.
+  tc_auto_subcycle   = .false.
+  ifprec_t     = 3
+  ifprec_v     = 3
+  ifprec_pot2d = 3
+  ifprec_divb  = 3
+  epscg_a       = 1.e-9
+  epscg_v       = 1.e-9
+  epscg_t       = 1.e-9
+  epscg_potfld  = 1.e-9
+  epscg_newflux = 1.e-9
+  epscg_divb    = 1.e-9
+  ncgmax = 100000
+ /
+!=======================================================================================
+! ------------
+! Zero-beta Triple TDm Flux Rope
+! ------------
+! First contribution of Tibor to the MAS test suite. This test run is a short zero-beta
+! relaxation of three overlapping TDm flux ropes inserted into a potential field extra-
+! polated from the Kitt Peak magnetogram used in the early Bastille Day simulations.
+! The magnetogram is preserved during the rope are insertion. An ad-hoc density profile
+! is used, largely based on B_0 = rho_0^3/2. Parallel flows are set to zero.
+!
+! Update RMC:  Each rope is a different kind (hollow_noff,hollow,parabolic)
+!=======================================================================================
+
+
+Code: MAS
+Version: 0.9.2.0git
+Updated on: 04/07/2025
+Source file: mas.F90
+Run ID: mas
+Run started on: 04/09/2025
+Run started at: 14:35:45
+Ran on machine: PREDSCI-GPU2
+Machine type: x86_64
+Compiler: GCC version 12.3.0
+Compiler Flags: -I /opt/psi/gnu/ext_deps/deps/hdf5/include -I /usr/lib/x86_64-linux-gnu/openmpi/lib/../../fortran/gfortran-mod-15/openmpi -I /usr/lib/x86_64-linux-gnu/openmpi/lib -march=alderlake -mmmx -mpopcnt -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx -mavx2 -mno-sse4a -mno-fma4 -mno-xop -mfma -mno-avx512f -mbmi -mbmi2 -maes -mpclmul -mno-avx512vl -mno-avx512bw -mno-avx512dq -mno-avx512cd -mno-avx512er -mno-avx512pf -mno-avx512vbmi -mno-avx512ifma -mno-avx5124vnniw -mno-avx5124fmaps -mno-avx512vpopcntdq -mno-avx512vbmi2 -mgfni -mvpclmulqdq -mno-avx512vnni -mno-avx512bitalg -mno-avx512bf16 -mno-avx512vp2intersect -mno-3dnow -madx -mabm -mno-cldemote -mclflushopt -mclwb -mno-clzero -mcx16 -mno-enqcmd -mf16c -mfsgsbase -mfxsr -mno-hle -msahf -mno-lwp -mlzcnt -mmovbe -mmovdir64b -mmovdiri -mno-mwaitx -mno-pconfig -mpku -mno-prefetchwt1 -mprfchw -mptwrite -mrdpid -mrdrnd -mrdseed -mno-rtm -mserialize -mno-sgx -msha -mshstk -mno-tbm -mno-tsxldtrk -mvaes -mwaitpkg -mno-wbnoinvd -mxsave -mxsavec -mxsaveopt -mxsaves -mno-a
+
+
+ ------------------------------------------------------------------------
+
+ ### COMMENT from START:
+ ### Timing has been turned ON for this run.
+
+ ### COMMENT from GENMESH:
+ ### Mesh information for coordinate r:
+
+ Number of mesh segments =            2
+
+ Segment      xi0       xi1               r0               r1            ratio
+    1    0.000000  0.216089       1.00000000       1.09500000       1.50000000
+    2    0.216089  1.000000       1.09500000      20.00000000     250.00000000
+
+ Mesh-point locations:
+      i                 r                dr             ratio
+      1        1.00000000
+      2        1.00976790        0.00976790
+      3        1.01975688        0.00998898        1.02263361
+      4        1.03013183        0.01037495        1.03863981
+      5        1.04098796        0.01085613        1.04637880
+      6        1.05237863        0.01139067        1.04923879
+      7        1.06436492        0.01198629        1.05228976
+      8        1.07708901        0.01272409        1.06155352
+      9        1.09086794        0.01377893        1.08290142
+     10        1.10625168        0.01538374        1.11646844
+     11        1.12398349        0.01773181        1.15263279
+     12        1.14489303        0.02090954        1.17921112
+     13        1.16982694        0.02493391        1.19246567
+     14        1.19966996        0.02984302        1.19688471
+     15        1.23541658        0.03574662        1.19782186
+     16        1.27823864        0.04282206        1.19793321
+     17        1.32953684        0.05129820        1.19793846
+     18        1.39098892        0.06145208        1.19793846
+     19        1.46460473        0.07361581        1.19793846
+     20        1.55279195        0.08818721        1.19793846
+     21        1.65843480        0.10564285        1.19793846
+     22        1.78498844        0.12655364        1.19793846
+     23        1.93659191        0.15160347        1.19793846
+     24        2.11820354        0.18161163        1.19793846
+     25        2.33576310        0.21755956        1.19793846
+     26        2.59638607        0.26062296        1.19793846
+     27        2.90859634        0.31221027        1.19793846
+     28        3.28260503        0.37400869        1.19793846
+     29        3.73064443        0.44803940        1.19793846
+     30        4.26736807        0.53672363        1.19793846
+     31        4.91032995        0.64296189        1.19793846
+     32        5.68055873        0.77022877        1.19793846
+     33        6.60324540        0.92268667        1.19793846
+     34        7.70856726        1.10532186        1.19793846
+     35        9.03267483        1.32410757        1.19793846
+     36       10.61826798        1.58559315        1.19748062
+     37       12.51053632        1.89226834        1.19341354
+     38       14.73802506        2.22748874        1.17715267
+     39       17.27355688        2.53553182        1.13829165
+     40       20.00000000        2.72644312        1.07529438
+
+ ### COMMENT from GENMESH:
+ ### Mesh information for coordinate t:
+
+ Number of mesh segments =            3
+
+ Segment      xi0       xi1               t0               t1            ratio
+    1    0.000000  0.158237       0.00000000       1.06814150       0.02500000
+    2    0.158237  0.748683       1.06814150       1.44513262       1.00000000
+    3    0.748683  1.000000       1.44513262       3.14159265      40.00000000
+
+ Mesh-point locations:
+      i                 t                dt             ratio
+      1        0.00000000
+      2        0.38308098        0.38308098
+      3        0.69049674        0.30741576        0.80248243
+      4        0.89149822        0.20100148        0.65384249
+      5        1.00326970        0.11177148        0.55607289
+      6        1.06161828        0.05834858        0.52203465
+      7        1.09551598        0.03389769        0.58095140
+      8        1.12058569        0.02506971        0.73956991
+      9        1.14317317        0.02258748        0.90098696
+     10        1.16525672        0.02208355        0.97768961
+     11        1.18727699        0.02202027        0.99713473
+     12        1.20929374        0.02201674        0.99983963
+     13        1.23131048        0.02201674        1.00000000
+     14        1.25332722        0.02201674        1.00000000
+     15        1.27534396        0.02201674        1.00000000
+     16        1.29736071        0.02201674        1.00000000
+     17        1.31937745        0.02201674        1.00000000
+     18        1.34139466        0.02201722        1.00002156
+     19        1.36342704        0.02203237        1.00068840
+     20        1.38560620        0.02217917        1.00666258
+     21        1.40855952        0.02295332        1.03490448
+     22        1.43423451        0.02567498        1.11857399
+     23        1.46705300        0.03281849        1.27822810
+     24        1.51510077        0.04804777        1.46404593
+     25        1.59151530        0.07641453        1.59038658
+     26        1.71657295        0.12505765        1.63656896
+     27        1.91853517        0.20196222        1.61495292
+     28        2.22594518        0.30741001        1.52211643
+     29        2.64590946        0.41996427        1.36613727
+     30        3.14159265        0.49568319        1.18029848
+
+ ### COMMENT from GENMESH:
+ ### Mesh information for coordinate p:
+
+ Number of mesh segments =            5
+
+ Segment      xi0       xi1               p0               p1            ratio
+    1    0.000000  0.305729       0.00000000       0.25132741       1.00000000
+    2    0.305729  0.450319       0.25132741       1.50796447      40.00000000
+    3    0.450319  0.549681       1.50796447       4.77522083       1.00000000
+    4    0.549681  0.694271       4.77522083       6.03185789       0.02500000
+    5    0.694271  1.000000       6.03185789       6.28318531       1.00000000
+
+ Mesh-point locations:
+      i                 p                dp             ratio
+      1        0.00000000        0.25276668        1.46054653
+      2        0.34563641        0.34563641        1.36741288
+      3        0.77966774        0.43403133        1.25574539
+      4        1.27963271        0.49996497        1.15190988
+      5        1.81642701        0.53679430        1.07366382
+      6        2.36581621        0.54938920        1.02346317
+      7        2.90862323        0.54280702        0.98801909
+      8        3.42249360        0.51387037        0.94669072
+      9        3.87871170        0.45621810        0.88780776
+     10        4.25132702        0.37261533        0.81674823
+     11        4.53018813        0.27886110        0.74838871
+     12        4.72427831        0.19409018        0.69601023
+     13        4.85338095        0.12910264        0.66516832
+     14        4.93763374        0.08425279        0.65260314
+     15        4.99248155        0.05484781        0.65099098
+     16        5.02858899        0.03610744        0.65832066
+     17        5.05329279        0.02470380        0.68417463
+     18        5.07168430        0.01839152        0.74448134
+     19        5.08709549        0.01541118        0.83795075
+     20        5.10139055        0.01429507        0.92757747
+     21        5.11538145        0.01399090        0.97872216
+     22        5.12931922        0.01393777        0.99620237
+     23        5.14325245        0.01393323        0.99967434
+     24        5.15718564        0.01393319        0.99999751
+     25        5.17111884        0.01393319        1.00000000
+     26        5.18505203        0.01393319        1.00000000
+     27        5.19898522        0.01393319        1.00000000
+     28        5.21291842        0.01393319        1.00000000
+     29        5.22685161        0.01393319        1.00000000
+     30        5.24078480        0.01393319        1.00000000
+     31        5.25471800        0.01393319        1.00000000
+     32        5.26865119        0.01393319        1.00000000
+     33        5.28258438        0.01393319        1.00000000
+     34        5.29651758        0.01393319        1.00000000
+     35        5.31045077        0.01393319        1.00000000
+     36        5.32438397        0.01393319        1.00000000
+     37        5.33831716        0.01393319        1.00000000
+     38        5.35225035        0.01393319        1.00000000
+     39        5.36618355        0.01393319        1.00000000
+     40        5.38011674        0.01393319        1.00000000
+     41        5.39404993        0.01393319        1.00000000
+     42        5.40798313        0.01393319        1.00000000
+     43        5.42191632        0.01393319        1.00000000
+     44        5.43584951        0.01393319        1.00000000
+     45        5.44978271        0.01393319        1.00000000
+     46        5.46371590        0.01393319        1.00000000
+     47        5.47764909        0.01393319        1.00000000
+     48        5.49158229        0.01393319        1.00000000
+     49        5.50551769        0.01393541        1.00015881
+     50        5.51948364        0.01396594        1.00219125
+     51        5.53364635        0.01416271        1.01408914
+     52        5.54860425        0.01495790        1.05614705
+     53        5.56585881        0.01725456        1.15354139
+     54        5.58827780        0.02241899        1.29930771
+     55        5.62041083        0.03213303        1.43329546
+     56        5.66886594        0.04845511        1.50795329
+     57        5.74319385        0.07432791        1.53395400
+     58        5.85735555        0.11416171        1.53591982
+     59        6.03041863        0.17306308        1.51594682
+     60        6.28318531        0.25276668        1.46054653
+
+ ------------------------------------------------------------------------
+
+ ### COMMENT from SET_DIAGNOSTICS:
+ Number of fields to plot =            1
+
+ Fields to plot:
+ Br
+
+ ------------------------------------------------------------------------
+
+ ### COMMENT from SET_DIAGNOSTICS:
+ Number of slice fields to plot =            0
+
+ ------------------------------------------------------------------------
+
+ ### COMMENT from SET_DIAGNOSTICS:
+ Number of diagnostic points =            0
+
+ ------------------------------------------------------------------------
+
+
+ ### COMMENT from START:
+ ### Upwind coefficients for the A equation:
+ UPWIND_AR =    1.0000000000000000     
+ UPWIND_AT =    1.0000000000000000     
+ UPWIND_AP =    1.0000000000000000     
+ UPWIND_A_R0 =    0.0000000000000000     
+
+ ### COMMENT from LOAD_POT2D_SOLVE:
+ ### pot2d preconditioner activated.
+ Matrix size per node (NxN) N:               900
+ Matrix # of non-zeros per node M:          4144
+ Estimated memory usage per node:     0.26 MB
+
+
+ ### COMMENT from LOAD_POT2DH_SOLVE:
+ ### pot2dh preconditioners activated.
+ Matrix size per node (NxN) N:               870
+ Matrix # of non-zeros per node M:          4232
+ Estimated memory usage per node:     0.26 MB
+
+ ### Adding the TDM flux rope with index =            1
+
+ ### COMMENT from TDM_ADD_A:
+ ### Calculating A for a modified Titov-Demoulin flux rope.
+
+ ### COMMENT from TDM_INIT_PARAMS:
+ ### Parameters for the modified Titov-Demoulin flux rope:
+
+ Flag to Add:  T
+ Rope Type = hollow_nonff
+ Flag to use the user specified major radius: F
+ Major radius =    8.3266666666666683E-002
+ Minor radius =    2.3000000000000000E-002
+ Apex height =    2.9999999999999999E-002
+ Footpoint separation =   0.12800000000000000     
+ Fractional surface transition layer width =   0.10000000000000001     
+ Axial current =    20.187052880305504     
+ Axial flux =  -0.23215110812351331     
+ Axial field =   -139.68996749383064     
+ Confining poloidal field =    36.000000000000000     
+ Handedness [-1 => left-handed, +1 => right-handed] =           -1
+ Flag to add charges:  F
+
+ ### Adding the TDM flux rope with index =            2
+
+ ### COMMENT from TDM_ADD_A:
+ ### Calculating A for a modified Titov-Demoulin flux rope.
+
+ ### COMMENT from TDM_INIT_PARAMS:
+ ### Parameters for the modified Titov-Demoulin flux rope:
+
+ Flag to Add:  T
+ Rope Type = hollow
+ Flag to use the user specified major radius: F
+ Major radius =    2.6899999999999997E-002
+ Minor radius =    2.0000000000000000E-002
+ Apex height =    2.0000000000000000E-002
+ Footpoint separation =    5.1999999999999998E-002
+ Fractional surface transition layer width =   0.10000000000000001     
+ Axial current =    13.894472811904032     
+ Axial flux =  -0.13894472811904032     
+ Axial field =   -110.56870148352367     
+ Confining poloidal field =    36.000000000000000     
+ Handedness [-1 => left-handed, +1 => right-handed] =           -1
+ Flag to add charges:  F
+
+ ### Adding the TDM flux rope with index =            3
+
+ ### COMMENT from TDM_ADD_A:
+ ### Calculating A for a modified Titov-Demoulin flux rope.
+
+ ### COMMENT from TDM_INIT_PARAMS:
+ ### Parameters for the modified Titov-Demoulin flux rope:
+
+ Flag to Add:  T
+ Rope Type = parabolic
+ Flag to use the user specified major radius: F
+ Major radius =    4.2919999999999993E-002
+ Minor radius =    1.7999999999999999E-002
+ Apex height =    2.5000000000000001E-002
+ Footpoint separation =    7.8000000000000000E-002
+ Fractional surface transition layer width =   0.10000000000000001     
+ Axial current =    16.971847258819189     
+ Axial flux =  -0.12960980948851233     
+ Axial field =   -127.33359168700974     
+ Confining poloidal field =    60.000000000000000     
+ Handedness [-1 => left-handed, +1 => right-handed] =           -1
+ Flag to add charges:  F
+
+ ### COMMENT from POTFLD_FROM_BNFILE:
+ ### Reading Br at r=R0 from file: br_map_input.h5
+
+ ### COMMENT from BALANCE_FLUX:
+ ### Normalization factor for the normal magnetic field:
+
+ Maximum field magnitude before normalization  =    899.05972694664752     
+ Maximum field magnitude after normalization   =    407.38739017361638     
+ Scaling factor for the magnetic field, BSCALE =    2.2068913978007396     
+ [Original field = BSCALE * normalized field.]
+
+ ### COMMENT from BALANCE_FLUX:
+ ### Computed flux balance:
+
+ Positive flux =    27.160518439987911     
+ Negative flux =   -31.537299929441250     
+
+ ### COMMENT from BALANCE_FLUX:
+ ### Flux balance correction:
+
+ Monopole Br field magnitude =  -0.34205966767230128     
+
+ ### COMMENT from POTFLD:
+ ### Boundary condition type used at r=R1:
+ POTENTIAL_FIELD_BC = CLOSED_WALL
+
+ ### COMMENT from POTFLD:
+
+ Writing BR0 to file: br_photo.h5
+
+ ### COMMENT from POTFLD:
+
+ ### Adding flux ropes while preserving Br at r=R0.
+ ### Thus, Br for the flux ropes is being subtracted from the Br
+ ### distribution that was at r=R0 before calculating
+ ### the potential field.
+
+ ### COMMENT from LOAD_RHO_FROM_FILE:
+ ### Reading the density from file: rho_bastille_test_reduced.h5
+
+ ### COMMENT from LOAD_RESISTIVITY:
+ ### Using resistivity profile: UNIFORM
+
+ ### COMMENT from LOAD_VISCOSITY:
+ ### Using viscosity profile: UNIFORM
+
+ ### COMMENT from LOAD_V_ADVANCE:
+ ### Velocity preconditioner activated.
+ Matrix size per node (NxN) N:             51600
+ Matrix # of non-zeros per node M:        743426
+ Estimated memory usage per node:    26.46 MB
+
+ ### COMMENT from CHECK_TIME_PROFILES:
+ ### There are no active time profiles.
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            1
+ NTIME =            0
+ TIME =    0.0000000000000000     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            2
+ NTIME =            1
+ TIME =    1.0000000000000000E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            3
+ NTIME =            2
+ TIME =    1.3753391675244294E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            4
+ NTIME =            3
+ TIME =    1.6749688627792946E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            5
+ NTIME =            4
+ TIME =    1.9872277303489934E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            6
+ NTIME =            5
+ TIME =    2.3150995412971769E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            7
+ NTIME =            6
+ TIME =    2.6593649427927696E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            8
+ NTIME =            7
+ TIME =    3.0208436143631420E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            9
+ NTIME =            8
+ TIME =    3.4003962195120331E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           10
+ NTIME =            9
+ TIME =    3.7989264549183688E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           11
+ NTIME =           10
+ TIME =    4.2173832020950212E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           12
+ NTIME =           11
+ TIME =    4.6567627866305064E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           13
+ NTIME =           12
+ TIME =    5.1181113503927659E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           14
+ NTIME =           13
+ TIME =    5.6025273423431386E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           15
+ NTIME =           14
+ TIME =    6.1111641338910299E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           16
+ NTIME =           15
+ TIME =    6.6452327650163151E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           17
+ NTIME =           16
+ TIME =    7.2060048276978653E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           18
+ NTIME =           17
+ TIME =    7.7948154935134932E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           19
+ NTIME =           18
+ TIME =    8.4130666926199027E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           20
+ NTIME =           19
+ TIME =    9.0622304516816323E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           21
+ NTIME =           20
+ TIME =    9.7438523986964481E-003
+
+ ### COMMENT from DUMPHIST:
+ Wrote time histories to file: mas_history_a.out
+ Wrote time histories to file: mas_history_b.out
+
+Code: MAS
+Version: 0.9.2.0git
+Updated on: 04/07/2025
+Source file: mas.F90
+Run ID: mas
+Run ended on: 04/09/2025
+Run ended at: 14:35:46
+Ran on machine: PREDSCI-GPU2
+Machine type: x86_64
+Compiler: GCC version 12.3.0
+Compiler Flags: -I /opt/psi/gnu/ext_deps/deps/hdf5/include -I /usr/lib/x86_64-linux-gnu/openmpi/lib/../../fortran/gfortran-mod-15/openmpi -I /usr/lib/x86_64-linux-gnu/openmpi/lib -march=alderlake -mmmx -mpopcnt -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx -mavx2 -mno-sse4a -mno-fma4 -mno-xop -mfma -mno-avx512f -mbmi -mbmi2 -maes -mpclmul -mno-avx512vl -mno-avx512bw -mno-avx512dq -mno-avx512cd -mno-avx512er -mno-avx512pf -mno-avx512vbmi -mno-avx512ifma -mno-avx5124vnniw -mno-avx5124fmaps -mno-avx512vpopcntdq -mno-avx512vbmi2 -mgfni -mvpclmulqdq -mno-avx512vnni -mno-avx512bitalg -mno-avx512bf16 -mno-avx512vp2intersect -mno-3dnow -madx -mabm -mno-cldemote -mclflushopt -mclwb -mno-clzero -mcx16 -mno-enqcmd -mf16c -mfsgsbase -mfxsr -mno-hle -msahf -mno-lwp -mlzcnt -mmovbe -mmovdir64b -mmovdiri -mno-mwaitx -mno-pconfig -mpku -mno-prefetchwt1 -mprfchw -mptwrite -mrdpid -mrdrnd -mrdseed -mno-rtm -mserialize -mno-sgx -msha -mshstk -mno-tbm -mno-tsxldtrk -mvaes -mwaitpkg -mno-wbnoinvd -mxsave -mxsavec -mxsaveopt -mxsaves -mno-a
+
+
+ ### End of run ...
+
+ NTIME =         20
+ TIME =  9.7438523987E-03
+
+ ### Time advance information:
+ Average time step used =    4.8719261993482223E-004
+
+ -----------------------------------------
+ ### Field solver convergence information:
+ -----------------------------------------
+
+ ### Implicit resistivity advance:
+ Total number of solves =           20
+ Total number of iterations =           19
+ Average number of iterations per solve =            0
+
+ ### Thermal conduction (e) advance:
+ Total number of solves =            0
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### Thermal conduction (p) advance:
+ Total number of solves =            0
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### Semi-implicit advance (predictor):
+ Total number of solves =           20
+ Total number of iterations =          196
+ Average number of iterations per solve =            9
+
+ ### Semi-implicit advance (corrector):
+ Total number of solves =           20
+ Total number of iterations =          201
+ Average number of iterations per solve =           10
+
+ ### Viscosity advance:
+ Total number of solves =           20
+ Total number of iterations =           48
+ Average number of iterations per solve =            2
+
+ ### Initial boundary potential field (2D):
+ Total number of solves =            1
+ Total number of iterations =           97
+ Average number of iterations per solve =           97
+
+ ### Initial potential field (3D):
+ Total number of solves =            1
+ Total number of iterations =          533
+ Average number of iterations per solve =          533
+
+ ### Boundary potential field (2D psi evolve):
+ Total number of solves =            0
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### Boundary potential field (2D phi evolve):
+ Total number of solves =            0
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### Divergence cleaning:
+ Total number of solves =            0
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### CPU time used (on IPROC0):         1.32 seconds
+

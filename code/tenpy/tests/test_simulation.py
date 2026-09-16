@@ -1,0 +1,418 @@
+"""A collection of tests to check the functionality of modules in `tenpy.simulations`"""
+# Copyright (C) TeNPy Developers, Apache license
+
+import copy
+import os
+import sys
+
+import numpy as np
+import pytest
+
+import tenpy
+from tenpy.algorithms.algorithm import Algorithm
+from tenpy.algorithms.truncation import TruncationError
+from tenpy.simulations.ground_state_search import GroundStateSearch
+from tenpy.simulations.simulation import *
+from tenpy.simulations.time_evolution import RealTimeEvolution, SpectralSimulation, SpectralSimulationEvolveBraKet
+
+tenpy.tools.misc.skip_logging_setup = True  # skip logging setup
+
+
+class DummyAlgorithm(Algorithm):
+    def __init__(self, psi, model, options, *, resume_data=None, cache=None):
+        super().__init__(psi, model, options, resume_data=resume_data)
+        self.dummy_value = -1
+        self.evolved_time = self.options.get('start_time', 0.0)
+        init_env_data = {} if resume_data is None else resume_data['init_env_data']
+        self.env = DummyEnv(**init_env_data)
+        self.trunc_err = TruncationError()
+        if not hasattr(self.psi, 'dummy_counter'):
+            self.psi.dummy_counter = 0  # note: doesn't get saved!
+            # But good enough to check `run_seq_simulations`
+
+    def run(self):
+        N_steps = self.options.get('N_steps', 5)
+        dt = self.options.get('dt', 5)
+        self.dummy_value = N_steps**2
+        for i in range(N_steps):
+            self.evolved_time += dt
+            self.checkpoint.emit(self)
+        self.psi.dummy_counter += 1
+        return None, self.psi
+
+    def get_resume_data(self, sequential_simulations=False):
+        data = super().get_resume_data(sequential_simulations=False)
+        data['init_env_data'] = self.env.get_initialization_data()
+        return data
+
+
+class SimulationStop(Exception):
+    pass
+
+
+class DummySimulation(Simulation):
+    # for `test_Simulation_resume`
+    pass
+
+
+def raise_SimulationStop(algorithm):
+    if algorithm.evolved_time == 1.0:
+        raise SimulationStop('from raise_SimulationStop')
+
+
+class DummyEnv:
+    def __init__(self, **kwargs):
+        if kwargs:
+            assert kwargs == self.get_initialization_data()
+
+    def get_initialization_data(self):
+        return {'Env data': 'Could be big'}
+
+
+def dummy_value_measurement(results, psi, model, simulation):
+    results['dummy_value'] = simulation.engine.dummy_value
+
+
+def bad_dummy_measurement(results, psi, model, simulation):
+    """Check using different keys - it should still work."""
+    i = results['measurement_index']
+    results[f'changing_key_{i:d}'] = simulation.engine.dummy_value
+    #  if i == 3:
+    #      raise ValueError("something went wrong")
+
+
+simulation_params = {
+    'model_class': 'XXZChain',
+    'model_params': {
+        'bc_MPS': 'infinite',  # defaults to finite
+        'L': 4,
+        'sort_charge': True,
+    },
+    'algorithm_class': 'DummyAlgorithm',
+    'algorithm_params': {
+        'N_steps': 4,
+        'dt': 0.5,
+    },
+    'initial_state_params': {
+        'method': 'lat_product_state',  # mandatory -> would complain if not passed on
+        'product_state': [['up'], ['down']],
+    },
+    'save_every_x_seconds': 0.0,  # save at each checkpoint
+    'connect_measurements': [
+        ('tenpy.simulations.measurement', 'm_onsite_expectation_value', {'opname': 'Sz'}),
+        (__name__, 'dummy_value_measurement'),
+    ],
+}
+expected_dummy_value = simulation_params['algorithm_params']['N_steps'] ** 2
+
+
+def test_Simulation(tmp_path):
+    os.chdir(tmp_path)
+    sim_params = copy.deepcopy(simulation_params)
+    sim_params['directory'] = 'results'
+    sim_params['output_filename'] = 'data.pkl'
+    sim = Simulation(sim_params)
+    with sim:
+        results = sim.run()
+        # should do exactly two measurements: one before and one after eng.run()
+    assert sim.model.lat.bc_MPS == 'infinite'  # check whether model parameters were used
+    assert 'psi' in results  # should be by default
+    meas = results['measurements']
+    # expect two measurements: once in `init_measurements` and in `final_measurement`.
+    assert np.all(meas['measurement_index'] == np.arange(2))
+    assert np.all(meas['dummy_value'] == [-1, expected_dummy_value])
+    assert (tmp_path / 'results' / sim_params['output_filename']).exists()
+
+    sim_params['overwrite_output'] = False
+    with pytest.warns(UserWarning, match='changed output filename to data_1.pkl'):
+        sim = Simulation(sim_params)
+
+    with sim:
+        results = sim.run()
+
+    assert (tmp_path / 'results' / 'data_1.pkl').exists()
+
+
+def test_bad_measurements():
+    sim_params = copy.deepcopy(simulation_params)
+    sim_params['connect_measurements'].append((__name__, 'bad_dummy_measurement', {}, -1))
+    sim = Simulation(sim_params)
+
+    expect_warning1 = "measurement gave new keys {'changing_key_[0-9]'} fill up with `None` for previous measurements."
+    expect_warning2 = (
+        "measurement didn't give keys {'changing_key_[0-9]'} we have from previous measurements, fill up with `None`"
+    )
+    with pytest.warns(UserWarning, match=f'({expect_warning1}|{expect_warning2})'):
+        results = sim.run()
+
+    meas = results['measurements']
+    assert np.all(meas['measurement_index'] == np.arange(2))
+    assert np.all(meas['dummy_value'] == [-1, expected_dummy_value])
+    assert meas['changing_key_0'] == [-1, None]
+    assert meas['changing_key_1'] == [None, expected_dummy_value]
+
+
+def test_measure_at_algorithm_checkpoint():
+    sim_params = copy.deepcopy(simulation_params)
+    sim_params['connect_measurements'].append(('tenpy.simulations.measurement', 'm_evolved_time'))
+    sim_params['measure_at_algorithm_checkpoints'] = True
+    sim = Simulation(sim_params)
+    with sim:
+        results = sim.run()
+        # should do exactly two measurements: one before and one after eng.run()
+    assert sim.model.lat.bc_MPS == 'infinite'  # check whether model parameters were used
+    assert 'psi' in results  # should be by default
+    meas = results['measurements']
+    # expect multiple measurements:
+    # once in `init_measurements` and in `final_measurement`, and 4 algorithm checkpoints
+    assert np.all(meas['measurement_index'] == np.arange(2 + 4))
+    assert np.all(meas['evolved_time'] == [0.0, 0.5, 1.0, 1.5, 2.0, 2.0])
+    assert np.all(meas['dummy_value'] == [-1] + [expected_dummy_value] * (1 + 4))
+
+
+def test_Simulation_resume(tmp_path):
+    sim_params = copy.deepcopy(simulation_params)
+    sim_params['directory'] = tmp_path
+    sim_params['output_filename'] = 'data.pkl'
+    # this should raise an error *after* saving the checkpoint
+    sim_params['connect_algorithm_checkpoint'] = [(__name__, 'raise_SimulationStop', {}, -1)]
+    sim = DummySimulation(sim_params)
+    try:
+        results = sim.run()
+        assert False, 'expected to raise a SimulationStop in sim.run()'
+    except SimulationStop:
+        checkpoint_results = sim.prepare_results_for_save()
+    assert not checkpoint_results['finished_run']
+    # try resuming with `resume_from_checkpoint`
+    update_sim_params = {'connect_algorithm_checkpoint': []}
+    res = resume_from_checkpoint(filename=tmp_path / 'data.pkl', update_sim_params=update_sim_params)
+
+    # alternatively, resume from the checkpoint results we have
+    checkpoint_results['simulation_parameters']['connect_algorithm_checkpoint'] = []
+    # if we explicitly know the simulation class, it's easy
+    sim2 = DummySimulation.from_saved_checkpoint(checkpoint_results=checkpoint_results)
+    res2 = sim2.resume_run()
+    for r in [res, res2]:
+        assert r['finished_run']
+        assert np.all(r['measurements']['measurement_index'] == np.arange(2))
+
+
+def test_sequential_simulation(tmp_path):
+    os.chdir(tmp_path)
+    sim_params = copy.deepcopy(simulation_params)
+    sim_params['directory'] = 'results'
+    sim_params['output_filename'] = 'data.pkl'
+    sim_params['sequential'] = {'recursive_keys': ['algorithm_params.dt'], 'value_lists': [[0.5, 0.3, 0.2]]}
+
+    results = run_seq_simulations(**sim_params)
+
+    psi = results['psi']
+    assert psi.dummy_counter == 3  # should have called Simulation.run 3 times on same psi
+    # (this breaks if collect_results_in_memory is used, because dummy_counter isn't copied in
+    # psi.copy()!)
+    assert (tmp_path / 'results' / 'data_dt_0.5.pkl').exists()
+    assert (tmp_path / 'results' / 'data_dt_0.3.pkl').exists()
+    assert (tmp_path / 'results' / 'data_dt_0.2.pkl').exists()
+
+
+groundstate_params = copy.deepcopy(simulation_params)
+
+
+def test_GroundStateSearch():
+    sim_params = copy.deepcopy(groundstate_params)
+    sim = GroundStateSearch(sim_params)
+    results = sim.run()  # should do exactly two measurements: one before and one after eng.run()
+    assert sim.model.lat.bc_MPS == 'infinite'  # check whether model parameters were used
+    assert 'psi' in results  # should be by default
+    meas = results['measurements']
+    # expect two measurements: once in `init_measurements` and in `final_measurement`.
+    assert np.all(meas['measurement_index'] == np.arange(2))
+    assert np.all(meas['dummy_value'] == [-1, expected_dummy_value])
+    del sim
+
+
+timeevol_params = copy.deepcopy(simulation_params)
+timeevol_params['final_time'] = 4.0
+
+
+def test_RealTimeEvolution():
+    sim_params = copy.deepcopy(timeevol_params)
+    sim = RealTimeEvolution(sim_params)
+    results = sim.run()
+    assert sim.model.lat.bc_MPS == 'infinite'  # check whether model parameters were used
+    assert 'psi' in results  # should be by default
+    meas = results['measurements']
+    # expect two measurements: once in `init_measurements` and in `final_measurement`.
+    alg_params = sim_params['algorithm_params']
+    expected_times = np.arange(0.0, sim_params['final_time'] + 1.0e-10, alg_params['N_steps'] * alg_params['dt'])
+    N = len(expected_times)
+    assert np.allclose(meas['evolved_time'], expected_times)
+    assert np.all(meas['measurement_index'] == np.arange(N))
+    assert np.all(meas['dummy_value'] == [-1] + [expected_dummy_value] * (N - 1))
+
+
+regrouping_params = copy.deepcopy(simulation_params)
+regrouping_params['final_time'] = 4.0
+regrouping_params['group_to_NearestNeighborModel'] = True
+regrouping_params['group_sites'] = 2
+
+
+def test_regrouping_and_group_to_NearestNeighborModel():
+    sim_params = copy.deepcopy(regrouping_params)
+    sim = RealTimeEvolution(sim_params)
+    results = sim.run()
+    assert sim.model.lat.bc_MPS == 'infinite'  # check whether model parameters were used
+    assert 'psi' in results  # should be by default
+    meas = results['measurements']
+    # expect two measurements: once in `init_measurements` and in `final_measurement`.
+    alg_params = sim_params['algorithm_params']
+    expected_times = np.arange(0.0, sim_params['final_time'] + 1.0e-10, alg_params['N_steps'] * alg_params['dt'])
+    N = len(expected_times)
+    assert np.allclose(meas['evolved_time'], expected_times)
+    assert np.all(meas['measurement_index'] == np.arange(N))
+    assert np.all(meas['dummy_value'] == [-1] + [expected_dummy_value] * (N - 1))
+    # after group_to_NearestNeighborModel, we should measure the bond_energies instead of energy_MPO
+    assert 'bond_energies' in meas and 'energy_MPO' not in meas
+
+
+spectral_sim_params = copy.deepcopy(timeevol_params)
+spectral_sim_params['operator_t0'] = {'opname': 'Sz'}
+spectral_sim_params['operator_t'] = 'Sz'
+spectral_sim_params['model_params']['bc_MPS'] = 'finite'
+
+
+def test_SpectralSimulation():
+    for SpectralSimulationClass in [SpectralSimulation, SpectralSimulationEvolveBraKet]:
+        # building with initial state passed in sim params
+        sim_params = copy.deepcopy(spectral_sim_params)
+        sim = SpectralSimulationClass(sim_params)
+        with pytest.warns(UserWarning, match='No ground state data is supplied'):
+            results = sim.run()
+
+        assert sim.model.lat.bc_MPS == 'finite'  # check whether model parameters were used
+        assert 'psi' and 'psi_ground_state' in results  # should be by default
+        assert 'spectral_function_Sz_Sz' in results  # output of SpectralSimulation for sim_params
+        meas = results['measurements']
+        # expect two measurements: once in `init_measurements` and in `final_measurement`.
+        alg_params = sim_params['algorithm_params']
+        expected_times = np.arange(0.0, sim_params['final_time'] + 1.0e-10, alg_params['N_steps'] * alg_params['dt'])
+        N = len(expected_times)
+        assert np.allclose(meas['evolved_time'], expected_times)
+        assert np.all(meas['measurement_index'] == np.arange(N))
+        assert np.all(meas['dummy_value'] == [-1] + [expected_dummy_value] * (N - 1))
+
+        # remove init_state_builder and model and pull from gs_search
+        sim_params = copy.deepcopy(spectral_sim_params)
+        del sim_params['initial_state_params'], sim_params['model_class'], sim_params['model_params']
+        # first run a gs_search
+        sim_params_gs = copy.deepcopy(groundstate_params)
+        sim_params_gs['model_params']['bc_MPS'] = 'finite'
+        sim = GroundStateSearch(sim_params_gs)
+        gs_results = sim.run()
+        # run the simulation from the results of the gs_search
+        sim = SpectralSimulation(sim_params, ground_state_data=gs_results)
+        results = sim.run()
+        assert sim.model.lat.bc_MPS == 'finite'  # check whether model parameters were used
+        assert 'psi' and 'psi_ground_state' in results  # should be by default
+        assert 'spectral_function_Sz_Sz' in results  # output of SpectralSimulation for sim_params
+        meas = results['measurements']
+        # expect two measurements: once in `init_measurements` and in `final_measurement`.
+        alg_params = sim_params['algorithm_params']
+        expected_times = np.arange(0.0, sim_params['final_time'] + 1.0e-10, alg_params['N_steps'] * alg_params['dt'])
+        N = len(expected_times)
+        assert np.allclose(meas['evolved_time'], expected_times)
+        assert np.all(meas['measurement_index'] == np.arange(N))
+        assert np.all(meas['dummy_value'] == [-1] + [expected_dummy_value] * (N - 1))
+
+
+def test_output_filename_from_dict():
+    options = copy.deepcopy(simulation_params)
+    assert output_filename_from_dict(options) == 'result.h5', 'hard-coded default values changed'
+    assert output_filename_from_dict(options, suffix='.pkl') == 'result.pkl'
+    fn = output_filename_from_dict(options, {'algorithm_params.dt': 'dt_{0:.2f}'})
+    assert fn == 'result_dt_0.50.h5'
+    fn = output_filename_from_dict(options, {'algorithm_params.dt': 'dt_{0:.2f}', 'model_params.L': 'L_{0:d}'})
+    assert fn == 'result_dt_0.50_L_4.h5'
+    # re-ordered parts
+    parts_order = ['model_params.L', 'algorithm_params.dt']
+    fn = output_filename_from_dict(
+        options, {'model_params.L': 'L_{0:d}', 'algorithm_params.dt': 'dt_{0:.2f}'}, parts_order=parts_order
+    )
+    assert fn == 'result_L_4_dt_0.50.h5'
+    if not sys.version_info < (3, 7):
+        # should also work without specifying the parts_order for python >= 3.7
+        fn = output_filename_from_dict(options, {'model_params.L': 'L_{0:d}', 'algorithm_params.dt': 'dt_{0:.2f}'})
+    assert fn == 'result_L_4_dt_0.50.h5'
+    options = {'alg': {'dt': 0.5}, 'model': {'Lx': 3, 'Ly': 4}, 'other': 'ignored'}
+    fn = output_filename_from_dict(
+        options,
+        parts={'alg.dt': 'dt_{0:.2f}', ('model.Lx', 'model.Ly'): '{0:d}x{1:d}'},
+        parts_order=['alg.dt', ('model.Lx', 'model.Ly')],
+    )
+    assert fn == 'result_dt_0.50_3x4.h5'
+
+
+yaml_example = """
+simulation_class : GroundStateSearch
+directory: results
+
+model_class : SpinModel
+model_params :
+    bc_MPS: infinite
+    bc_y: cylinder
+    lattice: !py_eval tenpy.models.lattice.Square
+    Lx: 2
+    Ly: 4
+    S: .5
+    Jx: !py_eval "[J ** 2 for J in range(6)]"
+    hx: !py_eval |
+        np.linspace(0, 5, 21, endpoint=True)
+
+log_params:
+    to_file: INFO
+    to_stdout: INFO
+
+initial_state_params:
+    method : lat_product_state
+    product_state : [[[up]]]
+
+algorithm_class: TwoSiteDMRGEngine
+algorithm_params:
+    mixer: True
+    trunc_params:
+        svd_min: 1.e-10
+        chi_max: 200
+    max_E_err: 1.e-10
+
+sequential:
+    recursive_keys:
+        - model_params.hx
+        - model_params.Jx
+"""
+
+
+def test_yaml_load(tmp_path):
+    yaml = pytest.importorskip('yaml')
+
+    # load without writing to file first
+    simulation_params = tenpy.load_yaml_with_py_eval(yaml_content=yaml_example, context=dict(np=np, tenpy=tenpy))
+    assert simulation_params['simulation_class'] == 'GroundStateSearch'
+    assert simulation_params['model_params']['Jx'] == [0, 1, 4, 9, 16, 25]
+    np.testing.assert_array_almost_equal_nulp(
+        simulation_params['model_params']['hx'], np.linspace(0, 5, 21, endpoint=True), 10
+    )
+    assert simulation_params['model_params']['lattice'] is tenpy.Square
+
+    # now try again loading from file
+    del simulation_params
+
+    file = tmp_path / 'simulation.yaml'
+    with open(file, 'w') as f:
+        print(yaml_example, file=f)
+    simulation_params = tenpy.load_yaml_with_py_eval(file, context=dict(np=np, tenpy=tenpy))
+    assert simulation_params['simulation_class'] == 'GroundStateSearch'
+    assert simulation_params['model_params']['Jx'] == [0, 1, 4, 9, 16, 25]
+    np.testing.assert_array_almost_equal_nulp(
+        simulation_params['model_params']['hx'], np.linspace(0, 5, 21, endpoint=True), 10
+    )
+    assert simulation_params['model_params']['lattice'] is tenpy.Square

@@ -1,0 +1,115 @@
+{
+  "skimage.exposure.rescale_intensity": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 491,
+      "end_line": 607
+    },
+    "description": "Return image after stretching or shrinking its intensity levels.",
+    "calls": [
+      "map",
+      "np.clip",
+      "_output_dtype",
+      "intensity_range",
+      "np.any",
+      "np.isnan",
+      "utils.warn",
+      "(image * (omax - omin) + omin).astype",
+      "np.clip(image, omin, omax).astype"
+    ],
+    "branches": [
+      {
+        "line": 583,
+        "expression": "out_range in ['dtype', 'image']"
+      },
+      {
+        "line": 593,
+        "expression": "np.any(np.isnan([imin, imax, omin, omax]))"
+      },
+      {
+        "line": 603,
+        "expression": "imin != imax"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.reconstruction": {
+    "implementation": {
+      "file": "src/skimage/morphology/grayreconstruct.py",
+      "line": 8,
+      "end_line": 217
+    },
+    "description": "Perform a morphological reconstruction of an image.",
+    "calls": [
+      "np.full",
+      "slice",
+      "np.any",
+      "rank_order",
+      "all",
+      "np.result_type",
+      "footprint_mgrid[:, footprint].transpose",
+      "images.reshape",
+      "np.argsort(images).astype",
+      "value_rank.astype",
+      "reconstruction_loop",
+      "footprint.astype",
+      "np.min",
+      "np.min_scalar_type",
+      "signed_int_dtype.char.upper",
+      "np.max",
+      "np.sum",
+      "np.argsort"
+    ],
+    "branches": [
+      {
+        "line": 118,
+        "expression": "method == 'dilation' and np.any(seed > mask)"
+      },
+      {
+        "line": 129,
+        "expression": "footprint is None"
+      },
+      {
+        "line": 134,
+        "expression": "offset is None"
+      },
+      {
+        "line": 154,
+        "expression": "method == 'dilation'"
+      },
+      {
+        "line": 194,
+        "expression": "method == 'dilation'"
+      },
+      {
+        "line": 204,
+        "expression": "method == 'dilation'"
+      },
+      {
+        "line": 123,
+        "expression": "method == 'erosion' and np.any(seed < mask)"
+      },
+      {
+        "line": 135,
+        "expression": "not all([d % 2 == 1 for d in footprint.shape])"
+      },
+      {
+        "line": 139,
+        "expression": "offset.ndim != footprint.ndim"
+      },
+      {
+        "line": 141,
+        "expression": "not all([0 <= o < d for o, d in zip(offset, footprint.shape)])"
+      },
+      {
+        "line": 156,
+        "expression": "method == 'erosion'"
+      },
+      {
+        "line": 206,
+        "expression": "method == 'erosion'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

@@ -1,0 +1,141 @@
+{
+  "skimage.exposure.rescale_intensity": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 491,
+      "end_line": 607
+    },
+    "description": "Return image after stretching or shrinking its intensity levels.",
+    "calls": [
+      "map",
+      "np.clip",
+      "_output_dtype",
+      "intensity_range",
+      "np.any",
+      "np.isnan",
+      "utils.warn",
+      "(image * (omax - omin) + omin).astype",
+      "np.clip(image, omin, omax).astype"
+    ],
+    "branches": [
+      {
+        "line": 583,
+        "expression": "out_range in ['dtype', 'image']"
+      },
+      {
+        "line": 593,
+        "expression": "np.any(np.isnan([imin, imax, omin, omax]))"
+      },
+      {
+        "line": 603,
+        "expression": "imin != imax"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.segmentation.random_walker": {
+    "implementation": {
+      "file": "src/skimage/segmentation/random_walker_segmentation.py",
+      "line": 316,
+      "end_line": 593
+    },
+    "description": "Random walker algorithm for segmentation from markers.",
+    "calls": [
+      "img_as_float",
+      "np.atleast_3d",
+      "utils.channel_as_last_axis",
+      "_preprocess",
+      "_build_linear_system",
+      "_solve_linear_system",
+      "labels.reshape",
+      "data.astype",
+      "np.copy",
+      "labels.astype",
+      "np.concatenate",
+      "X.min",
+      "X.max",
+      "np.argmax",
+      "np.unique"
+    ],
+    "branches": [
+      {
+        "line": 488,
+        "expression": "mode not in ('cg_mg', 'cg', 'bf', 'cg_j', None)"
+      },
+      {
+        "line": 494,
+        "expression": "data.dtype == np.float16"
+      },
+      {
+        "line": 500,
+        "expression": "spacing is None"
+      },
+      {
+        "line": 520,
+        "expression": "not multichannel"
+      },
+      {
+        "line": 542,
+        "expression": "copy"
+      },
+      {
+        "line": 547,
+        "expression": "isolated_values is None"
+      },
+      {
+        "line": 568,
+        "expression": "X.min() < -prob_tol or X.max() > 1 + prob_tol"
+      },
+      {
+        "line": 583,
+        "expression": "return_full_prob"
+      },
+      {
+        "line": 502,
+        "expression": "len(spacing) == labels.ndim"
+      },
+      {
+        "line": 521,
+        "expression": "data.ndim not in (2, 3)"
+      },
+      {
+        "line": 525,
+        "expression": "data.shape != labels.shape"
+      },
+      {
+        "line": 529,
+        "expression": "data.ndim not in (3, 4)"
+      },
+      {
+        "line": 533,
+        "expression": "data.shape[:-1] != labels.shape"
+      },
+      {
+        "line": 536,
+        "expression": "data.ndim == 3"
+      },
+      {
+        "line": 550,
+        "expression": "return_full_prob"
+      },
+      {
+        "line": 503,
+        "expression": "len(spacing) == 2"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 479,
+      "end_line": 505
+    },
+    "description": "Convert an image to floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

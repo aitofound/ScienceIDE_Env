@@ -1,0 +1,85 @@
+{
+  "skimage.color.gray2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 1028,
+      "end_line": 1049
+    },
+    "description": "Create an RGB representation of a gray-level image.",
+    "calls": [
+      "np.stack"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.hsv2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 350,
+      "end_line": 416
+    },
+    "description": "HSV to RGB color space conversion.",
+    "calls": [
+      "np.stack",
+      "channel_as_last_axis",
+      "_prepare_colorarray",
+      "np.floor",
+      "np.choose",
+      "np.stack([hi, hi, hi], axis=-1).astype"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.rgb2hsv": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 260,
+      "end_line": 347
+    },
+    "description": "RGB to HSV color space conversion.",
+    "calls": [
+      "np.seterr",
+      "channel_as_last_axis",
+      "_prepare_colorarray",
+      "arr.max",
+      "np.ptp",
+      "np.isnan",
+      "np.squeeze"
+    ],
+    "branches": [
+      {
+        "line": 303,
+        "expression": "input_is_one_pixel"
+      },
+      {
+        "line": 344,
+        "expression": "input_is_one_pixel"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.rank.entropy": {
+    "implementation": {
+      "file": "src/skimage/filters/rank/generic.py",
+      "line": 1482,
+      "end_line": 1551
+    },
+    "description": "Local entropy.",
+    "calls": [
+      "np.asanyarray",
+      "_apply_scalar_per_pixel",
+      "_apply_scalar_per_pixel_3D"
+    ],
+    "branches": [
+      {
+        "line": 1528,
+        "expression": "np_image.ndim == 2"
+      },
+      {
+        "line": 1539,
+        "expression": "np_image.ndim == 3"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

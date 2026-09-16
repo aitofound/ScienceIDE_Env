@@ -1,0 +1,159 @@
+{
+  "skimage.draw.ellipse": {
+    "implementation": {
+      "file": "src/skimage/draw/draw.py",
+      "line": 57,
+      "end_line": 152
+    },
+    "description": "Generate coordinates of pixels within ellipse.",
+    "calls": [
+      "abs",
+      "np.sin",
+      "np.cos",
+      "np.ceil(center - radii_rot).astype",
+      "np.floor(center + radii_rot).astype",
+      "_ellipse_in_shape",
+      "np.maximum",
+      "np.minimum",
+      "np.ceil",
+      "np.floor"
+    ],
+    "branches": [
+      {
+        "line": 139,
+        "expression": "shape is not None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.approximate_polygon": {
+    "implementation": {
+      "file": "src/skimage/measure/_polygon.py",
+      "line": 5,
+      "end_line": 91
+    },
+    "description": "Approximate a polygonal chain with the specified tolerance.",
+    "calls": [
+      "np.sqrt",
+      "pos_stack.append",
+      "np.sin",
+      "np.cos",
+      "pos_stack.pop",
+      "np.logical_and",
+      "np.logical_not",
+      "np.abs",
+      "np.minimum",
+      "np.any",
+      "np.arctan2",
+      "np.argmax"
+    ],
+    "branches": [
+      {
+        "line": 31,
+        "expression": "tolerance <= 0"
+      },
+      {
+        "line": 42,
+        "expression": "not end_of_chain"
+      },
+      {
+        "line": 81,
+        "expression": "np.any(segment_dists > tolerance)"
+      },
+      {
+        "line": 88,
+        "expression": "len(pos_stack) == 0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.find_contours": {
+    "implementation": {
+      "file": "src/skimage/measure/_find_contours.py",
+      "line": 10,
+      "end_line": 152
+    },
+    "description": "Find iso-valued contours in a 2D array for a given level value.",
+    "calls": [
+      "_get_contour_segments",
+      "_assemble_contours",
+      "mask.astype",
+      "image.astype",
+      "np.can_cast",
+      "np.nanmin",
+      "np.nanmax"
+    ],
+    "branches": [
+      {
+        "line": 125,
+        "expression": "fully_connected not in _param_options"
+      },
+      {
+        "line": 129,
+        "expression": "positive_orientation not in _param_options"
+      },
+      {
+        "line": 133,
+        "expression": "image.shape[0] < 2 or image.shape[1] < 2"
+      },
+      {
+        "line": 135,
+        "expression": "image.ndim != 2"
+      },
+      {
+        "line": 137,
+        "expression": "mask is not None"
+      },
+      {
+        "line": 143,
+        "expression": "level is None"
+      },
+      {
+        "line": 150,
+        "expression": "positive_orientation == 'high'"
+      },
+      {
+        "line": 138,
+        "expression": "mask.shape != image.shape"
+      },
+      {
+        "line": 140,
+        "expression": "not np.can_cast(mask.dtype, bool, casting='safe')"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.subdivide_polygon": {
+    "implementation": {
+      "file": "src/skimage/measure/_polygon.py",
+      "line": 108,
+      "end_line": 168
+    },
+    "description": "Subdivision of polygonal curves using B-Splines.",
+    "calls": [
+      "signal.convolve2d",
+      "np.atleast_2d",
+      "np.vstack",
+      "np.all"
+    ],
+    "branches": [
+      {
+        "line": 133,
+        "expression": "degree not in _SUBDIVISION_MASKS"
+      },
+      {
+        "line": 139,
+        "expression": "circular"
+      },
+      {
+        "line": 161,
+        "expression": "circular"
+      },
+      {
+        "line": 165,
+        "expression": "preserve_ends and (not circular)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

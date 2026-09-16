@@ -1,0 +1,159 @@
+{
+  "skimage.color.rgb2gray": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 941,
+      "end_line": 984
+    },
+    "description": "Compute luminance of an RGB image.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.rescale_intensity": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 491,
+      "end_line": 607
+    },
+    "description": "Return image after stretching or shrinking its intensity levels.",
+    "calls": [
+      "map",
+      "np.clip",
+      "_output_dtype",
+      "intensity_range",
+      "np.any",
+      "np.isnan",
+      "utils.warn",
+      "(image * (omax - omin) + omin).astype",
+      "np.clip(image, omin, omax).astype"
+    ],
+    "branches": [
+      {
+        "line": 583,
+        "expression": "out_range in ['dtype', 'image']"
+      },
+      {
+        "line": 593,
+        "expression": "np.any(np.isnan([imin, imax, omin, omax]))"
+      },
+      {
+        "line": 603,
+        "expression": "imin != imax"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.feature.corner_harris": {
+    "implementation": {
+      "file": "src/skimage/feature/corner.py",
+      "line": 654,
+      "end_line": 731
+    },
+    "description": "Compute Harris corner measure response image.",
+    "calls": [
+      "structure_tensor"
+    ],
+    "branches": [
+      {
+        "line": 726,
+        "expression": "method == 'k'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.feature.corner_peaks": {
+    "implementation": {
+      "file": "src/skimage/feature/corner.py",
+      "line": 1126,
+      "end_line": 1238
+    },
+    "description": "Find peaks in corner measure response image.",
+    "calls": [
+      "np.isinf",
+      "peak_local_max",
+      "spatial.cKDTree",
+      "set",
+      "np.delete",
+      "tree.query_ball_point",
+      "candidates.remove",
+      "rejected_peaks_indices.update"
+    ],
+    "branches": [
+      {
+        "line": 1202,
+        "expression": "np.isinf(num_peaks)"
+      },
+      {
+        "line": 1218,
+        "expression": "len(coords)"
+      },
+      {
+        "line": 1232,
+        "expression": "indices"
+      },
+      {
+        "line": 1224,
+        "expression": "idx not in rejected_peaks_indices"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.feature.corner_subpix": {
+    "implementation": {
+      "file": "src/skimage/feature/corner.py",
+      "line": 945,
+      "end_line": 1123
+    },
+    "description": "Determine subpixel position of corners.",
+    "calls": [
+      "np.sum",
+      "stats.f.isf",
+      "np.linalg.solve",
+      "np.spacing",
+      "image.astype",
+      "np.pad",
+      "safe_as_int",
+      "_compute_derivatives"
+    ],
+    "branches": [
+      {
+        "line": 1103,
+        "expression": "var_dot < np.spacing(1) and var_edge < np.spacing(1)"
+      },
+      {
+        "line": 1113,
+        "expression": "corner_class == -1"
+      },
+      {
+        "line": 1105,
+        "expression": "var_dot == 0"
+      },
+      {
+        "line": 1115,
+        "expression": "corner_class == 0"
+      },
+      {
+        "line": 1117,
+        "expression": "corner_class == 1"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 479,
+      "end_line": 505
+    },
+    "description": "Convert an image to floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

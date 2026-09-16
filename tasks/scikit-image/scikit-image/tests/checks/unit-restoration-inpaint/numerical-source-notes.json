@@ -1,0 +1,204 @@
+{
+  "skimage.color.rgb2gray": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 941,
+      "end_line": 984
+    },
+    "description": "Compute luminance of an RGB image.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.metrics.mean_squared_error": {
+    "implementation": {
+      "file": "src/skimage/metrics/simple_metrics.py",
+      "line": 26,
+      "end_line": 50
+    },
+    "description": "Compute the mean-squared error between two images.",
+    "calls": [
+      "check_shape_equality",
+      "_as_floats",
+      "np.mean"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.metrics.normalized_root_mse": {
+    "implementation": {
+      "file": "src/skimage/metrics/simple_metrics.py",
+      "line": 53,
+      "end_line": 112
+    },
+    "description": "Compute the normalized root mean-squared error (NRMSE) between two",
+    "calls": [
+      "np.sqrt",
+      "check_shape_equality",
+      "_as_floats",
+      "normalization.lower",
+      "np.mean",
+      "mean_squared_error",
+      "image_true.max",
+      "image_true.min",
+      "image_true.mean"
+    ],
+    "branches": [
+      {
+        "line": 104,
+        "expression": "normalization == 'euclidean'"
+      },
+      {
+        "line": 106,
+        "expression": "normalization == 'min-max'"
+      },
+      {
+        "line": 108,
+        "expression": "normalization == 'mean'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.dilation": {
+    "implementation": {
+      "file": "src/skimage/morphology/gray.py",
+      "line": 174,
+      "end_line": 284
+    },
+    "description": "Return grayscale morphological dilation of an image.",
+    "calls": [
+      "_min_max_to_constant_mode",
+      "pad_footprint",
+      "mirror_footprint",
+      "_iterate_gray_func",
+      "_footprint_is_sequence"
+    ],
+    "branches": [
+      {
+        "line": 260,
+        "expression": "out is None"
+      },
+      {
+        "line": 263,
+        "expression": "mode not in _SUPPORTED_MODES"
+      },
+      {
+        "line": 265,
+        "expression": "mode == 'ignore'"
+      },
+      {
+        "line": 273,
+        "expression": "not _footprint_is_sequence(footprint)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.disk": {
+    "implementation": {
+      "file": "src/skimage/morphology/footprints.py",
+      "line": 508,
+      "end_line": 597
+    },
+    "description": "Generates a flat, disk-shaped footprint.",
+    "calls": [
+      "np.arange",
+      "np.meshgrid",
+      "_nsphere_series_decomposition",
+      "disk",
+      "_cross_decomposition"
+    ],
+    "branches": [
+      {
+        "line": 586,
+        "expression": "decomposition is None"
+      },
+      {
+        "line": 589,
+        "expression": "not strict_radius"
+      },
+      {
+        "line": 592,
+        "expression": "decomposition == 'sequence'"
+      },
+      {
+        "line": 594,
+        "expression": "decomposition == 'crosses'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.restoration.inpaint_biharmonic": {
+    "implementation": {
+      "file": "src/skimage/restoration/inpaint.py",
+      "line": 197,
+      "end_line": 340
+    },
+    "description": "Inpaint masked points in image with biharmonic equations.",
+    "calls": [
+      "np.sum",
+      "_inpaint_biharmonic_single_region",
+      "slice",
+      "utils.channel_as_last_axis",
+      "np.ma.isMaskedArray",
+      "skimage.img_as_float",
+      "utils._supported_float_type",
+      "image.astype",
+      "mask.astype",
+      "np.copy",
+      "_get_neigh_coef",
+      "np.clip",
+      "known_points.min",
+      "known_points.max",
+      "ndi.generate_binary_structure",
+      "ndi.binary_dilation",
+      "label",
+      "ndi.find_objects",
+      "out[roi_sl].copy",
+      "max",
+      "min"
+    ],
+    "branches": [
+      {
+        "line": 247,
+        "expression": "image.ndim < 1"
+      },
+      {
+        "line": 252,
+        "expression": "img_baseshape != mask.shape"
+      },
+      {
+        "line": 255,
+        "expression": "np.ma.isMaskedArray(image)"
+      },
+      {
+        "line": 265,
+        "expression": "not multichannel"
+      },
+      {
+        "line": 287,
+        "expression": "split_into_regions"
+      },
+      {
+        "line": 337,
+        "expression": "not multichannel"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 479,
+      "end_line": 505
+    },
+    "description": "Convert an image to floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

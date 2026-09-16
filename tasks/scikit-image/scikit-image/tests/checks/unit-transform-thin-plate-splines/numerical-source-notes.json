@@ -1,0 +1,37 @@
+{
+  "skimage.transform.rotate": {
+    "implementation": {
+      "file": "src/skimage/transform/_warps.py",
+      "line": 346,
+      "end_line": 469
+    },
+    "description": "Rotate image by a certain angle around its center.",
+    "calls": [
+      "SimilarityTransform",
+      "warp",
+      "image.astype",
+      "tform.inverse",
+      "corners[:, 0].min",
+      "corners[:, 1].min",
+      "corners[:, 0].max",
+      "corners[:, 1].max",
+      "np.around",
+      "np.deg2rad"
+    ],
+    "branches": [
+      {
+        "line": 426,
+        "expression": "image.dtype == np.float16"
+      },
+      {
+        "line": 430,
+        "expression": "center is None"
+      },
+      {
+        "line": 440,
+        "expression": "resize"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}
