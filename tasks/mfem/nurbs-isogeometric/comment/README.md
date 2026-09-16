@@ -1,7 +1,7 @@
 # nurbs-isogeometric: authoring notes
 
 This directory is hidden at Harbor runtime and is not part of the contract.
-`comment/pipeline/` is written only by the CLI (module entry, test survey,
+`comment/pipeline/` is written only by the CLI (module entry, the Step 1.2 build-and-run record, test survey,
 self-validation and runtime records). This file is the human-readable story.
 
 ## Module
@@ -41,19 +41,22 @@ Yes: every check compiles the pinned MFEM source at solve time. There is nothing
 either image.
 
 The recipe is one line, identical for every check —
-`make serial -j$SAB_MAKE_JOBS MFEM_USE_METIS=NO CXXFLAGS="-O3 -std=c++17"` for the library, then
+`make serial -j$SAB_CPUS MFEM_USE_METIS=NO CXXFLAGS="-O3 -std=c++17"` for the library, then
 the check's own miniapp (or `unit_tests`) — where `-O3 -std=c++17` is MFEM's own `OPTIM_FLAGS`
 (`config/defaults.mk:29`, taken by `CXXFLAGS ?= $(OPTIM_FLAGS)` at `makefile:227`). The altbuild
 appends `-mfma -ffp-contract=fast` and nothing else.
 
 **Reuse within a run.** Each `run.sh` copies `SOURCE_DIR`, takes a SHA-256 over the sorted
 relative paths and bytes of that copy plus the exact recipe string, and keys a cache under
-`/tmp/sab-build-mfem-nurbs-isogeometric/<hash>`. `tests/test.sh produce` runs checks
-sequentially, so no cross-check race protocol is needed: on a miss the arriving check copies the
-tree into its own cache directory, builds there, and writes `BUILD_OK` only after `make`
-succeeds; every later check of the same run finds `BUILD_OK` and reports
+`/tmp/sab-build-mfem-nurbs-isogeometric/<hash>`. Within one container `tests/test.sh produce`
+runs its checks sequentially, so no cross-check race protocol is needed: on a miss the arriving
+check copies the tree into its own cache directory, builds there, and writes `BUILD_OK` only
+after `make` succeeds; every later check of the same container finds `BUILD_OK` and reports
 `SAB_BUILD_SECONDS=0`. If the shared root cannot be created, the same build function runs
-privately under the check's `$WORK`, so each `run.sh` stays self-contained.
+privately under the check's `$WORK`, so each `run.sh` stays self-contained. The resource-aware
+`solve.sh` of skill 5.17 may run several containers at once, sharded by the rubric's
+`configuration` text; each container has its own `/tmp`, so each shard pays the library build
+once and the shards never share a cache directory (no race, one more compile per shard).
 
 **The initial condition is overlaid after the build, not before.** An initial condition here is
 a set of mesh files, which no compilation reads. Keying the build on it would give nominal,
@@ -62,11 +65,15 @@ do, so the key covers the pinned source and the recipe only, and the meshes are 
 built tree afterwards. The runs read their meshes from that overlaid tree, so nominal and
 variant genuinely solve on different geometry while sharing one build.
 
-**Build jobs come from the cgroup, not from `nproc`.** `cpus_allowed()` reads cgroup v2
-`cpu.max` and only falls back to `nproc`. This is the failure recorded in
-`tasks/pyamg/classical-amg/comment/README.md`: ninja detected the worker's 88 cores under a
-`--cpus 1` limit and the OOM killer took out `cc1plus` mid-compile against a declared
-`memory_gb: 2.0`. Related: `references/pitfalls/blas-threads-follow-the-host-core-count.md`.
+**Build jobs are the resource knob, fixed at the declared cpus.** Every `run.sh` exposes
+`SAB_CPUS` (default 4, the per-check `cpus` of `task.toml`) and passes it to `make -j`; the
+miniapps and `unit_tests` themselves run serially, so the knob bounds only the compile. The
+default is never read from the host or the cgroup, as the skill requires: an earlier revision
+sized the jobs from cgroup `cpu.max` with an `nproc` fallback, after the pyamg leaf
+(`tasks/pyamg/classical-amg/comment/README.md`) had ninja detect the worker's 88 cores under a
+`--cpus 1` limit and the OOM killer take out `cc1plus` against `memory_gb: 2.0`; with the
+knob pinned to the declared cpus that failure cannot recur, and `memory_gb` is 4.0 for the
+four jobs. Related: `references/pitfalls/blas-threads-follow-the-host-core-count.md`.
 
 Build and run seconds, from the record in `comment/pipeline/runtime-metadata.json`
 (4 docker cpus, 4.0 GB): the three solves took 1458.6 s, 1444.9 s and 1438.5 s wall, of which
