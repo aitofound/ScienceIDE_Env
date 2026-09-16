@@ -1,0 +1,785 @@
+  
+ _|      _|     _|_|       _|_|_|
+ _|_|  _|_|   _|    _|   _|
+ _|  _|  _|   _|_|_|_|     _|_|
+ _|      _|   _|    _|         _|
+ _|      _|   _|    _|   _|_|_|
+  
+ Magnetohydrodynamic Algorithm outside a Sphere
+                         Predictive Science Inc.
+
+ ### Input file contents:
+
+!
+! *** Grid resolution.
+!
+&topology
+  nr = 105
+  nt = 100
+  np = 3
+/
+&data
+!
+! *** Use the new style output text files.
+!
+  legacy_output_filenames = .false.
+!
+! *** Radial domain.
+!
+  r0 = 1.0
+  r1 = 2.5
+!
+! *** Time domain.
+!
+  tmax = 15.0
+!
+! *** Grid specifications.
+!
+  rfrac    = 0.0,1.0
+  drratio  = 5.0
+  nfrmesh  = 5
+  tfrac    = 0.0,0.5,1.0
+  dtratio  = 0.5,2.0
+  nftmesh  = 5
+  pfrac    = 0.0
+  dpratio  = 0.0
+  nfpmesh  = 5
+  phishift = 0.0
+!
+! *** Time step specifications.
+!
+  dtmax = 0.025
+  dtmin = 0.0001
+  dt_init = 0.0
+!
+! *** Output options.
+!
+  plotlist = 'br'
+  tpltxint = 0.0
+  slice_plotlist = ''
+  slice_tp_radii = 0.0
+  slice_txint = 0.0
+  trace_txint = 0.0
+  hdf32 = .false.
+  rs_final = .false.
+  trsdump = 0.0
+!
+! *** Model specification.
+!
+  advance_a    = .true.
+  advance_v    = .true.
+  advance_t    = .false.
+  advance_rho  = .false.
+  advance_pw   = .false.
+  advance_zw   = .false.
+  advance_fcs  = .false.
+  trace_particles = .false.
+  slund = 1.e30
+  visc = 1.e-5
+  gamma = 1.666666666666667
+  g0 = 0.0
+  br00 = 1.0
+  rho0 = 1.0
+  tbc0    = 20000.
+  tchromo = 20000.
+  tfloor  = 20000.
+  char_bc0 = .false.
+  char_bc1 = .false.
+  ubzero = .false.
+  filter_poles = .false.
+! *** Thermal conduction:
+  advance_tc = .false.
+  tcond = 0.0
+  alpha_nocoll = 0.0
+  t_cutoff1 = 500000.0
+  nfilt_kappa = 0
+!
+! *** Initial condition.
+!
+  initial_field  = 'ALFVEN_WAVE1'
+  initial_plasma = 'ZERO-BETA'
+  wave_mode_r = 2
+  wave_mode_t = 3
+  wave_amplitude = 1e-4
+!
+! *** Numerical algorithm options.
+!
+  cfl = 0.4
+  use_sts_visc = .false.
+  use_sts_tc   = .false.
+  visc_auto_subcycle = .false.
+  tc_auto_subcycle   = .false.
+  ifprec_t     = 3
+  ifprec_v     = 3
+  ifprec_pot2d = 3
+  ifprec_divb  = 3
+  epscg_a       = 1.e-9
+  epscg_v       = 1.e-9
+  epscg_t       = 1.e-9
+  epscg_potfld  = 1.e-9
+  epscg_newflux = 1.e-9
+  epscg_divb    = 1.e-9
+  ncgmax = 100000
+!
+/
+! -----------------------
+! Zero-beta Alfven Wave P
+! -----------------------
+!
+! Description goes here.
+!
+! -----------------------
+
+
+Code: MAS
+Version: 0.9.2.0git
+Updated on: 04/07/2025
+Source file: mas.F90
+Run ID: mas
+Run started on: 04/09/2025
+Run started at: 13:42:03
+Ran on machine: PREDSCI-GPU2
+Machine type: x86_64
+Compiler: GCC version 12.3.0
+Compiler Flags: -I /opt/psi/gnu/ext_deps/deps/hdf5/include -I /usr/lib/x86_64-linux-gnu/openmpi/lib/../../fortran/gfortran-mod-15/openmpi -I /usr/lib/x86_64-linux-gnu/openmpi/lib -march=alderlake -mmmx -mpopcnt -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx -mavx2 -mno-sse4a -mno-fma4 -mno-xop -mfma -mno-avx512f -mbmi -mbmi2 -maes -mpclmul -mno-avx512vl -mno-avx512bw -mno-avx512dq -mno-avx512cd -mno-avx512er -mno-avx512pf -mno-avx512vbmi -mno-avx512ifma -mno-avx5124vnniw -mno-avx5124fmaps -mno-avx512vpopcntdq -mno-avx512vbmi2 -mgfni -mvpclmulqdq -mno-avx512vnni -mno-avx512bitalg -mno-avx512bf16 -mno-avx512vp2intersect -mno-3dnow -madx -mabm -mno-cldemote -mclflushopt -mclwb -mno-clzero -mcx16 -mno-enqcmd -mf16c -mfsgsbase -mfxsr -mno-hle -msahf -mno-lwp -mlzcnt -mmovbe -mmovdir64b -mmovdiri -mno-mwaitx -mno-pconfig -mpku -mno-prefetchwt1 -mprfchw -mptwrite -mrdpid -mrdrnd -mrdseed -mno-rtm -mserialize -mno-sgx -msha -mshstk -mno-tbm -mno-tsxldtrk -mvaes -mwaitpkg -mno-wbnoinvd -mxsave -mxsavec -mxsaveopt -mxsaves -mno-a
+
+
+Total number of ranks =      4
+
+Number of ranks in r =       2
+Number of ranks in t =       2
+Number of ranks in p =       1
+
+Global mesh dimension in r =    105
+Global mesh dimension in t =    100
+Global mesh dimension in p =      3
+
+Average # of mesh pts per rank in r =   52.5
+Average # of mesh pts per rank in t =   50.0
+Average # of mesh pts per rank in p =    3.0
+
+Estimated load imbalance =   1.89 %
+
+ >running
+
+NTIME =        1, TIME =     0.025000, DTIME =     0.025000 (dtmx)
+NTIME =        2, TIME =     0.050000, DTIME =     0.025000 (dtmx)
+NTIME =        3, TIME =     0.075000, DTIME =     0.025000 (dtmx)
+NTIME =        4, TIME =     0.100000, DTIME =     0.025000 (dtmx)
+NTIME =        5, TIME =     0.125000, DTIME =     0.025000 (dtmx)
+NTIME =        6, TIME =     0.150000, DTIME =     0.025000 (dtmx)
+NTIME =        7, TIME =     0.175000, DTIME =     0.025000 (dtmx)
+NTIME =        8, TIME =     0.200000, DTIME =     0.025000 (dtmx)
+NTIME =        9, TIME =     0.225000, DTIME =     0.025000 (dtmx)
+NTIME =       10, TIME =     0.250000, DTIME =     0.025000 (dtmx)
+NTIME =       11, TIME =     0.275000, DTIME =     0.025000 (dtmx)
+NTIME =       12, TIME =     0.300000, DTIME =     0.025000 (dtmx)
+NTIME =       13, TIME =     0.325000, DTIME =     0.025000 (dtmx)
+NTIME =       14, TIME =     0.350000, DTIME =     0.025000 (dtmx)
+NTIME =       15, TIME =     0.375000, DTIME =     0.025000 (dtmx)
+NTIME =       16, TIME =     0.400000, DTIME =     0.025000 (dtmx)
+NTIME =       17, TIME =     0.425000, DTIME =     0.025000 (dtmx)
+NTIME =       18, TIME =     0.450000, DTIME =     0.025000 (dtmx)
+NTIME =       19, TIME =     0.475000, DTIME =     0.025000 (dtmx)
+NTIME =       20, TIME =     0.500000, DTIME =     0.025000 (dtmx)
+NTIME =       21, TIME =     0.525000, DTIME =     0.025000 (dtmx)
+NTIME =       22, TIME =     0.550000, DTIME =     0.025000 (dtmx)
+NTIME =       23, TIME =     0.575000, DTIME =     0.025000 (dtmx)
+NTIME =       24, TIME =     0.600000, DTIME =     0.025000 (dtmx)
+NTIME =       25, TIME =     0.625000, DTIME =     0.025000 (dtmx)
+NTIME =       26, TIME =     0.650000, DTIME =     0.025000 (dtmx)
+NTIME =       27, TIME =     0.675000, DTIME =     0.025000 (dtmx)
+NTIME =       28, TIME =     0.700000, DTIME =     0.025000 (dtmx)
+NTIME =       29, TIME =     0.725000, DTIME =     0.025000 (dtmx)
+NTIME =       30, TIME =     0.750000, DTIME =     0.025000 (dtmx)
+NTIME =       31, TIME =     0.775000, DTIME =     0.025000 (dtmx)
+NTIME =       32, TIME =     0.800000, DTIME =     0.025000 (dtmx)
+NTIME =       33, TIME =     0.825000, DTIME =     0.025000 (dtmx)
+NTIME =       34, TIME =     0.850000, DTIME =     0.025000 (dtmx)
+NTIME =       35, TIME =     0.875000, DTIME =     0.025000 (dtmx)
+NTIME =       36, TIME =     0.900000, DTIME =     0.025000 (dtmx)
+NTIME =       37, TIME =     0.925000, DTIME =     0.025000 (dtmx)
+NTIME =       38, TIME =     0.950000, DTIME =     0.025000 (dtmx)
+NTIME =       39, TIME =     0.975000, DTIME =     0.025000 (dtmx)
+NTIME =       40, TIME =     1.000000, DTIME =     0.025000 (dtmx)
+NTIME =       41, TIME =     1.025000, DTIME =     0.025000 (dtmx)
+NTIME =       42, TIME =     1.050000, DTIME =     0.025000 (dtmx)
+NTIME =       43, TIME =     1.075000, DTIME =     0.025000 (dtmx)
+NTIME =       44, TIME =     1.100000, DTIME =     0.025000 (dtmx)
+NTIME =       45, TIME =     1.125000, DTIME =     0.025000 (dtmx)
+NTIME =       46, TIME =     1.150000, DTIME =     0.025000 (dtmx)
+NTIME =       47, TIME =     1.175000, DTIME =     0.025000 (dtmx)
+NTIME =       48, TIME =     1.200000, DTIME =     0.025000 (dtmx)
+NTIME =       49, TIME =     1.225000, DTIME =     0.025000 (dtmx)
+NTIME =       50, TIME =     1.250000, DTIME =     0.025000 (dtmx)
+NTIME =       51, TIME =     1.275000, DTIME =     0.025000 (dtmx)
+NTIME =       52, TIME =     1.300000, DTIME =     0.025000 (dtmx)
+NTIME =       53, TIME =     1.325000, DTIME =     0.025000 (dtmx)
+NTIME =       54, TIME =     1.350000, DTIME =     0.025000 (dtmx)
+NTIME =       55, TIME =     1.375000, DTIME =     0.025000 (dtmx)
+NTIME =       56, TIME =     1.400000, DTIME =     0.025000 (dtmx)
+NTIME =       57, TIME =     1.425000, DTIME =     0.025000 (dtmx)
+NTIME =       58, TIME =     1.450000, DTIME =     0.025000 (dtmx)
+NTIME =       59, TIME =     1.475000, DTIME =     0.025000 (dtmx)
+NTIME =       60, TIME =     1.500000, DTIME =     0.025000 (dtmx)
+NTIME =       61, TIME =     1.525000, DTIME =     0.025000 (dtmx)
+NTIME =       62, TIME =     1.550000, DTIME =     0.025000 (dtmx)
+NTIME =       63, TIME =     1.575000, DTIME =     0.025000 (dtmx)
+NTIME =       64, TIME =     1.600000, DTIME =     0.025000 (dtmx)
+NTIME =       65, TIME =     1.625000, DTIME =     0.025000 (dtmx)
+NTIME =       66, TIME =     1.650000, DTIME =     0.025000 (dtmx)
+NTIME =       67, TIME =     1.675000, DTIME =     0.025000 (dtmx)
+NTIME =       68, TIME =     1.700000, DTIME =     0.025000 (dtmx)
+NTIME =       69, TIME =     1.725000, DTIME =     0.025000 (dtmx)
+NTIME =       70, TIME =     1.750000, DTIME =     0.025000 (dtmx)
+NTIME =       71, TIME =     1.775000, DTIME =     0.025000 (dtmx)
+NTIME =       72, TIME =     1.800000, DTIME =     0.025000 (dtmx)
+NTIME =       73, TIME =     1.825000, DTIME =     0.025000 (dtmx)
+NTIME =       74, TIME =     1.850000, DTIME =     0.025000 (dtmx)
+NTIME =       75, TIME =     1.875000, DTIME =     0.025000 (dtmx)
+NTIME =       76, TIME =     1.900000, DTIME =     0.025000 (dtmx)
+NTIME =       77, TIME =     1.925000, DTIME =     0.025000 (dtmx)
+NTIME =       78, TIME =     1.950000, DTIME =     0.025000 (dtmx)
+NTIME =       79, TIME =     1.975000, DTIME =     0.025000 (dtmx)
+NTIME =       80, TIME =     2.000000, DTIME =     0.025000 (dtmx)
+NTIME =       81, TIME =     2.025000, DTIME =     0.025000 (dtmx)
+NTIME =       82, TIME =     2.050000, DTIME =     0.025000 (dtmx)
+NTIME =       83, TIME =     2.075000, DTIME =     0.025000 (dtmx)
+NTIME =       84, TIME =     2.100000, DTIME =     0.025000 (dtmx)
+NTIME =       85, TIME =     2.125000, DTIME =     0.025000 (dtmx)
+NTIME =       86, TIME =     2.150000, DTIME =     0.025000 (dtmx)
+NTIME =       87, TIME =     2.175000, DTIME =     0.025000 (dtmx)
+NTIME =       88, TIME =     2.200000, DTIME =     0.025000 (dtmx)
+NTIME =       89, TIME =     2.225000, DTIME =     0.025000 (dtmx)
+NTIME =       90, TIME =     2.250000, DTIME =     0.025000 (dtmx)
+NTIME =       91, TIME =     2.275000, DTIME =     0.025000 (dtmx)
+NTIME =       92, TIME =     2.300000, DTIME =     0.025000 (dtmx)
+NTIME =       93, TIME =     2.325000, DTIME =     0.025000 (dtmx)
+NTIME =       94, TIME =     2.350000, DTIME =     0.025000 (dtmx)
+NTIME =       95, TIME =     2.375000, DTIME =     0.025000 (dtmx)
+NTIME =       96, TIME =     2.400000, DTIME =     0.025000 (dtmx)
+NTIME =       97, TIME =     2.425000, DTIME =     0.025000 (dtmx)
+NTIME =       98, TIME =     2.450000, DTIME =     0.025000 (dtmx)
+NTIME =       99, TIME =     2.475000, DTIME =     0.025000 (dtmx)
+NTIME =      100, TIME =     2.500000, DTIME =     0.025000 (dtmx)
+NTIME =      101, TIME =     2.525000, DTIME =     0.025000 (dtmx)
+NTIME =      102, TIME =     2.550000, DTIME =     0.025000 (dtmx)
+NTIME =      103, TIME =     2.575000, DTIME =     0.025000 (dtmx)
+NTIME =      104, TIME =     2.600000, DTIME =     0.025000 (dtmx)
+NTIME =      105, TIME =     2.625000, DTIME =     0.025000 (dtmx)
+NTIME =      106, TIME =     2.650000, DTIME =     0.025000 (dtmx)
+NTIME =      107, TIME =     2.675000, DTIME =     0.025000 (dtmx)
+NTIME =      108, TIME =     2.700000, DTIME =     0.025000 (dtmx)
+NTIME =      109, TIME =     2.725000, DTIME =     0.025000 (dtmx)
+NTIME =      110, TIME =     2.750000, DTIME =     0.025000 (dtmx)
+NTIME =      111, TIME =     2.775000, DTIME =     0.025000 (dtmx)
+NTIME =      112, TIME =     2.800000, DTIME =     0.025000 (dtmx)
+NTIME =      113, TIME =     2.825000, DTIME =     0.025000 (dtmx)
+NTIME =      114, TIME =     2.850000, DTIME =     0.025000 (dtmx)
+NTIME =      115, TIME =     2.875000, DTIME =     0.025000 (dtmx)
+NTIME =      116, TIME =     2.900000, DTIME =     0.025000 (dtmx)
+NTIME =      117, TIME =     2.925000, DTIME =     0.025000 (dtmx)
+NTIME =      118, TIME =     2.950000, DTIME =     0.025000 (dtmx)
+NTIME =      119, TIME =     2.975000, DTIME =     0.025000 (dtmx)
+NTIME =      120, TIME =     3.000000, DTIME =     0.025000 (dtmx)
+NTIME =      121, TIME =     3.025000, DTIME =     0.025000 (dtmx)
+NTIME =      122, TIME =     3.050000, DTIME =     0.025000 (dtmx)
+NTIME =      123, TIME =     3.075000, DTIME =     0.025000 (dtmx)
+NTIME =      124, TIME =     3.100000, DTIME =     0.025000 (dtmx)
+NTIME =      125, TIME =     3.125000, DTIME =     0.025000 (dtmx)
+NTIME =      126, TIME =     3.150000, DTIME =     0.025000 (dtmx)
+NTIME =      127, TIME =     3.175000, DTIME =     0.025000 (dtmx)
+NTIME =      128, TIME =     3.200000, DTIME =     0.025000 (dtmx)
+NTIME =      129, TIME =     3.225000, DTIME =     0.025000 (dtmx)
+NTIME =      130, TIME =     3.250000, DTIME =     0.025000 (dtmx)
+NTIME =      131, TIME =     3.275000, DTIME =     0.025000 (dtmx)
+NTIME =      132, TIME =     3.300000, DTIME =     0.025000 (dtmx)
+NTIME =      133, TIME =     3.325000, DTIME =     0.025000 (dtmx)
+NTIME =      134, TIME =     3.350000, DTIME =     0.025000 (dtmx)
+NTIME =      135, TIME =     3.375000, DTIME =     0.025000 (dtmx)
+NTIME =      136, TIME =     3.400000, DTIME =     0.025000 (dtmx)
+NTIME =      137, TIME =     3.425000, DTIME =     0.025000 (dtmx)
+NTIME =      138, TIME =     3.450000, DTIME =     0.025000 (dtmx)
+NTIME =      139, TIME =     3.475000, DTIME =     0.025000 (dtmx)
+NTIME =      140, TIME =     3.500000, DTIME =     0.025000 (dtmx)
+NTIME =      141, TIME =     3.525000, DTIME =     0.025000 (dtmx)
+NTIME =      142, TIME =     3.550000, DTIME =     0.025000 (dtmx)
+NTIME =      143, TIME =     3.575000, DTIME =     0.025000 (dtmx)
+NTIME =      144, TIME =     3.600000, DTIME =     0.025000 (dtmx)
+NTIME =      145, TIME =     3.625000, DTIME =     0.025000 (dtmx)
+NTIME =      146, TIME =     3.650000, DTIME =     0.025000 (dtmx)
+NTIME =      147, TIME =     3.675000, DTIME =     0.025000 (dtmx)
+NTIME =      148, TIME =     3.700000, DTIME =     0.025000 (dtmx)
+NTIME =      149, TIME =     3.725000, DTIME =     0.025000 (dtmx)
+NTIME =      150, TIME =     3.750000, DTIME =     0.025000 (dtmx)
+NTIME =      151, TIME =     3.775000, DTIME =     0.025000 (dtmx)
+NTIME =      152, TIME =     3.800000, DTIME =     0.025000 (dtmx)
+NTIME =      153, TIME =     3.825000, DTIME =     0.025000 (dtmx)
+NTIME =      154, TIME =     3.850000, DTIME =     0.025000 (dtmx)
+NTIME =      155, TIME =     3.875000, DTIME =     0.025000 (dtmx)
+NTIME =      156, TIME =     3.900000, DTIME =     0.025000 (dtmx)
+NTIME =      157, TIME =     3.925000, DTIME =     0.025000 (dtmx)
+NTIME =      158, TIME =     3.950000, DTIME =     0.025000 (dtmx)
+NTIME =      159, TIME =     3.975000, DTIME =     0.025000 (dtmx)
+NTIME =      160, TIME =     4.000000, DTIME =     0.025000 (dtmx)
+NTIME =      161, TIME =     4.025000, DTIME =     0.025000 (dtmx)
+NTIME =      162, TIME =     4.050000, DTIME =     0.025000 (dtmx)
+NTIME =      163, TIME =     4.075000, DTIME =     0.025000 (dtmx)
+NTIME =      164, TIME =     4.100000, DTIME =     0.025000 (dtmx)
+NTIME =      165, TIME =     4.125000, DTIME =     0.025000 (dtmx)
+NTIME =      166, TIME =     4.150000, DTIME =     0.025000 (dtmx)
+NTIME =      167, TIME =     4.175000, DTIME =     0.025000 (dtmx)
+NTIME =      168, TIME =     4.200000, DTIME =     0.025000 (dtmx)
+NTIME =      169, TIME =     4.225000, DTIME =     0.025000 (dtmx)
+NTIME =      170, TIME =     4.250000, DTIME =     0.025000 (dtmx)
+NTIME =      171, TIME =     4.275000, DTIME =     0.025000 (dtmx)
+NTIME =      172, TIME =     4.300000, DTIME =     0.025000 (dtmx)
+NTIME =      173, TIME =     4.325000, DTIME =     0.025000 (dtmx)
+NTIME =      174, TIME =     4.350000, DTIME =     0.025000 (dtmx)
+NTIME =      175, TIME =     4.375000, DTIME =     0.025000 (dtmx)
+NTIME =      176, TIME =     4.400000, DTIME =     0.025000 (dtmx)
+NTIME =      177, TIME =     4.425000, DTIME =     0.025000 (dtmx)
+NTIME =      178, TIME =     4.450000, DTIME =     0.025000 (dtmx)
+NTIME =      179, TIME =     4.475000, DTIME =     0.025000 (dtmx)
+NTIME =      180, TIME =     4.500000, DTIME =     0.025000 (dtmx)
+NTIME =      181, TIME =     4.525000, DTIME =     0.025000 (dtmx)
+NTIME =      182, TIME =     4.550000, DTIME =     0.025000 (dtmx)
+NTIME =      183, TIME =     4.575000, DTIME =     0.025000 (dtmx)
+NTIME =      184, TIME =     4.600000, DTIME =     0.025000 (dtmx)
+NTIME =      185, TIME =     4.625000, DTIME =     0.025000 (dtmx)
+NTIME =      186, TIME =     4.650000, DTIME =     0.025000 (dtmx)
+NTIME =      187, TIME =     4.675000, DTIME =     0.025000 (dtmx)
+NTIME =      188, TIME =     4.700000, DTIME =     0.025000 (dtmx)
+NTIME =      189, TIME =     4.725000, DTIME =     0.025000 (dtmx)
+NTIME =      190, TIME =     4.750000, DTIME =     0.025000 (dtmx)
+NTIME =      191, TIME =     4.775000, DTIME =     0.025000 (dtmx)
+NTIME =      192, TIME =     4.800000, DTIME =     0.025000 (dtmx)
+NTIME =      193, TIME =     4.825000, DTIME =     0.025000 (dtmx)
+NTIME =      194, TIME =     4.850000, DTIME =     0.025000 (dtmx)
+NTIME =      195, TIME =     4.875000, DTIME =     0.025000 (dtmx)
+NTIME =      196, TIME =     4.900000, DTIME =     0.025000 (dtmx)
+NTIME =      197, TIME =     4.925000, DTIME =     0.025000 (dtmx)
+NTIME =      198, TIME =     4.950000, DTIME =     0.025000 (dtmx)
+NTIME =      199, TIME =     4.975000, DTIME =     0.025000 (dtmx)
+NTIME =      200, TIME =     5.000000, DTIME =     0.025000 (dtmx)
+NTIME =      201, TIME =     5.025000, DTIME =     0.025000 (dtmx)
+NTIME =      202, TIME =     5.050000, DTIME =     0.025000 (dtmx)
+NTIME =      203, TIME =     5.075000, DTIME =     0.025000 (dtmx)
+NTIME =      204, TIME =     5.100000, DTIME =     0.025000 (dtmx)
+NTIME =      205, TIME =     5.125000, DTIME =     0.025000 (dtmx)
+NTIME =      206, TIME =     5.150000, DTIME =     0.025000 (dtmx)
+NTIME =      207, TIME =     5.175000, DTIME =     0.025000 (dtmx)
+NTIME =      208, TIME =     5.200000, DTIME =     0.025000 (dtmx)
+NTIME =      209, TIME =     5.225000, DTIME =     0.025000 (dtmx)
+NTIME =      210, TIME =     5.250000, DTIME =     0.025000 (dtmx)
+NTIME =      211, TIME =     5.275000, DTIME =     0.025000 (dtmx)
+NTIME =      212, TIME =     5.300000, DTIME =     0.025000 (dtmx)
+NTIME =      213, TIME =     5.325000, DTIME =     0.025000 (dtmx)
+NTIME =      214, TIME =     5.350000, DTIME =     0.025000 (dtmx)
+NTIME =      215, TIME =     5.375000, DTIME =     0.025000 (dtmx)
+NTIME =      216, TIME =     5.400000, DTIME =     0.025000 (dtmx)
+NTIME =      217, TIME =     5.425000, DTIME =     0.025000 (dtmx)
+NTIME =      218, TIME =     5.450000, DTIME =     0.025000 (dtmx)
+NTIME =      219, TIME =     5.475000, DTIME =     0.025000 (dtmx)
+NTIME =      220, TIME =     5.500000, DTIME =     0.025000 (dtmx)
+NTIME =      221, TIME =     5.525000, DTIME =     0.025000 (dtmx)
+NTIME =      222, TIME =     5.550000, DTIME =     0.025000 (dtmx)
+NTIME =      223, TIME =     5.575000, DTIME =     0.025000 (dtmx)
+NTIME =      224, TIME =     5.600000, DTIME =     0.025000 (dtmx)
+NTIME =      225, TIME =     5.625000, DTIME =     0.025000 (dtmx)
+NTIME =      226, TIME =     5.650000, DTIME =     0.025000 (dtmx)
+NTIME =      227, TIME =     5.675000, DTIME =     0.025000 (dtmx)
+NTIME =      228, TIME =     5.700000, DTIME =     0.025000 (dtmx)
+NTIME =      229, TIME =     5.725000, DTIME =     0.025000 (dtmx)
+NTIME =      230, TIME =     5.750000, DTIME =     0.025000 (dtmx)
+NTIME =      231, TIME =     5.775000, DTIME =     0.025000 (dtmx)
+NTIME =      232, TIME =     5.800000, DTIME =     0.025000 (dtmx)
+NTIME =      233, TIME =     5.825000, DTIME =     0.025000 (dtmx)
+NTIME =      234, TIME =     5.850000, DTIME =     0.025000 (dtmx)
+NTIME =      235, TIME =     5.875000, DTIME =     0.025000 (dtmx)
+NTIME =      236, TIME =     5.900000, DTIME =     0.025000 (dtmx)
+NTIME =      237, TIME =     5.925000, DTIME =     0.025000 (dtmx)
+NTIME =      238, TIME =     5.950000, DTIME =     0.025000 (dtmx)
+NTIME =      239, TIME =     5.975000, DTIME =     0.025000 (dtmx)
+NTIME =      240, TIME =     6.000000, DTIME =     0.025000 (dtmx)
+NTIME =      241, TIME =     6.025000, DTIME =     0.025000 (dtmx)
+NTIME =      242, TIME =     6.050000, DTIME =     0.025000 (dtmx)
+NTIME =      243, TIME =     6.075000, DTIME =     0.025000 (dtmx)
+NTIME =      244, TIME =     6.100000, DTIME =     0.025000 (dtmx)
+NTIME =      245, TIME =     6.125000, DTIME =     0.025000 (dtmx)
+NTIME =      246, TIME =     6.150000, DTIME =     0.025000 (dtmx)
+NTIME =      247, TIME =     6.175000, DTIME =     0.025000 (dtmx)
+NTIME =      248, TIME =     6.200000, DTIME =     0.025000 (dtmx)
+NTIME =      249, TIME =     6.225000, DTIME =     0.025000 (dtmx)
+NTIME =      250, TIME =     6.250000, DTIME =     0.025000 (dtmx)
+NTIME =      251, TIME =     6.275000, DTIME =     0.025000 (dtmx)
+NTIME =      252, TIME =     6.300000, DTIME =     0.025000 (dtmx)
+NTIME =      253, TIME =     6.325000, DTIME =     0.025000 (dtmx)
+NTIME =      254, TIME =     6.350000, DTIME =     0.025000 (dtmx)
+NTIME =      255, TIME =     6.375000, DTIME =     0.025000 (dtmx)
+NTIME =      256, TIME =     6.400000, DTIME =     0.025000 (dtmx)
+NTIME =      257, TIME =     6.425000, DTIME =     0.025000 (dtmx)
+NTIME =      258, TIME =     6.450000, DTIME =     0.025000 (dtmx)
+NTIME =      259, TIME =     6.475000, DTIME =     0.025000 (dtmx)
+NTIME =      260, TIME =     6.500000, DTIME =     0.025000 (dtmx)
+NTIME =      261, TIME =     6.525000, DTIME =     0.025000 (dtmx)
+NTIME =      262, TIME =     6.550000, DTIME =     0.025000 (dtmx)
+NTIME =      263, TIME =     6.575000, DTIME =     0.025000 (dtmx)
+NTIME =      264, TIME =     6.600000, DTIME =     0.025000 (dtmx)
+NTIME =      265, TIME =     6.625000, DTIME =     0.025000 (dtmx)
+NTIME =      266, TIME =     6.650000, DTIME =     0.025000 (dtmx)
+NTIME =      267, TIME =     6.675000, DTIME =     0.025000 (dtmx)
+NTIME =      268, TIME =     6.700000, DTIME =     0.025000 (dtmx)
+NTIME =      269, TIME =     6.725000, DTIME =     0.025000 (dtmx)
+NTIME =      270, TIME =     6.750000, DTIME =     0.025000 (dtmx)
+NTIME =      271, TIME =     6.775000, DTIME =     0.025000 (dtmx)
+NTIME =      272, TIME =     6.800000, DTIME =     0.025000 (dtmx)
+NTIME =      273, TIME =     6.825000, DTIME =     0.025000 (dtmx)
+NTIME =      274, TIME =     6.850000, DTIME =     0.025000 (dtmx)
+NTIME =      275, TIME =     6.875000, DTIME =     0.025000 (dtmx)
+NTIME =      276, TIME =     6.900000, DTIME =     0.025000 (dtmx)
+NTIME =      277, TIME =     6.925000, DTIME =     0.025000 (dtmx)
+NTIME =      278, TIME =     6.950000, DTIME =     0.025000 (dtmx)
+NTIME =      279, TIME =     6.975000, DTIME =     0.025000 (dtmx)
+NTIME =      280, TIME =     7.000000, DTIME =     0.025000 (dtmx)
+NTIME =      281, TIME =     7.025000, DTIME =     0.025000 (dtmx)
+NTIME =      282, TIME =     7.050000, DTIME =     0.025000 (dtmx)
+NTIME =      283, TIME =     7.075000, DTIME =     0.025000 (dtmx)
+NTIME =      284, TIME =     7.100000, DTIME =     0.025000 (dtmx)
+NTIME =      285, TIME =     7.125000, DTIME =     0.025000 (dtmx)
+NTIME =      286, TIME =     7.150000, DTIME =     0.025000 (dtmx)
+NTIME =      287, TIME =     7.175000, DTIME =     0.025000 (dtmx)
+NTIME =      288, TIME =     7.200000, DTIME =     0.025000 (dtmx)
+NTIME =      289, TIME =     7.225000, DTIME =     0.025000 (dtmx)
+NTIME =      290, TIME =     7.250000, DTIME =     0.025000 (dtmx)
+NTIME =      291, TIME =     7.275000, DTIME =     0.025000 (dtmx)
+NTIME =      292, TIME =     7.300000, DTIME =     0.025000 (dtmx)
+NTIME =      293, TIME =     7.325000, DTIME =     0.025000 (dtmx)
+NTIME =      294, TIME =     7.350000, DTIME =     0.025000 (dtmx)
+NTIME =      295, TIME =     7.375000, DTIME =     0.025000 (dtmx)
+NTIME =      296, TIME =     7.400000, DTIME =     0.025000 (dtmx)
+NTIME =      297, TIME =     7.425000, DTIME =     0.025000 (dtmx)
+NTIME =      298, TIME =     7.450000, DTIME =     0.025000 (dtmx)
+NTIME =      299, TIME =     7.475000, DTIME =     0.025000 (dtmx)
+NTIME =      300, TIME =     7.500000, DTIME =     0.025000 (dtmx)
+NTIME =      301, TIME =     7.525000, DTIME =     0.025000 (dtmx)
+NTIME =      302, TIME =     7.550000, DTIME =     0.025000 (dtmx)
+NTIME =      303, TIME =     7.575000, DTIME =     0.025000 (dtmx)
+NTIME =      304, TIME =     7.600000, DTIME =     0.025000 (dtmx)
+NTIME =      305, TIME =     7.625000, DTIME =     0.025000 (dtmx)
+NTIME =      306, TIME =     7.650000, DTIME =     0.025000 (dtmx)
+NTIME =      307, TIME =     7.675000, DTIME =     0.025000 (dtmx)
+NTIME =      308, TIME =     7.700000, DTIME =     0.025000 (dtmx)
+NTIME =      309, TIME =     7.725000, DTIME =     0.025000 (dtmx)
+NTIME =      310, TIME =     7.750000, DTIME =     0.025000 (dtmx)
+NTIME =      311, TIME =     7.775000, DTIME =     0.025000 (dtmx)
+NTIME =      312, TIME =     7.800000, DTIME =     0.025000 (dtmx)
+NTIME =      313, TIME =     7.825000, DTIME =     0.025000 (dtmx)
+NTIME =      314, TIME =     7.850000, DTIME =     0.025000 (dtmx)
+NTIME =      315, TIME =     7.875000, DTIME =     0.025000 (dtmx)
+NTIME =      316, TIME =     7.900000, DTIME =     0.025000 (dtmx)
+NTIME =      317, TIME =     7.925000, DTIME =     0.025000 (dtmx)
+NTIME =      318, TIME =     7.950000, DTIME =     0.025000 (dtmx)
+NTIME =      319, TIME =     7.975000, DTIME =     0.025000 (dtmx)
+NTIME =      320, TIME =     8.000000, DTIME =     0.025000 (dtmx)
+NTIME =      321, TIME =     8.025000, DTIME =     0.025000 (dtmx)
+NTIME =      322, TIME =     8.050000, DTIME =     0.025000 (dtmx)
+NTIME =      323, TIME =     8.075000, DTIME =     0.025000 (dtmx)
+NTIME =      324, TIME =     8.100000, DTIME =     0.025000 (dtmx)
+NTIME =      325, TIME =     8.125000, DTIME =     0.025000 (dtmx)
+NTIME =      326, TIME =     8.150000, DTIME =     0.025000 (dtmx)
+NTIME =      327, TIME =     8.175000, DTIME =     0.025000 (dtmx)
+NTIME =      328, TIME =     8.200000, DTIME =     0.025000 (dtmx)
+NTIME =      329, TIME =     8.225000, DTIME =     0.025000 (dtmx)
+NTIME =      330, TIME =     8.250000, DTIME =     0.025000 (dtmx)
+NTIME =      331, TIME =     8.275000, DTIME =     0.025000 (dtmx)
+NTIME =      332, TIME =     8.300000, DTIME =     0.025000 (dtmx)
+NTIME =      333, TIME =     8.325000, DTIME =     0.025000 (dtmx)
+NTIME =      334, TIME =     8.350000, DTIME =     0.025000 (dtmx)
+NTIME =      335, TIME =     8.375000, DTIME =     0.025000 (dtmx)
+NTIME =      336, TIME =     8.400000, DTIME =     0.025000 (dtmx)
+NTIME =      337, TIME =     8.425000, DTIME =     0.025000 (dtmx)
+NTIME =      338, TIME =     8.450000, DTIME =     0.025000 (dtmx)
+NTIME =      339, TIME =     8.475000, DTIME =     0.025000 (dtmx)
+NTIME =      340, TIME =     8.500000, DTIME =     0.025000 (dtmx)
+NTIME =      341, TIME =     8.525000, DTIME =     0.025000 (dtmx)
+NTIME =      342, TIME =     8.550000, DTIME =     0.025000 (dtmx)
+NTIME =      343, TIME =     8.575000, DTIME =     0.025000 (dtmx)
+NTIME =      344, TIME =     8.600000, DTIME =     0.025000 (dtmx)
+NTIME =      345, TIME =     8.625000, DTIME =     0.025000 (dtmx)
+NTIME =      346, TIME =     8.650000, DTIME =     0.025000 (dtmx)
+NTIME =      347, TIME =     8.675000, DTIME =     0.025000 (dtmx)
+NTIME =      348, TIME =     8.700000, DTIME =     0.025000 (dtmx)
+NTIME =      349, TIME =     8.725000, DTIME =     0.025000 (dtmx)
+NTIME =      350, TIME =     8.750000, DTIME =     0.025000 (dtmx)
+NTIME =      351, TIME =     8.775000, DTIME =     0.025000 (dtmx)
+NTIME =      352, TIME =     8.800000, DTIME =     0.025000 (dtmx)
+NTIME =      353, TIME =     8.825000, DTIME =     0.025000 (dtmx)
+NTIME =      354, TIME =     8.850000, DTIME =     0.025000 (dtmx)
+NTIME =      355, TIME =     8.875000, DTIME =     0.025000 (dtmx)
+NTIME =      356, TIME =     8.900000, DTIME =     0.025000 (dtmx)
+NTIME =      357, TIME =     8.925000, DTIME =     0.025000 (dtmx)
+NTIME =      358, TIME =     8.950000, DTIME =     0.025000 (dtmx)
+NTIME =      359, TIME =     8.975000, DTIME =     0.025000 (dtmx)
+NTIME =      360, TIME =     9.000000, DTIME =     0.025000 (dtmx)
+NTIME =      361, TIME =     9.025000, DTIME =     0.025000 (dtmx)
+NTIME =      362, TIME =     9.050000, DTIME =     0.025000 (dtmx)
+NTIME =      363, TIME =     9.075000, DTIME =     0.025000 (dtmx)
+NTIME =      364, TIME =     9.100000, DTIME =     0.025000 (dtmx)
+NTIME =      365, TIME =     9.125000, DTIME =     0.025000 (dtmx)
+NTIME =      366, TIME =     9.150000, DTIME =     0.025000 (dtmx)
+NTIME =      367, TIME =     9.175000, DTIME =     0.025000 (dtmx)
+NTIME =      368, TIME =     9.200000, DTIME =     0.025000 (dtmx)
+NTIME =      369, TIME =     9.225000, DTIME =     0.025000 (dtmx)
+NTIME =      370, TIME =     9.250000, DTIME =     0.025000 (dtmx)
+NTIME =      371, TIME =     9.275000, DTIME =     0.025000 (dtmx)
+NTIME =      372, TIME =     9.300000, DTIME =     0.025000 (dtmx)
+NTIME =      373, TIME =     9.325000, DTIME =     0.025000 (dtmx)
+NTIME =      374, TIME =     9.350000, DTIME =     0.025000 (dtmx)
+NTIME =      375, TIME =     9.375000, DTIME =     0.025000 (dtmx)
+NTIME =      376, TIME =     9.400000, DTIME =     0.025000 (dtmx)
+NTIME =      377, TIME =     9.425000, DTIME =     0.025000 (dtmx)
+NTIME =      378, TIME =     9.450000, DTIME =     0.025000 (dtmx)
+NTIME =      379, TIME =     9.475000, DTIME =     0.025000 (dtmx)
+NTIME =      380, TIME =     9.500000, DTIME =     0.025000 (dtmx)
+NTIME =      381, TIME =     9.525000, DTIME =     0.025000 (dtmx)
+NTIME =      382, TIME =     9.550000, DTIME =     0.025000 (dtmx)
+NTIME =      383, TIME =     9.575000, DTIME =     0.025000 (dtmx)
+NTIME =      384, TIME =     9.600000, DTIME =     0.025000 (dtmx)
+NTIME =      385, TIME =     9.625000, DTIME =     0.025000 (dtmx)
+NTIME =      386, TIME =     9.650000, DTIME =     0.025000 (dtmx)
+NTIME =      387, TIME =     9.675000, DTIME =     0.025000 (dtmx)
+NTIME =      388, TIME =     9.700000, DTIME =     0.025000 (dtmx)
+NTIME =      389, TIME =     9.725000, DTIME =     0.025000 (dtmx)
+NTIME =      390, TIME =     9.750000, DTIME =     0.025000 (dtmx)
+NTIME =      391, TIME =     9.775000, DTIME =     0.025000 (dtmx)
+NTIME =      392, TIME =     9.800000, DTIME =     0.025000 (dtmx)
+NTIME =      393, TIME =     9.825000, DTIME =     0.025000 (dtmx)
+NTIME =      394, TIME =     9.850000, DTIME =     0.025000 (dtmx)
+NTIME =      395, TIME =     9.875000, DTIME =     0.025000 (dtmx)
+NTIME =      396, TIME =     9.900000, DTIME =     0.025000 (dtmx)
+NTIME =      397, TIME =     9.925000, DTIME =     0.025000 (dtmx)
+NTIME =      398, TIME =     9.950000, DTIME =     0.025000 (dtmx)
+NTIME =      399, TIME =     9.975000, DTIME =     0.025000 (dtmx)
+NTIME =      400, TIME =    10.000000, DTIME =     0.025000 (dtmx)
+NTIME =      401, TIME =    10.025000, DTIME =     0.025000 (dtmx)
+NTIME =      402, TIME =    10.050000, DTIME =     0.025000 (dtmx)
+NTIME =      403, TIME =    10.075000, DTIME =     0.025000 (dtmx)
+NTIME =      404, TIME =    10.100000, DTIME =     0.025000 (dtmx)
+NTIME =      405, TIME =    10.125000, DTIME =     0.025000 (dtmx)
+NTIME =      406, TIME =    10.150000, DTIME =     0.025000 (dtmx)
+NTIME =      407, TIME =    10.175000, DTIME =     0.025000 (dtmx)
+NTIME =      408, TIME =    10.200000, DTIME =     0.025000 (dtmx)
+NTIME =      409, TIME =    10.225000, DTIME =     0.025000 (dtmx)
+NTIME =      410, TIME =    10.250000, DTIME =     0.025000 (dtmx)
+NTIME =      411, TIME =    10.275000, DTIME =     0.025000 (dtmx)
+NTIME =      412, TIME =    10.300000, DTIME =     0.025000 (dtmx)
+NTIME =      413, TIME =    10.325000, DTIME =     0.025000 (dtmx)
+NTIME =      414, TIME =    10.350000, DTIME =     0.025000 (dtmx)
+NTIME =      415, TIME =    10.375000, DTIME =     0.025000 (dtmx)
+NTIME =      416, TIME =    10.400000, DTIME =     0.025000 (dtmx)
+NTIME =      417, TIME =    10.425000, DTIME =     0.025000 (dtmx)
+NTIME =      418, TIME =    10.450000, DTIME =     0.025000 (dtmx)
+NTIME =      419, TIME =    10.475000, DTIME =     0.025000 (dtmx)
+NTIME =      420, TIME =    10.500000, DTIME =     0.025000 (dtmx)
+NTIME =      421, TIME =    10.525000, DTIME =     0.025000 (dtmx)
+NTIME =      422, TIME =    10.550000, DTIME =     0.025000 (dtmx)
+NTIME =      423, TIME =    10.575000, DTIME =     0.025000 (dtmx)
+NTIME =      424, TIME =    10.600000, DTIME =     0.025000 (dtmx)
+NTIME =      425, TIME =    10.625000, DTIME =     0.025000 (dtmx)
+NTIME =      426, TIME =    10.650000, DTIME =     0.025000 (dtmx)
+NTIME =      427, TIME =    10.675000, DTIME =     0.025000 (dtmx)
+NTIME =      428, TIME =    10.700000, DTIME =     0.025000 (dtmx)
+NTIME =      429, TIME =    10.725000, DTIME =     0.025000 (dtmx)
+NTIME =      430, TIME =    10.750000, DTIME =     0.025000 (dtmx)
+NTIME =      431, TIME =    10.775000, DTIME =     0.025000 (dtmx)
+NTIME =      432, TIME =    10.800000, DTIME =     0.025000 (dtmx)
+NTIME =      433, TIME =    10.825000, DTIME =     0.025000 (dtmx)
+NTIME =      434, TIME =    10.850000, DTIME =     0.025000 (dtmx)
+NTIME =      435, TIME =    10.875000, DTIME =     0.025000 (dtmx)
+NTIME =      436, TIME =    10.900000, DTIME =     0.025000 (dtmx)
+NTIME =      437, TIME =    10.925000, DTIME =     0.025000 (dtmx)
+NTIME =      438, TIME =    10.950000, DTIME =     0.025000 (dtmx)
+NTIME =      439, TIME =    10.975000, DTIME =     0.025000 (dtmx)
+NTIME =      440, TIME =    11.000000, DTIME =     0.025000 (dtmx)
+NTIME =      441, TIME =    11.025000, DTIME =     0.025000 (dtmx)
+NTIME =      442, TIME =    11.050000, DTIME =     0.025000 (dtmx)
+NTIME =      443, TIME =    11.075000, DTIME =     0.025000 (dtmx)
+NTIME =      444, TIME =    11.100000, DTIME =     0.025000 (dtmx)
+NTIME =      445, TIME =    11.125000, DTIME =     0.025000 (dtmx)
+NTIME =      446, TIME =    11.150000, DTIME =     0.025000 (dtmx)
+NTIME =      447, TIME =    11.175000, DTIME =     0.025000 (dtmx)
+NTIME =      448, TIME =    11.200000, DTIME =     0.025000 (dtmx)
+NTIME =      449, TIME =    11.225000, DTIME =     0.025000 (dtmx)
+NTIME =      450, TIME =    11.250000, DTIME =     0.025000 (dtmx)
+NTIME =      451, TIME =    11.275000, DTIME =     0.025000 (dtmx)
+NTIME =      452, TIME =    11.300000, DTIME =     0.025000 (dtmx)
+NTIME =      453, TIME =    11.325000, DTIME =     0.025000 (dtmx)
+NTIME =      454, TIME =    11.350000, DTIME =     0.025000 (dtmx)
+NTIME =      455, TIME =    11.375000, DTIME =     0.025000 (dtmx)
+NTIME =      456, TIME =    11.400000, DTIME =     0.025000 (dtmx)
+NTIME =      457, TIME =    11.425000, DTIME =     0.025000 (dtmx)
+NTIME =      458, TIME =    11.450000, DTIME =     0.025000 (dtmx)
+NTIME =      459, TIME =    11.475000, DTIME =     0.025000 (dtmx)
+NTIME =      460, TIME =    11.500000, DTIME =     0.025000 (dtmx)
+NTIME =      461, TIME =    11.525000, DTIME =     0.025000 (dtmx)
+NTIME =      462, TIME =    11.550000, DTIME =     0.025000 (dtmx)
+NTIME =      463, TIME =    11.575000, DTIME =     0.025000 (dtmx)
+NTIME =      464, TIME =    11.600000, DTIME =     0.025000 (dtmx)
+NTIME =      465, TIME =    11.625000, DTIME =     0.025000 (dtmx)
+NTIME =      466, TIME =    11.650000, DTIME =     0.025000 (dtmx)
+NTIME =      467, TIME =    11.675000, DTIME =     0.025000 (dtmx)
+NTIME =      468, TIME =    11.700000, DTIME =     0.025000 (dtmx)
+NTIME =      469, TIME =    11.725000, DTIME =     0.025000 (dtmx)
+NTIME =      470, TIME =    11.750000, DTIME =     0.025000 (dtmx)
+NTIME =      471, TIME =    11.775000, DTIME =     0.025000 (dtmx)
+NTIME =      472, TIME =    11.800000, DTIME =     0.025000 (dtmx)
+NTIME =      473, TIME =    11.825000, DTIME =     0.025000 (dtmx)
+NTIME =      474, TIME =    11.850000, DTIME =     0.025000 (dtmx)
+NTIME =      475, TIME =    11.875000, DTIME =     0.025000 (dtmx)
+NTIME =      476, TIME =    11.900000, DTIME =     0.025000 (dtmx)
+NTIME =      477, TIME =    11.925000, DTIME =     0.025000 (dtmx)
+NTIME =      478, TIME =    11.950000, DTIME =     0.025000 (dtmx)
+NTIME =      479, TIME =    11.975000, DTIME =     0.025000 (dtmx)
+NTIME =      480, TIME =    12.000000, DTIME =     0.025000 (dtmx)
+NTIME =      481, TIME =    12.025000, DTIME =     0.025000 (dtmx)
+NTIME =      482, TIME =    12.050000, DTIME =     0.025000 (dtmx)
+NTIME =      483, TIME =    12.075000, DTIME =     0.025000 (dtmx)
+NTIME =      484, TIME =    12.100000, DTIME =     0.025000 (dtmx)
+NTIME =      485, TIME =    12.125000, DTIME =     0.025000 (dtmx)
+NTIME =      486, TIME =    12.150000, DTIME =     0.025000 (dtmx)
+NTIME =      487, TIME =    12.175000, DTIME =     0.025000 (dtmx)
+NTIME =      488, TIME =    12.200000, DTIME =     0.025000 (dtmx)
+NTIME =      489, TIME =    12.225000, DTIME =     0.025000 (dtmx)
+NTIME =      490, TIME =    12.250000, DTIME =     0.025000 (dtmx)
+NTIME =      491, TIME =    12.275000, DTIME =     0.025000 (dtmx)
+NTIME =      492, TIME =    12.300000, DTIME =     0.025000 (dtmx)
+NTIME =      493, TIME =    12.325000, DTIME =     0.025000 (dtmx)
+NTIME =      494, TIME =    12.350000, DTIME =     0.025000 (dtmx)
+NTIME =      495, TIME =    12.375000, DTIME =     0.025000 (dtmx)
+NTIME =      496, TIME =    12.400000, DTIME =     0.025000 (dtmx)
+NTIME =      497, TIME =    12.425000, DTIME =     0.025000 (dtmx)
+NTIME =      498, TIME =    12.450000, DTIME =     0.025000 (dtmx)
+NTIME =      499, TIME =    12.475000, DTIME =     0.025000 (dtmx)
+NTIME =      500, TIME =    12.500000, DTIME =     0.025000 (dtmx)
+NTIME =      501, TIME =    12.525000, DTIME =     0.025000 (dtmx)
+NTIME =      502, TIME =    12.550000, DTIME =     0.025000 (dtmx)
+NTIME =      503, TIME =    12.575000, DTIME =     0.025000 (dtmx)
+NTIME =      504, TIME =    12.600000, DTIME =     0.025000 (dtmx)
+NTIME =      505, TIME =    12.625000, DTIME =     0.025000 (dtmx)
+NTIME =      506, TIME =    12.650000, DTIME =     0.025000 (dtmx)
+NTIME =      507, TIME =    12.675000, DTIME =     0.025000 (dtmx)
+NTIME =      508, TIME =    12.700000, DTIME =     0.025000 (dtmx)
+NTIME =      509, TIME =    12.725000, DTIME =     0.025000 (dtmx)
+NTIME =      510, TIME =    12.750000, DTIME =     0.025000 (dtmx)
+NTIME =      511, TIME =    12.775000, DTIME =     0.025000 (dtmx)
+NTIME =      512, TIME =    12.800000, DTIME =     0.025000 (dtmx)
+NTIME =      513, TIME =    12.825000, DTIME =     0.025000 (dtmx)
+NTIME =      514, TIME =    12.850000, DTIME =     0.025000 (dtmx)
+NTIME =      515, TIME =    12.875000, DTIME =     0.025000 (dtmx)
+NTIME =      516, TIME =    12.900000, DTIME =     0.025000 (dtmx)
+NTIME =      517, TIME =    12.925000, DTIME =     0.025000 (dtmx)
+NTIME =      518, TIME =    12.950000, DTIME =     0.025000 (dtmx)
+NTIME =      519, TIME =    12.975000, DTIME =     0.025000 (dtmx)
+NTIME =      520, TIME =    13.000000, DTIME =     0.025000 (dtmx)
+NTIME =      521, TIME =    13.025000, DTIME =     0.025000 (dtmx)
+NTIME =      522, TIME =    13.050000, DTIME =     0.025000 (dtmx)
+NTIME =      523, TIME =    13.075000, DTIME =     0.025000 (dtmx)
+NTIME =      524, TIME =    13.100000, DTIME =     0.025000 (dtmx)
+NTIME =      525, TIME =    13.125000, DTIME =     0.025000 (dtmx)
+NTIME =      526, TIME =    13.150000, DTIME =     0.025000 (dtmx)
+NTIME =      527, TIME =    13.175000, DTIME =     0.025000 (dtmx)
+NTIME =      528, TIME =    13.200000, DTIME =     0.025000 (dtmx)
+NTIME =      529, TIME =    13.225000, DTIME =     0.025000 (dtmx)
+NTIME =      530, TIME =    13.250000, DTIME =     0.025000 (dtmx)
+NTIME =      531, TIME =    13.275000, DTIME =     0.025000 (dtmx)
+NTIME =      532, TIME =    13.300000, DTIME =     0.025000 (dtmx)
+NTIME =      533, TIME =    13.325000, DTIME =     0.025000 (dtmx)
+NTIME =      534, TIME =    13.350000, DTIME =     0.025000 (dtmx)
+NTIME =      535, TIME =    13.375000, DTIME =     0.025000 (dtmx)
+NTIME =      536, TIME =    13.400000, DTIME =     0.025000 (dtmx)
+NTIME =      537, TIME =    13.425000, DTIME =     0.025000 (dtmx)
+NTIME =      538, TIME =    13.450000, DTIME =     0.025000 (dtmx)
+NTIME =      539, TIME =    13.475000, DTIME =     0.025000 (dtmx)
+NTIME =      540, TIME =    13.500000, DTIME =     0.025000 (dtmx)
+NTIME =      541, TIME =    13.525000, DTIME =     0.025000 (dtmx)
+NTIME =      542, TIME =    13.550000, DTIME =     0.025000 (dtmx)
+NTIME =      543, TIME =    13.575000, DTIME =     0.025000 (dtmx)
+NTIME =      544, TIME =    13.600000, DTIME =     0.025000 (dtmx)
+NTIME =      545, TIME =    13.625000, DTIME =     0.025000 (dtmx)
+NTIME =      546, TIME =    13.650000, DTIME =     0.025000 (dtmx)
+NTIME =      547, TIME =    13.675000, DTIME =     0.025000 (dtmx)
+NTIME =      548, TIME =    13.700000, DTIME =     0.025000 (dtmx)
+NTIME =      549, TIME =    13.725000, DTIME =     0.025000 (dtmx)
+NTIME =      550, TIME =    13.750000, DTIME =     0.025000 (dtmx)
+NTIME =      551, TIME =    13.775000, DTIME =     0.025000 (dtmx)
+NTIME =      552, TIME =    13.800000, DTIME =     0.025000 (dtmx)
+NTIME =      553, TIME =    13.825000, DTIME =     0.025000 (dtmx)
+NTIME =      554, TIME =    13.850000, DTIME =     0.025000 (dtmx)
+NTIME =      555, TIME =    13.875000, DTIME =     0.025000 (dtmx)
+NTIME =      556, TIME =    13.900000, DTIME =     0.025000 (dtmx)
+NTIME =      557, TIME =    13.925000, DTIME =     0.025000 (dtmx)
+NTIME =      558, TIME =    13.950000, DTIME =     0.025000 (dtmx)
+NTIME =      559, TIME =    13.975000, DTIME =     0.025000 (dtmx)
+NTIME =      560, TIME =    14.000000, DTIME =     0.025000 (dtmx)
+NTIME =      561, TIME =    14.025000, DTIME =     0.025000 (dtmx)
+NTIME =      562, TIME =    14.050000, DTIME =     0.025000 (dtmx)
+NTIME =      563, TIME =    14.075000, DTIME =     0.025000 (dtmx)
+NTIME =      564, TIME =    14.100000, DTIME =     0.025000 (dtmx)
+NTIME =      565, TIME =    14.125000, DTIME =     0.025000 (dtmx)
+NTIME =      566, TIME =    14.150000, DTIME =     0.025000 (dtmx)
+NTIME =      567, TIME =    14.175000, DTIME =     0.025000 (dtmx)
+NTIME =      568, TIME =    14.200000, DTIME =     0.025000 (dtmx)
+NTIME =      569, TIME =    14.225000, DTIME =     0.025000 (dtmx)
+NTIME =      570, TIME =    14.250000, DTIME =     0.025000 (dtmx)
+NTIME =      571, TIME =    14.275000, DTIME =     0.025000 (dtmx)
+NTIME =      572, TIME =    14.300000, DTIME =     0.025000 (dtmx)
+NTIME =      573, TIME =    14.325000, DTIME =     0.025000 (dtmx)
+NTIME =      574, TIME =    14.350000, DTIME =     0.025000 (dtmx)
+NTIME =      575, TIME =    14.375000, DTIME =     0.025000 (dtmx)
+NTIME =      576, TIME =    14.400000, DTIME =     0.025000 (dtmx)
+NTIME =      577, TIME =    14.425000, DTIME =     0.025000 (dtmx)
+NTIME =      578, TIME =    14.450000, DTIME =     0.025000 (dtmx)
+NTIME =      579, TIME =    14.475000, DTIME =     0.025000 (dtmx)
+NTIME =      580, TIME =    14.500000, DTIME =     0.025000 (dtmx)
+NTIME =      581, TIME =    14.525000, DTIME =     0.025000 (dtmx)
+NTIME =      582, TIME =    14.550000, DTIME =     0.025000 (dtmx)
+NTIME =      583, TIME =    14.575000, DTIME =     0.025000 (dtmx)
+NTIME =      584, TIME =    14.600000, DTIME =     0.025000 (dtmx)
+NTIME =      585, TIME =    14.625000, DTIME =     0.025000 (dtmx)
+NTIME =      586, TIME =    14.650000, DTIME =     0.025000 (dtmx)
+NTIME =      587, TIME =    14.675000, DTIME =     0.025000 (dtmx)
+NTIME =      588, TIME =    14.700000, DTIME =     0.025000 (dtmx)
+NTIME =      589, TIME =    14.725000, DTIME =     0.025000 (dtmx)
+NTIME =      590, TIME =    14.750000, DTIME =     0.025000 (dtmx)
+NTIME =      591, TIME =    14.775000, DTIME =     0.025000 (dtmx)
+NTIME =      592, TIME =    14.800000, DTIME =     0.025000 (dtmx)
+NTIME =      593, TIME =    14.825000, DTIME =     0.025000 (dtmx)
+NTIME =      594, TIME =    14.850000, DTIME =     0.025000 (dtmx)
+NTIME =      595, TIME =    14.875000, DTIME =     0.025000 (dtmx)
+NTIME =      596, TIME =    14.900000, DTIME =     0.025000 (dtmx)
+NTIME =      597, TIME =    14.925000, DTIME =     0.025000 (dtmx)
+NTIME =      598, TIME =    14.950000, DTIME =     0.025000 (dtmx)
+NTIME =      599, TIME =    14.975000, DTIME =     0.025000 (dtmx)
+NTIME =      600, TIME =    15.000000, DTIME =     0.025000 (dtmx)
+
+Code: MAS
+Version: 0.9.2.0git
+Updated on: 04/07/2025
+Source file: mas.F90
+Run ID: mas
+Run ended on: 04/09/2025
+Run ended at: 13:42:07
+Ran on machine: PREDSCI-GPU2
+Machine type: x86_64
+Compiler: GCC version 12.3.0
+Compiler Flags: -I /opt/psi/gnu/ext_deps/deps/hdf5/include -I /usr/lib/x86_64-linux-gnu/openmpi/lib/../../fortran/gfortran-mod-15/openmpi -I /usr/lib/x86_64-linux-gnu/openmpi/lib -march=alderlake -mmmx -mpopcnt -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx -mavx2 -mno-sse4a -mno-fma4 -mno-xop -mfma -mno-avx512f -mbmi -mbmi2 -maes -mpclmul -mno-avx512vl -mno-avx512bw -mno-avx512dq -mno-avx512cd -mno-avx512er -mno-avx512pf -mno-avx512vbmi -mno-avx512ifma -mno-avx5124vnniw -mno-avx5124fmaps -mno-avx512vpopcntdq -mno-avx512vbmi2 -mgfni -mvpclmulqdq -mno-avx512vnni -mno-avx512bitalg -mno-avx512bf16 -mno-avx512vp2intersect -mno-3dnow -madx -mabm -mno-cldemote -mclflushopt -mclwb -mno-clzero -mcx16 -mno-enqcmd -mf16c -mfsgsbase -mfxsr -mno-hle -msahf -mno-lwp -mlzcnt -mmovbe -mmovdir64b -mmovdiri -mno-mwaitx -mno-pconfig -mpku -mno-prefetchwt1 -mprfchw -mptwrite -mrdpid -mrdrnd -mrdseed -mno-rtm -mserialize -mno-sgx -msha -mshstk -mno-tbm -mno-tsxldtrk -mvaes -mwaitpkg -mno-wbnoinvd -mxsave -mxsavec -mxsaveopt -mxsaves -mno-a
+
+
+ ### End of run ...
+
+ NTIME =        600
+ TIME =  1.5000000000E+01
+
+ ### CPU time used (on IPROC0):         3.08 seconds
+

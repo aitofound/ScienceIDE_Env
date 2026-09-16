@@ -1,0 +1,744 @@
+
+ ### Input file contents:
+
+!
+! *** Grid resolution.
+!
+&topology
+  nr = 41
+  nt = 31
+  np = 61
+/
+&data
+!
+! *** Use the new style output text files.
+!
+  legacy_output_filenames = .false.
+!
+! *** Radial domain.
+!
+  r0 = 1.0
+  r1 = 10.0
+!
+! *** Time domain.
+!
+  tmax = 0.6
+  ntmax = 10
+!
+! *** Grid specifications.
+!
+  rfrac    = 0.0, 0.005878828, 0.01, 0.01028786, 1.0
+  drratio  = 1.0, 1.652847, 1.0, 807.7936
+  nfrmesh  = 5
+  tfrac    = 0.0, 3.821100E-01, 6.178900E-01, 1.000000E+00
+  dtratio  = 4.722366E-03, 1.0, 2.117582E+02
+  nftmesh  = 5
+  pfrac    = 0.0, 4.882110E-01, 4.885288E-01, 4.919749E-01, 4.943872E-01, 5.056128E-01, 5.080251E-01, 5.114712E-01, 5.117890E-01
+  dpratio  = 3.777893E-03, 1.0, 7.664169E-01, 7.996955E-01, 1.0, 1.250476E+00, 1.304773E+00, 1.0, 2.646978E+02
+  nfpmesh  = 5
+  phishift = 0.0
+!
+! *** Time step specifications.
+!
+  dtmax = 0.0005
+  dtmin = 0.000001
+  dt_init = 0.0002
+!
+! *** Output options.
+!
+  plotlist = 'vr'
+  tpltxint = 0.0
+  ipltxint = 1
+  slice_plotlist = ''
+  slice_tp_radii = 0.0
+  slice_txint = 0.0
+  trace_txint = 0.0
+  hdf32 = .false.
+  rs_final = .false.
+  trsdump = 0.0
+!
+! *** Model specification.
+!
+  advance_a    = .true.
+  advance_v    = .true.
+  advance_t    = .false.
+  advance_rho  = .false.
+  advance_pw   = .false.
+  advance_zw   = .false.
+  advance_fcs  = .false.
+  trace_particles = .false.
+  slund = 1.e12
+  visc = 0.002
+  gamma = 1.05
+  g0 = 0.0
+  br00 = 1.0
+  rho0 = 2.0
+  tbc0    = 20000.
+  tchromo = 20000.
+  tfloor  = 20000.
+  char_bc0 = .false.
+  char_bc1 = .false.
+  ubzero = .false.
+  filter_poles = .false.
+  zero_v_parallel=.true.
+! *** Thermal conduction:
+  advance_tc = .false.
+  tcond = 0.0
+  alpha_nocoll = 0.0
+  t_cutoff1 = 500000.0
+  nfilt_kappa = 0
+  dt_max_wave_cfl = 50.0
+!
+! *** Initial condition.
+!
+  initial_field = 'DIPOLE'
+  b0_dipole = 0.0
+  n_ssdip = 0
+  bnfile = ''
+  fluxrope_preserve_br0 = .false.
+! North Rope Position (STRAPPING FIELD ONLY)
+  tdm_fluxrope(1)%add = .true.
+  tdm_fluxrope(1)%rope_type = "parabolic"
+  tdm_fluxrope(1)%origin_t = 1.293025
+  tdm_fluxrope(1)%origin_p = 3.141593
+  tdm_fluxrope(1)%normal_t = 0.0
+  tdm_fluxrope(1)%normal_p = 1.0
+  tdm_fluxrope(1)%tilt_from_vertical = 0.
+  tdm_fluxrope(1)%apex_height = 0.025200
+  tdm_fluxrope(1)%footpoint_halfdistance = 0.061727
+  tdm_fluxrope(1)%minor_radius = 0.025190
+  tdm_fluxrope(1)%b_poloidal = 0.0
+  tdm_fluxrope(1)%handedness = -1
+  tdm_fluxrope(1)%delta = 0.1
+  tdm_fluxrope(1)%add_charges = .true.
+  tdm_fluxrope(1)%charge_magnitude=0.020000
+  tdm_fluxrope(1)%charge_halflength=0.042000
+! Center Rope Position (STRAPPING FIELD ONLY)
+  tdm_fluxrope(2)%add = .true.
+  tdm_fluxrope(2)%rope_type = "parabolic"
+  tdm_fluxrope(2)%origin_t = 1.570796
+  tdm_fluxrope(2)%origin_p = 3.141593
+  tdm_fluxrope(2)%normal_t = 0.0
+  tdm_fluxrope(2)%normal_p = 1.0
+  tdm_fluxrope(2)%tilt_from_vertical = 0.
+  tdm_fluxrope(2)%apex_height = 0.025200
+  tdm_fluxrope(2)%footpoint_halfdistance = 0.061727
+  tdm_fluxrope(2)%minor_radius = 0.025190
+  tdm_fluxrope(2)%handedness = -1
+  tdm_fluxrope(2)%b_poloidal = 0.0
+  tdm_fluxrope(2)%delta = 0.1
+  tdm_fluxrope(2)%add_charges = .true.
+  tdm_fluxrope(2)%charge_magnitude = 0.020000
+  tdm_fluxrope(2)%charge_halflength = 0.042000
+! Southern Rope Position (STRAPPING FIELD ONLY)
+  tdm_fluxrope(3)%add = .true.
+  tdm_fluxrope(3)%rope_type = "parabolic"
+  tdm_fluxrope(3)%origin_t = 1.848568
+  tdm_fluxrope(3)%origin_p = 3.141593
+  tdm_fluxrope(3)%normal_t = 0.0
+  tdm_fluxrope(3)%normal_p = 1.0
+  tdm_fluxrope(3)%tilt_from_vertical = 0.0
+  tdm_fluxrope(3)%apex_height = 0.0252
+  tdm_fluxrope(3)%footpoint_halfdistance = 0.061727
+  tdm_fluxrope(3)%minor_radius = 0.025190
+  tdm_fluxrope(3)%b_poloidal = 0.0
+  tdm_fluxrope(3)%handedness = -1
+  tdm_fluxrope(3)%delta = 0.1
+  tdm_fluxrope(3)%add_charges = .true.
+  tdm_fluxrope(3)%charge_magnitude = 0.020000
+  tdm_fluxrope(3)%charge_halflength = 0.042000
+! RBSL FLUX ROPES
+! North Flux Rope (mirrored path, no poloidal mirroring)
+  rbsl_fluxrope(1)%add = .true.
+  rbsl_fluxrope(1)%path_file = 'rbsltest_path_mirrored_north.h5'
+  rbsl_fluxrope(1)%axial_current = 0.85712693
+  rbsl_fluxrope(1)%minor_radius = 0.025190
+  rbsl_fluxrope(1)%handedness = -1
+  rbsl_fluxrope(1)%mirror_poloidal = .false.
+! Equator Flux Rope (torus path, no poloidal mirroring)
+  rbsl_fluxrope(2)%add = .true.
+  rbsl_fluxrope(2)%path_file = 'rbsltest_path_torus.h5'
+  rbsl_fluxrope(2)%axial_current = 0.85712693
+  rbsl_fluxrope(2)%minor_radius = 0.025190
+  rbsl_fluxrope(2)%handedness = -1
+  rbsl_fluxrope(2)%mirror_poloidal = .false.
+! Southern Flux Rope (mirrored path, with poloidal mirroring)
+  rbsl_fluxrope(3)%add = .true.
+  rbsl_fluxrope(3)%path_file = 'rbsltest_path_mirrored_south.h5'
+  rbsl_fluxrope(3)%axial_current = 0.85712693
+  rbsl_fluxrope(3)%minor_radius = 0.025190
+  rbsl_fluxrope(3)%handedness = -1
+  rbsl_fluxrope(3)%mirror_poloidal = .true.
+  initial_plasma = 'ZERO-BETA'
+!
+! *** Numerical algorithm options.
+!
+  cfl = 0.6
+  use_sts_visc = .false.
+  use_sts_tc   = .false.
+  visc_auto_subcycle = .false.
+  tc_auto_subcycle   = .false.
+  ifprec_t     = 3
+  ifprec_v     = 3
+  ifprec_pot2d = 3
+  ifprec_divb  = 3
+  epscg_a       = 1.e-9
+  epscg_v       = 1.e-9
+  epscg_t       = 1.e-9
+  epscg_potfld  = 1.e-9
+  epscg_newflux = 1.e-9
+  epscg_divb    = 1.e-9
+  ncgmax = 100000
+ /
+!=======================================================================================
+!
+! MAS TEST: zb_3d_fr_rbsl
+!---------------------------------------------------------------------
+! - This test is designed to test the RBSL fluxrope functionality in MAS
+!
+! - The setup is very similar to the test it was based on: zb_3d_fr_test2
+!
+! - The idea is to place three similar flux-ropes at different latitudes
+!  - The coronal path is like the TDm ropes in zb_3d_fr_test2, but the
+!    subsurface path and options differa
+!    - Rope1 (North): RBSL with mirrored path below corona.
+!    - Rope2 (Center): RBSL with full torus path.
+!    - Rope3 (South): RBSL, mirrored path, mirror_poloidal=.true.
+!
+! - Each rope has a strapping field provided by the TDm charge options.
+!
+! - The end result shows how choosing various paths/parametrizations, you
+!   can get very different surface Br fields for the same coronal shape.
+!
+! - The original test development was done by CD
+!
+
+
+Code: MAS
+Version: 0.9.2.1git
+Updated on: 04/23/2025
+Source file: mas.F90
+Run ID: mas
+Run started on: 04/24/2025
+Run started at: 13:20:12
+Ran on machine: PREDSCI-GPU2
+Machine type: x86_64
+Compiler: GCC version 12.3.0
+Compiler Flags: -I /opt/psi/gnu/ext_deps/deps/hdf5/include -I /usr/lib/x86_64-linux-gnu/openmpi/lib/../../fortran/gfortran-mod-15/openmpi -I /usr/lib/x86_64-linux-gnu/openmpi/lib -march=alderlake -mmmx -mpopcnt -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx -mavx2 -mno-sse4a -mno-fma4 -mno-xop -mfma -mno-avx512f -mbmi -mbmi2 -maes -mpclmul -mno-avx512vl -mno-avx512bw -mno-avx512dq -mno-avx512cd -mno-avx512er -mno-avx512pf -mno-avx512vbmi -mno-avx512ifma -mno-avx5124vnniw -mno-avx5124fmaps -mno-avx512vpopcntdq -mno-avx512vbmi2 -mgfni -mvpclmulqdq -mno-avx512vnni -mno-avx512bitalg -mno-avx512bf16 -mno-avx512vp2intersect -mno-3dnow -madx -mabm -mno-cldemote -mclflushopt -mclwb -mno-clzero -mcx16 -mno-enqcmd -mf16c -mfsgsbase -mfxsr -mno-hle -msahf -mno-lwp -mlzcnt -mmovbe -mmovdir64b -mmovdiri -mno-mwaitx -mno-pconfig -mpku -mno-prefetchwt1 -mprfchw -mptwrite -mrdpid -mrdrnd -mrdseed -mno-rtm -mserialize -mno-sgx -msha -mshstk -mno-tbm -mno-tsxldtrk -mvaes -mwaitpkg -mno-wbnoinvd -mxsave -mxsavec -mxsaveopt -mxsaves -mno-a
+
+
+ ------------------------------------------------------------------------
+
+ ### COMMENT from START:
+ ### Timing has been turned ON for this run.
+
+ ### COMMENT from GENMESH:
+ ### Mesh information for coordinate r:
+
+ Number of mesh segments =            4
+
+ Segment      xi0       xi1               r0               r1            ratio
+    1    0.000000  0.414191       1.00000000       1.05290945       1.00000000
+    2    0.414191  0.637680       1.05290945       1.09000000       1.65284700
+    3    0.637680  0.649950       1.09000000       1.09259074       1.00000000
+    4    0.649950  1.000000       1.09259074      10.00000000     807.79360000
+
+ Mesh-point locations:
+      i                 r                dr             ratio
+      1        1.00000000
+      2        1.00327542        0.00327542
+      3        1.00655085        0.00327542        1.00000000
+      4        1.00982627        0.00327542        1.00000000
+      5        1.01310170        0.00327542        1.00000000
+      6        1.01637712        0.00327542        1.00000000
+      7        1.01965255        0.00327542        1.00000000
+      8        1.02292797        0.00327542        1.00000000
+      9        1.02620339        0.00327542        1.00000000
+     10        1.02947882        0.00327542        1.00000000
+     11        1.03275424        0.00327542        1.00000000
+     12        1.03602967        0.00327542        1.00000000
+     13        1.03930516        0.00327549        1.00002051
+     14        1.04258151        0.00327635        1.00026352
+     15        1.04586301        0.00328150        1.00156966
+     16        1.04916346        0.00330044        1.00577398
+     17        1.05251262        0.00334917        1.01476285
+     18        1.05595589        0.00344326        1.02809477
+     19        1.05954375        0.00358786        1.04199446
+     20        1.06331870        0.00377496        1.05214667
+     21        1.06730980        0.00399110        1.05725747
+     22        1.07153664        0.00422683        1.05906465
+     23        1.07602141        0.00448477        1.06102363
+     24        1.08082777        0.00480636        1.07170821
+     25        1.08617343        0.00534566        1.11220387
+     26        1.09264597        0.00647254        1.21080336
+     27        1.10147766        0.00883169        1.36448672
+     28        1.11482009        0.01334243        1.51074414
+     29        1.13609525        0.02127516        1.59454897
+     30        1.17066102        0.03456577        1.62470082
+     31        1.22706418        0.05640316        1.63176354
+     32        1.31915976        0.09209558        1.63280886
+     33        1.46954212        0.15038235        1.63289435
+     34        1.71510101        0.24555889        1.63289699
+     35        2.11607338        0.40097238        1.63289699
+     36        2.76868350        0.65261011        1.62756876
+     37        3.80951903        1.04083553        1.59488109
+     38        5.37639683        1.56687780        1.50540384
+     39        7.50116318        2.12476634        1.35605109
+     40       10.00000000        2.49883682        1.17605253
+
+ ### COMMENT from GENMESH:
+ ### Mesh information for coordinate t:
+
+ Number of mesh segments =            3
+
+ Segment      xi0       xi1               t0               t1            ratio
+    1    0.000000  0.038047       0.00000000       1.20043397       0.00472237
+    2    0.038047  0.961953       1.20043397       1.94115868       1.00000000
+    3    0.961953  1.000000       1.94115868       3.14159265     211.75820000
+
+ Mesh-point locations:
+      i                 t                dt             ratio
+      1        0.00000000
+      2        0.55537565        0.55537565
+      3        0.96002245        0.40464680        0.72860018
+      4        1.17622840        0.21620595        0.53430781
+      5        1.26676738        0.09053899        0.41876270
+      6        1.30700925        0.04024187        0.44447004
+      7        1.33580518        0.02879593        0.71557143
+      8        1.36345193        0.02764675        0.96009238
+      9        1.39109785        0.02764592        0.99996986
+     10        1.41874377        0.02764592        1.00000000
+     11        1.44638969        0.02764592        1.00000000
+     12        1.47403561        0.02764592        1.00000000
+     13        1.50168153        0.02764592        1.00000000
+     14        1.52932745        0.02764592        1.00000000
+     15        1.55697337        0.02764592        1.00000000
+     16        1.58461929        0.02764592        1.00000000
+     17        1.61226521        0.02764592        1.00000000
+     18        1.63991113        0.02764592        1.00000000
+     19        1.66755705        0.02764592        1.00000000
+     20        1.69520297        0.02764592        1.00000000
+     21        1.72284889        0.02764592        1.00000000
+     22        1.75049481        0.02764592        1.00000000
+     23        1.77814073        0.02764592        1.00000000
+     24        1.80578748        0.02764675        1.00003014
+     25        1.83458341        0.02879593        1.04156644
+     26        1.87482528        0.04024187        1.39748453
+     27        1.96536426        0.09053899        2.24987041
+     28        2.18157021        0.21620595        2.38798728
+     29        2.58621701        0.40464680        1.87158035
+     30        3.14159265        0.55537565        1.37249485
+
+ ### COMMENT from GENMESH:
+ ### Mesh information for coordinate p:
+
+ Number of mesh segments =            9
+
+ Segment      xi0       xi1               p0               p1            ratio
+    1    0.000000  0.189572       0.00000000       3.06752018       0.00377789
+    2    0.189572  0.195405       3.06752018       3.06951698       1.00000000
+    3    0.195405  0.267443       3.06951698       3.09116946       0.76641690
+    4    0.267443  0.331912       3.09116946       3.10632639       0.79969550
+    5    0.331912  0.668088       3.10632639       3.17685892       1.00000000
+    6    0.668088  0.732557       3.17685892       3.19201584       1.25047600
+    7    0.732557  0.804595       3.19201584       3.21366833       1.30477300
+    8    0.804595  0.810428       3.21366833       3.21566513       1.00000000
+    9    0.810428  1.000000       3.21566513       6.28318531     264.69780000
+
+ Mesh-point locations:
+      i                 p                dp             ratio
+      1        0.00000000        0.87050453        1.17832492
+      2        0.87050453        0.87050453        1.00000000
+      3        1.60926894        0.73876442        0.84866235
+      4        2.15190146        0.54263252        0.73451361
+      5        2.51020660        0.35830514        0.66030901
+      6        2.73318054        0.22297394        0.62230182
+      7        2.86905149        0.13587095        0.60935797
+      8        2.95156372        0.08251223        0.60728383
+      9        3.00168132        0.05011760        0.60739602
+     10        3.03217258        0.03049126        0.60839430
+     11        3.05088765        0.01871507        0.61378476
+     12        3.06274185        0.01185420        0.63340396
+     13        3.07083881        0.00809696        0.68304544
+     14        3.07705382        0.00621501        0.76757297
+     15        3.08238306        0.00532924        0.85747957
+     16        3.08725491        0.00487185        0.91417413
+     17        3.09181322        0.00455831        0.93564251
+     18        3.09610417        0.00429094        0.94134482
+     19        3.10015791        0.00405374        0.94471902
+     20        3.10401337        0.00385546        0.95108872
+     21        3.10772239        0.00370902        0.96201680
+     22        3.11134148        0.00361909        0.97575395
+     23        3.11491726        0.00357578        0.98803237
+     24        3.11847764        0.00356038        0.99569382
+     25        3.12203429        0.00355664        0.99895016
+     26        3.12559039        0.00355610        0.99984700
+     27        3.12914645        0.00355606        0.99999014
+     28        3.13270252        0.00355606        1.00000000
+     29        3.13625858        0.00355606        1.00000000
+     30        3.13981465        0.00355606        1.00000000
+     31        3.14337071        0.00355606        1.00000000
+     32        3.14692678        0.00355606        1.00000000
+     33        3.15048284        0.00355606        1.00000000
+     34        3.15403891        0.00355606        1.00000000
+     35        3.15759497        0.00355606        1.00000000
+     36        3.16115107        0.00355610        1.00000986
+     37        3.16470771        0.00355664        1.00015303
+     38        3.16826810        0.00356038        1.00105094
+     39        3.17184388        0.00357578        1.00432480
+     40        3.17546297        0.00361909        1.01211258
+     41        3.17917199        0.00370902        1.02484851
+     42        3.18302745        0.00385546        1.03948288
+     43        3.18708119        0.00405374        1.05142662
+     44        3.19137213        0.00429094        1.05851579
+     45        3.19593045        0.00455831        1.06231000
+     46        3.20080230        0.00487185        1.06878429
+     47        3.20613154        0.00532924        1.09388349
+     48        3.21234655        0.00621501        1.16620849
+     49        3.22044350        0.00809696        1.30280764
+     50        3.23229770        0.01185420        1.46403136
+     51        3.25101277        0.01871507        1.57877131
+     52        3.28150403        0.03049126        1.62923567
+     53        3.33162162        0.05011759        1.64367094
+     54        3.41413384        0.08251222        1.64637239
+     55        3.55000478        0.13587094        1.64667655
+     56        3.77297871        0.22297393        1.64107155
+     57        4.13128384        0.35830513        1.60693734
+     58        4.67391636        0.54263252        1.51444248
+     59        5.41268078        0.73876442        1.36144517
+     60        6.28318531        0.87050453        1.17832492
+
+ ------------------------------------------------------------------------
+
+ ### COMMENT from SET_DIAGNOSTICS:
+ Number of fields to plot =            1
+
+ Fields to plot:
+ vr
+
+ ------------------------------------------------------------------------
+
+ ### COMMENT from SET_DIAGNOSTICS:
+ Number of slice fields to plot =            0
+
+ ------------------------------------------------------------------------
+
+ ### COMMENT from SET_DIAGNOSTICS:
+ Number of diagnostic points =            0
+
+ ------------------------------------------------------------------------
+
+
+ ### COMMENT from START:
+ ### Upwind coefficients for the A equation:
+ UPWIND_AR =    1.0000000000000000     
+ UPWIND_AT =    1.0000000000000000     
+ UPWIND_AP =    1.0000000000000000     
+ UPWIND_A_R0 =    0.0000000000000000     
+
+ ### COMMENT from LOAD_POT2D_SOLVE:
+ ### pot2d preconditioner activated.
+ Matrix size per node (NxN) N:               900
+ Matrix # of non-zeros per node M:          4144
+ Estimated memory usage per node:     0.26 MB
+
+
+ ### COMMENT from LOAD_POT2DH_SOLVE:
+ ### pot2dh preconditioners activated.
+ Matrix size per node (NxN) N:               870
+ Matrix # of non-zeros per node M:          4232
+ Estimated memory usage per node:     0.26 MB
+
+ ### Adding the TDM flux rope with index =            1
+
+ ### COMMENT from TDM_ADD_A:
+ ### Calculating A for a modified Titov-Demoulin flux rope.
+
+ ### COMMENT from TDM_INIT_PARAMS:
+ ### Parameters for the modified Titov-Demoulin flux rope:
+
+ Flag to Add:  T
+ Rope Type = parabolic
+ Flag to use the user specified major radius: F
+ Major radius =    8.8199653353174590E-002
+ Minor radius =    2.5190000000000001E-002
+ Apex height =    2.5200000000000000E-002
+ Footpoint separation =   0.12345399999999999     
+ Fractional surface transition layer width =   0.10000000000000001     
+ Axial current =    0.0000000000000000     
+ Axial flux =   -0.0000000000000000     
+ Axial field =   -0.0000000000000000     
+ Confining poloidal field =    0.0000000000000000     
+ Handedness [-1 => left-handed, +1 => right-handed] =           -1
+ Flag to add charges:  T
+ Charge Magnitude:    2.0000000000000000E-002
+ Charge Halfdistance:    4.2000000000000003E-002
+
+ ### Adding the TDM flux rope with index =            2
+
+ ### COMMENT from TDM_ADD_A:
+ ### Calculating A for a modified Titov-Demoulin flux rope.
+
+ ### COMMENT from TDM_INIT_PARAMS:
+ ### Parameters for the modified Titov-Demoulin flux rope:
+
+ Flag to Add:  T
+ Rope Type = parabolic
+ Flag to use the user specified major radius: F
+ Major radius =    8.8199653353174590E-002
+ Minor radius =    2.5190000000000001E-002
+ Apex height =    2.5200000000000000E-002
+ Footpoint separation =   0.12345399999999999     
+ Fractional surface transition layer width =   0.10000000000000001     
+ Axial current =    0.0000000000000000     
+ Axial flux =   -0.0000000000000000     
+ Axial field =   -0.0000000000000000     
+ Confining poloidal field =    0.0000000000000000     
+ Handedness [-1 => left-handed, +1 => right-handed] =           -1
+ Flag to add charges:  T
+ Charge Magnitude:    2.0000000000000000E-002
+ Charge Halfdistance:    4.2000000000000003E-002
+
+ ### Adding the TDM flux rope with index =            3
+
+ ### COMMENT from TDM_ADD_A:
+ ### Calculating A for a modified Titov-Demoulin flux rope.
+
+ ### COMMENT from TDM_INIT_PARAMS:
+ ### Parameters for the modified Titov-Demoulin flux rope:
+
+ Flag to Add:  T
+ Rope Type = parabolic
+ Flag to use the user specified major radius: F
+ Major radius =    8.8199653353174590E-002
+ Minor radius =    2.5190000000000001E-002
+ Apex height =    2.5200000000000000E-002
+ Footpoint separation =   0.12345399999999999     
+ Fractional surface transition layer width =   0.10000000000000001     
+ Axial current =    0.0000000000000000     
+ Axial flux =   -0.0000000000000000     
+ Axial field =   -0.0000000000000000     
+ Confining poloidal field =    0.0000000000000000     
+ Handedness [-1 => left-handed, +1 => right-handed] =           -1
+ Flag to add charges:  T
+ Charge Magnitude:    2.0000000000000000E-002
+ Charge Halfdistance:    4.2000000000000003E-002
+
+ ### Adding the RBSL flux rope with index =            1
+
+ ### COMMENT from RBSL_ADD_A:
+ ### Calculating A for an RBSL flux rope.
+
+ ### COMMENT from RBSL_INIT_PARAMS:
+ ### Parameters for the regularized Biot-Savart Law (RBSL) flux rope:
+
+ Flag to Add:  T
+ Path File: rbsltest_path_mirrored_north.h5
+ Minor radius =    2.5190000000000001E-002
+ Axial current =   0.85712692999999995     
+ Handedness [-1 => left-handed, +1 => right-handed] =           -1
+ Flag to mirror the poloidal current below the photosphere =  F
+
+ ### Adding the RBSL flux rope with index =            2
+
+ ### COMMENT from RBSL_ADD_A:
+ ### Calculating A for an RBSL flux rope.
+
+ ### COMMENT from RBSL_INIT_PARAMS:
+ ### Parameters for the regularized Biot-Savart Law (RBSL) flux rope:
+
+ Flag to Add:  T
+ Path File: rbsltest_path_torus.h5
+ Minor radius =    2.5190000000000001E-002
+ Axial current =   0.85712692999999995     
+ Handedness [-1 => left-handed, +1 => right-handed] =           -1
+ Flag to mirror the poloidal current below the photosphere =  F
+
+ ### Adding the RBSL flux rope with index =            3
+
+ ### COMMENT from RBSL_ADD_A:
+ ### Calculating A for an RBSL flux rope.
+
+ ### COMMENT from RBSL_INIT_PARAMS:
+ ### Parameters for the regularized Biot-Savart Law (RBSL) flux rope:
+
+ Flag to Add:  T
+ Path File: rbsltest_path_mirrored_south.h5
+ Minor radius =    2.5190000000000001E-002
+ Axial current =   0.85712692999999995     
+ Handedness [-1 => left-handed, +1 => right-handed] =           -1
+ Flag to mirror the poloidal current below the photosphere =  T
+
+ ### COMMENT from INITIALIZE_MAGNETIC_FIELD_FROM_DIPOLES:
+ ### Adding a sun-centered dipole:
+
+ B0_DIPOLE =    0.0000000000000000     
+ DIPANGLE [deg] =    0.0000000000000000     
+
+ ### COMMENT from LOAD_RESISTIVITY:
+ ### Using resistivity profile: UNIFORM
+
+ ### COMMENT from LOAD_VISCOSITY:
+ ### Using viscosity profile: UNIFORM
+
+ ### COMMENT from LOAD_V_ADVANCE:
+ ### Velocity preconditioner activated.
+ Matrix size per node (NxN) N:             51600
+ Matrix # of non-zeros per node M:        743426
+ Estimated memory usage per node:    26.46 MB
+
+ ### COMMENT from CHECK_TIME_PROFILES:
+ ### There are no active time profiles.
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            1
+ NTIME =            0
+ TIME =    0.0000000000000000     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            2
+ NTIME =            1
+ TIME =    2.0000000000000001E-004
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            3
+ NTIME =            2
+ TIME =    4.0999999999999999E-004
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            4
+ NTIME =            3
+ TIME =    6.3049999999999998E-004
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            5
+ NTIME =            4
+ TIME =    8.6202499999999999E-004
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            6
+ NTIME =            5
+ TIME =    1.1051262500000000E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            7
+ NTIME =            6
+ TIME =    1.3603825625000000E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            8
+ NTIME =            7
+ TIME =    1.6284016906250001E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            9
+ NTIME =            8
+ TIME =    1.9098217751562503E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           10
+ NTIME =            9
+ TIME =    2.2053128639140628E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           11
+ NTIME =           10
+ TIME =    2.5155785071097662E-003
+
+ ### COMMENT from DUMPHIST:
+ Wrote time histories to file: mas_history_a.out
+ Wrote time histories to file: mas_history_b.out
+
+Code: MAS
+Version: 0.9.2.1git
+Updated on: 04/23/2025
+Source file: mas.F90
+Run ID: mas
+Run ended on: 04/24/2025
+Run ended at: 13:20:13
+Ran on machine: PREDSCI-GPU2
+Machine type: x86_64
+Compiler: GCC version 12.3.0
+Compiler Flags: -I /opt/psi/gnu/ext_deps/deps/hdf5/include -I /usr/lib/x86_64-linux-gnu/openmpi/lib/../../fortran/gfortran-mod-15/openmpi -I /usr/lib/x86_64-linux-gnu/openmpi/lib -march=alderlake -mmmx -mpopcnt -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx -mavx2 -mno-sse4a -mno-fma4 -mno-xop -mfma -mno-avx512f -mbmi -mbmi2 -maes -mpclmul -mno-avx512vl -mno-avx512bw -mno-avx512dq -mno-avx512cd -mno-avx512er -mno-avx512pf -mno-avx512vbmi -mno-avx512ifma -mno-avx5124vnniw -mno-avx5124fmaps -mno-avx512vpopcntdq -mno-avx512vbmi2 -mgfni -mvpclmulqdq -mno-avx512vnni -mno-avx512bitalg -mno-avx512bf16 -mno-avx512vp2intersect -mno-3dnow -madx -mabm -mno-cldemote -mclflushopt -mclwb -mno-clzero -mcx16 -mno-enqcmd -mf16c -mfsgsbase -mfxsr -mno-hle -msahf -mno-lwp -mlzcnt -mmovbe -mmovdir64b -mmovdiri -mno-mwaitx -mno-pconfig -mpku -mno-prefetchwt1 -mprfchw -mptwrite -mrdpid -mrdrnd -mrdseed -mno-rtm -mserialize -mno-sgx -msha -mshstk -mno-tbm -mno-tsxldtrk -mvaes -mwaitpkg -mno-wbnoinvd -mxsave -mxsavec -mxsaveopt -mxsaves -mno-a
+
+
+ ### End of run ...
+
+ NTIME =         10
+ TIME =  2.5155785071E-03
+
+ ### Time advance information:
+ Average time step used =    2.5155785071097662E-004
+
+ -----------------------------------------
+ ### Field solver convergence information:
+ -----------------------------------------
+
+ ### Implicit resistivity advance:
+ Total number of solves =           10
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### Thermal conduction (e) advance:
+ Total number of solves =            0
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### Thermal conduction (p) advance:
+ Total number of solves =            0
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### Semi-implicit advance (predictor):
+ Total number of solves =           10
+ Total number of iterations =           40
+ Average number of iterations per solve =            4
+
+ ### Semi-implicit advance (corrector):
+ Total number of solves =           10
+ Total number of iterations =           42
+ Average number of iterations per solve =            4
+
+ ### Viscosity advance:
+ Total number of solves =           10
+ Total number of iterations =           43
+ Average number of iterations per solve =            4
+
+ ### Initial boundary potential field (2D):
+ Total number of solves =            0
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### Initial potential field (3D):
+ Total number of solves =            0
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### Boundary potential field (2D psi evolve):
+ Total number of solves =            0
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### Boundary potential field (2D phi evolve):
+ Total number of solves =            0
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### Divergence cleaning:
+ Total number of solves =            0
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### CPU time used (on IPROC0):         0.96 seconds
+
