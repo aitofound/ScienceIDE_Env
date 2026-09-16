@@ -13,6 +13,7 @@ grades `triSlab`.
 **Observable.** the same basis field on a non-orthogonal (triangular) lattice.
 
 **Cost knob.** `SAB_RESOLUTION` — see `run.sh --help`.
+**Resource knob.** `SAB_THREADS` (default 1, the declared per-check cpus). S4 as built here is serial, so it changes nothing at the graded value; `run.sh --help` lists it.
 Default vs upstream: upstream
 
 ## Build settings, and why they are pinned
