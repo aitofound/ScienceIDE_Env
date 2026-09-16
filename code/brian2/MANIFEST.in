@@ -1,0 +1,38 @@
+# Include documentation
+include docs_sphinx/conf.py
+include docs_sphinx/_static/brian-logo.png
+recursive-include docs_sphinx *.rst
+prune docs_sphinx/reference
+prune docs_sphinx/examples
+prune docs_sphinx/resources
+
+# Include examples (but not tutorials)
+recursive-include examples *.py
+prune tutorials
+
+# Remove development scripts
+prune dev
+
+# Include license file in source tarball
+include LICENSE
+
+# Exclude configuration files
+global-exclude .gitignore
+exclude *.yml
+exclude .coveragerc
+exclude .gitattributes
+exclude .gitmodules
+include brian2/_version.py
+
+include brian2/devices/cpp_standalone/templates/*
+include brian2/devices/cpp_standalone/templates_GSL/*
+include brian2/tests/test_templates/fake_package_1/templates/*
+include brian2/tests/test_templates/fake_package_2/templates/*
+include brian2/codegen/runtime/numpy_rt/templates/*
+include brian2/codegen/runtime/GSLcython_rt/templates/*
+include brian2/codegen/runtime/cython_rt/templates/*
+include brian2/tests/*.ini
+include brian2/tests/*.pyx
+include brian2/tests/*.pxd
+include brian2/tests/rallpack_data/*.0
+include brian2/tests/rallpack_data/*.x
