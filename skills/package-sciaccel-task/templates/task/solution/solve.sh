@@ -16,17 +16,19 @@
 #   SAB_IC              initial condition: nominal (default), variant, or altbuild (the nominal
 #                       inputs on the alternative build, for the checks that declare one; the
 #                       others leave run.skipped)
-#   SAB_SOLVE_CPUS      the cpus and memory this solve may use on the host (default:
-#   SAB_SOLVE_MEMORY_GB the declared resources, i.e. one container). The declared
-#                       cpus and memory_gb are what one check needs; the driver
-#                       runs floor(SAB_SOLVE_CPUS / cpus) containers at once, bounded
-#                       the same way by memory, each at the declared limits, and
-#                       shards the checks across them by build configuration (the
+#   SAB_SOLVE_CPUS      the cpus and memory this solve may use on the host. Resource
+#   SAB_SOLVE_MEMORY_GB aware by default: when unset, what Docker reports for the
+#                       host (NCPU, MemTotal). The declared cpus and memory_gb are
+#                       what one check needs; the driver runs
+#                       floor(SAB_SOLVE_CPUS / cpus) containers at once, bounded the
+#                       same way by memory, each at the declared limits, and shards
+#                       the checks across them by build configuration (the
 #                       Config.pl-style options each rubric's `configuration`
 #                       names, so a build cache shared between the containers
 #                       compiles each configuration once) balanced by declared
-#                       runtime. Encouraged, not required: the single container is
-#                       the default and per-check run seconds mean what they meant.
+#                       runtime. Set SAB_SOLVE_CPUS to the declared cpus to force one
+#                       container. Per-check run seconds mean what they meant; only
+#                       the wall time falls.
 #   SAB_*               any other SAB_ variable is passed into the container
 #                       and on to run.sh (runtime knobs for iteration only)
 set -euo pipefail
@@ -42,8 +44,8 @@ if [ "${1:-}" = "--help" ]; then
   echo "== driver"
   echo "SAB_ORACLE_DIR=<empty dir>  where results/ and the oracle manifest are written"
   echo "SAB_IC=nominal  initial condition to run: nominal, variant or altbuild (nominal inputs on the alternative build; checks without one are skipped)"
-  echo "SAB_SOLVE_CPUS=<declared cpus>  cpus this solve may use on the host; floor(SAB_SOLVE_CPUS / declared cpus) containers run the checks at once, sharded by build configuration and balanced by declared runtime"
-  echo "SAB_SOLVE_MEMORY_GB=<declared memory_gb>  memory this solve may use on the host; bounds the container count the same way"
+  echo "SAB_SOLVE_CPUS=<host cpus per docker info>  cpus this solve may use on the host; floor(SAB_SOLVE_CPUS / declared cpus) containers run the checks at once, sharded by build configuration and balanced by declared runtime; set it to the declared cpus for one container"
+  echo "SAB_SOLVE_MEMORY_GB=<host memory per docker info>  memory this solve may use on the host; bounds the container count the same way"
   exit 0
 fi
 
@@ -92,11 +94,17 @@ while IFS='=' read -r name _; do
 done < <(env | grep -E '^SAB_[A-Z0-9_]+=' || true)
 mkdir -p "$ORACLE/results"
 # How many containers at once: the host allowance over the declared per-check
-# resources (one container when the allowance is the declaration or unset).
-PARALLEL=1
-if [ -n "${SAB_SOLVE_CPUS:-}" ] || [ -n "${SAB_SOLVE_MEMORY_GB:-}" ]; then
-  PARALLEL="$(python3 - "${SAB_SOLVE_CPUS:-}" "${CPUS:-}" "${SAB_SOLVE_MEMORY_GB:-}" "${MEMORY_GB:-}" <<'PY'
-import math, sys
+# resources. Resource aware by default: the allowance is SAB_SOLVE_CPUS and
+# SAB_SOLVE_MEMORY_GB when set, else what Docker reports for the host.
+HOST_CPUS="${SAB_SOLVE_CPUS:-}"; HOST_MEM_GB="${SAB_SOLVE_MEMORY_GB:-}"
+if [ -z "$HOST_CPUS" ] || [ -z "$HOST_MEM_GB" ]; then
+  read -r DOCKER_NCPU DOCKER_MEM <<<"$(docker info --format '{{.NCPU}} {{.MemTotal}}' 2>/dev/null || echo "")"
+  [ "${DOCKER_NCPU:-0}" != 0 ] || DOCKER_NCPU=""   # a daemon that is not running reports 0 0: unknown, one container
+  [ -n "$HOST_CPUS" ] || HOST_CPUS="${DOCKER_NCPU:-}"
+  [ -n "$HOST_MEM_GB" ] || HOST_MEM_GB="$(python3 -c 'import sys; b=sys.argv[1]; print(round(int(b)/2**30, 1) if b.isdigit() and int(b) > 0 else "")' "${DOCKER_MEM:-}")"
+fi
+PARALLEL="$(python3 - "$HOST_CPUS" "${CPUS:-}" "$HOST_MEM_GB" "${MEMORY_GB:-}" <<'PY'
+import sys
 host_cpus, cpus, host_mem, mem = sys.argv[1:]
 n = []
 if host_cpus and cpus and float(cpus) > 0: n.append(int(float(host_cpus) // float(cpus)))
@@ -104,7 +112,7 @@ if host_mem and mem and float(mem) > 0: n.append(int(float(host_mem) // float(me
 print(max(1, min(n)) if n else 1)
 PY
 )"
-fi
+echo "HOST allowance: ${HOST_CPUS:-?} cpus, ${HOST_MEM_GB:-?} GB (SAB_SOLVE_CPUS / SAB_SOLVE_MEMORY_GB, else docker info); per check ${CPUS:-?} cpus, ${MEMORY_GB:-?} GB" 
 # Shards: the checks grouped by build configuration (the Config.pl-style options
 # named in each rubric's `configuration`, order-independent; a rubric worded
 # differently falls back to its opening words, which at worst costs a duplicate
