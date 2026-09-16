@@ -75,7 +75,8 @@ def main() -> int:
     config = json.loads(Path(config_path).read_text())
     test_root = Path(source) / "test"
     env = os.environ.copy()
-    env.update({"PYTHONDONTWRITEBYTECODE": "1", "OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1"})
+    threads = os.environ.get("SAB_THREADS", "1")
+    env.update({"PYTHONDONTWRITEBYTECODE": "1", "OMP_NUM_THREADS": threads, "OPENBLAS_NUM_THREADS": threads})
     started = time.monotonic()
 
     # Some upstream "test_*" files are executable scripts with top-level

@@ -96,8 +96,9 @@ def main() -> int:
     config = json.loads(Path(config_path).read_text())
     workdir = Path(source) / "examples" / "scripts"
     env = os.environ.copy()
-    env.update({"PYTHONDONTWRITEBYTECODE": "1", "OMP_NUM_THREADS": "1",
-                "OPENBLAS_NUM_THREADS": "1", "KMP_DUPLICATE_LIB_OK": "TRUE"})
+    threads = os.environ.get("SAB_THREADS", "1")
+    env.update({"PYTHONDONTWRITEBYTECODE": "1", "OMP_NUM_THREADS": threads,
+                "OPENBLAS_NUM_THREADS": threads, "KMP_DUPLICATE_LIB_OK": "TRUE"})
     # sparse_dot_mkl loads libmkl_rt through ctypes and does not search the
     # virtual environment's lib directory, so example27.py fails with
     # "libmkl_rt not found" unless MKL_RT names the shared object explicitly.

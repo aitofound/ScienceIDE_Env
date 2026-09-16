@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
-if [ "${1:-}" = "--help" ]; then echo "SAB_L=16 chain length for the calibration solve"; exit 0; fi
+if [ "${1:-}" = "--help" ]; then printf '%s\n' 'SAB_L=16 chain length for the calibration solve' 'SAB_THREADS=1 threads the BLAS/OpenMP reductions may use, default the declared per-check cpus'; exit 0; fi
 IC="${1:?usage: run.sh <nominal|variant>}"; case "$IC" in nominal|variant) ;; *) exit 2;; esac
+export OMP_NUM_THREADS="${SAB_THREADS:-1}" OPENBLAS_NUM_THREADS="${SAB_THREADS:-1}" MKL_NUM_THREADS="${SAB_THREADS:-1}"
 : "${SOURCE_DIR:?}" "${OUT_DIR:?}" "${CHECK_DIR:?}"
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 cp -R "$SOURCE_DIR/." "$WORK/src"; echo "SAB_BUILD_SECONDS=0"
