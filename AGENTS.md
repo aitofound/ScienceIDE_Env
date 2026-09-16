@@ -2,14 +2,20 @@
 
 # ScienceAccelBench agent instructions
 
-This repository registers scientific acceleration tasks. For packaging work,
-read and follow the packaging skill, [`SKILL.md`](https://github.com/huangzesen/sciaccelbench-pipeline/blob/main/skill/package-sciaccel-task/SKILL.md) in `huangzesen/sciaccelbench-pipeline`;
-it is the canonical procedure and owns the exact Harbor leaf tree. The skill,
-its SPEC and its CLI live in `huangzesen/sciaccelbench-pipeline`; that
-directory holds only a pointer, the commit pin `PIPELINE_REVISION` and the
-loader `scripts/sab.py`; the README's *The skill* section says how to get the clone. Never
-put pipeline text or code here; change the pipeline there and land the pin
-with its `tools/release.py`.
+This repository registers scientific acceleration tasks. The packaging skill
+(the procedure, its SPEC, the pitfalls reference, the templates and the `sab`
+CLI) lives in **https://github.com/huangzesen/sciaccelbench-pipeline**; this
+repository keeps only a pointer under `skills/package-sciaccel-task/`, the
+commit pin `PIPELINE_REVISION` and the loader `scripts/sab.py`. Get the skill
+at the pinned commit and read its `SKILL.md`:
+
+```bash
+git clone https://github.com/huangzesen/sciaccelbench-pipeline ../sciaccelbench-pipeline
+git -C ../sciaccelbench-pipeline checkout "$(cat skills/package-sciaccel-task/PIPELINE_REVISION)"
+```
+
+Never put pipeline text or code here; change the pipeline there and land the
+pin with its `tools/release.py`.
 
 ## Packaging a codebase
 
@@ -62,6 +68,10 @@ label metadata, flat targets, and strict target JSON. It deliberately does not
 recursively inspect source, scientific content, or opaque runtime/check
 internals. `npm run check` runs the generic repository gate and the real Harbor
 validator; do not add a validator self-test file or hook.
+
+A PR that first introduces `code/<source>/` must add four non-empty files
+under `codebase-reports/<source>/` (`codebase-metadata.json`, `.html`, `.md`
+and `references.bib`); `npm run test:report-gate` checks that rule.
 
 When prose and a validator disagree, inspect [`CONTRIBUTING.md`](CONTRIBUTING.md)
 and [`scripts/validate.mjs`](scripts/validate.mjs), then fix the disagreement;
