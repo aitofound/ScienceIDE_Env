@@ -202,9 +202,6 @@ def lint(leaf: Path, allow_custom_drivers: bool) -> tuple[list[str], list[str], 
             if p.is_file() and config.ALTBUILD not in p.read_text(encoding="utf-8", errors="replace"):
                 (warns if allow_custom_drivers else errs).append(
                     f"{drv}: {len(alt_checks)} check(s) declare altbuild but the driver does not accept it; update it from the 5.8.0 template (SPEC.html §7)")
-    acc = [i["name"] for i in infos if "acceleration" in i["labels"]]
-    if len(acc) > 1:
-        errs.append(f"exactly one check may carry the acceleration label; found {acc}")
     meta = None
     try:
         meta = task_meta(leaf)
