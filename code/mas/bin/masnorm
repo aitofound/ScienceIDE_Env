@@ -1,0 +1,93 @@
+#!/usr/bin/env python
+import numpy as np
+
+format_str_e='%41s %27.15e %15s'
+format_str_f='%41s %27.15f %15s'
+
+he_frac=0
+
+c       =2.99792458e10
+c2      =3.0e10
+pi      =3.1415926535897932
+fourpi  =4*pi
+rsun    =6.96e10
+g0phys  =0.274e5
+g0norm  =0.823
+fn0phys =1e8
+fmp     =1.6726e-24
+boltz   =1.3807e-16
+fkspitz =9.0e-7
+he_rho  =(1.0+4*he_frac)/(1+2*he_frac)
+he_p    =(2.0+3*he_frac)/(1+2*he_frac)
+he_np   =1.0/(1+2*he_frac)
+fnorml  =rsun
+fnormt  =np.sqrt(g0norm*fnorml/g0phys)
+fnormm  =fn0phys*fmp*np.power(fnorml,3)
+fn_n    =fn0phys
+fn_rho  =fmp*fn0phys
+fn_t    =fmp*fnorml*fnorml/(boltz*fnormt*fnormt)
+fn_v    =fnorml/fnormt
+fn_p    =fmp*fn0phys*np.power(fnorml/fnormt,2)
+fn_qrad =fmp*np.power(fnorml,2)/(fn0phys*np.power(fnormt,3))
+fn_kappa=boltz*fn0phys*np.power(fnorml,2)/fnormt
+fn_q0   =fnormm/np.power(fnormt,3)
+fn_heat =fn_q0/fnorml
+fn_jb   =fn_p/fnorml
+k       =fn_rho*np.power(fnorml,5)/np.power(fnormt,2)
+fn_b    =np.sqrt(fourpi*fn_rho)*fnorml/fnormt
+fn_bnt  =np.multiply(fn_b,1e5)
+fn_j    =(c/fourpi)*fn_b/fnorml
+fn_e    =fn_b*fnorml/(fnormt*c)
+fn_nu   =fn_b*fnorml/np.sqrt(fourpi*fn_rho)
+w       =np.power(fn_b,2)*np.power(fnorml,3)/(fourpi)
+fn_eta  =fnorml*fnorml*fourpi/(fnormt*c*c)
+omega_mas = 0.004144
+#print(fn_eta)
+#print(fnorml*fnorml*fourpi/(fnormt*c2*c2))
+#fn_eta  =fn_e/fn_j
+#print(fn_eta)
+
+print(' ')
+print('-------------------- MAS CONSTANTS AND NORMALIZATIONS --------------------')
+print(' ')
+print('%37s %20s %15s' % ('Parameter','Value','Code Var Name'))
+print('--------------------------------------------------------------------------')
+print('NORMALIZATIONS')
+print('X_cgs = normalization*X_mas')
+print(' ')
+print(format_str_e % ('Length (cm)',fnorml,'fnorml'))
+print(format_str_f % ('Time (s)',fnormt,'fnormt'))
+print(format_str_e % ('Velocity (cm/s)',fn_v,'fn_v'))
+print(format_str_f % ('Velocity (km/s)',1e-5*fn_v,'1e-5*fn_v'))
+print(format_str_e % ('Mass (g)',fnormm,'fnormm'))
+print(format_str_e % ('Density [rho] (g/cm^3)',fn_rho,'fn_rho'))
+print(format_str_e % ('Number Density (cm^-3)',fn_n,'fn_n'))
+print(format_str_e % ('Temperature (K)',fn_t,'fn_t'))
+print(format_str_f % ('Pressure (erg/cm^3)',fn_p,'fn_p'))
+print(format_str_f % ('Magnetic Field [B] (Gauss)',fn_b,'fn_b'))
+print(format_str_f % ('Magnetic Field [B] (   nT)',fn_bnt,'fn_bnt'))
+print(format_str_f % ('Current Density [J] (statamp/cm^2)',fn_j,'N/A'))
+print(format_str_f % ('Electric Field [E] (statvolt/cm)',fn_e,'N/A'))
+print(format_str_e % ('Radiative Loss (erg cm^3/s)',fn_qrad,'fn_qrad'))
+print(format_str_e % ('Thermal Conductivity (erg/cm/s/K)',fn_kappa,'fn_kappa'))
+print(format_str_e % ('Surface Heat Flux (erg/cm^2/s)',fn_q0,'fn_q0'))
+print(format_str_e % ('Volumetric Heating Rate (erg/cm^3/s)',fn_heat,'N/A'))
+print(format_str_e % ('Magnetic Energy (erg)',w,'N/A'))
+print(format_str_e % ('Kinetic Energy (erg)',k,'N/A'))
+print(format_str_e % ('Pressure Gradient [(1/c)JxB] (dynes/cm^3)',fn_jb,'N/A'))
+#print(format_str_f % ('Resistivity [eta] (s)',0.0467796,'N/A'))
+print(format_str_f % ('Resistivity [eta] (s)',fn_eta,'N/A'))
+print(format_str_e % ('Kinematic Viscosity [nu] (cm^2/s)',fn_nu,'N/A'))
+print(' ')
+print('CONSTANTS')
+print(' ')
+print(format_str_e % ('Pi',pi,'N/A'))
+print(format_str_e % ('Speed of Light (cm/s)',c,'N/A'))
+print(format_str_e % ('Solar Radius (cm)',rsun,'rsun'))
+print(format_str_e % ('Proton Mass (g)',fmp,'fmp'))
+print(format_str_e % ('Boltzman''s Constant (erg/K)',boltz,'boltz'))
+print(format_str_e % ('Spitzer''s Coefficient',fkspitz,'fkspitz'))
+print(format_str_f % ('Solar Gravity at Rsun (cm/s^2)',g0phys,'g0phys'))
+print(format_str_f % ('Solar rotation rate (Omega) in MAS units',omega_mas,'N/A'))
+
+
