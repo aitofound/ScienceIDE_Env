@@ -34,12 +34,13 @@ calibration uses the same pinned source rebuilt with `OPTFLAG=-O2`.
 
 ## The pass policy
 
-Every column uses `atol=0, rtol=1e-8` (the driver's `%.10e` print quantum),
-except `e^-kappa`, `g`, `g'`, `g''` and `cb2`, which fall to a true zero (the
-first four at early times) or never exceed about `3e-10` (`cb2`, roughly
-`kT/m_p c^2` at recombination): those get a `1e-300` atol in their own groups
-so a legitimately near-zero value is not left ungraded by `rtol` alone,
-without loosening any other column.
+The `z` and `tau` keys use `rtol=1e-8` (the driver's `%.10e` print quantum).
+Every physical column uses `rtol=1e-4` plus a per-column absolute floor that
+covers its late-time tail, where each column falls twenty decades below its
+peak (`x_e` 1e-9, the kappa derivatives 1e-3, `e^-kappa`, `g`, `g'`, `g''`
+1e-7, `Tb` 1e-4, `cb2` 1e-14, the rate column 1e-5). Both are ten times the
+shift the arm64 `-O2` build produced (2.3e-7 relative on `x_e`; the tails in
+absolute terms); the x86 `-O2` build was bit-identical.
 
 ## Evidence
 

@@ -285,6 +285,34 @@ Re-grading every check's final5 nominal-versus-variant outputs with the
 shipped rubrics passes 31 of 31; the per-check bound fractions are in
 `comment/pipeline/self-validation.json` of the final run.
 
+## Second architecture: the arm64 -O2 build moves what the x86 one could not
+
+The x86 record (136.114.2.6 and a 2-cpu GitHub runner, 2026-09-15/16) found the
+`OPTFLAG=-O2` alternative build bit-identical on all 31 checks: on x86-64 without
+`-mfma` the optimiser cannot fuse multiply-adds, so `-O2` changes no arithmetic.
+The record shipped with this revision was made on arm64 (Colima on the curator's
+Mac, Ubuntu 24.04 gcc, 2026-09-16), where gcc contracts multiply-adds at `-O2`
+by default. There the same build moved 28 of the 31 checks, and five failed the
+bounds the x86 floor had left untested:
+
+| what moved | measured arm64 -O2 shift | bound now |
+|---|---|---|
+| CMB spectra of the three precision-file decks (`cl_ref.pre`, `cl_permille.pre`, `pk_ref.pre`) | TT up to 2.2e-5 relative; TE, T-phi, E-phi far above 1e-6 near their zero crossings (absolute shifts 2e-16, 7e-17, 5e-19) | the same per-column scheme as the other four decks: 1e-3 relative plus an absolute floor of about 1e-3 of each column's peak |
+| Planck 2018 deck TT and EE | 3.8e-4 relative on TT above one percent of its peak (7e-14 absolute), 4e-4 of the EE peak | TT floor 1e-12, EE floor 1e-13 on every deck |
+| `test_thermodynamics.c` table | x_e 2.3e-7 relative; kappa derivatives, visibility derivatives, Tb, cb2 and the rate column only in their late-time tails (twenty decades below peak) | 1e-4 relative per column plus per-column absolute floors from the tails |
+| classy wrapper scenarios | lensed BB 8.8e-5 relative (three scenarios); every other array under 1e-6 | 1e-5 relative, lensed BB 1e-3 |
+| `one_k.py`, `one_time.py` transfer functions | a third of the 1e-3 bound, as the 1e-9 variant also was | 1e-2 relative plus 1e-2 of scale |
+| `test_harmonic.c`, `test_fourier.c` | 1.9e-6 and 1.2e-5 relative | 1e-4 relative |
+
+Every bound is ten times, decade-rounded, the larger of the variant spread and
+this floor; every rubric's `warrant` ends with the number for its check. The
+mechanism is the one the variant calibration already named: CLASS's conformal
+time and wavenumber sampling is adaptive (`source/perturbations.c`, an
+accumulating floating-point loop), so any rounding change moves grid decisions
+discretely, and the oscillating spectra amplify that near their zero crossings.
+A port on any target meets the same floor. Three checks did not move at all
+(`test_background.c`, `distances.py`, `test_hmcode.py`) and remain unmeasured.
+
 ## Why example-cl-ref is the expensive path, and memory_gb 4 to 8
 
 `cl_ref.pre` was first measured natively at 52 s wall / 886 CPU-seconds on

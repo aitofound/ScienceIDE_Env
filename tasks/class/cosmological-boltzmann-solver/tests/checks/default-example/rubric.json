@@ -12,7 +12,7 @@
   "altbuild": "same pinned source with OPTFLAG=-O2; a legitimate alternative optimization build of the same source and input.",
   "comparison": {
     "atol": 0.0,
-    "rtol": 1e-06,
+    "rtol": 0.001,
     "files": [
       {
         "path": "cl.txt",
@@ -32,7 +32,7 @@
             "columns": [
               1
             ],
-            "atol": 0.0,
+            "atol": 1e-12,
             "rtol": 0.001
           },
           {
@@ -40,7 +40,7 @@
             "columns": [
               2
             ],
-            "atol": 1e-14,
+            "atol": 1e-13,
             "rtol": 0.001
           },
           {
@@ -103,7 +103,7 @@
             "columns": [
               1
             ],
-            "atol": 0.0,
+            "atol": 1e-12,
             "rtol": 0.001
           },
           {
@@ -111,7 +111,7 @@
             "columns": [
               2
             ],
-            "atol": 1e-14,
+            "atol": 1e-13,
             "rtol": 0.001
           },
           {
@@ -180,24 +180,24 @@
         ]
       }
     ],
-    "rule": "pointwise on the three physical output files of the default.ini run (cl.txt, cl_lensed.txt, pk.txt): every value, including the l and k columns, is graded |candidate - reference| <= 1e-6 x |reference| (atol 0); nothing excluded."
+    "rule": "pointwise on every physical output file of the run (cl.txt, cl_lensed.txt, pk.txt): the l and k keys exactly (k at 1e-4 relative); every spectrum column |candidate - reference| <= atol_col + 1e-3 x |reference| with a per-column absolute floor of about 1e-3 of the column's peak (TT 1e-12, EE 1e-13, TE 2e-13, BB 0, T-phi 5e-15, E-phi 1e-15), the lensing potential phi-phi at 1e-2 relative, and P(k) at 1e-3 relative; nothing excluded. The absolute floors are ten times, decade-rounded, the largest shift the arm64 -O2 build produced in that column near its zero crossings (measured 2026-09-16); the x86 -O2 build was bit-identical."
   },
   "evidence": {
-    "floor": 0.0,
-    "floor_how": "measured by selfcheck on 2026-09-16: run.sh altbuild (same pinned source with OPTFLAG=-O2) against run.sh nominal, graded with the check's own validate.py: bit-identical output",
-    "self_validation_spread": 0.07838694000020041,
-    "self_validation_bound_fraction": 0.3774751150730309,
+    "floor": 0.09867985999881057,
+    "floor_how": "measured by selfcheck on 2026-09-16: run.sh altbuild (same pinned source with OPTFLAG=-O2) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
+    "self_validation_spread": 0.16586095000093337,
+    "self_validation_bound_fraction": 0.033527848021621974,
     "altbuild": {
       "what": "same pinned source with OPTFLAG=-O2",
-      "distance": 0.0,
-      "bound_fraction": 0.0,
-      "identical": true,
+      "distance": 0.09867985999881057,
+      "bound_fraction": 0.03472938152380882,
+      "identical": false,
       "graded_identical": false,
       "passed": true,
       "reason": "all graded values within bound",
-      "at": "2026-09-16T04:42:19Z"
+      "at": "2026-09-16T10:33:26Z"
     },
-    "floor_bound_fraction": 0.0
+    "floor_bound_fraction": 0.03472938152380882
   },
-  "warrant": "default.ini is an official upstream example deck (the stock LambdaCDM default deck (Planck-like fiducial parameters, halofit off)); the module's own excluded note records that the four upstream .ini decks are not vendored under code/class/ at this pin, so this check ships a byte-identical copy under ic/, the same pattern explanatory-end-to-end and thermodynamics already use for their own deck inputs. Every physical output file the deck writes is graded: the unlensed and lensed CMB spectra (all seven physical columns: TT, EE, TE, BB, phiphi, Tphi, Ephi) at an exact integer multipole key, and the matter power spectrum (and, where halofit runs, the baryon+CDM-only and non-linear variants) at a wavenumber key, all at atol=0, rtol=1e-6, tracking the driver's own high-precision print format. A wrong transfer projection, harmonic normalization, lensing convolution or non-linear correction anywhere in the pipeline will move at least one graded column beyond its bound on this independent, differently-parameterized cosmology from the C-driver test decks. The live omega_cdm variant (1e-9 relative, an active input this deck controls) moves every graded output file, unlike the identical variants the other checks in this leaf use because their upstream test drivers fix every input internally. The same-input -O2 build supplies the numerical-floor evidence.\n\nRevised after the class-rev728-final3 calibration run: CLASS's perturbation and Fourier k/tau sampling is adaptive (perturbations.c:1887-1951 accumulates conformal time in a floating-point loop terminated by a floating-point comparison); measured on the x86 worker's live omega_cdm (1e-9 relative) variant, this discretizes the auto-spectra (TT, EE, PP, and the matter power spectrum) at the few-times-1e-4-relative level and moves the cross-spectra (TE, TP, EP) -- which legitimately cross zero -- by amounts that blow up under a pure relative bound near their zero-crossings. rtol=1e-3 tracks the measured auto-spectra floor with room to spare (measured worst 3.9e-4 TT, 1.6e-3 EE, 8.1e-4 PP across the three deck checks); the small per-column atol on ee/te/tp/ep absorbs the zero-crossing floor (measured worst needed atol 6.97e-16/9.61e-15/2.35e-16/4.25e-17 respectively across the three deck checks, each with roughly 10-20x margin here) without loosening the bound anywhere the reference is not near zero. Bound calibration (x86 worker, run class-rev728-final5, 2026-09-15): against the live 1e-9 omega_cdm variant the unlensed TT column moved by up to 3.8e-4 relative and the lensed BB column used 0.86 of its former rtol 1e-4, because CLASS's adaptive time, wavenumber and multipole sampling react discretely to the nudge; every spectrum and P(k) column is therefore graded at rtol 1e-3, which leaves about 2.6x over the measured TT floor (the smallest headroom in this leaf, reported to the curator) and 10x or more on every other column. The lensing-potential column (pp) is graded at rtol 1e-2: it moved by up to 8.1e-4 relative under the same nudge (CLASS's default precision resolves the high-multipole lensing potential only to percent level), which leaves about 12x there."
+  "warrant": "default.ini is an official upstream example deck (the stock LambdaCDM default deck (Planck-like fiducial parameters, halofit off)); the module's own excluded note records that the four upstream .ini decks are not vendored under code/class/ at this pin, so this check ships a byte-identical copy under ic/, the same pattern explanatory-end-to-end and thermodynamics already use for their own deck inputs. Every physical output file the deck writes is graded: the unlensed and lensed CMB spectra (all seven physical columns: TT, EE, TE, BB, phiphi, Tphi, Ephi) at an exact integer multipole key, and the matter power spectrum (and, where halofit runs, the baryon+CDM-only and non-linear variants) at a wavenumber key, all at atol=0, rtol=1e-6, tracking the driver's own high-precision print format. A wrong transfer projection, harmonic normalization, lensing convolution or non-linear correction anywhere in the pipeline will move at least one graded column beyond its bound on this independent, differently-parameterized cosmology from the C-driver test decks. The live omega_cdm variant (1e-9 relative, an active input this deck controls) moves every graded output file, unlike the identical variants the other checks in this leaf use because their upstream test drivers fix every input internally. The same-input -O2 build supplies the numerical-floor evidence.\n\nRevised after the class-rev728-final3 calibration run: CLASS's perturbation and Fourier k/tau sampling is adaptive (perturbations.c:1887-1951 accumulates conformal time in a floating-point loop terminated by a floating-point comparison); measured on the x86 worker's live omega_cdm (1e-9 relative) variant, this discretizes the auto-spectra (TT, EE, PP, and the matter power spectrum) at the few-times-1e-4-relative level and moves the cross-spectra (TE, TP, EP) -- which legitimately cross zero -- by amounts that blow up under a pure relative bound near their zero-crossings. rtol=1e-3 tracks the measured auto-spectra floor with room to spare (measured worst 3.9e-4 TT, 1.6e-3 EE, 8.1e-4 PP across the three deck checks); the small per-column atol on ee/te/tp/ep absorbs the zero-crossing floor (measured worst needed atol 6.97e-16/9.61e-15/2.35e-16/4.25e-17 respectively across the three deck checks, each with roughly 10-20x margin here) without loosening the bound anywhere the reference is not near zero. Bound calibration (x86 worker, run class-rev728-final5, 2026-09-15): against the live 1e-9 omega_cdm variant the unlensed TT column moved by up to 3.8e-4 relative and the lensed BB column used 0.86 of its former rtol 1e-4, because CLASS's adaptive time, wavenumber and multipole sampling react discretely to the nudge; every spectrum and P(k) column is therefore graded at rtol 1e-3, which leaves about 2.6x over the measured TT floor (the smallest headroom in this leaf, reported to the curator) and 10x or more on every other column. The lensing-potential column (pp) is graded at rtol 1e-2: it moved by up to 8.1e-4 relative under the same nudge (CLASS's default precision resolves the high-multipole lensing potential only to percent level), which leaves about 12x there. Second architecture (2026-09-16, arm64, Colima on the curator's Mac, gcc -O2, which contracts multiply-adds where x86-64 without -mfma cannot): the -O2 build moved this check's graded values by up to 4.8e-04 relative on values above one percent of their column's peak (cl_lensed.txt column 3) and by up to 1.6e-05 of the column peak in absolute terms; the x86 -O2 build of the same day was bit-identical. The bound is judged against this floor."
 }

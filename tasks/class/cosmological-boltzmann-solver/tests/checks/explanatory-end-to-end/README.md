@@ -31,7 +31,9 @@ the declared same-input `-O2` altbuild.
 
 The full multipole-resolved CMB spectrum is a physical output of the complete
 CLASS pipeline. Dropping a perturbation source or changing transfer/harmonic
-normalization should exceed the per-spectrum bounds (`atol=1e-12`, `rtol=1e-6`)
+normalization should exceed the per-spectrum bounds (`rtol=1e-6` with a
+per-column absolute floor: TT 2e-13, EE 5e-16, TE 3e-15, phi-phi 1e-14,
+T-phi 7e-16, E-phi 7e-18)
 for at least one non-zero component. The check exposes `SAB_LMAX` as the
 runtime knob while keeping the official default at 2500. A same-input
 alternative optimization build supplies the numerical floor; the validator

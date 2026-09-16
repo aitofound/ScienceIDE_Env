@@ -68,7 +68,7 @@ the same pinned source rebuilt with `OPTFLAG=-O2`.
 
 ## The pass policy
 
-Every `Cl` array is graded at `atol=0, rtol=1e-4` (revised from the
+Every `Cl` array is graded at `atol=0, rtol=0.0001` plus `0.0001 x max|array|` (revised from the
 original atol=0/rtol=1e-6 print-precision guess after the
 class-rev728-final3 calibration run measured 3.09e-5 worst relative error
 under the live variant; rtol=1e-4 leaves about 3x margin), not only the
