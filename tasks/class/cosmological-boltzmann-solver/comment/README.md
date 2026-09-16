@@ -226,7 +226,7 @@ scripts, `generate_Pk_example.py` and the tensor-capable
 `generate_Pk_example_w_tensors.py`, confirmed to run; grades every output
 file from both, live `omega_cdm` variant), and `example-cl-ref`
 (`cl_ref.pre`, the upstream README's most expensive documented precision
-configuration — see "Why the acceleration label moved" below).
+configuration — see "Why example-cl-ref is the expensive path" below).
 
 ## Calibration on the x86 worker
 
@@ -285,7 +285,7 @@ Re-grading every check's final5 nominal-versus-variant outputs with the
 shipped rubrics passes 31 of 31; the per-check bound fractions are in
 `comment/pipeline/self-validation.json` of the final run.
 
-## Why the acceleration label moved, and memory_gb 4 to 8
+## Why example-cl-ref is the expensive path, and memory_gb 4 to 8
 
 `cl_ref.pre` was first measured natively at 52 s wall / 886 CPU-seconds on
 a host whose `class` binary parallelized up to 17x, too optimistic to
@@ -296,8 +296,8 @@ container memory limit was killed (`exit 137`, the container's own cgroup
 OOM killer); a second attempt at 16 GB completed at 505 s wall with a peak
 resident set of 5.33 GB. Both numbers are now on record: 505 s is well
 under the `suite_budget_s` guidance window, so `example-cl-ref` is
-packaged and carries the `acceleration` label (moved off
-`explanatory-end-to-end`, whose own `README.md` explains why: this is the
+packaged as a check (no check carries a timing label since skill 5.17.0:
+what is timed, and on what, is decided downstream with the tasks; this is the
 genuinely expensive path — the perturbation hierarchy and harmonic/
 transfer integration at `cl_ref.pre`'s tightened precision parameters —
 not the default-precision smoke run). `task.toml`'s `resources.memory_gb`

@@ -11,7 +11,7 @@ KNOB_HELP="SAB_LMAX=800  l_max_scalars in the explanatory.ini deck copy (upstrea
   P_k_max_h/Mpc in the same copy (upstream: 1.). pk_ref.pre (the official precision file) stays
   byte-identical to upstream; only the deck's own scalar-multipole and matter-power-spectrum reach are
   dialed down toward this leaf's 60s-per-check cap. run.sh --help on example-cl-ref documents the
-  higher-reach acceleration-label defaults for the sibling precision-file check."
+  higher-reach defaults of the sibling precision-file check (the module's expensive path)."
 ALTBUILD="same pinned source with OPTFLAG=-O2"
 THREADS_HELP='SAB_THREADS=2  thread count exported to OMP/OPENBLAS/MKL for this check'"'"'s Python and BLAS layer; the default is the task'"'"'s declared two cpus per check. CLASS itself is built without OpenMP (upstream Makefile: OMPFLAG = -pthread #-fopenmp), so on a pure-C check this pins the numeric environment rather than scaling the solver'
 if [ "${1:-}" = "--help" ]; then printf '%s\n' "$KNOB_HELP" "$THREADS_HELP"; [ -z "$ALTBUILD" ] || echo "altbuild: $ALTBUILD"; exit 0; fi
