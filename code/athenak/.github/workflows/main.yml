@@ -1,0 +1,97 @@
+name: AthenaK CI/CD
+run-name: ${{ github.actor }} ${{ github.ref_name }}
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+jobs:        
+  lint-job:
+    runs-on: [self-hosted, ias-cluster]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: true
+      - name: Lint python, cplusplus
+        shell: bash
+        run: |
+          source /usr/share/Modules/init/bash
+          module load gcc-toolset/10 anaconda3
+          python3 -m pip install --user flake8 numpy pytest testutils
+          cd ${{ github.workspace }}/tst
+          echo "Running test_suite..."
+          python run_test_suite.py --style
+      - name: Upload combinded lint log
+        uses: actions/upload-artifact@v6
+        with:
+          name:  lint_log.txt
+          path:  ${{ github.workspace }}/tst/test_log.txt
+  
+  regression_cpu-job:
+    needs: [lint-job]
+    runs-on: [self-hosted, ias-cluster]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: true
+      - name: cpu regression test
+        shell: bash
+        run: |
+          source /usr/share/Modules/init/bash
+          module load gcc-toolset/10 anaconda3
+          python -m pip install --user flake8 numpy pytest testutils
+          cd ${{ github.workspace }}/tst
+          echo "Running regression script on CPU..."
+          python run_test_suite.py --cpu
+      - name: Archive log_file_cpu
+        uses: actions/upload-artifact@v6
+        with:
+          name: cpu_test_log.txt
+          path: ${{ github.workspace }}/tst/test_log.txt
+
+  regression_mpi_cpu-job:
+    needs: [lint-job]
+    runs-on: [self-hosted, ias-cluster]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: true
+      - name: mpi cpu regression test
+        shell: bash
+        run: |
+          source /usr/share/Modules/init/bash
+          module load gcc-toolset/10 openmpi/gcc/4.1.0 anaconda3
+          python3 -m pip install --user flake8 numpy pytest testutils
+          cd ${{ github.workspace }}/tst
+          echo "Running regression script on multiple CPUs..."
+          python run_test_suite.py --mpicpu
+      - name: Archive log_file_mpi_cpu
+        uses: actions/upload-artifact@v6
+        with:
+          name: log_file_mpi_cpu.txt
+          path: ${{ github.workspace }}/tst/test_log.txt
+
+  regression_gpu-job:
+    needs: [lint-job]
+    runs-on: [self-hosted, ias-apollo]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: true
+      - name: gpu regression test
+        shell: bash
+        run: |
+          source /usr/share/Modules/init/bash
+          module load gcc-toolset/10 cudatoolkit/11.7 anaconda3
+          python3 -m pip install --user flake8 numpy pytest testutils
+          cd ${{ github.workspace }}/tst
+          export CUDA_VISIBLE_DEVICES=1
+          echo "Running regressions script on GPU..."
+          python run_test_suite.py --gpu "-DKokkos_ARCH_AMPERE80=On -DCMAKE_CXX_COMPILER=${{ github.workspace }}/kokkos/bin/nvcc_wrapper"
+      - name: Archive log_file_gpu
+        uses: actions/upload-artifact@v6
+        with:
+          name: log_file_gpu.txt
+          path: ${{ github.workspace }}/tst/test_log.txt

@@ -1,0 +1,104 @@
+# -*- coding: utf-8 -*-
+"""An N-body integrator package for python."""
+
+import sys
+import os
+import warnings
+import platform
+import importlib.util
+from ctypes import cdll, c_char_p, c_int, c_uint32
+
+# Find suffix
+if platform.system()=="Windows" and sys.version_info.major<=3 and sys.version_info.minor<8:
+    # Using distutils.sysconfig instead of sysconfig because 
+    # of a bug in Python < 3.8 on windows
+    import distutils.sysconfig as sysconfig
+else:
+    import sysconfig
+suffix = sysconfig.get_config_var('EXT_SUFFIX')
+
+if suffix is None:
+    suffix = ".so"
+
+try: # Only needed for pyodide
+    import pyodide_js
+    from site import getsitepackages
+    pyodide_js._module.loadDynamicLibrary(getsitepackages()[0]+"/librebound"+suffix)
+    del getsitepackages
+    del pyodide_js
+except:
+    pass
+
+# Import shared library
+spec = importlib.util.find_spec("librebound")
+if spec and spec.origin:
+    __libpath__ = spec.origin
+    clibrebound = cdll.LoadLibrary(__libpath__)
+else:
+    raise ImportError("librebound not found")
+
+# Version
+__version__ = c_char_p.in_dll(clibrebound, "reb_version_str").value.decode('ascii')
+
+# Build
+__build__ = c_char_p.in_dll(clibrebound, "reb_build_str").value.decode('ascii')
+
+# Githash
+__githash__ = c_char_p.in_dll(clibrebound, "reb_githash_str").value.decode('ascii')
+
+# Check for version
+moduleversion = sys.modules["rebound"].__version__
+libreboundversion = __version__
+if moduleversion != libreboundversion:
+    warnings.warn("WARNING: python module and librebound have different version numbers: '%s' vs '%s'.\n" %(moduleversion, libreboundversion), ImportWarning)
+        
+# Max string size for error messages, field descriptors, etc.
+string_size_max = c_uint32.in_dll(clibrebound, "reb_string_size_max").value
+
+# Exceptions
+class GenericError(Exception):
+    """The simulation exited with a generic error."""
+    pass
+
+class Encounter(Exception):
+    """The simulation exited because a close encounter has been detected.
+    You may want to search for the pair of bodies which have the smallest distance."""
+    pass
+
+class Collision(Exception):
+    """The simulation exited because a collision has been detected.
+    You may want to search for which particles have a last_collision time equal to the simulation time."""
+    pass
+
+class Escape(Exception):
+    """The simulation exited because a particle has been se encounter has been detected.
+    You may want to search for the particle with the largest distance from the
+    origin and remove it from the simulation."""
+    pass
+
+class NoParticles(Exception):
+    """The simulation exited because no particles are left in the simulation."""
+    pass
+
+class ParticleNotFound(Exception):
+    """Particle was not found in the simulation."""
+    pass
+
+# OpenMP
+def omp_set_num_threads(num_threads):
+    clibrebound.reb_omp_set_num_threads(c_int(num_threads))
+
+# Is AVX512 available?
+avx512_available = (clibrebound.reb_avx512_available() == 1)
+        
+# Imports from other files
+from .tools import mod2pi, M_to_f, E_to_f, M_to_E, spherical_to_xyz, xyz_to_spherical
+from .simulation import Simulation, Variation, ODE, Vec3d, Vec3dBasic, CollisionS # CollisionS is the collision struct, not the exception
+from .rotation import Rotation
+from .orbit import Orbit
+from .particle import Particle
+from .plotting import OrbitPlot, OrbitPlotSet
+from .simulationarchive import Simulationarchive
+from .frequency_analysis import frequency_analysis
+
+__all__ = ["__libpath__", "__version__", "__build__", "__githash__", "Simulationarchive", "Simulation", "Orbit", "OrbitPlot", "OrbitPlotSet", "Particle", "GenericError", "Encounter", "Collision", "CollisionS", "Escape", "NoParticles", "ParticleNotFound", "Variation", "clibrebound", "mod2pi", "M_to_f", "E_to_f", "M_to_E", "ODE", "Rotation", "Vec3d", "spherical_to_xyz", "xyz_to_spherical"]

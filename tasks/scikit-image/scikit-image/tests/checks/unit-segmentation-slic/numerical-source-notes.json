@@ -1,0 +1,225 @@
+{
+  "skimage.filters.gaussian": {
+    "implementation": {
+      "file": "src/skimage/_shared/filters.py",
+      "line": 19,
+      "end_line": 136
+    },
+    "description": "Multi-dimensional Gaussian filter.",
+    "calls": [
+      "np.any",
+      "convert_to_float",
+      "image.astype",
+      "ndi.gaussian_filter",
+      "isinstance",
+      "sigma.insert"
+    ],
+    "branches": [
+      {
+        "line": 120,
+        "expression": "np.any(np.asarray(sigma) < 0.0)"
+      },
+      {
+        "line": 122,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 132,
+        "expression": "out is not None and (not np.issubdtype(out.dtype, np.floating))"
+      },
+      {
+        "line": 124,
+        "expression": "not isinstance(sigma, Iterable)"
+      },
+      {
+        "line": 126,
+        "expression": "len(sigma) == image.ndim - 1"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.segmentation.slic": {
+    "implementation": {
+      "file": "src/skimage/segmentation/slic_superpixels.py",
+      "line": 105,
+      "end_line": 449
+    },
+    "description": "Segments image using k-means clustering in Color-(x,y,z) space.",
+    "calls": [
+      "np.ascontiguousarray",
+      "_slic_cython",
+      "np.isinf",
+      "isinstance",
+      "np.insert",
+      "utils.channel_as_last_axis",
+      "img_as_float",
+      "utils._supported_float_type",
+      "image.astype",
+      "image_values.min",
+      "image_values.max",
+      "np.isnan",
+      "np.isscalar",
+      "(sigma > 0).any",
+      "max",
+      "mask.view",
+      "_get_mask_centroids",
+      "_get_grid_centroids",
+      "gaussian",
+      "np.concatenate",
+      "_enforce_label_connectivity_cython",
+      "np.expand_dims",
+      "np.broadcast_to",
+      "rgb2lab",
+      "mask.sum",
+      "math.prod"
+    ],
+    "branches": [
+      {
+        "line": 256,
+        "expression": "image.ndim == 2 and channel_axis is not None"
+      },
+      {
+        "line": 269,
+        "expression": "mask is not None"
+      },
+      {
+        "line": 285,
+        "expression": "np.isnan(imin)"
+      },
+      {
+        "line": 287,
+        "expression": "np.isinf(imin) or np.isinf(imax)"
+      },
+      {
+        "line": 290,
+        "expression": "imax != imin"
+      },
+      {
+        "line": 299,
+        "expression": "image.ndim == 2"
+      },
+      {
+        "line": 311,
+        "expression": "multichannel and (convert2lab or convert2lab is None)"
+      },
+      {
+        "line": 317,
+        "expression": "start_label not in [0, 1]"
+      },
+      {
+        "line": 322,
+        "expression": "use_mask"
+      },
+      {
+        "line": 333,
+        "expression": "spacing is None"
+      },
+      {
+        "line": 363,
+        "expression": "np.isscalar(sigma)"
+      },
+      {
+        "line": 391,
+        "expression": "(sigma > 0).any()"
+      },
+      {
+        "line": 409,
+        "expression": "update_centroids"
+      },
+      {
+        "line": 435,
+        "expression": "enforce_connectivity"
+      },
+      {
+        "line": 446,
+        "expression": "is_2d"
+      },
+      {
+        "line": 272,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 303,
+        "expression": "image.ndim == 3 and multichannel"
+      },
+      {
+        "line": 312,
+        "expression": "image.shape[channel_axis] != 3 and convert2lab"
+      },
+      {
+        "line": 324,
+        "expression": "mask.ndim == 2"
+      },
+      {
+        "line": 326,
+        "expression": "mask.shape != image.shape[:3]"
+      },
+      {
+        "line": 335,
+        "expression": "isinstance(spacing, Iterable)"
+      },
+      {
+        "line": 366,
+        "expression": "isinstance(sigma, Iterable)"
+      },
+      {
+        "line": 436,
+        "expression": "use_mask"
+      },
+      {
+        "line": 307,
+        "expression": "image.ndim == 3 and (not multichannel)"
+      },
+      {
+        "line": 314,
+        "expression": "image.shape[channel_axis] == 3"
+      },
+      {
+        "line": 337,
+        "expression": "is_2d"
+      },
+      {
+        "line": 368,
+        "expression": "is_2d"
+      },
+      {
+        "line": 338,
+        "expression": "spacing.size != 2"
+      },
+      {
+        "line": 354,
+        "expression": "spacing.size != 3"
+      },
+      {
+        "line": 369,
+        "expression": "sigma.size != 2"
+      },
+      {
+        "line": 385,
+        "expression": "sigma.size != 3"
+      },
+      {
+        "line": 339,
+        "expression": "spacing.size == 3"
+      },
+      {
+        "line": 370,
+        "expression": "spacing.size == 3"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 479,
+      "end_line": 505
+    },
+    "description": "Convert an image to floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

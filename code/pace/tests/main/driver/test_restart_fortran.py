@@ -1,0 +1,63 @@
+import numpy as np
+import xarray as xr
+
+from ndsl import (
+    CubedSphereCommunicator,
+    CubedSpherePartitioner,
+    LocalComm,
+    QuantityFactory,
+    SubtileGridSizer,
+    TilePartitioner,
+)
+from ndsl.config import Backend
+from pace import FortranRestartInit, GeneratedGridConfig, NullComm
+from pyshield import PHYSICS_PACKAGES
+from tests.paths import REPO_ROOT
+
+
+def test_state_from_fortran_restart():
+    layout = (1, 1)
+    backend = Backend("st:numpy:cpu:IJK")
+    partitioner = CubedSpherePartitioner(TilePartitioner(layout))
+    # need a local communicator to mock "scatter" for the restart data,
+    # but need null communicator to handle grid initialization
+    local_comm = LocalComm(rank=0, total_ranks=6, buffer_dict={})
+    null_comm = NullComm(rank=0, total_ranks=6)
+    local_communicator = CubedSphereCommunicator(local_comm, partitioner)
+    null_communicator = CubedSphereCommunicator(null_comm, partitioner)
+
+    sizer = SubtileGridSizer.from_tile_params(
+        nx_tile=12,
+        ny_tile=12,
+        nz=63,
+        n_halo=3,
+        layout=layout,
+        tile_partitioner=partitioner.tile,
+        tile_rank=0,
+        backend=backend,
+    )
+
+    quantity_factory = QuantityFactory(sizer=sizer, backend=backend)
+    restart_dir = REPO_ROOT / "tests" / "main" / "data" / "c12_restart"
+
+    (
+        damping_coefficients,
+        driver_grid_data,
+        grid_data,
+    ) = GeneratedGridConfig(
+        restart_path=restart_dir, eta_file=restart_dir / "fv_core.res.nc"
+    ).get_grid(quantity_factory, null_communicator)
+
+    restart_config = FortranRestartInit(path=restart_dir)
+    driver_state = restart_config.get_driver_state(
+        quantity_factory,
+        local_communicator,
+        damping_coefficients=damping_coefficients,
+        driver_grid_data=driver_grid_data,
+        grid_data=grid_data,
+        schemes=[PHYSICS_PACKAGES["GFS_microphysics"]],
+    )
+    ds = xr.open_dataset(restart_dir / "fv_core.res.tile1.nc")
+    np.testing.assert_array_equal(
+        ds["u"].values[0, :].transpose(2, 1, 0), driver_state.dycore_state.u.view[:]
+    )

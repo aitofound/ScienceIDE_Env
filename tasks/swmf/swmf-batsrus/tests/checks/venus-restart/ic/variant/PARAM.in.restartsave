@@ -1,0 +1,124 @@
+#DESCRIPTION
+Param/VENUS/PARAM.in.restartsave		StringDescription
+
+#NORMALIZATION
+SOLARWIND		TypeNormalization
+
+#VERBOSE
+1			lVerbose
+
+#PLANET
+VENUS			NamePlanet
+
+#ROTATION
+F			UseRotation
+
+#GRAVITY
+T			UseGravity
+0			iDirGravity
+
+#INCLUDE
+Param/VENUS/Grid
+
+#GRIDLEVEL
+2			nLevel
+initial			StringShape
+
+! The denisities are overwritten in the Venus ModUser file
+#BODY
+T			UseBody
+1.0231328486450759		rBody
+1.0			rCurrents
+1.0e6			BodyNDim Hp
+1.0e6			BodyNDim CO2p
+1.0e6			BodyNDim O2p
+1.0e6			BodyNDim Op
+300.0			BodyTDim
+
+#TIMEACCURATE
+F			IsTimeAccurate
+
+#TIMESTEPPING
+2			nStage
+0.2			CflExpl
+
+#USERSWITCH
++init +ic +source		StringSwitch
+
+#SAVELOGFILE
+T			DoSaveLogfile
+VAR step		StringLog
+1			DnSaveLogfile
+-1.			DtSaveLogfile
+dt pmin pmax rho p hpflx opflx o2pflx co2pflx		NameLogVars
+3.0 5.0			StringLogRadii
+
+#BOXBOUNDARY
+outflow			TypeBc1
+inflow			TypeBc2
+fixed			TypeBc3
+fixed			TypeBc4
+fixed			TypeBc5
+fixed			TypeBc6
+
+#INNERBOUNDARY
+user			TypeBcBody
+
+#MULTISPECIES
+T			DoReplaceDensity
+5.0			SpeciesPercentCheck
+
+#SOLARWIND
+14.00028			SwNDim [n/cc]    \
+2.703E5			SwTDim [K]          |
+-400.0			SwUxDim [km/s]      |
+0.0			SwUyDim [km/s]      |
+0.0			SwUzDim [km/s]      |
+0.0			SwBxDim [nT]        |
+15.0			SwByDim [nT]        !15 nT parker spiral
+0.0			SwBzDim [nT]       /
+
+#SAVERESTART
+T			DoSaveRestart
+3000			DnSaveRestart
+-1.0			DtSaveRestart
+
+#SAVEPLOT
+5			nPlotFile
+z=0 MHD tec		StringPlot
+1000			DnSavePlot
+-1.0			DtSavePlot
+y=0 MHD tec		StringPlot
+1000			DnSavePlot
+-1.0			DtSavePlot
+x=0 MHD idl		StringPlot
+1000			DnSavePlot
+-1.0			DtSavePlot
+-1.0			DxSavePlot
+y=0 MHD idl		StringPlot
+1000			DnSavePlot
+-1.0			DtSavePlot
+-1.0			DxSavePlot
+z=0 MHD idl		StringPlot
+1000			DnSavePlot
+-1.0			DtSavePlot
+-1.0			DxSavePlot
+
+#SCHEME
+2			nOrder
+Linde			TypeFlux
+mc			TypeLimiter
+1.2			LimiterBeta
+
+#NONCONSERVATIVE
+T			UseNonConservative
+
+#CONSERVATIVECRITERIA
+1			nConservCrit
+r			TypeConservCrit
+6.			rConserv
+
+#STOP
+25			MaxIteration
+-1.0			tSimulationMax
+

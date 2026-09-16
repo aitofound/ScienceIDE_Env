@@ -1,0 +1,71 @@
+{
+  "skimage.feature.CENSURE.detect": {
+    "implementation": {
+      "file": "src/skimage/feature/censure.py",
+      "line": 261,
+      "end_line": 346
+    },
+    "description": "Detect CENSURE keypoints along with the corresponding scale.",
+    "calls": [
+      "_mask_border_keypoints",
+      "np.ascontiguousarray",
+      "_filter_image",
+      "np.nonzero",
+      "np.column_stack",
+      "_prepare_grayscale_input_2D",
+      "minimum_filter",
+      "maximum_filter",
+      "_suppress_lines"
+    ],
+    "branches": [
+      {
+        "line": 320,
+        "expression": "self.mode == 'dob'"
+      },
+      {
+        "line": 327,
+        "expression": "self.mode == 'octagon'"
+      },
+      {
+        "line": 335,
+        "expression": "self.mode == 'star'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.rescale": {
+    "implementation": {
+      "file": "src/skimage/transform/_warps.py",
+      "line": 228,
+      "end_line": 343
+    },
+    "description": "Scale image by a certain factor.",
+    "calls": [
+      "channel_as_last_axis",
+      "np.atleast_1d",
+      "np.maximum",
+      "resize",
+      "np.round",
+      "np.concatenate"
+    ],
+    "branches": [
+      {
+        "line": 321,
+        "expression": "len(scale) > 1"
+      },
+      {
+        "line": 330,
+        "expression": "multichannel"
+      },
+      {
+        "line": 322,
+        "expression": "not multichannel and len(scale) != image.ndim or (multichannel and len(scale) != image.ndim - 1)"
+      },
+      {
+        "line": 326,
+        "expression": "multichannel"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

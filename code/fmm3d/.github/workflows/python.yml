@@ -1,0 +1,107 @@
+name: Python
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+      - 'py_v*'
+
+jobs:
+  build-wheels:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            gcc_version: latest
+          - os: macos-15
+            arch: arm64
+            macos_deployment_target: '11.0'
+          - os: macos-15-intel
+            arch: x86_64
+            macos_deployment_target: '10.15'
+          - os: windows-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: fortran-lang/setup-fortran@v1
+        if: runner.os == 'Linux' || runner.os == 'Windows'
+        with:
+          compiler: gcc
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v3.4.0
+        env:
+          CIBW_BUILD: 'cp310-* cp311-* cp312-* cp313-* cp314-*'
+          CIBW_BUILD_VERBOSITY: 1
+          CIBW_CONFIG_SETTINGS: compile-args=-v
+          CIBW_SKIP: '*-musllinux* *i686 *-win32'
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+          CIBW_BEFORE_ALL_LINUX: dnf install -y gcc-gfortran
+          CIBW_BEFORE_ALL_MACOS: >
+            ARCH=$(uname -m) &&
+            curl -L https://github.com/isuruf/gcc/releases/download/gcc-11.3.0-2/gfortran-darwin-${ARCH}-native.tar.gz -o /tmp/gfortran.tar.gz &&
+            sudo tar -xzf /tmp/gfortran.tar.gz -C /opt &&
+            sudo mkdir -p /usr/local/bin /usr/local/lib &&
+            sudo ln -sf /opt/gfortran-darwin-${ARCH}-native/bin/gfortran /usr/local/bin/gfortran &&
+            sudo ln -sf /opt/gfortran-darwin-${ARCH}-native/lib/libgfortran.5.dylib /usr/local/lib/ &&
+            sudo ln -sf /opt/gfortran-darwin-${ARCH}-native/lib/libgfortran.dylib /usr/local/lib/ &&
+            sudo ln -sf /opt/gfortran-darwin-${ARCH}-native/lib/libquadmath.0.dylib /usr/local/lib/ &&
+            sudo ln -sf /opt/gfortran-darwin-${ARCH}-native/lib/libquadmath.dylib /usr/local/lib/ &&
+            sudo ln -sf /opt/gfortran-darwin-${ARCH}-native/lib/libgcc_s.1.dylib /usr/local/lib/ &&
+            sudo ln -sf /opt/gfortran-darwin-${ARCH}-native/lib/libgcc_s.1.1.dylib /usr/local/lib/
+          CIBW_ARCHS_MACOS: ${{ matrix.arch }}
+          CIBW_ENVIRONMENT_MACOS: >
+            MACOSX_DEPLOYMENT_TARGET=${{ matrix.macos_deployment_target }}
+            SDKROOT=$(xcrun --show-sdk-path)
+            LIBRARY_PATH=$(xcrun --show-sdk-path)/usr/lib
+          CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >
+            delvewheel repair --add-path C:\msys64\mingw64\bin -w {dest_dir} {wheel}
+          CIBW_TEST_REQUIRES: pytest
+          CIBW_TEST_COMMAND: python -m pytest -s {project}/python/test
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}
+          path: wheelhouse/*.whl
+
+  build-sdist:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Install build
+        run: pip install build
+
+      - name: Build sdist
+        run: python -m build --sdist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+
+  publish:
+    needs: [build-wheels, build-sdist]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

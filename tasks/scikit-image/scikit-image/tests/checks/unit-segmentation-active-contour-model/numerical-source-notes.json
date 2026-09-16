@@ -1,0 +1,160 @@
+{
+  "skimage.color.rgb2gray": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 941,
+      "end_line": 984
+    },
+    "description": "Compute luminance of an RGB image.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.gaussian": {
+    "implementation": {
+      "file": "src/skimage/_shared/filters.py",
+      "line": 19,
+      "end_line": 136
+    },
+    "description": "Multi-dimensional Gaussian filter.",
+    "calls": [
+      "np.any",
+      "convert_to_float",
+      "image.astype",
+      "ndi.gaussian_filter",
+      "isinstance",
+      "sigma.insert"
+    ],
+    "branches": [
+      {
+        "line": 120,
+        "expression": "np.any(np.asarray(sigma) < 0.0)"
+      },
+      {
+        "line": 122,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 132,
+        "expression": "out is not None and (not np.issubdtype(out.dtype, np.floating))"
+      },
+      {
+        "line": 124,
+        "expression": "not isinstance(sigma, Iterable)"
+      },
+      {
+        "line": 126,
+        "expression": "len(sigma) == image.ndim - 1"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.segmentation.active_contour": {
+    "implementation": {
+      "file": "src/skimage/segmentation/active_contour_model.py",
+      "line": 9,
+      "end_line": 250
+    },
+    "description": "Active contour model.",
+    "calls": [
+      "np.roll",
+      "sobel",
+      "boundary_condition.startswith",
+      "boundary_condition.endswith",
+      "np.arange",
+      "np.tanh",
+      "intp",
+      "np.abs",
+      "img_as_float",
+      "img.astype",
+      "RectBivariateSpline",
+      "snake_xy[:, 0].astype",
+      "snake_xy[:, 1].astype",
+      "np.eye",
+      "np.linalg.inv",
+      "inv.astype",
+      "np.stack",
+      "intp(x, y, dx=1, grid=False).astype",
+      "intp(x, y, dy=1, grid=False).astype",
+      "np.min",
+      "np.sum",
+      "sum",
+      "np.max",
+      "', '.join"
+    ],
+    "branches": [
+      {
+        "line": 104,
+        "expression": "max_num_iter <= 0"
+      },
+      {
+        "line": 116,
+        "expression": "boundary_condition not in valid_bcs"
+      },
+      {
+        "line": 131,
+        "expression": "w_edge != 0"
+      },
+      {
+        "line": 140,
+        "expression": "RGB"
+      },
+      {
+        "line": 173,
+        "expression": "boundary_condition.startswith('fixed')"
+      },
+      {
+        "line": 179,
+        "expression": "boundary_condition.endswith('fixed')"
+      },
+      {
+        "line": 185,
+        "expression": "boundary_condition.startswith('free')"
+      },
+      {
+        "line": 192,
+        "expression": "boundary_condition.endswith('free')"
+      },
+      {
+        "line": 132,
+        "expression": "RGB"
+      },
+      {
+        "line": 210,
+        "expression": "sfixed"
+      },
+      {
+        "line": 213,
+        "expression": "efixed"
+      },
+      {
+        "line": 216,
+        "expression": "sfree"
+      },
+      {
+        "line": 219,
+        "expression": "efree"
+      },
+      {
+        "line": 228,
+        "expression": "sfixed"
+      },
+      {
+        "line": 231,
+        "expression": "efixed"
+      },
+      {
+        "line": 240,
+        "expression": "j < convergence_order"
+      },
+      {
+        "line": 247,
+        "expression": "dist < convergence"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

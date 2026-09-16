@@ -1,0 +1,152 @@
+import functools
+from collections.abc import Sequence
+
+import ndsl.constants as constants
+
+
+def shift_boundary_slice_tuple(
+    dims: Sequence[str],
+    origin: Sequence[int],
+    extent: Sequence[int],
+    boundary_type: int,
+    slice_tuple: tuple[slice | int, ...],
+) -> tuple[slice | int, ...]:
+    slice_list = []
+    for dim, entry, origin_1d, extent_1d in zip(dims, slice_tuple, origin, extent):
+        slice_list.append(
+            _shift_boundary_slice(dim, origin_1d, extent_1d, boundary_type, entry)
+        )
+    return tuple(slice_list)
+
+
+def bound_default_slice(
+    slice_in: slice,
+    start: int | None = None,
+    stop: int | None = None,
+) -> slice:
+    if slice_in.start is not None:
+        start = slice_in.start
+    if slice_in.stop is not None:
+        stop = slice_in.stop
+    return slice(start, stop, slice_in.step)
+
+
+def _shift_boundary_slice(
+    dim: str, origin: int, extent: int, boundary_type: int, slice_object: slice | int
+) -> slice | int:
+    """_get_boundary_slice for corner views"""
+    start_offset, stop_offset = _get_offset(boundary_type, dim, origin, extent)
+    if isinstance(slice_object, slice):
+        if slice_object.start is not None:
+            start = slice_object.start + start_offset
+        else:
+            start = slice_object.start
+
+        if slice_object.stop is not None:
+            stop = slice_object.stop + stop_offset
+        else:
+            stop = slice_object.stop
+
+        return bound_default_slice(
+            slice(start, stop, slice_object.step), origin, origin + extent
+        )
+
+    # usually an integer
+    return slice_object + start_offset
+
+
+def _get_offset(
+    boundary_type: int, dim: str, origin: int, extent: int
+) -> tuple[int, int]:
+    if boundary_type is constants.INTERIOR:
+        return origin, origin + extent
+
+    boundary_at_start = boundary_at_start_of_dim(boundary_type, dim)
+    if boundary_at_start is None:  # default is to index within compute domain
+        return origin, origin
+
+    if boundary_at_start:
+        return origin, origin
+
+    return origin + extent, origin + extent
+
+
+@functools.lru_cache(maxsize=None)
+def get_boundary_slice(
+    dims: tuple[str, ...],
+    origin: tuple[int, ...],
+    extent: tuple[int, ...],
+    shape: tuple[int, ...],
+    boundary_type: int,
+    n_halo: int,
+    interior: bool,
+) -> tuple[slice, ...]:
+    boundary_slice = []
+    for dim, origin_1d, extent_1d, shape_1d in zip(dims, origin, extent, shape):
+        if dim in constants.INTERFACE_DIMS:
+            n_overlap = 1
+        else:
+            n_overlap = 0
+        n_points = n_halo
+        at_start = boundary_at_start_of_dim(boundary_type, dim)
+        if dim not in constants.HORIZONTAL_DIMS:
+            start, stop = origin_1d, origin_1d + extent_1d
+        elif at_start is None:
+            start, stop = origin_1d, origin_1d + extent_1d
+        elif at_start:
+            edge_index = origin_1d
+            if interior:
+                edge_index += n_overlap
+                start, stop = edge_index, edge_index + n_points
+            else:
+                start, stop = edge_index - n_points, edge_index
+        else:
+            edge_index = origin_1d + extent_1d
+            if interior:
+                edge_index -= n_overlap
+                start, stop = edge_index - n_points, edge_index
+            else:
+                start, stop = edge_index, edge_index + n_points
+        if start < 0:
+            raise IndexError(
+                f"Boundary slice extends past start of domain on dimension {dim}."
+            )
+        elif stop > shape_1d:
+            raise IndexError(
+                f"Boundary slice extends past end of domain on dimension {dim}."
+            )
+        else:
+            boundary_slice.append(slice(start, stop))
+    return tuple(boundary_slice)
+
+
+def boundary_at_start_of_dim(boundary: int, dim: str) -> bool | None:
+    """
+    Return True if boundary is at the start of the dimension,
+    False if at the end, None if the boundary does not align with the dimension.
+    """
+    return BOUNDARY_AT_START_OF_DIM_MAPPING[boundary].get(dim, None)
+
+
+BOUNDARY_AT_START_OF_DIM_MAPPING = {
+    constants.WEST: {constants.I_DIM: True, constants.I_INTERFACE_DIM: True},
+    constants.EAST: {constants.I_DIM: False, constants.I_INTERFACE_DIM: False},
+    constants.SOUTH: {constants.J_DIM: True, constants.J_INTERFACE_DIM: True},
+    constants.NORTH: {constants.J_DIM: False, constants.J_INTERFACE_DIM: False},
+}
+BOUNDARY_AT_START_OF_DIM_MAPPING[constants.NORTHWEST] = {
+    **BOUNDARY_AT_START_OF_DIM_MAPPING[constants.NORTH],
+    **BOUNDARY_AT_START_OF_DIM_MAPPING[constants.WEST],
+}
+BOUNDARY_AT_START_OF_DIM_MAPPING[constants.NORTHEAST] = {
+    **BOUNDARY_AT_START_OF_DIM_MAPPING[constants.NORTH],
+    **BOUNDARY_AT_START_OF_DIM_MAPPING[constants.EAST],
+}
+BOUNDARY_AT_START_OF_DIM_MAPPING[constants.SOUTHWEST] = {
+    **BOUNDARY_AT_START_OF_DIM_MAPPING[constants.SOUTH],
+    **BOUNDARY_AT_START_OF_DIM_MAPPING[constants.WEST],
+}
+BOUNDARY_AT_START_OF_DIM_MAPPING[constants.SOUTHEAST] = {
+    **BOUNDARY_AT_START_OF_DIM_MAPPING[constants.SOUTH],
+    **BOUNDARY_AT_START_OF_DIM_MAPPING[constants.EAST],
+}

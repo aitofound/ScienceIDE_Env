@@ -1,0 +1,152 @@
+{
+  "skimage.segmentation.random_walker": {
+    "implementation": {
+      "file": "src/skimage/segmentation/random_walker_segmentation.py",
+      "line": 316,
+      "end_line": 593
+    },
+    "description": "Random walker algorithm for segmentation from markers.",
+    "calls": [
+      "img_as_float",
+      "np.atleast_3d",
+      "utils.channel_as_last_axis",
+      "_preprocess",
+      "_build_linear_system",
+      "_solve_linear_system",
+      "labels.reshape",
+      "data.astype",
+      "np.copy",
+      "labels.astype",
+      "np.concatenate",
+      "X.min",
+      "X.max",
+      "np.argmax",
+      "np.unique"
+    ],
+    "branches": [
+      {
+        "line": 488,
+        "expression": "mode not in ('cg_mg', 'cg', 'bf', 'cg_j', None)"
+      },
+      {
+        "line": 494,
+        "expression": "data.dtype == np.float16"
+      },
+      {
+        "line": 500,
+        "expression": "spacing is None"
+      },
+      {
+        "line": 520,
+        "expression": "not multichannel"
+      },
+      {
+        "line": 542,
+        "expression": "copy"
+      },
+      {
+        "line": 547,
+        "expression": "isolated_values is None"
+      },
+      {
+        "line": 568,
+        "expression": "X.min() < -prob_tol or X.max() > 1 + prob_tol"
+      },
+      {
+        "line": 583,
+        "expression": "return_full_prob"
+      },
+      {
+        "line": 502,
+        "expression": "len(spacing) == labels.ndim"
+      },
+      {
+        "line": 521,
+        "expression": "data.ndim not in (2, 3)"
+      },
+      {
+        "line": 525,
+        "expression": "data.shape != labels.shape"
+      },
+      {
+        "line": 529,
+        "expression": "data.ndim not in (3, 4)"
+      },
+      {
+        "line": 533,
+        "expression": "data.shape[:-1] != labels.shape"
+      },
+      {
+        "line": 536,
+        "expression": "data.ndim == 3"
+      },
+      {
+        "line": 550,
+        "expression": "return_full_prob"
+      },
+      {
+        "line": 503,
+        "expression": "len(spacing) == 2"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.resize": {
+    "implementation": {
+      "file": "src/skimage/transform/_warps.py",
+      "line": 71,
+      "end_line": 225
+    },
+    "description": "Resize image to match a certain size.",
+    "calls": [
+      "np.any",
+      "_preprocess_resize_output_shape",
+      "np.divide",
+      "_validate_interpolation_order",
+      "_to_ndimage_mode",
+      "ndi.zoom",
+      "_clip_warp_output",
+      "image.astype",
+      "convert_to_float",
+      "ndi.gaussian_filter",
+      "any",
+      "np.maximum",
+      "np.atleast_1d"
+    ],
+    "branches": [
+      {
+        "line": 175,
+        "expression": "input_type == np.float16"
+      },
+      {
+        "line": 178,
+        "expression": "anti_aliasing is None"
+      },
+      {
+        "line": 185,
+        "expression": "input_type == bool and anti_aliasing"
+      },
+      {
+        "line": 190,
+        "expression": "order > 0"
+      },
+      {
+        "line": 195,
+        "expression": "anti_aliasing"
+      },
+      {
+        "line": 196,
+        "expression": "anti_aliasing_sigma is None"
+      },
+      {
+        "line": 202,
+        "expression": "np.any(anti_aliasing_sigma < 0)"
+      },
+      {
+        "line": 207,
+        "expression": "np.any((anti_aliasing_sigma > 0) & (factors <= 1))"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

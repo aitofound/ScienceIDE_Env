@@ -1,0 +1,233 @@
+{
+  "skimage.io.imread": {
+    "implementation": {
+      "file": "src/skimage/io/_io.py",
+      "line": 32,
+      "end_line": 97
+    },
+    "description": "Load an image from file.",
+    "calls": [
+      "hasattr",
+      "np.swapaxes",
+      "deprecate_parameter",
+      "isinstance",
+      "warnings.warn",
+      "str",
+      "fname.lower().endswith",
+      "file_or_url_context",
+      "_hide_plugin_deprecation_warnings",
+      "call_plugin",
+      "fname.resolve",
+      "rgb2gray",
+      "fname.lower",
+      "rgba2rgb"
+    ],
+    "branches": [
+      {
+        "line": 62,
+        "expression": "plugin is DEPRECATED"
+      },
+      {
+        "line": 64,
+        "expression": "plugin_args"
+      },
+      {
+        "line": 74,
+        "expression": "isinstance(fname, pathlib.Path)"
+      },
+      {
+        "line": 77,
+        "expression": "plugin is None and hasattr(fname, 'lower')"
+      },
+      {
+        "line": 84,
+        "expression": "not hasattr(img, 'ndim')"
+      },
+      {
+        "line": 87,
+        "expression": "img.ndim > 2"
+      },
+      {
+        "line": 78,
+        "expression": "fname.lower().endswith(('.tiff', '.tif'))"
+      },
+      {
+        "line": 88,
+        "expression": "img.shape[-1] not in (3, 4) and img.shape[-3] in (3, 4)"
+      },
+      {
+        "line": 92,
+        "expression": "as_gray"
+      },
+      {
+        "line": 93,
+        "expression": "img.shape[2] == 4"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.registration._masked_phase_cross_correlation._masked_phase_cross_correlation": {
+    "implementation": {
+      "file": "src/skimage/registration/_masked_phase_cross_correlation.py",
+      "line": 21,
+      "end_line": 98
+    },
+    "description": "Masked image translation registration by masked normalized",
+    "calls": [
+      "cross_correlate_masked",
+      "np.stack",
+      "np.mean",
+      "reference_mask.astype",
+      "np.nonzero",
+      "xcorr.max"
+    ],
+    "branches": [
+      {
+        "line": 66,
+        "expression": "moving_mask is None"
+      },
+      {
+        "line": 67,
+        "expression": "reference_image.shape != moving_image.shape"
+      },
+      {
+        "line": 76,
+        "expression": "im.shape != mask.shape"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.registration._masked_phase_cross_correlation.cross_correlate_masked": {
+    "implementation": {
+      "file": "src/skimage/registration/_masked_phase_cross_correlation.py",
+      "line": 101,
+      "end_line": 277
+    },
+    "description": "Masked normalized cross-correlation between arrays.",
+    "calls": [
+      "fft",
+      "ifft",
+      "np.square",
+      "partial",
+      "np.fmax",
+      "_centering",
+      "set",
+      "_flip",
+      "np.logical_not",
+      "np.max",
+      "fixed_image.astype",
+      "moving_image.astype",
+      "np.round",
+      "np.sqrt",
+      "np.clip",
+      "np.finfo",
+      "fixed_mask.astype",
+      "rotated_moving_mask.astype",
+      "slice",
+      "next_fast_len",
+      "_ifft",
+      "np.abs"
+    ],
+    "branches": [
+      {
+        "line": 157,
+        "expression": "mode not in {'full', 'same'}"
+      },
+      {
+        "line": 163,
+        "expression": "float_dtype.kind == 'c'"
+      },
+      {
+        "line": 253,
+        "expression": "mode == 'same'"
+      },
+      {
+        "line": 175,
+        "expression": "fixed_image.shape[axis] != moving_image.shape[axis]"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.registration.phase_cross_correlation": {
+    "implementation": {
+      "file": "src/skimage/registration/_phase_cross_correlation.py",
+      "line": 202,
+      "end_line": 420
+    },
+    "description": "Efficient subpixel image translation registration by cross-correlation.",
+    "calls": [
+      "np.sum",
+      "np.real",
+      "ifftn",
+      "space.lower",
+      "target_freq.conj",
+      "np.isnan",
+      "np.abs",
+      "np.unravel_index",
+      "np.stack(maxima).astype",
+      "np.argmax",
+      "np.trunc",
+      "fftn",
+      "np.stack",
+      "src_freq.conj",
+      "_masked_phase_cross_correlation",
+      "np.maximum",
+      "np.ceil",
+      "_upsampled_dft(image_product.conj(), upsampled_region_size, upsample_factor, sample_region_offset).conj",
+      "_disambiguate_shift",
+      "_compute_error",
+      "_compute_phasediff",
+      "np.finfo",
+      "np.round",
+      "_upsampled_dft",
+      "image_product.conj"
+    ],
+    "branches": [
+      {
+        "line": 319,
+        "expression": "reference_mask is not None or moving_mask is not None"
+      },
+      {
+        "line": 326,
+        "expression": "reference_image.shape != moving_image.shape"
+      },
+      {
+        "line": 330,
+        "expression": "space.lower() == 'fourier'"
+      },
+      {
+        "line": 343,
+        "expression": "normalization == 'phase'"
+      },
+      {
+        "line": 361,
+        "expression": "upsample_factor == 1"
+      },
+      {
+        "line": 403,
+        "expression": "disambiguate"
+      },
+      {
+        "line": 410,
+        "expression": "np.isnan(CCmax) or np.isnan(src_amp) or np.isnan(target_amp)"
+      },
+      {
+        "line": 334,
+        "expression": "space.lower() == 'real'"
+      },
+      {
+        "line": 346,
+        "expression": "normalization is not None"
+      },
+      {
+        "line": 400,
+        "expression": "shape[dim] == 1"
+      },
+      {
+        "line": 404,
+        "expression": "space.lower() != 'real'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

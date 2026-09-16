@@ -1,0 +1,256 @@
+import rebound
+import unittest
+import math
+import warnings
+import ctypes 
+
+class TestIntegratorDoc(unittest.TestCase):
+    def test_field_doc(self):
+        sim = rebound.Simulation()
+        sim.integrator = "whfast"
+        doc = sim.integrator.safe_mode.__doc__
+        lines = len(doc.split("\n"))
+        self.assertGreater(lines, 4)
+
+    def test_integrator_doc(self):
+        """ Make sure documentation is available for each integrator and it renders ok """
+        clibrebound = rebound.clibrebound
+        clibrebound.reb_integrators_registered.restype = ctypes.POINTER(ctypes.c_char_p)
+        res = clibrebound.reb_integrators_registered()
+        i = 0
+        names = []
+        while True:
+            if res[i] == None:
+                break
+            else:
+                names.append(res[i].decode("ascii"))
+            i = i+1
+        clibrebound.reb_free(res)
+        for name in names:
+            with self.subTest(val=name):
+                sim = rebound.Simulation()
+                sim.integrator = name
+                doc = sim.integrator.__doc__
+                self.assertNotEqual(doc, None)
+                lines = len(doc.split("\n"))
+                self.assertGreater(lines, 4)
+
+
+class TestUniqueIntegrator(unittest.TestCase):
+    def test_unique_integrator_names(self):
+        clibrebound = rebound.clibrebound
+        clibrebound.reb_integrators_registered.restype = ctypes.POINTER(ctypes.c_char_p)
+        res = clibrebound.reb_integrators_registered()
+        i = 0
+        names = []
+        while True:
+            if res[i] == None:
+                break
+            else:
+                names.append(res[i].decode("ascii"))
+            i = i+1
+        clibrebound.reb_free(res)
+        self.assertEqual(len(names), len(set(names)))
+
+class TestUniqueEqual(unittest.TestCase):
+    def test_not_equal(self):
+        sim1 = rebound.Simulation()
+        sim1.integrator = "whfast"
+        sim2 = rebound.Simulation()
+        sim2.integrator = "ias15"
+        self.assertNotEqual(sim1.integrator, sim2.integrator)
+    def test_equal(self):
+        sim1 = rebound.Simulation()
+        sim1.integrator = "whfast"
+        sim2 = rebound.Simulation()
+        sim2.integrator = "WHFAST"
+        self.assertEqual(sim1.integrator, sim2.integrator)
+
+
+class TestIntegratorIAS15Timescale(unittest.TestCase):
+    def test_ias15_timescale(self):
+        sim = rebound.Simulation()
+        sim.add(m=1.)
+        sim.add(a=1)
+        tau = sim.ias15_timescale()
+        self.assertAlmostEqual(tau, 1., delta=1e-15)
+    def test_ias15_timescale2(self):
+        sim = rebound.Simulation()
+        sim.add(m=1.)
+        sim.add(P=2.0)
+        tau = sim.ias15_timescale()*math.pi*2.0
+        self.assertAlmostEqual(tau, 2., delta=1e-15)
+
+class TestIntegratorWHFastHyper(unittest.TestCase):
+    def test_whfast_veryhyperbolic(self):
+        sim = rebound.Simulation()
+        sim.add(m=1.)
+        sim.add(m=0.,x=1.,vy=100000.)
+        sim.integrator = "whfast"
+        sim.dt = 1.234567
+        sim.steps(1)
+        y = sim.particles[1].y
+        ys = 1.234567*100000.
+        self.assertAlmostEqual((y-ys)/ys, 0., delta=1e-10)
+    def test_ias_veryhyperbolic(self):
+        sim = rebound.Simulation()
+        sim.add(m=1.)
+        sim.add(m=0.,x=1.,vy=100000.)
+        sim.integrator = "ias15"
+        sim.dt = 1.234567
+        sim.integrate(1.234567)
+        y = sim.particles[1].y
+        ys = 1.234567*100000.
+        self.assertAlmostEqual((y-ys)/ys, 0., delta=1e-10)
+
+class TestIntegrator2(unittest.TestCase):
+    def test_whfast_verylargedt(self):
+        sim = rebound.Simulation()
+        sim.add(m=1.)
+        sim.add(m=1e-3, a=1.)
+        sim.move_to_com()
+        sim.integrator = "whfast"
+        yr = sim.particles[1].P
+        sim.dt = 4.56*yr
+        x0 = sim.particles[1].x
+        with warnings.catch_warnings(record=True) as w: 
+            warnings.simplefilter("always")
+            sim.integrate(1e3*yr)
+            self.assertEqual(1,len(w))
+        x1 = sim.particles[1].x
+        self.assertAlmostEqual(x0, x1, delta=1e-11)
+    
+    def test_whfast_hyperbolic(self):
+        sim = rebound.Simulation()
+        sim.add(m=1.)
+        sim.add(m=1e-3, a=-1.,e=2.5)
+        sim.integrator = "whfast"
+        x0 = sim.energy()
+        yr = -sim.particles[1].P
+        sim.dt = 0.12*yr
+        sim.integrate(1e2*yr)
+        x1 = sim.energy()
+        self.assertAlmostEqual(x0, x1, delta=1e-14)
+    
+    def test_whfast_verylargedt_hyperbolic(self):
+        sim = rebound.Simulation()
+        sim.add(m=1.)
+        sim.add(m=1e-3, a=-1.,e=2.5)
+        sim.integrator = "whfast"
+        x0 = sim.energy()
+        yr = -sim.particles[1].P
+        sim.dt = 4.56*yr
+        sim.integrate(1e3*yr)
+        x1 = sim.energy()
+        self.assertAlmostEqual(x0, x1, delta=1e-14)
+
+
+class TestIntegrator(unittest.TestCase):
+    def setUp(self):
+        self.sim = rebound.Simulation()
+        self.sim.add("outer solar system")
+        self.sim.move_to_com()
+    
+    def tearDown(self):
+        self.sim = None
+    
+    def test_ias15_globaloff(self):
+        self.sim.integrator = "ias15"
+        self.sim.integrator.adaptive_mode = "individual"
+        jupyr = 11.86*2.*math.pi
+        e0 = self.sim.energy()
+        self.assertNotEqual(e0,0.)
+        self.sim.integrate(1e3*jupyr)
+        e1 = self.sim.energy()
+        self.assertLess(math.fabs((e0-e1)/e1),1e-14)
+
+    def test_ias15_small_initial_dt(self):
+        self.sim.integrator = "ias15"
+        jupyr = 11.86*2.*math.pi
+        self.sim.dt = jupyr*1e-7
+        e0 = self.sim.energy()
+        self.assertNotEqual(e0,0.)
+        self.sim.integrate(self.sim.dt*1.001)
+        self.sim.dt = jupyr
+        self.sim.integrate(1e3*jupyr)
+        e1 = self.sim.energy()
+        self.assertLess(math.fabs((e0-e1)/e1),1e-14)
+
+    def test_ias15(self):
+        self.sim.integrator = "ias15"
+        jupyr = 11.86*2.*math.pi
+        e0 = self.sim.energy()
+        self.assertNotEqual(e0,0.)
+        self.sim.integrate(1e3*jupyr)
+        e1 = self.sim.energy()
+        self.assertLess(math.fabs((e0-e1)/e1),1e-14)
+        # Longer tests:
+        #self.sim.integrate(1e4*jupyr)
+        #e1 = self.sim.energy()
+        #self.assertLess(math.fabs((e0-e1)/e1),10**13.5)
+    
+    def test_ias15_compensated(self):
+        self.sim.integrator = "ias15"
+        self.sim.gravity = "compensated"
+        jupyr = 11.86*2.*math.pi
+        e0 = self.sim.energy()
+        self.assertNotEqual(e0,0.)
+        self.sim.integrate(1e3*jupyr)
+        e1 = self.sim.energy()
+        self.assertLess(math.fabs((e0-e1)/e1),1e-14)
+    
+    def test_whfast_largedt(self):
+        self.sim.integrator = "whfast"
+        jupyr = 11.86*2.*math.pi
+        self.sim.dt = 0.123*jupyr
+        e0 = self.sim.energy()
+        self.sim.integrate(1e3*jupyr)
+        self.assertNotEqual(e0,0.)
+        e1 = self.sim.energy()
+        self.assertLess(math.fabs((e0-e1)/e1),1e-4)
+    
+    def test_whfast_smalldt(self):
+        self.sim.integrator = "whfast"
+        jupyr = 11.86*2.*math.pi
+        self.sim.dt = 0.0123*jupyr
+        e0 = self.sim.energy()
+        self.sim.integrate(1e3*jupyr)
+        self.assertNotEqual(e0,0.)
+        e1 = self.sim.energy()
+        self.assertLess(math.fabs((e0-e1)/e1),1e-6)
+    
+    def test_whfast_smalldt_compensated(self):
+        self.sim.integrator = "whfast"
+        self.sim.gravity = "compensated"
+        jupyr = 11.86*2.*math.pi
+        self.sim.dt = 0.0123*jupyr
+        e0 = self.sim.energy()
+        self.sim.integrate(1e3*jupyr)
+        self.assertNotEqual(e0,0.)
+        e1 = self.sim.energy()
+        self.assertLess(math.fabs((e0-e1)/e1),1e-6)
+    
+    def test_whfast_verysmalldt(self):
+        self.sim.integrator = "whfast"
+        jupyr = 11.86*2.*math.pi
+        self.sim.dt = 0.00123*jupyr
+        e0 = self.sim.energy()
+        self.sim.integrate(1e3*jupyr)
+        self.assertNotEqual(e0,0.)
+        e1 = self.sim.energy()
+        self.assertLess(math.fabs((e0-e1)/e1),1e-8)
+    
+    def test_whfast_nosafemode(self):
+        self.sim.integrator = "whfast"
+        self.sim.integrator.safe_mode = 0
+        self.sim.integrator.corrector = 11
+        jupyr = 11.86*2.*math.pi
+        self.sim.dt = 0.0123*jupyr
+        e0 = self.sim.energy()
+        self.sim.integrate(1e3*jupyr)
+        self.assertNotEqual(e0,0.)
+        e1 = self.sim.energy()
+        self.assertLess(math.fabs((e0-e1)/e1),1e-9)
+
+if __name__ == "__main__":
+    unittest.main()

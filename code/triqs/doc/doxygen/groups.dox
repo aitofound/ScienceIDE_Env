@@ -1,0 +1,952 @@
+/**
+ * @defgroup triqs-atom-diag Atomic problem diagonalization
+ * @brief Exact diagonalization of atomic (local) Hamiltonians and their atomic Green's function.
+ *
+ * @details The @ref triqs-atom-diag module performs exact diagonalization of a many-body Hamiltonian \f$ \hat H \f$
+ * acting on the Fock space of a finite set of fermionic single-particle states. The Hilbert space is split into
+ * invariant subspaces of \f$ \hat H \f$, each of which is diagonalized independently:
+ * \f[
+ *   H_B = U_B \, \mathrm{diag}(E_B) \, U^{\dagger}_B \; ,
+ * \f]
+ * where \f$ B \f$ indexes the subspaces, \f$ H_B \f$ is the Hamiltonian restricted to the subspace, \f$ U_B \f$ is the
+ * unitary matrix mapping the Fock basis of the subspace to the eigenbasis of the Hamiltonian, and \f$ E_B \f$ is the
+ * vector of eigenvalues. By convention the global ground-state energy is subtracted at construction, so that the
+ * smallest eigenvalue across all subspaces is zero.
+ *
+ * The invariant subspaces are built either by an auto-partition procedure, by an explicit list of quantum-number
+ * operators, or by a particle-number window, and each block is then diagonalized with the QR algorithm.
+ *
+ * **Notation used throughout the API:**
+ *
+ * - \f$ B,\, B' \f$ : subspace index (parameter `sp_index`),
+ * - \f$ \dim(B) \f$ : dimension of subspace \f$ B \f$, returned by triqs::atom_diag::atom_diag::get_subspace_dim,
+ * - \f$ E_{B,i} \f$ : the \f$ i \f$-th eigenvalue inside subspace \f$ B \f$,
+ * - \f$ N \f$ : dimension of the full Hilbert space.
+ *
+ * **Atomic Green's function.**
+ *
+ * Derived from a solved diagonalization problem, the atomic Green's function is built in the Lehmann (spectral)
+ * representation,
+ * \f[
+ *   G_{ab}(z) = \frac{1}{Z} \sum_{B, B'} \sum_{i=0}^{\dim(B)-1} \sum_{j=0}^{\dim(B')-1} \Bigl( e^{-\beta E_{B,i}} +
+ *   \eta\, e^{-\beta E_{B',j}} \Bigr) \frac{\langle B, i\,|\, \hat c_a \,|\, B', j\rangle \, \langle B', j\,|\,
+ *   \hat c_b^\dagger \,|\, B, i\rangle} {z + E_{B,i} - E_{B',j}} \; ,
+ * \f]
+ * where \f$ \eta = +1 \f$ for fermionic and \f$ \eta = -1 \f$ for bosonic statistics, \f$ Z \f$ is the partition
+ * function, \f$ B, B' \f$ are subspace indices, and \f$ i, j \f$ are eigenstate indices inside the corresponding
+ * subspaces with \f$ 0 \le i < \dim(B) \f$ and \f$ 0 \le j < \dim(B') \f$. The orbital indices \f$ a, b \f$ run over
+ * one Green's-function block and are mapped to fundamental-operator linear indices through the fundamental operator
+ * set. The only non-zero contributions come from \f$ (B, B') \f$ pairs that are connected by the application of a
+ * creation/annihilation operator, i.e. for which the corresponding matrix block is non-zero.
+ *
+ * The poles
+ * \f[
+ *   p = E_{B',j} - E_{B,i}
+ * \f]
+ * and the residues
+ * \f[
+ *   r_p = \bigl(e^{-\beta E_{B,i}} + \eta\, e^{-\beta E_{B',j}}\bigr)
+ *   \langle B, i\,|\, \hat c_a \,|\, B', j\rangle \langle B', j\,|\, \hat c_b^\dagger \,|\, B, i\rangle / Z
+ * \f]
+ * are first stored in the Lehmann data structure, then evaluated on the requested target mesh (imaginary time,
+ * Matsubara, Legendre, or real frequency).
+ *
+ * The solver itself is exposed through triqs::atom_diag::atom_diag (with real- and complex-valued specializations);
+ * a set of free functions builds thermodynamic averages, quantum-number tables and the atomic Green's function on
+ * different meshes from a solved instance.
+ */
+
+/**
+ * @defgroup triqs-detmanip Determinant manipulation
+ * @brief Manipulating determinants efficiently.
+ *
+ * @details The weight of a MC configuration in CTQMC solvers is often given in terms of the determinant of one or
+ * more matrices such that the acceptance probability is a ratio of these determinants. It is therefore important to
+ * be able to efficiently compute these determinants and ratios of determinants.
+ *
+ * Let \f$ F^{(n)} \f$ be the \f$ n \times n \f$ matrix that we are interested in. We assume that the elements of the
+ * matrix can be written as \f$ F^{(n)}_{ij} = f(x_i, y_j) \f$, where \f$ f \f$ is the callable object and \f$ 
+ * \mathbf{x} \f$ and \f$ \mathbf{y} \f$ are vectors of size \f$ n \f$ that contain the arguments for \f$ f \f$ and 
+ * therefore determine the contents of the matrix.
+ *
+ * In the following, we will not work directly with the matrix \f$ F^{(n)} \f$ but with \f$ G^{(n)} \f$ which has its
+ * rows and columns permuted w.r.t. \f$ F^{(n)} \f$, i.e. \f$ F^{(n)} = P^{(n)}_r G^{(n)} P^{(n)}_c \f$. \f$ P^{(n)}_r
+ * \f$ and \f$ P^{(n)}_c \f$ are permutation matrices that permute the rows and columns of \f$ G^{(n)} \f$ to restore
+ * the original matrix. This gives us more flexibility when adding, removing, or modifying rows and columns.
+ *
+ * Suppose we know the matrix \f$ G^{(n)} \f$ and its determinant \f$ \det(G^{(n)}) \f$ and that we want to add \f$ k
+ * \f$ new rows and columns to the matrix. We can write the resulting matrix as
+ * \f[
+ *   G^{(n+k)} = \begin{bmatrix} G^{(n)} & B \\ C & D \end{bmatrix} =
+ *   \begin{bmatrix} [M^{(n)}]^{-1} & B \\ C & D \end{bmatrix} =
+ *   [M^{(n+k)}]^{-1} \; .
+ * \f]
+ * Here, we have introduced the inverse matrix \f$ M^{(n)} = [G^{(n)}]^{-1} \f$ and the matrices \f$ B \f$, \f$ C \f$,
+ * and \f$ D \f$ which are of size \f$ n \times k \f$, \f$ k \times n \f$, and \f$ k \times k \f$, respectively. They
+ * contain the elements of the new rows and columns.
+ *
+ * By making use of the block structure of the matrix (see also <a href="https://en.wikipedia.org/wiki/Block_matrix">
+ * Wikipedia</a>), the inverse matrix takes the form
+ * \f[
+ *   M^{(n+k)} = \begin{bmatrix} M^{(n)} + M^{(n)} B (D - C M^{(n)} B)^{-1} C M^{(n)} & -M^{(n)} B (D - C M^{(n)}
+ *   B)^{-1} \\ -(D - C M^{(n)} B)^{-1} C M^{(n)} & (D - C M^{(n)} B)^{-1} \end{bmatrix} =
+ *   \begin{bmatrix} P & Q \\ R & S \end{bmatrix}  \; ,
+ * \f]
+ * and its determinant can be computed as
+ * \f[
+ *   \det(G^{(n+k)}) = \det(G^{(n)}) \det(D - C M^{(n)} B) = \det(G^{(n)}) \det(S^{-1}) \; .
+ * \f]
+ * Here, \f$ P \f$, \f$ Q \f$, \f$ R \f$, and \f$ S \f$ are matrices of size \f$ n \times n \f$, \f$ n \times k \f$,
+ * \f$ k \times n \f$, and \f$ k \times k \f$, respectively.
+ *
+ * The original matrix \f$ F^{(n)} \f$ and its determinant can be obtained with \f$ F^{(n)} = P^{(n)}_r G^{(n)}
+ * P^{(n)}_c \f$ and \f$ \det(F^{(n)}) = \det(P^{(n)}_r) \det(G^{(n)}) det(P^{(n)}_c) = s^{(n)} \det(G^{(n)}) \f$,
+ * where \f$ s^{(n)} = \det(P^{(n)}_r) det(P^{(n)}_c) = \pm 1 \f$ is a sign associated with the permutation matrices.
+ *
+ * So by keeping track of the inverse matrix \f$ M^{(n)} \f$, the determinant \f$ \det(G^{(n)}) \f$ and two additional
+ * permutation matrices that specify how the rows and columns have been permuted w.r.t. the original matrix, we can
+ * add, remove, or modify (a few) rows and columns fairly efficiently.
+ */
+
+/**
+ * @defgroup triqs-experimental Experimental tools
+ * @brief Experimental tools that are still under development and whose API may change.
+ *
+ * @details They live in the `triqs::experimental` namespace and are organized into two submodules:
+ * 
+ * - @ref triqs-experimental-lattice provides advanced lattice tools.
+ * - @ref triqs-experimental-utility provides numerical helpers.
+ */
+
+/**
+ * @ingroup triqs-experimental
+ * @defgroup triqs-experimental-lattice Lattice tools (experimental)
+ * @brief Fourier polynomials, tight-binding Hamiltonians, superlattices, Wannier90 loaders and Brillouin-zone 
+ * integration.
+ *
+ * @details These tools represent lattice functions \f$ f(\mathbf{k}) = \sum_\mathbf{R} f(\mathbf{R}) e^{2 \pi i
+ * \mathbf{k} \cdot \mathbf{R}} \f$ as Fourier polynomials and build tight-binding Hamiltonians on top of them. They
+ * provide band-structure calculations, folding onto a superlattice, loading of Wannier90 `*_tb.dat` / `*_hr.dat` files, 
+ * and the computation of the non-interacting local Green's function via Brillouin-zone integration.
+ */
+
+/**
+ * @ingroup triqs-experimental
+ * @defgroup triqs-experimental-utility Utilities (experimental)
+ * @brief Adaptive 1D integration, a generic CLEF integrator wrapper and root-finding routines.
+ *
+ * @details These utilities provide the numerical building blocks used by the experimental 
+ * @ref triqs-experimental-lattice tools: an adaptive 13-point Kronrod 1D integrator, a generic wrapper that integrates 
+ * CLEF expressions over a placeholder, and dichotomy/bisection root finding.
+ */
+
+/**
+ * @defgroup triqs-gfs Green's functions
+ * @brief Generic containers for Green's functions, self energies and other important functions in quantum many-body
+ * physics.
+ *
+ * @details The @ref triqs-gfs in the **TRIQS** library are generic containers for functions which are not known
+ * analytically. As the name suggests, they are intended to be used for quantum many-body Green's functions, self
+ * energies or other correlation functions, but they can in principle be used for more general functions.
+ *
+ * The central container is triqs::gfs::gf, a class template parameterised by two ingredients:
+ * - a **mesh** (see @ref triqs-meshes) that fixes the mathematical domain of the function, how it is represented in
+ * memory and how it is evaluated, and
+ * - a **target**, which fixes the value stored at each mesh point: a scalar (triqs::gfs::scalar_valued), a matrix
+ * (triqs::gfs::matrix_valued) or a higher-rank tensor (triqs::gfs::tensor_valued). The target types live in
+ * @ref triqs-gfs-targets.
+ *
+ * Each container comes with non-owning view classes, triqs::gfs::gf_view and triqs::gfs::gf_const_view, that refer to
+ * the data of an existing Green's function without copying it. The generic requirements shared by all of these types
+ * are spelled out as C++20 concepts in @ref triqs-gfs-concepts.
+ *
+ * Many physical problems are naturally block-diagonal (e.g. in spin or orbital sectors). triqs::gfs::block_gf and its
+ * view triqs::gfs::block_gf_view represent a vector of Green's functions sharing a common type, while
+ * triqs::gfs::block2_gf provides the two-index analogue.
+ *
+ * Around these containers the module provides a library of physical operations such as density and high-frequency tail
+ * evaluation (@ref triqs-gfs-functions), HDF5 serialisation (@ref triqs-gfs-io), transforms between representations
+ * such as the Fourier transform and the Padé analytic continuation (@ref triqs-gfs-transforms), and factory functions,
+ * expression templates and other utilities (@ref triqs-gfs-utils).
+ */
+
+/**
+ * @ingroup triqs-gfs
+ * @defgroup triqs-gfs-concepts GF concepts
+ * @brief Concepts that specify the requirements for Green's function types.
+ *
+ * @details The Green's function machinery is generic: any type satisfying the relevant concept can be used with the
+ * algorithms in @ref triqs-gfs. The concepts in this group spell out the minimal interface those types must expose,
+ * most prominently triqs::gfs::MemoryGf, which constrains a type to own a mesh and a compatible data array.
+ */
+
+/**
+ * @ingroup triqs-gfs
+ * @defgroup triqs-gfs-containers GF containers
+ * @brief Green's function container and view types.
+ *
+ * @details This group contains the central Green's function containers and their non-owning views:
+ * - triqs::gfs::gf is the owning container, parameterised by a mesh and a target.
+ * - triqs::gfs::gf_view and triqs::gfs::gf_const_view are mutable and constant views into the data of an existing
+ * Green's function.
+ *
+ * The block-diagonal containers are collected in @ref triqs-gfs-block, and the target value types in
+ * @ref triqs-gfs-targets.
+ */
+
+/**
+ * @ingroup triqs-gfs-containers
+ * @defgroup triqs-gfs-block Block Green's functions
+ * @brief Block-diagonal Green's function containers.
+ *
+ * @details Many physical problems are naturally block-diagonal (e.g. in spin or orbital sectors).
+ * triqs::gfs::block_gf and its view triqs::gfs::block_gf_view represent a vector of Green's functions grouped into
+ * named blocks, while triqs::gfs::block2_gf and triqs::gfs::block2_gf_view provide the two-index analogue. The block
+ * structure of a Green's function is described by triqs::gfs::gf_struct_t.
+ */
+
+/**
+ * @ingroup triqs-gfs-containers
+ * @defgroup triqs-gfs-targets GF targets
+ * @brief Target types that fix the value stored at each mesh point of a Green's function.
+ *
+ * @details A target determines the value stored at each mesh point of a Green's function: a scalar
+ * (triqs::gfs::scalar_valued), a matrix (triqs::gfs::matrix_valued) or a higher-rank tensor
+ * (triqs::gfs::tensor_valued), each available in a real- and a complex-valued variant. This group also contains the
+ * traits that map between a (scalar type, rank) pair and the corresponding target type.
+ */
+
+/**
+ * @ingroup triqs-gfs
+ * @defgroup triqs-gfs-utils GF utilities
+ * @brief Operations and utilities acting on Green's function containers.
+ *
+ * @details This is a parent group collecting the building blocks of the Green's function module, organised by purpose:
+ * construction (@ref triqs-gfs-factories), lazy arithmetic (@ref triqs-gfs-algebra), evaluation and interpolation
+ * (@ref triqs-gfs-evaluation), MPI support (@ref triqs-gfs-mpi), CLEF auto-assignment (@ref triqs-gfs-clef), data
+ * reshaping and slicing (@ref triqs-gfs-reshape), block mapping (@ref triqs-gfs-map) and symmetry reduction
+ * (@ref triqs-gfs-symmetry).
+ * 
+ * General utilities are placed directly in @ref triqs-gfs-utils.
+ */
+
+/**
+ * @ingroup triqs-gfs-utils
+ * @defgroup triqs-gfs-factories GF factories
+ * @brief Factory functions that construct Green's function containers.
+ *
+ * @details Convenience factories that build triqs::gfs::gf, triqs::gfs::block_gf and triqs::gfs::block2_gf objects (and
+ * their views) from meshes, shapes, block structures or existing Green's functions.
+ */
+
+/**
+ * @ingroup triqs-gfs-utils
+ * @defgroup triqs-gfs-algebra GF algebra
+ * @brief Lazy expression templates and arithmetic operations on Green's functions.
+ *
+ * @details Arithmetic on Green's functions is *lazy*: an expression such as `g1 + g2` or `2 * g` does not compute a
+ * new Green's function immediately. Instead it builds a lightweight expression node (triqs::gfs::gf_expr for binary
+ * operations, triqs::gfs::gf_unary_m_expr for the unary minus) that models the `GreenFunction` concept and is only 
+ * evaluated element by element when the expression is assigned to a container or accessed. This fuses chained 
+ * operations and avoids intermediate temporaries.
+ *
+ * The operators are generated by macros, so they do not appear individually in the member list below. The complete set
+ * of supported operations is, with `g`, `g1`, `g2` Green's functions and `s` a scalar (an integer, real or complex
+ * number):
+ *
+ * **Binary operators** (build a lazy triqs::gfs::gf_expr):
+ * - `g1 + g2`, `g1 - g2` — element-wise addition / subtraction of two Green's functions.
+ * - `g1 * g2`, `g1 / g2` — element-wise product / quotient of two Green's functions.
+ * - `s * g`, `g * s` — multiplication by a scalar from either side.
+ * - `s / g`, `g / s` — scalar divided by a Green's function, and Green's function divided by a scalar.
+ * - Note: addition and subtraction with a bare scalar are **not** available as binary expressions (only `*` and `/`
+ *   accept a scalar operand); use the in-place `+=` / `-=` operators below instead.
+ *
+ * **Unary operator:**
+ * - `-g` — negation (builds a lazy triqs::gfs::gf_unary_m_expr).
+ *
+ * **Compound assignment** (in-place, defined for both triqs::gfs::gf and triqs::gfs::gf_view and implemented as
+ * `g = g OP x`):
+ * - `g += x`, `g -= x`, `g *= x`, `g /= x`, where `x` is another Green's function or a scalar.
+ *
+ * **In-place operations with a matrix or scalar:**
+ * - `g += m`, `g -= m` — add / subtract a matrix `m` at every mesh point of a matrix-valued Green's function.
+ * - `g += s`, `g -= s` — for a matrix-valued Green's function, add / subtract `s` times the identity matrix at every
+ *   mesh point; for a scalar-valued Green's function, add / subtract the scalar `s` directly.
+ *
+ * **Compatibility rules** enforced when combining two Green's functions:
+ * - The meshes must be identical, otherwise a `triqs::runtime_error` is thrown; the data and target shapes must match
+ *   as well (a scalar operand adopts the shape of the other operand).
+ * - For products and quotients on an imaginary-time mesh (triqs::mesh::imtime, triqs::mesh::dlr_imtime) the particle
+ *   statistics of the result is the parity sum of the operand statistics (e.g. fermion \f$ \times \f$ fermion
+ *   \f$ \to \f$ boson).
+ * - On a product mesh (triqs::mesh::prod) the rules are applied component by component.
+ *
+ * Block Green's functions (triqs::gfs::block_gf) support the analogous set of arithmetic operations, applied
+ * block by block.
+ */
+
+/**
+ * @ingroup triqs-gfs-utils
+ * @defgroup triqs-gfs-evaluation GF evaluation
+ * @brief Evaluation, interpolation and mesh/target introspection of Green's functions.
+ *
+ * @details Tools to evaluate a Green's function at arbitrary points using the interpolation scheme of its mesh
+ * (triqs::gfs::gf_evaluator, triqs::gfs::default_evaluator) and to introspect its mesh and target
+ * (triqs::gfs::get_mesh, triqs::gfs::target_value_t).
+ */
+
+/**
+ * @ingroup triqs-gfs-utils
+ * @defgroup triqs-gfs-mpi GF MPI support
+ * @brief MPI broadcast and reduction of Green's functions.
+ *
+ * @details MPI-aware operations for the Green's function containers: triqs::gfs::mpi_broadcast and
+ * triqs::gfs::mpi_reduce (with the in-place variant triqs::gfs::mpi_reduce_into), for both single and block Green's
+ * functions.
+ */
+
+/**
+ * @ingroup triqs-gfs-utils
+ * @defgroup triqs-gfs-clef CLEF auto-assignment
+ * @brief CLEF integration enabling the `g(w_) << expr` assignment syntax.
+ *
+ * @details Hooks that let a Green's function be filled by a lazy CLEF expression, e.g. `g(w_) << 1 / (w_ - eps)`, by
+ * evaluating the expression at every mesh point.
+ */
+
+/**
+ * @ingroup triqs-gfs-utils
+ * @defgroup triqs-gfs-reshape GF reshaping and slicing
+ * @brief Reshape, flatten and slice the data of a Green's function.
+ *
+ * @details Utilities that reinterpret the data of a Green's function: flattening the target into a two-dimensional
+ * form (triqs::gfs::flatten_gf_2d), slicing the target space, transposing, and forming restricted or reinterpreted
+ * views.
+ */
+
+/**
+ * @ingroup triqs-gfs-utils
+ * @defgroup triqs-gfs-map GF block mapping
+ * @brief Apply a function block-by-block on block Green's functions.
+ *
+ * @details Helpers that lift a function acting on a single Green's function to a function acting on each block of a
+ * block Green's function (triqs::gfs::map_block_gf).
+ */
+
+/**
+ * @ingroup triqs-gfs-utils
+ * @defgroup triqs-gfs-symmetry GF symmetries
+ * @brief Symmetry-reduced representation of Green's functions.
+ *
+ * @details Tools to exploit symmetries of a Green's function by storing and reconstructing only a symmetry-reduced set
+ * of data points.
+ */
+
+/**
+ * @ingroup triqs-gfs
+ * @defgroup triqs-gfs-io GF input/output
+ * @brief HDF5 serialisation of Green's functions.
+ *
+ * @details This group provides the HDF5 read and write support for the Green's function containers, so that they can
+ * be stored to and restored from disk.
+ */
+
+/**
+ * @ingroup triqs-gfs
+ * @defgroup triqs-gfs-functions GF functions
+ * @brief Physical operations acting on Green's functions.
+ *
+ * @details This is a parent group for operations frequently applied to Green's functions: computing the particle
+ * density (@ref triqs-gfs-density), fitting and manipulating high-frequency tails (@ref triqs-gfs-tailfitting),
+ * checking reality and hermiticity (@ref triqs-gfs-reality) and converting between basis representations
+ * (@ref triqs-gfs-basis).
+ */
+
+/**
+ * @ingroup triqs-gfs-functions
+ * @defgroup triqs-gfs-density GF density
+ * @brief Computation of the particle density from a Green's function.
+ */
+
+/**
+ * @ingroup triqs-gfs-functions
+ * @defgroup triqs-gfs-tailfitting GF tail fitting
+ * @brief Fitting and manipulation of the high-frequency tail of a Green's function.
+ *
+ * @details Tools to extract the high-frequency moments of a Green's function (triqs::gfs::fit_tail,
+ * triqs::gfs::fit_hermitian_tail) and to construct or substitute tails.
+ */
+
+/**
+ * @ingroup triqs-gfs-functions
+ * @defgroup triqs-gfs-reality GF reality and hermiticity
+ * @brief Reality and hermiticity checks and operations on Green's functions.
+ *
+ * @details Predicates such as triqs::gfs::is_gf_real and triqs::gfs::is_gf_hermitian, together with related
+ * operations such as complex conjugation.
+ */
+
+/**
+ * @ingroup triqs-gfs-functions
+ * @defgroup triqs-gfs-basis GF basis conversions
+ * @brief Conversions between basis representations of a Green's function.
+ *
+ * @details Conversions to and from compact basis representations such as Legendre polynomials and the discrete
+ * Lehmann representation (DLR).
+ */
+
+/**
+ * @ingroup triqs-gfs
+ * @defgroup triqs-gfs-transforms GF transforms
+ * @brief Transforms between different Green's function representations.
+ *
+ * @details This is a parent group for the transforms that map a Green's function from one representation to another:
+ * the Fourier transform (@ref triqs-gfs-fourier), the Legendre/Matsubara transform (@ref triqs-gfs-legendre-matsubara)
+ * and the Padé analytic continuation (@ref triqs-gfs-pade).
+ */
+
+/**
+ * @ingroup triqs-gfs-transforms
+ * @defgroup triqs-gfs-fourier GF Fourier transform
+ * @brief Fourier transform between time and frequency representations.
+ *
+ * @details The Fourier transform between imaginary time and Matsubara frequency and between real time and real
+ * frequency, as well as the lattice Fourier transform.
+ */
+
+/**
+ * @ingroup triqs-gfs-transforms
+ * @defgroup triqs-gfs-legendre-matsubara GF Legendre-Matsubara transform
+ * @brief Transform between the Legendre and Matsubara representations.
+ */
+
+/**
+ * @ingroup triqs-gfs-transforms
+ * @defgroup triqs-gfs-pade GF Padé continuation
+ * @brief Padé analytic continuation from Matsubara to real frequencies.
+ */
+
+/**
+ * @defgroup triqs-hilbert Hilbert space
+ * @brief Fock state representations and Hilbert space tools for many-body systems.
+ *
+ * @details In the following, we introduce some basic concepts and notations used throughout the documentation.
+ *
+ * Let us start by considering a single particle Hilbert space \f$ \mathcal{H}_1 \f$ of finite dimension \f$ N \f$ with
+ * a complete set of eigenstates \f$ \{ \lvert \alpha_i \rangle \}_{i=0}^{N-1} \f$.
+ *
+ * We can construct the associated Fock space \f$ \mathcal{F} \f$ as the Hilbert space spanned by all possible
+ * occupation number configurations of the single particle states. Since we are only considering fermions, each single
+ * particle state \f$ \lvert \alpha_i \rangle \f$ can either be empty or singly occupied, i.e. \f$ n_{\alpha_i} \in
+ * \{0, 1\} \f$, which implies that \f$ \dim(\mathcal{F}) = 2^N \f$.
+ *
+ * The occupation number basis states of the Fock space are therefore given by
+ * \f[
+ *   \lvert n_{\alpha_0}, n_{\alpha_1}, \dots, n_{\alpha_{N-1}} \rangle = \prod_{i=0}^{N-1} (c_{\alpha_i}^\dagger)^{n_{
+ *   \alpha_i}} \lvert 0 \rangle \; ,
+ * \f]
+ * where \f$ c_{\alpha_i}^\dagger \f$ is the fermionic creation operator such that \f$ \lvert \alpha_i \rangle =
+ * c_{\alpha_i}^\dagger \lvert 0 \rangle \f$, and \f$ \lvert 0 \rangle \f$ is the vacuum state with no particles.
+ *
+ * If we restrict ourselves to \f$ N < 64 \f$, we can 1-to-1 map each occupation number basis state \f$ \lvert
+ * n_{\alpha_0}, n_{\alpha_1}, \dots, n_{\alpha_{N-1}} \rangle \f$ to a single 64-bit integer
+ * \f[
+ *   f(n_{\alpha_0}, n_{\alpha_1}, \dots, n_{\alpha_{N-1}}) = \sum_{i=0}^{N-1} n_{\alpha_i} 2^i \; ,
+ * \f]
+ * where the \f$ i \f$-th bit of \f$ f \f$ is set if and only if the single particle state \f$ \lvert \alpha_i \rangle
+ * \f$ is occupied.
+ */
+
+/**
+ * @defgroup triqs-lattice Lattice tools
+ * @brief Tools for working with Bravais lattices, Brillouin zones and tight-binding Hamiltonians.
+ *
+ * @details The lattice tools provide classes to describe crystal lattices in real and reciprocal space, and to build
+ * tight-binding Hamiltonians on top of them. The main classes are:
+ * - triqs::lattice::bravais_lattice: A Bravais lattice in 1, 2 or 3 dimensions, defined by a set of basis vectors and
+ * the positions of (optionally named) atomic orbitals within the unit cell.
+ * - triqs::lattice::brillouin_zone: The first Brillouin zone of a given Bravais lattice, defined by the corresponding
+ * reciprocal-space basis vectors.
+ * - triqs::lattice::tight_binding: A tight-binding Hamiltonian on a Bravais lattice, parameterised by lattice
+ * displacements and the associated hopping (overlap) matrices between orbitals. It provides the Fourier transform to
+ * reciprocal space, dispersion (band-structure) calculations on Brillouin zone meshes and integration with the TRIQS
+ * Green's function framework.
+ * - triqs::lattice::grid_generator: A forward iterator that produces a regular grid of points inside the d-dimensional
+ * unit cube, useful for sampling the Brillouin zone.
+ */
+
+/**
+ * @defgroup triqs-mc MC tools
+ * @brief Tools to implement and perform Monte Carlo simulations.
+ *
+ * @details The @ref triqs-mc module provides a generic framework for writing Markov-chain Monte Carlo simulations. It
+ * does not implement any particular physical algorithm; instead it supplies the scaffolding common to all such
+ * simulations — driving the Markov chain, dispatching user-defined updates, accumulating user-defined observables, and
+ * aggregating results across MPI ranks.
+ *
+ * A simulation is described by three ingredients supplied by the user:
+ * - a **sign type** (real or complex, see triqs::mc_tools::DoubleOrComplex) that encodes the per-configuration weight,
+ * - a set of **moves** that propose updates of the Markov chain and report their Metropolis acceptance ratio (see
+ * @ref triqs-mc-moves and triqs::mc_tools::MCMove),
+ * - a set of **measurements** that accumulate observables along the chain (see @ref triqs-mc-measures and
+ * triqs::mc_tools::MCMeasure).
+ *
+ * These ingredients are plugged into a triqs::mc_tools::mc_generic instance, which manages *warmup* (equilibration,
+ * optional move calibration) and *accumulation* (measurement) phases, organised into cycles of MC steps. The driver is
+ * MPI-aware: random seeds, exception propagation, cycle counters and measurement reduction are all coordinated through
+ * an `mpi::communicator`, so the same simulation code runs serially or in parallel.
+ */
+
+/**
+ * @ingroup triqs-mc
+ * @defgroup triqs-mc-concepts MC concepts
+ * @brief Concepts that specify the requirements for MC moves and measurements.
+ *
+ * @details The MC framework is generic: any user type that satisfies the relevant concept can be plugged into
+ * triqs::mc_tools::mc_generic. The concepts in this group spell out the minimal interface those types must expose:
+ * - triqs::mc_tools::DoubleOrComplex constrains the *sign type* to either `double` or `std::complex<double>`.
+ * - triqs::mc_tools::MCMove requires `attempt()` and `accept()` returning the sign type, with optional `reject()`,
+ * `calibrate()` and `collect_statistics()` hooks for adaptive moves and diagnostics.
+ * - triqs::mc_tools::MCMeasure requires `accumulate(sign)` and `collect_results(mpi::communicator)`, leaving the
+ * storage of partial accumulators entirely to the user.
+ *
+ * Because the framework relies on concepts rather than virtual inheritance, user moves and measurements remain plain,
+ * value-semantic types; the triqs::mc_tools::mc_generic engine wraps them through type erasure internally.
+ */
+
+/**
+ * @ingroup triqs-mc
+ * @defgroup triqs-mc-measures MC measurements
+ * @brief Abstraction for Monte Carlo measurements.
+ *
+ * @details A *measurement* is any object that, given the current sign of the Markov chain, contributes to one or more
+ * running estimators. This group provides the type-erased wrappers used by triqs::mc_tools::mc_generic to store
+ * heterogeneous measurements together:
+ * - triqs::mc_tools::measure wraps a user object satisfying triqs::mc_tools::MCMeasure and bookkeeps the number of
+ * measurements, optional timing and an optional `report()` callback.
+ * - triqs::mc_tools::measure_set is the container of registered measurements; it forwards `accumulate` and
+ * `collect_results` to every measurement it owns.
+ * - triqs::mc_tools::measure_aux holds *auxiliary* callables that are run on every cycle but do not themselves
+ * accumulate an estimator (e.g. live diagnostics or periodic state dumps).
+ *
+ * Final reduction across MPI ranks is delegated to the user code inside `collect_results`, which receives the
+ * communicator.
+ */
+
+/**
+ * @ingroup triqs-mc
+ * @defgroup triqs-mc-moves MC moves
+ * @brief Abstraction for Monte Carlo moves.
+ *
+ * @details A *move* proposes an update of the Markov chain and returns the Metropolis acceptance ratio. The framework
+ * supplies two type-erased containers:
+ * - triqs::mc_tools::move wraps a user object satisfying triqs::mc_tools::MCMove, tracks per-move proposal and
+ * acceptance counters, optional timing, and forwards the optional `reject`, `calibrate` and `collect_statistics` hooks.
+ * - triqs::mc_tools::move_set combines several moves with relative weights and itself satisfies the MCMove concept: on
+ * each step it draws one of its sub-moves with probability proportional to its weight, allowing composite update
+ * schemes to be assembled hierarchically.
+ *
+ * Acceptance ratios and timing statistics are exposed for diagnostics and are aggregated across MPI ranks when results
+ * are collected.
+ */
+
+/**
+ * @ingroup triqs-mc
+ * @defgroup triqs-mc-simulation MC simulation
+ * @brief Run and manage MC simulations.
+ *
+ * @details This group contains triqs::mc_tools::mc_generic, the driver that ties together moves, measurements and the
+ * random generator. A typical lifecycle is:
+ * 1. construct an `mc_generic<S>` with a chosen engine name and seed,
+ * 2. register moves with `add_move`, measurements with `add_measure`, and any auxiliary callables with
+ * `add_measure_aux`,
+ * 3. run `warmup` (equilibrate the chain, optionally calibrate moves), then `accumulate` (perform measurements) — or
+ * the combined `warmup_and_accumulate` / `run`,
+ * 4. call `collect_results` to reduce per-rank estimators across an `mpi::communicator`.
+ *
+ * The driver organises work into *cycles* of MC steps separated by measurement passes, and checks for user-requested
+ * termination and for exceptions on configurable intervals so that ranks can stop in a coordinated way even with
+ * asymmetric workloads.
+ */
+
+/**
+ * @ingroup triqs-mc
+ * @defgroup triqs-mc-utils MC utilities
+ * @brief Various utilities used with @ref triqs-mc.
+ *
+ * @details This group collects auxiliary building blocks used by the MC framework, most prominently the random number
+ * generator:
+ * - triqs::mc_tools::random_generator is a type-erased wrapper around a pseudo-random engine. The engine is selected at
+ * construction by name (`"mt19937"`, several `"lagged_fibonacci..."` variants, `"ranlux3"`, and the built-in Mersenne
+ * Twister); samples are produced in batches into an internal buffer for efficiency. Overloaded `operator()` returns
+ * either a uniform `double` in \f$ [0,1) \f$ or a uniform integer in \f$ \{0, ..., i-1 \} \f$, and the generator state
+ * can be serialised to HDF5 for reproducible restarts.
+ *
+ * The list of available engine names is exposed at runtime via triqs::mc_tools::random_generator_names_list.
+ */
+
+/**
+ * @defgroup triqs-meshes Meshes
+ * @brief Various meshes for @ref triqs-gfs.
+ *
+ * @details Meshes form the basis for the @ref triqs-gfs (GF) containers in the **TRIQS** library. They determine the
+ * mathematical domain of the underlying function, how it is represented, i.e. what is actually stored in memory, and
+ * how it is evaluated.
+ *
+ * Every mesh satisfies the triqs::mesh::Mesh, and optionally the triqs::mesh::MeshWithValues concept. It consists of
+ * \f$ N \f$ mesh points, where \f$ N \f$ is the size of the mesh. The mesh points themselves satisfy the
+ * triqs::mesh::MeshPoint concept and they have two indices associated with it, as well as an optional value:
+ * - The data index \f$ d \f$ is usually an integer \f$ \in \{ 0, \dots, N-1 \} \f$ (except for product meshes, for
+ * which it is a tuple of indices) and simply indexes all mesh points in the mesh. The name refers to the fact that the
+ * GF containers store a certain value/object for each mesh point in an array and the data index \f$ d \f$ is the
+ * position of the value/object in that array.
+ * - For some meshes, it is natural to associate each mesh point with another index \f$ n \f$. The meaning of the index
+ * depends on the mesh type. For example,
+ *   - for a triqs::mesh::imfreq mesh on the imaginary frequency axis, \f$ n \in \mathbb{Z} \f$ denotes the index of the
+ *   Matsubara frequency \f$ i \omega_n \f$.
+ *   - for a 3D triqs::mesh::cyclat mesh with periodic boundary conditions, \f$ n \equiv \mathbf{n} \in \mathbb{Z}^3 \f$
+ *   denotes the index of the lattice point \f$ \mathbf{R}^{\mathbf{n}} \f$.
+ *   - for a triqs::mesh::imtime mesh, the index is simply equal to its data index, i.e. \f$ n = d \f$.
+ * - If a mesh satisfies the triqs::mesh::MeshWithValues concept, each mesh point has an additional value. For example,
+ * the value of the mesh point with index \f$ n \f$
+ *   - of a triqs::mesh::imfreq mesh is the Matsubara frequency \f$ i \omega_n \f$.
+ *   - of a triqs::mesh::cyclat mesh is the lattice vector \f$ \mathbf{R}^{\mathbf{n}} \f$ in the standard basis.
+ *   - of a triqs::mesh::imtime mesh is an imaginary time point \f$ \tau_n \in [0, \beta] \f$.
+ *
+ * To make this more concrete, let us look at a typical example. One of the most important quantities in quantum
+ * many-body physics is the single particle GF \f$ G(\tau) \f$ defined on the imaginary time axis interval \f$ [0,
+ * \beta] \f$. For simplicity, we assume that the GF is real valued such that \f$ G : [0, \beta] \in \mathbb{R} \to
+ * \mathbb{R} \f$. The @ref triqs-gfs containers allow us to represent the same function with different meshes. For
+ * example, we can use
+ * - a triqs::mesh::imtime mesh on the imaginary time axis with \f$ N \f$ mesh points. In this case, the interval
+ * \f$ [0, \beta] \f$ is divided into \f$ N \f$ equally spaced points \f$ \tau_n = n \beta / (N - 1) \f$, where the
+ * imaginary time point \f$ \tau_n \f$ is the value of the mesh point with index \f$ n = d \in \{ 0, \dots, N-1 \} \f$.
+ * For each mesh point, the GF container stores the function value \f$ G(\tau_n) \f$ in an array of size \f$ N \f$. To
+ * evaluate the GF at an arbitrary \f$ \tau \in [0, \beta] \f$ with \f$ \tau_n \leq \tau \leq \tau_{n+1} \f$, the
+ * container uses linear interpolation between the two mesh points \f$ \tau_n \f$ and \f$ \tau_{n+1} \f$.
+ * - a triqs::mesh::legendre mesh with \f$ N \f$ mesh points. In this case, the mesh point with index \f$ n = d \in
+ * \{ 0, \dots, N-1 \} \f$ refers to the Legendre polynomial \f$ P_n(x) \f$ of degree \f$ n \f$ and has no value
+ * associated with it. The GF container stores the coefficients
+ * \f[
+ *   g_n = \sqrt{2n + 1} \int_0^\beta d\tau \, G(\tau) P_n(x(\tau)) \; ,
+ * \f]
+ * where \f$ x(\tau) = 2\tau / \beta - 1 \f$ is a linear map from \f$ [0, \beta] \f$ to \f$ [-1, 1] \f$. To evaluate
+ * the GF at an arbitrary point \f$ \tau \in [0, \beta] \f$, the container uses a truncated series expansion of \f$
+ * G(\tau) \f$ in terms of Legendre polynomials:
+ * \f[
+ *   G(\tau) \approx \sum_{n=0}^{N-1} \frac{\sqrt{2n + 1}}{\beta} g_n P_n(x(\tau)) \; .
+ * \f]
+ */
+
+/**
+ * @ingroup triqs-meshes
+ * @defgroup triqs-meshes-concepts Mesh concepts
+ * @brief Various concepts used with @ref triqs-meshes.
+ */
+
+/**
+ * @ingroup triqs-meshes
+ * @defgroup triqs-meshes-types Mesh types
+ * @brief Different mesh types provided by the **TRIQS** library.
+ */
+
+/**
+ * @ingroup triqs-meshes-types
+ * @defgroup triqs-meshes-func Function space meshes
+ * @brief %Mesh types for function spaces.
+ */
+
+/**
+ * @ingroup triqs-meshes-types
+ * @defgroup triqs-meshes-imag Imaginary time and frequency meshes
+ * @brief %Mesh types for imaginary time and frequency domains.
+ */
+
+/**
+ * @ingroup triqs-meshes-imag
+ * @defgroup triqs-meshes-matsubara Matsubara frequencies
+ * @brief Tools to represent and manipulate Matsubara frequencies.
+ *
+ * @details Arithmetic operations between Matsubara frequencies and scalars are performed using the complex values of
+ * the Matsubara frequencies.
+ */
+
+/**
+ * @ingroup triqs-meshes-types
+ * @defgroup triqs-meshes-lattice Lattice meshes
+ * @brief %Mesh types for Bravais lattices and Brillouin zones.
+ */
+
+/**
+ * @ingroup triqs-meshes-lattice
+ * @defgroup triqs-meshes-kexpr k-vector expressions
+ * @brief Lazy expressions for k-vectors.
+ */
+
+/**
+ * @ingroup triqs-meshes-types
+ * @defgroup triqs-meshes-other Other mesh types
+ * @brief Mesh types used as base classes and rarely used mesh types.
+ */
+
+/**
+ * @ingroup triqs-meshes-types
+ * @defgroup triqs-meshes-prod Product meshes
+ * @brief %Mesh types for products of meshes.
+ */
+
+/**
+ * @ingroup triqs-meshes-types
+ * @defgroup triqs-meshes-real Real time and frequency meshes
+ * @brief %Mesh types for real time and frequency domains.
+ */
+
+/**
+ * @ingroup triqs-meshes
+ * @defgroup triqs-meshes-utils Mesh utilities
+ * @brief Various utilities used with @ref triqs-meshes.
+ */
+
+/**
+ * @ingroup triqs-meshes
+ * @defgroup triqs-meshes-tailfitting Tail fitting tools
+ * @brief Tools to fit the high- and low-frequency tails of functions defined on real or imaginary frequency meshes.
+ */
+
+/**
+ * @defgroup triqs-ops Operators
+ * @brief Tools to construct and manipulate second-quantized many-body operators.
+ *
+ * @details The @ref triqs-ops module provides a symbolic algebra for second-quantized many-body operators acting on the
+ * fermionic Fock space introduced in @ref triqs-hilbert.
+ *
+ * The central type is triqs::operators::many_body_operator (with the real- and complex-valued aliases
+ * triqs::operators::many_body_operator_real and triqs::operators::many_body_operator_complex). A many-body operator
+ * \f$ \hat{O} = \sum_i a_i \hat{m}_i \f$ is a linear combination of monomials \f$ \hat{m}_i \f$ (see
+ * triqs::operators::monomial_t), where each monomial is an ordered product of canonical creation/annihilation
+ * operators (see triqs::operators::canonical_ops_t). The operators form an algebra over the field of real/complex
+ * scalars, with an additional addition operation between operators and scalars.
+ *
+ * Operators are not constructed directly but assembled from the factory functions triqs::operators::c (annihilation),
+ * triqs::operators::c_dag (creation) and triqs::operators::n (number), combined with the usual `+`, `-` and `*`
+ * arithmetic.
+ *
+ * Helper functions include `dagger` (Hermitian conjugation), triqs::operators::real / triqs::operators::imag
+ * (real/imaginary parts of the coefficients), `transform` (apply a callable to each coefficient) and
+ * triqs::operators::is_op_hermitian.
+ *
+ * The module is split into two parts:
+ * - @ref triqs-ops-mbo — the many-body operator algebra itself.
+ * - @ref triqs-ops-extractors — helpers that decompose an operator into coefficient tensors and matrices.
+ */
+
+/**
+ * @ingroup triqs-ops
+ * @defgroup triqs-ops-mbo Many-body operators
+ * @brief The many-body operator algebra in second quantization.
+ *
+ * @details This group contains triqs::operators::many_body_operator_generic and its real- and complex-valued aliases.
+ * An operator is stored as a map from monomials (triqs::operators::monomial_t, an ordered product of
+ * triqs::operators::canonical_ops_t) to scalar coefficients. 
+ * 
+ * In addition the group provides:
+ * 
+ * - the creation/annihilation/number factories triqs::operators::c, triqs::operators::c_dag and triqs::operators::n,
+ * - operator-operator and operator-scalar arithmetic (`+`, `-`, `*`, `/`) implementing the algebra,
+ * - Hermitian conjugation via `dagger` and Hermiticity checks via triqs::operators::is_op_hermitian,
+ * - coefficient manipulation through `transform`, triqs::operators::real and triqs::operators::imag, and
+ * - HDF5 serialization of operators together with a fundamental operator set.
+ */
+
+/**
+ * @ingroup triqs-ops
+ * @defgroup triqs-ops-extractors Operator utilities
+ * @brief Helpers to extract coefficient tensors and maps from many-body operators.
+ *
+ * @details This group collects free functions that decompose a many-body operator of a known structure into coefficient 
+ * dictionaries and dense arrays:
+ * 
+ * - utils::extract_h_dict, utils::extract_U_dict2 and utils::extract_U_dict4 read the coefficients of normal-ordered 
+ * quadratic, density-density and general two-particle operators into index-keyed dictionaries.
+ * - utils::dict_to_matrix and utils::dict_to_variant_matrix convert such dictionaries into dense arrays indexed by the 
+ * linear indices of a triqs::hilbert_space::fundamental_operator_set.
+ * - utils::quadratic_terms and utils::quartic_terms keep only the monomials of a given length. 
+ * - utils::block_matrix_from_op and utils::op_from_block_matrix convert between a block-diagonal quadratic operator and 
+ * its block-matrix representation.
+ */
+
+/**
+ * @defgroup triqs-stat Statistical analysis tools
+ * @brief Tools for the statistical analysis of Monte Carlo data and other sampled observables.
+ *
+ * @details The @ref triqs-stat module is a small, header-mostly toolkit for analysing samples produced by Monte Carlo
+ * (or any other) simulations. It is built around two ideas: *streaming* accumulators that update mean, error and
+ * autocorrelation estimates on the fly without storing the full sample stream, and *standalone* functions that operate
+ * on a range of pre-collected samples.
+ *
+ * Every component has an MPI-aware variant — either an `*_mpi` overload (e.g. triqs::stat::mean_mpi,
+ * triqs::stat::jackknife_mpi) or a member function taking an `mpi::communicator` (e.g.
+ * triqs::stat::lin_binning::mean_error_and_tau, triqs::stat::log_binning::mean_errors_and_taus). The same client code
+ * therefore runs serially or in parallel, and per-rank partial results are combined into a single estimator on all
+ * ranks.
+ */
+
+/**
+ * @defgroup triqs-stat-accs Accumulators
+ * @ingroup triqs-stat
+ * @brief Streaming binning accumulators that estimate mean, error and autocorrelation time on the fly.
+ *
+ * @details An *accumulator* receives samples one at a time via `operator<<` and maintains running estimators without
+ * storing the full sample stream. Two flavours are provided:
+ * - triqs::stat::lin_binning groups consecutive samples into equally sized bins. The bin data is kept and can be
+ * accessed after the run, which makes it the natural input for downstream resampling (see
+ * @ref triqs-stat-resampling). It can run either with a fixed maximum number of bins (bins are compressed by a factor
+ * of two and the bin capacity is doubled whenever the maximum is reached) or with an unbounded number of bins of fixed
+ * capacity.
+ * - triqs::stat::log_binning is the canonical *autocorrelation* diagnostic: it maintains one bin per power-of-two bin
+ * size and reports the standard error \f$ s_n \f$ and integrated autocorrelation time \f$ \tau_n \f$ for each binning
+ * level. \f$ s_n \f$ and \f$ \tau_n \f$ are expected to grow with the bin size and saturate once the bin size exceeds
+ * the autocorrelation time of the underlying chain.
+ *
+ * Both accumulators provide MPI-aware variants of their estimator methods and HDF5 serialisation for checkpointing long
+ * runs. The free function triqs::stat::compress_bins merges adjacent bins of a `std::vector<T>` by a given
+ * compression factor and is used by triqs::stat::lin_binning when aligning bin capacities across MPI ranks.
+ */
+
+/**
+ * @defgroup triqs-stat-concepts Concepts
+ * @ingroup triqs-stat
+ * @brief C++20 concepts that constrain the value and range types accepted by @ref triqs-stat.
+ *
+ * @details The statistics module is generic in its sample type: it accepts plain scalars as well as `nda` arrays, but
+ * only for a restricted set of element types. The three concepts in this group spell out those restrictions:
+ * - triqs::stat::StatCompatible — a single sample value. Either a `double` / `std::complex<double>` scalar, or an
+ * `nda::Array` whose value type is `double` / `std::complex<double>` and whose algebra is `'A'` (i.e. it behaves as a
+ * generic array under elementwise operations).
+ * - triqs::stat::AccCompatible — additionally required by the streaming accumulators (triqs::stat::lin_binning,
+ * triqs::stat::log_binning). It refines triqs::stat::StatCompatible by also requiring scalars or *regular* array types,
+ * so that bins can own their storage.
+ * - triqs::stat::StatCompatibleRange — a sized forward range whose value type is triqs::stat::StatCompatible. This is
+ * the type of input accepted by triqs::stat::mean, triqs::stat::mean_and_err and triqs::stat::jackknife.
+ */
+
+/**
+ * @defgroup triqs-stat-meanerr Mean and error estimation
+ * @ingroup triqs-stat
+ * @brief Free functions that compute the mean / sum and a corresponding error estimate from a range of samples.
+ *
+ * @details Given a range of samples \f$ \{ x_i : i = 1, \ldots, N \} \f$, this group provides:
+ * - triqs::stat::mean and its MPI-aware counterpart triqs::stat::mean_mpi, which return either the simple sum \f$
+ * \sum_i x_i \f$ or the arithmetic mean \f$ \overline{x} \f$ depending on the triqs::stat::mean_tag template parameter.
+ * - triqs::stat::mean_and_err and triqs::stat::mean_and_err_mpi, which return both the mean / sum and an error
+ * estimate. The flavour of error is selected through the triqs::stat::error_tag enum: sum of squared deviations from
+ * the mean, variance of the data, variance of the mean, standard error of the data, standard error of the mean, or
+ * jackknife error.
+ * - triqs::stat::tau_estimate_from_errors, which computes an estimate of the integrated autocorrelation time \f$ \tau
+ * = \frac{1}{2} (s_n^2 / s_0^2 - 1) \f$ from a binned and an unbinned standard error.
+ *
+ * The two MPI variants accept a `std::optional<mpi::communicator>` and fall back to the serial implementation when no
+ * communicator is provided; otherwise per-rank partial results are combined with a numerically careful reweighting so
+ * that the reduced mean and sum of squared deviations match what a serial run on the concatenated data would have
+ * produced.
+ */
+
+/**
+ * @defgroup triqs-stat-resampling Resampling techniques
+ * @ingroup triqs-stat
+ * @brief Resampling algorithms for bias-corrected estimates of functions of averages.
+ *
+ * @details Many physical observables of interest are *non-linear* functions of statistical averages, for which the
+ * naive estimate \f$ f(\overline{x}_1, \overline{x}_2, \ldots) \f$ carries a bias of order \f$ 1/N \f$ that has to be
+ * corrected.
+ *
+ * triqs::stat::jackknife performs the delete-one jackknife resampling on one or more sample ranges and returns a tuple
+ * containing:
+ * - the bias-corrected estimate \f$ f_{\mathrm{corr}} = N \overline{f} - (N - 1) \overline{f}_{\mathrm{JK}} \f$,
+ * - the jackknife error estimate \f$ s_f \f$,
+ * - the jackknife function estimate \f$ \overline{f}_{\mathrm{JK}} \f$, and
+ * - the naive estimate \f$ \overline{f} = f(\overline{x}_1, \overline{x}_2, \ldots) \f$.
+ *
+ * The MPI-aware variant triqs::stat::jackknife_mpi performs the same calculation on samples distributed across multiple
+ * ranks; results are made available on all ranks. Both functions accept any callable and any number of
+ * triqs::stat::StatCompatibleRange inputs.
+ */
+
+/**
+ * @defgroup triqs-stat-utils Utilities
+ * @ingroup triqs-stat
+ * @brief Histograms and small helpers shared by the rest of the @ref triqs-stat module.
+ */
+
+/**
+ * @defgroup triqs-test-tools Test tools
+ * @brief GoogleTest-based helpers for writing TRIQS C++ unit tests.
+ *
+ * @details The @ref triqs-test-tools module is a header-only collection of helpers, built on top of **GoogleTest**, 
+ * that the TRIQS C++ test suite uses to compare its core data structures and to set up test executables.
+ * 
+ * It provides various macros and helper functions to simplify writing unit tests involving TRIQS components.
+ */
+
+/**
+ * @defgroup triqs-utility Utilities
+ * @brief General-purpose utilities used across the **TRIQS** library.
+ *
+ * @details The @ref triqs-utility module collects foundational building blocks that the rest of the **TRIQS** library
+ * depends on: compiler glue and exception types, template-metaprogramming helpers, numerical helpers (Legendre,
+ * Chebyshev, Padé, ...), runtime utilities (timers, signal handling, crash logging) and a small set of I/O streams.
+ *
+ * The utilities are organised into the following thematic subgroups:
+ * - @ref triqs-utility-io — reporting and debugging output streams,
+ * - @ref triqs-utility-macros — foundational macros, exception types and compiler/platform glue,
+ * - @ref triqs-utility-math — numerical and mathematical helpers,
+ * - @ref triqs-utility-other — other general-purpose utilities,
+ * - @ref triqs-utility-runtime — timers, signal handling and other runtime utilities,
+ * - @ref triqs-utility-tuple — helpers for manipulating and serializing tuples and variants,
+ * - @ref triqs-utility-traits — type traits and template-metaprogramming helpers.
+ *
+ * Most utilities live in the `triqs::utility` namespace.
+ */
+
+/**
+ * @ingroup triqs-utility
+ * @defgroup triqs-utility-macros Macros and exceptions
+ * @brief Foundational macros, exception types and compiler/platform glue.
+ */
+
+/**
+ * @ingroup triqs-utility
+ * @defgroup triqs-utility-traits Type traits and metaprogramming
+ * @brief Type traits, concept helpers and template-metaprogramming utilities.
+ */
+
+/**
+ * @ingroup triqs-utility
+ * @defgroup triqs-utility-tuple Tuple and variant tools
+ * @brief Helpers for manipulating and serializing `std::tuple` and `std::variant` objects.
+ */
+
+/**
+ * @ingroup triqs-utility
+ * @defgroup triqs-utility-math Math helpers
+ * @brief Numerical and mathematical helpers (Legendre, Chebyshev, Padé, real-or-complex, ...).
+ */
+
+/**
+ * @ingroup triqs-utility
+ * @defgroup triqs-utility-runtime Runtime utilities
+ * @brief Timers, signal handling, crash logging and other runtime helpers.
+ */
+
+/**
+ * @ingroup triqs-utility
+ * @defgroup triqs-utility-io I/O streams
+ * @brief Reporting and debugging output streams.
+ */
+
+/**
+ * @ingroup triqs-utility
+ * @defgroup triqs-utility-other Other utilities
+ * @brief Other general-purpose utilities.
+ */

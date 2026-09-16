@@ -1,0 +1,401 @@
+#COMPONENTMAP
+SC  0 -1  1		CompMap
+IH  0 -1  1		CompMap
+
+#INCLUDE
+RESTART.in
+
+#STARTTIME
+#INCLUDE
+STARTMAGNETOGRAMTIME.in
+
+#TIMESIMULATION
+0.0			tSimulation
+
+#NSTEP
+0			nStep
+
+#DESCRIPTION
+Param/PARAM.in.test.restart.SCIH_threadbc: Time accurate SC-IH run with SC switched off in second session		StringDescription
+
+#TIMEACCURATE
+T			IsTimeAccurate
+
+#BEGIN_COMP SC ---------------------------------------------------------------
+
+#INCLUDE
+SC/restartIN/restart.H
+
+#STARTTIME
+#INCLUDE
+STARTMAGNETOGRAMTIME.in
+
+#TIMESIMULATION
+0.0			tSimulation
+
+#NSTEP
+0			nStep
+
+#PLASMA
+1.0			FluidMass [amu]
+1.0			IonCharge [e]
+1.0			ElectronTemperatureRatio
+
+#CHROMOSPHERE
+F			UseChromosphereHeating
+3.125e11		NeChromosphereCgs
+3.2e4			TeChromosphereSi
+
+#FIELDLINETHREAD
+T			UseFieldLineThreads
+400			nPointThreadMax
+1.0e-3			DsThreadMin
+
+#THREADEDBC
+T			UseAlignedVelocity
+T			DoConvergenceCheck
+limited			TypeBc
+1.0e-6			Tolerance
+40			MaxIter
+
+
+#LOOKUPTABLE
+B0			NameTable
+load			NameCommand
+harmonics_bxyz.out		NameFile
+real4			TypeFile
+
+#NEWHARMONICSFILE
+SC/endmagnetogram.dat		NameHarmonicsFileNew
+
+#HELIOUPDATEB0
+50.0			DtUpdateB0
+
+#HARMONICSGRID
+1.0			rMagnetogram
+2.5			rSourceSurface
+F			IsLogRadius
+30			MaxOrder
+30			nR
+90			nLon
+90			nLat
+
+#CURLB0
+T			UseCurlB0
+2.5			rCurrentFreeB0
+T			UseB0MomentumFlux
+
+#B0SOURCE
+T			UseB0Source
+T			UseDivFullBSource
+
+#USERSWITCH
++init +ic		StringSwitch
+
+#POYNTINGFLUX
+1.1e6			PoyntingFluxPerBSi [J/m^2/s/T]
+
+#CORONALHEATING
+turbulentcascade		TypeCoronalHeating
+1.5e5			LperpTimesSqrtBSi
+1.1			rMinWaveReflection
+F			UseReynoldsDecomposition
+
+#HEATPARTITIONING
+uniform			TypeHeatPartitioning
+0.6			QionRatio
+
+#TEST
+radiative_cooling		StringTest
+
+#RADIATIVECOOLING
+T			UseRadCooling
+
+#LOOKUPTABLE
+radcool			NameTable
+load			NameCommand
+SC/Param/RadCoolCorona.dat		NameFile
+ascii			TypeFile
+
+#LOOKUPTABLE
+TR			NameTable
+load			NameCommand
+SC/Param/TR.dat		NameFile
+ascii			TypeFile
+
+#TIMESTEPPING
+2			nStage
+0.8			CflExpl
+
+#MINIMUMPRESSURE
+1.0E-9			pMinDim
+1.0e-9			PeMinDim
+
+#MINIMUMTEMPERATURE
+5.0e4			TminDim
+5.0e4			TeMinDim
+
+#SCHEME
+2			nOrder (1 or 2)
+Sokolov			TypeFlux (Roe, Rusanov, Linde, Sokolov
+mc3			TypeLimiter
+1.2			LimiterBeta
+
+#LIMITER
+T			UseLogRhoLimiter
+T			UseLogPLimiter
+F			UseRhoRatioLimiter
+
+#NONCONSERVATIVE
+T			UseNonConservative
+
+#MESSAGEPASS
+all			TypeMessagePass
+
+#TVDRESCHANGE
+T			UseTvdReschange
+
+#SAVELOGFILE
+T			DoSaveLogfile
+RAW			StringLog
+1			DnSaveLogfile
+-1.			DtSaveLogfile
+
+#COARSEAXIS
+T			UseCoarseAxis
+2			nCoarseLayer
+
+#OUTERBOUNDARY
+fieldlinethreads		TypeBc1   user for spherical and user_outerbcs
+float			TypeBc2
+none			TypeBc3
+none			TypeBc4
+none			TypeBc5
+none			TypeBc6
+
+#SAVEPLOT
+5			nPlotFile
+x=0 VAR idl		StringPlot
+-1			DnSavePlot
+10.0			DtSavePlot
+-1.0			DxSavePlot
+rho ux uy uz ti te bx by bz I01 I02 p		NameVars
+g rbody			NamePars
+y=0 VAR idl		StringPlot
+-1			DnSavePlot
+10.0			DtSavePlot
+-1.0			DxSavePlot
+rho ux uy uz ti te bx by bz I01 I02 p		NameVars
+g rbody			NamePars
+z=0 VAR idl		StringPlot
+-1			DnSavePlot
+10			DtSavePlot
+-1.0			DxSavePlot
+rho ux uy uz ti te bx by bz I01 I02 p		NameVars
+g rbody			NamePars
+los ins idl_ascii		StringPlot
+-1			DnSavePlot
+100.0			DtSavePlot
+sta:euvi stb:euvi sdo:aia		StringsInstrument
+shl VAR idl_ascii		StringPlot
+-1			DnSavePlot
+10.0			DtSavePlot
+HGR			TypeCoordPlot
+1.03			rMin
+1.03			rMax
+2.0			LonMin
+358.0			LonMax
+4.0			dLon
+-88.0			LatMin
+88.0			LatMax
+4.0			dLat
+{HD} te ti		NameVars
+{default}		NamePars
+
+#LOOKUPTABLE		OffsetAngle
+AiaXrt			NameTable
+load			NameCommand
+SC/Param/los_tbl.dat		NameFile
+ascii			TypeFile
+
+#LOOKUPTABLE		nPix
+euv			NameTable
+load			NameCommand
+SC/Param/los_Eit_cor.dat		NameFile
+ascii			TypeFile
+
+#LOOKUPTABLE
+EuviA			NameTable
+load			NameCommand
+SC/Param/los_EuviA.dat		NameFile
+ascii			TypeFile
+
+#LOOKUPTABLE
+EuviB			NameTable
+load			NameCommand
+SC/Param/los_EuviB.dat		NameFile
+ascii			TypeFile
+
+#SATELLITE
+3			nSatellite
+MHD			StringSatellite
+-1			DnOutput
+-1.0			DtOutput [sec]
+SC/TRAJECTORY/earth.dat		NameTrajectoryFile
+MHD			StringSatellite
+5000			DnOutput
+3600.0			DtOutput [sec]
+SC/TRAJECTORY/sta.dat		NameTrajectoryFile
+MHD			StringSatellite
+-1			DnOutput
+-1.0			DtOutput [sec]
+SC/TRAJECTORY/stb.dat		NameTrajectoryFile
+
+#END_COMP SC -----------------------------------------------------------------
+
+#BEGIN_COMP IH ---------------------------------------------------------------
+
+#INCLUDE
+IH/restartIN/restart.H
+
+#STARTTIME
+#INCLUDE
+STARTMAGNETOGRAMTIME.in
+
+#TIMESIMULATION
+0.0			tSimulation
+
+#NSTEP
+0			nStep
+
+
+#PLASMA
+1.0			FluidMass [amu]
+1.0			IonCharge [e]
+1.0			ElectronTemperatureRatio
+
+#INNERBOUNDARY
+buffergrid		TypeBcBody
+
+#OUTERBOUNDARY
+float			TypeBc1
+float			TypeBc2
+float			TypeBc3
+float			TypeBc4
+float			TypeBc5
+float			TypeBc6
+
+#RESCHANGE
+T			UseAccurateReschange
+
+#USERSWITCH
++init			StringSwitch
+
+#CORONALHEATING
+turbulentcascade		TypeCoronalHeating
+1.5e5			LperpTimesSqrtBSi
+0.0			rMinWaveReflection
+F			UseReynoldsDecomposition
+
+#SCHEME
+2			nOrder
+Sokolov			TypeFlux
+mc3			TypeLimiter
+1.2			LimiterBeta
+
+#NONCONSERVATIVE
+T			UseNonConservative
+
+#TIMESTEPPING
+2			nStage
+0.8			CflExpl
+
+#DIVB
+T			UseDivbSource
+T			UseDivbDiffusion
+F			UseProjection
+F			UseConstrainB
+
+#SAVELOGFILE
+T			DoSaveLogfile
+RAW			StringLog
+1			DnSaveLogfile
+-1.			DtSaveLogfile
+
+
+#SAVEPLOT
+4			nPlotFile
+x=0 VAR idl		StringPlot
+-1 			DnSavePlot
+10.0			DtSavePlot
+-1.0			DxSavePlot
+rho ux uy uz ti te bx by bz I01 I02 p		NameVars
+g rbody			NamePars
+y=0 VAR idl		StringPlot
+-1			DnSavePlot
+10.0			DtSavePlot
+-1.0			DxSavePlot
+rho ux uy uz ti te bx by bz I01 I02 p		NameVars
+g rbody			NamePars
+z=0 VAR idl		StringPlot
+-1			DnSavePlot
+10.0			DtSavePlot
+-1.0			DxSavePlot
+rho ux uy uz ti te bx by bz I01 I02 p		NameVars
+g rbody			NamePars
+buf MHD idl		StringPlot
+-1			DnSavePlot
+50.0			DtSavePlot
+
+#END_COMP IH -----------------------------------------------------------------
+
+#COUPLE1
+SC			NameSource
+IH			NameTarget
+-1			DnCouple
+1.0			DtCouple
+
+#ENDTIME
+#INCLUDE
+ENDMAGNETOGRAMTIME.in
+
+#END ##########################################################################
+
+Possible continuation with SC off
+
+#RUN ##########################################################################
+
+#COMPONENT
+SC			NameComp
+F			UseComp
+
+#BEGIN_COMP IH ----------------------------------------------------------------
+
+#SAVEPLOT
+3			nPlotFiles
+x=0 VAR idl		StringPlot
+10 			DnSavePlot
+-1.			DtSavePlot
+-1.0			DxSavePlot
+rho ux uy uz ti te bx by bz I01 I02 p sign
+g rbody
+y=0 VAR idl		StringPlot
+10			DnSavePlot
+-1.			DtSavePlot
+-1.0			DxSavePlot
+rho ux uy uz ti te bx by bz I01 I02 p sign
+g rbody
+z=0 VAR idl		StringPlot
+10 			DnSavePlot
+-1.			DtSavePlot
+-1.0			DxSavePlot
+rho ux uy uz ti te bx by bz I01 I02 p sign
+g rbody
+
+#END_COMP IH ------------------------------------------------------------------
+
+#STOP
+-1			MaxIter
+1000.0			TimeMax
+
+#END ##########################################################################

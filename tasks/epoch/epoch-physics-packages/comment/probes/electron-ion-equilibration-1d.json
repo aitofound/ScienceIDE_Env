@@ -1,0 +1,49 @@
+{
+  "check": "electron-ion-equilibration-1d",
+  "purpose": "Retain the machine-readable evidence behind the warrant's realisation-spread and wrong-physics claims (steward review item 5, 2026-09-05); this is one of the two thinnest-headroom checks in the leaf (2.6x altbuild-floor headroom), so the curator asked it to be preferred for reproduction.",
+  "realisation_spread": {
+    "what": "Three independent native realisations of the graded configuration: the graded deck, the variant deck with the two species blocks exchanged, and a third run at 999 instead of 1000 pseudoparticles per cell.",
+    "host": "native macOS, gfortran 15, OpenMPI 5",
+    "date": "2026-09-04/05 (native calibration; see rubric.json evidence.spread_how)",
+    "source": "transcribed from tests/checks/electron-ion-equilibration-1d/rubric.json evidence.spread_how; no new run this round",
+    "per_invariant_spread": {
+      "electron-energy-ratio-final": {"largest_spread": 1.05e-2, "bound": 0.05, "bound_type": "atol"},
+      "electron-energy-ratio-mid-mean": {"largest_spread": 1.02e-2, "bound": 0.03, "bound_type": "atol"},
+      "proton-energy-ratio-final": {"largest_spread": 1.93e-2, "bound": 0.08, "bound_type": "atol"},
+      "proton-energy-ratio-mid-mean": {"largest_spread": 2.00e-2, "bound": 0.06, "bound_type": "atol"},
+      "electron-temperature-final": {"largest_spread_pct": 1.34, "bound_pct": 6, "bound_type": "rtol"},
+      "proton-temperature-final": {"largest_spread_pct": 1.78, "bound_pct": 6, "bound_type": "rtol"},
+      "total-energy-drift": {"within_run_drift": [1.07e-2, 1.25e-2, 1.00e-2], "bound": 0.04}
+    }
+  },
+  "wrong_physics_probes": {
+    "coulomb_log_doubled": {
+      "what_was_run": "electron-ion-equilibration-1d nominal deck with coulomb_log = 10 in place of 5, all other settings graded (5 cells, 1000 ppc per species, 3e-12 s, nstep_snapshot 3300, nprocx = 1); a scratch copy of the deck only, no source edit, same pinned epoch1d build used for the round-1 altbuild floor measurement",
+      "host": "native macOS, gfortran 15.2.0, OpenMPI 5.0.8",
+      "date": "2026-09-05",
+      "reproduced": true,
+      "measurement": {
+        "electron-energy-ratio-final": {"nominal": 0.858728, "faulted": 0.797962, "displacement_abs": 0.060766, "bound_atol": 0.05, "bound_fraction_of_displacement": 1.215},
+        "electron-energy-ratio-mid-mean": {"nominal": 0.916015, "faulted": 0.852152, "displacement_abs": 0.063863, "bound_atol": 0.03, "bound_fraction_of_displacement": 2.129},
+        "proton-energy-ratio-final": {"nominal": 1.31356, "faulted": 1.45192, "displacement_abs": 0.13836, "bound_atol": 0.08, "bound_fraction_of_displacement": 1.730},
+        "proton-energy-ratio-mid-mean": {"nominal": 1.186672, "faulted": 1.317558, "displacement_abs": 0.130886, "bound_atol": 0.06, "bound_fraction_of_displacement": 2.181},
+        "electron-temperature-final": {"nominal_eV": 85.3106, "faulted_eV": 79.2371, "displacement_rel": 0.07120, "bound_rtol": 0.06, "bound_fraction_of_displacement": 1.187},
+        "proton-temperature-final": {"nominal_eV": 65.2652, "faulted_eV": 72.1475, "displacement_rel": 0.10545, "bound_rtol": 0.06, "bound_fraction_of_displacement": 1.757}
+      },
+      "note": "The rubric/README warrant used to say this fault 'displaces the proton energy ratio by about five times its bound' without a retained run behind it. This measurement finds 1.2x to 2.2x depending on the invariant -- every invariant still clears its bound at this fault size (a doubled Coulomb logarithm), but with materially less margin than the old, unretained estimate implied. Reported to the curator as the round-2 finding on this check; no tolerance changed."
+    },
+    "dead_operator": {
+      "what_was_run": "electron-ion-equilibration-1d nominal deck with collide = none in place of collide = all, same settings and build as above",
+      "host": "native macOS, gfortran 15.2.0, OpenMPI 5.0.8",
+      "date": "2026-09-05",
+      "reproduced": true,
+      "measurement": {
+        "electron-energy-ratio-final": {"faulted": 1.00892},
+        "proton-energy-ratio-final": {"faulted": 1.00013},
+        "electron-temperature-final_eV": {"faulted": 99.968, "loaded_eV": 100},
+        "proton-temperature-final_eV": {"faulted": 49.699, "loaded_eV": 50}
+      },
+      "note": "Confirms the warrant's claim that a collision operator that never fires holds both ratios at 1 and both temperatures at their loaded values."
+    }
+  }
+}

@@ -1,0 +1,138 @@
+{
+  "skimage.metrics.peak_signal_noise_ratio": {
+    "implementation": {
+      "file": "src/skimage/metrics/simple_metrics.py",
+      "line": 115,
+      "end_line": 171
+    },
+    "description": "Compute the peak signal to noise ratio (PSNR) for an image.",
+    "calls": [
+      "check_shape_equality",
+      "_as_floats",
+      "mean_squared_error",
+      "np.log10",
+      "np.min",
+      "np.max"
+    ],
+    "branches": [
+      {
+        "line": 148,
+        "expression": "data_range is None"
+      },
+      {
+        "line": 149,
+        "expression": "image_true.dtype != image_test.dtype"
+      },
+      {
+        "line": 156,
+        "expression": "true_max > dmax or true_min < dmin"
+      },
+      {
+        "line": 161,
+        "expression": "true_min >= 0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.restoration.denoise_wavelet": {
+    "implementation": {
+      "file": "src/skimage/restoration/_denoise.py",
+      "line": 852,
+      "end_line": 1046
+    },
+    "description": "Perform wavelet denoising on an image.",
+    "calls": [
+      "_wavelet_threshold",
+      "utils.channel_as_last_axis",
+      "_scale_sigma_and_image_consistently",
+      "np.clip",
+      "color.rgb2ycbcr",
+      "color.ycbcr2rgb",
+      "_rescale_sigma_rgb2ycbcr",
+      "denoise_wavelet",
+      "image.min",
+      "out[..., i].min",
+      "out[..., i].max"
+    ],
+    "branches": [
+      {
+        "line": 977,
+        "expression": "method not in ['BayesShrink', 'VisuShrink']"
+      },
+      {
+        "line": 986,
+        "expression": "convert2ycbcr and (not multichannel)"
+      },
+      {
+        "line": 992,
+        "expression": "multichannel"
+      },
+      {
+        "line": 1043,
+        "expression": "clip_output"
+      },
+      {
+        "line": 993,
+        "expression": "convert2ycbcr"
+      },
+      {
+        "line": 996,
+        "expression": "rescale_sigma"
+      },
+      {
+        "line": 1002,
+        "expression": "scale_factor == 0"
+      },
+      {
+        "line": 1008,
+        "expression": "sigma_channel is not None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.restoration.estimate_sigma": {
+    "implementation": {
+      "file": "src/skimage/restoration/_denoise.py",
+      "line": 1049,
+      "end_line": 1125
+    },
+    "description": "Robust wavelet-based estimator of the (Gaussian) noise standard deviation.",
+    "calls": [
+      "pywt.dwtn",
+      "_sigma_est_dwt",
+      "functools.partial",
+      "ImportError",
+      "estimate_sigma",
+      "np.mean",
+      "_at"
+    ],
+    "branches": [
+      {
+        "line": 1106,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 1113,
+        "expression": "average_sigmas"
+      },
+      {
+        "line": 1116,
+        "expression": "image.shape[-1] <= 4"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 479,
+      "end_line": 505
+    },
+    "description": "Convert an image to floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

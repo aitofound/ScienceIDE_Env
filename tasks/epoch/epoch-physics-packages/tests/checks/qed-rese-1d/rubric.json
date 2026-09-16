@@ -1,0 +1,218 @@
+{
+  "check": "qed-rese-1d",
+  "policy": "invariants",
+  "chaotic": false,
+  "upstream_test": "code/epoch/epoch1d/example_decks/qed_rese.deck",
+  "configuration": "make -C epoch1d COMPILER=gfortran DEFINE=\"-DPHOTONS\"; the upstream qed_rese deck at 1024 cells (the upstream resolution), 64 pseudoparticles per cell over the two loaded species, 40 fs of physical time and 21 dumps, run on 2 MPI ranks in the layout nprocx = 2. Graded: the text series extracted from the SDF dumps by extract.py (weighted photon number, photon energy, electron kinetic energy, field energy, injected laser energy, one row per dump). Knobs SAB_NX, SAB_PPC, SAB_T_END and SAB_DT_SNAPSHOT scale the run and reach the upstream settings, which are 1024 cells, 64 particles per cell, 200 fs and 201 dumps.",
+  "observable": "weighted photon number and photon energy, electron kinetic energy, field energy and injected laser energy at the final dump, with weighted photon number, photon energy and electron kinetic energy also averaged over the last five dumps",
+  "expected_runtime_s": 80,
+  "default_vs_upstream": "window 40 fs of 200 fs, dumps every 2 fs of 1 fs; SAB_T_END=200e-15 and SAB_DT_SNAPSHOT=1.0e-15 restore (cells and particles per cell are already upstream)",
+  "variant": "the same deck with the MPI rank layout changed from nprocx = 2 to nprocx = 3. The rank layout is what a port cannot preserve: the random stream is seeded 7842432 + rank (setup.F90 lines 500 to 505) and the per-rank particle lists are walked in order, so a different layout gives a different, equally correct realisation of the same physics, exactly as a port that reorders or parallelises the stream would. It is deliberately not reachable through a knob. Its size is stated plainly: this is a change of MPI rank count, two ranks to three, not a perturbation of an input at the last bit, and it is active. The Phase 2 calibration self-validation that began 2026-09-04T11:25:52Z records the nominal and variant runs as non-identical at a distance of 0.0085, and every graded column differs.",
+  "time_grid": {
+    "units": "s",
+    "time_column": 0,
+    "dump_index_column": 6,
+    "tolerance_s": 5.993729835591794e-17,
+    "semantics": "dump identity is the exact complete SDF filename sequence 0000..0020, stored as dump_index; physical timestamps must be strictly increasing and remain within one reference timestep of the observed canonical grid, allowing correct compiler and architecture ports to differ in the last-step crossing while preserving the intended output cadence",
+    "files": {
+      "series.txt": {
+        "count": 21,
+        "values_s": [
+          2.996864917795897e-17,
+          2.0378681441012118e-15,
+          4.015798989846508e-15,
+          6.053667133947722e-15,
+          8.031597979692994e-15,
+          1.0009528825438238e-14,
+          1.2047396969539398e-14,
+          1.4025327815284642e-14,
+          1.6003258661029888e-14,
+          1.8041126805131048e-14,
+          2.0019057650876292e-14,
+          2.2056925794977453e-14,
+          2.4034856640722697e-14,
+          2.601278748646794e-14,
+          2.80506556305691e-14,
+          3.002858647631451e-14,
+          3.2006517322059965e-14,
+          3.404438546616134e-14,
+          3.602231631190679e-14,
+          3.8000247157652245e-14,
+          4.003811530175362e-14
+        ],
+        "tolerance_s": 5.993729835591794e-17
+      }
+    },
+    "canonical_series": "series.txt",
+    "calibration_status": "provisional_one_reference_timestep_portability_envelope_pending_fresh_selfcheck",
+    "header": [
+      "time_s",
+      "photon_number",
+      "photon_energy_J",
+      "electron_energy_J",
+      "field_energy_J",
+      "laser_energy_injected_J",
+      "dump_index"
+    ],
+    "column_domains": {
+      "photon_number": {
+        "min": 0.0
+      },
+      "photon_energy_J": {
+        "min": 0.0
+      },
+      "electron_energy_J": {
+        "min": 0.0
+      },
+      "field_energy_J": {
+        "min": 0.0
+      },
+      "laser_energy_injected_J": {
+        "min": 0.0
+      }
+    },
+    "windows": {
+      "series": {
+        "start_index": 0,
+        "end_index": 20,
+        "count": 21
+      },
+      "tail": {
+        "start_index": 16,
+        "end_index": 20,
+        "count": 5
+      }
+    }
+  },
+  "altbuild": "the same pinned source built with epoch1d/Makefile's FFLAGS at -O0 instead of -O3 in the scratch build copy only, not SOURCE_DIR (fallback from EPOCH's own MODE=debug profile, whose -ffpe-trap fires in EPOCH's mpi_minimal_init at MPI startup, before any deck-specific code runs, on every check in this leaf, verified on the worker 2026-09-05): the same source at a different optimisation level, which a correct candidate could plausibly be built at",
+  "comparison": {
+    "trajectory_l1": true,
+    "invariants": [
+      {
+        "name": "photon-number-final",
+        "file": "series.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 1,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 0.03,
+        "atol": 0.0,
+        "canonical_series": "series.txt",
+        "window": "series"
+      },
+      {
+        "name": "photon-number-tail-mean",
+        "file": "series.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 1,
+        "mode": "agreement",
+        "statistic": "mean",
+        "rtol": 0.03,
+        "atol": 0.0,
+        "canonical_series": "series.txt",
+        "window": "tail"
+      },
+      {
+        "name": "photon-energy-final",
+        "file": "series.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 2,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 0.06,
+        "atol": 0.0,
+        "canonical_series": "series.txt",
+        "window": "series"
+      },
+      {
+        "name": "photon-energy-tail-mean",
+        "file": "series.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 2,
+        "mode": "agreement",
+        "statistic": "mean",
+        "rtol": 0.04,
+        "atol": 0.0,
+        "canonical_series": "series.txt",
+        "window": "tail"
+      },
+      {
+        "name": "electron-kinetic-energy-final",
+        "file": "series.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 3,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 0.08,
+        "atol": 0.0,
+        "canonical_series": "series.txt",
+        "window": "series"
+      },
+      {
+        "name": "electron-kinetic-energy-tail-mean",
+        "file": "series.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 3,
+        "mode": "agreement",
+        "statistic": "mean",
+        "rtol": 0.08,
+        "atol": 0.0,
+        "canonical_series": "series.txt",
+        "window": "tail"
+      },
+      {
+        "name": "field-energy-final",
+        "file": "series.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 4,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 0.03,
+        "atol": 0.0,
+        "canonical_series": "series.txt",
+        "window": "series"
+      },
+      {
+        "name": "laser-energy-injected-final",
+        "file": "series.txt",
+        "format": "text",
+        "comments": "#",
+        "column": 5,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 1e-09,
+        "atol": 0.0,
+        "canonical_series": "series.txt",
+        "window": "series"
+      }
+    ]
+  },
+  "evidence": {
+    "spread": 0.0185,
+    "spread_how": "Three alternative rank layouts (nprocx = 1, 3 and 4) run against the graded nprocx = 2 with the pinned source built natively (gfortran 15, OpenMPI 5, macOS, 2 to 4 ranks) at the graded settings (1024 cells, 64 particles per cell, 40 fs, 21 dumps). Largest relative difference over the three, at the final dump and as a mean over the last five dumps: weighted photon number 5.9e-3, photon energy 1.4e-2, electron kinetic energy 1.8e-2, field energy 6.4e-3, injected laser energy 0.0 (bit identical). Wall time 12 s per run on 2 contended cores; the graded run wrote 21 dumps of 0.2 MB.",
+    "self_validation_spread": 0.015150155854640955,
+    "self_validation_bound_fraction": 0.2525025975773493,
+    "expected_runtime_derivation": "the Phase 2 calibration self-validation that began 2026-09-04T11:25:52Z on the x86 worker (8 cpus), run ids 20260904T112552Z-1611712 (nominal) and 20260904T113616Z-1685913 (variant): run 9.9 s for this check, excluding the 54 s nominal build reported separately; expected_runtime_s is the nearest integer to 1.5 times that run time",
+    "floor": 0.004892370114790855,
+    "floor_how": "measured by selfcheck on 2026-09-12: run.sh altbuild (the same pinned source built with epoch1d/Makefile's FFLAGS at -O0 instead of -O3 in the scratch build copy only, not SOURCE_DIR (fallback from EPOCH's own MODE=debug profile, whose -ffpe-trap fires in EPOCH's mpi_minimal_init at MPI startup, before any deck-specific code runs, on every check in this leaf, verified on the worker 2026-09-05): the same source at a different optimisation level, which a correct candidate could plausibly be built at) against run.sh nominal, graded with the check's own validate.py: all invariants within bound",
+    "altbuild": {
+      "what": "the same pinned source built with epoch1d/Makefile's FFLAGS at -O0 instead of -O3 in the scratch build copy only, not SOURCE_DIR (fallback from EPOCH's own MODE=debug profile, whose -ffpe-trap fires in EPOCH's mpi_minimal_init at MPI startup, before any deck-specific code runs, on every check in this leaf, verified on the worker 2026-09-05): the same source at a different optimisation level, which a correct candidate could plausibly be built at",
+      "distance": 0.004892370114790855,
+      "bound_fraction": 0.0815395019131809,
+      "identical": false,
+      "graded_identical": false,
+      "passed": true,
+      "reason": "all invariants within bound",
+      "at": "2026-09-12T21:49:50Z"
+    },
+    "floor_bound_fraction": 0.0815395019131809
+  },
+  "warrant": "The graded observables are the weighted number of tracked photons (sum of `Particles/Weight/Photon`), the total tracked-photon energy, the total electron kinetic energy and the total electromagnetic field energy of the upstream qed_rese deck, read from every dump of a 40 fs window and compared between the two runs at the final dump, with the weighted photon number, photon energy and electron kinetic energy also compared as a mean over the last five dumps (field energy is graded at the final dump only); final-dump relative bounds are 0.03, 0.06, 0.08 and 0.03 on the weighted photon number, photon energy, electron kinetic energy and field energy respectively, with tail-mean bounds of 0.03, 0.04 and 0.08 on the first three; the laser energy injected through the x_min boundary is compared to 1e-09 relative as a configuration guard, because it is set by the boundary source alone and is layout-independent. Pointwise is the preferred policy and it is not appropriate here, for the first reason the spec names: a random stream drives the run, so two correct runs diverge from the first event and no pointwise bound can both contain that divergence and still reject a fault. Shortening the window does not rescue it, because the observable the check exists for is the emitted photon population, which does not exist at all until the sampler has fired many times. Hence invariants, each with its own tolerance set from the measured run-to-run spread of that invariant. Every electron carries an optical depth that is decremented deterministically each step and, when it crosses zero, three numbers are drawn from one KISS stream per rank to fix the photon energy, the new photon's own optical depth and the emitter's reset (photons.F90 lines 895, 948 and 577), all inside the serial linked-list walk of qed_update_optical_depth (photons.F90 lines 532 to 619, list traversal at 549, 550 and 588); the stream is seeded 7842432 + rank in setup.F90 lines 500 to 505, so which electron emits which photon is fixed by that electron's position in the list. The seed is deterministic rather than absent from the deck: the one deck key that touches it is the boolean use_random_seed (deck_control_block.F90 lines 312 to 313 in 1-D, 340 to 341 in 2-D, 358 to 359 in 3-D), which replaces the fixed base 7842432 with SYSTEM_CLOCK; it defaults to false (setup.F90 line 87 in 1-D, 91 in 2-D, 95 in 3-D) and this deck leaves it false, and no deck key sets a chosen numeric seed. So this run repeats bit for bit at this rank layout, and reproducibility holds for a fixed decomposition and traversal order and for nothing else; the variant deliberately remaps those streams and the two runs part company at the first emission. Any port that reorders the particle list, splits the stream across threads or lanes, or changes the decomposition produces a different and equally correct realisation from the first emission onward, so the check compares moments and counts, not particles. Physical: a wrong synchrotron emission rate, a table interpolation that extrapolates instead of clamping, a dropped radiation-reaction recoil (photons.F90 line 921) or a mis-set photon_energy_min gate (line 937) changes the weighted photon number and the energy it carries by tens of per cent up to a factor of several, ten to a hundred times these bounds; a QED package that never fires leaves the weighted photon number at zero. Achievable: the same deck run at nprocx = 1, 3 and 4 instead of the graded nprocx = 2 gives the run-to-run spread of a correct but differently ordered execution, and the largest of those spreads over all of them is 0.59 per cent on the weighted photon number, 1.4 per cent on the photon energy, 1.8 per cent on the electron energy and 0.64 per cent on the field energy, so every bound sits about four to five times above the largest legitimate spread measured, while the injected laser energy came out bit-identical. The run prints once that an argument to find_value_from_table_1d and to find_value_from_table_alt fell outside the tabulated range. That is a diagnostic, not an error: when the bracket test xdif1*xdif2 < 0 fails the bisection is skipped and the interpolation weight is set to 0 or 1, which returns exactly the first or last table entry (photons.F90 lines 1102 to 1144 for the one-dimensional rate table and 1156 to 1280 for the photon-energy sampler). It fires here because the cold bulk electrons of the target sit below the tabulated eta = 1e-5 of hsokolov.table and because a uniform draw can fall outside the tabulated ends of a row of the ksi_sokolov CDF. The clamp is part of the pinned emission model and a port must reproduce it rather than extrapolate. No conservation bound is declared. The deck is an open system, a laser is injected at x_min through a simple_laser boundary that is also outflowing, and EPOCH's emission is deliberately not energy-conserving: the emitting electron's momentum magnitude is reduced by E_gamma/c (photons.F90 line 921), which conserves three-momentum exactly but leaves the system about E_gamma/(2 gamma^2) per emission, and a photon below photon_energy_min takes its recoil and is then discarded (the gate at photons.F90 line 937 sits after the recoil). So this check carries agreement bounds only. Each bound is defended against the run-to-run spread of its own invariant rather than against a single suite-level number. The Phase 2 calibration self-validation that began 2026-09-04T11:25:52Z measured the nominal-to-variant spread of every graded invariant in the container. Tolerance divided by each invariant's own policy-normalised spread (absolute for atol and relative for rtol) is: photon energy tail mean 4% / 0.851% = 4.70x, weighted photon number tail mean 3% / 0.557% = 5.38x, weighted photon number final 3% / 0.231% = 13.0x, electron kinetic energy tail mean 8% / 0.459% = 17.4x, electron kinetic energy final 8% / 0.369% = 21.7x, photon energy final 6% / 0.137% = 44.0x, field energy final 3% / 0.0466% = 64.4x, injected laser energy final 1.00e-9 relative / zero observed spread = exact. The tightest of these, the photon energy over the last five dumps, has the fewest independent emissions behind it, and it is also the invariant that a dead sampler, a dropped recoil or a mis-set gate moves by one to two orders of magnitude; the mid- and single-value statistics either side of it sit five to sixty times inside their bounds, so no bound here is one unlucky realisation away from failing. The in-container spreads are from the Phase 2 calibration self-validation run IDs 20260904T112552Z-1611712 and 20260904T113616Z-1685913; the final full selfcheck after this calibration metadata refresh is recorded separately in `comment/pipeline/self-validation.json`. Altbuild floor, measured by selfcheck 2026-09-05 (the same source at -O0 instead of -O3): 0.00489 relative, 0.0815 of the tightest bound (photon-energy-final, 0.06) — a headroom of 12x. The strong-field QED sampler compares an accumulated per-particle optical depth against a KISS-drawn threshold after reducing it with values interpolated from the shipped TABLES/ data (photons.F90 lines 532-619); the interpolation's floating-point result differs in its last bits between -O0 and -O3, occasionally moving which macro-step crosses the threshold, the same table-lookup path the checks' own README already flags for its out-of-range clamp."
+}

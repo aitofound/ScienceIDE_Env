@@ -1,0 +1,3 @@
+# remapping
+
+::: stencils.remapping

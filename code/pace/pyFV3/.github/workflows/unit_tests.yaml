@@ -1,0 +1,46 @@
+name: "PyFV3 unit tests"
+
+# Run these these whenever ...
+on:
+  pull_request: # ... a PR is opened / updated
+  merge_group: # ... the PR is added to the merge queue
+  push:
+    branches:
+      - main # ... when merging into the main branch
+
+# cancel running jobs if theres a newer push
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install mpi
+        run: pip install openmpi
+
+      - name: Install Python packages
+        run: pip install .[ndsl,test]
+
+      - name: Run serial-cpu tests
+        run: coverage run --rcfile=pyproject.toml -m pytest tests/main
+
+      - name: Run parallel-cpu tests
+        env:
+          NDSL_LOGLEVEL: Debug
+        run: mpiexec -np 9 --oversubscribe coverage run --rcfile=pyproject.toml -m mpi4py -m pytest tests/mpi
+
+      - name: Output code coverage
+        run: |
+          coverage combine
+          coverage report

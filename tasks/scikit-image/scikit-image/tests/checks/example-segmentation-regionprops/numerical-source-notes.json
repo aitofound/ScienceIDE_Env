@@ -1,0 +1,309 @@
+{
+  "skimage.draw.ellipse": {
+    "implementation": {
+      "file": "src/skimage/draw/draw.py",
+      "line": 57,
+      "end_line": 152
+    },
+    "description": "Generate coordinates of pixels within ellipse.",
+    "calls": [
+      "abs",
+      "np.sin",
+      "np.cos",
+      "np.ceil(center - radii_rot).astype",
+      "np.floor(center + radii_rot).astype",
+      "_ellipse_in_shape",
+      "np.maximum",
+      "np.minimum",
+      "np.ceil",
+      "np.floor"
+    ],
+    "branches": [
+      {
+        "line": 139,
+        "expression": "shape is not None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.threshold_otsu": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 336,
+      "end_line": 407
+    },
+    "description": "Return threshold value based on Otsu's method.",
+    "calls": [
+      "np.cumsum",
+      "_validate_image_histogram",
+      "np.argmax",
+      "np.all",
+      "image.reshape"
+    ],
+    "branches": [
+      {
+        "line": 376,
+        "expression": "image is not None and image.ndim > 2 and (image.shape[-1] in (3, 4))"
+      },
+      {
+        "line": 385,
+        "expression": "image is not None"
+      },
+      {
+        "line": 387,
+        "expression": "np.all(image == first_pixel)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.find_contours": {
+    "implementation": {
+      "file": "src/skimage/measure/_find_contours.py",
+      "line": 10,
+      "end_line": 152
+    },
+    "description": "Find iso-valued contours in a 2D array for a given level value.",
+    "calls": [
+      "_get_contour_segments",
+      "_assemble_contours",
+      "mask.astype",
+      "image.astype",
+      "np.can_cast",
+      "np.nanmin",
+      "np.nanmax"
+    ],
+    "branches": [
+      {
+        "line": 125,
+        "expression": "fully_connected not in _param_options"
+      },
+      {
+        "line": 129,
+        "expression": "positive_orientation not in _param_options"
+      },
+      {
+        "line": 133,
+        "expression": "image.shape[0] < 2 or image.shape[1] < 2"
+      },
+      {
+        "line": 135,
+        "expression": "image.ndim != 2"
+      },
+      {
+        "line": 137,
+        "expression": "mask is not None"
+      },
+      {
+        "line": 143,
+        "expression": "level is None"
+      },
+      {
+        "line": 150,
+        "expression": "positive_orientation == 'high'"
+      },
+      {
+        "line": 138,
+        "expression": "mask.shape != image.shape"
+      },
+      {
+        "line": 140,
+        "expression": "not np.can_cast(mask.dtype, bool, casting='safe')"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.label": {
+    "implementation": {
+      "file": "src/skimage/measure/_label.py",
+      "line": 33,
+      "end_line": 125
+    },
+    "description": "Label connected regions of an integer array.",
+    "calls": [
+      "_label_bool",
+      "clabel"
+    ],
+    "branches": [
+      {
+        "line": 117,
+        "expression": "label_image.dtype == bool"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.regionprops": {
+    "implementation": {
+      "file": "src/skimage/measure/_regionprops.py",
+      "line": 1163,
+      "end_line": 1471
+    },
+    "description": "Measure properties of labeled image regions.",
+    "calls": [
+      "ndi.find_objects",
+      "RegionProperties",
+      "regions.append"
+    ],
+    "branches": [
+      {
+        "line": 1424,
+        "expression": "label_image.ndim not in (2, 3)"
+      },
+      {
+        "line": 1427,
+        "expression": "not np.issubdtype(label_image.dtype, np.integer)"
+      },
+      {
+        "line": 1439,
+        "expression": "offset is None"
+      },
+      {
+        "line": 1428,
+        "expression": "np.issubdtype(label_image.dtype, bool)"
+      },
+      {
+        "line": 1443,
+        "expression": "offset_arr.ndim != 1 or offset_arr.size != label_image.ndim"
+      },
+      {
+        "line": 1454,
+        "expression": "sl is None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.regionprops_table": {
+    "implementation": {
+      "file": "src/skimage/measure/_regionprops.py",
+      "line": 973,
+      "end_line": 1160
+    },
+    "description": "Compute region properties and return them as a pandas-compatible table.",
+    "calls": [
+      "regionprops",
+      "_props_to_dict",
+      "out_d.items"
+    ],
+    "branches": [
+      {
+        "line": 1138,
+        "expression": "extra_properties is not None"
+      },
+      {
+        "line": 1140,
+        "expression": "len(regions) == 0"
+      },
+      {
+        "line": 1144,
+        "expression": "intensity_image is not None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.remove_small_holes": {
+    "implementation": {
+      "file": "src/skimage/morphology/misc.py",
+      "line": 182,
+      "end_line": 298
+    },
+    "description": "Remove contiguous holes smaller than the specified size.",
+    "calls": [
+      "np.logical_not",
+      "deprecate_parameter",
+      "_check_dtype_supported",
+      "ar.astype",
+      "warnings.catch_warnings",
+      "warnings.filterwarnings",
+      "remove_small_objects"
+    ],
+    "branches": [
+      {
+        "line": 265,
+        "expression": "ar.dtype != bool"
+      },
+      {
+        "line": 272,
+        "expression": "out is not None"
+      },
+      {
+        "line": 273,
+        "expression": "out.dtype != bool"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.remove_small_objects": {
+    "implementation": {
+      "file": "src/skimage/morphology/misc.py",
+      "line": 60,
+      "end_line": 179
+    },
+    "description": "Remove objects smaller than the specified size.",
+    "calls": [
+      "deprecate_parameter",
+      "_check_dtype_supported",
+      "ar.copy",
+      "ndi.generate_binary_structure",
+      "ndi.label",
+      "np.bincount",
+      "ccs.ravel"
+    ],
+    "branches": [
+      {
+        "line": 140,
+        "expression": "out is None"
+      },
+      {
+        "line": 145,
+        "expression": "max_size == 0"
+      },
+      {
+        "line": 148,
+        "expression": "out.dtype == bool"
+      },
+      {
+        "line": 164,
+        "expression": "len(component_sizes) == 2 and out.dtype != bool"
+      },
+      {
+        "line": 170,
+        "expression": "min_size is not DEPRECATED"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.rotate": {
+    "implementation": {
+      "file": "src/skimage/transform/_warps.py",
+      "line": 346,
+      "end_line": 469
+    },
+    "description": "Rotate image by a certain angle around its center.",
+    "calls": [
+      "SimilarityTransform",
+      "warp",
+      "image.astype",
+      "tform.inverse",
+      "corners[:, 0].min",
+      "corners[:, 1].min",
+      "corners[:, 0].max",
+      "corners[:, 1].max",
+      "np.around",
+      "np.deg2rad"
+    ],
+    "branches": [
+      {
+        "line": 426,
+        "expression": "image.dtype == np.float16"
+      },
+      {
+        "line": 430,
+        "expression": "center is None"
+      },
+      {
+        "line": 440,
+        "expression": "resize"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

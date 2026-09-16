@@ -1,0 +1,162 @@
+!
+! *** Grid resolution.
+!
+&topology
+  nr = 51
+  nt = 31
+  np = 61
+/
+&data
+!
+! *** Use the new style output text files.
+!
+  legacy_output_filenames = .false.
+!
+! *** Radial domain.
+!
+  r0 = 1.0
+  r1 = 20.0
+!
+! *** Time domain.
+!
+  tmax = 0.5
+!
+! *** Grid specifications.
+!
+  rfrac    = 0.0,0.001,0.79,1.0
+  drratio  = 3.0,1000.0,1.0
+  nfrmesh  = 5
+  tfrac    = 0.0,1.274212E-01,2.227219E-01,2.644975E-01,
+             3.108777E-01,4.321008E-01,4.672269E-01,5.462185E-01,
+             8.218487E-01,1.0
+  dtratio  = 1.0,1.818182E-01,1.0,3.448276E-01,
+             1.0,2.9,1.0,5.5,1.0
+  nftmesh  = 5
+  pfrac    = 0.0,2.651704E-01,3.522672E-01,3.635225E-01,
+             3.743596E-01,3.961867E-01,4.090053E-01,4.206749E-01,
+             5.095594E-01
+  dpratio  = 1.0,1.333333E-01,1.0,5.000000E-01,
+             1.0,2.0,1.0,7.5,1.0
+  nfpmesh  = 5
+  phishift = 0.0
+!
+! *** Time step specifications.
+!
+  dtmax = 0.01
+  dtmin = 0.0001
+  dt_init = 0.0
+!
+! *** Output options.
+!
+  plotlist = 't'
+  ipltxint = 1
+  tpltxint = 0.0
+  slice_plotlist = 'rho'
+  slice_tp_radii = 10.0
+  slice_ixint = 1
+  slice_txint = 0.0
+  trace_txint = 0.0
+  hdf32 = .false.
+  rs_final = .false.
+  trsdump = 0.0
+!
+! *** Model specification.
+!
+  advance_a    = .true.
+  advance_v    = .true.
+  advance_t    = .true.
+  advance_rho  = .true.
+  advance_pw   = .false.
+  advance_zw   = .false.
+  advance_fcs  = .false.
+  trace_particles = .false.
+  slund = 1.e6
+  visc = 0.001
+  gamma = 1.666666666666667
+  g0 = 0.823
+  br00 = 0.0
+  rho0 = 20000.0
+  tbc0    = 20000.
+  tchromo = 20000.
+  iftfloor = .true.
+  tfloor  = 10000.
+  char_bc0 = .true.
+  char_bc1 = .true.
+  ubzero = .true.
+  filter_poles = .false.
+! *** Thermal conduction:
+  advance_tc = .true.
+  tcond = 1.0
+  t_cutoff1 = 250000.0
+  nfilt_kappa = 0
+  alpha_nocoll = 1.0
+  tc_dr = 0.5
+  tc_nocoll_dr = 0.5
+! *** Radiative loss:
+  radloss = 1.0
+  rad_law = 'CHIANTI_v713_HYBRID'
+! *** Heating:
+  heatsource(1)%active = .true.
+  heatsource(1)%name = 'QS'
+  heatsource(1)%type = 'br-dependent'
+  heatsource(1)%h0 = 0.044
+  heatsource(1)%lambda = 0.2
+  heatsource(1)%brmax = 0.25
+  heatsource(1)%b_attenuation = .false.
+  heatsource(1)%t_profile%active = .false.
+  heatsource(1)%r_profile%active = .false.
+  heatsource(1)%b_profile%active = .false.
+  heatsource(2)%active = .true.
+  heatsource(2)%name = 'AR'
+  heatsource(2)%type = 'b-dependent'
+  heatsource(2)%h0 = 0.18
+  heatsource(2)%power = 1.2
+  heatsource(2)%b_attenuation = .false.
+  heatsource(2)%t_profile%active = .false.
+  heatsource(2)%r_profile%active = .false.
+  heatsource(2)%b_profile%active = .true.
+  heatsource(2)%b_profile%f = 0.0,1.0,1.0
+  heatsource(2)%b_profile%x = 8.2
+  heatsource(2)%b_profile%w = 7.2,1.0
+  heatsource(3)%active = .true.
+  heatsource(3)%name = 'FW'
+  heatsource(3)%type = 'exponential'
+  heatsource(3)%h0 = 0.00184
+  heatsource(3)%lambda = 0.7
+  heatsource(3)%b_attenuation = .false.
+  heatsource(3)%t_profile%active = .false.
+  heatsource(3)%r_profile%active = .false.
+  heatsource(3)%b_profile%active = .false.
+!
+! *** Initial condition.
+!
+  initial_field = 'POTENTIAL_FIELD'
+  bnfile = 'br_input.h5'
+  initial_plasma = '1dfile'
+  onedfile = 'initial_plasma_1d_r.dat'
+!
+! *** Numerical algorithm options.
+!
+  cfl = 0.6
+  use_sts_visc = .false.
+  use_sts_tc   = .false.
+  visc_auto_subcycle = .false.
+  tc_auto_subcycle   = .false.
+  ifimplrad = 0
+  ifprec_t     = 3
+  ifprec_v     = 3
+  ifprec_pot2d = 3
+  ifprec_divb  = 3
+  epscg_a       = 1.e-9
+  epscg_v       = 1.e-9
+  epscg_t       = 1.e-9
+  epscg_potfld  = 1.e-9
+  epscg_newflux = 1.e-9
+  epscg_divb    = 1.e-9
+  ncgmax = 100000
+/
+!
+! A 3D CME for a model field like the May 12, 1997 CME.
+! The initial field is the sum of a sun-centered dipole
+! and a sub-surface bipole to represent the active region.
+!

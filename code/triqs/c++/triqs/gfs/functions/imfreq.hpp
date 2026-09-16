@@ -1,0 +1,450 @@
+// Copyright (c) 2016-2018 Commissariat à l'énergie atomique et aux énergies alternatives (CEA)
+// Copyright (c) 2016-2018 Centre national de la recherche scientifique (CNRS)
+// Copyright (c) 2018-2023 Simons Foundation
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You may obtain a copy of the License at
+//     https://www.gnu.org/licenses/gpl-3.0.txt
+//
+// Authors: Michel Ferrero, Olivier Parcollet, Nils Wentzell
+
+/**
+ * @file
+ * @brief Provides Matsubara-frequency-specific functions and reality / hermiticity helpers for Green's functions.
+ */
+
+#pragma once
+
+#include "./functions2.hpp"
+#include "../gf/gf.hpp"
+#include "../gf/gf_view.hpp"
+#include "../block/block_gf.hpp"
+#include "../../utility/exceptions.hpp"
+#include "../../utility/view_tools.hpp"
+
+#include "../../mesh/dlr_imfreq.hpp"
+#include "../../mesh/dlr_imtime.hpp"
+#include "../../mesh/imfreq.hpp"
+#include "../../mesh/imtime.hpp"
+
+#include <algorithm>
+#include <cmath>
+#include <type_traits>
+#include <utility>
+
+namespace triqs::gfs {
+
+  // Elevated from nda (name not found via ADL on some compilers).
+  using nda::conj; // not found on gcc 5
+
+  // ---------------------------  A few specific functions ---------------------------------
+
+  /**
+   * @ingroup triqs-gfs-reality
+   * @brief Build a full-mesh Matsubara Green's function from one defined on positive frequencies only.
+   *
+   * @details Uses the relation \f$ G(-i\omega_n) = G(i\omega_n)^* \f$, valid for Green's functions with a real
+   * imaginary-time counterpart, to fill in the negative-frequency part of the mesh.
+   *
+   * @tparam T Target type. @tparam Layout Layout type.
+   * @param g Green's function defined on a positive-only Matsubara mesh.
+   * @return The Green's function on the full (positive and negative) Matsubara mesh.
+   */
+  template <typename T, typename Layout> gf<mesh::imfreq, T> make_gf_from_real_gf(gf_const_view<mesh::imfreq, T, Layout> g) {
+    if (!g.mesh().positive_only()) TRIQS_RUNTIME_ERROR << "gf imfreq is not for omega_n >0, real_to_complex does not apply";
+    auto const &dat = g.data();
+    auto sh         = dat.shape();
+    int is_boson    = (g.mesh().statistic() == Boson);
+    long L          = sh[0];
+    sh[0]           = 2 * sh[0] - is_boson;
+    array<dcomplex, std::decay_t<decltype(dat)>::rank> new_data(sh);
+    auto ell = nda::ellipsis{};
+    if (is_boson) new_data(L - 1, ell) = dat(0, ell);
+    long L1 = (is_boson ? L - 1 : L);
+    for (long u = is_boson; u < L; ++u) {
+      new_data(L1 + u, ell)    = dat(u, ell);
+      new_data(L - 1 - u, ell) = conj(dat(u, ell));
+    }
+    return {mesh::imfreq{g.mesh().beta(), g.mesh().statistic(), L}, std::move(new_data)};
+  }
+
+  /**
+   * @ingroup triqs-gfs-reshape
+   * @brief Make a view of the positive-frequency part of a Matsubara Green's function.
+   *
+   * @tparam G The type of the Green's function (must be an lvalue or a view).
+   * @param g The Matsubara Green's function.
+   * @return A view onto the positive-frequency part of `g`.
+   */
+  template <typename G>
+  view_or_type_t<std::decay_t<G>>
+  positive_freq_view(G &&g) // NOLINT(cppcoreguidelines-missing-std-forward): the returned view binds to g's data; g is not moved
+    requires(is_gf_v<G>)
+  {
+    static_assert(std::is_same_v<typename std::decay_t<G>::mesh_t, mesh::imfreq>, "positive_freq_view only makes senses for imfreq gf");
+    static_assert(std::decay_t<G>::is_view or std::is_lvalue_reference_v<G>, "Cannot construct a positive_freq_view from a temporary gf");
+    if (g.mesh().positive_only()) return g;
+    long L       = g.mesh().size();
+    long L1      = (L + 1) / 2; // fermion : L is even. boson, L = 2p+1 --> p+1
+    int is_boson = (g.mesh().statistic() == Boson);
+    return {g.mesh().get_positive_freq(), g.data()(range(L1 - is_boson, L), nda::ellipsis())};
+  }
+
+  /**
+   * @ingroup triqs-gfs-reality
+   * @brief Test whether a Green's function satisfies the hermitian symmetry up to a tolerance \f$ \epsilon \f$.
+   *
+   * @details Depending on the mesh and target rank, one of the following relations is checked:
+   *
+   * - \f$ G(i\omega) \approx \frac{1}{2} [ G(i\omega) + G^*(-i\omega) ] \f$
+   * - \f$ G(\tau) \approx \frac{1}{2} [ G(\tau) + G^*(\tau) ] \f$
+   * - \f$ G_{i,j}(i\omega) \approx \frac{1}{2} [ G_{i,j}(i\omega) + G_{j,i}^*(i\omega) ] \f$
+   * - \f$ G_{i,j}(\tau) \approx \frac{1}{2} [ G_{i,j}(\tau) + G_{j,i}^*(\tau) ] \f$
+   * - \f$ G_{i,j,k,l}(i\omega) \approx \frac{1}{2} [ G_{i,j,k,l}(i\omega)] + G_{k,l,i,j}^*(i\omega) ] \f$
+   * - \f$ G_{i,j,k,l}(\tau) \approx \frac{1}{2} [ G_{i,j,k,l}(\tau) + G_{k,l,i,j}(\tau) ] \f$
+   * 
+   * For block Green's functions, the check is applied block-wise.
+   *
+   * @tparam G The type of the Green's function.
+   * @param g The Green's function to check.
+   * @param tolerance Tolerance \f$ \epsilon \f$ for the check (default \f$ 10^{-12} \f$).
+   * @return True if the property holds at every point of the mesh.
+   */
+  template <typename G>
+  bool is_gf_hermitian(G const &g, double tolerance = 1.e-12)
+    requires(is_gf_v<G> or is_block_gf_v<G>)
+  {
+    if constexpr (is_gf_v<G>) {
+      using target_t = typename G::target_t;
+      using mesh_t   = typename std::decay_t<G>::mesh_t;
+      static_assert(std::is_same_v<mesh_t, mesh::imfreq> or std::is_same_v<mesh_t, mesh::imtime> or std::is_same_v<mesh_t, mesh::dlr_imfreq>
+                       or std::is_same_v<mesh_t, mesh::dlr_imtime>,
+                    "is_gf_hermitian requires an imfreq, imtime, dlr_imfreq or dlr_imtime Green function");
+      static_assert(target_t::rank == 0 or target_t::rank == 2 or target_t::rank == 4,
+                    "is_gf_hermitian requires a Green function with a target rank of 0, 2 or 4.");
+
+      if constexpr (std::is_same_v<mesh_t, mesh::imfreq>) { // === gf<imfreq>
+        if (g.mesh().positive_only()) return true;
+        //for (auto w : g.mesh().get_positive_freq()) {
+        for (auto w : g.mesh()) {
+          if constexpr (target_t::rank == 0) { // ------ scalar_valued
+            if (abs(conj(g[-w]) - g[w]) > tolerance) return false;
+          } else if constexpr (target_t::rank == 2) { // matrix_valued
+            if (max_element(abs(dagger(g[-w]) - g[w])) > tolerance) return false;
+          } else { // ---------------------------------- tensor_valued<4>
+            for (auto [i, j, k, l] : g.target_indices())
+              if (abs(conj(g[-w](k, l, i, j)) - g[w](i, j, k, l)) > tolerance) return false;
+          }
+        }
+        return true;
+      } else if constexpr (std::is_same_v<mesh_t, mesh::dlr_imfreq>) { // === gf<dlr_imfreq>
+        // Requires symmetrize=true so that DLR nodes come in (iw, -iw) pairs
+        TRIQS_ASSERT(g.mesh().symmetrize());
+        long N = g.mesh().size();
+        for (long d = 0; d < N / 2; ++d) {
+          long d_neg = N - 1 - d;
+          if constexpr (target_t::rank == 0) { // ------ scalar_valued
+            if (abs(conj(g.data()(d_neg)) - g.data()(d)) > tolerance) return false;
+          } else if constexpr (target_t::rank == 2) { // matrix_valued
+            if (max_element(abs(dagger(g.data()(d_neg, ellipsis())) - g.data()(d, ellipsis()))) > tolerance) return false;
+          } else { // ---------------------------------- tensor_valued<4>
+            for (auto [i, j, k, l] : g.target_indices())
+              if (abs(conj(g.data()(d_neg, k, l, i, j)) - g.data()(d, i, j, k, l)) > tolerance) return false;
+          }
+        }
+        return true;
+      } else if constexpr (std::is_same_v<mesh_t, mesh::dlr_imtime>) { // === gf<dlr_imtime>
+        for (long d = 0; d < g.mesh().size(); ++d) {
+          if constexpr (target_t::rank == 0) { // ------ scalar_valued
+            if (abs(conj(g.data()(d)) - g.data()(d)) > tolerance) return false;
+          } else if constexpr (target_t::rank == 2) { // matrix_valued
+            for (auto [i, j] : g.target_indices())
+              if (abs(conj(g.data()(d, j, i)) - g.data()(d, i, j)) > tolerance) return false;
+          } else { // ---------------------------------- tensor_valued<4>
+            for (auto [i, j, k, l] : g.target_indices())
+              if (abs(conj(g.data()(d, k, l, i, j)) - g.data()(d, i, j, k, l)) > tolerance) return false;
+          }
+        }
+        return true;
+      } else { // === gf<imtime>
+        for (auto t : g.mesh()) {
+          if constexpr (target_t::rank == 0) { // ------ scalar_valued
+            if (abs(conj(g[t]) - g[t]) > tolerance) return false;
+          } else if constexpr (target_t::rank == 2) { // matrix_valued
+            for (auto [i, j] : g.target_indices())
+              if (abs(conj(g[t](j, i)) - g[t](i, j)) > tolerance) return false;
+          } else { // ---------------------------------- tensor_valued<4>
+            for (auto [i, j, k, l] : g.target_indices())
+              if (abs(conj(g[t](k, l, i, j)) - g[t](i, j, k, l)) > tolerance) return false;
+          }
+        }
+        return true;
+      }
+    } else { // Block Green function
+      return std::all_of(g.begin(), g.end(), [&](auto &g_bl) { return is_gf_hermitian<typename G::g_t>(g_bl, tolerance); });
+    }
+  }
+
+  /**
+   * @ingroup triqs-gfs-reality
+   * @brief Test whether a Matsubara Green's function corresponds to a real imaginary-time Green's function.
+   *
+   * @details The criterion checked, up to tolerance \f$ \epsilon \f$, is \f$ G_{i,j,\dots}(i\omega) \approx 
+   * G_{i,j,\dots}^*(-i\omega) \f$ for every element of the target space and for every Matsubara frequency.
+   * 
+   * For block Green's functions, the check is applied block-wise.
+   *
+   * @tparam G The type of the Green's function.
+   * @param g The Matsubara Green's function to check.
+   * @param tolerance Tolerance \f$ \epsilon \f$ for the check (default \f$ 10^{-12} \f$).
+   * @return True if the property holds at every point of the mesh.
+   */
+  template <typename G> bool is_gf_real_in_tau(G const &g, double tolerance = 1.e-12) {
+    if constexpr (is_gf_v<G>) {
+      using target_t = typename G::target_t;
+      using mesh_t   = typename std::decay_t<G>::mesh_t;
+      static_assert(std::is_same_v<mesh_t, mesh::imfreq>, "is_gf_hermitian requires an imfreq Green function");
+
+      if (g.mesh().positive_only()) return true;
+      for (auto w : g.mesh()) {
+        if constexpr (target_t::rank == 0) { // ---- scalar_valued
+          if (abs(conj(g[-w]) - g[w]) > tolerance) return false;
+        } else {
+          if (max_element(abs(conj(g[-w]) - g[w])) > tolerance) return false;
+        }
+      }
+      return true;
+    } else { // Block Green function
+      return std::all_of(g.begin(), g.end(), [&](auto &g_bl) { return is_gf_real_in_tau<typename G::g_t>(g_bl, tolerance); });
+    }
+  }
+
+  /**
+   * @ingroup triqs-gfs-reality
+   * @brief Symmetrize a Green's function so that it satisfies the hermitian symmetry.
+   *
+   * @details Depending on the mesh and target rank, one of the following transformations is applied:
+   *
+   * - \f$ G(i\omega) \rightarrow \frac{1}{2} [ G(i\omega) + G^*(-i\omega) ] \f$
+   * - \f$ G(\tau) \rightarrow \frac{1}{2} [ G(\tau) + G^*(\tau) ] \f$
+   * - \f$ G_{i,j}(i\omega) \rightarrow \frac{1}{2} [ G_{i,j}(i\omega) + G_{j,i}^*(i\omega) ] \f$
+   * - \f$ G_{i,j}(\tau) \rightarrow \frac{1}{2} [ G_{i,j}(\tau) + G_{j,i}^*(\tau) ] \f$
+   * - \f$ G_{i,j,k,l}(i\omega) \rightarrow \frac{1}{2} [ G_{i,j,k,l}(i\omega)] + G_{k,l,i,j}^*(i\omega) ] \f$
+   * - \f$ G_{i,j,k,l}(\tau) \rightarrow \frac{1}{2} [ G_{i,j,k,l}(\tau) + G_{k,l,i,j}(\tau) ] \f$
+   * 
+   * For block Green's functions, the symmetrization is applied block-wise.
+   *
+   * @tparam G The type of the Green's function.
+   * @param g The Green's function to symmetrize.
+   * @return The symmetrized Green's function.
+   */
+  template <typename G>
+  typename G::regular_type make_hermitian(G const &g)
+    requires(is_gf_v<G> or is_block_gf_v<G>)
+  {
+    if constexpr (is_gf_v<G>) {
+      using target_t = typename G::target_t;
+      using mesh_t   = typename std::decay_t<G>::mesh_t;
+      static_assert(std::is_same_v<mesh_t, mesh::imfreq> or std::is_same_v<mesh_t, mesh::imtime> or std::is_same_v<mesh_t, mesh::dlr_imfreq>
+                       or std::is_same_v<mesh_t, mesh::dlr_imtime>,
+                    "make_hermitian requires an imfreq, imtime, dlr_imfreq or dlr_imtime Green function");
+      static_assert(target_t::rank == 0 or target_t::rank == 2 or target_t::rank == 4,
+                    "make_hermitian requires a Green function with a target rank of 0, 2 or 4.");
+
+      if constexpr (std::is_same_v<mesh_t, mesh::imfreq>) { // === gf<imfreq>
+        if (g.mesh().positive_only()) return typename G::regular_type{g};
+        auto g_sym = typename G::regular_type{g};
+        for (auto w : g.mesh()) {
+          if constexpr (target_t::rank == 0) // ---- scalar_valued
+            g_sym[w] = 0.5 * (g[w] + conj(g[-w]));
+          else if constexpr (target_t::rank == 2) // matrix_valued
+            g_sym[w] = 0.5 * (g[w] + dagger(g[-w]));
+          else // ---------------------------------- tensor_valued<4>
+            for (auto [i, j, k, l] : g.target_indices()) g_sym[w](i, j, k, l) = 0.5 * (g[w](i, j, k, l) + conj(g[-w](k, l, i, j)));
+        }
+        return g_sym;
+
+      } else if constexpr (std::is_same_v<mesh_t, mesh::dlr_imfreq>) { // === gf<dlr_imfreq>
+        TRIQS_ASSERT(g.mesh().symmetrize());
+        auto g_sym = typename G::regular_type{g};
+        long N     = g.mesh().size();
+        for (long d = 0; d < N; ++d) {
+          long d_neg = N - 1 - d;
+          if constexpr (target_t::rank == 0)
+            g_sym.data()(d) = 0.5 * (g.data()(d) + conj(g.data()(d_neg)));
+          else if constexpr (target_t::rank == 2)
+            g_sym.data()(d, ellipsis()) = 0.5 * (g.data()(d, ellipsis()) + dagger(g.data()(d_neg, ellipsis())));
+          else
+            for (auto [i, j, k, l] : g.target_indices())
+              g_sym.data()(d, i, j, k, l) = 0.5 * (g.data()(d, i, j, k, l) + conj(g.data()(d_neg, k, l, i, j)));
+        }
+        return g_sym;
+      } else { // === gf<imtime> or gf<dlr_imtime>
+        auto g_sym = typename G::regular_type{g};
+        for (long d = 0; d < g.mesh().size(); ++d) {
+          if constexpr (target_t::rank == 0) // ---- scalar_valued
+            g_sym.data()(d) = 0.5 * (g.data()(d) + conj(g.data()(d)));
+          else if constexpr (target_t::rank == 2) // matrix_valued
+            for (auto [i, j] : g.target_indices()) g_sym.data()(d, i, j) = 0.5 * (g.data()(d, i, j) + conj(g.data()(d, j, i)));
+          else // ---------------------------------- tensor_valued<4>
+            for (auto [i, j, k, l] : g.target_indices())
+              g_sym.data()(d, i, j, k, l) = 0.5 * (g.data()(d, i, j, k, l) + conj(g.data()(d, k, l, i, j)));
+        }
+        return g_sym;
+      }
+    } else if (is_block_gf_v<G>) { // Block Green function
+      return map_block_gf(make_hermitian<typename G::g_t>, g);
+    }
+  }
+
+  /**
+   * @ingroup triqs-gfs-reality
+   * @brief Symmetrize a Matsubara Green's function so that its imaginary-time partner is real-valued.
+   *
+   * @details The transformation applied is \f$ G_{i,j,\dots}(i\omega) \rightarrow \frac{1}{2} [ G_{i,j,\dots}(i\omega) 
+   * + G_{i,j,\dots}^*(-i\omega) ] \f$.
+   * 
+   * For block Green's functions, the symmetrization is applied block-wise.
+   *
+   * @tparam G The type of the Green's function.
+   * @param g The Matsubara Green's function to symmetrize.
+   * @return The symmetrized Green's function.
+   */
+  template <typename G>
+  typename G::regular_type make_real_in_tau(G const &g)
+    requires(is_gf_v<G> or is_block_gf_v<G>)
+  {
+    if constexpr (is_gf_v<G>) {
+      using mesh_t = typename std::decay_t<G>::mesh_t;
+      static_assert(std::is_same_v<mesh_t, mesh::imfreq>, "make_real_in_tau requires an imfreq Green function");
+
+      if (g.mesh().positive_only()) return typename G::regular_type{g};
+      auto g_sym = typename G::regular_type{g};
+      for (auto w : g.mesh()) { g_sym[w] = 0.5 * (g[w] + conj(g[-w])); }
+      return g_sym;
+    } else if (is_block_gf_v<G>) { // Block Green function
+      return map_block_gf(make_real_in_tau<typename G::g_t>, g);
+    }
+  }
+
+  // ------------------------------------------------------------------------------------------------------
+
+  /**
+   * @ingroup triqs-gfs-reshape
+   * @brief Make a const view of a Matsubara Green's function restricted to the first `n_max` frequency indices.
+   *
+   * @tparam G The Green's function container template.
+   * @tparam T The target type of the Green's function.
+   * @param g The Matsubara Green's function.
+   * @param n_max Number of (positive) Matsubara indices to keep.
+   * @return A const view on the restricted frequency range.
+   */
+  template <template <typename, typename, typename...> typename G, typename T> auto restricted_view(G<mesh::imfreq, T> const &g, int n_max) {
+    auto iw_mesh = mesh::imfreq{g.mesh().beta(), Fermion, n_max};
+
+    auto const &old_mesh = g.mesh();
+    int idx_min          = old_mesh.to_data_index(iw_mesh.first_index());
+    int idx_max          = old_mesh.to_data_index(iw_mesh.last_index());
+    auto data_view       = g.data()(range(idx_min, idx_max + 1), ellipsis());
+
+    return typename G<mesh::imfreq, T>::const_view_type{iw_mesh, data_view};
+  }
+
+  /**
+   * @ingroup triqs-gfs-tailfitting
+   * @brief Overwrite the high-frequency tail of a Matsubara Green's function.
+   *
+   * @details For every Matsubara index with \f$ |n| \geq n_{\min} \f$, the value of the Green's function is replaced by 
+   * the tail expansion evaluated at that frequency. Values at lower indices are left unchanged.
+   *
+   * @tparam T The target type of the Green's function.
+   * @param g The Matsubara Green's function to modify in place.
+   * @param tail The high-frequency moments used to build the tail.
+   * @param n_min Minimum absolute Matsubara index from which to apply the tail.
+   */
+  template <typename T> void replace_by_tail(gf_view<mesh::imfreq, T> g, array_const_view<dcomplex, 1 + T::rank> tail, int n_min) {
+    for (auto iw : g.mesh())
+      if (iw.n >= n_min or iw.n < -n_min) g[iw] = mesh::detail::tail_eval(tail, iw);
+  }
+
+  /**
+   * @ingroup triqs-gfs-tailfitting
+   * @brief Overwrite the high-frequency portion of a Matsubara Green's function with the tail expansion.
+   *
+   * @details The cutoff \f$ n_{\min} \f$ is first set automatically from the tail-fit window of the mesh. Then the 
+   * function delegates to ``replace_by_tail``.
+   *
+   * @tparam T The target type of the Green's function.
+   * @param g The Matsubara Green's function to modify in place.
+   * @param tail The high-frequency moments used to build the tail.
+   */
+  template <typename T> void replace_by_tail_in_fit_window(gf_view<mesh::imfreq, T> g, array_const_view<dcomplex, 1 + T::rank> tail) {
+    int n_pts_in_fit_range = int(std::round(g.mesh().get_tail_fitter().get_tail_fraction() * g.mesh().size() / 2));
+    int n_min              = g.mesh().last_index() - n_pts_in_fit_range;
+    replace_by_tail(g, tail, n_min);
+  }
+
+  /**
+   * @ingroup triqs-gfs-tailfitting
+   * @brief Fit the high-frequency tail of a Matsubara Green's function on a restricted frequency window.
+   *
+   * @details The fit is performed on the window \f$ [n_{\min}, n_{\max}] \f$ of the Matsubara mesh (\f$ n_{\max} = 
+   * -1 \f$ selects the last index of the mesh). The tail fitter is configured from ``n_tail_max`` and 
+   * ``expansion_order``, and the fit is delegated to ``fit_tail``.
+   *
+   * @tparam G The Green's function container template.
+   * @tparam T The target type of the Green's function.
+   * @param g The Matsubara Green's function whose tail is to be fitted.
+   * @param n_min Minimum Matsubara index of the fit window.
+   * @param n_max Maximum Matsubara index of the fit window (\f$ -1 \f$ means use the last index of the mesh).
+   * @param known_moments Array of known high-frequency moments to constrain the fit.
+   * @param n_tail_max Maximum frequency index used internally by the tail fitter.
+   * @param expansion_order Order of the tail expansion to fit.
+   * @return A pair containing the fitted tail moments and the fitting error.
+   */
+  template <template <typename, typename, typename...> typename G, typename T>
+  auto fit_tail_on_window(G<mesh::imfreq, T> const &g, int n_min, int n_max, array_const_view<dcomplex, 3> known_moments, int n_tail_max,
+                          int expansion_order) {
+    if (n_max == -1) n_max = g.mesh().last_index();
+    auto g_rview         = restricted_view(g, n_max);
+    double tail_fraction = static_cast<double>(n_max - n_min) / n_max;
+    g_rview.mesh().set_tail_fit_parameters(tail_fraction, n_tail_max, expansion_order);
+    return fit_tail(g_rview, known_moments);
+  }
+
+  /**
+   * @ingroup triqs-gfs-tailfitting
+   * @brief Fit the high-frequency tail on a restricted window, imposing hermitian moment matrices.
+   *
+   * @details Behaves like ``fit_tail_on_window`` but enforces the symmetry \f$ G_{i,j}(i\omega) = 
+   * G_{j,i}^*(-i\omega) \f$ on the fitted moments.
+   *
+   * @tparam G The Green's function container template.
+   * @tparam T The target type of the Green's function.
+   * @param g The Matsubara Green's function whose tail is to be fitted.
+   * @param n_min Minimum Matsubara index of the fit window.
+   * @param n_max Maximum Matsubara index of the fit window (\f$ -1 \f$ means use the last index of the mesh).
+   * @param known_moments Array of known high-frequency moments to constrain the fit.
+   * @param n_tail_max Maximum frequency index used internally by the tail fitter.
+   * @param expansion_order Order of the tail expansion to fit.
+   * @return A pair containing the fitted tail moments and the fitting error.
+   */
+  template <template <typename, typename...> typename G, typename T>
+  auto fit_hermitian_tail_on_window(G<mesh::imfreq, T> const &g, int n_min, int n_max, array_const_view<dcomplex, 3> known_moments, int n_tail_max,
+                                    int expansion_order) {
+    if (n_max == -1) n_max = g.mesh().last_index();
+    auto g_rview         = restricted_view(g, n_max);
+    double tail_fraction = static_cast<double>(n_max - n_min) / n_max;
+    g_rview.mesh().set_tail_fit_parameters(tail_fraction, n_tail_max, expansion_order);
+    return fit_hermitian_tail(g_rview, known_moments);
+  }
+} // namespace triqs::gfs

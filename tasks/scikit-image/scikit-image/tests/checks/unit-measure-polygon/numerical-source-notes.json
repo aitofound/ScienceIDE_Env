@@ -1,0 +1,76 @@
+{
+  "skimage.measure.approximate_polygon": {
+    "implementation": {
+      "file": "src/skimage/measure/_polygon.py",
+      "line": 5,
+      "end_line": 91
+    },
+    "description": "Approximate a polygonal chain with the specified tolerance.",
+    "calls": [
+      "np.sqrt",
+      "pos_stack.append",
+      "np.sin",
+      "np.cos",
+      "pos_stack.pop",
+      "np.logical_and",
+      "np.logical_not",
+      "np.abs",
+      "np.minimum",
+      "np.any",
+      "np.arctan2",
+      "np.argmax"
+    ],
+    "branches": [
+      {
+        "line": 31,
+        "expression": "tolerance <= 0"
+      },
+      {
+        "line": 42,
+        "expression": "not end_of_chain"
+      },
+      {
+        "line": 81,
+        "expression": "np.any(segment_dists > tolerance)"
+      },
+      {
+        "line": 88,
+        "expression": "len(pos_stack) == 0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.subdivide_polygon": {
+    "implementation": {
+      "file": "src/skimage/measure/_polygon.py",
+      "line": 108,
+      "end_line": 168
+    },
+    "description": "Subdivision of polygonal curves using B-Splines.",
+    "calls": [
+      "signal.convolve2d",
+      "np.atleast_2d",
+      "np.vstack",
+      "np.all"
+    ],
+    "branches": [
+      {
+        "line": 133,
+        "expression": "degree not in _SUBDIVISION_MASKS"
+      },
+      {
+        "line": 139,
+        "expression": "circular"
+      },
+      {
+        "line": 161,
+        "expression": "circular"
+      },
+      {
+        "line": 165,
+        "expression": "preserve_ends and (not circular)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

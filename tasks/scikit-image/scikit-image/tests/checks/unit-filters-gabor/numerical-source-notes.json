@@ -1,0 +1,73 @@
+{
+  "skimage.filters._gabor._sigma_prefactor": {
+    "implementation": {
+      "file": "src/skimage/filters/_gabor.py",
+      "line": 11,
+      "end_line": 14
+    },
+    "description": "",
+    "calls": [
+      "math.sqrt",
+      "math.log"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.gabor": {
+    "implementation": {
+      "file": "src/skimage/filters/_gabor.py",
+      "line": 115,
+      "end_line": 220
+    },
+    "description": "Return real and imaginary responses to Gabor filter.",
+    "calls": [
+      "ndi.convolve",
+      "gabor_kernel",
+      "image.astype",
+      "np.promote_types",
+      "np.real",
+      "np.imag"
+    ],
+    "branches": [
+      {
+        "line": 199,
+        "expression": "image.dtype.kind == 'f'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.gabor_kernel": {
+    "implementation": {
+      "file": "src/skimage/filters/_gabor.py",
+      "line": 17,
+      "end_line": 112
+    },
+    "description": "Return complex 2D Gabor filter kernel.",
+    "calls": [
+      "abs",
+      "math.ceil",
+      "max",
+      "np.arange",
+      "_sigma_prefactor",
+      "math.cos",
+      "math.sin",
+      "np.meshgrid",
+      "np.exp"
+    ],
+    "branches": [
+      {
+        "line": 86,
+        "expression": "sigma_x is None"
+      },
+      {
+        "line": 88,
+        "expression": "sigma_y is None"
+      },
+      {
+        "line": 91,
+        "expression": "np.dtype(dtype).kind != 'c'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

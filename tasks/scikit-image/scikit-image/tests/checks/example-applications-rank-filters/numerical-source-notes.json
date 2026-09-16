@@ -1,0 +1,512 @@
+{
+  "skimage.exposure.equalize_hist": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 359,
+      "end_line": 398
+    },
+    "description": "Return image after histogram equalization.",
+    "calls": [
+      "cumulative_distribution",
+      "np.interp",
+      "out.reshape",
+      "out.astype",
+      "utils._supported_float_type"
+    ],
+    "branches": [
+      {
+        "line": 389,
+        "expression": "mask is not None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.histogram": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 190,
+      "end_line": 276
+    },
+    "description": "Return histogram of image.",
+    "calls": [
+      "_histogram",
+      "utils.channel_as_last_axis",
+      "utils.warn",
+      "np.stack",
+      "_bincount_histogram_centers",
+      "_get_numpy_hist_range",
+      "_get_bin_edges",
+      "hist.append"
+    ],
+    "branches": [
+      {
+        "line": 246,
+        "expression": "len(sh) == 3 and sh[-1] < 4 and (channel_axis is None)"
+      },
+      {
+        "line": 254,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 259,
+        "expression": "np.issubdtype(image.dtype, np.integer)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.rescale_intensity": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 491,
+      "end_line": 607
+    },
+    "description": "Return image after stretching or shrinking its intensity levels.",
+    "calls": [
+      "map",
+      "np.clip",
+      "_output_dtype",
+      "intensity_range",
+      "np.any",
+      "np.isnan",
+      "utils.warn",
+      "(image * (omax - omin) + omin).astype",
+      "np.clip(image, omin, omax).astype"
+    ],
+    "branches": [
+      {
+        "line": 583,
+        "expression": "out_range in ['dtype', 'image']"
+      },
+      {
+        "line": 593,
+        "expression": "np.any(np.isnan([imin, imax, omin, omax]))"
+      },
+      {
+        "line": 603,
+        "expression": "imin != imax"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.rank.autolevel": {
+    "implementation": {
+      "file": "src/skimage/filters/rank/generic.py",
+      "line": 442,
+      "end_line": 504
+    },
+    "description": "Auto-level image using local histogram.",
+    "calls": [
+      "np.asanyarray",
+      "_apply_scalar_per_pixel",
+      "_apply_scalar_per_pixel_3D"
+    ],
+    "branches": [
+      {
+        "line": 483,
+        "expression": "np_image.ndim == 2"
+      },
+      {
+        "line": 493,
+        "expression": "np_image.ndim == 3"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.rank.autolevel_percentile": {
+    "implementation": {
+      "file": "src/skimage/filters/rank/_percentile.py",
+      "line": 68,
+      "end_line": 113
+    },
+    "description": "Return grayscale local autolevel of an image.",
+    "calls": [
+      "_apply"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.rank.enhance_contrast": {
+    "implementation": {
+      "file": "src/skimage/filters/rank/generic.py",
+      "line": 1118,
+      "end_line": 1183
+    },
+    "description": "Enhance contrast of an image.",
+    "calls": [
+      "np.asanyarray",
+      "_apply_scalar_per_pixel",
+      "_apply_scalar_per_pixel_3D"
+    ],
+    "branches": [
+      {
+        "line": 1162,
+        "expression": "np_image.ndim == 2"
+      },
+      {
+        "line": 1172,
+        "expression": "np_image.ndim == 3"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.rank.enhance_contrast_percentile": {
+    "implementation": {
+      "file": "src/skimage/filters/rank/_percentile.py",
+      "line": 251,
+      "end_line": 297
+    },
+    "description": "Enhance contrast of an image.",
+    "calls": [
+      "_apply"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.rank.entropy": {
+    "implementation": {
+      "file": "src/skimage/filters/rank/generic.py",
+      "line": 1482,
+      "end_line": 1551
+    },
+    "description": "Local entropy.",
+    "calls": [
+      "np.asanyarray",
+      "_apply_scalar_per_pixel",
+      "_apply_scalar_per_pixel_3D"
+    ],
+    "branches": [
+      {
+        "line": 1528,
+        "expression": "np_image.ndim == 2"
+      },
+      {
+        "line": 1539,
+        "expression": "np_image.ndim == 3"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.rank.equalize": {
+    "implementation": {
+      "file": "src/skimage/filters/rank/generic.py",
+      "line": 507,
+      "end_line": 566
+    },
+    "description": "Equalize image using local histogram.",
+    "calls": [
+      "np.asanyarray",
+      "_apply_scalar_per_pixel",
+      "_apply_scalar_per_pixel_3D"
+    ],
+    "branches": [
+      {
+        "line": 545,
+        "expression": "np_image.ndim == 2"
+      },
+      {
+        "line": 555,
+        "expression": "np_image.ndim == 3"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.rank.gradient": {
+    "implementation": {
+      "file": "src/skimage/filters/rank/generic.py",
+      "line": 569,
+      "end_line": 628
+    },
+    "description": "Return local gradient of an image (i.e. local maximum - local minimum).",
+    "calls": [
+      "np.asanyarray",
+      "_apply_scalar_per_pixel",
+      "_apply_scalar_per_pixel_3D"
+    ],
+    "branches": [
+      {
+        "line": 607,
+        "expression": "np_image.ndim == 2"
+      },
+      {
+        "line": 617,
+        "expression": "np_image.ndim == 3"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.rank.maximum": {
+    "implementation": {
+      "file": "src/skimage/filters/rank/generic.py",
+      "line": 631,
+      "end_line": 699
+    },
+    "description": "Return local maximum of an image.",
+    "calls": [
+      "np.asanyarray",
+      "_apply_scalar_per_pixel",
+      "_apply_scalar_per_pixel_3D"
+    ],
+    "branches": [
+      {
+        "line": 678,
+        "expression": "np_image.ndim == 2"
+      },
+      {
+        "line": 688,
+        "expression": "np_image.ndim == 3"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.rank.mean": {
+    "implementation": {
+      "file": "src/skimage/filters/rank/generic.py",
+      "line": 702,
+      "end_line": 761
+    },
+    "description": "Return local mean of an image.",
+    "calls": [
+      "np.asanyarray",
+      "_apply_scalar_per_pixel",
+      "_apply_scalar_per_pixel_3D"
+    ],
+    "branches": [
+      {
+        "line": 740,
+        "expression": "np_image.ndim == 2"
+      },
+      {
+        "line": 750,
+        "expression": "np_image.ndim == 3"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.rank.mean_bilateral": {
+    "implementation": {
+      "file": "src/skimage/filters/rank/bilateral.py",
+      "line": 60,
+      "end_line": 125
+    },
+    "description": "Apply a flat kernel bilateral filter.",
+    "calls": [
+      "_apply"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.rank.median": {
+    "implementation": {
+      "file": "src/skimage/filters/rank/generic.py",
+      "line": 905,
+      "end_line": 980
+    },
+    "description": "Return local median of an image.",
+    "calls": [
+      "np.asanyarray",
+      "ndi.generate_binary_structure",
+      "_apply_scalar_per_pixel",
+      "_apply_scalar_per_pixel_3D"
+    ],
+    "branches": [
+      {
+        "line": 957,
+        "expression": "footprint is None"
+      },
+      {
+        "line": 959,
+        "expression": "np_image.ndim == 2"
+      },
+      {
+        "line": 969,
+        "expression": "np_image.ndim == 3"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.rank.minimum": {
+    "implementation": {
+      "file": "src/skimage/filters/rank/generic.py",
+      "line": 983,
+      "end_line": 1051
+    },
+    "description": "Return local minimum of an image.",
+    "calls": [
+      "np.asanyarray",
+      "_apply_scalar_per_pixel",
+      "_apply_scalar_per_pixel_3D"
+    ],
+    "branches": [
+      {
+        "line": 1030,
+        "expression": "np_image.ndim == 2"
+      },
+      {
+        "line": 1040,
+        "expression": "np_image.ndim == 3"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.rank.otsu": {
+    "implementation": {
+      "file": "src/skimage/filters/rank/generic.py",
+      "line": 1554,
+      "end_line": 1619
+    },
+    "description": "Local Otsu's threshold value for each pixel.",
+    "calls": [
+      "np.asanyarray",
+      "_apply_scalar_per_pixel",
+      "_apply_scalar_per_pixel_3D"
+    ],
+    "branches": [
+      {
+        "line": 1598,
+        "expression": "np_image.ndim == 2"
+      },
+      {
+        "line": 1608,
+        "expression": "np_image.ndim == 3"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.threshold_otsu": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 336,
+      "end_line": 407
+    },
+    "description": "Return threshold value based on Otsu's method.",
+    "calls": [
+      "np.cumsum",
+      "_validate_image_histogram",
+      "np.argmax",
+      "np.all",
+      "image.reshape"
+    ],
+    "branches": [
+      {
+        "line": 376,
+        "expression": "image is not None and image.ndim > 2 and (image.shape[-1] in (3, 4))"
+      },
+      {
+        "line": 385,
+        "expression": "image is not None"
+      },
+      {
+        "line": 387,
+        "expression": "np.all(image == first_pixel)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.ball": {
+    "implementation": {
+      "file": "src/skimage/morphology/footprints.py",
+      "line": 841,
+      "end_line": 911
+    },
+    "description": "Generates a ball-shaped footprint.",
+    "calls": [
+      "_nsphere_series_decomposition"
+    ],
+    "branches": [
+      {
+        "line": 896,
+        "expression": "decomposition is None"
+      },
+      {
+        "line": 904,
+        "expression": "not strict_radius"
+      },
+      {
+        "line": 907,
+        "expression": "decomposition == 'sequence'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.dilation": {
+    "implementation": {
+      "file": "src/skimage/morphology/gray.py",
+      "line": 174,
+      "end_line": 284
+    },
+    "description": "Return grayscale morphological dilation of an image.",
+    "calls": [
+      "_min_max_to_constant_mode",
+      "pad_footprint",
+      "mirror_footprint",
+      "_iterate_gray_func",
+      "_footprint_is_sequence"
+    ],
+    "branches": [
+      {
+        "line": 260,
+        "expression": "out is None"
+      },
+      {
+        "line": 263,
+        "expression": "mode not in _SUPPORTED_MODES"
+      },
+      {
+        "line": 265,
+        "expression": "mode == 'ignore'"
+      },
+      {
+        "line": 273,
+        "expression": "not _footprint_is_sequence(footprint)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.disk": {
+    "implementation": {
+      "file": "src/skimage/morphology/footprints.py",
+      "line": 508,
+      "end_line": 597
+    },
+    "description": "Generates a flat, disk-shaped footprint.",
+    "calls": [
+      "np.arange",
+      "np.meshgrid",
+      "_nsphere_series_decomposition",
+      "disk",
+      "_cross_decomposition"
+    ],
+    "branches": [
+      {
+        "line": 586,
+        "expression": "decomposition is None"
+      },
+      {
+        "line": 589,
+        "expression": "not strict_radius"
+      },
+      {
+        "line": 592,
+        "expression": "decomposition == 'sequence'"
+      },
+      {
+        "line": 594,
+        "expression": "decomposition == 'crosses'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_ubyte": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 557,
+      "end_line": 578
+    },
+    "description": "Convert an image to 8-bit unsigned integer format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

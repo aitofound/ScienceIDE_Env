@@ -1,0 +1,305 @@
+.. _applications:
+
+**Applications based on TRIQS**
+###############################
+
+The TRIQS library provides all the necessary building blocks for the
+development of applications for the study of interacting quantum systems.
+These applications can be grouped into one of the following categories:
+
+* **Official applications**
+
+  These applications have readily been developed and are maintained by the TRIQS
+  collaboration.
+
+* **External applications**
+
+  These applications were developed and are maintained externally but are still fundamentally
+  relying on TRIQS library features.
+
+* **Interfaces to external codes**
+
+  These applications are thin wrappers around TRIQS independent codes that are developed and
+  maintained externally. The maintenance of the interface layer is commonly shared between the
+  TRIQS collaboration and the external developers.
+
+If you would like to have your application listed please contact us directly.
+
+.. _impurity_solvers:
+
+**Impurity Solvers**
+====================
+
+**Hybridization-expansion solver**
+----------------------------------
+
+The hybridization-expansion solver is an official TRIQS application that allows
+to solve the generic problem of a quantum impurity embedded in a conduction bath.
+It is based on a quantum Monte Carlo algorithm that stochastically samples the
+diagrams of a hybridization expansion of the partition function.
+
+For publications based on results produced with this application please cite `Comput. Phys. Comm. 200, 274 (2016) <https://www.sciencedirect.com/science/article/pii/S001046551500404X>`_
+
+*Homepage:* `<https://triqs.github.io/cthyb/>`_
+
+**Segment Picture Hybridization-expansion solver**
+--------------------------------------------------
+
+The segment picture hybridization-expansion solver can solve quantum impurity models
+with local Hamiltonians that commute with the impurity density operators.
+When applicable, this algorithm is more efficient than the vanilla hybridization-expansion.
+In addition to a static local Hamiltonian, dynamic density-density and spin-spin interactions
+can be included.
+
+*Homepage:* `<https://triqs.github.io/ctseg/>`_
+
+**Interaction-expansion solver**
+--------------------------------
+
+The interaction-expansion solver is an official TRIQS application that allows
+to solve the generic problem of a quantum impurity embedded in a conduction bath
+for an arbitrary local interaction vertex. It is based on a continuous-time quantum
+Monte Carlo algorithm that stochastically samples the diagrams of a weak-coupling
+expansion of the partition function in powers of the interaction (CT-INT).
+
+For publications based on results produced with this application please cite `10.5281/zenodo.15598402 <https://doi.org/10.5281/zenodo.15598402>`_
+
+*Homepage:* `<https://triqs.github.io/ctint/>`_
+
+**X-Crossing Approximation (XCA) solver**
+-----------------------------------------
+
+The X-Crossing Approximation solver is an official TRIQS application that
+solves generic multiband Anderson impurity problems approximately through a
+perturbative (bold) expansion in the coupling to the bath, i.e. the hybridization
+function. It leverages a sum-of-exponentials representation together with the
+Discrete Lehmann Representation to achieve a parametrically better computational
+complexity than direct integration.
+
+For publications based on results produced with this application please cite `Phys. Rev. X 14, 031034 (2024) <https://doi.org/10.1103/PhysRevX.14.031034>`_ and `SciPost Phys. 19, 121 (2025) <https://doi.org/10.21468/SciPostPhys.19.5.121>`_
+
+*Homepage:* `<https://triqs.github.io/xca/>`_
+
+**Hubbard I solver**
+--------------------
+
+This solver gives the Hubbard I solution of a quantum impurity problem,
+i.e. it solves the atomic limit. This simple approximation allows for
+very quick answers even for large multiband systems.
+
+*Homepage:* `<https://triqs.github.io/hubbardI/>`_
+
+**Hartree Fock solver**
+-----------------------
+
+This solver calculates the self-consistent Hartree or Hartree Fock approximation for
+a given quantum impurity or lattice problem. It uses gradient descent to solve the
+self-consistency at fixed density or chemical potential. The solver is limited to
+static and local interactions.
+
+*Homepage:* `<https://triqs.github.io/hartree_fock/>`_
+
+**gem - Gutzwiller Embedding Method**
+-------------------------------------
+
+gem is an official TRIQS application implementing the ghost Gutzwiller approximation (ghost-GA),
+a quantum embedding method that augments the Gutzwiller variational approach with auxiliary
+("ghost") degrees of freedom. These additional bath levels systematically improve the
+description of the local spectral function and quasiparticle properties of correlated
+electron systems beyond the standard Gutzwiller approximation.
+
+*Homepage:* `<https://triqs.github.io/gem/>`_
+
+**PYED - Exact diagonalization for finite quantum systems (external)**
+----------------------------------------------------------------------
+
+The TRIQS-based python application pyed implements exact diagonalization for finite fermionic many-body quantum systems,
+together with calculations of several response functions in imagianary time.
+
+*Homepage*: `<https://github.com/hugostrand/pyed/>`_
+
+**Interface to the pomerol exact diagonalization solver (external)**
+--------------------------------------------------------------------
+
+TRIQS wrapper around the `Pomerol <http://aeantipov.github.io/pomerol>`_ exact diagonalization library.
+
+For publications based on results produced with this application please cite `10.5281/zenodo.592291 <https://doi.org/10.5281/zenodo.592291>`_
+
+*Homepage*: `<https://github.com/krivenko/pomerol2triqs/>`_
+
+**Interface to the EDIpack impurity solver**
+--------------------------------------------------
+
+This application provides an interface to the Lanczos-based exact diagonalization 
+impurity solver `EDIpack <https://edipack.github.io/EDIpack/>`_.
+
+For publications based on results produced with this application please cite `SciPost Phys. Codebases 58 (2025) <https://doi.org/10.21468/SciPostPhysCodeb.58>`_ and `Comput. Phys. Commun. 273, 108261 (2022) <https://doi.org/10.1016/j.cpc.2021.108261>`_
+
+*Homepage*: `<https://edipack.github.io/edipack2triqs/>`_
+
+**Interface to the w2dynamics impurity solver**
+-----------------------------------------------
+
+This application provides an interface to the continuous-time hybridization expansion
+impurity solver contained in the `w2dynamics <https://github.com/w2dynamics/w2dynamics>`_ software package.
+
+For publications based on results produced with this application please cite `Comput. Phys. Commun. 235, 388 (2019) <https://www.sciencedirect.com/science/article/pii/S0010465518303217>`_
+
+*Homepage*: `<https://triqs.github.io/w2dynamics_interface/>`_
+
+**Interface to the NRG Ljubljana impurity solver**
+--------------------------------------------------
+
+This application provides an interface to the numerical renormalization group
+impurity solver `NRG Ljubljana <http://nrgljubljana.ijs.si>`_.
+
+For publications based on results produced with this application please cite `Phys. Rev. B 79, 085106 (2009) <https://doi.org/10.1103/PhysRevB.79.085106>`_
+
+*Homepage*: `<https://triqs.github.io/nrgljubljana_interface/>`_
+
+
+.. _abinitio_tools:
+
+**Ab-Initio Tools**
+===================
+
+**DFT tools - Toolbox for ab initio calculations of correlated materials**
+--------------------------------------------------------------------------
+
+DFTTools is an official TRIQS application that provides an interface to DFT packages
+such as Wien2k and VASP for DFT+DMFT calculation. It allows you to turn band-structure calculations
+results to inputs for full-fledged DFT+DMFT calculations in a few lines.
+
+For publications based on results produced with this application please cite `Comput. Phys. Comm. 204, 200 (2016) <https://www.sciencedirect.com/science/article/pii/S0010465516300728?via%3Dihub>`_
+
+*Homepage:* `<https://triqs.github.io/dft_tools/>`_
+
+**dftkit - DFT converters for TRIQS**
+-------------------------------------
+
+dftkit is an official TRIQS application that provides converters turning the output of
+various DFT codes into the TRIQS-compatible HDF5 format required for DFT+DMFT calculations.
+Supported codes include Elk, VASP (with the PLOVasp projection tools), Wien2k (with the
+``dmftproj`` executable), Quantum Espresso, Wannier90 and generic tight-binding Hamiltonians.
+It provides a modern, modular successor to the converters historically shipped with DFTTools.
+
+*Homepage:* `<https://triqs.github.io/dftkit/>`_
+
+**modest - Modular Electronic Structure Toolkit**
+-------------------------------------------------
+
+modest is an official TRIQS application written in C++ with a Python interface that extends
+the modular design of TRIQS with an API tailored to electronic-structure developers and users.
+Key features include interfaces to external DFT codes (VASP, Quantum Espresso, Wien2k, Elk,
+AbInit, Wannier90), a generic representation of DFT one-body data, a flexible description of
+generic DMFT embedding scenarios, and high-performance implementations of key routines such as
+the local Green's function, the chemical-potential search and the lattice density.
+
+*Homepage:* `<https://triqs.github.io/modest/>`_
+
+**solid_dmft - Python wrapper to perform DFT+DMFT calculations using TRIQS**
+----------------------------------------------------------------------------
+
+solid_dmft allows to perform DFT+DMFT ''one-shot'' and charge self-consistent
+(CSC) calculations from h5 archives, created by DFTTools or VASP/Quantum Espresso
+input files for multiband systems. It takes advantage of various impurity solvers
+available in TRIQS. Postprocessing scripts are available to perform analytic
+continuation and calculate spectral functions.
+
+*Homepage:* `<https://triqs.github.io/solid_dmft/>`_
+
+**MagInt - ab initio inter-site exchange in correlated insulators**
+-------------------------------------------------------------------
+MagInt is an external TRIQS application for calculating inter-site exchange interactions in
+correlated insulators. It uses a force-theorem approach based on the Hubbard-I approximation
+to electronic self-energy. MagInt is applied as a postprocessing tool on top of converged
+DFT+Hubbard-I calculations. It uses DFTTools and its own implementation of Hubbard-I.
+MagInt includes interfaces to Wien2k and VASP (experimental).
+
+*Homepage* `<https://github.com/MagInteract/MagInt>`_
+
+
+
+.. _analytic_continuation:
+
+**Analytic Continuation**
+=========================
+
+**Maxent**
+----------
+
+This official TRIQS application provides a modular Maximum Entropy program to perform analytic continuation.
+
+*Homepage:* `<https://triqs.github.io/maxent/>`_
+
+**Nevanlinna Analytic Continuation**
+------------------------------------
+
+This is a TRIQS based implementation of analytical continuation methods using Nevanlinna [#nevanlinna]_ and Caratheodory [#caratheodory]_ functions.
+
+The application is written and maintained by S. Iskakov, N. Wentzell and A. Hampel.
+
+For papers discussing implemented methods see:
+
+.. [#nevanlinna] Jiani Fei, Chia-Nan Yeh, and Emanuel Gull, Phys. Rev. Lett. 126, 056402 (2021) <https://doi.org/10.1103/PhysRevLett.126.056402>
+.. [#caratheodory] Jiani Fei, Chia-Nan Yeh, Dominika Zgid, and Emanuel Gull, Phys. Rev. B 104, 165111 (2021) <https://doi.org/10.1103/PhysRevB.104.165111>
+
+*Homepage:* `<https://triqs.github.io/Nevanlinna/>`_
+
+**SOM - Stochastic Optimization Method for Analytic Continuation (external)**
+-----------------------------------------------------------------------------
+
+This external TRIQS application is an optimized implementation of an analytic
+continuation method proposed by Andrey S. Mishchenko.
+A detailed description of the method can be found `here <http://www.cond-mat.de/events/correl12/manuscripts/mishchenko.pdf>`_.
+It also supports the Stochastic Optimization with Consistent Constraints extensions proposed by Olga Goulko et al in
+`Phys. Rev. B 95, 014102 (2017) <https://doi.org/10.1103/PhysRevB.95.014102>`_.
+
+For publications based on results produced with this application please cite `Comput. Phys. Commun. 239, 166 (2019) <https://www.sciencedirect.com/science/article/pii/S0010465519300402?via%3Dihub>`_
+
+*Homepage:* `<http://krivenko.github.io/som/>`_
+
+**Interface to Omegamaxent**
+----------------------------
+
+This application provides an interface to the `OmegaMaxent <https://www.physique.usherbrooke.ca/MaxEnt/index.php/Main_Page>`_
+Maximum Entropy code.
+
+For publications based on results produced with this application please cite `Phys. Rev. E 94, 023303 (2016) <https://journals.aps.org/pre/abstract/10.1103/PhysRevE.94.023303>`_
+
+*Homepage:* `<https://triqs.github.io/omegamaxent_interface/>`_
+
+
+
+.. _other_applications:
+
+**Other Applications**
+======================
+
+**TPRF - The Two-Particle Response Function tool box**
+------------------------------------------------------
+
+The two-particle response function tool box (TPRF) is an official TRIQS application that provides efficient (C++/OpenMP/MPI)
+implementations of the basic operations for higher order response functions such as inversion, products,
+the random phase approximation, the Bethe Salpeter equation, etc.
+
+For publications based on results produced with this application please cite `10.5281/zenodo.2638058 <https://doi.org/10.5281/zenodo.2638058>`_
+
+*Homepage:* `<https://triqs.github.io/tprf/>`_
+
+**TRIQS Solver benchmarks**
+---------------------------
+
+This official TRIQS application provides systematic tests and benchmarks of various impurity solvers for a set of
+reference impurity models. It uses the Python interface of the TRIQS library as a framework.
+
+*Homepage:* `<https://github.com/triqs/benchmarks>`_
+
+**App4Triqs Application Skeleton**
+----------------------------------
+
+This official TRIQS application provides a CMake based skeleton for TRIQS applications.
+Most of the official TRIQS applications are continuously following this project structure.
+It can be easily adapted for your own application.
+
+*Homepage:* `<https://github.com/triqs/app4triqs>`_

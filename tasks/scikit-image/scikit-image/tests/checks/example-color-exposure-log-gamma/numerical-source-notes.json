@@ -1,0 +1,65 @@
+{
+  "skimage.exposure.adjust_gamma": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 626,
+      "end_line": 688
+    },
+    "description": "Perform gamma correction on the input image.",
+    "calls": [
+      "_adjust_gamma_u8",
+      "_assert_non_negative",
+      "dtype_limits",
+      "((image / scale) ** gamma * scale * gain).astype"
+    ],
+    "branches": [
+      {
+        "line": 673,
+        "expression": "gamma < 0"
+      },
+      {
+        "line": 678,
+        "expression": "dtype is np.uint8"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.adjust_log": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 691,
+      "end_line": 732
+    },
+    "description": "Performs Logarithmic correction on the input image.",
+    "calls": [
+      "dtype_limits",
+      "_assert_non_negative",
+      "out.astype",
+      "dtype",
+      "np.log2"
+    ],
+    "branches": [
+      {
+        "line": 727,
+        "expression": "inv"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.cumulative_distribution": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 314,
+      "end_line": 356
+    },
+    "description": "Return cumulative distribution function (cdf) for the given image.",
+    "calls": [
+      "histogram",
+      "hist.cumsum",
+      "utils._supported_float_type",
+      "img_cdf.astype"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

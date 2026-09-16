@@ -1,0 +1,26 @@
+% generateCodeCoverageReport.m
+% Generate a Cobertura-style code coverage report for the experimental MATLAB interface.
+
+import matlab.unittest.TestRunner
+import matlab.unittest.plugins.CodeCoveragePlugin
+import matlab.unittest.plugins.codecoverage.CoberturaFormat
+
+sourceFolder = fullfile(pwd, 'interfaces', 'matlab');
+testFolder = fullfile(pwd, 'test', 'matlab');
+
+suite = testsuite(testFolder);
+% Sample tests are tagged as 'Slow' due to the extra headroom
+% required when Cantera is loaded in 'outofprocess' mode.
+isSlow = cellfun(@(tags) any(strcmp(tags, 'Slow')), {suite.Tags});
+suite = suite(~isSlow);
+
+runner = TestRunner.withTextOutput;
+
+reportFormat = CoberturaFormat(fullfile(testFolder, 'matlabCoverage.xml'));
+coveragePlugin = CodeCoveragePlugin.forFolder(sourceFolder, ...
+                                              'IncludingSubfolders', true, ...
+                                              'Producing', reportFormat);
+runner.addPlugin(coveragePlugin);
+
+results = runner.run(suite);
+disp(results);

@@ -1,0 +1,180 @@
+{
+  "skimage.filters.gaussian": {
+    "implementation": {
+      "file": "src/skimage/_shared/filters.py",
+      "line": 19,
+      "end_line": 136
+    },
+    "description": "Multi-dimensional Gaussian filter.",
+    "calls": [
+      "np.any",
+      "convert_to_float",
+      "image.astype",
+      "ndi.gaussian_filter",
+      "isinstance",
+      "sigma.insert"
+    ],
+    "branches": [
+      {
+        "line": 120,
+        "expression": "np.any(np.asarray(sigma) < 0.0)"
+      },
+      {
+        "line": 122,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 132,
+        "expression": "out is not None and (not np.issubdtype(out.dtype, np.floating))"
+      },
+      {
+        "line": 124,
+        "expression": "not isinstance(sigma, Iterable)"
+      },
+      {
+        "line": 126,
+        "expression": "len(sigma) == image.ndim - 1"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.threshold_otsu": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 336,
+      "end_line": 407
+    },
+    "description": "Return threshold value based on Otsu's method.",
+    "calls": [
+      "np.cumsum",
+      "_validate_image_histogram",
+      "np.argmax",
+      "np.all",
+      "image.reshape"
+    ],
+    "branches": [
+      {
+        "line": 376,
+        "expression": "image is not None and image.ndim > 2 and (image.shape[-1] in (3, 4))"
+      },
+      {
+        "line": 385,
+        "expression": "image is not None"
+      },
+      {
+        "line": 387,
+        "expression": "np.all(image == first_pixel)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.dilation": {
+    "implementation": {
+      "file": "src/skimage/morphology/gray.py",
+      "line": 174,
+      "end_line": 284
+    },
+    "description": "Return grayscale morphological dilation of an image.",
+    "calls": [
+      "_min_max_to_constant_mode",
+      "pad_footprint",
+      "mirror_footprint",
+      "_iterate_gray_func",
+      "_footprint_is_sequence"
+    ],
+    "branches": [
+      {
+        "line": 260,
+        "expression": "out is None"
+      },
+      {
+        "line": 263,
+        "expression": "mode not in _SUPPORTED_MODES"
+      },
+      {
+        "line": 265,
+        "expression": "mode == 'ignore'"
+      },
+      {
+        "line": 273,
+        "expression": "not _footprint_is_sequence(footprint)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.erosion": {
+    "implementation": {
+      "file": "src/skimage/morphology/gray.py",
+      "line": 65,
+      "end_line": 171
+    },
+    "description": "Return grayscale morphological erosion of an image.",
+    "calls": [
+      "_min_max_to_constant_mode",
+      "pad_footprint",
+      "_iterate_gray_func",
+      "_footprint_is_sequence"
+    ],
+    "branches": [
+      {
+        "line": 150,
+        "expression": "out is None"
+      },
+      {
+        "line": 153,
+        "expression": "mode not in _SUPPORTED_MODES"
+      },
+      {
+        "line": 155,
+        "expression": "mode == 'ignore'"
+      },
+      {
+        "line": 160,
+        "expression": "not _footprint_is_sequence(footprint)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.segmentation.clear_border": {
+    "implementation": {
+      "file": "src/skimage/segmentation/_clear_border.py",
+      "line": 6,
+      "end_line": 109
+    },
+    "description": "Clear objects connected to the label image border.",
+    "calls": [
+      "slice",
+      "label",
+      "np.unique",
+      "np.arange",
+      "np.isin",
+      "label_mask[labels.reshape(-1)].reshape",
+      "any",
+      "labels.copy",
+      "labels.reshape"
+    ],
+    "branches": [
+      {
+        "line": 63,
+        "expression": "any((buffer_size >= s for s in labels.shape)) and mask is None"
+      },
+      {
+        "line": 67,
+        "expression": "out is None"
+      },
+      {
+        "line": 70,
+        "expression": "mask is not None"
+      },
+      {
+        "line": 75,
+        "expression": "out.shape != mask.shape"
+      },
+      {
+        "line": 77,
+        "expression": "mask.dtype != bool"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}
