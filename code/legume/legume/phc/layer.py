@@ -172,7 +172,7 @@ class ShapesLayer(Layer):
         ind0 = bd.abs(gvec[0, :]) + bd.abs(gvec[1, :]) < 1e-10
         # If the first element corresponding to V(0) is negative we shift the energies by Vmax
         if FT[ind0][0] < 0:
-            FT[ind0] += bd.abs(Vmax)
+            FT = FT + bd.where(ind0, bd.abs(Vmax), 0)
         ### k near zero could be explicitly set to the potential average value, to be done!
 
         return FT
