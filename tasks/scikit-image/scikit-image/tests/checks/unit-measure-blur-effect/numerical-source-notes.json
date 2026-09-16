@@ -1,0 +1,84 @@
+{
+  "skimage.color.rgb2gray": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 941,
+      "end_line": 984
+    },
+    "description": "Compute luminance of an RGB image.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.gaussian": {
+    "implementation": {
+      "file": "src/skimage/_shared/filters.py",
+      "line": 19,
+      "end_line": 136
+    },
+    "description": "Multi-dimensional Gaussian filter.",
+    "calls": [
+      "np.any",
+      "convert_to_float",
+      "image.astype",
+      "ndi.gaussian_filter",
+      "isinstance",
+      "sigma.insert"
+    ],
+    "branches": [
+      {
+        "line": 120,
+        "expression": "np.any(np.asarray(sigma) < 0.0)"
+      },
+      {
+        "line": 122,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 132,
+        "expression": "out is not None and (not np.issubdtype(out.dtype, np.floating))"
+      },
+      {
+        "line": 124,
+        "expression": "not isinstance(sigma, Iterable)"
+      },
+      {
+        "line": 126,
+        "expression": "len(sigma) == image.ndim - 1"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.blur_effect": {
+    "implementation": {
+      "file": "src/skimage/measure/_blur_effect.py",
+      "line": 22,
+      "end_line": 98
+    },
+    "description": "Compute a metric that indicates the strength of blur in an image",
+    "calls": [
+      "np.abs",
+      "np.maximum",
+      "np.sum",
+      "sobel",
+      "print",
+      "img_as_float",
+      "rgb2gray",
+      "ndi.uniform_filter1d",
+      "B.append",
+      "reduce_func",
+      "np.moveaxis",
+      "slice"
+    ],
+    "branches": [
+      {
+        "line": 65,
+        "expression": "channel_axis is not None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

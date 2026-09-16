@@ -1,0 +1,71 @@
+{
+  "skimage.restoration.denoise_wavelet": {
+    "implementation": {
+      "file": "src/skimage/restoration/_denoise.py",
+      "line": 852,
+      "end_line": 1046
+    },
+    "description": "Perform wavelet denoising on an image.",
+    "calls": [
+      "_wavelet_threshold",
+      "utils.channel_as_last_axis",
+      "_scale_sigma_and_image_consistently",
+      "np.clip",
+      "color.rgb2ycbcr",
+      "color.ycbcr2rgb",
+      "_rescale_sigma_rgb2ycbcr",
+      "denoise_wavelet",
+      "image.min",
+      "out[..., i].min",
+      "out[..., i].max"
+    ],
+    "branches": [
+      {
+        "line": 977,
+        "expression": "method not in ['BayesShrink', 'VisuShrink']"
+      },
+      {
+        "line": 986,
+        "expression": "convert2ycbcr and (not multichannel)"
+      },
+      {
+        "line": 992,
+        "expression": "multichannel"
+      },
+      {
+        "line": 1043,
+        "expression": "clip_output"
+      },
+      {
+        "line": 993,
+        "expression": "convert2ycbcr"
+      },
+      {
+        "line": 996,
+        "expression": "rescale_sigma"
+      },
+      {
+        "line": 1002,
+        "expression": "scale_factor == 0"
+      },
+      {
+        "line": 1008,
+        "expression": "sigma_channel is not None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 479,
+      "end_line": 505
+    },
+    "description": "Convert an image to floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "skimage.transform._geometric._affine_matrix_from_vector": {
+    "implementation": {
+      "file": "src/skimage/transform/_geometric.py",
+      "line": 21,
+      "end_line": 33
+    },
+    "description": "Affine matrix from linearized (d, d + 1) matrix entries.",
+    "calls": [
+      "np.eye",
+      "np.reshape",
+      "np.round",
+      "np.sqrt"
+    ],
+    "branches": [
+      {
+        "line": 27,
+        "expression": "d != dimensionality"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform._geometric._append_homogeneous_dim": {
+    "implementation": {
+      "file": "src/skimage/transform/_geometric.py",
+      "line": 156,
+      "end_line": 173
+    },
+    "description": "Append a column of ones to the right of `points`.",
+    "calls": [
+      "np.hstack"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform._geometric._apply_homogeneous": {
+    "implementation": {
+      "file": "src/skimage/transform/_geometric.py",
+      "line": 122,
+      "end_line": 153
+    },
+    "description": "Transform (N, D) `points` array with homogeneous (D+1, D+1) `matrix`.",
+    "calls": [
+      "_append_homogeneous_dim",
+      "np.where",
+      "np.finfo"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform._geometric._calc_center_normalize": {
+    "implementation": {
+      "file": "src/skimage/transform/_geometric.py",
+      "line": 36,
+      "end_line": 108
+    },
+    "description": "Calculate transformation `matrix` to center and normalize image points.",
+    "calls": [
+      "np.mean",
+      "np.sqrt",
+      "scaling.lower",
+      "np.eye",
+      "np.sum"
+    ],
+    "branches": [
+      {
+        "line": 86,
+        "expression": "scaling == 'raw'"
+      },
+      {
+        "line": 90,
+        "expression": "scaling == 'rms'"
+      },
+      {
+        "line": 103,
+        "expression": "divisor == 0"
+      },
+      {
+        "line": 92,
+        "expression": "scaling == 'mrs'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform._geometric._center_and_normalize_points": {
+    "implementation": {
+      "file": "src/skimage/transform/_geometric.py",
+      "line": 111,
+      "end_line": 119
+    },
+    "description": "Convenience function to calculate and apply scaling",
+    "calls": [
+      "_calc_center_normalize",
+      "np.all",
+      "_apply_homogeneous",
+      "np.isfinite",
+      "np.full_like"
+    ],
+    "branches": [
+      {
+        "line": 117,
+        "expression": "not np.all(np.isfinite(matrix))"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform._geometric._euler_rotation_matrix": {
+    "implementation": {
+      "file": "src/skimage/transform/_geometric.py",
+      "line": 1791,
+      "end_line": 1810
+    },
+    "description": "Produce an Euler rotation matrix from the given intrinsic rotation angles",
+    "calls": [
+      "spatial.transform.Rotation.from_euler('XYZ', angles=angles, degrees=degrees).as_matrix",
+      "spatial.transform.Rotation.from_euler"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.matrix_transform": {
+    "implementation": {
+      "file": "src/skimage/transform/_geometric.py",
+      "line": 2676,
+      "end_line": 2692
+    },
+    "description": "Apply 2D matrix transform.",
+    "calls": [
+      "ProjectiveTransform(matrix)",
+      "ProjectiveTransform"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

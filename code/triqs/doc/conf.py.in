@@ -1,0 +1,275 @@
+# -*- coding: utf-8 -*-
+#
+# TRIQS documentation build configuration file
+
+extensions = ['sphinx.ext.autodoc',
+              'sphinx.ext.mathjax',
+              'sphinx.ext.intersphinx',
+              'sphinx.ext.doctest',
+              'sphinx.ext.todo',
+              'sphinx.ext.viewcode',
+              'sphinx.ext.autosummary',
+              'sphinx.ext.githubpages',
+              'nbsphinx',
+              'myst_parser',
+              'matplotlib.sphinxext.plot_directive',
+              'numpydoc',
+              ]
+
+myst_enable_extensions = [
+    "amsmath",
+    "colon_fence",
+    "deflist",
+    "dollarmath",
+    "html_admonition",
+    "html_image",
+    "linkify",
+    "replacements",
+    "smartquotes",
+    "substitution",
+    "tasklist",
+]
+
+mathjax_path = "@MATHJAX_PATH@/MathJax.js?config=default"
+print("Mathjax: ",mathjax_path)
+
+# Turn on sphinx.ext.autosummary
+autosummary_generate = True
+autosummary_imported_members = False
+
+# Add any paths that contain templates here, relative to this directory.
+templates_path = ['@CMAKE_CURRENT_SOURCE_DIR@/_templates']
+
+# The suffix of source filenames.
+source_suffix = '.rst'
+
+# The master toctree document.
+master_doc = 'contents'
+
+# General information about the project.
+project = 'TRIQS'
+copyright = '2011-present, The TRIQS collaboration'
+
+# The version displayed in the documentation, i.e. the branch this build
+# corresponds to (unstable / X.Y.x), set via BRANCH_FOR_DOC in CMakeLists.txt.
+version = '@BRANCH_FOR_DOC@'
+release = '@TRIQS_VERSION@'
+
+# List of directories, relative to source directory, that shouldn't be searched
+# for source files.
+exclude_trees = ['build','html','sphinxext'] #, 'triqs']
+exclude_patterns = ['sphinxext/*', 'doxygen', '_templates'] # For Sphinx 1.3 and later
+
+# The name of the Pygments (syntax highlighting) style to use.
+pygments_style = 'sphinx'
+
+# Point search engines at the evergreen "latest" build of each page via a
+# rel="canonical" link. Setting this in *every* version build (unstable, X.Y.x,
+# ...) consolidates ranking signals onto the latest/ docs so they are preferred
+# over older versions in search results.
+html_baseurl = 'https://triqs.github.io/triqs/latest/'
+
+# this requires the sphinx_rtd_theme to be installed via pip
+html_theme = 'sphinx_rtd_theme'
+
+# options for the the rtd theme
+html_theme_options = {
+    'logo_only': True,
+    'display_version': True,
+    'prev_next_buttons_location': 'bottom',
+    'style_external_links': False,
+    'vcs_pageview_mode': '',
+    'style_nav_header_background': '#7E588A',
+    # Toc options
+    'collapse_navigation': False,
+    'sticky_navigation': True,
+    'navigation_depth': 5,
+    'includehidden': True,
+    'titles_only': False
+}
+
+html_show_sphinx = False
+html_context = {'header_title': 'triqs',
+                'header_subtitle': 'A Toolbox for Research on Interacting Quantum Systems',
+                # Version switcher flyout (rendered by _templates/versions.html, which
+                # overrides the empty versions.html shipped by sphinx_rtd_theme 3.x). The
+                # list is static -- update it when a new release line is published.
+                'current_version': version,
+                'versions': [
+                    ['unstable', 'https://triqs.github.io/triqs/unstable/'],
+                    ['4.0.x',    'https://triqs.github.io/triqs/4.0.x/'],
+                    ['3.3.x',    'https://triqs.github.io/triqs/3.3.x/'],
+                ]}
+
+html_style = 'css/custom.css'
+html_favicon = '@CMAKE_CURRENT_SOURCE_DIR@/_static/triqs_logo/triqs_favicon.ico'
+html_logo = '@CMAKE_CURRENT_SOURCE_DIR@/_static/triqs_logo/Logo/PNG/Triqs_Logo_RGB_White.png'
+
+# Add any paths that contain custom static files (such as style sheets) here.
+html_static_path = ['@CMAKE_CURRENT_SOURCE_DIR@/_static']
+
+html_sidebars = {'index': ['sideb.html', 'searchbox.html']}
+
+# Output file base name for HTML help builder.
+htmlhelp_basename = 'TRIQSdoc'
+
+# Disable nbsphinx notebook execution
+nbsphinx_execute = 'never'
+
+# Plot options
+plot_include_source = True
+plot_html_show_source_link = False
+plot_html_show_formats = False
+
+intersphinx_mapping = {'python': ('https://docs.python.org/3.11', None)}
+
+# configure numpydoc
+numpydoc_attributes_as_param_list = False
+# inheritance is communicated uniformly via the `Bases:` line emitted by autoclass `:show-inheritance:`
+numpydoc_show_inherited_class_members = False
+
+
+# open links in new tab instead of same window
+from sphinx.writers.html import HTMLTranslator
+from docutils import nodes
+from docutils.nodes import Element
+
+class PatchedHTMLTranslator(HTMLTranslator):
+
+    def visit_reference(self, node: Element) -> None:
+        atts = {'class': 'reference'}
+        if node.get('internal') or 'refuri' not in node:
+            atts['class'] += ' internal'
+        else:
+            atts['class'] += ' external'
+            # ---------------------------------------------------------
+            # Customize behavior (open in new tab, secure linking site)
+            atts['target'] = '_blank'
+            atts['rel'] = 'noopener noreferrer'
+            # ---------------------------------------------------------
+        if 'refuri' in node:
+            atts['href'] = node['refuri'] or '#'
+            if self.settings.cloak_email_addresses and atts['href'].startswith('mailto:'):
+                atts['href'] = self.cloak_mailto(atts['href'])
+                self.in_mailto = True
+        else:
+            assert 'refid' in node, \
+                   'References must have "refuri" or "refid" attribute.'
+            atts['href'] = '#' + node['refid']
+        if not isinstance(node.parent, nodes.TextElement):
+            assert len(node) == 1 and isinstance(node[0], nodes.image)
+            atts['class'] += ' image-reference'
+        if 'reftitle' in node:
+            atts['title'] = node['reftitle']
+        if 'target' in node:
+            atts['target'] = node['target']
+        self.body.append(self.starttag(node, 'a', '', **atts))
+
+        if node.get('secnumber'):
+            self.body.append(('%s' + self.secnumber_suffix) %
+                             '.'.join(map(str, node['secnumber'])))
+
+
+# process doc strings for better rst/html output
+import re
+
+# regular expressions for docstring parsing
+_autosummary_re = re.compile(r'^\s*\.\.\s+autosummary::', re.M)
+_dispatched_desc_re = re.compile(r'^\s*(?:\[([^\]]*)\]\s*)?([^\n]*)')
+
+
+def mark_autosummary_sources(app, docname, source):
+    """
+    Sphinx hook to mark rst files that contain an autosummary directive.
+
+    This is needed in the processing hook to identify files with autosummary
+    directives.
+
+    Parameters
+    ----------
+    app : Sphinx application object
+        The Sphinx application instance.
+    docname : str
+        The name of the document being processed.
+    source : list of str
+        The source content of the document.
+    """
+    text = source[0]
+    marks = getattr(app.env, "_docs_with_autosummary", set())
+    if _autosummary_re.search(text):
+        marks.add(docname)
+    app.env._docs_with_autosummary = marks
+
+
+def process_docstring(app, what, name, obj, options, lines):
+    """
+    Process doc string lines for autosummary tables.
+
+    Note: For functions, any changes to the doc string are not reflected in the actual documentation page.
+    For classes, this is not the case!
+
+    Parameters
+    ----------
+    app : Sphinx application object
+        The Sphinx application instance.
+    what : str
+        The type of the object being documented (e.g., 'function', 'class').
+    name : str
+        The fully qualified name of the object.
+    obj : object
+        The object being documented.
+    options : object
+        The options given to the directive.
+    lines : list of str
+        The lines of the doc string to process.
+    """
+    if not lines:
+        return
+
+    # process doc string only for autosummary tables
+    docname = app.env.temp_data.get('docname') or getattr(app.env, 'docname', None)
+    if docname in getattr(app.env, "_docs_with_autosummary", set()):
+        # find the first line which is not empty, not whitespace-only and not intended
+        first_idx = next((i for i, s in enumerate(lines) if s and s.strip() and s == s.lstrip()), None)
+
+        # if no such line is found, do nothing (what else could we do?)
+        first_line = lines[first_idx] if first_idx is not None else None
+        if not first_line:
+            return
+
+        # handle wrapped classes with no description
+        if first_line == 'Dispatched C++ constructor(s).' or first_line == 'Synthesized constructor with the following keyword arguments:':
+            # somehow this not only changes the table but also the actual documentation page
+            lines.insert(0, 'Wrapped C++ class.')
+            lines.insert(1, '')
+            return
+
+        # handle dispatched functions
+        if first_line == 'Dispatched C++ function(s).':
+            # try to find a doc string
+            doc_str = ''
+            for i in range(first_idx + 3, len(lines)):
+                if lines[i].strip() and lines[i] == lines[i].lstrip():
+                    doc_str = lines[i].strip()
+                    break
+
+            # empty doc string, use "Dispatched C++ function(s)."
+            if doc_str == '..':
+                return
+
+            # try to match "[...] str_desc"
+            match = _dispatched_desc_re.match(doc_str)
+
+            # we only care about lines[0] since autosummary uses it for the function table
+            lines[0] = match.group(2) if match.group(1) else doc_str
+            lines[1] = ''
+
+
+def setup(app):
+    app.set_translator('html', PatchedHTMLTranslator)
+
+    # use process_docstring to modify docstrings
+    app.connect("source-read", mark_autosummary_sources)
+    app.connect('autodoc-process-docstring', process_docstring, priority=1000)
+
+    return {'version': '1.0'}

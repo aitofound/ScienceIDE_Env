@@ -1,0 +1,62 @@
+from ndsl.comm.partitioner import Partitioner
+from ndsl.dsl.caches.codepath import FV3CodePath
+
+
+def identify_code_path(
+    rank: int,
+    partitioner: Partitioner,
+    *,
+    single_code_path: bool = False,
+) -> FV3CodePath:
+    """
+    Determine which code path your rank will hit.
+
+    If single_code_path is True, only one code path exists,
+    e.g. in case of a doubly periodic grid.
+    If single_code_path is False, we are in the case of the
+    cube-sphere and we will look at our position on the tile.
+    """
+
+    # Doubly-periodic or single tile grid
+    if single_code_path or partitioner.layout == (1, 1):
+        return FV3CodePath.All
+
+    # Cube-sphere
+    if partitioner.layout[0] <= 1 or partitioner.layout[1] <= 1:
+        raise NotImplementedError(
+            f"Build for layout {partitioner.layout} is not handled."
+        )
+
+    # Bottom row
+    if partitioner.tile.on_tile_bottom(rank):
+        if partitioner.tile.on_tile_left(rank):
+            return FV3CodePath.BottomLeft
+        if partitioner.tile.on_tile_right(rank):
+            return FV3CodePath.BottomRight
+        return FV3CodePath.Bottom
+
+    # Top row
+    if partitioner.tile.on_tile_top(rank):
+        if partitioner.tile.on_tile_left(rank):
+            return FV3CodePath.TopLeft
+        if partitioner.tile.on_tile_right(rank):
+            return FV3CodePath.TopRight
+        return FV3CodePath.Top
+
+    # Left & right column with corners already handled
+    if partitioner.tile.on_tile_left(rank):
+        return FV3CodePath.Left
+    if partitioner.tile.on_tile_right(rank):
+        return FV3CodePath.Right
+
+    return FV3CodePath.Center
+
+
+def get_cache_fullpath(code_path: FV3CodePath) -> str:
+    from gt4py.cartesian import config as gt_config
+
+    return f"{gt_config.cache_settings['root_path']}/.gt_cache_{code_path}"
+
+
+def get_cache_directory(code_path: FV3CodePath) -> str:
+    return f".gt_cache_{code_path}"

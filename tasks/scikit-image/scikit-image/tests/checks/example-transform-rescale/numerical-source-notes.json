@@ -1,0 +1,122 @@
+{
+  "skimage.color.rgb2gray": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 941,
+      "end_line": 984
+    },
+    "description": "Compute luminance of an RGB image.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.downscale_local_mean": {
+    "implementation": {
+      "file": "src/skimage/transform/_warps.py",
+      "line": 472,
+      "end_line": 516
+    },
+    "description": "Down-sample N-dimensional image by local averaging.",
+    "calls": [
+      "block_reduce"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.rescale": {
+    "implementation": {
+      "file": "src/skimage/transform/_warps.py",
+      "line": 228,
+      "end_line": 343
+    },
+    "description": "Scale image by a certain factor.",
+    "calls": [
+      "channel_as_last_axis",
+      "np.atleast_1d",
+      "np.maximum",
+      "resize",
+      "np.round",
+      "np.concatenate"
+    ],
+    "branches": [
+      {
+        "line": 321,
+        "expression": "len(scale) > 1"
+      },
+      {
+        "line": 330,
+        "expression": "multichannel"
+      },
+      {
+        "line": 322,
+        "expression": "not multichannel and len(scale) != image.ndim or (multichannel and len(scale) != image.ndim - 1)"
+      },
+      {
+        "line": 326,
+        "expression": "multichannel"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.resize": {
+    "implementation": {
+      "file": "src/skimage/transform/_warps.py",
+      "line": 71,
+      "end_line": 225
+    },
+    "description": "Resize image to match a certain size.",
+    "calls": [
+      "np.any",
+      "_preprocess_resize_output_shape",
+      "np.divide",
+      "_validate_interpolation_order",
+      "_to_ndimage_mode",
+      "ndi.zoom",
+      "_clip_warp_output",
+      "image.astype",
+      "convert_to_float",
+      "ndi.gaussian_filter",
+      "any",
+      "np.maximum",
+      "np.atleast_1d"
+    ],
+    "branches": [
+      {
+        "line": 175,
+        "expression": "input_type == np.float16"
+      },
+      {
+        "line": 178,
+        "expression": "anti_aliasing is None"
+      },
+      {
+        "line": 185,
+        "expression": "input_type == bool and anti_aliasing"
+      },
+      {
+        "line": 190,
+        "expression": "order > 0"
+      },
+      {
+        "line": 195,
+        "expression": "anti_aliasing"
+      },
+      {
+        "line": 196,
+        "expression": "anti_aliasing_sigma is None"
+      },
+      {
+        "line": 202,
+        "expression": "np.any(anti_aliasing_sigma < 0)"
+      },
+      {
+        "line": 207,
+        "expression": "np.any((anti_aliasing_sigma > 0) & (factors <= 1))"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

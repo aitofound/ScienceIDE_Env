@@ -1,0 +1,217 @@
+import dataclasses
+from pathlib import Path
+from typing import Self
+
+import xarray as xr
+
+import ndsl.dsl.gt4py_utils as gt_utils
+from ndsl import Quantity, QuantityFactory, SubtileGridSizer
+from ndsl.constants import I_DIM, J_DIM, K_DIM, N_HALO_DEFAULT
+from ndsl.dsl.typing import Float
+from ndsl.grid import DampingCoefficients, DriverGridData, GridData
+from ndsl.typing import Communicator
+from pyfv3 import DycoreState
+from pyshield import PHYSICS_PACKAGES, PhysicsState
+
+
+@dataclasses.dataclass()
+class TendencyState:
+    """
+    Accumulated tendencies from physical parametrizations to be applied
+    to the dynamical core model state.
+    """
+
+    u_dt: Quantity = dataclasses.field(
+        metadata={
+            "name": "eastward_wind_tendency_due_to_physics",
+            "dims": [I_DIM, J_DIM, K_DIM],
+            "units": "m/s**2",
+            "intent": "inout",
+        }
+    )
+    v_dt: Quantity = dataclasses.field(
+        metadata={
+            "name": "northward_wind_tendency_due_to_physics",
+            "dims": [I_DIM, J_DIM, K_DIM],
+            "units": "m/s**2",
+            "intent": "inout",
+        }
+    )
+    pt_dt: Quantity = dataclasses.field(
+        metadata={
+            "name": "temperature_tendency_due_to_physics",
+            "dims": [I_DIM, J_DIM, K_DIM],
+            "units": "K/s",
+            "intent": "inout",
+        }
+    )
+
+    @classmethod
+    def init_zeros(cls, quantity_factory: QuantityFactory) -> Self:
+        initial_quantities = {}
+        for _field in dataclasses.fields(cls):
+            initial_quantities[_field.name] = quantity_factory.zeros(
+                _field.metadata["dims"],
+                _field.metadata["units"],
+                dtype=Float,
+            )
+        return cls(**initial_quantities)
+
+
+@dataclasses.dataclass
+class DriverState:
+    dycore_state: DycoreState
+    physics_state: PhysicsState
+    tendency_state: TendencyState
+    grid_data: GridData
+    damping_coefficients: DampingCoefficients
+    driver_grid_data: DriverGridData
+
+    # TODO: the driver_config argument here isn't type hinted from
+    # import due to a circular dependency. This can be fixed by refactoring
+    # for example by moving this method into some restart.py module
+    @classmethod
+    def load_state_from_restart(
+        cls,
+        restart_path: str,
+        driver_config,
+        damping_coefficients: DampingCoefficients,
+        driver_grid_data: DriverGridData,
+        grid_data: GridData,
+        schemes: list[PHYSICS_PACKAGES],
+    ) -> Self:
+        comm = driver_config.comm_config.get_comm()
+        communicator: Communicator = Communicator.from_layout(
+            comm=comm, layout=driver_config.layout
+        )
+        sizer = SubtileGridSizer.from_tile_params(
+            nx_tile=driver_config.nx_tile,
+            ny_tile=driver_config.nx_tile,
+            nz=driver_config.nz,
+            n_halo=N_HALO_DEFAULT,
+            layout=driver_config.layout,
+            tile_partitioner=communicator.partitioner.tile,
+            tile_rank=communicator.tile.rank,
+            backend=driver_config.stencil_config.backend,
+        )
+        quantity_factory = QuantityFactory(
+            sizer, backend=driver_config.stencil_config.compilation_config.backend
+        )
+
+        state = _restart_driver_state(
+            restart_path,
+            communicator.rank,
+            quantity_factory,
+            communicator,
+            damping_coefficients=damping_coefficients,
+            driver_grid_data=driver_grid_data,
+            grid_data=grid_data,
+            schemes=schemes,
+        )
+        return state
+
+    def save_state(self, comm, restart_path: str = "RESTART"):
+        Path(restart_path).mkdir(parents=True, exist_ok=True)
+        current_rank = str(comm.Get_rank())
+        self.dycore_state.xr_dataset.to_netcdf(
+            f"{restart_path}/restart_dycore_state_{current_rank}.nc"
+        )
+        self.physics_state.xr_dataset.to_netcdf(
+            f"{restart_path}/restart_physics_state_{current_rank}.nc"
+        )
+        # we can also convert the state to Fortran's restart format using
+        # code similar to this commented code. We don't need this feature right
+        # now so we haven't implemented it, but this is a good starter.
+        """
+        xr.Dataset(
+            data_vars={
+                "cld_amt": state.dycore_state.qcld.data_array,
+                "graupel": state.dycore_state.qgraupel.data_array,
+                "ice_wat": state.dycore_state.qice.data_array,
+                "liq_wat": state.dycore_state.qliquid.data_array,
+                "o3mr": state.dycore_state.qo3mr.data_array,
+                "rainwat": state.dycore_state.qrain.data_array,
+                "sgs_tke": state.dycore_state.qsgs_tke.data_array,
+                "snowwat": state.dycore_state.qsnow.data_array,
+                "sphum": state.dycore_state.qvapor.data_array,
+            }
+        ).rename(
+            {
+                "z": "zaxis_1",
+                "x": "xaxis_1",
+                "y": "yaxis_1",
+            }
+        ).transpose(
+            "zaxis_1", "yaxis_1", "xaxis_1"
+        ).expand_dims(
+            dim="Time", axis=0
+        ).to_netcdf(os.path.join(path, f"fv_tracer.res.tile{rank + 1}.nc"))
+        """
+
+
+def _overwrite_state_from_restart(
+    path: str,
+    rank: int,
+    state: DycoreState,
+    restart_file_prefix: str,
+):
+    """
+    Args:
+        path: path to restart files
+        rank: current rank number
+        state: an empty state
+        restart_file_prefix: file prefix name to read
+    """
+    ds = xr.open_dataset(path + f"/{restart_file_prefix}_{rank}.nc")
+
+    for _field in dataclasses.fields(type(state)):
+        if "units" in _field.metadata.keys():
+            state.__dict__[_field.name][:] = gt_utils.asarray(
+                ds[_field.name][:], to_type=state.__dict__[_field.name].np.ndarray
+            )
+
+
+def _restart_driver_state(
+    path: str,
+    rank: int,
+    quantity_factory: QuantityFactory,
+    communicator: Communicator,
+    damping_coefficients: DampingCoefficients,
+    driver_grid_data: DriverGridData,
+    grid_data: GridData,
+    schemes: list[PHYSICS_PACKAGES],
+):
+    # It's a restart from a FORTRAN run if we find any files in the restart directory
+    # that ends in "fv_core.res.nc".
+    is_fortran_restart = any(fname for fname in Path(path).glob("**/*fv_core.res.nc"))
+
+    if is_fortran_restart:
+        dycore_state = DycoreState.from_fortran_restart(
+            quantity_factory=quantity_factory, communicator=communicator, path=path
+        )
+    else:
+        dycore_state = DycoreState.init_zeros(quantity_factory=quantity_factory)
+        _overwrite_state_from_restart(
+            path,
+            rank,
+            dycore_state,
+            "restart_dycore_state",
+        )
+
+    physics_state = PhysicsState.init_zeros(
+        quantity_factory=quantity_factory, schemes=schemes
+    )
+
+    physics_state.__post_init__(quantity_factory, schemes)
+    tendency_state = TendencyState.init_zeros(
+        quantity_factory=quantity_factory,
+    )
+
+    return DriverState(
+        dycore_state=dycore_state,
+        physics_state=physics_state,
+        tendency_state=tendency_state,
+        grid_data=grid_data,
+        damping_coefficients=damping_coefficients,
+        driver_grid_data=driver_grid_data,
+    )

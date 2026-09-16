@@ -1,0 +1,71 @@
+{
+  "skimage.metrics.hausdorff_distance": {
+    "implementation": {
+      "file": "src/skimage/metrics/set_metrics.py",
+      "line": 7,
+      "end_line": 79
+    },
+    "description": "Calculate the Hausdorff distance between nonzero elements of given images.",
+    "calls": [
+      "max",
+      "np.transpose",
+      "np.nonzero",
+      "np.mean",
+      "cKDTree",
+      "cKDTree(a_points).query",
+      "cKDTree(b_points).query"
+    ],
+    "branches": [
+      {
+        "line": 57,
+        "expression": "method not in ('standard', 'modified')"
+      },
+      {
+        "line": 66,
+        "expression": "len(a_points) == 0"
+      },
+      {
+        "line": 76,
+        "expression": "method == 'standard'"
+      },
+      {
+        "line": 68,
+        "expression": "len(b_points) == 0"
+      },
+      {
+        "line": 78,
+        "expression": "method == 'modified'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.metrics.hausdorff_pair": {
+    "implementation": {
+      "file": "src/skimage/metrics/set_metrics.py",
+      "line": 82,
+      "end_line": 147
+    },
+    "description": "Returns pair of points that are Hausdorff distance apart between nonzero",
+    "calls": [
+      "np.transpose",
+      "np.nonzero",
+      "cKDTree",
+      "cKDTree(a_points).query",
+      "cKDTree(b_points).query",
+      "nearest_dists_from_b.argmax",
+      "nearest_dists_from_a.argmax",
+      "warnings.warn"
+    ],
+    "branches": [
+      {
+        "line": 121,
+        "expression": "len(a_points) == 0 or len(b_points) == 0"
+      },
+      {
+        "line": 138,
+        "expression": "max_dist_from_b > max_dist_from_a"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

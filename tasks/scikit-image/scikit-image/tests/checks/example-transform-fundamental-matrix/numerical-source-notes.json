@@ -1,0 +1,62 @@
+{
+  "skimage.color.rgb2gray": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 941,
+      "end_line": 984
+    },
+    "description": "Compute luminance of an RGB image.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.feature.match_descriptors": {
+    "implementation": {
+      "file": "src/skimage/feature/match.py",
+      "line": 5,
+      "end_line": 103
+    },
+    "description": "Brute-force matching of descriptors.",
+    "calls": [
+      "np.argmin",
+      "cdist",
+      "np.arange",
+      "np.column_stack",
+      "np.finfo"
+    ],
+    "branches": [
+      {
+        "line": 60,
+        "expression": "descriptors1.shape[1] != descriptors2.shape[1]"
+      },
+      {
+        "line": 63,
+        "expression": "metric is None"
+      },
+      {
+        "line": 72,
+        "expression": "metric == 'minkowski'"
+      },
+      {
+        "line": 79,
+        "expression": "cross_check"
+      },
+      {
+        "line": 85,
+        "expression": "max_distance < np.inf"
+      },
+      {
+        "line": 90,
+        "expression": "max_ratio < 1.0"
+      },
+      {
+        "line": 64,
+        "expression": "np.issubdtype(descriptors1.dtype, bool)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

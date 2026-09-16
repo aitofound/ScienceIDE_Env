@@ -1,0 +1,158 @@
+{
+  "skimage.exposure.adjust_gamma": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 626,
+      "end_line": 688
+    },
+    "description": "Perform gamma correction on the input image.",
+    "calls": [
+      "_adjust_gamma_u8",
+      "_assert_non_negative",
+      "dtype_limits",
+      "((image / scale) ** gamma * scale * gain).astype"
+    ],
+    "branches": [
+      {
+        "line": 673,
+        "expression": "gamma < 0"
+      },
+      {
+        "line": 678,
+        "expression": "dtype is np.uint8"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.cumulative_distribution": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 314,
+      "end_line": 356
+    },
+    "description": "Return cumulative distribution function (cdf) for the given image.",
+    "calls": [
+      "histogram",
+      "hist.cumsum",
+      "utils._supported_float_type",
+      "img_cdf.astype"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.equalize_hist": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 359,
+      "end_line": 398
+    },
+    "description": "Return image after histogram equalization.",
+    "calls": [
+      "cumulative_distribution",
+      "np.interp",
+      "out.reshape",
+      "out.astype",
+      "utils._supported_float_type"
+    ],
+    "branches": [
+      {
+        "line": 389,
+        "expression": "mask is not None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.exposure.rescale_intensity": {
+    "implementation": {
+      "file": "src/skimage/exposure/exposure.py",
+      "line": 491,
+      "end_line": 607
+    },
+    "description": "Return image after stretching or shrinking its intensity levels.",
+    "calls": [
+      "map",
+      "np.clip",
+      "_output_dtype",
+      "intensity_range",
+      "np.any",
+      "np.isnan",
+      "utils.warn",
+      "(image * (omax - omin) + omin).astype",
+      "np.clip(image, omin, omax).astype"
+    ],
+    "branches": [
+      {
+        "line": 583,
+        "expression": "out_range in ['dtype', 'image']"
+      },
+      {
+        "line": 593,
+        "expression": "np.any(np.isnan([imin, imax, omin, omax]))"
+      },
+      {
+        "line": 603,
+        "expression": "imin != imax"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 479,
+      "end_line": 505
+    },
+    "description": "Convert an image to floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.montage": {
+    "implementation": {
+      "file": "src/skimage/util/_montage.py",
+      "line": 9,
+      "end_line": 157
+    },
+    "description": "Create a montage of several single- or multichannel images.",
+    "calls": [
+      "slice",
+      "utils.channel_as_last_axis",
+      "np.atleast_1d(fill).astype",
+      "arr_in.mean",
+      "divmod",
+      "np.ceil",
+      "exposure.rescale_intensity",
+      "np.atleast_1d",
+      "np.sqrt"
+    ],
+    "branches": [
+      {
+        "line": 98,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 103,
+        "expression": "arr_in.ndim != 4"
+      },
+      {
+        "line": 112,
+        "expression": "grid_shape"
+      },
+      {
+        "line": 118,
+        "expression": "rescale_intensity"
+      },
+      {
+        "line": 123,
+        "expression": "fill == 'mean'"
+      },
+      {
+        "line": 154,
+        "expression": "channel_axis is not None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

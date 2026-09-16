@@ -1,0 +1,601 @@
+{
+  "skimage.color.rgb2gray": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 941,
+      "end_line": 984
+    },
+    "description": "Compute luminance of an RGB image.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.draw.circle_perimeter_aa": {
+    "implementation": {
+      "file": "src/skimage/draw/draw.py",
+      "line": 588,
+      "end_line": 646
+    },
+    "description": "Generate anti-aliased circle perimeter coordinates.",
+    "calls": [
+      "_circle_perimeter_aa"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.feature.peak_local_max": {
+    "implementation": {
+      "file": "src/skimage/feature/peak.py",
+      "line": 118,
+      "end_line": 313
+    },
+    "description": "Find peaks in an image as coordinate list.",
+    "calls": [
+      "_get_high_intensity_peaks",
+      "_get_peak_mask",
+      "_exclude_border",
+      "_get_excluded_border_width",
+      "_get_threshold",
+      "labels.astype",
+      "ndi.find_objects",
+      "image[roi].copy",
+      "labels_peak_coord.append",
+      "np.vstack",
+      "np.finfo",
+      "np.iinfo",
+      "np.logical_not"
+    ],
+    "branches": [
+      {
+        "line": 237,
+        "expression": "(footprint is None or footprint.size == 1) and min_distance < 1"
+      },
+      {
+        "line": 249,
+        "expression": "footprint is None"
+      },
+      {
+        "line": 255,
+        "expression": "labels is None"
+      },
+      {
+        "line": 269,
+        "expression": "np.issubdtype(image.dtype, np.floating)"
+      },
+      {
+        "line": 301,
+        "expression": "labels_peak_coord"
+      },
+      {
+        "line": 306,
+        "expression": "len(coordinates) > num_peaks"
+      },
+      {
+        "line": 279,
+        "expression": "roi is None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform._warps._linear_polar_mapping": {
+    "implementation": {
+      "file": "src/skimage/transform/_warps.py",
+      "line": 1061,
+      "end_line": 1089
+    },
+    "description": "Inverse mapping function to convert from cartesian to polar coordinates",
+    "calls": [
+      "np.column_stack",
+      "np.sin",
+      "np.cos"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform._warps._log_polar_mapping": {
+    "implementation": {
+      "file": "src/skimage/transform/_warps.py",
+      "line": 1092,
+      "end_line": 1120
+    },
+    "description": "Inverse mapping function to convert from cartesian to polar coordinates",
+    "calls": [
+      "np.exp",
+      "np.column_stack",
+      "np.sin",
+      "np.cos"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.downscale_local_mean": {
+    "implementation": {
+      "file": "src/skimage/transform/_warps.py",
+      "line": 472,
+      "end_line": 516
+    },
+    "description": "Down-sample N-dimensional image by local averaging.",
+    "calls": [
+      "block_reduce"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.rescale": {
+    "implementation": {
+      "file": "src/skimage/transform/_warps.py",
+      "line": 228,
+      "end_line": 343
+    },
+    "description": "Scale image by a certain factor.",
+    "calls": [
+      "channel_as_last_axis",
+      "np.atleast_1d",
+      "np.maximum",
+      "resize",
+      "np.round",
+      "np.concatenate"
+    ],
+    "branches": [
+      {
+        "line": 321,
+        "expression": "len(scale) > 1"
+      },
+      {
+        "line": 330,
+        "expression": "multichannel"
+      },
+      {
+        "line": 322,
+        "expression": "not multichannel and len(scale) != image.ndim or (multichannel and len(scale) != image.ndim - 1)"
+      },
+      {
+        "line": 326,
+        "expression": "multichannel"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.resize": {
+    "implementation": {
+      "file": "src/skimage/transform/_warps.py",
+      "line": 71,
+      "end_line": 225
+    },
+    "description": "Resize image to match a certain size.",
+    "calls": [
+      "np.any",
+      "_preprocess_resize_output_shape",
+      "np.divide",
+      "_validate_interpolation_order",
+      "_to_ndimage_mode",
+      "ndi.zoom",
+      "_clip_warp_output",
+      "image.astype",
+      "convert_to_float",
+      "ndi.gaussian_filter",
+      "any",
+      "np.maximum",
+      "np.atleast_1d"
+    ],
+    "branches": [
+      {
+        "line": 175,
+        "expression": "input_type == np.float16"
+      },
+      {
+        "line": 178,
+        "expression": "anti_aliasing is None"
+      },
+      {
+        "line": 185,
+        "expression": "input_type == bool and anti_aliasing"
+      },
+      {
+        "line": 190,
+        "expression": "order > 0"
+      },
+      {
+        "line": 195,
+        "expression": "anti_aliasing"
+      },
+      {
+        "line": 196,
+        "expression": "anti_aliasing_sigma is None"
+      },
+      {
+        "line": 202,
+        "expression": "np.any(anti_aliasing_sigma < 0)"
+      },
+      {
+        "line": 207,
+        "expression": "np.any((anti_aliasing_sigma > 0) & (factors <= 1))"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.resize_local_mean": {
+    "implementation": {
+      "file": "src/skimage/transform/_warps.py",
+      "line": 1290,
+      "end_line": 1404
+    },
+    "description": "Resize an array with the local mean / bilinear scaling.",
+    "calls": [
+      "np.moveaxis",
+      "convert_to_float",
+      "_preprocess_resize_output_shape",
+      "_local_mean_weights",
+      "np.tensordot"
+    ],
+    "branches": [
+      {
+        "line": 1359,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 1400,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 1360,
+        "expression": "channel_axis < -image.ndim or channel_axis >= image.ndim"
+      },
+      {
+        "line": 1368,
+        "expression": "output_ndim == image.ndim - 1"
+      },
+      {
+        "line": 1394,
+        "expression": "old_size == new_size"
+      },
+      {
+        "line": 1371,
+        "expression": "output_ndim == image.ndim"
+      },
+      {
+        "line": 1372,
+        "expression": "output_shape[channel_axis] != nc"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.rotate": {
+    "implementation": {
+      "file": "src/skimage/transform/_warps.py",
+      "line": 346,
+      "end_line": 469
+    },
+    "description": "Rotate image by a certain angle around its center.",
+    "calls": [
+      "SimilarityTransform",
+      "warp",
+      "image.astype",
+      "tform.inverse",
+      "corners[:, 0].min",
+      "corners[:, 1].min",
+      "corners[:, 0].max",
+      "corners[:, 1].max",
+      "np.around",
+      "np.deg2rad"
+    ],
+    "branches": [
+      {
+        "line": 426,
+        "expression": "image.dtype == np.float16"
+      },
+      {
+        "line": 430,
+        "expression": "center is None"
+      },
+      {
+        "line": 440,
+        "expression": "resize"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.swirl": {
+    "implementation": {
+      "file": "src/skimage/transform/_warps.py",
+      "line": 536,
+      "end_line": 617
+    },
+    "description": "Perform a swirl transformation.",
+    "calls": [
+      "warp"
+    ],
+    "branches": [
+      {
+        "line": 597,
+        "expression": "center is None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.warp": {
+    "implementation": {
+      "file": "src/skimage/transform/_warps.py",
+      "line": 780,
+      "end_line": 1058
+    },
+    "description": "Warp an image according to a given coordinate transformation.",
+    "calls": [
+      "isinstance",
+      "_warp_fast[ctype]",
+      "_validate_interpolation_order",
+      "_clip_warp_output",
+      "convert_to_float",
+      "safe_as_int",
+      "_to_ndimage_mode",
+      "ndi.map_coordinates",
+      "image.astype",
+      "matrix.astype",
+      "ProjectiveTransform",
+      "warp_coords",
+      "inverse_map",
+      "hasattr",
+      "np.linalg.inv",
+      "np.dstack",
+      "get_bound_method_class",
+      "dims.append"
+    ],
+    "branches": [
+      {
+        "line": 931,
+        "expression": "map_args is None"
+      },
+      {
+        "line": 934,
+        "expression": "image.size == 0"
+      },
+      {
+        "line": 939,
+        "expression": "order > 0"
+      },
+      {
+        "line": 946,
+        "expression": "output_shape is None"
+      },
+      {
+        "line": 953,
+        "expression": "order == 2"
+      },
+      {
+        "line": 966,
+        "expression": "order in (1, 3) and (not map_args)"
+      },
+      {
+        "line": 1014,
+        "expression": "warped is None"
+      },
+      {
+        "line": 941,
+        "expression": "image.dtype == np.float16"
+      },
+      {
+        "line": 971,
+        "expression": "isinstance(inverse_map, np.ndarray) and inverse_map.shape == (3, 3)"
+      },
+      {
+        "line": 987,
+        "expression": "matrix is not None"
+      },
+      {
+        "line": 1017,
+        "expression": "isinstance(inverse_map, np.ndarray) and inverse_map.shape == (3, 3)"
+      },
+      {
+        "line": 1022,
+        "expression": "isinstance(inverse_map, np.ndarray)"
+      },
+      {
+        "line": 975,
+        "expression": "isinstance(inverse_map, HOMOGRAPHY_TRANSFORMS)"
+      },
+      {
+        "line": 990,
+        "expression": "image.ndim == 2"
+      },
+      {
+        "line": 1030,
+        "expression": "image.ndim < 2 or image.ndim > 3"
+      },
+      {
+        "line": 1040,
+        "expression": "len(input_shape) == 3 and len(output_shape) == 2"
+      },
+      {
+        "line": 979,
+        "expression": "hasattr(inverse_map, '__name__') and inverse_map.__name__ == 'inverse' and (get_bound_method_class(inverse_map) in HOMOGRAPHY_TRANSFORMS)"
+      },
+      {
+        "line": 999,
+        "expression": "image.ndim == 3"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.warp_polar": {
+    "implementation": {
+      "file": "src/skimage/transform/_warps.py",
+      "line": 1123,
+      "end_line": 1235
+    },
+    "description": "Remap image to polar or log-polar coordinates space.",
+    "calls": [
+      "channel_as_last_axis",
+      "warp",
+      "np.sqrt",
+      "safe_as_int",
+      "np.ceil",
+      "np.log"
+    ],
+    "branches": [
+      {
+        "line": 1191,
+        "expression": "image.ndim != 2 and (not multichannel)"
+      },
+      {
+        "line": 1197,
+        "expression": "image.ndim != 3 and multichannel"
+      },
+      {
+        "line": 1203,
+        "expression": "center is None"
+      },
+      {
+        "line": 1206,
+        "expression": "radius is None"
+      },
+      {
+        "line": 1210,
+        "expression": "output_shape is None"
+      },
+      {
+        "line": 1219,
+        "expression": "scaling == 'linear'"
+      },
+      {
+        "line": 1222,
+        "expression": "scaling == 'log'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.dtype._convert": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 209,
+      "end_line": 396
+    },
+    "description": "Convert an image to the requested data-type.",
+    "calls": [
+      "np.multiply",
+      "_scale",
+      "image.astype",
+      "np.iinfo",
+      "np.clip",
+      "_dtype_itemsize",
+      "np.maximum",
+      "image_out.astype",
+      "_dtype_bits",
+      "image.copy",
+      "dtype_in",
+      "dtype_out",
+      "np.rint",
+      "image.view",
+      "np.min",
+      "np.max",
+      "np.floor",
+      "np.add"
+    ],
+    "branches": [
+      {
+        "line": 261,
+        "expression": "dtype is np.floating"
+      },
+      {
+        "line": 281,
+        "expression": "np.issubdtype(dtype_in, dtype)"
+      },
+      {
+        "line": 286,
+        "expression": "not (dtype_in in _supported_types and dtype_out in _supported_types)"
+      },
+      {
+        "line": 289,
+        "expression": "kind_in in 'ui'"
+      },
+      {
+        "line": 292,
+        "expression": "kind_out in 'ui'"
+      },
+      {
+        "line": 297,
+        "expression": "kind_out == 'b'"
+      },
+      {
+        "line": 301,
+        "expression": "kind_in == 'b'"
+      },
+      {
+        "line": 308,
+        "expression": "kind_in == 'f'"
+      },
+      {
+        "line": 343,
+        "expression": "kind_out == 'f'"
+      },
+      {
+        "line": 372,
+        "expression": "kind_in == 'u'"
+      },
+      {
+        "line": 382,
+        "expression": "kind_out == 'u'"
+      },
+      {
+        "line": 389,
+        "expression": "itemsize_in > itemsize_out"
+      },
+      {
+        "line": 282,
+        "expression": "force_copy"
+      },
+      {
+        "line": 303,
+        "expression": "kind_out != 'f'"
+      },
+      {
+        "line": 309,
+        "expression": "kind_out == 'f'"
+      },
+      {
+        "line": 313,
+        "expression": "np.min(image) < -1.0 or np.max(image) > 1.0"
+      },
+      {
+        "line": 321,
+        "expression": "not uniform"
+      },
+      {
+        "line": 349,
+        "expression": "kind_in == 'u'"
+      },
+      {
+        "line": 373,
+        "expression": "kind_out == 'i'"
+      },
+      {
+        "line": 322,
+        "expression": "kind_out == 'u'"
+      },
+      {
+        "line": 331,
+        "expression": "kind_out == 'u'"
+      },
+      {
+        "line": 356,
+        "expression": "kind_in == 'i'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 479,
+      "end_line": 505
+    },
+    "description": "Convert an image to floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

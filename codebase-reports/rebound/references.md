@@ -1,0 +1,5 @@
+# Bibliography provenance
+
+Entries come from the pinned [automatic citation helper](https://github.com/hannorein/rebound/blob/33549d1d50d616a95a6d6a79e5e2c9c3b3730b1f/rebound/citations.py). They cover the base code and its shipped integrators, simulation archive and variational equations. REBOUNDx is an external extension and its citation is omitted. Journal macros have been expanded so the bibliography is self-contained. Coverage of a method by this bibliography is not a claim that its official tests were run during the short investigation. The extra trailing brace in the TRACE entry is removed in this report bibliography. The WHFast512 author spelling, title and publication metadata follow the [published article](https://astro.theoj.org/article/84547-whfast512-a-symplectic-n-body-integrator-for-planetary-systems-optimized-with-avx512-instructions) and [arXiv record](https://arxiv.org/abs/2307.05683). These bibliography repairs do not modify the vendored source.
+
+These are upstream scientific/software citations. Jingxu Xie is credited for the benchmark submission separately; the upstream author lists have not been changed.

@@ -1,0 +1,44 @@
+{
+  "skimage.segmentation.clear_border": {
+    "implementation": {
+      "file": "src/skimage/segmentation/_clear_border.py",
+      "line": 6,
+      "end_line": 109
+    },
+    "description": "Clear objects connected to the label image border.",
+    "calls": [
+      "slice",
+      "label",
+      "np.unique",
+      "np.arange",
+      "np.isin",
+      "label_mask[labels.reshape(-1)].reshape",
+      "any",
+      "labels.copy",
+      "labels.reshape"
+    ],
+    "branches": [
+      {
+        "line": 63,
+        "expression": "any((buffer_size >= s for s in labels.shape)) and mask is None"
+      },
+      {
+        "line": 67,
+        "expression": "out is None"
+      },
+      {
+        "line": 70,
+        "expression": "mask is not None"
+      },
+      {
+        "line": 75,
+        "expression": "out.shape != mask.shape"
+      },
+      {
+        "line": 77,
+        "expression": "mask.dtype != bool"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

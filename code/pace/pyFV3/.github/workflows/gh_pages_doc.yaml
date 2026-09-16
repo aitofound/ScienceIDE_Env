@@ -1,0 +1,35 @@
+name: "PyFV3 documentation"
+
+# Documentation automatically updates upon merge to develop
+on:
+  push:
+    branches:
+      - develop
+
+# Security: Restrict permissions of this workflow to whats needed.
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Configure Git Credentials
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email github-actions[bot]@users.noreply.github.com
+
+      - name: Setup python
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.12
+
+      - name: Install dependencies
+        run: pip install mkdocs-material mkdocstrings[python]
+
+      - name: Deploy to GitHub Pages
+        run: mkdocs gh-deploy --force

@@ -1,0 +1,137 @@
+{
+  "skimage.color.label2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorlabel.py",
+      "line": 85,
+      "end_line": 156
+    },
+    "description": "Return an RGB image where color-coded labels are painted over the image.",
+    "calls": [
+      "np.moveaxis",
+      "_label2rgb_overlay",
+      "_label2rgb_avg"
+    ],
+    "branches": [
+      {
+        "line": 146,
+        "expression": "image is not None"
+      },
+      {
+        "line": 148,
+        "expression": "kind == 'overlay'"
+      },
+      {
+        "line": 152,
+        "expression": "kind == 'avg'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.rgb2gray": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 941,
+      "end_line": 984
+    },
+    "description": "Compute luminance of an RGB image.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.apply_hysteresis_threshold": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 1186,
+      "end_line": 1230
+    },
+    "description": "Apply hysteresis thresholding to ``image``.",
+    "calls": [
+      "np.clip",
+      "ndi.label",
+      "ndi.sum",
+      "np.arange"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.threshold_multiotsu": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 1233,
+      "end_line": 1339
+    },
+    "description": "Generate `classes`-1 threshold values to divide gray levels in `image`,",
+    "calls": [
+      "_validate_image_histogram",
+      "prob.astype",
+      "np.count_nonzero",
+      "np.flatnonzero",
+      "_get_multiotsu_thresh_indices_lut",
+      "_get_multiotsu_thresh_indices"
+    ],
+    "branches": [
+      {
+        "line": 1304,
+        "expression": "image is not None and image.ndim > 2 and (image.shape[-1] in (3, 4))"
+      },
+      {
+        "line": 1316,
+        "expression": "nvalues < classes"
+      },
+      {
+        "line": 1325,
+        "expression": "nvalues == classes"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.centroid": {
+    "implementation": {
+      "file": "src/skimage/measure/_moments.py",
+      "line": 385,
+      "end_line": 414
+    },
+    "description": "Return the (weighted) centroid of an image.",
+    "calls": [
+      "moments_central",
+      "np.eye"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.skeletonize": {
+    "implementation": {
+      "file": "src/skimage/morphology/_skeletonize.py",
+      "line": 18,
+      "end_line": 96
+    },
+    "description": "Compute the skeleton of the input image via thinning.",
+    "calls": [
+      "image.astype",
+      "_skeletonize_zhang",
+      "_skeletonize_lee"
+    ],
+    "branches": [
+      {
+        "line": 82,
+        "expression": "method not in {'zhang', 'lee', None}"
+      },
+      {
+        "line": 86,
+        "expression": "image.ndim == 2 and (method is None or method == 'zhang')"
+      },
+      {
+        "line": 88,
+        "expression": "image.ndim == 3 and method == 'zhang'"
+      },
+      {
+        "line": 90,
+        "expression": "image.ndim == 3 or (image.ndim == 2 and method == 'lee')"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

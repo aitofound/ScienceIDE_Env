@@ -1,0 +1,87 @@
+{
+  "skimage.color.label2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorlabel.py",
+      "line": 85,
+      "end_line": 156
+    },
+    "description": "Return an RGB image where color-coded labels are painted over the image.",
+    "calls": [
+      "np.moveaxis",
+      "_label2rgb_overlay",
+      "_label2rgb_avg"
+    ],
+    "branches": [
+      {
+        "line": 146,
+        "expression": "image is not None"
+      },
+      {
+        "line": 148,
+        "expression": "kind == 'overlay'"
+      },
+      {
+        "line": 152,
+        "expression": "kind == 'avg'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.feature.local_binary_pattern": {
+    "implementation": {
+      "file": "src/skimage/feature/texture.py",
+      "line": 318,
+      "end_line": 393
+    },
+    "description": "Compute the local binary patterns (LBP) of an image.",
+    "calls": [
+      "ord",
+      "np.ascontiguousarray",
+      "_local_binary_pattern",
+      "warnings.warn",
+      "method.lower"
+    ],
+    "branches": [
+      {
+        "line": 384,
+        "expression": "np.issubdtype(image.dtype, np.floating)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.rotate": {
+    "implementation": {
+      "file": "src/skimage/transform/_warps.py",
+      "line": 346,
+      "end_line": 469
+    },
+    "description": "Rotate image by a certain angle around its center.",
+    "calls": [
+      "SimilarityTransform",
+      "warp",
+      "image.astype",
+      "tform.inverse",
+      "corners[:, 0].min",
+      "corners[:, 1].min",
+      "corners[:, 0].max",
+      "corners[:, 1].max",
+      "np.around",
+      "np.deg2rad"
+    ],
+    "branches": [
+      {
+        "line": 426,
+        "expression": "image.dtype == np.float16"
+      },
+      {
+        "line": 430,
+        "expression": "center is None"
+      },
+      {
+        "line": 440,
+        "expression": "resize"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "skimage.filters.difference_of_gaussians": {
+    "implementation": {
+      "file": "src/skimage/filters/_gaussian.py",
+      "line": 9,
+      "end_line": 168
+    },
+    "description": "Find features between ``low_sigma`` and ``high_sigma`` in size.",
+    "calls": [
+      "gaussian",
+      "img_as_float",
+      "any"
+    ],
+    "branches": [
+      {
+        "line": 119,
+        "expression": "high_sigma is None"
+      },
+      {
+        "line": 124,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 129,
+        "expression": "len(low_sigma) != 1 and len(low_sigma) != spatial_dims"
+      },
+      {
+        "line": 134,
+        "expression": "len(high_sigma) != 1 and len(high_sigma) != spatial_dims"
+      },
+      {
+        "line": 143,
+        "expression": "any(high_sigma < low_sigma)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.gaussian": {
+    "implementation": {
+      "file": "src/skimage/_shared/filters.py",
+      "line": 19,
+      "end_line": 136
+    },
+    "description": "Multi-dimensional Gaussian filter.",
+    "calls": [
+      "np.any",
+      "convert_to_float",
+      "image.astype",
+      "ndi.gaussian_filter",
+      "isinstance",
+      "sigma.insert"
+    ],
+    "branches": [
+      {
+        "line": 120,
+        "expression": "np.any(np.asarray(sigma) < 0.0)"
+      },
+      {
+        "line": 122,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 132,
+        "expression": "out is not None and (not np.issubdtype(out.dtype, np.floating))"
+      },
+      {
+        "line": 124,
+        "expression": "not isinstance(sigma, Iterable)"
+      },
+      {
+        "line": 126,
+        "expression": "len(sigma) == image.ndim - 1"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

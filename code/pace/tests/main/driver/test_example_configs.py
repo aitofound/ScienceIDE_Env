@@ -1,0 +1,89 @@
+import os
+from pathlib import Path
+
+import pytest
+import yaml
+
+from pace import DriverConfig
+from tests.paths import EXAMPLE_CONFIGS_DIR, JENKINS_CONFIGS_DIR
+
+TESTED_CONFIGS: list[str] = [
+    "baroclinic_c12.yaml",
+    "baroclinic_c12_dp.yaml",
+    "baroclinic_c12_explicit_physics.yaml",
+    "baroclinic_c12_comm_read.yaml",
+    "baroclinic_c12_comm_write.yaml",
+    "baroclinic_c12_null_comm.yaml",
+    "baroclinic_c12_write_restart.yaml",
+    "baroclinic_c48_6ranks_serialbox_test.yaml",
+    "analytic_test.yaml",
+]
+EXCLUDED_CONFIGS: list[str] = [
+    # We don't test serialbox example because it loads namelist
+    # filepath that are not in git
+    "baroclinic_c12_from_serialbox.yaml",
+    "baroclinic_c12_orch_cpu.yaml",
+    "baroclinic_c48_no_out.yaml",
+    "tropical_read_restart_fortran.yml",
+    "tropicalcyclone_c128.yaml",
+    "test_external_C12_1x1.yaml",
+    "test_external_C12_2x2.yaml",
+]
+
+
+TESTED_JENKINS_CONFIGS: list[str] = [
+    "baroclinic_c48_6ranks_dycore_only.yaml",
+    "baroclinic_c192_6ranks.yaml",
+    "baroclinic_c192_54ranks.yaml",
+]
+
+EXCLUDED_JENKINS_CONFIGS: list[str] = [
+    # We don't test serialbox example because it loads namelist
+    # filepath that are not in git
+    "baroclinic_c48_6ranks_dycore_only_serialbox.yaml",
+]
+
+
+@pytest.mark.parametrize(
+    "config_dir, tested_configs, excluded_configs",
+    [
+        pytest.param(
+            EXAMPLE_CONFIGS_DIR, TESTED_CONFIGS, EXCLUDED_CONFIGS, id="example configs"
+        ),
+        pytest.param(
+            JENKINS_CONFIGS_DIR,
+            TESTED_JENKINS_CONFIGS,
+            EXCLUDED_JENKINS_CONFIGS,
+            id="jenkins configs",
+        ),
+    ],
+)
+def test_all_configs_tested_or_excluded(
+    config_dir: Path, tested_configs: list[str], excluded_configs: list[str]
+):
+    """
+    If any configs are not tested or excluded, add them to TESTED_CONFIGS or
+    EXCLUDED_CONFIGS as appropriate.
+    """
+    config_files = [
+        filename for filename in os.listdir(config_dir) if filename.endswith(".yaml")
+    ]
+    assert len(config_files) > 0
+    missing_files = (
+        set(config_files).difference(tested_configs).difference(excluded_configs)
+    )
+    assert len(missing_files) == 0
+
+
+@pytest.mark.parametrize(
+    "path, file_list",
+    [
+        pytest.param(EXAMPLE_CONFIGS_DIR, TESTED_CONFIGS),
+        pytest.param(JENKINS_CONFIGS_DIR, TESTED_JENKINS_CONFIGS),
+    ],
+)
+def test_example_config_can_initialize(path: Path, file_list: list[str]):
+    for file_name in file_list:
+        with open(path / file_name, "r") as f:
+            config = DriverConfig.from_dict(yaml.safe_load(f))
+        assert isinstance(config, DriverConfig)

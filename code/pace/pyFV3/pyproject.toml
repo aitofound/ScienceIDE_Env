@@ -1,0 +1,106 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools >= 77.0.3"]
+
+[project]
+authors = [{name = "NOAA - Geophysical Fluid Dynamics Laboratory", email = "oliver.elbert@noaa.gov"}]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Intended Audience :: Developers",
+  "Natural Language :: English",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13"
+]
+dependencies = [
+  "dacite",
+  "f90nml>=1.1.0",
+  "numpy>=2",
+  "pyyaml",
+  "xarray"
+]
+description = "PyFV3 is a NDSL-based FV3 dynamical core for atmospheric models."
+license = "Apache-2.0"
+license-files = ["LICENSE.md"]
+name = "pyfv3"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+version = "0.2.0"
+
+[project.optional-dependencies]
+dev = [
+  "pyfv3[docs,ndsl,test]",
+  "pre-commit",
+  "flake8-pyproject"
+]
+docs = [
+  "mkdocs-material",
+  "mkdocstrings[python]"
+]
+extras = [
+  "pyfv3[dev]",
+  "pyfv3[docs]",
+  "pyfv3[ndsl]",
+  "pyfv3[test]"
+]
+ndsl = ["ndsl @ git+https://github.com/NOAA-GFDL/NDSL.git@2026.08.00"]
+test = [
+  "coverage",
+  "pytest",
+  "pytest-subtests"
+]
+
+[project.urls]
+Repository = "https://github.com/NOAA-GFDL/pyFV3"
+
+[tool.aliases]
+
+[tool.black]
+target-version = ["py312", "py313"]
+
+[tool.coverage.run]
+branch = true
+omit = ["tests/*", "*gt_cache*", ".dacecache*", "external/*", "__init__.py"]
+parallel = true
+source_pkgs = ["pyfv3"]
+
+[tool.flake8]
+exclude = ["docs"]
+extend-ignore = ["W503", "E302", "E203", "F841", "E501"]
+max-line-length = 88
+
+[tool.isort]
+default_section = "THIRDPARTY"
+known_first_party = "pyfv3,ndsl,pyshield"
+known_third_party = "f90nml,pytest,xarray,numpy,mpi4py,gt4py"
+profile = "black"
+sections = "FUTURE,STDLIB,THIRDPARTY,FIRSTPARTY,LOCALFOLDER"
+
+[tool.mypy]
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+# TODO: understand what's wrong with imports and fix
+ignore_missing_imports = true
+strict_equality = true
+strict_optional = true
+warn_redundant_casts = true
+warn_unreachable = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+disallow_incomplete_defs = false
+disallow_untyped_defs = false
+module = [
+  # not sure if we can ever type all stencils
+  "pyfv3.stencils.*",
+  "pyfv3.initialization.test_cases.*",
+  "pyfv3.initialization.init_utils",
+  "pyfv3.testing.validation"
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["pyfv3", "pyfv3.*"]

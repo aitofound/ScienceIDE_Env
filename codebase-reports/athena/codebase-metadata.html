@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Athena++ codebase metadata</title><style>body{font:16px system-ui;max-width:1100px;margin:2rem auto;padding:0 1rem;line-height:1.5}table{border-collapse:collapse;width:100%}td,th{border:1px solid #bbb;padding:.5rem;text-align:left;vertical-align:top}pre{white-space:pre-wrap;overflow-wrap:anywhere}a{overflow-wrap:anywhere}</style></head><body><h1>Athena++ codebase metadata and bibliography</h1><p>Informational, non-blocking backfill; not a new source audit or runtime validation.</p><p><a href="references.bib">29 verified BibTeX entries</a> | <a href="codebase-metadata.json">Canonical JSON</a> | <a href="codebase-metadata.md">Markdown report</a></p><h2>Eight shipped tasks / 70 check directories</h2><table><tr><th>Task</th><th>Scientific scope</th><th>Checks</th><th>Citation keys</th></tr><tr><td>athena-newtonian-hydro</td><td>Finite-volume Newtonian hydro, reconstruction, general EOS, curvilinear geometry and passive scalars.</td><td>16</td><td>Stone2020Athena, Felker2018FourthOrder, Mignone2014Reconstruction, Quirk1994Riemann, Sod1978ShockTube, Gardiner2005ConstrainedTransport</td></tr><tr><td>athena-newtonian-mhd</td><td>Constrained transport, MHD Riemann solvers, AMR waves and shearing-box/orbital-advection tests.</td><td>8</td><td>Stone2020Athena, Gardiner2005ConstrainedTransport, Miyoshi2005HLLD, Ryu1995OneDimensional, Quirk1994Riemann, Hawley1992ShearInstability, Johnson2008OrbitalAdvection, Johnson2005ShearingWaves</td></tr><tr><td>athena-diffusion-sts</td><td>Viscous, resistive, thermal and scalar diffusion with explicit and RKL1/RKL2 super-time-stepping.</td><td>10</td><td>Stone2020Athena, Meyer2014SuperTimeStepping, Ryu1995Multidimensional</td></tr><tr><td>athena-special-relativity</td><td>Flat-spacetime relativistic hydro/MHD Riemann problems, wave convergence and passive scalars.</td><td>10</td><td>Stone2020Athena, White2016Relativity, Mignone2005RelativisticHydro, Mignone2009RelativisticMHD</td></tr><tr><td>athena-general-relativity</td><td>Fixed-metric GR hydro/MHD solvers, with and without local-frame transformations; shipped runtime checks use Minkowski coordinates.</td><td>8</td><td>Stone2020Athena, White2016Relativity, Mignone2005RelativisticHydro, Mignone2009RelativisticMHD</td></tr><tr><td>athena-self-gravity-fft</td><td>FFT round trips, FFT/multigrid Poisson solvers, stable/unstable Jeans modes and driven turbulence.</td><td>5</td><td>Stone2020Athena, Tomida2023Multigrid, Frigo2005FFTW, Lynn2012Turbulence, Plimpton1995ParallelAlgorithms</td></tr><tr><td>athena-radiation-transport</td><td>Explicit and implicit discrete-angle radiation transport, AMR waves, thermal relaxation and multigroup source terms.</td><td>7</td><td>Stone2020Athena, Jiang2014Radiation, Jiang2021ImplicitRadiation, Jiang2022Multigroup</td></tr><tr><td>athena-chemistry</td><td>H2 and GOW17 networks, KIDA input, KROME shock-tube chemistry, CVODE/explicit integration and six-ray shielding.</td><td>6</td><td>Stone2020Athena, Gong2023Chemistry, Gong2017Network, Grassi2014KROME, Hindmarsh2005SUNDIALS, Wakelam2012KIDA</td></tr></table><h2>Report, provenance and limitations</h2><pre># Athena++ codebase metadata and bibliography
+
+Informational, non-blocking backfill from shipped task evidence. The companion
+[`codebase-metadata.json`](codebase-metadata.json) is the canonical data record;
+[`codebase-metadata.html`](codebase-metadata.html) is a self-contained view.
+This report was not produced by rerunning the source-measurement pipeline.
+
+## Codebase identity
+
+| Field | Value | Evidence |
+|---|---|---|
+| Codebase / source payload | `athena` / `code/athena/` | Eight shipped task manifests |
+| Upstream | [PrincetonUniversity/athena](https://github.com/PrincetonUniversity/athena) (Athena++, not the older Athena C code) | Pinned README |
+| Upstream pin | `823614c90b594472747a0ac2a699e4a454f300d2` | All eight task manifests |
+| Language / domain | C++11 with Python tooling; physics-astronomy | Task manifests and upstream |
+| License declaration | BSD-3-Clause; file-header discrepancy noted below | Task manifests, README and CFF |
+| Source fingerprint / sizes | Unknown; not measured by this backfill | Not inferred |
+| Benchmark snapshot reviewed | `9b9ac0eea13712f2e40d25e28ac4c4b49a07c761` | Worktree HEAD before this change |
+
+## Modules, shipped checks and citation coverage
+
+The common primary citation is `Stone2020Athena`; `Athena2024Software` identifies
+the published v24.0 release, not the exact task commit. There are **8 shipped tasks
+and 70 check directories**. Shared code includes mesh/boundary infrastructure,
+task lists, reconstruction, coordinates, I/O, build tools and regression utilities;
+the copied module paths and shared list are preserved in the JSON, without new size claims.
+
+| Shipped task | Scientific scope | Checks | Additional bibliography keys |
+|---|---|---:|---|
+| [athena-newtonian-hydro](../../tasks/athena/athena-newtonian-hydro/task.toml) | Finite-volume Newtonian hydro, reconstruction, general EOS, curvilinear geometry and passive scalars. | 16 | `Felker2018FourthOrder`, `Mignone2014Reconstruction`, `Quirk1994Riemann`, `Sod1978ShockTube`, `Gardiner2005ConstrainedTransport` |
+| [athena-newtonian-mhd](../../tasks/athena/athena-newtonian-mhd/task.toml) | Constrained transport, MHD Riemann solvers, AMR waves and shearing-box/orbital-advection tests. | 8 | `Gardiner2005ConstrainedTransport`, `Miyoshi2005HLLD`, `Ryu1995OneDimensional`, `Quirk1994Riemann`, `Hawley1992ShearInstability`, `Johnson2008OrbitalAdvection`, `Johnson2005ShearingWaves` |
+| [athena-diffusion-sts](../../tasks/athena/athena-diffusion-sts/task.toml) | Viscous, resistive, thermal and scalar diffusion with explicit and RKL1/RKL2 super-time-stepping. | 10 | `Meyer2014SuperTimeStepping`, `Ryu1995Multidimensional` |
+| [athena-special-relativity](../../tasks/athena/athena-special-relativity/task.toml) | Flat-spacetime relativistic hydro/MHD Riemann problems, wave convergence and passive scalars. | 10 | `White2016Relativity`, `Mignone2005RelativisticHydro`, `Mignone2009RelativisticMHD` |
+| [athena-general-relativity](../../tasks/athena/athena-general-relativity/task.toml) | Fixed-metric GR hydro/MHD solvers, with and without local-frame transformations; shipped runtime checks use Minkowski coordinates. | 8 | `White2016Relativity`, `Mignone2005RelativisticHydro`, `Mignone2009RelativisticMHD` |
+| [athena-self-gravity-fft](../../tasks/athena/athena-self-gravity-fft/task.toml) | FFT round trips, FFT/multigrid Poisson solvers, stable/unstable Jeans modes and driven turbulence. | 5 | `Tomida2023Multigrid`, `Frigo2005FFTW`, `Lynn2012Turbulence`, `Plimpton1995ParallelAlgorithms` |
+| [athena-radiation-transport](../../tasks/athena/athena-radiation-transport/task.toml) | Explicit and implicit discrete-angle radiation transport, AMR waves, thermal relaxation and multigroup source terms. | 7 | `Jiang2014Radiation`, `Jiang2021ImplicitRadiation`, `Jiang2022Multigroup` |
+| [athena-chemistry](../../tasks/athena/athena-chemistry/task.toml) | H2 and GOW17 networks, KIDA input, KROME shock-tube chemistry, CVODE/explicit integration and six-ray shielding. | 6 | `Gong2023Chemistry`, `Gong2017Network`, `Grassi2014KROME`, `Hindmarsh2005SUNDIALS`, `Wakelam2012KIDA` |
+
+### Check inventory
+
+These names are copied from shipped `tests/checks/*/check.json` locations.
+All task manifests declare `draft`; existing module approvals were read, not changed.
+
+- **athena-newtonian-hydro**: `blast-cylindrical`, `blast-spherical`, `eos-comparison`, `eos-hdf5-table`, `eos-mhd`, `eos-riemann`, `eos-table`, `hydro-carbuncle`, `hydro-linwave`, `hydro-linwave-aligned`, `hydro4-linwave-2d`, `hydro4-linwave-3d`, `mignone-meridional`, `mignone-radial`, `scalars-restart`, `sod-shock`.
+
+- **athena-newtonian-mhd**: `amr-linwave`, `mhd-carbuncle`, `mhd-cpaw`, `mhd-linwave`, `mhd-rj2a-shock`, `mhd-shwave`, `mri2d`, `ssheet`.
+
+- **athena-diffusion-sts**: `diffusion-linwave3d`, `diffusion-linwave3d-sts`, `resistive-diffusion`, `resistive-diffusion-sts`, `scalar-diffusion`, `scalar-diffusion-sts`, `thermal-attenuation`, `thermal-attenuation-sts`, `viscous-diffusion`, `viscous-diffusion-sts`.
+
+- **athena-special-relativity**: `sr-hydro-convergence`, `sr-hydro-scalars`, `sr-hydro-shocks-hllc`, `sr-hydro-shocks-hlle`, `sr-hydro-shocks-llf`, `sr-mhd-convergence`, `sr-mhd-linwave`, `sr-mhd-shocks-hlld`, `sr-mhd-shocks-hlle`, `sr-mhd-shocks-llf`.
+
+- **athena-general-relativity**: `gr-hydro-shocks-hllc`, `gr-hydro-shocks-hlle`, `gr-hydro-shocks-hlle-notransform`, `gr-hydro-shocks-llf`, `gr-hydro-shocks-llf-notransform`, `gr-mhd-shocks-hlld`, `gr-mhd-shocks-hlle`, `gr-mhd-shocks-llf`.
+
+- **athena-self-gravity-fft**: `fft-roundtrip`, `jeans-fft-mg`, `turb-driven`, `unstable-jeans-fft`, `unstable-jeans-mg`.
+
+- **athena-radiation-transport**: `implicit-rad-amr-linwave`, `implicit-rad-linwave`, `implicit-rad-source`, `multigroup-rad-source`, `rad-amr-linwave`, `rad-linwave`, `rad-source`.
+
+- **athena-chemistry**: `chem-g14sod`, `chem-gow17`, `chem-h2-cvode`, `chem-h2-euler`, `chem-kida`, `chem-six-ray`.
+
+## Bibliography and verification
+
+[`references.bib`](references.bib) contains **29 unique verified entries**,
+with the upstream-recommended framework paper first. The bibliography is selective
+for this codebase and its shipped tasks, not an exhaustive astrophysics reading list.
+Every task citation is represented by its intended work, with compound citations
+split and the identifier errors below corrected only in this report.
+
+Verification date: **2026-09-12**. DOI records were inspected via DOI content
+negotiation (BibTeX/CSL-JSON) or Crossref registration metadata. Where journal
+metadata could not be established, the verified arXiv record is cited as a preprint.
+Each entry has a stable DOI or arXiv URL; the JSON records per-entry verification links.
+
+Authoritative code and method-selection evidence:
+- https://github.com/PrincetonUniversity/athena/blob/823614c90b594472747a0ac2a699e4a454f300d2/README.md
+- https://github.com/PrincetonUniversity/athena/blob/823614c90b594472747a0ac2a699e4a454f300d2/CITATION.cff
+- https://github.com/PrincetonUniversity/athena/wiki/Chemistry
+- https://github.com/PrincetonUniversity/athena/wiki/Non-relativistic-Radiation-Transport
+- https://github.com/PrincetonUniversity/athena/blob/823614c90b594472747a0ac2a699e4a454f300d2/src/pgen/jgg.cpp
+- https://github.com/PrincetonUniversity/athena/blob/823614c90b594472747a0ac2a699e4a454f300d2/src/pgen/ssheet.cpp
+- https://github.com/PrincetonUniversity/athena/blob/823614c90b594472747a0ac2a699e4a454f300d2/src/fft/athena_fft.cpp
+
+### Corrections and conservative decisions
+
+- The chemistry task abbreviates the preprint title and omits/reorders authors. Gong2023Chemistry uses the exact title and complete nine-author list verified at arXiv:2305.04965; the upstream Chemistry wiki explicitly requests this work.
+- The Newtonian-MHD task combines two shearing-box works under DOI 10.1086/533428. That DOI identifies Matt and Pudritz on stellar winds, not Johnson et al. Use separate Johnson2008OrbitalAdvection (10.1086/586707, independently linked by arXiv:0804.4699) and Johnson2005ShearingWaves (10.1086/430081, arXiv:astro-ph/0501005). The pinned jgg.cpp and ssheet.cpp confirm the intended works.
+- The radiation task gives DOI 10.3847/1538-4365/ac9b40, which returned 404. The upstream radiation wiki identifies Jiang (2022), ApJS 263, 4; Jiang2022Multigroup conservatively cites the matching verified arXiv:2209.06240 instead. No journal DOI is invented and no duplicate journal/preprint entry is added.
+- The self-gravity task calls the Plimpton paper 1997, but its DOI records publication in 1995. Plimpton1995ParallelAlgorithms is retained only as historical parallel-software context, not evidence that an MD workload is shipped or that the article describes Athena FFT routines. Frigo2005FFTW directly covers the FFTW library used in src/fft/athena_fft.cpp.
+- The SR and GR task references combine the Mignone-Bodo (2005) and Mignone-Ugliano-Bodo (2009) papers under a repository URL. They are separated into two verified DOI entries and shared by both task mappings.
+- The pinned README cites software release v24.0, whereas its CITATION.cff still describes v21.0. Athena2024Software follows the README and verified Zenodo record; neither release is asserted to be identical to the benchmark source commit.
+- Capitalization, TeX-safe punctuation, and obvious Ryu (1995) DOI-title typographical errors are normalized. The combined III/IV Hawley-Balbus title is retained as registered. Published papers and their arXiv versions occupy a single entry where both identifiers were verified.
+
+## Pending-review PR coverage
+
+The supplied inventory was checked for exact `athena` membership in each open PR&#x27;s
+`codebases` array: **no mapped PRs**. A live `gh pr list --repo
+aitofound/ScienceAccelBench --state open --search athena --limit 100` also returned
+an empty list before this bibliography PR was created. Thus there were no mapped
+pending PR bodies/files requiring a separate citation mapping. Cross-codebase
+filenames containing the word &quot;athena&quot; were not treated as Athena PR mappings.
+
+## Gaps and warnings
+
+- This is an informational bibliography-led backfill from shipped task evidence, not a regenerated source audit or a new module approval. Source fingerprint, file/line accounting and framework-collected test counts remain unknown (null).
+- Seventy shipped check directories are counted statically; they are not seventy newly executed tests, individual parameter cases, or total upstream tests. No native, Docker, GPU, calibration, runtime or speedup validation was performed for this documentation-only change.
+- All eight shipped task manifests declare draft status. Existing pass policies and approval records were read, not re-approved or modified.
+- The GR runtime checks use Minkowski coordinates; curved-metric coverage is not established by these checks.
+- Cosmic-ray transport is not one of the eight shipped tasks; chemistry six-ray radiation is distinct from the radiation-transport task.
+- BSD-3-Clause is the upstream/task declaration, not a completed file-level license audit. The pinned src/nr_radiation/integrators/multi_group.cpp also contains a GPL header; this backfill does not resolve that discrepancy.
+- The chemistry and multigroup works are recorded as verified arXiv preprints; unverified journal metadata are omitted.</pre></body></html>
