@@ -16,14 +16,15 @@ Four packages are installed for the official example decks rather than for the l
 
 ## Runtime
 
-Every `expected_runtime_s` is sized so that the two runner classes this leaf has
-been recorded on both land inside the factor-of-two band the review brief
-enforces: the same suite measured 925 s on the first CI runner and 508 s on the
-second, a factor of 1.8 between hosts that share the declared two cores, and the
-declarations sit at the midpoint of the two measurements rather than at one of
-them. That is the record's measured nominal run time (2 docker cores,
-`comment/pipeline/self-validation.json`) plus about 40 percent of headroom, so
-the declaration and the measurement stay in
+Every `expected_runtime_s` is sized so that the runner classes this leaf has been
+recorded on all land inside the factor-of-two band the review brief enforces. The
+same suite has measured 508 s, 716 s and 925 s on three refreshes that share the
+declared two cores, so the declarations sit at the midpoint of the observed
+range rather than at any single measurement; re-tuning them to the newest number
+would flip the brief's flag list the next time a refresh lands on a slower host.
+Each declaration is therefore the record's measured nominal run time (2 docker
+cores, `comment/pipeline/self-validation.json`) with headroom, and the notes
+quote ranges rather than one run, so the declaration and the measurement stay in
 the same band in both directions: the reviewer flags a declaration that is
 more than twice the measured value, and `selfcheck` warns when the measurement
 is more than twice the declaration. Read the file for the host those numbers
