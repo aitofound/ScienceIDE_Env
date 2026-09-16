@@ -13,6 +13,7 @@ grades `output.txt`.
 **Observable.** the same convergence sweep under the normal-vector formulation, nine basis sizes. The reciprocal-lattice-vector count S:GetNumG() previously printed alongside it is deliberately not graded: it is a build-dependent bookkeeping count that a fused multiply-add can change (known pitfall s4-gvector-selection-fma), not a physical quantity.
 
 **Cost knob.** `SAB_NG_MAX` — see `run.sh --help`.
+**Resource knob.** `SAB_THREADS` (default 1, the declared per-check cpus). S4 as built here is serial, so it changes nothing at the graded value; `run.sh --help` lists it.
 Default vs upstream: basis sweep shortened from upstream's 41..401 to 41..361: the normal-vector basis construction destabilises at the largest basis size, where two legitimate builds disagree by 3.4e-6 while the nine smaller sizes agree to 1e-12. SAB_NG_MAX=401 restores the upstream sweep.
 
 ## Build settings, and why they are pinned

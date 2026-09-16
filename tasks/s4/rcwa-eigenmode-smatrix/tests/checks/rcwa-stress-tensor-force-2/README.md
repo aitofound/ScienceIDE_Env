@@ -15,6 +15,7 @@ grades every number the deck prints to stdout as `output.txt`.
 **Cost knob.** `SAB_NUMG` sets NumBasis. The layer eigenproblem is
 `2*NumBasis` square and the eigendecomposition is `O(NumBasis^3)`, so this is
 the single dial that scales the check. `run.sh --help` prints it.
+**Resource knob.** `SAB_THREADS` (default 1, the declared per-check cpus). S4 as built here is serial, so it changes nothing at the graded value; `run.sh --help` lists it.
 Default vs upstream: upstream
 
 ## Build settings, and why they are pinned
