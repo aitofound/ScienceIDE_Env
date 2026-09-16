@@ -1,0 +1,39 @@
+{
+  "groups": [
+    "energy_pair1",
+    "energy_pair2",
+    "forces_pair1",
+    "forces_pair2",
+    "stress_pair1",
+    "stress_pair2"
+  ],
+  "matdyn_freq_files": [],
+  "n_acoustic": 3,
+  "scf_prefixes": [
+    "twochem1",
+    "twochem2"
+  ],
+  "steps": [
+    {
+      "exe": "pw.x",
+      "in": "scf_twochem.in"
+    },
+    {
+      "exe": "ph.x",
+      "in": "phG_twochem.in",
+      "wipe_ph0": true,
+      "skip_if_crash": true
+    },
+    {
+      "exe": "pw.x",
+      "in": "scf2.in"
+    },
+    {
+      "exe": "ph.x",
+      "in": "phG2.in",
+      "wipe_ph0": true,
+      "skip_if_crash": true
+    }
+  ],
+  "testdir": "ph_twochem"
+}

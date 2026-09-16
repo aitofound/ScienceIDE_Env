@@ -1,0 +1,31 @@
+{
+  "module": {
+    "slug": "mas",
+    "title": "MAS: thermodynamic resistive MHD of the solar corona and inner heliosphere in 3D spherical coordinates",
+    "paths": [
+      "."
+    ],
+    "entrypoints": [
+      "the mas executable built from src/mas.F90 (mpirun -np N mas RUN_NAME mas.in); testsuite/run_test_suite.sh; the examples decks mas.in"
+    ],
+    "expensive_path": "the per-step MHD advance on the 3D spherical staggered grid: the semi-implicit velocity and viscosity solves (advv, v_solver: preconditioned conjugate gradient, 60 percent of the thermo_3d_relaxation step time), the field-aligned thermal conduction solve (advtce), the vector-potential advance (adva), and the potential-field initialisation (pot_3d) on production grids of 8 to 28 million cells; upstream's own GPU port (OpenACC and do concurrent under nvfortran) is the record to beat",
+    "rationale": "One code, one build, one executable, one namelist, one test suite: every physics switch (zero-beta, polytropic, thermodynamic with conduction, radiation and heating models, pressure waves, WTD turbulence, charge states, tracer particles, heliospheric boundary files) is a namelist option of the same 73k-line program and shares the grid, the MPI decomposition, the CG solvers and the HDF5 I/O. The whole codebase is one module.",
+    "excluded": [],
+    "hazards": [
+      "final energies depend on the MPI rank count at the 1e-8 relative level in the thermodynamic decks (semi-implicit PCG reductions); the zero-beta and 2D heliospheric decks were rank-independent to 12 digits",
+      "the shipped references were made on x86 (GCC 12.3, alderlake, 4 ranks); the suite's own bar is 6 decimal digits, met here on arm64 with gfortran 15",
+      "single-file source pre-processed by PSI's expmac macro expander; a port has to keep the build (build.sh, conf file) working",
+      "needs HDF5 with Fortran bindings built by the same compiler, and an MPI library; no other external dependency",
+      "the upstream README asks research users to contact support@predsci.com (Apache-2.0 licence otherwise)",
+      "the production example decks cost minutes per step; checks derived from them need a reduced grid and a short window"
+    ]
+  },
+  "approval": {
+    "modules": [
+      "mas"
+    ],
+    "human_ref": "single-module default: the whole codebase is one module; no human decision at STOP 1, the cut is read in the source PR body at STOP 2",
+    "at": "2026-09-16T04:59:40Z"
+  },
+  "shared_infrastructure": []
+}
