@@ -1,0 +1,90 @@
+% Shared bibliography for the legume codebase and every task built on it.
+% Update this file in every task PR before review; do not start a second
+% bibliography inside a task leaf.
+
+% --- The codebase's own papers, as upstream asks to be cited in README.md ---
+
+@article{minkov2020inverse,
+  title={Inverse design of photonic crystals through automatic differentiation},
+  author={Minkov, Momchil and Williamson, Ian AD and Andreani, Lucio C and Gerace, Dario and Lou, Beicheng and Song, Alex Y and Hughes, Tyler W and Fan, Shanhui},
+  journal={ACS Photonics},
+  volume={7},
+  number={7},
+  pages={1729--1741},
+  year={2020},
+  publisher={American Chemical Society}
+}
+
+@article{Zanotti2024legume,
+  title = {Legume: A free implementation of the guided-mode expansion method for photonic crystal slabs},
+  journal = {Computer Physics Communications},
+  volume = {304},
+  pages = {109286},
+  year = {2024},
+  issn = {0010-4655},
+  doi = {10.1016/j.cpc.2024.109286},
+  url = {https://www.sciencedirect.com/science/article/pii/S0010465524002091},
+  author = {Simone Zanotti and Momchil Minkov and Davide Nigro and Dario Gerace and Shanhui Fan and Lucio Claudio Andreani}
+}
+
+% --- The method the codebase implements ---
+% Cited in the source itself at legume/gme/slab_modes.py:535, where the comment
+% also records an error in the manuscript's statement of the X3 coefficient.
+
+@article{andreani2006photonic,
+  title = {Photonic-crystal slabs with a triangular lattice of triangular holes investigated using a guided-mode expansion method},
+  author = {Andreani, Lucio Claudio and Gerace, Dario},
+  journal = {Physical Review B},
+  volume = {73},
+  number = {23},
+  pages = {235114},
+  year = {2006},
+  publisher = {American Physical Society},
+  doi = {10.1103/PhysRevB.73.235114},
+  eprint = {0706.0395},
+  archivePrefix = {arXiv}
+}
+
+% --- The reference the README compares its band diagram against ---
+
+@book{joannopoulos2008molding,
+  title = {Photonic Crystals: Molding the Flow of Light},
+  author = {Joannopoulos, John D. and Johnson, Steven G. and Winn, Joshua N. and Meade, Robert D.},
+  edition = {2nd},
+  publisher = {Princeton University Press},
+  year = {2008},
+  note = {The README reproduces Fig. 2(b) of chapter 8; example notebook 04 is that comparison}
+}
+
+% --- Software the codebase is built on ---
+
+@article{harris2020array,
+  title = {Array programming with {NumPy}},
+  author = {Harris, Charles R. and Millman, K. Jarrod and van der Walt, St{\'e}fan J. and Gommers, Ralf and Virtanen, Pauli and Cournapeau, David and Wieser, Eric and Taylor, Julian and Berg, Sebastian and Smith, Nathaniel J. and others},
+  journal = {Nature},
+  volume = {585},
+  number = {7825},
+  pages = {357--362},
+  year = {2020},
+  doi = {10.1038/s41586-020-2649-2}
+}
+
+@article{virtanen2020scipy,
+  title = {{SciPy} 1.0: fundamental algorithms for scientific computing in {Python}},
+  author = {Virtanen, Pauli and Gommers, Ralf and Oliphant, Travis E. and Haberland, Matt and Reddy, Tyler and Cournapeau, David and Burovski, Evgeni and Peterson, Pearu and Weckesser, Warren and Bright, Jonathan and others},
+  journal = {Nature Methods},
+  volume = {17},
+  number = {3},
+  pages = {261--272},
+  year = {2020},
+  doi = {10.1038/s41592-019-0686-2},
+  note = {legume uses scipy.optimize.brentq for the slab guided-mode dispersion relation and scipy.io.loadmat to read the committed MATLAB references}
+}
+
+@inproceedings{maclaurin2015autograd,
+  title = {Autograd: Effortless gradients in {NumPy}},
+  author = {Maclaurin, Dougal and Duvenaud, David and Adams, Ryan P.},
+  booktitle = {ICML 2015 AutoML Workshop},
+  year = {2015},
+  note = {The optional backend that makes every legume output differentiable; legume/primitives.py supplies the custom vjps for eigh and eigsh that autograd does not provide}
+}
