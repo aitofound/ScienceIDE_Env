@@ -30,19 +30,77 @@ def cmd_brief(a) -> None:
     print("Show this to the human in full before reading any code; it is the first thing they hear about a codebase.")
 
 
+STEP12_BRIEF = """\
+STEP 1.2  Build the codebase and actually run its tests and examples. THE MOST
+          IMPORTANT SUBSTEP: getting the codebase running is the nontrivial part
+          of every task, and everything downstream rests on what you learn here.
+
+  Never in Docker (Docker starts only after the human's consent at STOP 3).
+  Work in a scratch copy of {code}; the tree that will be vendored stays clean.
+  Then record, as {state}/runs.json:
+
+  build      the build system, the exact commands you ran, the measured wall
+             seconds, whether it succeeded, and every pitfall on the way (an
+             undocumented flag, a compiler or library version, an environment
+             variable, a download the build wants).
+  landscape  every test suite and example family the codebase ships: where it
+             lives, how it is run, how many distinct tests or decks it holds,
+             whether upstream ships reference outputs.
+  runs       the tests and examples you ACTUALLY ran, one entry each: the
+             command, wall seconds, whether the upstream reference was
+             reproduced and to how many digits, the output files and formats,
+             non-determinism observed, and the pitfalls met (a missing input
+             parameter or data file in the deck, a path assumption, a test that
+             needs a network, credentials or a GPU). Run a representative set
+             across the families, the shortest first; not every deck, but real
+             runs. At most THREE MINUTES of wall time per run: shorten the
+             window or resolution through the deck's own settings, and record
+             a run that cannot be shortened as not run, with the reason.
+  pitfalls   the consolidated list, each with where it bit (build, a run id,
+             general), the symptom and the workaround: this is what saves the
+             check authors and the Dockerfiles the most time. Write paths
+             relative to the checkout or as the variable name that carries
+             them; the report redacts absolute paths.
+  not_run    families or tests you did not attempt, with why.
+
+  {{
+    "codebase": "{cb}",
+    "build": {{"system": "<cmake|make|meson|pip|...>", "commands": ["<exact command>"], "wall_s": 0,
+              "ok": true, "pitfalls": ["<what bit during the build and how it was fixed>"]}},
+    "landscape": [
+      {{"family": "<suite or example family>", "kind": "test-suite|examples|benchmarks|tutorials|regression|other",
+        "path": "<relative to the checkout>", "count": 0, "how_to_run": "<the upstream command>",
+        "reference_outputs": "shipped|partial|none", "notes": ""}}
+    ],
+    "runs": [
+      {{"id": "<lower-kebab-case>", "family": "<family>", "path": "<test file or deck directory>",
+        "command": "<exact command line>", "ran": true, "wall_s": 0, "shortened": "<how, or null>",
+        "reproduced": "<yes: N digits | no | no reference | not compared>", "outputs": ["<file: format>"],
+        "nondeterminism": "<none seen | what varied between two runs>", "pitfalls": ["<what bit and the fix>"]}},
+      {{"id": "<...>", "family": "<family>", "path": "<...>", "command": "<...>", "ran": false,
+        "reason_not_run": "<why: cannot be shortened below three minutes, needs data X, needs a GPU, ...>", "pitfalls": []}}
+    ],
+    "pitfalls": [{{"where": "build|<run id>|general", "symptom": "<what you saw>", "workaround": "<what made it work>"}}],
+    "not_run": [{{"what": "<family or test>", "why": "<reason>"}}]
+  }}
+
+  Run `build-and-run` again to validate; it prints the summary that becomes the
+  build-and-run section of the codebase report and of the source PR body, and
+  the measured wall seconds become upstream_runtime_s in the survey (Step 2).
+  Skipping this substep is strongly advised against.
+"""
+
 STEP1_BRIEF = """\
 STEP 1  Investigate the codebase, then propose the module cut.
 
-  Investigation runs, not reading alone: build the checkout natively in a
-  scratch copy and make dry runs or short runs of its official tests. Never
-  in Docker (Docker starts only after the human's consent, task plan). At
-  most THREE MINUTES of wall time per test: shorten the window or resolution
-  with the test's own settings, and record a test that cannot be shortened
-  as unmeasured rather than running it. Measure build time, per-test wall
-  time, whether the upstream reference is reproduced and to how many digits,
-  output formats and non-determinism; they go into overview.md, inform the
-  module cut, and become upstream_runtime_s with runtime_measured: true in
-  the survey.
+  Investigation is not reading alone. Step 1.2 (sab.py codebase build-and-run)
+  is the dedicated substep where you build the checkout natively in a scratch
+  copy, actually run a representative set of its tests and examples (three
+  minutes of wall time each at most, never Docker), and record the landscape
+  and every pitfall in {state}/runs.json. Do it before proposing the cut and
+  before the report and the source PR; propose-modules warns when it is
+  missing, and skipping it is strongly advised against. Its measured wall
+  seconds become upstream_runtime_s with runtime_measured: true in the survey.
 
   Read {code} as a scientist would: what it simulates, the build system, the
   production entry points, where the official test suites and the standard
@@ -129,34 +187,17 @@ STEP 1.5  The source PR (outside this CLI). HARD STOP.
   Dockerfiles must build from code/{source}/ and public, well-known packages
   only. Pin, URL and licence go in task.toml.
 
-  The PR body is written for a reader who has one minute: the facts first,
-  the generated report last. In this order, as headed Markdown with tables:
-
-    What it is     two sentences on what the code simulates and who uses it;
-                   upstream URL, pin (tag or commit), licence.
-    Size           a table: language | files | lines of code, with a total
-                   and the tool that counted (cloc, or `wc -l`); what is
-                   vendored beyond upstream (bundled libraries, data tables,
-                   patches) and its size.
-    Build, tests   build system and measured native build time; the official
-                   test suites and example decks (how many, how they run);
-                   how many ran natively in the investigation and reproduced
-                   the upstream reference, to how many digits.
-    Module cut     the single-module default in one line (the whole codebase,
-                   one module, recorded by propose-modules); for a multi-module
-                   cut a table, one row per module: slug | title | what it
-                   computes | owned paths | lines of code | expensive path |
-                   official tests that exercise it | evidence for both
-                   conditions | approved or proposed-only; below it the human's
-                   approving words and date.
-    Shared         the shared infrastructure, listed once, with lines of code.
-    Left out       every not_packaged entry with its reason.
-    Report         the bounded Markdown report (codebase-metadata.md) pasted
-                   under a rule, when it exists; a line saying so when it
-                   does not. Then the skill revision that produced the PR.
-
-  Reviewers read the body before the tree; a body that is only the report or
-  only a link sends the PR back.
+  The PR body IS the codebase page, nothing hand-written above it:
+    sab.py codebase present --codebase {cb} --markdown
+  pasted verbatim (what the code does, the code split with production lines
+  first, build and run, the module cut with the human's approving words for a
+  multi-module one, what is left out, the warnings); then a rule; then
+  codebase-reports/{cb}/codebase-metadata.md for information only; then the
+  skill revision. The page is computed from the report, so fill the report's
+  description, source_extensions, example_path_markers and third_party_paths
+  first and rerun `codebase report` until the page reads right. Reviewers read
+  the page before the tree; a body that is prose instead of the page, only the
+  report, or only a link sends the PR back.
 
   Then STOP. Report the PR link and wait for the human to review and merge it.
   Nothing downstream (the test survey, the task scaffold, the checks) is
