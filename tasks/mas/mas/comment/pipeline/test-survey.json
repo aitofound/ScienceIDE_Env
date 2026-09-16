@@ -1,0 +1,257 @@
+{
+  "module": "mas",
+  "tests": [
+    {
+      "id": "zb-2d-alfven-wave-t",
+      "module": "mas",
+      "path": "testsuite/zb_2d_alfven_wave_t",
+      "chaotic": false,
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 2.0,
+        "mpi_ranks": 4
+      },
+      "upstream_runtime_s": 15.9,
+      "runtime_measured": true,
+      "suitable": true,
+      "proposed_check": "zb-2d-alfven-wave-t",
+      "policy": "pointwise",
+      "exercises": "zero-beta 2D (nr 105, nt 100, np 3) analytic Alfven wave in theta (ALFVEN_WAVE1, modes r 2, t 3, amplitude 1e-4) to t 15 with viscosity 1e-5 and no resistivity: the vector-potential advance and the semi-implicit velocity solve",
+      "why": "damped wave, deterministic, 602 history rows; graded on the mas_history_a.out energy columns and the final br field; reproduced the PSI reference to 6 digits"
+    },
+    {
+      "id": "zb-3d-alfven-wave-p-rot",
+      "module": "mas",
+      "path": "testsuite/zb_3d_alfven_wave_p_rot",
+      "chaotic": false,
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 2.0,
+        "mpi_ranks": 4
+      },
+      "upstream_runtime_s": 35.4,
+      "runtime_measured": true,
+      "suitable": true,
+      "proposed_check": "zb-3d-alfven-wave-p-rot",
+      "policy": "pointwise",
+      "exercises": "zero-beta 3D (25x50x100) tilted Alfven wave in phi (ALFVEN_WAVE2_ROTATED) to t 3: the full 3D advance with a phi-periodic mesh and the pole filter",
+      "why": "deterministic; longest suite deck (35 s on 1 rank); graded on the history columns and final fields; reproduced to 6 digits"
+    },
+    {
+      "id": "zb-3d-tdm-3rope",
+      "module": "mas",
+      "path": "testsuite/zb_3d_tdm_3rope",
+      "chaotic": false,
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 5.2,
+      "runtime_measured": true,
+      "suitable": true,
+      "proposed_check": "zb-3d-tdm-3rope",
+      "policy": "pointwise",
+      "exercises": "zero-beta 3D (41x31x61) potential field from a Bastille-day map (br_map_input.h5) with three TDm flux ropes inserted (rho_bastille_test_reduced.h5), 20 steps at dtmax 0.001: the TDm rope insertion and the first steps of the relaxation",
+      "why": "deterministic, ntmax 20; graded on the history columns and the final field; reproduced to 6 digits"
+    },
+    {
+      "id": "zb-3d-fr-rbsl",
+      "module": "mas",
+      "path": "testsuite/zb_3d_fr_rbsl",
+      "chaotic": false,
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 4.0,
+      "runtime_measured": true,
+      "suitable": true,
+      "proposed_check": "zb-3d-fr-rbsl",
+      "policy": "pointwise",
+      "exercises": "zero-beta 3D (41x31x61) dipole with an RBSL flux rope built from three path files (torus, mirrored north, mirrored south), 10 steps: the Regularized Biot-Savart Laws insertion that CORHEL-CME uses",
+      "why": "deterministic, ntmax 10; 1 and 4 ranks identical to 12 digits; graded on the history columns and the final field; reproduced to 6 digits"
+    },
+    {
+      "id": "poly-3d-pw-relaxation",
+      "module": "mas",
+      "path": "testsuite/poly_3d_pw_relaxation",
+      "chaotic": false,
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 2.0,
+        "mpi_ranks": 4
+      },
+      "upstream_runtime_s": 30.5,
+      "runtime_measured": true,
+      "suitable": true,
+      "proposed_check": "poly-3d-pw-relaxation",
+      "policy": "pointwise",
+      "exercises": "polytropic 3D (51x35x71) relaxation from a Parker 1D profile (initial_plasma_1d_r_parker1.8.dat) with WKB pressure waves (advance_pw) to t 2 and two in-situ history probes",
+      "why": "deterministic; graded on mas_history_a.out, the in-situ histories and the final fields; reproduced to 6 digits"
+    },
+    {
+      "id": "thermo-3d-relaxation",
+      "module": "mas",
+      "path": "testsuite/thermo_3d_relaxation",
+      "chaotic": false,
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 2.0,
+        "mpi_ranks": 4
+      },
+      "upstream_runtime_s": 23.7,
+      "runtime_measured": true,
+      "suitable": true,
+      "proposed_check": "thermo-3d-relaxation",
+      "policy": "pointwise",
+      "exercises": "thermodynamic 3D (51x31x61, r 1 to 20) relaxation with anisotropic thermal conduction (advance_tc), radiative losses and heating from a 1D profile to t 0.5, with tp slices",
+      "why": "deterministic for a fixed rank count; 4 ranks vs 1 rank differ at 1e-8 relative, so the check fixes mpi_ranks; graded on history columns, slices and final fields; reproduced to 6 digits"
+    },
+    {
+      "id": "thermo-wtd-3d-relaxation",
+      "module": "mas",
+      "path": "testsuite/thermo_wtd_3d_relaxation",
+      "chaotic": false,
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 2.0,
+        "mpi_ranks": 4
+      },
+      "upstream_runtime_s": 26.3,
+      "runtime_measured": true,
+      "suitable": true,
+      "proposed_check": "thermo-wtd-3d-relaxation",
+      "policy": "pointwise",
+      "exercises": "thermodynamic 3D (61x31x61) relaxation with the wave-turbulence-driven model (advance_zw): WTD flux mask, zw limit table, a 3D initial density at 1 AU (rho3d_initial_1au_rho40k.h5) and the rho40k 1D profile",
+      "why": "deterministic for a fixed rank count (same solver family as thermo-3d-relaxation); graded on history columns, slices and final fields; reproduced to 6 digits"
+    },
+    {
+      "id": "helio-2d-relaxation",
+      "module": "mas",
+      "path": "testsuite/helio_2d_relaxation",
+      "chaotic": false,
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 2.7,
+      "runtime_measured": true,
+      "suitable": true,
+      "proposed_check": "helio-2d-relaxation",
+      "policy": "pointwise",
+      "exercises": "heliospheric 2D (201x61x3) relaxation from r0 30 Rs with time-dependent boundary files in bc/ (br, rho, t, vr slices), dtmax 100 to t 100: the inner-heliosphere driver with file boundaries",
+      "why": "deterministic; 1 and 4 ranks identical to 12 digits; 266 history rows; graded on the history columns and the final fields; reproduced to 6 digits"
+    },
+    {
+      "id": "corona-polytropic-cr2124",
+      "module": "mas",
+      "path": "examples/corona_polytropic_cr2124_steadystate",
+      "chaotic": false,
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 2.0,
+        "mpi_ranks": 4
+      },
+      "upstream_runtime_s": 2.8,
+      "runtime_measured": true,
+      "suitable": true,
+      "proposed_check": "corona-polytropic-cr2124",
+      "policy": "pointwise",
+      "exercises": "CORHEL masp polytropic coronal relaxation from the CR2124 HMI synoptic map (potential-field start, Parker 1D profile), the deck's own physics at a reduced grid and a short window",
+      "why": "the production deck (201x151x257, tmax 150) costs minutes per step; the check keeps the deck's physics switches and inputs and reduces nr, nt, np and ntmax (measured 2.8 s for 5 steps at 61x51x91 on 4 ranks; the check window is set at calibration under the 300 s rule); no reference shipped, the pinned build generates it"
+    },
+    {
+      "id": "corona-thermo-hm1-cr2124",
+      "module": "mas",
+      "path": "examples/corona_thermo_hm1_cr2124_steadystate",
+      "chaotic": false,
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 2.0,
+        "mpi_ranks": 4
+      },
+      "upstream_runtime_s": 3.0,
+      "runtime_measured": true,
+      "suitable": true,
+      "proposed_check": "corona-thermo-hm1-cr2124",
+      "policy": "pointwise",
+      "exercises": "CORHEL thermodynamic coronal relaxation with Heating Model 1: potential field from the CR2124 map, thermal conduction, radiative losses, pressure waves, heat and emission outputs",
+      "why": "production deck 255x143x300; same reduction as the polytropic deck (measured 3.0 s for 5 steps at 61x51x91 on 4 ranks); pinned-build reference; the HM1 heating path is exercised by no testsuite deck"
+    },
+    {
+      "id": "corona-thermo-hm2-cr2124",
+      "module": "mas",
+      "path": "examples/corona_thermo_hm2_cr2124_steadystate",
+      "chaotic": false,
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 2.0,
+        "mpi_ranks": 4
+      },
+      "upstream_runtime_s": 3.0,
+      "runtime_measured": false,
+      "suitable": true,
+      "proposed_check": "corona-thermo-hm2-cr2124",
+      "policy": "pointwise",
+      "exercises": "CORHEL thermodynamic coronal relaxation with Heating Model 2 and the closed-field heating mask closed_field_mask_pfss.h5",
+      "why": "production deck 255x143x300, runtime estimated from the HM1 deck at the same reduction (not yet run natively); HM2 with a heat mask is exercised by no other deck; pinned-build reference"
+    },
+    {
+      "id": "corona-thermo-hm1-tilted-dipole",
+      "module": "mas",
+      "path": "examples/corona_thermo_hm1_tilted_dipole_steadystate",
+      "chaotic": false,
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 2.0,
+        "mpi_ranks": 4
+      },
+      "upstream_runtime_s": 3.0,
+      "runtime_measured": false,
+      "suitable": true,
+      "proposed_check": "corona-thermo-hm1-tilted-dipole",
+      "policy": "pointwise",
+      "exercises": "thermodynamic HM1 relaxation of a tilted dipole (DIPOLE initial field, no input map), tmax 2.49",
+      "why": "production deck 231x125x217, runtime estimated from the HM1 deck (not yet run natively); the DIPOLE start with HM1 heating is exercised by no other deck; pinned-build reference"
+    },
+    {
+      "id": "heliosphere-wsa-bc-cr2124",
+      "module": "mas",
+      "path": "examples/heliosphere_wsa_bc_cr2124_steadystate",
+      "chaotic": false,
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 2.0,
+        "mpi_ranks": 4
+      },
+      "upstream_runtime_s": 1.1,
+      "runtime_measured": true,
+      "suitable": true,
+      "proposed_check": "heliosphere-wsa-bc-cr2124",
+      "policy": "pointwise",
+      "exercises": "inner-heliosphere polytropic relaxation from 30 Rs driven by WSA boundary files (bc/, from SWiG), corotating frame, tmax 600",
+      "why": "production deck 500x157x361; measured 1.1 s for 5 steps at 61x51x91 on 4 ranks; pinned-build reference; bc/ symlinks must be preserved when the deck is copied into the check"
+    },
+    {
+      "id": "heliosphere-tmhdhm1-bc-cr2124",
+      "module": "mas",
+      "path": "examples/heliosphere_tmhdhm1_bc_cr2124_steadystate",
+      "chaotic": false,
+      "resources": {
+        "cpus": 4,
+        "memory_gb": 2.0,
+        "mpi_ranks": 4
+      },
+      "upstream_runtime_s": 1.1,
+      "runtime_measured": false,
+      "suitable": true,
+      "proposed_check": "heliosphere-tmhdhm1-bc-cr2124",
+      "policy": "pointwise",
+      "exercises": "inner-heliosphere relaxation from 30 Rs driven by boundary slices of a thermodynamic HM1 coronal run (bc/slice_tp001_*.h5)",
+      "why": "production deck 500x157x361, runtime estimated from the WSA deck (not yet run natively); the coronal-slice boundary reader is exercised by no other deck; pinned-build reference"
+    }
+  ]
+}
