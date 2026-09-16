@@ -246,6 +246,11 @@ const result = run({
     'sa-0016': 'laps-3d-compressible',
     'laps': 'laps-3d-compressible',
   },
+  /* Packages that left this repository whole, with their vendored code and
+     history, for a repository of their own. The slug stays reserved here. */
+  slugMoved: {
+    'swmf-batsrus': 'https://github.com/huangzesen/sciaccel-swmf',
+  },
   dirRe: /^[a-z][a-z0-9-]*$/,
   legacyRe: /^[a-z][a-z0-9-]*\.ya?ml$/,
   dirShape: 'a lowercase codebase/task name (pluto, laps-3d-compressible)',

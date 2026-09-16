@@ -1,0 +1,85 @@
+{
+  "groups": [
+    "phonon",
+    "phonon_acoustic"
+  ],
+  "matdyn_freq_files": [],
+  "n_acoustic": 3,
+  "scf_prefixes": [],
+  "postahc_files": [
+    "diam.postahc1.in.out",
+    "diam.postahc2.in.out",
+    "diam.postahc3.in.out"
+  ],
+  "steps": [
+    {
+      "exe": "pw.x",
+      "in": "diam.scf.in"
+    },
+    {
+      "exe": "ph.x",
+      "in": "diam.ph.in",
+      "wipe_ph0": true
+    },
+    {
+      "exe": "q2r.x",
+      "in": "diam.q2r.in"
+    },
+    {
+      "exe": "matdyn.x",
+      "in": "diam.matdyn1.in"
+    },
+    {
+      "exe": "matdyn.x",
+      "in": "diam.matdyn2.in"
+    },
+    {
+      "exe": "matdyn.x",
+      "in": "diam.matdyn3.in"
+    },
+    {
+      "exe": "dvscf_q2r.x",
+      "in": "diam.dvscfq2r.in"
+    },
+    {
+      "exe": "dvscf_q2r.x",
+      "in": "diam.dvscfq2r.doneutral.in"
+    },
+    {
+      "exe": "pw.x",
+      "in": "diam.nscf.in"
+    },
+    {
+      "exe": "ph.x",
+      "in": "diam.ahc1.in",
+      "wipe_ph0": false
+    },
+    {
+      "exe": "pw.x",
+      "in": "diam.nscf.nosym.in"
+    },
+    {
+      "exe": "ph.x",
+      "in": "diam.ahc2.in",
+      "wipe_ph0": false
+    },
+    {
+      "exe": "ph.x",
+      "in": "diam.ahc3.in",
+      "wipe_ph0": false
+    },
+    {
+      "exe": "postahc.x",
+      "in": "diam.postahc1.in"
+    },
+    {
+      "exe": "postahc.x",
+      "in": "diam.postahc2.in"
+    },
+    {
+      "exe": "postahc.x",
+      "in": "diam.postahc3.in"
+    }
+  ],
+  "testdir": "ph_ahc_diam"
+}
