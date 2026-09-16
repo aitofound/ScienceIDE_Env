@@ -1,0 +1,424 @@
+  
+ _|      _|     _|_|       _|_|_|
+ _|_|  _|_|   _|    _|   _|
+ _|  _|  _|   _|_|_|_|     _|_|
+ _|      _|   _|    _|         _|
+ _|      _|   _|    _|   _|_|_|
+  
+ Magnetohydrodynamic Algorithm outside a Sphere
+                         Predictive Science Inc.
+
+ ### Input file contents:
+
+!
+! *** Grid resolution.
+!
+&topology
+  nr = 61
+  nt = 31
+  np = 61
+/
+&data
+!
+! *** Use the new style output text files.
+!
+  legacy_output_filenames = .false.
+!
+! *** Radial domain.
+!
+  r0 = 1.0
+  r1 = 30.0
+!
+! *** Time domain.
+!
+  tmax = 0.5
+!
+! *** Grid specifications.
+!
+  rfrac    = 0.0,3.103429E-04,9.198402E-03,1.206897E-02,
+             1.020199E-01,1.034483E-01,1.0
+  drratio  = 7.001596E-01,2.142857E+01,1.000000E+00,7.957998E+00,
+             1.000000E+00,1.197639E+01
+  nfrmesh  = 5
+  tfrac    = 0.0
+  dtratio  = 1.0
+  nftmesh  = 5
+  pfrac    = 0.0
+  dpratio  = 1.0
+  nfpmesh  = 5
+  phishift = 0.0
+!
+! *** Time step specifications.
+!
+  dtmax = 0.01
+  dtmin = 1.e-5
+  dt_init = 0.005
+  dt_max_wave_cfl = 200.0
+!
+! *** Output options.
+!
+  plotlist = 'zp'
+  ipltxint = 2
+  tpltxint = 0.0
+  slice_plotlist = 'rho'
+  slice_tp_radii = 10.0
+  slice_ixint = 1
+  slice_txint = 0.0
+  trace_txint = 0.0
+  hdf32 = .false.
+  rs_final = .false.
+  trsdump = 0.0
+!
+! *** Model specification.
+!
+  advance_a    = .true.
+  advance_v    = .true.
+  advance_t    = .true.
+  advance_rho  = .true.
+  advance_pw   = .false.
+  advance_zw   = .true.
+  advance_fcs  = .false.
+  trace_particles = .false.
+  slund = 1.e5
+  visc = .002
+  gamma = 1.666666666666667
+  g0 = 0.823
+  br00 = 0.0
+  rho0 = 40000.0
+  tbc0 = 17500.0
+  tchromo = 17500.0
+  iftfloor = .true.
+  tfloor = 10000.0
+  char_bc0 = .true.
+  char_bc1 = .true.
+  rhobc_maxfac_r1 = 0.1
+  ifrholimit = .true.
+  rho_limit_factor = 0.007
+  rho_limit_file = 'rho3d_initial_1au_rho40k.h5'
+  max_alfven_speed_rho_mod = 100.0
+  ubzero = .false.
+  filter_poles = .true.
+! *** Thermal conduction:
+  advance_tc = .true.
+  tcond = 1.0
+  t_cutoff1 = 400000.0
+  nfilt_kappa = 0
+  alpha_nocoll = 1.0
+  tc_r = 10.0
+  tc_dr = 1.0
+  tc_fac0 = 1.0
+  tc_fac1 = 0.0
+  tc_nocoll_r = 10.0
+  tc_nocoll_dr = 1.0
+! *** Radiative loss:
+  radloss = 1.0
+  rad_law = 'CHIANTI_v713_HYBRID'
+! *** Heating:
+  heatsource(1)%active = .true.
+  heatsource(1)%name = 'NL'
+  heatsource(1)%use_mask = .false.
+  heatsource(1)%type = 'exponential-b-photo-dependent'
+  heatsource(1)%nl_mask = .true.
+  heatsource(1)%h0 = 0.10
+  heatsource(1)%lambda = 0.03
+  heatsource(1)%power = 1.00
+  heatsource(1)%b_profile%active = .false.
+  heatsource(1)%b_attenuation = .false.
+  heatsource(1)%r_profile%active = .false.
+  heatsource(1)%t_profile%active = .false.
+  heatsource(2)%active = .true.
+  heatsource(2)%name = 'Quiet Sun Heating'
+  heatsource(2)%type = 'br-dependent'
+  heatsource(2)%h0 = .044
+  heatsource(2)%lambda = .2
+  heatsource(2)%brmax = .25
+  heatsource(2)%r_profile%active = .false.
+  heatsource(2)%t_profile%active = .false.
+  heatsource(2)%b_profile%active = .false.
+  heatsource(2)%b_attenuation = .false.
+  heatsource(3)%active = .true.
+  heatsource(3)%name = 'FW'
+  heatsource(3)%use_mask = .false.
+  heatsource(3)%type = 'exponential'
+  heatsource(3)%h0 = 0.000435
+  heatsource(3)%lambda = 1.00
+  heatsource(3)%b_profile%active = .false.
+  heatsource(3)%b_attenuation = .false.
+  heatsource(3)%r_profile%active = .false.
+  heatsource(3)%t_profile%active = .false.
+  heatsource(4)%active = .true.
+  heatsource(4)%name = 'SS'
+  heatsource(4)%use_mask = .false.
+  heatsource(4)%type = 'exponential'
+  heatsource(4)%h0 = 0.10
+  heatsource(4)%lambda = 0.03
+  heatsource(4)%b_profile%active = .false.
+  heatsource(4)%b_attenuation = .false.
+  heatsource(4)%r_profile%active = .false.
+  heatsource(4)%t_profile%active = .false.
+  heatsource(5)%active = .true.
+  heatsource(5)%name = 'Active Region Heating'
+  heatsource(5)%type = 'b-dependent'
+  heatsource(5)%h0 = .06
+  heatsource(5)%power = 1.0
+  heatsource(5)%r_profile%active = .true.
+  heatsource(5)%r_profile%f = 1.,0.
+  heatsource(5)%r_profile%x = 2.
+  heatsource(5)%r_profile%w = 0.5
+  heatsource(5)%t_profile%active = .false.
+  heatsource(5)%b_profile%active = .true.
+  heatsource(5)%b_profile%f = 0.,1.
+  heatsource(5)%b_profile%x = 11.3
+  heatsource(5)%b_profile%w = 9.07
+  heatsource(5)%b_attenuation = .false.
+  heatsource(6)%active = .true.
+  heatsource(6)%name = 'SS'
+  heatsource(6)%use_mask = .false.
+  heatsource(6)%type = 'zw-exponential'
+  heatsource(6)%h0 = 0.10
+  heatsource(6)%lambda = 0.03
+  heatsource(6)%b_profile%active = .false.
+  heatsource(6)%b_attenuation = .false.
+  heatsource(6)%r_profile%active = .false.
+  heatsource(6)%t_profile%active = .false.
+  heatsource(7)%active = .true.
+  heatsource(7)%name = 'FW'
+  heatsource(7)%use_mask = .false.
+  heatsource(7)%type = 'zw-exponential'
+  heatsource(7)%h0 = .000054375
+  heatsource(7)%lambda = 1.00
+  heatsource(7)%b_profile%active = .false.
+  heatsource(7)%b_attenuation = .false.
+  heatsource(7)%r_profile%active = .false.
+  heatsource(7)%t_profile%active = .false.
+  heating_flat_topped = .false.
+  heat_mask_file = ' '
+  add_ohmic_heating = .false.
+! WTD heating/pressure parameters
+  wtd_z0 = 0.02
+  wtd_b0 = 3.86834
+  wtd_lambda0 = 0.02
+  wtd_use_zw_flux_mask = .true.
+  z0_flux_mask_tp_file = 'wtd_flux_mask_tp.h5'
+  zw_dissp = .true.
+  zw_reflection = .true.
+  wtd_add_zw_heating = .true.
+  wtd_add_zw_pressure = .false.
+  zw_uwc_s = 0.0
+  zw_uwc_z = 1.0
+  wtd_use_flux_limiter_gradzw = .true.
+  wtd_use_flux_limiter_gradsrc = .false.
+  zw_flux_limiter_type = 'ospre'
+  zw_cfl = 0.9
+  wtd_use_zw_limit = .true.
+  zw_limit_amplitude = 1.6
+  zw_limit_radial_file = 'zw_limit_test01.dat'
+  zw_rho_aw = 3.0
+  wtd_bc_extrap_fac_r1 = 0.1
+  wtd_use_zw_effective_rho_limit = .true.
+  zw_effective_rho_limit_lr = 2.20412
+  zw_effective_rho_limit_lw = 0.3
+  wtd_use_zw_horho_limit = .true.
+  zw_horho_limit_rlim = 8.0
+  zw_horho_limit_value = 5.e-2
+  use_chromo_heat = .true.
+  chromo_heat_t_zqc_0 = 10000.0
+  chromo_heat_t_zqc_1 = 40000.0
+  tprofile(2)%t = 0.0,1.0
+  tprofile(2)%f = 1.0,1.0
+  tprofile(2)%vars = 'zw_heat_factor'
+  tprofile(3)%t = 0.0,1.0
+  tprofile(3)%f = 1.0,1.0
+  tprofile(3)%vars = 'zw_pressure_factor'
+  wtd_icond = 'WKB_BR'
+  wtd_icfac = 1.0
+!
+! *** Initial condition.
+!
+  initial_field = 'POTENTIAL_FIELD'
+  bnfile = 'br_input.h5'
+  b_in_gauss = .true.
+  initial_plasma = '1dfile'
+  onedfile = 'initial_plasma_1d_r_rho40k.dat'
+!
+! *** Numerical algorithm options.
+!
+  cfl = 0.4
+  use_sts_visc = .true.
+  use_sts_tc   = .true.
+  visc_auto_subcycle = .true.
+  tc_auto_subcycle   = .true.
+  ifimplrad = 0
+  ifprec_t     = 3
+  ifprec_v     = 3
+  ifprec_pot2d = 3
+  ifprec_divb  = 3
+  epscg_a       = 1.e-9
+  epscg_v       = 1.e-9
+  epscg_t       = 1.e-9
+  epscg_potfld  = 1.e-9
+  epscg_newflux = 1.e-9
+  epscg_divb    = 1.e-9
+  ncgmax = 100000
+/
+!
+! mas_wtd_2019eclipse_example (mas_wtd r350)
+! -------------------------------------
+! Example ifile for running MAS-WTD calculations using a similar setup to the
+! final coronal prediction for the 2019 eclipse.
+!
+! This ifile is based on my most recent run in 2021 (suvi2018_high_01)
+! and is compatible with SVN mas_wtd branch, revision 350.
+!
+! IMPORTANT NOTES:
+! A) The WTD Poynting flux is tuned to HMI Br multiplied by 1.4x!
+!   - If you drop the multiplier you will need to drop wtd_z0 by sqrt(1.4)
+!   -e.g. z0 = 0.02 goes to z0 = 0.0169
+!   - Here I assume Br was derived from LOS measurments (e.g. std synoptic maps)
+!   - If you use vector measurments, be careful of noise but the scaling factor
+!     may not be needed (e.g. don't multiply by 1.4, but keep z0 = 0.02).
+!
+! B) The WTD flux mask is designed to truncate the Poynting flux in strong
+!    sunspot fields (based on observational papers).
+!   - This may be really important for WTD runs during active periods, and it
+!     can help stabilize the code (less heating in diverging strong field open
+!      regions less strong flows).
+!   - There is a BASH script that goes with this ifile that computes the flux-mask
+!     based on an HMI synoptic map and your magnetogram diffusion profile
+!   - See this for details on the setup, edit as needed.
+!   - NOTE: The script option for open flux multiplication was experimental. I don't use
+!     this in production runs. keep that turned off unless you are feeling adventurous.
+!
+! C) This heating model was tuned for the recent solar minumum (e.g. 2019).
+!   - This 2021 paper by Ben Boe, found a favorable comparison of the 2019 run
+      to white light observables (https://ui.adsabs.harvard.edu/abs/2021ApJ...912...44B/abstract)
+!   - My conclusion is that the coronal densities are decent.
+!   - Also the EUV comparisons for a non-energized WTD run look decent. They suggest good coronal temps
+!     but maybe a bit cool. You'll have to live with this (corona gets hotter w/ energization).
+!   - Results may vary for very different time-periods.
+!   - Results WILL vary if you use different Br measurements without thinking about how the
+!     WTD Poynting flux should change with the change in Br scaling .
+!
+! D) MAS was already very sensitive to the visc and eta numbers and may be more so in the
+!    WTD setup. --> choose these numbers carefully depending on your mesh!
+!   - for low-to-medium res visc is usually 0.015 or 0.02.
+!   - for the eclipse "high" (699 pts in phi) I use 0.01.
+!   - for sub regions with much higher resolution (e.g. CME cases) I use variable 2D or 3D visc and eta profiles.
+!   - who knows about slund, but 1e5 is usually safe but diffuse for 300+ pts in phi.
+!     -  1e6 can be jagged if resolution is poor. So somewere in this range depending on resolution.
+!
+! RMC edits:  Lowered res, updated to new merged wtd trunk model.
+!
+
+
+ ### NOTE from CHECK_INPUTS:
+ ### 'filter_poles' is ACTIVE.
+ ### Auto-setting pole filter for all quantities.
+
+Code: MAS
+Version: 0.9.2.1git
+Updated on: 04/23/2025
+Source file: mas.F90
+Run ID: mas
+Run started on: 04/28/2025
+Run started at: 16:04:45
+Ran on machine: PREDSCI-GPU2
+Machine type: x86_64
+Compiler: GCC version 12.3.0
+Compiler Flags: -I /opt/psi/gnu/ext_deps/deps/hdf5/include -I /usr/lib/x86_64-linux-gnu/openmpi/lib/../../fortran/gfortran-mod-15/openmpi -I /usr/lib/x86_64-linux-gnu/openmpi/lib -march=alderlake -mmmx -mpopcnt -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx -mavx2 -mno-sse4a -mno-fma4 -mno-xop -mfma -mno-avx512f -mbmi -mbmi2 -maes -mpclmul -mno-avx512vl -mno-avx512bw -mno-avx512dq -mno-avx512cd -mno-avx512er -mno-avx512pf -mno-avx512vbmi -mno-avx512ifma -mno-avx5124vnniw -mno-avx5124fmaps -mno-avx512vpopcntdq -mno-avx512vbmi2 -mgfni -mvpclmulqdq -mno-avx512vnni -mno-avx512bitalg -mno-avx512bf16 -mno-avx512vp2intersect -mno-3dnow -madx -mabm -mno-cldemote -mclflushopt -mclwb -mno-clzero -mcx16 -mno-enqcmd -mf16c -mfsgsbase -mfxsr -mno-hle -msahf -mno-lwp -mlzcnt -mmovbe -mmovdir64b -mmovdiri -mno-mwaitx -mno-pconfig -mpku -mno-prefetchwt1 -mprfchw -mptwrite -mrdpid -mrdrnd -mrdseed -mno-rtm -mserialize -mno-sgx -msha -mshstk -mno-tbm -mno-tsxldtrk -mvaes -mwaitpkg -mno-wbnoinvd -mxsave -mxsavec -mxsaveopt -mxsaves -mno-a
+
+
+Total number of ranks =      4
+
+Number of ranks in r =       2
+Number of ranks in t =       1
+Number of ranks in p =       2
+
+Global mesh dimension in r =     61
+Global mesh dimension in t =     31
+Global mesh dimension in p =     61
+
+Average # of mesh pts per rank in r =   30.5
+Average # of mesh pts per rank in t =   31.0
+Average # of mesh pts per rank in p =   30.5
+
+Estimated load imbalance =   6.35 %
+
+ >running
+
+NTIME =        1, TIME =     0.005000, DTIME =     0.005000 (init)
+NTIME =        2, TIME =     0.010250, DTIME =     0.005250 (mxup)
+NTIME =        3, TIME =     0.015763, DTIME =     0.005513 (mxup)
+NTIME =        4, TIME =     0.021551, DTIME =     0.005788 (mxup)
+NTIME =        5, TIME =     0.027628, DTIME =     0.006078 (mxup)
+NTIME =        6, TIME =     0.034010, DTIME =     0.006381 (mxup)
+NTIME =        7, TIME =     0.040710, DTIME =     0.006700 (mxup)
+NTIME =        8, TIME =     0.047746, DTIME =     0.007036 (mxup)
+NTIME =        9, TIME =     0.055133, DTIME =     0.007387 (mxup)
+NTIME =       10, TIME =     0.062889, DTIME =     0.007757 (mxup)
+NTIME =       11, TIME =     0.071034, DTIME =     0.008144 (mxup)
+NTIME =       12, TIME =     0.079586, DTIME =     0.008552 (mxup)
+NTIME =       13, TIME =     0.088565, DTIME =     0.008979 (mxup)
+NTIME =       14, TIME =     0.097993, DTIME =     0.009428 (mxup)
+NTIME =       15, TIME =     0.107893, DTIME =     0.009900 (mxup)
+NTIME =       16, TIME =     0.117893, DTIME =     0.010000 (dtmx)
+NTIME =       17, TIME =     0.127893, DTIME =     0.010000 (dtmx)
+NTIME =       18, TIME =     0.137893, DTIME =     0.010000 (dtmx)
+NTIME =       19, TIME =     0.147893, DTIME =     0.010000 (dtmx)
+NTIME =       20, TIME =     0.157893, DTIME =     0.010000 (dtmx)
+NTIME =       21, TIME =     0.167893, DTIME =     0.010000 (dtmx)
+NTIME =       22, TIME =     0.177893, DTIME =     0.010000 (dtmx)
+NTIME =       23, TIME =     0.187893, DTIME =     0.010000 (dtmx)
+NTIME =       24, TIME =     0.197893, DTIME =     0.010000 (dtmx)
+NTIME =       25, TIME =     0.207893, DTIME =     0.010000 (dtmx)
+NTIME =       26, TIME =     0.217893, DTIME =     0.010000 (dtmx)
+NTIME =       27, TIME =     0.227893, DTIME =     0.010000 (dtmx)
+NTIME =       28, TIME =     0.237893, DTIME =     0.010000 (dtmx)
+NTIME =       29, TIME =     0.247893, DTIME =     0.010000 (dtmx)
+NTIME =       30, TIME =     0.257893, DTIME =     0.010000 (dtmx)
+NTIME =       31, TIME =     0.267893, DTIME =     0.010000 (dtmx)
+NTIME =       32, TIME =     0.277893, DTIME =     0.010000 (dtmx)
+NTIME =       33, TIME =     0.287893, DTIME =     0.010000 (dtmx)
+NTIME =       34, TIME =     0.297893, DTIME =     0.010000 (dtmx)
+NTIME =       35, TIME =     0.307893, DTIME =     0.010000 (dtmx)
+NTIME =       36, TIME =     0.317893, DTIME =     0.010000 (dtmx)
+NTIME =       37, TIME =     0.327893, DTIME =     0.010000 (dtmx)
+NTIME =       38, TIME =     0.337893, DTIME =     0.010000 (dtmx)
+NTIME =       39, TIME =     0.347893, DTIME =     0.010000 (dtmx)
+NTIME =       40, TIME =     0.357893, DTIME =     0.010000 (dtmx)
+NTIME =       41, TIME =     0.367893, DTIME =     0.010000 (dtmx)
+NTIME =       42, TIME =     0.377893, DTIME =     0.010000 (dtmx)
+NTIME =       43, TIME =     0.387893, DTIME =     0.010000 (dtmx)
+NTIME =       44, TIME =     0.397893, DTIME =     0.010000 (dtmx)
+NTIME =       45, TIME =     0.407893, DTIME =     0.010000 (dtmx)
+NTIME =       46, TIME =     0.417893, DTIME =     0.010000 (dtmx)
+NTIME =       47, TIME =     0.427893, DTIME =     0.010000 (dtmx)
+NTIME =       48, TIME =     0.437893, DTIME =     0.010000 (dtmx)
+NTIME =       49, TIME =     0.447893, DTIME =     0.010000 (dtmx)
+NTIME =       50, TIME =     0.457893, DTIME =     0.010000 (dtmx)
+NTIME =       51, TIME =     0.467893, DTIME =     0.010000 (dtmx)
+NTIME =       52, TIME =     0.477893, DTIME =     0.010000 (dtmx)
+NTIME =       53, TIME =     0.487893, DTIME =     0.010000 (dtmx)
+NTIME =       54, TIME =     0.497893, DTIME =     0.010000 (dtmx)
+NTIME =       55, TIME =     0.507893, DTIME =     0.010000 (dtmx)
+
+Code: MAS
+Version: 0.9.2.1git
+Updated on: 04/23/2025
+Source file: mas.F90
+Run ID: mas
+Run ended on: 04/28/2025
+Run ended at: 16:04:52
+Ran on machine: PREDSCI-GPU2
+Machine type: x86_64
+Compiler: GCC version 12.3.0
+Compiler Flags: -I /opt/psi/gnu/ext_deps/deps/hdf5/include -I /usr/lib/x86_64-linux-gnu/openmpi/lib/../../fortran/gfortran-mod-15/openmpi -I /usr/lib/x86_64-linux-gnu/openmpi/lib -march=alderlake -mmmx -mpopcnt -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx -mavx2 -mno-sse4a -mno-fma4 -mno-xop -mfma -mno-avx512f -mbmi -mbmi2 -maes -mpclmul -mno-avx512vl -mno-avx512bw -mno-avx512dq -mno-avx512cd -mno-avx512er -mno-avx512pf -mno-avx512vbmi -mno-avx512ifma -mno-avx5124vnniw -mno-avx5124fmaps -mno-avx512vpopcntdq -mno-avx512vbmi2 -mgfni -mvpclmulqdq -mno-avx512vnni -mno-avx512bitalg -mno-avx512bf16 -mno-avx512vp2intersect -mno-3dnow -madx -mabm -mno-cldemote -mclflushopt -mclwb -mno-clzero -mcx16 -mno-enqcmd -mf16c -mfsgsbase -mfxsr -mno-hle -msahf -mno-lwp -mlzcnt -mmovbe -mmovdir64b -mmovdiri -mno-mwaitx -mno-pconfig -mpku -mno-prefetchwt1 -mprfchw -mptwrite -mrdpid -mrdrnd -mrdseed -mno-rtm -mserialize -mno-sgx -msha -mshstk -mno-tbm -mno-tsxldtrk -mvaes -mwaitpkg -mno-wbnoinvd -mxsave -mxsavec -mxsaveopt -mxsaves -mno-a
+
+
+ ### End of run ...
+
+ NTIME =         55
+ TIME =  5.0789281794E-01
+
+ ### CPU time used (on IPROC0):         7.43 seconds
+

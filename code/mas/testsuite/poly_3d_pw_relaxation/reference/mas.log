@@ -1,0 +1,238 @@
+  
+ _|      _|     _|_|       _|_|_|
+ _|_|  _|_|   _|    _|   _|
+ _|  _|  _|   _|_|_|_|     _|_|
+ _|      _|   _|    _|         _|
+ _|      _|   _|    _|   _|_|_|
+  
+ Magnetohydrodynamic Algorithm outside a Sphere
+                         Predictive Science Inc.
+
+ ### Input file contents:
+
+!
+! *** Grid resolution.
+!
+&topology
+  nr = 51
+  nt = 35
+  np = 71
+/
+&data
+!
+! *** Use the new style output text files.
+!
+  legacy_output_filenames = .false.
+!
+! *** Radial domain.
+!
+  r0 = 1.0
+  r1 = 30.0
+!
+! *** Time domain.
+!
+  tmax = 2.0
+!
+! *** Grid specifications.
+!
+  rfrac    = 0.0,0.66,1.0
+  drratio  = 55.0,1.0
+  nfrmesh  = 5
+  tfrac    = 0.0,0.394,0.604,1.0
+  dtratio  = 0.4,1.0,2.5
+  nftmesh  = 5
+  pfrac    = 0.0
+  dpratio  = 0.0
+  nfpmesh  = 5
+  phishift = 0.0
+!
+! *** Time step specifications.
+!
+  dtmax = 0.09
+  dtmin = 0.002
+  dt_init = 0.0
+!
+! *** Output options.
+!
+  plotlist = 'ep'
+  tpltxint = 0.1
+  slice_plotlist = ''
+  slice_tp_radii = 0.0
+  slice_txint = 0.0
+  trace_txint = 0.0
+  hdf32 = .false.
+  rs_final = .false.
+  trsdump = 0.0
+!Diagnostic points:
+  diag(1)%r = 1.05
+  diag(1)%t = 0.
+  diag(1)%p = 0.
+  diag(1)%fields = 'vr','vt','vp','br','bt','bp','jr','jt','jp','rho','p'
+  diag(2)%type = 'norm'
+  diag(2)%fields = 'vr','vt','vp','br','bt','bp','jr','jt','jp','rho',
+   'ar','at','ap'
+!
+! *** Model specification.
+!
+  advance_a    = .true.
+  advance_v    = .true.
+  advance_t    = .true.
+  advance_rho  = .true.
+  advance_pw   = .true.
+  advance_zw   = .false.
+  advance_fcs  = .false.
+  trace_particles = .false.
+  slund = 1.e5
+  visc = 0.002
+  gamma = 1.05
+  g0 = 0.823
+  br00 = 1.0
+  rho0 = 2.0
+  tbc0 = 1.8e6
+  iftfloor = .false.
+  tfloor  = 20000.
+  char_bc0 = .true.
+  char_bc1 = .true.
+  ubzero = .false.
+  filter_poles = .true.
+! *** Thermal conduction:
+  advance_tc = .false.
+  tcond = 0.0
+  alpha_nocoll = 0.0
+  t_cutoff1 = 500000.0
+  nfilt_kappa = 0
+  tchromo = 20000.
+!
+! *** Initial condition.
+!
+  initial_field = 'POTENTIAL_FIELD'
+  bnfile = 'br_input.h5'
+  b_in_gauss = .true.
+  initial_plasma = '1dfile'
+  onedfile = "initial_plasma_1d_r_parker1.8.dat"
+  pw0 = 0.1
+!
+! *** Numerical algorithm options.
+!
+  cfl = 0.4
+  use_sts_visc = .false.
+  use_sts_tc   = .false.
+  visc_auto_subcycle = .false.
+  tc_auto_subcycle   = .false.
+  ifprec_t     = 3
+  ifprec_v     = 3
+  ifprec_pot2d = 3
+  ifprec_divb  = 3
+  epscg_a       = 1.e-9
+  epscg_v       = 1.e-9
+  epscg_t       = 1.e-9
+  epscg_potfld  = 1.e-9
+  epscg_newflux = 1.e-9
+  epscg_divb    = 1.e-9
+  ncgmax = 100000
+!
+/
+!
+! Polytropic corotating relaxation run.
+!
+
+
+ ### NOTE from CHECK_INPUTS:
+ ### 'filter_poles' is ACTIVE.
+ ### Auto-setting pole filter for all quantities.
+
+Code: MAS
+Version: 0.9.2.1git
+Updated on: 04/23/2025
+Source file: mas.F90
+Run ID: mas
+Run started on: 04/28/2025
+Run started at: 18:26:33
+Ran on machine: PREDSCI-GPU2
+Machine type: x86_64
+Compiler: GCC version 12.3.0
+Compiler Flags: -I /opt/psi/gnu/ext_deps/deps/hdf5/include -I /usr/lib/x86_64-linux-gnu/openmpi/lib/../../fortran/gfortran-mod-15/openmpi -I /usr/lib/x86_64-linux-gnu/openmpi/lib -march=alderlake -mmmx -mpopcnt -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx -mavx2 -mno-sse4a -mno-fma4 -mno-xop -mfma -mno-avx512f -mbmi -mbmi2 -maes -mpclmul -mno-avx512vl -mno-avx512bw -mno-avx512dq -mno-avx512cd -mno-avx512er -mno-avx512pf -mno-avx512vbmi -mno-avx512ifma -mno-avx5124vnniw -mno-avx5124fmaps -mno-avx512vpopcntdq -mno-avx512vbmi2 -mgfni -mvpclmulqdq -mno-avx512vnni -mno-avx512bitalg -mno-avx512bf16 -mno-avx512vp2intersect -mno-3dnow -madx -mabm -mno-cldemote -mclflushopt -mclwb -mno-clzero -mcx16 -mno-enqcmd -mf16c -mfsgsbase -mfxsr -mno-hle -msahf -mno-lwp -mlzcnt -mmovbe -mmovdir64b -mmovdiri -mno-mwaitx -mno-pconfig -mpku -mno-prefetchwt1 -mprfchw -mptwrite -mrdpid -mrdrnd -mrdseed -mno-rtm -mserialize -mno-sgx -msha -mshstk -mno-tbm -mno-tsxldtrk -mvaes -mwaitpkg -mno-wbnoinvd -mxsave -mxsavec -mxsaveopt -mxsaves -mno-a
+
+
+Total number of ranks =      4
+
+Number of ranks in r =       2
+Number of ranks in t =       1
+Number of ranks in p =       2
+
+Global mesh dimension in r =     51
+Global mesh dimension in t =     35
+Global mesh dimension in p =     71
+
+Average # of mesh pts per rank in r =   25.5
+Average # of mesh pts per rank in t =   35.0
+Average # of mesh pts per rank in p =   35.5
+
+Estimated load imbalance =   6.52 %
+
+ >running
+
+NTIME =        1, TIME =     0.090000, DTIME =     0.090000 (dtmx)
+NTIME =        2, TIME =     0.180000, DTIME =     0.090000 (dtmx)
+NTIME =        3, TIME =     0.270000, DTIME =     0.090000 (dtmx)
+NTIME =        4, TIME =     0.360000, DTIME =     0.090000 (dtmx)
+NTIME =        5, TIME =     0.443853, DTIME =     0.083853 (flow)
+NTIME =        6, TIME =     0.520621, DTIME =     0.076768 (flow)
+NTIME =        7, TIME =     0.591589, DTIME =     0.070969 (flow)
+NTIME =        8, TIME =     0.658851, DTIME =     0.067262 (flow)
+NTIME =        9, TIME =     0.721240, DTIME =     0.062388 (flow)
+NTIME =       10, TIME =     0.778963, DTIME =     0.057724 (flow)
+NTIME =       11, TIME =     0.833654, DTIME =     0.054691 (flow)
+NTIME =       12, TIME =     0.886035, DTIME =     0.052381 (flow)
+NTIME =       13, TIME =     0.936227, DTIME =     0.050191 (flow)
+NTIME =       14, TIME =     0.984281, DTIME =     0.048054 (flow)
+NTIME =       15, TIME =     1.030428, DTIME =     0.046147 (flow)
+NTIME =       16, TIME =     1.075002, DTIME =     0.044573 (flow)
+NTIME =       17, TIME =     1.118283, DTIME =     0.043282 (flow)
+NTIME =       18, TIME =     1.160443, DTIME =     0.042159 (flow)
+NTIME =       19, TIME =     1.201573, DTIME =     0.041130 (flow)
+NTIME =       20, TIME =     1.241750, DTIME =     0.040178 (flow)
+NTIME =       21, TIME =     1.281060, DTIME =     0.039309 (flow)
+NTIME =       22, TIME =     1.319581, DTIME =     0.038522 (flow)
+NTIME =       23, TIME =     1.357376, DTIME =     0.037795 (flow)
+NTIME =       24, TIME =     1.394485, DTIME =     0.037109 (flow)
+NTIME =       25, TIME =     1.430946, DTIME =     0.036461 (flow)
+NTIME =       26, TIME =     1.466803, DTIME =     0.035857 (flow)
+NTIME =       27, TIME =     1.502085, DTIME =     0.035283 (flow)
+NTIME =       28, TIME =     1.536829, DTIME =     0.034744 (flow)
+NTIME =       29, TIME =     1.571076, DTIME =     0.034247 (flow)
+NTIME =       30, TIME =     1.604867, DTIME =     0.033792 (flow)
+NTIME =       31, TIME =     1.638241, DTIME =     0.033374 (flow)
+NTIME =       32, TIME =     1.671230, DTIME =     0.032989 (flow)
+NTIME =       33, TIME =     1.703864, DTIME =     0.032635 (flow)
+NTIME =       34, TIME =     1.736174, DTIME =     0.032310 (flow)
+NTIME =       35, TIME =     1.768188, DTIME =     0.032014 (flow)
+NTIME =       36, TIME =     1.799934, DTIME =     0.031746 (flow)
+NTIME =       37, TIME =     1.831437, DTIME =     0.031503 (flow)
+NTIME =       38, TIME =     1.862720, DTIME =     0.031283 (flow)
+NTIME =       39, TIME =     1.893802, DTIME =     0.031082 (flow)
+NTIME =       40, TIME =     1.924701, DTIME =     0.030899 (flow)
+NTIME =       41, TIME =     1.955431, DTIME =     0.030731 (flow)
+NTIME =       42, TIME =     1.986007, DTIME =     0.030576 (flow)
+NTIME =       43, TIME =     2.016441, DTIME =     0.030434 (flow)
+
+Code: MAS
+Version: 0.9.2.1git
+Updated on: 04/23/2025
+Source file: mas.F90
+Run ID: mas
+Run ended on: 04/28/2025
+Run ended at: 18:26:42
+Ran on machine: PREDSCI-GPU2
+Machine type: x86_64
+Compiler: GCC version 12.3.0
+Compiler Flags: -I /opt/psi/gnu/ext_deps/deps/hdf5/include -I /usr/lib/x86_64-linux-gnu/openmpi/lib/../../fortran/gfortran-mod-15/openmpi -I /usr/lib/x86_64-linux-gnu/openmpi/lib -march=alderlake -mmmx -mpopcnt -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx -mavx2 -mno-sse4a -mno-fma4 -mno-xop -mfma -mno-avx512f -mbmi -mbmi2 -maes -mpclmul -mno-avx512vl -mno-avx512bw -mno-avx512dq -mno-avx512cd -mno-avx512er -mno-avx512pf -mno-avx512vbmi -mno-avx512ifma -mno-avx5124vnniw -mno-avx5124fmaps -mno-avx512vpopcntdq -mno-avx512vbmi2 -mgfni -mvpclmulqdq -mno-avx512vnni -mno-avx512bitalg -mno-avx512bf16 -mno-avx512vp2intersect -mno-3dnow -madx -mabm -mno-cldemote -mclflushopt -mclwb -mno-clzero -mcx16 -mno-enqcmd -mf16c -mfsgsbase -mfxsr -mno-hle -msahf -mno-lwp -mlzcnt -mmovbe -mmovdir64b -mmovdiri -mno-mwaitx -mno-pconfig -mpku -mno-prefetchwt1 -mprfchw -mptwrite -mrdpid -mrdrnd -mrdseed -mno-rtm -mserialize -mno-sgx -msha -mshstk -mno-tbm -mno-tsxldtrk -mvaes -mwaitpkg -mno-wbnoinvd -mxsave -mxsavec -mxsaveopt -mxsaves -mno-a
+
+
+ ### End of run ...
+
+ NTIME =         43
+ TIME =  2.0164414392E+00
+
+ ### CPU time used (on IPROC0):         8.34 seconds
+
