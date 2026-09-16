@@ -74,8 +74,10 @@ build and run seconds are in `comment/pipeline/runtime-metadata.json`.
 The bounds are the print precision of `p7_tophits.c`, not packager choices: bit scores and biases print
 `%6.1f`/`%5.1f` (lines 1670 and 1755), so `atol` 0.11 is one printed unit; E-values print `%9.2g`, so
 `rtol` 0.11 is one unit in the second significant figure; the mean posterior accuracy prints `%4.2f`, so
-its bound is 0.011; coordinates, domain counts, identities, accessions, descriptions and aligned residues
-are exact, and rows are keyed by target, query and domain number plus an occurrence index (duplicate
+its bound is 0.011; E-values below 1e-300 are treated as equal (below the double's normal range the x86_64 record prints 0
+where the arm64 build prints a denormal such as 1.4e-322, measured on SMC_N's thousand-bit hits in
+regression-stdin; no E-value that small carries information); coordinates, domain counts, identities,
+accessions, descriptions and aligned residues are exact, and rows are keyed by target, query and domain number plus an occurrence index (duplicate
 names in i10 and i21 grade row for row). The previous revision applied `atol` 0.11 to the E-value
 columns as well, which cannot fail for any E-value below 0.1; that is the one tolerance change of this
 revision. Floors: the `-O0` altbuild graded identical to nominal in every value on every check natively
