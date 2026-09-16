@@ -1,0 +1,261 @@
+  
+ _|      _|     _|_|       _|_|_|
+ _|_|  _|_|   _|    _|   _|
+ _|  _|  _|   _|_|_|_|     _|_|
+ _|      _|   _|    _|         _|
+ _|      _|   _|    _|   _|_|_|
+  
+ Magnetohydrodynamic Algorithm outside a Sphere
+                         Predictive Science Inc.
+
+ ### Input file contents:
+
+!
+! *** Grid resolution.
+!
+&topology
+  nr = 41
+  nt = 31
+  np = 61
+/
+&data
+!
+! *** Use the new style output text files.
+!
+  legacy_output_filenames = .false.
+!
+! *** Radial domain.
+!
+  r0 = 1.0
+  r1 = 20.0
+!
+! *** Time domain.
+!
+  tmax = 0.1
+  ntmax = 20
+!
+! *** Grid specifications.
+!
+  rfrac    = 0.0,0.005,1.0
+  drratio  = 1.5,250.0
+  nfrmesh  = 5
+  tfrac    = 0.0,0.34,0.46,1.0
+  dtratio  = 0.025,1.0,40.0
+  nftmesh  = 5
+  pfrac    = 0.0,0.04,0.24,0.76,0.96
+  dpratio  = 1.0,40.0,1.0,0.025,1.0
+  nfpmesh  = 5
+  phishift = 5.45
+!
+! *** Time step specifications.
+!
+  dtmax = 0.001
+  dtmin = 0.000001
+  dt_init = 0.0
+!
+! *** Output options.
+!
+  plotlist = 'br'
+  tpltxint = 0.0
+  ipltxint = 1
+  slice_plotlist = ''
+  slice_tp_radii = 0.0
+  slice_txint = 0.0
+  trace_txint = 0.0
+  hdf32 = .false.
+  rs_final = .false.
+  trsdump = 0.0
+!
+! *** Model specification.
+!
+  advance_a    = .true.
+  advance_v    = .true.
+  advance_t    = .false.
+  advance_rho  = .false.
+  advance_pw   = .false.
+  advance_zw   = .false.
+  advance_fcs  = .false.
+  trace_particles = .false.
+  slund = 1.e5
+  visc = 1.e-3
+  gamma = 1.666666666666667
+  g0 = 0.0
+  br00 = 1.0
+  rho0 = 1.0
+  tbc0    = 20000.
+  tchromo = 20000.
+  tfloor  = 20000.
+  char_bc0 = .false.
+  char_bc1 = .false.
+  ubzero = .false.
+  filter_poles = .false.
+  zero_v_parallel=.true.
+! *** Thermal conduction:
+  advance_tc = .false.
+  tcond = 0.0
+  alpha_nocoll = 0.0
+  t_cutoff1 = 500000.0
+  nfilt_kappa = 0
+!
+! *** Initial condition.
+!
+  initial_field = 'POTENTIAL_FIELD'
+  bnfile = 'br_map_input.h5'
+  zb_rho_profile = 'READ_FROM_FILE'
+  zb_rho_file = 'rho_bastille_test_reduced.h5'
+  tdm_preserve_br0 = .true.
+! *** FR1: along E-W segment of PIL
+  tdm_fluxrope(1)%add = .true.
+  tdm_fluxrope(1)%rope_type = 'hollow_nonff'
+  tdm_fluxrope(1)%origin_t = 1.27450
+  tdm_fluxrope(1)%origin_p = 5.40750
+  tdm_fluxrope(1)%normal_t = -0.952424
+  tdm_fluxrope(1)%normal_p = -0.304776
+  tdm_fluxrope(1)%tilt_from_vertical = 0.
+  tdm_fluxrope(1)%apex_height = 0.03
+  tdm_fluxrope(1)%footpoint_halfdistance = 0.064
+  tdm_fluxrope(1)%b_poloidal = 36.0
+  tdm_fluxrope(1)%handedness = -1
+  tdm_fluxrope(1)%minor_radius = 0.023
+  tdm_fluxrope(1)%delta = 0.1
+! *** FR2: along western (right) N-S segment of PIL
+  tdm_fluxrope(2)%add = .true.
+  tdm_fluxrope(2)%rope_type= 'hollow'
+  tdm_fluxrope(2)%origin_t = 1.224
+  tdm_fluxrope(2)%origin_p = 5.4725
+  tdm_fluxrope(2)%normal_t = 0.609711
+  tdm_fluxrope(2)%normal_p = -0.792624
+  tdm_fluxrope(2)%tilt_from_vertical = 0.0
+  tdm_fluxrope(2)%apex_height = 0.02
+  tdm_fluxrope(2)%footpoint_halfdistance = 0.026
+  tdm_fluxrope(2)%b_poloidal = 36.0
+  tdm_fluxrope(2)%handedness = -1
+  tdm_fluxrope(2)%minor_radius = 0.02
+  tdm_fluxrope(2)%delta = 0.1
+! *** FR3: along eastern (left) N-S segment of PIL
+  tdm_fluxrope(3)%add = .true.
+  tdm_fluxrope(3)%rope_type = 'parabolic'
+  tdm_fluxrope(3)%origin_t = 1.2685
+  tdm_fluxrope(3)%origin_p = 5.324
+  tdm_fluxrope(3)%normal_t = -0.853704
+  tdm_fluxrope(3)%normal_p = 0.520759
+  tdm_fluxrope(3)%tilt_from_vertical = 0.0
+  tdm_fluxrope(3)%apex_height = 0.025
+  tdm_fluxrope(3)%footpoint_halfdistance = 0.039
+  tdm_fluxrope(3)%b_poloidal = 60.0
+  tdm_fluxrope(3)%handedness = -1
+  tdm_fluxrope(3)%minor_radius = 0.018
+  tdm_fluxrope(3)%delta = 0.1
+  initial_plasma = 'ZERO-BETA'
+!
+! *** Numerical algorithm options.
+!
+  cfl = 0.6
+  use_sts_visc = .false.
+  use_sts_tc   = .false.
+  visc_auto_subcycle = .false.
+  tc_auto_subcycle   = .false.
+  ifprec_t     = 3
+  ifprec_v     = 3
+  ifprec_pot2d = 3
+  ifprec_divb  = 3
+  epscg_a       = 1.e-9
+  epscg_v       = 1.e-9
+  epscg_t       = 1.e-9
+  epscg_potfld  = 1.e-9
+  epscg_newflux = 1.e-9
+  epscg_divb    = 1.e-9
+  ncgmax = 100000
+ /
+!=======================================================================================
+! ------------
+! Zero-beta Triple TDm Flux Rope
+! ------------
+! First contribution of Tibor to the MAS test suite. This test run is a short zero-beta
+! relaxation of three overlapping TDm flux ropes inserted into a potential field extra-
+! polated from the Kitt Peak magnetogram used in the early Bastille Day simulations.
+! The magnetogram is preserved during the rope are insertion. An ad-hoc density profile
+! is used, largely based on B_0 = rho_0^3/2. Parallel flows are set to zero.
+!
+! Update RMC:  Each rope is a different kind (hollow_noff,hollow,parabolic)
+!=======================================================================================
+
+
+ ### NOTE from CHECK_INPUTS:
+ ### Depricated parameter 'tdm_preserve_br0'
+ ### was set to .true. but fluxrope_preserve_br0
+ ### was set to .false.
+ ### setting fluxrope_preserve_br0=.true.
+
+Code: MAS
+Version: 0.9.2.0git
+Updated on: 04/07/2025
+Source file: mas.F90
+Run ID: mas
+Run started on: 04/09/2025
+Run started at: 14:35:45
+Ran on machine: PREDSCI-GPU2
+Machine type: x86_64
+Compiler: GCC version 12.3.0
+Compiler Flags: -I /opt/psi/gnu/ext_deps/deps/hdf5/include -I /usr/lib/x86_64-linux-gnu/openmpi/lib/../../fortran/gfortran-mod-15/openmpi -I /usr/lib/x86_64-linux-gnu/openmpi/lib -march=alderlake -mmmx -mpopcnt -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx -mavx2 -mno-sse4a -mno-fma4 -mno-xop -mfma -mno-avx512f -mbmi -mbmi2 -maes -mpclmul -mno-avx512vl -mno-avx512bw -mno-avx512dq -mno-avx512cd -mno-avx512er -mno-avx512pf -mno-avx512vbmi -mno-avx512ifma -mno-avx5124vnniw -mno-avx5124fmaps -mno-avx512vpopcntdq -mno-avx512vbmi2 -mgfni -mvpclmulqdq -mno-avx512vnni -mno-avx512bitalg -mno-avx512bf16 -mno-avx512vp2intersect -mno-3dnow -madx -mabm -mno-cldemote -mclflushopt -mclwb -mno-clzero -mcx16 -mno-enqcmd -mf16c -mfsgsbase -mfxsr -mno-hle -msahf -mno-lwp -mlzcnt -mmovbe -mmovdir64b -mmovdiri -mno-mwaitx -mno-pconfig -mpku -mno-prefetchwt1 -mprfchw -mptwrite -mrdpid -mrdrnd -mrdseed -mno-rtm -mserialize -mno-sgx -msha -mshstk -mno-tbm -mno-tsxldtrk -mvaes -mwaitpkg -mno-wbnoinvd -mxsave -mxsavec -mxsaveopt -mxsaves -mno-a
+
+
+Total number of ranks =      4
+
+Number of ranks in r =       2
+Number of ranks in t =       1
+Number of ranks in p =       2
+
+Global mesh dimension in r =     41
+Global mesh dimension in t =     31
+Global mesh dimension in p =     61
+
+Average # of mesh pts per rank in r =   20.5
+Average # of mesh pts per rank in t =   31.0
+Average # of mesh pts per rank in p =   30.5
+
+Estimated load imbalance =   7.83 %
+
+ >running
+
+NTIME =        1, TIME =     0.001000, DTIME =     0.001000 (dtmx)
+NTIME =        2, TIME =     0.001375, DTIME =     0.000375 (flow)
+NTIME =        3, TIME =     0.001675, DTIME =     0.000300 (flow)
+NTIME =        4, TIME =     0.001987, DTIME =     0.000312 (flow)
+NTIME =        5, TIME =     0.002315, DTIME =     0.000328 (mxup)
+NTIME =        6, TIME =     0.002659, DTIME =     0.000344 (mxup)
+NTIME =        7, TIME =     0.003021, DTIME =     0.000361 (mxup)
+NTIME =        8, TIME =     0.003400, DTIME =     0.000380 (mxup)
+NTIME =        9, TIME =     0.003799, DTIME =     0.000399 (mxup)
+NTIME =       10, TIME =     0.004217, DTIME =     0.000418 (mxup)
+NTIME =       11, TIME =     0.004657, DTIME =     0.000439 (mxup)
+NTIME =       12, TIME =     0.005118, DTIME =     0.000461 (mxup)
+NTIME =       13, TIME =     0.005603, DTIME =     0.000484 (mxup)
+NTIME =       14, TIME =     0.006111, DTIME =     0.000509 (mxup)
+NTIME =       15, TIME =     0.006645, DTIME =     0.000534 (mxup)
+NTIME =       16, TIME =     0.007206, DTIME =     0.000561 (mxup)
+NTIME =       17, TIME =     0.007795, DTIME =     0.000589 (mxup)
+NTIME =       18, TIME =     0.008413, DTIME =     0.000618 (mxup)
+NTIME =       19, TIME =     0.009062, DTIME =     0.000649 (mxup)
+NTIME =       20, TIME =     0.009744, DTIME =     0.000682 (mxup)
+
+Code: MAS
+Version: 0.9.2.0git
+Updated on: 04/07/2025
+Source file: mas.F90
+Run ID: mas
+Run ended on: 04/09/2025
+Run ended at: 14:35:46
+Ran on machine: PREDSCI-GPU2
+Machine type: x86_64
+Compiler: GCC version 12.3.0
+Compiler Flags: -I /opt/psi/gnu/ext_deps/deps/hdf5/include -I /usr/lib/x86_64-linux-gnu/openmpi/lib/../../fortran/gfortran-mod-15/openmpi -I /usr/lib/x86_64-linux-gnu/openmpi/lib -march=alderlake -mmmx -mpopcnt -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx -mavx2 -mno-sse4a -mno-fma4 -mno-xop -mfma -mno-avx512f -mbmi -mbmi2 -maes -mpclmul -mno-avx512vl -mno-avx512bw -mno-avx512dq -mno-avx512cd -mno-avx512er -mno-avx512pf -mno-avx512vbmi -mno-avx512ifma -mno-avx5124vnniw -mno-avx5124fmaps -mno-avx512vpopcntdq -mno-avx512vbmi2 -mgfni -mvpclmulqdq -mno-avx512vnni -mno-avx512bitalg -mno-avx512bf16 -mno-avx512vp2intersect -mno-3dnow -madx -mabm -mno-cldemote -mclflushopt -mclwb -mno-clzero -mcx16 -mno-enqcmd -mf16c -mfsgsbase -mfxsr -mno-hle -msahf -mno-lwp -mlzcnt -mmovbe -mmovdir64b -mmovdiri -mno-mwaitx -mno-pconfig -mpku -mno-prefetchwt1 -mprfchw -mptwrite -mrdpid -mrdrnd -mrdseed -mno-rtm -mserialize -mno-sgx -msha -mshstk -mno-tbm -mno-tsxldtrk -mvaes -mwaitpkg -mno-wbnoinvd -mxsave -mxsavec -mxsaveopt -mxsaves -mno-a
+
+
+ ### End of run ...
+
+ NTIME =         20
+ TIME =  9.7438523987E-03
+
+ ### CPU time used (on IPROC0):         1.32 seconds
+

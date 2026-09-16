@@ -206,18 +206,14 @@ def _harbor_validate_entries(
     for path in check_dirs:
         if _harbor_parts(path)[2].startswith(_HARBOR_LEGACY_ACCELERATION_PREFIX):
             problems.append(_HarborProblem("legacy-acceleration-name", path,
-                                           "direct check directory names must be ordinary; put the acceleration label in check.json"))
-    acceleration = [path for path in check_dirs if "acceleration" in check_labels.get(path, set())]
+                                           "direct check directory names must be ordinary (the ACCELERATION- prefix is a retired form)"))
     if not check_dirs:
         if "tests/checks" in file_set or "tests/checks" in special_set:
             problems.append(_HarborProblem("wrong-type", "tests/checks", "required real directory"))
         elif "tests/checks" not in dir_set:
             problems.append(_HarborProblem("missing", "tests/checks", "required structural checks directory is absent"))
-        problems.append(_HarborProblem("missing-acceleration-label", "tests/checks",
-                                       'at least one direct check must carry the exact "acceleration" label in check.json'))
-    elif not acceleration:
-        problems.append(_HarborProblem("missing-acceleration-label", "tests/checks",
-                                       'at least one direct check must carry the exact "acceleration" label in check.json'))
+        else:
+            problems.append(_HarborProblem("no-checks", "tests/checks", "at least one direct check directory is required"))
 
     target_files = sorted(path for path in file_set if _harbor_is_target_file(path))
     active_targets = [path for path in target_files if _harbor_is_active_target(path)]
