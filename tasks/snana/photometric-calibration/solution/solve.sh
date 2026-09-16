@@ -112,7 +112,7 @@ if host_mem and mem and float(mem) > 0: n.append(int(float(host_mem) // float(me
 print(max(1, min(n)) if n else 1)
 PY
 )"
-echo "HOST allowance: ${HOST_CPUS:-?} cpus, ${HOST_MEM_GB:-?} GB (SAB_SOLVE_CPUS / SAB_SOLVE_MEMORY_GB, else docker info); per check ${CPUS:-?} cpus, ${MEMORY_GB:-?} GB" 
+echo "HOST allowance: ${HOST_CPUS:-?} cpus, ${HOST_MEM_GB:-?} GB (SAB_SOLVE_CPUS / SAB_SOLVE_MEMORY_GB, else docker info); per check ${CPUS:-?} cpus, ${MEMORY_GB:-?} GB"
 # Shards: the checks grouped by build configuration (the Config.pl-style options
 # named in each rubric's `configuration`, order-independent; a rubric worded
 # differently falls back to its opening words, which at worst costs a duplicate
