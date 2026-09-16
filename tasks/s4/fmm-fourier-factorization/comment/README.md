@@ -93,9 +93,13 @@ solves, separate output roots) but follow one convention.
 ## Tolerances
 
 Every bound is `atol / rtol=0`, set to a clean power of ten roughly 1000x
-above the larger of two measured quantities. Margins run 407x to 16835x,
-measured on the x86 worker on 2026-09-07 (see the floor table below for the
-per-check numbers).
+above the larger of two measured quantities. Margins run 333x to 3848x,
+measured on the x86 worker on 2026-09-16 (see the floor table below for the
+per-check numbers). Two bounds were tightened on 2026-09-16 (PR #694) on the
+curator's ruling that a margin over 10,000x was looser than the record
+warrants: `fmm-crossed-grating-convergence-new` 1e-7 -> 1e-8 (now the same
+bound as its two sibling sweeps) and `fmm-crossed-grating-orders` 1e-12 ->
+1e-13.
 
 The **floor** comes from `run.sh altbuild`: the same pinned source rebuilt at
 `-O0` instead of `-O2` and with `-DHAVE_BLAS -DHAVE_LAPACK`, which sends the
