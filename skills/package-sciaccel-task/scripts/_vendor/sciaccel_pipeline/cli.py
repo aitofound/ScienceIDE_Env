@@ -36,9 +36,8 @@ runs/. Nothing there is committed; scaffold and selfcheck copy what a reviewer
 needs into the leaf under comment/pipeline/.
 
 Exactly four refusals: `survey-tests` and `task scaffold` refuse until the
-source PR is merged and recorded (`codebase source-merged`), unless the human
-bypasses that gate with `--allow-unmerged-source --human-ref`, which warns
-and records the bypass; `task scaffold`
+source PR is merged into main and recorded (`codebase source-merged`); there
+is no bypass, the codebase MUST be vendored first; `task scaffold`
 refuses a module whose cut is not recorded (the single-module default by
 `propose-modules`, a multi-module cut by the human's `approve-modules`); `task build` and `task selfcheck`
 refuse without a consent record for the current run plan (`task plan`, then
@@ -110,16 +109,12 @@ def main() -> None:
     p = cbp.add_parser("survey-tests")
     p.add_argument("--codebase", required=True)
     p.add_argument("--module")
-    p.add_argument("--allow-unmerged-source", action="store_true", help="bypass the Step 1.5 merge gate with a warning (needs --human-ref)")
-    p.add_argument("--human-ref", help="the human's words authorising the bypass")
 
     tp = sub.add_parser("task", help="Step 3: scaffold, add checks, lint, plan, consent, build, selfcheck, review").add_subparsers(dest="cmd", required=True)
     p = tp.add_parser("scaffold")
     p.add_argument("--codebase", required=True)
     p.add_argument("--module", required=True, help="approved slug; for one whole-codebase module, prefer the canonical codebase id")
     p.add_argument("--force", action="store_true")
-    p.add_argument("--allow-unmerged-source", action="store_true", help="bypass the Step 1.5 merge gate with a warning (needs --human-ref)")
-    p.add_argument("--human-ref", help="the human's words authorising the bypass")
     p = tp.add_parser("add-check")
     p.add_argument("--task", required=True)
     p.add_argument("--name", required=True)
