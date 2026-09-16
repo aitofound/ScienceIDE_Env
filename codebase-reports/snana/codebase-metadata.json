@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "report_type": "codebase-metadata",
-  "generated_at": "2026-09-16T05:33:39Z",
+  "generated_at": "2026-09-16T05:53:41Z",
   "informational": true,
   "non_blocking": true,
   "codebase": {
@@ -23,13 +23,16 @@
     "fingerprint_algorithm": "SHA-256 over typed sorted regular-file paths+bytes and symlink paths+safe targets",
     "measurement_source": "vendored source payload",
     "agent_authored": {
-      "description": "SNANA simulates and analyzes supernova observations. This source PR vendors its full pinned upstream tree. The initial task covers wfit.exe: fitting a Hubble diagram with covariance and fixed priors to infer flat-universe cosmological parameters and their uncertainties. Light-curve fitting and simulation remain outside this contribution. The production-line breakdown below measures the whole vendored repository; the selected task owns 6,509 lines plus its explicitly listed shared dependencies.",
+      "description": "SNANA simulates and analyzes supernova observations. This PR preserves the complete source tree at the pinned revision and maps five functional modules plus their shared infrastructure. Only cosmology fitting with wfit.exe is selected for the first task PR. Light-curve analysis, simulation, bias correction and calibration are later candidates, with no task delivery commitment in this contribution. The approximately 320k production-line count below measures the entire repository; wfit.c contains 5,626 physical lines and its common dependencies are counted separately.",
       "upstream_archive_sha256": "26939621bc6713f3f058b51e609742851d9d7ba6c4c4addc71478acbadce2fce",
       "evidence": [
         "README.md",
         "src/wfit.c:1-69",
         "src/Makefile.am:617-628",
-        "doc/snana_manual.tex:13281-13476"
+        "doc/snana_manual.tex:13281-13476",
+        "src/snlc_fit.F90:1-17",
+        "src/psnid.F90:1-18",
+        "src/Makefile.am:100-234"
       ]
     }
   },
@@ -409,14 +412,18 @@
   },
   "approval": {
     "proposed_modules": [
-      "wfit"
+      "wfit",
+      "light-curve-analysis",
+      "supernova-simulation",
+      "bias-correction",
+      "photometric-calibration"
     ],
     "approved_modules": [
       "wfit"
     ],
-    "approved_at": "2026-09-16T05:09:02Z",
+    "approved_at": "2026-09-16T05:53:41Z",
     "classification": "recorded module scope",
-    "scope_statement": "Initial task scope: cosmology fitting with wfit.exe. SNANA remains the codebase identity, and its complete pinned source tree is preserved."
+    "scope_statement": "Five functional modules are mapped below. Only wfit is selected for the first task PR; the other four are unscheduled candidates for later work. SNANA remains the codebase identity, and its complete pinned source tree is preserved."
   },
   "build_and_run": {
     "recorded": true,
@@ -554,6 +561,46 @@
         "how_to_run": "check_create_covariance.py with BBC covariance configuration and products",
         "reference_outputs": "none",
         "notes": "Requires external BBC products; creates/checks upstream wfit inputs, but not an embedded wfit regression."
+      },
+      {
+        "family": "Light-curve analysis (later candidate; not run)",
+        "kind": "regression",
+        "path": "src/snana.F90",
+        "count": 49,
+        "how_to_run": "SNANA_code_tests.py selects external task definitions for snana.exe, snlc_fit.exe, psnid.exe",
+        "reference_outputs": "none",
+        "notes": "Definition inventory only. Reference availability for this candidate was not inspected; no native run or reference comparison is recorded. 49 named definitions found.",
+        "definition_list_sha256": "7303037a8ce6e285c7d659ae336a43012ccb7a6c07c9066f9bce76b380862a7f"
+      },
+      {
+        "family": "Supernova simulation (later candidate; not run)",
+        "kind": "regression",
+        "path": "src/snlc_sim.c",
+        "count": 44,
+        "how_to_run": "SNANA_code_tests.py selects external task definitions for snlc_sim.exe",
+        "reference_outputs": "none",
+        "notes": "Definition inventory only. Reference availability for this candidate was not inspected; no native run or reference comparison is recorded. 44 named definitions found.",
+        "definition_list_sha256": "7303037a8ce6e285c7d659ae336a43012ccb7a6c07c9066f9bce76b380862a7f"
+      },
+      {
+        "family": "Bias correction and distance estimation (later candidate; not run)",
+        "kind": "regression",
+        "path": "src/SALT2mu.c",
+        "count": 15,
+        "how_to_run": "SNANA_code_tests.py selects external task definitions for SALT2mu.exe",
+        "reference_outputs": "none",
+        "notes": "Definition inventory only. Reference availability for this candidate was not inspected; no native run or reference comparison is recorded. 15 named definitions found.",
+        "definition_list_sha256": "2beab1ac33464380bc1497a509fc919e1833a4736689d280edea908990c58ef1"
+      },
+      {
+        "family": "Photometric calibration (later candidate; not run)",
+        "kind": "regression",
+        "path": "src/kcor.c",
+        "count": 1,
+        "how_to_run": "SNANA_code_tests.py selects external task definitions for kcor.exe",
+        "reference_outputs": "none",
+        "notes": "Definition inventory only. Reference availability for this candidate was not inspected; no native run or reference comparison is recorded. 1 named definitions found.",
+        "definition_list_sha256": "7303037a8ce6e285c7d659ae336a43012ccb7a6c07c9066f9bce76b380862a7f"
       }
     ],
     "runs": [
@@ -1660,79 +1707,386 @@
         "why": "Three official regression commands are available and run. Other historical manual configurations lack complete matching decks in the source tree; do not substitute the unbinned Pantheon+DESI regression for the manual binned SN+CMB case."
       },
       {
-        "what": "Light-curve fitting, simulation, training, BBC, data conversion and tutorial workflows",
-        "why": "These programs are outside the wfit task scope. Their external model, calibration and data decks were not collected or executed."
+        "what": "Light-curve analysis, supernova simulation, bias correction, calibration and repository support",
+        "why": "Later candidates and support only. Their task definitions were inspected to describe module boundaries; their scientific data, native builds and executions are outside the first wfit task."
       }
     ],
     "classification": "CLI-copied from the Step 1.2 record (runs.json); agent-measured on the native build"
   },
   "shared_components": [
     {
-      "id": "shared-infrastructure",
-      "title": "Shared infrastructure",
-      "purpose": "SNANA table/covariance I/O, matrix and numerical helpers, NPZ decoding and the existing build target.",
+      "id": "wfit-common-runtime",
+      "title": "Common runtime used by wfit",
+      "purpose": "Conservative local-include closure of the six-object wfit target, excluding wfit.c. Includes cosmology, numerical helpers, data declarations, I/O, NPZ handling and bundled notices; optional preprocessor branches are retained. These files are shared source and are not all unique to wfit.",
       "paths": [
-        "src/sntools.c",
-        "src/sntools.h",
-        "src/sntools_output.cpp",
-        "src/sntools_output.h",
-        "src/sntools_output_text.c",
-        "src/sntools_output_marz.c",
-        "src/sntools_output_root.c",
-        "src/sntools_npz.cpp",
-        "src/sntools_npz.h",
         "src/cnpy.cpp",
         "src/cnpy.h",
         "src/eispack.c",
         "src/eispack.h",
-        "src/uthash.h",
-        "src/Makefile.am",
-        "configure.ac",
-        "Makefile.am"
+        "src/sndata.h",
+        "src/sntools.c",
+        "src/sntools.h",
+        "src/sntools_cosmology.c",
+        "src/sntools_cosmology.h",
+        "src/sntools_data.h",
+        "src/sntools_genExpHalfGauss.h",
+        "src/sntools_genGauss_asym.h",
+        "src/sntools_gridmap.h",
+        "src/sntools_npz.cpp",
+        "src/sntools_npz.h",
+        "src/sntools_output.cpp",
+        "src/sntools_output.h",
+        "src/sntools_output_marz.c",
+        "src/sntools_output_root.c",
+        "src/sntools_output_text.c",
+        "src/sntools_spectrograph.h",
+        "src/uthash.h"
       ],
       "used_by": [
-        "wfit"
+        "wfit",
+        "light-curve-analysis",
+        "supernova-simulation",
+        "bias-correction",
+        "photometric-calibration"
       ],
-      "relationship": "runtime/build",
+      "relationship": "runtime/source inventory",
       "evidence": [
         "src/Makefile.am:617-628",
-        "src/sntools.c",
-        "src/sntools_output.cpp"
+        "src/sntools.h:25-29"
       ],
       "classification": "agent-authored description; CLI-computed size",
       "metrics": {
-        "regular_files": 17,
-        "bytes": 1160127,
-        "text_files": 17,
-        "text_physical_lines": 41770
+        "regular_files": 22,
+        "bytes": 1197091,
+        "text_files": 22,
+        "text_physical_lines": 42730
+      }
+    },
+    {
+      "id": "model-evaluation",
+      "title": "Model evaluation",
+      "purpose": "Light-curve and spectral model implementations retained as one dependency family. Individual simulation/fitting configurations use subsets; this is not an additional task or a claim that every model is exercised.",
+      "paths": [
+        "src/genmag_ALL.h",
+        "src/genmag_BAYESN.c",
+        "src/genmag_BAYESN.h",
+        "src/genmag_LCLIB.c",
+        "src/genmag_LCLIB.h",
+        "src/genmag_NON1AGRID.c",
+        "src/genmag_NON1AGRID.h",
+        "src/genmag_NON1ASED.c",
+        "src/genmag_NON1ASED.h",
+        "src/genmag_PySEDMODEL.c",
+        "src/genmag_PySEDMODEL.h",
+        "src/genmag_S11DM15.c",
+        "src/genmag_S11DM15.h",
+        "src/genmag_SALT2.c",
+        "src/genmag_SALT2.h",
+        "src/genmag_SEDtools.c",
+        "src/genmag_SEDtools.h",
+        "src/genmag_SIMSED.c",
+        "src/genmag_SIMSED.h",
+        "src/genmag_extinction.c",
+        "src/genmag_extinction.h",
+        "src/genmag_extrap.c",
+        "src/genmag_extrap.h",
+        "src/genmag_mlcs2k2.c",
+        "src/genmag_mlcs2k2.h",
+        "src/genmag_snoopy.c",
+        "src/genmag_snoopy.h",
+        "src/genmag_stretch2.c",
+        "src/genmag_stretch2.h",
+        "src/gensed_AGN.py",
+        "src/gensed_BYOSED.py",
+        "src/gensed_PYBAYESN.py",
+        "src/gensed_SNEMO.py",
+        "src/gensed_base.py"
+      ],
+      "used_by": [
+        "light-curve-analysis",
+        "supernova-simulation",
+        "photometric-calibration"
+      ],
+      "relationship": "runtime/model family",
+      "evidence": [
+        "src/Makefile.am:100-122",
+        "src/kcor.c:1-24"
+      ],
+      "classification": "agent-authored description; CLI-computed size",
+      "metrics": {
+        "regular_files": 34,
+        "bytes": 751725,
+        "text_files": 34,
+        "text_physical_lines": 23656
+      }
+    },
+    {
+      "id": "build-system",
+      "title": "Build system",
+      "purpose": "The shared build system and configuration helpers. No source directory is rearranged, and the pinned tree remains byte-identical.",
+      "paths": [
+        "Makefile.am",
+        "configure.ac",
+        "m4/m4_ax_cxx_compile_stdcxx.m4",
+        "run_autotools+make.sh",
+        "src/Makefile.am",
+        "src/Makefile.legacy",
+        "util/set_Cpreproc_flags.py",
+        "util/snmake.pl"
+      ],
+      "used_by": [
+        "wfit",
+        "light-curve-analysis",
+        "supernova-simulation",
+        "bias-correction",
+        "photometric-calibration"
+      ],
+      "relationship": "build",
+      "evidence": [
+        "src/Makefile.am",
+        "configure.ac"
+      ],
+      "classification": "agent-authored description; CLI-computed size",
+      "metrics": {
+        "regular_files": 8,
+        "bytes": 102111,
+        "text_files": 8,
+        "text_physical_lines": 3621
+      }
+    },
+    {
+      "id": "repository-tools",
+      "title": "Repository tools and orchestration",
+      "purpose": "Test harnesses, batch drivers, format converters, table/model preparation tools and retained legacy helpers. Classified for complete repository accounting; they are outside the first wfit task and are not proposed as standalone RL modules. External training/classification packages invoked by scripts are not vendored here.",
+      "paths": [
+        "src/SIMSED_check.c",
+        "src/SIMSED_extractSpec.c",
+        "src/SIMSED_rebin.c",
+        "src/atmosphere_sim.c",
+        "src/combine_fitres.c",
+        "src/merge_root.c",
+        "src/simlib_coadd.c",
+        "src/simlib_tools.c",
+        "src/simlib_tools.h",
+        "src/sntable_combine.c",
+        "src/sntable_dump.c",
+        "util/SNANA_code_tests.py",
+        "util/SNANA_submit_tests.py",
+        "util/backup_SNDATA_ROOT.py",
+        "util/check_create_covariance.py",
+        "util/cigale_translator.py",
+        "util/combine_dataVersions.py",
+        "util/convertSMP2snana.py",
+        "util/convert_SIMSED_to_NON1ASED.py",
+        "util/convert_snana_f77_to_f90.py",
+        "util/convertcsv2snana.py",
+        "util/create_covariance.py",
+        "util/find_my_snana_folders.py",
+        "util/get_fitres_values.py",
+        "util/get_vpec.py",
+        "util/help_inputs_fortran.py",
+        "util/install_SNDATA_ROOT.py",
+        "util/makeDataFiles.sh",
+        "util/makeDataFiles/makeDataFiles_base.py",
+        "util/makeDataFiles/makeDataFiles_main.py",
+        "util/makeDataFiles/makeDataFiles_params.py",
+        "util/makeDataFiles/makeDataFiles_util.py",
+        "util/makeDataFiles/read_data_des_folder.py",
+        "util/makeDataFiles/read_data_lsst_fastdb.py",
+        "util/makeDataFiles/read_data_sirah_folder.py",
+        "util/makeDataFiles/read_data_snana_folder.py",
+        "util/makeDataFiles/read_data_ztf.py",
+        "util/makeDataFiles/write_data_csv.py",
+        "util/makeDataFiles/write_data_snana.py",
+        "util/make_eff_detect.py",
+        "util/make_fluxerr_model.py",
+        "util/make_hostlib_diffsky.py",
+        "util/make_hostlib_weightmap.py",
+        "util/make_simlib_ideal.py",
+        "util/make_simsed_binaries.py",
+        "util/make_spectrograph_table.py",
+        "util/plot_peakmag_redshift.py",
+        "util/plot_simlib.py",
+        "util/plot_simlib_dump.py",
+        "util/plot_snana_lightcurves.py",
+        "util/plot_table.py",
+        "util/quick_commands.py",
+        "util/randomize_table.py",
+        "util/remove_locf_messages.py",
+        "util/remove_minuit_stdout.py",
+        "util/resimulate_with_spectra.py",
+        "util/sim_SNgrid.pl",
+        "util/simsed_modify.py",
+        "util/snlc_efficiency.py",
+        "util/sntable_cat.py",
+        "util/sntable_dump.py",
+        "util/sntools.pm",
+        "util/submit_batch/requirements.txt",
+        "util/submit_batch/submit_HELP.py",
+        "util/submit_batch/submit_batch_jobs.py",
+        "util/submit_batch/submit_makeDataFiles.py",
+        "util/submit_batch/submit_params.py",
+        "util/submit_batch/submit_prog_base.py",
+        "util/submit_batch/submit_prog_bbc.py",
+        "util/submit_batch/submit_prog_combine.py",
+        "util/submit_batch/submit_prog_cosmofit.py",
+        "util/submit_batch/submit_prog_covmat.py",
+        "util/submit_batch/submit_prog_hostfit.py",
+        "util/submit_batch/submit_prog_lcfit.py",
+        "util/submit_batch/submit_prog_sim.py",
+        "util/submit_batch/submit_prog_smp.py",
+        "util/submit_batch/submit_train_BAYESN.py",
+        "util/submit_batch/submit_train_SALT2.py",
+        "util/submit_batch/submit_train_SALT3.py",
+        "util/submit_batch/submit_train_util.py",
+        "util/submit_batch/submit_util.py",
+        "util/submit_batch_jobs.sh",
+        "util/submit_batch_list.py",
+        "util/tag_missing_events.py",
+        "util/translate_CSPDR3.py",
+        "util/uncombine_dataVersions.py",
+        "util/update_data_files.py",
+        "util/wait_for_file.py"
+      ],
+      "used_by": [],
+      "relationship": "repository support, outside first task",
+      "evidence": [
+        "util/SNANA_code_tests.py",
+        "util/submit_batch",
+        "src/Makefile.am:193-234"
+      ],
+      "classification": "agent-authored description; CLI-computed size",
+      "metrics": {
+        "regular_files": 88,
+        "bytes": 2312201,
+        "text_files": 88,
+        "text_physical_lines": 66361
+      }
+    },
+    {
+      "id": "other-common-runtime",
+      "title": "Other numerical and data infrastructure",
+      "purpose": "Remaining shared numerical routines, data formats, calibration/model-grid readers and bundled minimization code used across the later candidate programs. The inventory does not assert that every executable links every file.",
+      "paths": [
+        "src/MWgaldust.c",
+        "src/MWgaldust.h",
+        "src/minuit.F",
+        "src/multiseason.c",
+        "src/multiseason.h",
+        "src/sntools_calib.c",
+        "src/sntools_calib.h",
+        "src/sntools_data.c",
+        "src/sntools_dataformat_fits.c",
+        "src/sntools_dataformat_fits.h",
+        "src/sntools_dataformat_text.c",
+        "src/sntools_dataformat_text.h",
+        "src/sntools_devel.c",
+        "src/sntools_devel.h",
+        "src/sntools_fluxErrModels.c",
+        "src/sntools_fluxErrModels.h",
+        "src/sntools_fluxErrModels_legacy.c",
+        "src/sntools_fluxErrModels_legacy.h",
+        "src/sntools_genExpHalfGauss.c",
+        "src/sntools_genGauss_asym.c",
+        "src/sntools_genPDF.c",
+        "src/sntools_genPDF.h",
+        "src/sntools_genSmear.c",
+        "src/sntools_genSmear.h",
+        "src/sntools_gridmap.c",
+        "src/sntools_modelgrid.h",
+        "src/sntools_modelgrid_read.c",
+        "src/sntools_nonlinearity.c",
+        "src/sntools_nonlinearity.h",
+        "src/sntools_simeff_obsolete.c",
+        "src/sntools_simeff_obsolete.h",
+        "src/sntools_spectrograph.c",
+        "src/sntools_spline.c",
+        "src/sntools_spline.h",
+        "src/sntools_wgtmap.c",
+        "src/sntools_wgtmap.h",
+        "src/sntools_zPDF_spline.c",
+        "src/sntools_zPDF_spline.h",
+        "src/yaml.c",
+        "src/yaml.h"
+      ],
+      "used_by": [
+        "light-curve-analysis",
+        "supernova-simulation",
+        "bias-correction",
+        "photometric-calibration"
+      ],
+      "relationship": "runtime/source inventory",
+      "evidence": [
+        "src/Makefile.am:124-187"
+      ],
+      "classification": "agent-authored description; CLI-computed size",
+      "metrics": {
+        "regular_files": 40,
+        "bytes": 1996860,
+        "text_files": 40,
+        "text_physical_lines": 63410
+      }
+    },
+    {
+      "id": "documentation-and-metadata",
+      "title": "Documentation and repository metadata",
+      "purpose": "Upstream documentation, generated manual artifacts and repository metadata retained in the source snapshot. These files are not scientific task modules or runtime dependencies.",
+      "paths": [
+        ".github/CODEOWNERS",
+        ".gitignore",
+        "README.md",
+        "doc/Fig_hostgal_noise.ps",
+        "doc/MAKE_SNANA_INSTALL",
+        "doc/MAKE_SNANA_MANUAL",
+        "doc/ProblemSet_SNIaCosmo.pdf",
+        "doc/README_UPDATES",
+        "doc/snana_install.pdf",
+        "doc/snana_install.tex",
+        "doc/snana_manual.bbl",
+        "doc/snana_manual.bib",
+        "doc/snana_manual.blg",
+        "doc/snana_manual.pdf",
+        "doc/snana_manual.tex"
+      ],
+      "used_by": [],
+      "relationship": "repository documentation",
+      "evidence": [
+        "README.md",
+        "doc/snana_manual.tex"
+      ],
+      "classification": "agent-authored description; CLI-computed size",
+      "metrics": {
+        "regular_files": 15,
+        "bytes": 3905273,
+        "text_files": 12,
+        "text_physical_lines": 43812
       }
     }
   ],
   "modules": [
     {
       "slug": "wfit",
-      "title": "Cosmology fitting with wfit.exe",
+      "title": "Cosmology fitting",
       "entrypoints": [
-        "src/Makefile.am: make wfit -> bin/wfit.exe",
-        "src/wfit.c: main"
+        "wfit.exe"
       ],
-      "expensive_path": "Luminosity-distance integration across a two-dimensional cosmology grid and dense covariance-weighted chi-square evaluation.",
-      "rationale": "The initial task covers cosmological inference with wfit.exe. SNANA remains the codebase identity and its full tree is vendored. wfit has its own executable, Hubble-diagram/covariance input contract and cosmological parameter outputs. It shares utility files within the same source directory, so this scoped contribution is an exception to the whole-codebase task default.",
+      "expensive_path": "Luminosity-distance integration across a cosmology grid and dense covariance-weighted likelihood evaluation.",
+      "rationale": "A bounded distance-to-cosmology contract with a separate executable and three reproduced official WFIT decks. General cosmology helpers are shared with other programs and are classified once in the common runtime layer.",
       "excluded": [
-        "snlc_fit.exe and all light-curve fitting",
-        "snlc_sim.exe, simulation model generation and training",
-        "SALT2mu/BBC and covariance generation",
-        "CPL w0-wa and LCDM-only modes, HDIBC, blinding and randomized uncertainty studies in the first task; the three official wCDM decks include CMB and BAO priors"
+        "light-curve-analysis",
+        "supernova-simulation",
+        "bias-correction",
+        "photometric-calibration"
       ],
       "hazards": [
         "Official external regression data were located on Midway after initial local exploration; preserve checksums and retain all three WFIT task definitions.",
         "No blanket source redistribution license located; preserve component notices and request curator review of terms.",
         "Native Mac clean-build portability issue recorded; clean native Linux build and the three exact official WFIT decks succeeded on Midway.",
         "Printed output quantization and analytic distance-offset marginalization must be represented in the policy.",
-        "The official Pantheon deck uses unbinned data and DESI 2024 BAO priors; the manual Pantheon table is a different configuration and must not be claimed reproduced."
+        "The official Pantheon deck uses unbinned data and DESI 2024 BAO priors; the manual Pantheon table is a different configuration and must not be claimed reproduced.",
+        "Functional boundary within a shared src/ tree; no independently packaged directory is claimed."
       ],
-      "approval_status": "approved",
-      "purpose": "Estimate cosmological parameters and uncertainties from supernova distance measurements, with statistical/systematic covariance and fixed matter-density, CMB or BAO priors.",
+      "purpose": "Infer cosmological parameters and uncertainties from a Hubble diagram, covariance and fixed priors. This is the only module selected for the first task PR.",
       "primary_inputs": [
         "SNANA FITRES or MUDIF Hubble-diagram table",
         "Optional dense systematic or inverse-total covariance matrix",
@@ -1751,42 +2105,407 @@
         "Apply prior contributions and summarize the grid posterior"
       ],
       "unique_responsibilities": [
-        "Cosmological inference from precomputed distances, distinct from light-curve fitting or simulation"
+        "A bounded distance-to-cosmology contract with a separate executable and three reproduced official WFIT decks. General cosmology helpers are shared with other programs and are classified once in the common runtime layer."
       ],
       "not_responsible_for": [
-        "snlc_fit.exe and all light-curve fitting",
-        "snlc_sim.exe, simulation model generation and training",
-        "SALT2mu/BBC and covariance generation",
-        "CPL w0-wa and LCDM-only modes, HDIBC, blinding and randomized uncertainty studies in the first task; the three official wCDM decks include CMB and BAO priors"
+        "light-curve-analysis",
+        "supernova-simulation",
+        "bias-correction",
+        "photometric-calibration"
       ],
       "shared_component_ids": [
-        "shared-infrastructure"
+        "wfit-common-runtime",
+        "build-system"
       ],
       "depends_on_modules": [],
-      "differences": "The task covers wfit cosmology fitting. Shared utilities live in the same src directory and are declared explicitly.",
+      "differences": "First task: wfit only. The remaining rows are later candidates.",
+      "delivery_stage": "first task",
       "evidence": [
-        "src/wfit.c",
-        "src/sntools_cosmology.c",
-        "doc/snana_manual.tex:13281-13476"
+        "src/wfit.c:1-69",
+        "src/Makefile.am:617-628"
       ],
+      "approval_status": "approved",
       "owned_paths": [
-        "src/wfit.c",
-        "src/sntools_cosmology.c",
-        "src/sntools_cosmology.h"
+        "src/wfit.c"
       ],
       "classification": "agent-authored module card; CLI-computed size and approval status",
       "metrics": {
         "owned": {
-          "regular_files": 3,
-          "bytes": 196102,
-          "text_files": 3,
-          "text_physical_lines": 6509
+          "regular_files": 1,
+          "bytes": 170211,
+          "text_files": 1,
+          "text_physical_lines": 5626
         },
         "shared": {
-          "regular_files": 17,
-          "bytes": 1160127,
-          "text_files": 17,
-          "text_physical_lines": 41770
+          "regular_files": 30,
+          "bytes": 1299202,
+          "text_files": 30,
+          "text_physical_lines": 46351
+        },
+        "overlap": {
+          "regular_files": 0,
+          "bytes": 0,
+          "text_files": 0,
+          "text_physical_lines": 0
+        }
+      }
+    },
+    {
+      "slug": "light-curve-analysis",
+      "title": "Light-curve analysis",
+      "entrypoints": [
+        "snana.exe",
+        "snlc_fit.exe",
+        "psnid.exe"
+      ],
+      "expensive_path": "Repeated model-flux evaluation, nonlinear fits and template likelihood integration over light curves.",
+      "rationale": "These programs share an analysis substrate: snlc_fit.F90 and psnid.F90 directly include snana.F90. Grouping them preserves that coupling rather than presenting three independent packages.",
+      "excluded": [
+        "wfit",
+        "supernova-simulation",
+        "bias-correction",
+        "photometric-calibration"
+      ],
+      "hazards": [
+        "No native build or scientific execution for this candidate is recorded in this contribution.",
+        "Fits in the inspected external suite often depend on simulation outputs; isolated fixtures require separate work.",
+        "No PSNID-specific definition was located in the selected task lists; classification coverage remains to be established.",
+        "Functional boundary within a shared src/ tree; no independently packaged directory is claimed."
+      ],
+      "purpose": "Select, fit and classify observed or simulated light curves with fixed source models. This is a candidate for later task work.",
+      "primary_inputs": [
+        "Light-curve photometry, uncertainties and redshifts",
+        "Fixed light-curve/template models and calibration tables",
+        "Selection, fitting or classification configuration"
+      ],
+      "primary_outputs": [
+        "Selected/reformatted event data",
+        "Fit parameters, errors, fit status and residuals",
+        "Photometric classification probabilities and fit diagnostics"
+      ],
+      "algorithm_stages": [
+        "Read data and apply selection",
+        "Load fixed models and calibration",
+        "Fit model parameters or evaluate classification templates",
+        "Write fitted/selected data and diagnostics"
+      ],
+      "unique_responsibilities": [
+        "These programs share an analysis substrate: snlc_fit.F90 and psnid.F90 directly include snana.F90. Grouping them preserves that coupling rather than presenting three independent packages."
+      ],
+      "not_responsible_for": [
+        "wfit",
+        "supernova-simulation",
+        "bias-correction",
+        "photometric-calibration"
+      ],
+      "shared_component_ids": [
+        "wfit-common-runtime",
+        "model-evaluation",
+        "build-system",
+        "other-common-runtime"
+      ],
+      "depends_on_modules": [],
+      "differences": "Later candidate only; no task build, scientific run or self-validation is claimed.",
+      "delivery_stage": "later candidate, unscheduled",
+      "evidence": [
+        "src/snlc_fit.F90:1-17",
+        "src/psnid.F90:1-18",
+        "src/Makefile.am:583-607"
+      ],
+      "approval_status": "proposed-only",
+      "owned_paths": [
+        "src/snana.F90",
+        "src/snlc_fit.F90",
+        "src/psnid.F90",
+        "src/psnid_tools.c",
+        "src/psnid_tools.h",
+        "src/psnid_BEST.c",
+        "src/psnid_BEST2.c"
+      ],
+      "classification": "agent-authored module card; CLI-computed size and approval status",
+      "metrics": {
+        "owned": {
+          "regular_files": 7,
+          "bytes": 1803997,
+          "text_files": 7,
+          "text_physical_lines": 60123
+        },
+        "shared": {
+          "regular_files": 104,
+          "bytes": 4047787,
+          "text_files": 104,
+          "text_physical_lines": 133417
+        },
+        "overlap": {
+          "regular_files": 0,
+          "bytes": 0,
+          "text_files": 0,
+          "text_physical_lines": 0
+        }
+      }
+    },
+    {
+      "slug": "supernova-simulation",
+      "title": "Supernova simulation",
+      "entrypoints": [
+        "snlc_sim.exe"
+      ],
+      "expensive_path": "Population sampling, spectral/model evaluation across survey epochs, noise and selection calculations.",
+      "rationale": "The forward population/survey model has a distinct input deck, generated observables and executable. Models and numerical helpers shared with fitting remain in common components.",
+      "excluded": [
+        "wfit",
+        "light-curve-analysis",
+        "bias-correction",
+        "photometric-calibration"
+      ],
+      "hazards": [
+        "No native build or scientific execution for this candidate is recorded in this contribution.",
+        "Stochastic outputs need a separately justified scientific equivalence policy.",
+        "Model and survey assets must be selected and pinned before task implementation.",
+        "Functional boundary within a shared src/ tree; no independently packaged directory is claimed."
+      ],
+      "purpose": "Generate light curves, spectra and selection statistics from source populations, physical models and survey conditions. This is a candidate for later task work.",
+      "primary_inputs": [
+        "Population and transient-model parameters",
+        "Survey cadence, noise and detection-efficiency information",
+        "Fixed calibration/model files and random-stream settings"
+      ],
+      "primary_outputs": [
+        "Simulated photometric or spectral event data",
+        "Truth parameters and selection/efficiency summaries"
+      ],
+      "algorithm_stages": [
+        "Initialize populations, models and survey",
+        "Sample event truth and evaluate model flux",
+        "Apply noise and selection",
+        "Write simulated data and summaries"
+      ],
+      "unique_responsibilities": [
+        "The forward population/survey model has a distinct input deck, generated observables and executable. Models and numerical helpers shared with fitting remain in common components."
+      ],
+      "not_responsible_for": [
+        "wfit",
+        "light-curve-analysis",
+        "bias-correction",
+        "photometric-calibration"
+      ],
+      "shared_component_ids": [
+        "wfit-common-runtime",
+        "model-evaluation",
+        "build-system",
+        "other-common-runtime"
+      ],
+      "depends_on_modules": [],
+      "differences": "Later candidate only; no task build, scientific run or self-validation is claimed.",
+      "delivery_stage": "later candidate, unscheduled",
+      "evidence": [
+        "src/snlc_sim.c:1-71",
+        "src/Makefile.am:165-187",
+        "src/Makefile.am:609-615"
+      ],
+      "approval_status": "proposed-only",
+      "owned_paths": [
+        "src/snlc_sim.c",
+        "src/snlc_sim.h",
+        "src/SNcadenceFoM.c",
+        "src/sim_unit_tests.c",
+        "src/sntools_modelgrid_gen.c",
+        "src/inoue_igm.c",
+        "src/inoue_igm.h",
+        "src/sntools_host.c",
+        "src/sntools_host.h",
+        "src/sntools_stronglens.c",
+        "src/sntools_stronglens.h",
+        "src/sntools_weaklens.c",
+        "src/sntools_weaklens.h",
+        "src/sntools_wronghost.c",
+        "src/sntools_wronghost.h",
+        "src/sntools_trigger.c",
+        "src/sntools_trigger.h",
+        "src/sntools_sim_readme.c",
+        "src/sntools_sim_readme.h",
+        "src/sntools_sim_atmosphere.c",
+        "src/sntools_sim_atmosphere.h"
+      ],
+      "classification": "agent-authored module card; CLI-computed size and approval status",
+      "metrics": {
+        "owned": {
+          "regular_files": 21,
+          "bytes": 1917855,
+          "text_files": 21,
+          "text_physical_lines": 58803
+        },
+        "shared": {
+          "regular_files": 104,
+          "bytes": 4047787,
+          "text_files": 104,
+          "text_physical_lines": 133417
+        },
+        "overlap": {
+          "regular_files": 0,
+          "bytes": 0,
+          "text_files": 0,
+          "text_physical_lines": 0
+        }
+      }
+    },
+    {
+      "slug": "bias-correction",
+      "title": "Bias correction and distance estimation",
+      "entrypoints": [
+        "SALT2mu.exe"
+      ],
+      "expensive_path": "Bias-correction interpolation and repeated nuisance-parameter likelihood evaluation across the sample.",
+      "rationale": "The SALT2mu entry point optimizes standardization and distance-bias corrections from fit summaries. Its data contract differs from both light-curve fitting and cosmological inference.",
+      "excluded": [
+        "wfit",
+        "light-curve-analysis",
+        "supernova-simulation",
+        "photometric-calibration"
+      ],
+      "hazards": [
+        "No native build or scientific execution for this candidate is recorded in this contribution.",
+        "Small representative correction simulations and the nuisance-fit configuration must be pinned separately.",
+        "Functional boundary within a shared src/ tree; no independently packaged directory is claimed."
+      ],
+      "purpose": "Estimate standardization parameters and bias-corrected distances from light-curve fit summaries and bias-correction simulations. This is a candidate for later task work.",
+      "primary_inputs": [
+        "FITRES light-curve parameter summaries",
+        "Bias-correction simulation summaries and sample definitions",
+        "Standardization and contamination-prior configuration"
+      ],
+      "primary_outputs": [
+        "Standardization/nuisance parameters",
+        "Bias-corrected distances and fit diagnostics"
+      ],
+      "algorithm_stages": [
+        "Read fitted sample and correction simulations",
+        "Construct bias/prior mappings",
+        "Optimize standardization and distance model",
+        "Write corrected distances and diagnostics"
+      ],
+      "unique_responsibilities": [
+        "The SALT2mu entry point optimizes standardization and distance-bias corrections from fit summaries. Its data contract differs from both light-curve fitting and cosmological inference."
+      ],
+      "not_responsible_for": [
+        "wfit",
+        "light-curve-analysis",
+        "supernova-simulation",
+        "photometric-calibration"
+      ],
+      "shared_component_ids": [
+        "wfit-common-runtime",
+        "build-system",
+        "other-common-runtime"
+      ],
+      "depends_on_modules": [],
+      "differences": "Later candidate only; no task build, scientific run or self-validation is claimed.",
+      "delivery_stage": "later candidate, unscheduled",
+      "evidence": [
+        "src/SALT2mu.c:1-8",
+        "src/Makefile.am:646-660"
+      ],
+      "approval_status": "proposed-only",
+      "owned_paths": [
+        "src/SALT2mu.c"
+      ],
+      "classification": "agent-authored module card; CLI-computed size and approval status",
+      "metrics": {
+        "owned": {
+          "regular_files": 1,
+          "bytes": 888469,
+          "text_files": 1,
+          "text_physical_lines": 27399
+        },
+        "shared": {
+          "regular_files": 70,
+          "bytes": 3296062,
+          "text_files": 70,
+          "text_physical_lines": 109761
+        },
+        "overlap": {
+          "regular_files": 0,
+          "bytes": 0,
+          "text_files": 0,
+          "text_physical_lines": 0
+        }
+      }
+    },
+    {
+      "slug": "photometric-calibration",
+      "title": "Photometric calibration",
+      "entrypoints": [
+        "kcor.exe"
+      ],
+      "expensive_path": "Spectral and filter convolution across redshift, phase and extinction grids.",
+      "rationale": "The kcor entry point produces reusable calibration tables from spectra and passbands. Its outputs can be fixed inputs for simulation and light-curve analysis.",
+      "excluded": [
+        "wfit",
+        "light-curve-analysis",
+        "supernova-simulation",
+        "bias-correction"
+      ],
+      "hazards": [
+        "No native build or scientific execution for this candidate is recorded in this contribution.",
+        "Passbands, primary spectra and spectral templates must be pinned separately.",
+        "Functional boundary within a shared src/ tree; no independently packaged directory is claimed."
+      ],
+      "purpose": "Integrate spectral templates through filter responses to construct photometric calibration and K-correction tables. This is a candidate for later task work.",
+      "primary_inputs": [
+        "Filter transmission curves",
+        "Primary reference spectra and transient spectral templates",
+        "Redshift, phase and extinction grid settings"
+      ],
+      "primary_outputs": [
+        "Calibration and K-correction FITS tables",
+        "Filter and integration diagnostics"
+      ],
+      "algorithm_stages": [
+        "Read passbands and spectra",
+        "Normalize reference fluxes",
+        "Integrate over requested grids",
+        "Write calibration tables"
+      ],
+      "unique_responsibilities": [
+        "The kcor entry point produces reusable calibration tables from spectra and passbands. Its outputs can be fixed inputs for simulation and light-curve analysis."
+      ],
+      "not_responsible_for": [
+        "wfit",
+        "light-curve-analysis",
+        "supernova-simulation",
+        "bias-correction"
+      ],
+      "shared_component_ids": [
+        "wfit-common-runtime",
+        "model-evaluation",
+        "build-system",
+        "other-common-runtime"
+      ],
+      "depends_on_modules": [],
+      "differences": "Later candidate only; no task build, scientific run or self-validation is claimed.",
+      "delivery_stage": "later candidate, unscheduled",
+      "evidence": [
+        "src/kcor.c:1-24",
+        "src/Makefile.am:630-644"
+      ],
+      "approval_status": "proposed-only",
+      "owned_paths": [
+        "src/kcor.c",
+        "src/kcor.h"
+      ],
+      "classification": "agent-authored module card; CLI-computed size and approval status",
+      "metrics": {
+        "owned": {
+          "regular_files": 2,
+          "bytes": 187375,
+          "text_files": 2,
+          "text_physical_lines": 6465
+        },
+        "shared": {
+          "regular_files": 104,
+          "bytes": 4047787,
+          "text_files": 104,
+          "text_physical_lines": 133417
         },
         "overlap": {
           "regular_files": 0,
@@ -1799,31 +2518,35 @@
   ],
   "official_tests": {
     "frameworks": [
-      "SNANA_code_tests.py custom regression harness; exact WFIT task definitions are external to the source repository"
+      "SNANA_code_tests.py with external task lists, definitions and inputs; no complete-suite execution is claimed"
     ],
     "collection_commands": [
-      "Read SNANA_TESTS/SNANA_tasks_wfit.LIST and the three tasks/WFIT_* definitions on Midway"
+      "Read SNANA_TESTS/SNANA_tasks_wfit.LIST and the three tasks/WFIT_* definitions on Midway",
+      "Read SNANA_tasks_all.LIST and SNANA_tasks_salt2mu.LIST plus their named task definitions on Midway; identify entry points and dependencies without executing them"
     ],
     "run_commands": [
       "WFIT_K09: wfit.exe K09_SDSS_mlcs2k2.fitres -cmb -snrms .1 -wsteps 100",
       "WFIT_DES3YR: wfit.exe DES3YR_HD.FITRES -cmb_sim -sigma_Rcmb 0.007 -mucov_file DES3YR_COV.DAT",
       "WFIT_Pantheon: wfit.exe Pantheon_HD.FITRES -bao DESI_2024 -cmb_sim -sigma_Rcmb 0.007 -mucov_file Pantheon_COV.DAT -wsteps 20 -omsteps 21"
     ],
+    "summary": "Source-stage landscape only: the two main external lists contain 116 unique task definitions, of which 3 invoke external SCONE and 113 invoke pinned SNANA programs. The separate wfit list repeats 3 of those definitions. Of the SNANA definitions, 112 map to the five functional rows and 1 is SIMSED extraction support. Only the 3 WFIT definitions were executed in this contribution. Other counts describe inspected definitions, not completed tests or packaged checks.",
     "counts": {
       "test_files": {
-        "value": 3,
+        "value": 113,
         "unit": "files",
         "semantics": "distinct official test files considered",
-        "classification": "agent-authored/evidenced"
+        "classification": "agent-authored/evidenced",
+        "evidence": "Distinct non-SCONE definitions in the dated external task-list inspection; no complete-suite run or framework collection."
       },
       "test_definitions": {
-        "value": 3,
+        "value": 113,
         "unit": "source-level test definitions",
         "semantics": "source-level functions or methods, not collected cases",
-        "classification": "agent-authored/evidenced"
+        "classification": "agent-authored/evidenced",
+        "evidence": "Distinct non-SCONE definitions in the dated external task-list inspection; no complete-suite run or framework collection."
       },
       "collected_items": {
-        "value": 3,
+        "value": null,
         "unit": "framework-collected items",
         "semantics": "items collected after framework parametrization",
         "classification": "agent-authored/evidenced"
@@ -1886,6 +2609,318 @@
           "All three exact official commands ran on a clean pinned native Midway build and the existing native Mac binary; all four COSPAR values matched the stored upstream reference to five decimal places."
         ],
         "classification": "agent-authored/evidenced, except any explicitly CLI-labelled counts"
+      },
+      "light-curve-analysis": {
+        "sources": [
+          "external SNANA_TESTS/tasks/FITRESTMAG_SDSS",
+          "external SNANA_TESTS/tasks/LCFIT_DES-SN5YR_LAMSHIFT",
+          "external SNANA_TESTS/tasks/LCFIT_DES-SN5YR_MAGSHIFT",
+          "external SNANA_TESTS/tasks/LCFIT_DES-SN5YR_SALTSYST"
+        ],
+        "selectors": [
+          "SNANA_tasks_all.LIST",
+          "TESTJOB in snana.exe, snlc_fit.exe, psnid.exe"
+        ],
+        "counts": {
+          "test_files": {
+            "value": 49,
+            "unit": "files",
+            "semantics": "distinct official test files considered",
+            "classification": "agent-authored/evidenced"
+          },
+          "test_definitions": {
+            "value": 49,
+            "unit": "source-level test definitions",
+            "semantics": "source-level functions or methods, not collected cases",
+            "classification": "agent-authored/evidenced"
+          },
+          "collected_items": {
+            "value": null,
+            "unit": "framework-collected items",
+            "semantics": "items collected after framework parametrization",
+            "classification": "agent-authored/evidenced"
+          },
+          "inner_cases": {
+            "value": null,
+            "unit": "inner cases",
+            "semantics": "optional cases inside one source-level definition that collection does not expose",
+            "classification": "agent-authored/evidenced"
+          }
+        },
+        "listed_task_names": [
+          "FITRESTMAG_SDSS",
+          "LCFIT_DES-SN5YR_LAMSHIFT",
+          "LCFIT_DES-SN5YR_MAGSHIFT",
+          "LCFIT_DES-SN5YR_SALTSYST",
+          "LCFIT_FUDGE_FITERR",
+          "LCFIT_MLCS_HST",
+          "LCFIT_MLCS_LOWZ",
+          "LCFIT_MLCS_SDSS",
+          "LCFIT_MLCS_SNLS",
+          "LCFIT_SALT2_CSPDR2",
+          "LCFIT_SALT2_LOWZ",
+          "LCFIT_SALT2_SDSS",
+          "LCFIT_SALT2_SNLS",
+          "LCFIT_SALT2_SNLS3",
+          "LCFIT_SALT2mb_CFA3",
+          "LCFIT_SALT2mb_CFA3+OPTMW",
+          "REFORMAT_CFA3",
+          "SDSS_INTERP-CSP",
+          "SIMFIT_BYOSED_P21",
+          "SIMFIT_CBAYESN_LSST",
+          "SIMFIT_DES5YR_QZPHOT5",
+          "SIMFIT_DES5YR_QZPHOT5+MUPRI",
+          "SIMFIT_FUDGE_SNRMAX",
+          "SIMFIT_MLCS_DES",
+          "SIMFIT_MLCS_HST_LANDOLT00",
+          "SIMFIT_MLCS_HST_LANDOLT65",
+          "SIMFIT_MLCS_SDSS",
+          "SIMFIT_NON1ASED_DES",
+          "SIMFIT_ROMAN_ZPHOT",
+          "SIMFIT_SALT2_CFA3_FIXPAR2",
+          "SIMFIT_SALT2_DES_IDEAL",
+          "SIMFIT_SALT2_DES_ZPHOT5_SNonly",
+          "SIMFIT_SALT2_JPAS",
+          "SIMFIT_SALT2_SDSS+HOSTLIB",
+          "SIMFIT_SALT2_SDSS_FITS",
+          "SIMFIT_SALT2_SDSS_TEXT",
+          "SIMFIT_SDSS_MLCS_ZPHOT5_SN+HOST",
+          "SIMFIT_SDSS_MLCS_ZPHOT5_SNonly",
+          "SIMFIT_SDSS_SALT2_ZPHOT4_SNonly",
+          "SIMFIT_SDSS_SALT2_ZPHOT5_SNonly",
+          "SIMFIT_SIMSED_FLASH1",
+          "SIMFIT_WFIRST+SPECTROGRAPH",
+          "SIMFIT_WFIRST+TAKE_SPECTRUM",
+          "SIMFIT_WFIRST+ZPHOT_FUDGE",
+          "snana_OPT_SETPKMJD-01",
+          "snana_OPT_SETPKMJD-02",
+          "snana_OPT_SETPKMJD-08",
+          "snana_OPT_SETPKMJD-16",
+          "snana_SDSS"
+        ],
+        "covers": [
+          "43 snlc_fit and 6 snana definitions; no PSNID definition in these selected lists."
+        ],
+        "known_gaps": [
+          "No native build or scientific execution for this candidate is recorded in this contribution.",
+          "Fits in the inspected external suite often depend on simulation outputs; isolated fixtures require separate work.",
+          "No PSNID-specific definition was located in the selected task lists; classification coverage remains to be established."
+        ],
+        "execution": [
+          "Not run in this contribution; later candidate only."
+        ],
+        "classification": "agent-authored/evidenced, except any explicitly CLI-labelled counts"
+      },
+      "supernova-simulation": {
+        "sources": [
+          "external SNANA_TESTS/tasks/GRIDGEN_NON1ASED_DES",
+          "external SNANA_TESTS/tasks/GRIDGEN_SALT2_DES",
+          "external SNANA_TESTS/tasks/SIMGEN_BAYESN_LSST",
+          "external SNANA_TESTS/tasks/SIMGEN_BIMODAL_UV"
+        ],
+        "selectors": [
+          "SNANA_tasks_all.LIST",
+          "TESTJOB in snlc_sim.exe"
+        ],
+        "counts": {
+          "test_files": {
+            "value": 44,
+            "unit": "files",
+            "semantics": "distinct official test files considered",
+            "classification": "agent-authored/evidenced"
+          },
+          "test_definitions": {
+            "value": 44,
+            "unit": "source-level test definitions",
+            "semantics": "source-level functions or methods, not collected cases",
+            "classification": "agent-authored/evidenced"
+          },
+          "collected_items": {
+            "value": null,
+            "unit": "framework-collected items",
+            "semantics": "items collected after framework parametrization",
+            "classification": "agent-authored/evidenced"
+          },
+          "inner_cases": {
+            "value": null,
+            "unit": "inner cases",
+            "semantics": "optional cases inside one source-level definition that collection does not expose",
+            "classification": "agent-authored/evidenced"
+          }
+        },
+        "listed_task_names": [
+          "GRIDGEN_NON1ASED_DES",
+          "GRIDGEN_SALT2_DES",
+          "SIMGEN_BAYESN_LSST",
+          "SIMGEN_BIMODAL_UV",
+          "SIMGEN_BK13KN_LSST",
+          "SIMGEN_BYOSED_P21",
+          "SIMGEN_DES5YR_DES",
+          "SIMGEN_DES5YR_LOWZ",
+          "SIMGEN_FIXMAG_DES",
+          "SIMGEN_FUDGE_FLUXERR",
+          "SIMGEN_FUDGE_SNRMAX",
+          "SIMGEN_FUDGE_ZPT",
+          "SIMGEN_LCLIB_RRL",
+          "SIMGEN_MLCS_DES",
+          "SIMGEN_MLCS_HST",
+          "SIMGEN_MLCS_SDSS",
+          "SIMGEN_NON1AGRID_DES",
+          "SIMGEN_NON1ASED_DES",
+          "SIMGEN_NON1ASED_SDSS",
+          "SIMGEN_ROMAN_TAKE_SPECTRUM",
+          "SIMGEN_SALT2_CFA3_FIXPAR1",
+          "SIMGEN_SALT2_CFA3_FIXPAR2",
+          "SIMGEN_SALT2_DES",
+          "SIMGEN_SALT2_DES+FLUXERRMAP",
+          "SIMGEN_SALT2_DES+HOSTNBR",
+          "SIMGEN_SALT2_DES+wran",
+          "SIMGEN_SALT2_DES-CIDRAN",
+          "SIMGEN_SALT2_DES-DEEP",
+          "SIMGEN_SALT2_DES-FASTLC",
+          "SIMGEN_SALT2_DES_WGTMAP3D+x1+c",
+          "SIMGEN_SALT2_JPAS",
+          "SIMGEN_SALT2_SDSS+HOSTLIB",
+          "SIMGEN_SALT2_SDSS_FITS",
+          "SIMGEN_SALT2_SDSS_TEXT",
+          "SIMGEN_SALT2_SDSS_WRONGHOST",
+          "SIMGEN_SIMLIB_DESFAKES",
+          "SIMGEN_SIMLIB_MSKOPT2",
+          "SIMGEN_SIMSED_FLASH1",
+          "SIMGEN_SIMSED_FLASH2",
+          "SIMGEN_WFIRST+LENSING",
+          "SIMGEN_WFIRST+SPECTROGRAPH",
+          "SIMGEN_WFIRST+TAKE_SPECTRUM",
+          "SIMGEN_WFIRST+ZPHOT_FUDGE",
+          "SIMGEN_ZVARIATION"
+        ],
+        "covers": [
+          "Task definitions exist for: snlc_sim.exe; individual scientific coverage remains to be investigated."
+        ],
+        "known_gaps": [
+          "No native build or scientific execution for this candidate is recorded in this contribution.",
+          "Stochastic outputs need a separately justified scientific equivalence policy.",
+          "Model and survey assets must be selected and pinned before task implementation."
+        ],
+        "execution": [
+          "Not run in this contribution; later candidate only."
+        ],
+        "classification": "agent-authored/evidenced, except any explicitly CLI-labelled counts"
+      },
+      "bias-correction": {
+        "sources": [
+          "external SNANA_TESTS/tasks/SALT2mu_BROKEN_ALPHA_CHI2MAX2",
+          "external SNANA_TESTS/tasks/SALT2mu_BROKEN_ALPHA_CHI2MAX3",
+          "external SNANA_TESTS/tasks/SALT2mu_DES3YR_BBC1D",
+          "external SNANA_TESTS/tasks/SALT2mu_DES3YR_BBC5D"
+        ],
+        "selectors": [
+          "SNANA_tasks_salt2mu.LIST",
+          "TESTJOB in SALT2mu.exe"
+        ],
+        "counts": {
+          "test_files": {
+            "value": 15,
+            "unit": "files",
+            "semantics": "distinct official test files considered",
+            "classification": "agent-authored/evidenced"
+          },
+          "test_definitions": {
+            "value": 15,
+            "unit": "source-level test definitions",
+            "semantics": "source-level functions or methods, not collected cases",
+            "classification": "agent-authored/evidenced"
+          },
+          "collected_items": {
+            "value": null,
+            "unit": "framework-collected items",
+            "semantics": "items collected after framework parametrization",
+            "classification": "agent-authored/evidenced"
+          },
+          "inner_cases": {
+            "value": null,
+            "unit": "inner cases",
+            "semantics": "optional cases inside one source-level definition that collection does not expose",
+            "classification": "agent-authored/evidenced"
+          }
+        },
+        "listed_task_names": [
+          "SALT2mu_BROKEN_ALPHA_CHI2MAX2",
+          "SALT2mu_BROKEN_ALPHA_CHI2MAX3",
+          "SALT2mu_DES3YR_BBC1D",
+          "SALT2mu_DES3YR_BBC5D",
+          "SALT2mu_DES3YR_COVADD",
+          "SALT2mu_DESNN_BBC5D",
+          "SALT2mu_DESNN_BBC5D+OPT128",
+          "SALT2mu_DESNN_H11BBC5D",
+          "SALT2mu_DES_BBC5D_noCC",
+          "SALT2mu_SIGMBFIT",
+          "SALT2mu_SIMFIT1",
+          "SALT2mu_SIMFIT2",
+          "SALT2mu_ZTFSIM_BROKEN_ALPHA",
+          "SALT2mu_avemag0_DATA",
+          "SALT2mu_avemag0_SIM"
+        ],
+        "covers": [
+          "Task definitions exist for: SALT2mu.exe; individual scientific coverage remains to be investigated."
+        ],
+        "known_gaps": [
+          "No native build or scientific execution for this candidate is recorded in this contribution.",
+          "Small representative correction simulations and the nuisance-fit configuration must be pinned separately."
+        ],
+        "execution": [
+          "Not run in this contribution; later candidate only."
+        ],
+        "classification": "agent-authored/evidenced, except any explicitly CLI-labelled counts"
+      },
+      "photometric-calibration": {
+        "sources": [
+          "external SNANA_TESTS/tasks/KCOR_SDSS"
+        ],
+        "selectors": [
+          "SNANA_tasks_all.LIST",
+          "TESTJOB in kcor.exe"
+        ],
+        "counts": {
+          "test_files": {
+            "value": 1,
+            "unit": "files",
+            "semantics": "distinct official test files considered",
+            "classification": "agent-authored/evidenced"
+          },
+          "test_definitions": {
+            "value": 1,
+            "unit": "source-level test definitions",
+            "semantics": "source-level functions or methods, not collected cases",
+            "classification": "agent-authored/evidenced"
+          },
+          "collected_items": {
+            "value": null,
+            "unit": "framework-collected items",
+            "semantics": "items collected after framework parametrization",
+            "classification": "agent-authored/evidenced"
+          },
+          "inner_cases": {
+            "value": null,
+            "unit": "inner cases",
+            "semantics": "optional cases inside one source-level definition that collection does not expose",
+            "classification": "agent-authored/evidenced"
+          }
+        },
+        "listed_task_names": [
+          "KCOR_SDSS"
+        ],
+        "covers": [
+          "Task definitions exist for: kcor.exe; individual scientific coverage remains to be investigated."
+        ],
+        "known_gaps": [
+          "No native build or scientific execution for this candidate is recorded in this contribution.",
+          "Passbands, primary spectra and spectral templates must be pinned separately."
+        ],
+        "execution": [
+          "Not run in this contribution; later candidate only."
+        ],
+        "classification": "agent-authored/evidenced, except any explicitly CLI-labelled counts"
       }
     },
     "count_semantics": "test_files, source-level test_definitions, framework-collected items, and hidden inner cases are distinct units"
@@ -1893,16 +2928,16 @@
   "classification_and_gaps": {
     "buckets": {
       "shared": {
-        "regular_files": 17,
-        "bytes": 1160127,
-        "text_files": 17,
-        "text_physical_lines": 41770
+        "regular_files": 207,
+        "bytes": 10265261,
+        "text_files": 204,
+        "text_physical_lines": 243590
       },
       "owned": {
-        "regular_files": 3,
-        "bytes": 196102,
-        "text_files": 3,
-        "text_physical_lines": 6509
+        "regular_files": 32,
+        "bytes": 4967907,
+        "text_files": 32,
+        "text_physical_lines": 158416
       },
       "overlapping_owned": {
         "regular_files": 0,
@@ -1911,235 +2946,15 @@
         "text_physical_lines": 0
       },
       "unclassified": {
-        "regular_files": 219,
-        "bytes": 13876939,
-        "text_files": 216,
-        "text_physical_lines": 353727
+        "regular_files": 0,
+        "bytes": 0,
+        "text_files": 0,
+        "text_physical_lines": 0
       }
     },
     "overlaps": [],
     "overlaps_truncated": 0,
-    "unclassified_paths": [
-      ".github/CODEOWNERS",
-      ".gitignore",
-      "README.md",
-      "doc/Fig_hostgal_noise.ps",
-      "doc/MAKE_SNANA_INSTALL",
-      "doc/MAKE_SNANA_MANUAL",
-      "doc/ProblemSet_SNIaCosmo.pdf",
-      "doc/README_UPDATES",
-      "doc/snana_install.pdf",
-      "doc/snana_install.tex",
-      "doc/snana_manual.bbl",
-      "doc/snana_manual.bib",
-      "doc/snana_manual.blg",
-      "doc/snana_manual.pdf",
-      "doc/snana_manual.tex",
-      "m4/m4_ax_cxx_compile_stdcxx.m4",
-      "run_autotools+make.sh",
-      "src/MWgaldust.c",
-      "src/MWgaldust.h",
-      "src/Makefile.legacy",
-      "src/SALT2mu.c",
-      "src/SIMSED_check.c",
-      "src/SIMSED_extractSpec.c",
-      "src/SIMSED_rebin.c",
-      "src/SNcadenceFoM.c",
-      "src/atmosphere_sim.c",
-      "src/combine_fitres.c",
-      "src/genmag_ALL.h",
-      "src/genmag_BAYESN.c",
-      "src/genmag_BAYESN.h",
-      "src/genmag_LCLIB.c",
-      "src/genmag_LCLIB.h",
-      "src/genmag_NON1AGRID.c",
-      "src/genmag_NON1AGRID.h",
-      "src/genmag_NON1ASED.c",
-      "src/genmag_NON1ASED.h",
-      "src/genmag_PySEDMODEL.c",
-      "src/genmag_PySEDMODEL.h",
-      "src/genmag_S11DM15.c",
-      "src/genmag_S11DM15.h",
-      "src/genmag_SALT2.c",
-      "src/genmag_SALT2.h",
-      "src/genmag_SEDtools.c",
-      "src/genmag_SEDtools.h",
-      "src/genmag_SIMSED.c",
-      "src/genmag_SIMSED.h",
-      "src/genmag_extinction.c",
-      "src/genmag_extinction.h",
-      "src/genmag_extrap.c",
-      "src/genmag_extrap.h",
-      "src/genmag_mlcs2k2.c",
-      "src/genmag_mlcs2k2.h",
-      "src/genmag_snoopy.c",
-      "src/genmag_snoopy.h",
-      "src/genmag_stretch2.c",
-      "src/genmag_stretch2.h",
-      "src/gensed_AGN.py",
-      "src/gensed_BYOSED.py",
-      "src/gensed_PYBAYESN.py",
-      "src/gensed_SNEMO.py",
-      "src/gensed_base.py",
-      "src/inoue_igm.c",
-      "src/inoue_igm.h",
-      "src/kcor.c",
-      "src/kcor.h",
-      "src/merge_root.c",
-      "src/minuit.F",
-      "src/multiseason.c",
-      "src/multiseason.h",
-      "src/psnid.F90",
-      "src/psnid_BEST.c",
-      "src/psnid_BEST2.c",
-      "src/psnid_tools.c",
-      "src/psnid_tools.h",
-      "src/sim_unit_tests.c",
-      "src/simlib_coadd.c",
-      "src/simlib_tools.c",
-      "src/simlib_tools.h",
-      "src/snana.F90",
-      "src/sndata.h",
-      "src/snlc_fit.F90",
-      "src/snlc_sim.c",
-      "src/snlc_sim.h",
-      "src/sntable_combine.c",
-      "src/sntable_dump.c",
-      "src/sntools_calib.c",
-      "src/sntools_calib.h",
-      "src/sntools_data.c",
-      "src/sntools_data.h",
-      "src/sntools_dataformat_fits.c",
-      "src/sntools_dataformat_fits.h",
-      "src/sntools_dataformat_text.c",
-      "src/sntools_dataformat_text.h",
-      "src/sntools_devel.c",
-      "src/sntools_devel.h",
-      "src/sntools_fluxErrModels.c",
-      "src/sntools_fluxErrModels.h",
-      "src/sntools_fluxErrModels_legacy.c",
-      "src/sntools_fluxErrModels_legacy.h",
-      "src/sntools_genExpHalfGauss.c",
-      "src/sntools_genExpHalfGauss.h",
-      "src/sntools_genGauss_asym.c",
-      "src/sntools_genGauss_asym.h",
-      "src/sntools_genPDF.c",
-      "src/sntools_genPDF.h",
-      "src/sntools_genSmear.c",
-      "src/sntools_genSmear.h",
-      "src/sntools_gridmap.c",
-      "src/sntools_gridmap.h",
-      "src/sntools_host.c",
-      "src/sntools_host.h",
-      "src/sntools_modelgrid.h",
-      "src/sntools_modelgrid_gen.c",
-      "src/sntools_modelgrid_read.c",
-      "src/sntools_nonlinearity.c",
-      "src/sntools_nonlinearity.h",
-      "src/sntools_sim_atmosphere.c",
-      "src/sntools_sim_atmosphere.h",
-      "src/sntools_sim_readme.c",
-      "src/sntools_sim_readme.h",
-      "src/sntools_simeff_obsolete.c",
-      "src/sntools_simeff_obsolete.h",
-      "src/sntools_spectrograph.c",
-      "src/sntools_spectrograph.h",
-      "src/sntools_spline.c",
-      "src/sntools_spline.h",
-      "src/sntools_stronglens.c",
-      "src/sntools_stronglens.h",
-      "src/sntools_trigger.c",
-      "src/sntools_trigger.h",
-      "src/sntools_weaklens.c",
-      "src/sntools_weaklens.h",
-      "src/sntools_wgtmap.c",
-      "src/sntools_wgtmap.h",
-      "src/sntools_wronghost.c",
-      "src/sntools_wronghost.h",
-      "src/sntools_zPDF_spline.c",
-      "src/sntools_zPDF_spline.h",
-      "src/yaml.c",
-      "src/yaml.h",
-      "util/SNANA_code_tests.py",
-      "util/SNANA_submit_tests.py",
-      "util/backup_SNDATA_ROOT.py",
-      "util/check_create_covariance.py",
-      "util/cigale_translator.py",
-      "util/combine_dataVersions.py",
-      "util/convertSMP2snana.py",
-      "util/convert_SIMSED_to_NON1ASED.py",
-      "util/convert_snana_f77_to_f90.py",
-      "util/convertcsv2snana.py",
-      "util/create_covariance.py",
-      "util/find_my_snana_folders.py",
-      "util/get_fitres_values.py",
-      "util/get_vpec.py",
-      "util/help_inputs_fortran.py",
-      "util/install_SNDATA_ROOT.py",
-      "util/makeDataFiles.sh",
-      "util/makeDataFiles/makeDataFiles_base.py",
-      "util/makeDataFiles/makeDataFiles_main.py",
-      "util/makeDataFiles/makeDataFiles_params.py",
-      "util/makeDataFiles/makeDataFiles_util.py",
-      "util/makeDataFiles/read_data_des_folder.py",
-      "util/makeDataFiles/read_data_lsst_fastdb.py",
-      "util/makeDataFiles/read_data_sirah_folder.py",
-      "util/makeDataFiles/read_data_snana_folder.py",
-      "util/makeDataFiles/read_data_ztf.py",
-      "util/makeDataFiles/write_data_csv.py",
-      "util/makeDataFiles/write_data_snana.py",
-      "util/make_eff_detect.py",
-      "util/make_fluxerr_model.py",
-      "util/make_hostlib_diffsky.py",
-      "util/make_hostlib_weightmap.py",
-      "util/make_simlib_ideal.py",
-      "util/make_simsed_binaries.py",
-      "util/make_spectrograph_table.py",
-      "util/plot_peakmag_redshift.py",
-      "util/plot_simlib.py",
-      "util/plot_simlib_dump.py",
-      "util/plot_snana_lightcurves.py",
-      "util/plot_table.py",
-      "util/quick_commands.py",
-      "util/randomize_table.py",
-      "util/remove_locf_messages.py",
-      "util/remove_minuit_stdout.py",
-      "util/resimulate_with_spectra.py",
-      "util/set_Cpreproc_flags.py",
-      "util/sim_SNgrid.pl",
-      "util/simsed_modify.py",
-      "util/snlc_efficiency.py",
-      "util/snmake.pl",
-      "util/sntable_cat.py",
-      "util/sntable_dump.py",
-      "util/sntools.pm",
-      "util/submit_batch/requirements.txt",
-      "util/submit_batch/submit_HELP.py",
-      "util/submit_batch/submit_batch_jobs.py",
-      "util/submit_batch/submit_makeDataFiles.py",
-      "util/submit_batch/submit_params.py",
-      "util/submit_batch/submit_prog_base.py",
-      "util/submit_batch/submit_prog_bbc.py",
-      "util/submit_batch/submit_prog_combine.py",
-      "util/submit_batch/submit_prog_cosmofit.py",
-      "util/submit_batch/submit_prog_covmat.py",
-      "util/submit_batch/submit_prog_hostfit.py",
-      "util/submit_batch/submit_prog_lcfit.py",
-      "util/submit_batch/submit_prog_sim.py",
-      "util/submit_batch/submit_prog_smp.py",
-      "util/submit_batch/submit_train_BAYESN.py",
-      "util/submit_batch/submit_train_SALT2.py",
-      "util/submit_batch/submit_train_SALT3.py",
-      "util/submit_batch/submit_train_util.py",
-      "util/submit_batch/submit_util.py",
-      "util/submit_batch_jobs.sh",
-      "util/submit_batch_list.py",
-      "util/tag_missing_events.py",
-      "util/translate_CSPDR3.py",
-      "util/uncombine_dataVersions.py",
-      "util/update_data_files.py",
-      "util/wait_for_file.py"
-    ],
+    "unclassified_paths": [],
     "unclassified_paths_truncated": 0,
     "reconciliation": {
       "regular_files": 239,
@@ -2148,35 +2963,31 @@
     },
     "not_packaged": [
       {
-        "what": "snlc_fit.exe and all light-curve fitting",
-        "why": "Outside the initial wfit task scope; the corresponding upstream files remain in the vendored tree."
+        "what": "light-curve-analysis, supernova-simulation, bias-correction and photometric-calibration",
+        "why": "Later candidates only. The first task PR contains wfit; these candidates have no native validation or task delivery commitment in this contribution."
       },
       {
-        "what": "snlc_sim.exe, simulation model generation and training",
-        "why": "Outside the initial wfit task scope; the corresponding upstream files remain in the vendored tree."
+        "what": "Repository tools, batch orchestration, external model training/classification and legacy helpers",
+        "why": "Retained and accounted for as repository support; they are outside the first task. SCONE and external training packages are not part of the pinned SNANA source."
       },
       {
-        "what": "SALT2mu/BBC and covariance generation",
-        "why": "Outside the initial wfit task scope; the corresponding upstream files remain in the vendored tree."
-      },
-      {
-        "what": "CPL w0-wa and LCDM-only modes, HDIBC, blinding and randomized uncertainty studies in the first task; the three official wCDM decks include CMB and BAO priors",
-        "why": "These modes are not exercised by the three located official WFIT decks; the future task survey will record every omission explicitly."
+        "what": "CPL w0-wa and LCDM-only modes, HDIBC, blinding and randomized uncertainty studies",
+        "why": "Outside the first wfit task; the three located official WFIT decks exercise wCDM with CMB and BAO priors. The task survey will document remaining example omissions."
       }
     ],
     "known_review_gaps": [
       "No repository-wide redistribution license was located. The manual permits modification; all upstream notices are retained and terms are recorded as NOASSERTION for curator review.",
-      "The initial wfit task is a scoped exception to the whole-codebase task default. SNANA uses a shared source directory; its executables are not independent source packages.",
+      "The five rows are functional candidates within a shared source directory, not independently packaged subprojects. The functional split is proposed for source review; only wfit is selected for the first task.",
+      "The other four candidates have source and test-landscape descriptions only. Their native builds, scientific runs, data subsets and task validation remain future work.",
       "Official sab.py task self-validation has not been run; source merge is required before the task phase. Existing prototype results are supplemental investigation only.",
       "The external official reference identifies v12_02b-22-g11861f0, while this source pin is f7ad9ad6. Both native platforms reproduced its reported numbers; the later task oracle will be generated from the pinned source itself."
     ],
     "open_questions": [
+      "Review the functional boundaries and common dependency layer while keeping the first task limited to wfit.",
       "Confirm applicable source and embedded component redistribution terms during source review."
     ],
     "classification": "CLI-computed accounting plus agent-authored gaps"
   },
-  "warnings": [
-    "219 regular file(s) are unclassified; this is visible but non-blocking"
-  ],
-  "notes": "Prepared with package-sciaccel-task 5.17.2. Official external WFIT assets were located on the Midway installation after the initial local investigation. Only the three selected decks, five inputs and two DESI prior tables (about 12 MB) were copied. No task leaf is included in this source PR."
+  "warnings": [],
+  "notes": "Prepared with package-sciaccel-task 5.17.2. First task: wfit only. Four additional functional candidates document the rest of the principal scientific programs and are unscheduled. All 239 pinned files are accounted for once as owned source, shared runtime/build files or repository support. Only the existing 12-file WFIT data subset (12,156,883 bytes) was downloaded; the broader inspection read task definitions only. No non-wfit execution or task leaf is included."
 }
