@@ -34,7 +34,7 @@ CHECK_FILES = ("check.json", "run.sh", "rubric.json", "validate.py", "README.md"
 FILL = re.compile(r"<FILL\b")
 TOKEN = re.compile(r"\{\{[A-Z_]+\}\}")
 KNOB_LINE = re.compile(r"^[A-Z][A-Z0-9_]*=\S+")
-REVISION = "5.16.0"  # the SPEC/skill revision this CLI implements; must equal SKILL.md version
+REVISION = "5.17.2"  # the SPEC/skill revision this CLI implements; must equal SKILL.md version
 LANG_BY_EXT = {  # best effort, for the production-code split of the codebase page
     ".c": "C", ".h": "C", ".cc": "C++", ".cpp": "C++", ".cxx": "C++", ".hpp": "C++", ".hh": "C++", ".hxx": "C++", ".ipp": "C++",
     ".cu": "CUDA", ".cuh": "CUDA", ".f": "Fortran", ".for": "Fortran", ".f77": "Fortran", ".f90": "Fortran", ".f95": "Fortran",

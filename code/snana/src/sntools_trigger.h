@@ -1,0 +1,431 @@
+/**************************************************
+   sntools_trigger.h
+
+
+   functions and Variables for maps related to
+     + Detection efficiency
+     + PHOTPROB/ML map
+     + SPEC-confirmed efficiency
+     + zHOST efficiency
+
+  Jul 13 2020: MXMAP_SEARCHEFF_zHOST -> 20 (was 10)
+
+  Feb 05 2021: define FIELDLIST_OVP and NFIELD_OVP
+
+  Aug 27 2024: add variables to update SPECEFF map to include SALT2x1, SALT2c, LOGMASS
+
+  Sep 02 2025: MXMAP_SEARCHEFF_SPEC = 20 -> 50 (for ATLAS)
+
+  May 22 2026: R. Purohit
+     MXMASK_SEARCHEFF_LOGIC -> 60  (was 10)
+     MXSUBSTR_SEARCHEFF_MAP -> 60  (was 4)
+     char INPUT_STRING[200];     was 80 (in SEARCHEFF_LOGIC struct)
+ **************************************************/
+
+#define MAPTYPE_SEARCHEFF_SPECID    "SPEC"
+#define MAPTYPE_SEARCHEFF_zHOST     "zHOST"
+#define MAPTYPE_SEARCHEFF_PHOTPROB  "PHOTPROB"
+
+
+#define  IVARTYPE_EFFMAP_PEAKMAG    1  // flag that var is a peakmag
+#define  IVARTYPE_EFFMAP_PEAKCOLOR  2  // flag that var is a peak color
+#define  IVARTYPE_EFFMAP_REDSHIFT   3  // flag that var is a redshift
+#define  IVARTYPE_EFFMAP_PEAKMJD    4  // flag that var is a peakmjd
+#define  IVARTYPE_EFFMAP_DTPEAK     5  // flag that var is a dTpeak_min
+#define  IVARTYPE_EFFMAP_DTSEASON_PEAK 6
+#define  IVARTYPE_EFFMAP_HOSTMAG    7  // flag that var is HOSTmag
+#define  IVARTYPE_EFFMAP_HOSTCOLOR  8  // flag that var is HOST color
+#define  IVARTYPE_EFFMAP_SBMAG      9  // flag that var is SBmag
+#define  IVARTYPE_EFFMAP_SBCOLOR   10  // flag that var is SB color
+#define  IVARTYPE_EFFMAP_LOGMASS   11  // flag that var is a LOGMASS
+#define  IVARTYPE_EFFMAP_SALT2mB   12  // flag that var is SALT2mb
+#define  IVARTYPE_EFFMAP_SALT2x1   13  // flag that var us SALT2x1
+#define  IVARTYPE_EFFMAP_SALT2c    14  // flag that var is SALT2c
+#define  IVARTYPE_EFFMAP_SNRSUM_REST_V 15 // flag for SPECTROGRAPH SNR for rest-V
+#define  IVARTYPE_EFFMAP_HOSTLIB   18  // flag that var is in HOSTLIB (Mar 2026)
+#define  IVARTYPE_EFFMAP           19  // flag that var is SPECEFF
+
+#define  MXVAR_SEARCHEFF_MAP       20  // max number of VARNAMES for SEARCHEFF maps
+#define  MXVAR_SEARCHEFF_HOSTLIB   10
+#define  MXMAP_SEARCHEFF_MAP       50  
+#define  MXROW_SEARCHEFF_MAP    30000
+
+#define MXSUBSTR_SEARCHEFF_MAP 60 // e.g., g+r+i+z is max number of + separated substrings
+
+#define  FLAG_EFFMAP_MAG    1   // mag for PEAK(SN), or HOST, or SB ...
+#define  FLAG_EFFMAP_COLOR  2   // color for PEAK(SN), or HOST, or SB ...
+
+// - - - -
+#define  MXVAR_SEARCHEFF_SPEC       20  // max number of SPEC-eff VARNAMES
+#define  MXMAP_SEARCHEFF_DETECT   50  
+#define  MXROW_SEARCHEFF_DETECT   10000
+
+#define  MXMAP_SEARCHEFF_PHOTPROB     10
+#define  MXROW_SEARCHEFF_PHOTPROB  10000
+#define  MXVAR_SEARCHEFF_PHOTPROB     20
+#define  MXOBS_PHOTPROB              400 // max obs per event with PHOTPROB
+
+#define  MXMAP_SEARCHEFF_SPECID   50   // max number of SPEC-maps
+#define  MXROW_SEARCHEFF_SPECID 30000  // temp max size of SPEC-eff map
+
+#define  MXMAP_SEARCHEFF_zHOST   20    // max number of zHOST maps
+#define  MXROW_SEARCHEFF_zHOST  5000   // max size of each map
+#define  MXVAR_SEARCHEFF_zHOST   10    // max number of zHOST VARNAMES
+
+#define  IVERSION_zHOST_LEGACY    1    // legacy z-only map
+#define  IVERSION_zHOST_MULTID    2    // multi-D map of HOSTLIB properties
+#define  MXSHIFT_SEARCHEFF        8    // max number of systematic (varname) shifts
+
+#define FLAG_EFFSNR_DETECT    1    // flag for EFF vs, SNR
+#define FLAG_EFFABSSNR_DETECT 2    // flag for EFF vs, ABS(SNR)
+#define FLAG_EFFMAG_DETECT    3    // flat for EFF vs. MAG
+#define SEARCHEFF_PARNAME (char*[4]){ "", "SNR", "ABS(SNR)", "MAG" }
+
+#define APPLYMASK_SEARCHEFF_PIPELINE    1  // pipeline detection
+#define APPLYMASK_SEARCHEFF_SPECID      2  // spec confirmed (and accurate zSN)
+#define APPLYMASK_SEARCHEFF_zHOST       4  // zSpec from host (not necessarily SPECID)
+#define APPLYMASK_SEARCHEFF_zSPEC       8  // zSpec from SN or HOST (or of SPECID and zHOST)
+
+#define DETECT_MASK_SNR         1  // detect mask for SNR or MAG
+#define DETECT_MASK_MJD_TRIGGER 2  // identify obs where trigger passes
+#define DETECT_MASK_PHOTPROB    4  // detect mask for PHOTPROB
+
+#define MXOBS_TRIGGER  MXEPOCH 
+
+// define allowed variables to use in PHOTPROB map
+#define IVARABS_PHOTPROB_SNR       0
+#define IVARABS_PHOTPROB_LOGSNR    1
+#define IVARABS_PHOTPROB_SBMAG     2
+#define IVARABS_PHOTPROB_REDSHIFT  3  // Feb 14 2020
+#define IVARABS_PHOTPROB_GALMAG    4  // Feb 16 2020
+#define MXDEF_VARNAMES_PHOTPROB    5
+
+
+char COMMENT_README_SEARCHEFF[2][200];
+
+char VARDEF_SEARCHEFF_PHOTPROB[MXDEF_VARNAMES_PHOTPROB][20] ;
+
+int  SEARCHEFF_FLAG;   // FLAG_EFFSNR or FLAG_EFFMAG
+
+char PATH_SEARCHEFF[2*MXPATHLEN+60]; // path for PIPELINE_FILE, SPEC_FILE
+
+int NONZERO_SEARCHEFF_SPECID  ; // number of events with EFF_SPEC > 0
+int NONZERO_SEARCHEFF_zHOST   ; // number of events with EFF_zHOST > 0
+double **SEARCHEFF_TMPMAP2D   ; // generic array to read/store map
+
+struct  {
+  char   USER_PIPELINE_LOGIC_FILE[MXPATHLEN]; // added Dec 2015
+  char   USER_PIPELINE_EFF_FILE[MXPATHLEN]; // EFF vs. SNR or vs. MAG
+  char   USER_SPEC_FILE[MXPATHLEN];     // SPEC eff vs. peakmag,z,etc ...
+  char   USER_zHOST_FILE[MXPATHLEN] ;   // eff vs. z of getting zHOST
+
+  // repeat input file names with full path 
+  char   PIPELINE_LOGIC_FILE[MXPATHLEN]; 
+  char   PIPELINE_EFF_FILE[MXPATHLEN]; 
+  char   SPEC_FILE[MXPATHLEN];     
+  char   zHOST_FILE[MXPATHLEN] ;   
+
+  /* xxxxxx mark delete 4.28.2026 xxxxxx
+  int    IFLAG_zHOST_EFFZERO;      // flag to set EFF_zHOST=0
+  int    IFLAG_zHOST_EFFONE;       // flag to set EFF_zHOST=1 (Nov 2024)
+  
+  int    IFLAG_SPECID_EFFZERO;       // flag to set EFF_SPEC=0
+  int    IFLAG_SPECID_EFFONE;        // flag to set EFF_SPEC=1 (Nov 2024)
+  xxxxxxx end mark xxxxx */
+  int    IVERSION_zHOST;           // 1=legacy, 2=multi-D
+
+  int    APPLY_DETECT_SINGLE;    // check EFF(pipe) on each exposure, not coadd
+
+  double USER_SPECEFF_SCALE; // default=1.0 ?? obsolete ??
+  // xxx mark delete Mar 8 2026   double CUTWIN_SNRMAX_zHOST[2]; // extra requirement for zHOST
+
+  // time-window (days) in which all detections count as 1 detection
+  // e.g.,  0.3 -> 1 roughly night, 0.007 -> 10 minutes, or SDSS ugriz
+  double TIME_SINGLE_DETECT ;  // days
+
+  // Number of PSF-sigmas to resolve nearby LCs for detections (e.g, SL images)
+  double NPSFSIGMA_MINSEP_DETECT; 
+
+  // systematic shifts of data values used for efficiency lookup map
+  double  MAGSHIFT_SPECEFF, MAGSHIFT_zHOSTEFF ; // applies only to MAG variables
+  int     NSHIFT_SPEC, NSHIFT_zHOST;            // applies to arbitrary map variable
+  double  *SHIFT_VALUES_SPEC, *SHIFT_VALUES_zHOST;    
+  char   **SHIFT_VARNAMES_SPEC, **SHIFT_VARNAMES_zHOST ;
+
+  // min number of observations to evaluate trigger
+  int    MINOBS ; 
+
+    // define number of maps, which is also a logical flag.
+  int NMAP_DETECT, NMAP_PHOTPROB, NMAP_SPECID, NMAP_zHOST ;
+
+  int NREDUCED_CORR_PHOTPROB ;  // Nmap(PHOTPROB) with non-zero REDUCED_CORR
+  int NPHOTPROB_DUMP;           // number of PHOTPROB>0 to dump per event
+
+  int LEGACYMAP_DETECT; // no MAPNAME_DETECT of ENDMAP (MAr 2018)
+
+  int  PHOTFLAG_DETECT ;  // optional PHOTFLAG bit for each detection
+  int  PHOTFLAG_TRIGGER ; // idem, for the one epoch making trigger
+
+  // - - - - - -  DEBUG STUFF - - - - - - - 
+  // allow for fixing pipeline efficiency for debugging
+  double FIX_EFF_PIPELINE ; 
+
+  // option to hack z-dependent efficiency function (for debugging)
+  int    FUNEFF_DEBUG ;  
+
+  int  OPTMASK_OPENFILE ;
+
+  int RESTORE_DES5YR; // Oct 15 2025
+
+  int REFAC_SEARCHEFF_MAP;    // Mar 8 2026
+
+} INPUTS_SEARCHEFF ;
+
+
+// Define structure for search eff vs. SNR for each filter
+int    MAPVERSION_SEARCHEFF_DETECT ; // allows legacy or new map style
+char   FILTERLIST_ALL_SEARCHEFF_DETECT[MXFILTINDX];    // store all bands used for detection
+struct SEARCHEFF_PIPELINE {
+  char   MAPNAME[40] ;
+  int    NBIN ;
+  char   FIELDLIST[MXCHAR_FIELDLIST] ;  // Nov 2022
+  char   FILTERLIST[MXFILTINDX] ;
+  double *VAL, *EFF ;
+  int    NLINE_README;
+  char   README[20][MXPATHLEN];
+} SEARCHEFF_DETECT[MXMAP_SEARCHEFF_DETECT+1] ;
+
+
+int MAPVERSION_SEARCHEFF_PHOTPROB ;
+
+struct {
+  char NAME[40] ;
+  char FIELDLIST[MXCHAR_FIELDLIST] ;
+  char FILTERLIST[MXFILTINDX] ;
+  char VARNAMES[MXVAR_SEARCHEFF_PHOTPROB][20] ;
+  int  IVARABS[MXVAR_SEARCHEFF_PHOTPROB] ;
+  double  VALMIN[MXVAR_SEARCHEFF_PHOTPROB] ;
+  double  VALMAX[MXVAR_SEARCHEFF_PHOTPROB] ;
+  double  BINSIZE; // photprob bin size
+  int  NVAR_TOT, NVAR_MAP, NFUN_CDF ;
+  int  NROW ;
+  int  REQUIRE_DETECTION; // flag read from SEARCH-input file
+  double CUTVAL ;         // reject epoch if PHOTPROB < CUTVAL (Feb 2020)
+  double REDUCED_CORR ;   // reduced correlation (-1:1) read from input file
+ 
+  double PHOTPROB_CDFBINS[MXVAR_SEARCHEFF_PHOTPROB] ;
+  GRIDMAP_DEF GRIDMAP; 
+
+  int NLINE_README;
+  char README[4][MXPATHLEN];
+
+} SEARCHEFF_PHOTPROB[MXMAP_SEARCHEFF_PHOTPROB];
+
+
+// store obs-list for PHOTPROB; needed to compute correlated randoms.
+struct {
+  int    NSTORE;
+  int    IMAP_LIST[MXOBS_PHOTPROB]; // IMAP for PHOTPROB
+  int    OBS_LIST[MXOBS_PHOTPROB];  // obs index for SEARCHEFF_DATA
+  double RAN_LIST[MXOBS_PHOTPROB];  // list of ran[0,1]
+  int    OBSINV_LIST[MXOBS_TRIGGER];  // local index vs [obs]
+} OBS_PHOTPROB;
+
+
+#define MXMASK_SEARCHEFF_LOGIC 60 // max number of logic conditions
+struct SEARCHEFF_LOGIC {
+  int  NMJD;     // number of MJDs to have a detection
+  int  NMASK;    // number of ORs
+  int  IFILTDEF_MASK[MXMASK_SEARCHEFF_LOGIC];  // AND-mask vs. NMASK
+  char INPUT_STRING[200];  // user-input logic-string
+} SEARCHEFF_LOGIC ;
+
+
+// - - - - -
+// define typedef struct for generic multi-dimensional map
+typedef struct {
+
+  int NVAR_TOT;
+  char VARNAMES[MXVAR_SEARCHEFF_MAP][40] ; // note that 'g-r' counts as one VARNAME
+  int IVAR, IVAR_REDSHIFT, IVAR_PEAKMJD, IVAR_LOGMASS ;
+  int IVAR_DTPEAK, IVAR_DTSEASON_PEAK, IVAR_SALT2mB, IVAR_SALT2x1, IVAR_SALT2c ;
+  int IVAR_SNRSUM_REST_V;
+
+  int NVAR_HOST;  // optional subset of NVAR
+  int IVAR_HOST[MXVAR_SEARCHEFF_HOSTLIB];    // map IVAR for HOST var
+  int IVAR_HOSTLIB[MXVAR_SEARCHEFF_MAP]; // HOSTLIB ivar for HOSTLIB subset
+
+  char   FIELDLIST[MXCHAR_FIELDLIST] ;
+  double PEAKMJD_RANGE[2]; // PEAKMJD range for each map
+
+  int IVARTYPE[MXVAR_SEARCHEFF_MAP] ;  // specifies which IVAR_XXX above
+
+  int REQUIRE; // 1 -> require this map (logical AND) instead of optional (OR)
+  
+  int FLAG_MAG[MXVAR_SEARCHEFF_MAP];   // flag for mag or color
+  double MAGSHIFT; // from user input MAGSHIFT_SPECEFF or MAGSHIFT_zHOSTEFF
+
+  double SHIFT[MXVAR_SEARCHEFF_MAP]; // systematic shift per variable
+
+  // ifilt_obs (mag and color) vs. IVAR index
+  int NFILTLIST_PEAKMAG[MXVAR_SEARCHEFF_MAP];
+  int IFILTLIST_PEAKMAG[MXVAR_SEARCHEFF_MAP][MXFILTINDX];  
+
+  int NFILTLIST_HOSTMAG[MXVAR_SEARCHEFF_MAP];  // Mar 26 2026
+  int IFILTLIST_HOSTMAG[MXVAR_SEARCHEFF_MAP][MXFILTINDX];
+
+  int NFILTLIST_SBMAG[MXVAR_SEARCHEFF_MAP];  // Mar 26 2026
+  int IFILTLIST_SBMAG[MXVAR_SEARCHEFF_MAP][MXFILTINDX];
+
+  GRIDMAP_DEF GRIDMAP ;
+
+} SEARCHEFF_MAP_DEF;  // Mar 2026 for both SPECID and zHOST
+
+
+// Mar 2026: define SEARCHEFF maps using refactored typedef struct
+typedef struct {
+  char  MAPTYPE[20];         // e.g., SPECID, zHOST 
+  char  MAP_FILE[MXPATHLEN]; // full path of map file
+  int   NMAP ;
+  int   OPT_EXTRAP ;
+  int   OPT_FIELDMATCH_REQUIRE ; // true -> every field must be associated with a map
+  SEARCHEFF_MAP_DEF  MAP_LIST[MXMAP_SEARCHEFF_MAP];
+
+  int   IFLAG_EFFZERO, IFLAG_EFFONE;
+
+  int   IVARTYPE_MASK ;
+  int   FLAG_PEAKMAG_ONLY ;
+  int   BOOLEAN_OR, BOOLEAN_AND;
+
+  int   NLINE_README;
+  char  README[40][MXPATHLEN];
+
+  // - - - -
+  int NONZERO_SEARCHEFF; // Number of map entries with EFF > 0
+
+} SEARCHEFF_INFO_DEF ;  // Mar 2026
+
+SEARCHEFF_INFO_DEF SEARCHEFF_INFO_SPECID ;
+SEARCHEFF_INFO_DEF SEARCHEFF_INFO_zHOST  ;
+
+
+// - - - - - - -
+
+
+// Oct 2021 - definw MJDs associated with pipeline detections
+typedef struct {
+  double TRIGGER, FIRST, LAST;
+} MJD_DETECT_DEF ;
+
+// ------ data needed to evaluate trigger -------
+
+struct {
+  int    NOBS ;
+
+  // scalars
+  int    CID ;
+  double REDSHIFT, PEAKMJD, DTPEAK_MIN, DTSEASON_PEAK, SNRMAX, MWEBV ;
+  double SALT2mB, SALT2x1, SALT2c, LOGMASS;
+  double SNRSUM_REST_V ; // for spectrograph 
+  int    SIMLIB_ID;
+
+  char FIELDNAME[MXCHAR_FIELDLIST]; // e.g., X3 or X1+X3 for overlap
+  char FIELDLIST_OVP[MXFIELD_OVP][20]; //specify each ovp field 
+  int  NFIELD_OVP;   // number of overlap fields
+
+  // filter-dependent peak-mags
+  double PEAKMAG[MXFILTINDX] ;
+  double HOSTMAG[MXFILTINDX] ;
+  double SBMAG[MXFILTINDX] ;
+
+  double SEP_NEAREST_SRC; // sep (arcsec) to nearest src (e.g., another SL)
+
+  // obs-dependent quantities
+  double MJD[MXOBS_TRIGGER];
+  double MAG[MXOBS_TRIGGER];  // mag for each obs
+  double SNR_CALC[MXOBS_TRIGGER];  // calculated signal-to-noise for each obs
+  double SNR_OBS[MXOBS_TRIGGER];   // meaured flux/fluxerr
+  double FLUX[MXOBS_TRIGGER];      // flux in ADU, or errmsg only
+  double FLUXERR[MXOBS_TRIGGER];
+  int    IFILTOBS[MXOBS_TRIGGER];  // absolute filter index. each obs
+  int    NPE_SAT[MXOBS_TRIGGER];   // Npe above sat (negative --> ok)
+  int detectFlag[MXOBS_TRIGGER]; // detection flag for each obs (not trigger)
+  double PHOTPROB[MXOBS_TRIGGER];  // Mar 13 2018
+  double PSFSIG[MXOBS_TRIGGER];    // PSF sigma, arcsec
+  int    NEXPOSE[MXOBS_TRIGGER]; // Number of Exposures in CO-ADD. 08/06/2022 
+} SEARCHEFF_DATA ;
+
+
+// randoms
+struct {
+  double FLAT_PIPELINE[MXOBS_TRIGGER];     // flat ran for each obs [0,1]
+  double FLAT_PHOTPROB[MXOBS_TRIGGER];     // flat ran for each detection
+  double GAUSS_PHOTPROB[MXOBS_TRIGGER];     // Gauss ran for each detection
+  double GAUSSCORR_PHOTPROB[MXOBS_TRIGGER] ;  // correlated Gauss Ran
+  double FLAT_SPEC[MXFILTINDX+1] ;            // for each filter
+  double FLAT_zHOST[MXFILTINDX+1] ;           // for each filter
+} SEARCHEFF_RANDOMS ;
+
+
+// ============== FUNCTION PROTOTYPES ===============
+
+void   init_SEARCHEFF(char *SURVEY_NAME, char *SURVEY_FILTERS, int APPLYMASK_SEARCHEFF );
+int    init_SEARCHEFF_PIPELINE(char *SURVEY_NAME, char *SURVEY_FILTERS);
+void   init_SEARCHEFF_LOGIC(char *survey) ;
+void   init_SEARCHEFF_SPECID(char *survey)  ;
+void   init_SEARCHEFF_zHOST(char *survey) ;
+
+FILE   *open_zHOST_FILE(int OPT);
+void   init_searcheff_map(char *MAPTYPE, SEARCHEFF_INFO_DEF *SEARCHEFF_INFO) ;
+void   init_searcheff_shifts(int imap, SEARCHEFF_INFO_DEF *SEARCHEFF_INFO) ;
+void   read_searcheff_map(char *USER_MAP_FILE, SEARCHEFF_INFO_DEF *SEARCHEFF_INFO) ;
+int    assign_MAP_VARNAME(char *MAPTYPE, int ivar, char *VARNAME, SEARCHEFF_MAP_DEF *MAP) ;
+int    assign_MAP_VARNAME_FILTERS(char *MAPTYPE, int ivar, char *VARNAME, SEARCHEFF_MAP_DEF *MAP) ;
+
+
+void   read_searcheff_raw_varnames(char *SEARCHEFF_FILE, int *OPEN_STATUS, int *NVAR_RAW, char **RAW_VARNAMES);
+
+int  readMap_SEARCHEFF_DETECT  (FILE *fp,  char *key);
+int  readMap_SEARCHEFF_PHOTPROB(FILE *fp,  char *key);
+int  malloc_NEXTMAP_SEARCHEFF_DETECT(void);
+
+void   check_APPLYMASK_SEARCHEFF(char *SURVEY, int APPLYMASK_SEARCHEFF);
+
+int    gen_SEARCHEFF(int ID, double *EFF_SPECID, double *EFF_zHOST, 
+		     MJD_DETECT_DEF *MJD_DETECT );
+int    gen_SEARCHEFF_PIPELINE(int ID, MJD_DETECT_DEF *MJD_DETECT );
+
+int    gen_SEARCHEFF_SPECID(int ID, double *EFF_SPECID);
+int    gen_SEARCHEFF_zHOST(int ID, double *EFF_zHOST );
+
+int    gen_searcheff_map(int ID, SEARCHEFF_INFO_DEF *SEARCHEFF_INFO, double *EFF);
+
+int    gen_SEARCHEFF_DEBUG(char *what, double RAN, double *EFF);
+
+
+void   check_SEARCHEFF_DETECT(int imap );
+void   check_SEARCHEFF_PHOTPROB(int imap );
+void   check_missing_filters_SEARCHEFF_DETECT(char *SURVEY_FILTERS);
+
+double LOAD_SEARCHEFF_VAR(char *MAPTYPE, SEARCHEFF_MAP_DEF *MAP, int ivar);
+void   LOAD_PHOTPROB_CDF(int NVAR_CDF, double *WGTLIST );
+double LOAD_PHOTPROB_VAR(int OBS, int IMAP, int IVAR) ;
+double GETEFF_PIPELINE_DETECT(int obs);
+
+double get_searcheff_mag(char *MAPTYPE, int FLAG_MAG, double MAGSHIFT, char *VARNAME,
+			 int NFILT, int *IFILTLIST, double *MAG_DATA);
+
+void   setObs_for_PHOTPROB(int DETECT_FLAG, int obs);
+void   setRan_for_PHOTPROB(void) ;
+double get_PIPELINE_PHOTPROB(int obs);
+double get_PIPELINE_PHOTPROB_Obsolete(int DETECT_FLAG, int obs);
+void   dumpLine_PIPELINE_PHOTPROB(void);
+
+void   parse_search_eff_logic(char *survey, int NMJD, char *logic);
+
+int    IVARABS_SEARCHEFF_PHOTPROB(char *VARNAME);
+
+bool   MATCH_SEARCHEFF_FIELD(char *field_map);
+
+
+// ============= END: ===============

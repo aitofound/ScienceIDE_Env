@@ -1,7 +1,9 @@
 """Codebase mode: register, decompose, approve, record the source merge, survey tests."""
 from __future__ import annotations
 
+import re
 import subprocess
+import time
 from pathlib import Path
 
 from . import config
@@ -28,11 +30,70 @@ def source_on_main(source: str) -> str | None:
         return None
 
 
-def require_source_merged(cb_id: str, cb: dict, allow_unmerged: bool = False, human_ref: str = "") -> None:
-    """The hard stop of Step 1.5: refuse until the source PR is merged and the human has said so.
+def vendoring_status(source: str) -> dict:
+    """What origin/main already carries for code/<source>/: the age of its last commit and whether tasks/<source>/ exists."""
+    git = ["git", "-C", str(config.ROOT)]
+    out = {"on_main": False, "hours": None, "subject": "", "tasks": False}
+    try:
+        subprocess.run(git + ["fetch", "--quiet", "origin", "main"], capture_output=True, text=True, timeout=120)
+        tree = subprocess.run(git + ["ls-tree", "-d", "origin/main", f"code/{source}"], capture_output=True, text=True, timeout=60)
+        if tree.returncode != 0 or not tree.stdout.strip():
+            return out
+        out["on_main"] = True
+        log = subprocess.run(git + ["log", "-1", "--format=%ct %s", "origin/main", "--", f"code/{source}"], capture_output=True, text=True, timeout=60)
+        if log.stdout.strip():
+            ts, _, subject = log.stdout.strip().partition(" ")
+            out["hours"] = round((time.time() - int(ts)) / 3600, 1)
+            out["subject"] = subject
+        tasks = subprocess.run(git + ["ls-tree", "-d", "origin/main", f"tasks/{source}"], capture_output=True, text=True, timeout=60)
+        out["tasks"] = tasks.returncode == 0 and bool(tasks.stdout.strip())
+    except (OSError, subprocess.SubprocessError, ValueError):
+        pass
+    return out
 
-    With --allow-unmerged-source and the human's words the refusal becomes a loud warning, recorded in the codebase
-    state (source_gate_bypass) so that status keeps reporting it until `codebase source-merged` is run."""
+
+DECONFLICT_HOURS = 24
+
+
+def deconflict(cb_id: str, source: str, existing: dict) -> dict | None:
+    """The first check of the codebase phase: is this codebase already vendored on origin/main, and how old is that?
+
+    Never a refusal. Older than DECONFLICT_HOURS with no task work: fine, take it over and say so on the old source PR.
+    Younger, or with task work: held by someone; the agent tells the human and waits for their word."""
+    st = vendoring_status(source)
+    print("DECONFLICT  (before any investigation: is this codebase already vendored?)")
+    if not st["on_main"]:
+        print(f"  code/{source}/ is not on origin/main. Also look for the same upstream under another name:")
+        print(f"  `git ls-tree --name-only origin/main code/` and the open source PRs (title `code(<id>)`, the upstream URL).")
+        print()
+        return None
+    age = f"{st['hours']} h ago" if st["hours"] is not None else "at an unknown time"
+    m = re.search(r"\(#(\d+)\)\s*$", st["subject"])
+    old_pr = f"#{m.group(1)}" if m else "the source PR that vendored it (find it by `code({source})` in the PR titles)"
+    print(f"  code/{source}/ IS on origin/main, last touched {age} ({st['subject'][:80]}); tasks/{source}/: {'present' if st['tasks'] else 'absent'}")
+    if (existing.get("source_pr") or {}).get("human_ref"):
+        print("  this state already records its source PR as merged: you are continuing your own vendoring.")
+        print()
+        return None
+    held = st["tasks"] or (st["hours"] is not None and st["hours"] < DECONFLICT_HOURS)
+    if held:
+        print(f"  HELD: vendored within the last {DECONFLICT_HOURS} h, or task work exists. Someone is on it.")
+        print("  Do not start Step 1 on it yet: tell the human in one line who holds it and since when, and go on")
+        print("  only on their word (continue on the existing tree, hand over, or pick another codebase).")
+        status = "held"
+    else:
+        print(f"  FINE: vendored more than {DECONFLICT_HOURS} h ago with no task work since. Take it over: post one comment")
+        print(f"  on {old_pr} saying `> 24 h inactiveness, taken by <your handle>` and proceed on the existing tree,")
+        print("  or vendor a fresh pin under a new source PR whose body says so.")
+        status = "fine"
+    print()
+    return {"at": now(), "status": status, "hours": st["hours"], "tasks": st["tasks"], "old_pr": old_pr if m else None}
+
+
+def require_source_merged(cb_id: str, cb: dict) -> None:
+    """The hard stop of Step 1.5: refuse until the source PR is merged into main and the human has said so.
+
+    There is no bypass: the codebase MUST be vendored and merged before the survey and the task phase."""
     rec = cb.get("source_pr")
     merged = bool(rec and rec.get("human_ref")) and source_on_main(cb["source"]) is not None
     if merged:
@@ -40,19 +101,8 @@ def require_source_merged(cb_id: str, cb: dict, allow_unmerged: bool = False, hu
     reason = (f"the source PR for code/{cb['source']}/ is not recorded as merged; after the human merges it run "
               f"`sab.py codebase source-merged --codebase {cb_id} --human-ref ...`" if not (rec and rec.get("human_ref"))
               else f"code/{cb['source']}/ is not on origin/main (recorded merge {rec.get('merge_commit')})")
-    if not allow_unmerged:
-        print(STEP15_BRIEF.format(source=cb["source"], cb=cb_id))
-        die(f"refusing: {reason}; the human can bypass this gate with --allow-unmerged-source --human-ref \"<their words>\"")
-    if not human_ref.strip():
-        die("--allow-unmerged-source needs --human-ref with the human's words")
-    print(f"WARNING: Step 1.5 gate bypassed at the human's request: {reason}.")
-    print("WARNING: everything downstream builds on a source tree that is not on main; the task PR must not merge before the source PR,")
-    print("WARNING: and every Dockerfile must still build from code/<source>/ as it will be vendored. Run `sab.py codebase source-merged` once it lands.")
-    d = state_dir(cb_id) / "codebase.json"
-    if d.is_file():
-        doc = read_json(d)
-        doc["source_gate_bypass"] = {"at": now(), "human_ref": human_ref, "reason": reason}
-        write_json(d, doc)
+    print(STEP15_BRIEF.format(source=cb["source"], cb=cb_id))
+    die(f"refusing: {reason}; the codebase MUST be merged into main before the survey and the task phase, there is no bypass")
 
 
 def cmd_codebase_init(a) -> None:
@@ -75,6 +125,10 @@ def cmd_codebase_init(a) -> None:
     text = briefing_text(doc)
     print(text)
     print("Show this briefing to the human in full before reading any code.\n")
+    # Then the deconfliction check, before any investigation and before any state is written.
+    claim = deconflict(a.codebase, doc["source"], existing)
+    if claim:
+        doc["deconflict"] = claim
     doc.setdefault("steps", {})["init"] = now()
     write_json(d / "codebase.json", doc)
     (d / "briefing.md").write_text(text, encoding="utf-8")
@@ -524,7 +578,7 @@ def cmd_codebase_survey(a) -> None:
     approved = approved_modules(mdoc)
     if not approved:
         die("no approved modules yet; finish Step 1 first")
-    require_source_merged(a.codebase, cb, getattr(a, "allow_unmerged_source", False), getattr(a, "human_ref", "") or "")
+    require_source_merged(a.codebase, cb)
     source = config.ROOT / "code" / cb["source"]
     if not source.is_dir():
         die(f"code/{cb['source']}/ does not exist in this checkout; pull the merged main first")
