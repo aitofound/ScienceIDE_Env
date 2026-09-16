@@ -101,7 +101,7 @@ def cmd_task_add_check(a) -> None:
             die("--custom needs --reason: why no official test backs this check")
     elif not (source / a.from_test).exists():
         die(f"--from-test must exist under code/{meta['source']}/: {a.from_test} (or pass --custom --reason)")
-    labels = [lab for lab, on in (("acceleration", a.acceleration), ("custom", a.custom)) if on]
+    labels = ["custom"] if a.custom else []
     check = leaf / "tests" / "checks" / a.name
     if check.exists():
         die(f"check already exists: {rel(check)}")
