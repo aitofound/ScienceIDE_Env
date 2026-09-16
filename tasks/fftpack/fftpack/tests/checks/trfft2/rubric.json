@@ -1,0 +1,67 @@
+{
+  "check": "trfft2",
+  "policy": "invariants",
+  "chaotic": false,
+  "upstream_test": "code/fftpack/test/trfft2.f",
+  "configuration": "gfortran -fdefault-real-8 -O2 -std=legacy (nominal); driver.f, a copy of the upstream test with RANDOM_SEED()/RANDOM_NUMBER() replaced by a fixed ic/ input vector",
+  "observable": "the real 2D FFT (RFFT2F/RFFT2B) round-trip max error (both call orders) and the max and mean magnitude of the array produced by the first forward transform of the fixed input, L=100, M=100",
+  "expected_runtime_s": 1,
+  "runtime_note": "under 300 s",
+  "default_vs_upstream": "upstream, except the input vector is fixed (see the variant note) instead of drawn from the upstream test's unseeded RANDOM_SEED()/RANDOM_NUMBER()",
+  "variant": "every element of ic/nominal's fixed input vector perturbed by two ulps at binary64 (np.nextafter twice); this is the check's only active initial-condition input, so perturbing all of it is the minimal sufficient perturbation. It moves the transformed array's max and mean magnitude at the 1e-16 to 1e-13 relative level (measured below) on every check; it does not always move the round-trip residual, which is a sum whose exact value is zero and therefore round-off sized regardless of the input (see the pitfall citation in the warrant).",
+  "altbuild": "the same pinned source built with gfortran -O0 instead of -O2 (same -fdefault-real-8 -std=legacy); FFTPACK's default build is already IEEE (no fast-math), so this is the same-compiler fallback per the NCAR-classic-libraries family ruling, not a strict-IEEE flip",
+  "comparison": {
+    "invariants": [
+      {
+        "name": "roundtrip-max-error",
+        "file": "roundtrip_errors.txt",
+        "format": "text",
+        "column": 0,
+        "mode": "agreement",
+        "statistic": "max",
+        "rtol": 0.0,
+        "atol": 1e-09
+      },
+      {
+        "name": "transformed-max-magnitude",
+        "file": "transformed.txt",
+        "format": "text",
+        "column": 0,
+        "mode": "agreement",
+        "statistic": "max",
+        "rtol": 1e-09,
+        "atol": 1e-12
+      },
+      {
+        "name": "transformed-mean-magnitude",
+        "file": "transformed.txt",
+        "format": "text",
+        "column": 0,
+        "mode": "agreement",
+        "statistic": "mean",
+        "rtol": 1e-09,
+        "atol": 1e-12
+      }
+    ]
+  },
+  "evidence": {
+    "spread": 2.775557561562891e-08,
+    "spread_how": "Selfcheck on the worker (x86_64 debian trixie, gfortran, 2026-09-16, run1): one nominal run and one variant run (every element of the fixed input perturbed by two ulps at binary64) compared under this check's own validate.py. roundtrip-max-error reference 9.298e-16, candidate 9.021e-16 (bound_fraction 2.776e-08, headroom 36,028,797x); transformed-max-magnitude reference 5.002076e-01 (bound_fraction 2.215e-07, headroom 4,514,477x); transformed-mean-magnitude reference 3.364542e-05 (bound_fraction 1.311e-08, headroom 76,269,570x). Worst check-level bound_fraction 2.215e-07 (headroom 4,514,477x). Full record: comment/pipeline/self-validation.json.",
+    "self_validation_spread": 0.029850746268656716,
+    "self_validation_bound_fraction": 2.2150959573971934e-07,
+    "floor": 0.0,
+    "floor_how": "measured by selfcheck on 2026-09-16: run.sh altbuild (the same pinned source built with gfortran -O0 instead of -O2 (same -fdefault-real-8 -std=legacy flags); the same-compiler fallback per the NCAR-classic-libraries altbuild family ruling) against run.sh nominal, graded with the check's own validate.py: bit-identical output",
+    "altbuild": {
+      "what": "the same pinned source built with gfortran -O0 instead of -O2 (same -fdefault-real-8 -std=legacy flags); the same-compiler fallback per the NCAR-classic-libraries altbuild family ruling",
+      "distance": 0.0,
+      "bound_fraction": 0.0,
+      "identical": true,
+      "graded_identical": false,
+      "passed": true,
+      "reason": "all invariants within bound",
+      "at": "2026-09-16T05:45:54Z"
+    },
+    "floor_bound_fraction": 0.0
+  },
+  "warrant": "roundtrip-max-error compares the |output-input| max over both round-trip call orders on the SAME fixed input; its analytic value is exactly zero, so what is measured is the round-off remainder of the transform's forward and inverse stages (pitfall references/pitfalls/residual-below-one-ulp.md: a residual whose true value is zero carries no information about a port beyond its OK/FAILED verdict against a wide bound). Measured on the worker (x86_64 debian trixie, run1, 2-ulp variant): reference 9.298e-16, candidate 9.021e-16, using 2.776e-08 of the 1e-09 bound (headroom 36,028,797x). A candidate that does not actually invert the transform (a missing backward call, a wrong routine, a scrambled index map) leaves a round-trip error of order the input itself (about 0.5 to 1 depending on the transform's own scale), 8 to 10 orders of magnitude over the bound: the bound comfortably separates round-off reordering from that fault. transformed-max-magnitude and transformed-mean-magnitude compare the aggregate size of the array the first forward transform produces on the fixed input (real 2D FFT (RFFT2F/RFFT2B) on a 100x100 array), so a candidate must actually compute the same transform on the same data, not merely round-trip an unrelated one (tests.json's survey: 'grades the round-trip error and the transformed array'). Because the input is fixed, two correct implementations of the same transform on the same input agree to double-precision round-off under any legitimate reordering (summation order, radix decomposition, compiler, architecture): measured max-magnitude bound_fraction 2.215e-07 (headroom 4,514,477x) and mean-magnitude bound_fraction 1.311e-08 (headroom 76,269,570x) from the 2-ulp variant, the only calibration evidence available since the altbuild moved nothing on this host (see below). A wrong normalization, a wrong axis, a transposed 2D array, or a transform that never ran moves the magnitude by an order-1 relative amount (or leaves it at the untransformed input's own scale), six to seven orders of magnitude over the 1e-09 bound: the bound leaves real headroom above the measured floor while still separating a plausible fault by a wide margin. altbuild (gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy) was measured bit-identical to nominal on this host (distance 0.0, floor 0.0): FFTPACK's fixed-length loop nest gives the same instruction sequence and rounding at either optimisation level here, so it supplies no floor of its own on x86_64. (During authoring, the same altbuild measured natively on macOS arm64 gfortran 15.2 showed the transformed-magnitude agreement at 2e-17 to 8e-16 relative, not zero -- the same fixed source and flags round differently across architectures, matching references/pitfalls/altbuild-floors-are-host-specific.md; the graded record is the x86_64 worker's.) The variant remains the only calibration evidence for this bound, and it already shows several orders of magnitude of headroom below the fault separation above."
+}
