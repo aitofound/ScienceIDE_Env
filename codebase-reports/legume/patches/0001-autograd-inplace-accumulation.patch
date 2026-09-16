@@ -1,0 +1,95 @@
+DEVIATION FROM BYTE-FOR-BYTE VENDORING, applied to code/legume/.
+
+This is the only vendored tree in the benchmark that differs from its pin.
+It is deliberate and was decided by the codebase owner; it is isolated in one
+commit so that `git show` on that commit is exactly the deviation.
+
+WHAT   Four in-place accumulations rewritten out-of-place, at three files:
+         legume/gme/gme.py:1720   rad_c['te'][clad_ind] += ...
+         legume/gme/gme.py:1743   rad_c['tm'][clad_ind] += ...
+         legume/utils.py:28       ftinv += ...
+         legume/phc/layer.py:175  FT[ind0] += bd.abs(Vmax)
+
+WHY    Each accumulator is allocated as a plain numpy array (bd.zeros or
+       np.zeros). Under the autograd backend the right-hand side is an
+       autograd ArrayBox, and `ndarray += ArrayBox` makes numpy return
+       NotImplemented, raising TypeError. Assigning out-of-place lets the box
+       propagate. The first two sites break every differentiated run with
+       compute_im=True, which is the default; the third breaks differentiation
+       through get_field_xy, the real-space field reconstruction.
+
+SINCE  Upstream commit d663dd5 (2020-03-12) for the gme.py sites; present in
+       every tag from 0.1.2 through v1.0.3. No tagged release has ever had a
+       working gradient-of-Q path.
+
+SAFE   For a plain numpy array `a = a + b` and `a += b` compute identical
+       values; only allocation differs. Measured, not assumed: on the numpy
+       backend, freqs, freqs_im and a reconstructed real-space field are
+       sha256-identical between the pristine and patched trees. The third
+       site is exercised by that field comparison. The fourth site's two
+       formulations are bit-identical on plain arrays when its branch fires,
+       checked over random trials (maxdiff 0.0), and differentiating geometry
+       with the branch NOT taken returns 9.25608383 on both trees.
+
+EFFECT tests/test_gme_grad.py: TypeError -> pass; whole suite 12 passed +
+       1 failed -> 13 passed. Example notebook 08: TypeError -> passes in
+       161 s. Example notebook 06: gets past the defect and runs its real
+       10-epoch Adam cavity optimization, then exceeds the 300 s per-cell cap
+       used here; the cap, not a defect, is what stops it. Gradient of the sum
+       of Q factors now returns in one reverse-mode pass and agrees with finite
+       differences to 2.7e-02, inside upstream's own 1e-1 test bound.
+
+FOURTH legume/phc/layer.py:175, in Layer.compute_exc_ft (the exciton
+SITE   potential transform), is guarded by `if FT[ind0][0] < 0`. No test or
+       example takes that branch: test_polariton reaches the guard but reads
+       FT[ind0][0] == 0.0, so the line never runs upstream. It is nonetheless
+       a real defect, reproduced by differentiating a shape radius with a
+       negative Vmax: pristine raises TypeError ("only integer scalar arrays
+       can be converted to a scalar index"), patched returns 5.48617265, which
+       agrees with a central difference to 1.9e-11. Fixed with bd.where rather
+       than an index-assignment so it dispatches on both backends.
+
+SEARCH A static scan for `X = zeros(...)` followed by `X +=` found these sites
+       plus six in legume/primitives.py that are correct (a vjp body receives
+       concrete arrays, never boxes, and test_primitives passes). That scan is
+       a heuristic: it did not catch the two gme.py sites, whose accumulator is
+       built by a dict comprehension, so the class may have further members on
+       paths nothing executes.
+
+diff --git a/code/legume/legume/gme/gme.py b/code/legume/legume/gme/gme.py
+index ef2ea8dc7..b36f7eaf6 100644
+--- a/code/legume/legume/gme/gme.py
++++ b/code/legume/legume/gme/gme.py
+@@ -1717,7 +1717,8 @@ class GuidedModeExp(object):
+                     # TE and TM waves with E field that is in-phase
+                     # (See equations in legume paper where the TE fields are
+                     # proportional to i, we're just getting rid of that here)
+-                    rad_c['te'][clad_ind] += -1j * bd.sum(rad, axis=0)
++                    rad_c['te'][clad_ind] = rad_c['te'][clad_ind] + (
++                        -1j * bd.sum(rad, axis=0))
+ 
+                     # Radiation to TM-polarized states
+                     if mode1 % 2 == 0:
+@@ -1740,7 +1741,8 @@ class GuidedModeExp(object):
+                         evec[count:count +
+                              self.modes_numg[kind][im1]][:, np.newaxis])
+                     # Add everything up
+-                    rad_c['tm'][clad_ind] += bd.sum(rad, axis=0)
++                    rad_c['tm'][clad_ind] = rad_c['tm'][clad_ind] + bd.sum(
++                        rad, axis=0)
+                 count += self.modes_numg[kind][im1]
+ 
+             # Density of states of leaky modes
+diff --git a/code/legume/legume/utils.py b/code/legume/legume/utils.py
+index 1f90ddec5..0bd44d742 100644
+--- a/code/legume/legume/utils.py
++++ b/code/legume/legume/utils.py
+@@ -25,7 +25,7 @@ def ftinv(ft_coeff, gvec, xgrid, ygrid):
+     (g_unique, ind_unique) = np.unique(gvec, return_index=True, axis=1)
+ 
+     for indg in ind_unique:
+-        ftinv += ft_coeff[indg]*np.exp(1j*gvec[0, indg]*xmesh + \
++        ftinv = ftinv + ft_coeff[indg]*np.exp(1j*gvec[0, indg]*xmesh + \
+                             1j*gvec[1, indg]*ymesh)
+ 
+     # # Do the x- and y-transforms separately

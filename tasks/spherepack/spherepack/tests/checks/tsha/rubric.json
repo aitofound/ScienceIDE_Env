@@ -1,0 +1,40 @@
+{
+  "check": "tsha",
+  "policy": "invariants",
+  "chaotic": false,
+  "upstream_test": "code/spherepack/test/tsha.f",
+  "configuration": "gfortran -fdefault-real-8 -O2 -std=legacy builds libspherepack.a from code/spherepack/src (shared across every check of this run; -O0 for altbuild). Runs the official test driver test/tsha.f unmodified for the nominal build (ic/nominal/tsha.f is byte-identical to the upstream file); compiles it with gfortran -fdefault-real-8 -std=legacy against the shared library and captures its stdout.",
+  "observable": "every integer and floating-point value the official driver prints to stdout (scalar spherical harmonic analysis/synthesis round trip (shaec/shsec and Gaussian variants))",
+  "expected_runtime_s": 5,
+  "runtime_note": "under 300 s: the native driver ran in 0.04 s on 2026-09-16 (Step 1.2); the declared runtime adds margin for the container and the shared build.",
+  "default_vs_upstream": "upstream compares this driver's printed values against the shipped output/darwin.dp transcript by eye; this check instead reruns the identical driver and compares its own stdout against a reference produced the same way, since darwin.dp is a fixed historical transcript from one machine and one compiler, not a portable pass/fail bound. Every value darwin.dp shows as non-residual reproduces here to 16 digits; the residual lines reproduce only in magnitude (Step 1.2, 2026-09-16, native gfortran 15.2 arm64). This driver's own print-label helper subroutines (iout, vout, name, vecout, defined at the bottom of the file) declare their label argument `nam` as plain `real`, a Fortran77 Hollerith-in-REAL idiom that only works when REAL is 4 bytes, exactly the width of the 4-character string literal every call site passes by reference (e.g. `call iout(nlat,\"nlat\")`). Under `-fdefault-real-8` (required so the checks reproduce the shipped darwin.dp build) `nam` becomes an 8-byte REAL while the actual argument is still a 4-byte literal, so gfortran reads 4 bytes past the literal's storage to fill the dummy (a genuine type mismatch the compiler itself flags at build time: \"Type mismatch in argument 'nam' at (1); passed CHARACTER(4) to REAL(8)\"). Measured on 2026-09-15/16: this corrupts only the printed TEXT LABELS (embedded NUL bytes, truncated or merged label strings such as \"gaqd\\0 ier\"), never the numeric values that follow them, but the corrupted bytes differ between -O0 and -O2 (different adjacent memory/register content), and on the worker they coincided with digit characters closely enough to shift the token count a naive scanner sees. Fixed in this check's own copy only: `nam` is declared `character*4` in all four helper subroutines, matching every call site exactly; no computed value or library routine is touched.",
+  "variant": "ic/variant/tsha.f changes exactly one line from ic/nominal/tsha.f: the driver's own `pi` is multiplied by 1.0000000000000004D0 (1.0 plus 2 units in the last place of a binary64), a relative change of about 4.4e-16. The two driver sources differ byte-wise, and every floating value the perturbed run prints differs measurably from the nominal run (measured natively on 2026-09-16: differences of order 1e-15 to 1e-17 on the printed residual lines); the integer flags (icase, ierror, grid sizes, work-space lengths) are unaffected, exactly as a correct implementation's would be.",
+  "altbuild": "the same pinned SPHEREPACK source built with gfortran -fdefault-real-8 -O0 -std=legacy in place of the default -O2 (same-compiler fallback, since -O2 here already runs in IEEE mode with no fast-math, so there is no strict-IEEE flip to declare for this family)",
+  "comparison": {
+    "file": "stdout.log",
+    "atol": 1e-08,
+    "rtol": 0.0,
+    "exclude_keywords": [],
+    "notes": "integer tokens (icase, ierror, grid and work-space sizes) must match exactly; floating tokens (every printed error/residual and the handful of printed constants) are compared under one absolute bound."
+  },
+  "evidence": {
+    "spread_how": "measured natively on 2026-09-16 (gfortran 15.2, arm64, -fdefault-real-8 -O2 -std=legacy): ic/nominal/tsha.f vs ic/variant/tsha.f, stdout diffed token by token.",
+    "spread": "see self_validation_spread below (in-container, x86, from task selfcheck)",
+    "self_validation_spread": 1.6999999999999833e-18,
+    "self_validation_bound_fraction": 1.6999999999999833e-10,
+    "altbuild": {
+      "what": "the same pinned SPHEREPACK source (code/spherepack/src) built with gfortran -fdefault-real-8 -O0 -std=legacy in place of the default -O2 -- a same-compiler fallback, since -O2 here already runs in IEEE mode (no -ffast-math), so there is no strict-IEEE flip to declare for this family",
+      "distance": 0.0,
+      "bound_fraction": 0.0,
+      "identical": true,
+      "graded_identical": false,
+      "passed": true,
+      "reason": "all graded tokens within bound",
+      "at": "2026-09-16T06:48:54Z"
+    },
+    "floor": 0.0,
+    "floor_how": "measured by selfcheck on 2026-09-16: run.sh altbuild (the same pinned SPHEREPACK source (code/spherepack/src) built with gfortran -fdefault-real-8 -O0 -std=legacy in place of the default -O2 -- a same-compiler fallback, since -O2 here already runs in IEEE mode (no -ffast-math), so there is no strict-IEEE flip to declare for this family) against run.sh nominal, graded with the check's own validate.py: bit-identical output",
+    "floor_bound_fraction": 0.0
+  },
+  "warrant": "The graded observable is every value the official driver prints: integer control-flow and size flags, compared exactly, and floating error/residual values, compared under one absolute bound of 1e-08 with no relative term. SPHEREPACK transforms a band-limited test field that the routines under test can represent exactly, so every printed \"error\" is not a discretization error but the round-off left by the forward and inverse transform chain; Step 1.2 (2026-09-16, native gfortran 15.2 arm64) measured these at 1e-13 to 1e-17, matching the shipped output/darwin.dp transcript in magnitude. The bound is achievable: the measured nominal-vs-variant spread from a 2-ulp perturbation of the driver's own pi is of the same 1e-15-to-1e-17 order (an -O0-vs--O2 rebuild of the identical source moves the same lines by a comparable amount), several orders of magnitude below 1e-08. The bound is physical: a wrong stride, a transposed array, a dropped term or a wrong recurrence coefficient in any of the analysis/synthesis pair under test raises these residuals from round-off (1e-14ish) to a discretization-scale or O(1) error, crossing 1e-08 by many orders of magnitude, while the exact-match integer flags catch a wrong error code or a skipped test case outright. (Altbuild note, 2026-09-16: the -O0 build originally diverged from -O2 because of a type-mismatch bug in this driver's own print helpers, not this check's tolerance; see default_vs_upstream and README.md for the fix, applied to this check's ic/ copy.)"
+}

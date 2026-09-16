@@ -1,0 +1,1389 @@
+
+ ### Input file contents:
+
+!
+! *** Grid resolution.
+!
+&topology
+  nr = 61
+  nt = 31
+  np = 61
+/
+&data
+!
+! *** Use the new style output text files.
+!
+  legacy_output_filenames = .false.
+!
+! *** Radial domain.
+!
+  r0 = 1.0
+  r1 = 30.0
+!
+! *** Time domain.
+!
+  tmax = 0.5
+!
+! *** Grid specifications.
+!
+  rfrac    = 0.0,3.103429E-04,9.198402E-03,1.206897E-02,
+             1.020199E-01,1.034483E-01,1.0
+  drratio  = 7.001596E-01,2.142857E+01,1.000000E+00,7.957998E+00,
+             1.000000E+00,1.197639E+01
+  nfrmesh  = 5
+  tfrac    = 0.0
+  dtratio  = 1.0
+  nftmesh  = 5
+  pfrac    = 0.0
+  dpratio  = 1.0
+  nfpmesh  = 5
+  phishift = 0.0
+!
+! *** Time step specifications.
+!
+  dtmax = 0.01
+  dtmin = 1.e-5
+  dt_init = 0.005
+  dt_max_wave_cfl = 200.0
+!
+! *** Output options.
+!
+  plotlist = 'zp'
+  ipltxint = 2
+  tpltxint = 0.0
+  slice_plotlist = 'rho'
+  slice_tp_radii = 10.0
+  slice_ixint = 1
+  slice_txint = 0.0
+  trace_txint = 0.0
+  hdf32 = .false.
+  rs_final = .false.
+  trsdump = 0.0
+!
+! *** Model specification.
+!
+  advance_a    = .true.
+  advance_v    = .true.
+  advance_t    = .true.
+  advance_rho  = .true.
+  advance_pw   = .false.
+  advance_zw   = .true.
+  advance_fcs  = .false.
+  trace_particles = .false.
+  slund = 1.e5
+  visc = .002
+  gamma = 1.666666666666667
+  g0 = 0.823
+  br00 = 0.0
+  rho0 = 40000.0
+  tbc0 = 17500.0
+  tchromo = 17500.0
+  iftfloor = .true.
+  tfloor = 10000.0
+  char_bc0 = .true.
+  char_bc1 = .true.
+  rhobc_maxfac_r1 = 0.1
+  ifrholimit = .true.
+  rho_limit_factor = 0.007
+  rho_limit_file = 'rho3d_initial_1au_rho40k.h5'
+  max_alfven_speed_rho_mod = 100.0
+  ubzero = .false.
+  filter_poles = .true.
+! *** Thermal conduction:
+  advance_tc = .true.
+  tcond = 1.0
+  t_cutoff1 = 400000.0
+  nfilt_kappa = 0
+  alpha_nocoll = 1.0
+  tc_r = 10.0
+  tc_dr = 1.0
+  tc_fac0 = 1.0
+  tc_fac1 = 0.0
+  tc_nocoll_r = 10.0
+  tc_nocoll_dr = 1.0
+! *** Radiative loss:
+  radloss = 1.0
+  rad_law = 'CHIANTI_v713_HYBRID'
+! *** Heating:
+  heatsource(1)%active = .true.
+  heatsource(1)%name = 'NL'
+  heatsource(1)%use_mask = .false.
+  heatsource(1)%type = 'exponential-b-photo-dependent'
+  heatsource(1)%nl_mask = .true.
+  heatsource(1)%h0 = 0.10
+  heatsource(1)%lambda = 0.03
+  heatsource(1)%power = 1.00
+  heatsource(1)%b_profile%active = .false.
+  heatsource(1)%b_attenuation = .false.
+  heatsource(1)%r_profile%active = .false.
+  heatsource(1)%t_profile%active = .false.
+  heatsource(2)%active = .true.
+  heatsource(2)%name = 'Quiet Sun Heating'
+  heatsource(2)%type = 'br-dependent'
+  heatsource(2)%h0 = .044
+  heatsource(2)%lambda = .2
+  heatsource(2)%brmax = .25
+  heatsource(2)%r_profile%active = .false.
+  heatsource(2)%t_profile%active = .false.
+  heatsource(2)%b_profile%active = .false.
+  heatsource(2)%b_attenuation = .false.
+  heatsource(3)%active = .true.
+  heatsource(3)%name = 'FW'
+  heatsource(3)%use_mask = .false.
+  heatsource(3)%type = 'exponential'
+  heatsource(3)%h0 = 0.000435
+  heatsource(3)%lambda = 1.00
+  heatsource(3)%b_profile%active = .false.
+  heatsource(3)%b_attenuation = .false.
+  heatsource(3)%r_profile%active = .false.
+  heatsource(3)%t_profile%active = .false.
+  heatsource(4)%active = .true.
+  heatsource(4)%name = 'SS'
+  heatsource(4)%use_mask = .false.
+  heatsource(4)%type = 'exponential'
+  heatsource(4)%h0 = 0.10
+  heatsource(4)%lambda = 0.03
+  heatsource(4)%b_profile%active = .false.
+  heatsource(4)%b_attenuation = .false.
+  heatsource(4)%r_profile%active = .false.
+  heatsource(4)%t_profile%active = .false.
+  heatsource(5)%active = .true.
+  heatsource(5)%name = 'Active Region Heating'
+  heatsource(5)%type = 'b-dependent'
+  heatsource(5)%h0 = .06
+  heatsource(5)%power = 1.0
+  heatsource(5)%r_profile%active = .true.
+  heatsource(5)%r_profile%f = 1.,0.
+  heatsource(5)%r_profile%x = 2.
+  heatsource(5)%r_profile%w = 0.5
+  heatsource(5)%t_profile%active = .false.
+  heatsource(5)%b_profile%active = .true.
+  heatsource(5)%b_profile%f = 0.,1.
+  heatsource(5)%b_profile%x = 11.3
+  heatsource(5)%b_profile%w = 9.07
+  heatsource(5)%b_attenuation = .false.
+  heatsource(6)%active = .true.
+  heatsource(6)%name = 'SS'
+  heatsource(6)%use_mask = .false.
+  heatsource(6)%type = 'zw-exponential'
+  heatsource(6)%h0 = 0.10
+  heatsource(6)%lambda = 0.03
+  heatsource(6)%b_profile%active = .false.
+  heatsource(6)%b_attenuation = .false.
+  heatsource(6)%r_profile%active = .false.
+  heatsource(6)%t_profile%active = .false.
+  heatsource(7)%active = .true.
+  heatsource(7)%name = 'FW'
+  heatsource(7)%use_mask = .false.
+  heatsource(7)%type = 'zw-exponential'
+  heatsource(7)%h0 = .000054375
+  heatsource(7)%lambda = 1.00
+  heatsource(7)%b_profile%active = .false.
+  heatsource(7)%b_attenuation = .false.
+  heatsource(7)%r_profile%active = .false.
+  heatsource(7)%t_profile%active = .false.
+  heating_flat_topped = .false.
+  heat_mask_file = ' '
+  add_ohmic_heating = .false.
+! WTD heating/pressure parameters
+  wtd_z0 = 0.02
+  wtd_b0 = 3.86834
+  wtd_lambda0 = 0.02
+  wtd_use_zw_flux_mask = .true.
+  z0_flux_mask_tp_file = 'wtd_flux_mask_tp.h5'
+  zw_dissp = .true.
+  zw_reflection = .true.
+  wtd_add_zw_heating = .true.
+  wtd_add_zw_pressure = .false.
+  zw_uwc_s = 0.0
+  zw_uwc_z = 1.0
+  wtd_use_flux_limiter_gradzw = .true.
+  wtd_use_flux_limiter_gradsrc = .false.
+  zw_flux_limiter_type = 'ospre'
+  zw_cfl = 0.9
+  wtd_use_zw_limit = .true.
+  zw_limit_amplitude = 1.6
+  zw_limit_radial_file = 'zw_limit_test01.dat'
+  zw_rho_aw = 3.0
+  wtd_bc_extrap_fac_r1 = 0.1
+  wtd_use_zw_effective_rho_limit = .true.
+  zw_effective_rho_limit_lr = 2.20412
+  zw_effective_rho_limit_lw = 0.3
+  wtd_use_zw_horho_limit = .true.
+  zw_horho_limit_rlim = 8.0
+  zw_horho_limit_value = 5.e-2
+  use_chromo_heat = .true.
+  chromo_heat_t_zqc_0 = 10000.0
+  chromo_heat_t_zqc_1 = 40000.0
+  tprofile(2)%t = 0.0,1.0
+  tprofile(2)%f = 1.0,1.0
+  tprofile(2)%vars = 'zw_heat_factor'
+  tprofile(3)%t = 0.0,1.0
+  tprofile(3)%f = 1.0,1.0
+  tprofile(3)%vars = 'zw_pressure_factor'
+  wtd_icond = 'WKB_BR'
+  wtd_icfac = 1.0
+!
+! *** Initial condition.
+!
+  initial_field = 'POTENTIAL_FIELD'
+  bnfile = 'br_input.h5'
+  b_in_gauss = .true.
+  initial_plasma = '1dfile'
+  onedfile = 'initial_plasma_1d_r_rho40k.dat'
+!
+! *** Numerical algorithm options.
+!
+  cfl = 0.4
+  use_sts_visc = .true.
+  use_sts_tc   = .true.
+  visc_auto_subcycle = .true.
+  tc_auto_subcycle   = .true.
+  ifimplrad = 0
+  ifprec_t     = 3
+  ifprec_v     = 3
+  ifprec_pot2d = 3
+  ifprec_divb  = 3
+  epscg_a       = 1.e-9
+  epscg_v       = 1.e-9
+  epscg_t       = 1.e-9
+  epscg_potfld  = 1.e-9
+  epscg_newflux = 1.e-9
+  epscg_divb    = 1.e-9
+  ncgmax = 100000
+/
+!
+! mas_wtd_2019eclipse_example (mas_wtd r350)
+! -------------------------------------
+! Example ifile for running MAS-WTD calculations using a similar setup to the
+! final coronal prediction for the 2019 eclipse.
+!
+! This ifile is based on my most recent run in 2021 (suvi2018_high_01)
+! and is compatible with SVN mas_wtd branch, revision 350.
+!
+! IMPORTANT NOTES:
+! A) The WTD Poynting flux is tuned to HMI Br multiplied by 1.4x!
+!   - If you drop the multiplier you will need to drop wtd_z0 by sqrt(1.4)
+!   -e.g. z0 = 0.02 goes to z0 = 0.0169
+!   - Here I assume Br was derived from LOS measurments (e.g. std synoptic maps)
+!   - If you use vector measurments, be careful of noise but the scaling factor
+!     may not be needed (e.g. don't multiply by 1.4, but keep z0 = 0.02).
+!
+! B) The WTD flux mask is designed to truncate the Poynting flux in strong
+!    sunspot fields (based on observational papers).
+!   - This may be really important for WTD runs during active periods, and it
+!     can help stabilize the code (less heating in diverging strong field open
+!      regions less strong flows).
+!   - There is a BASH script that goes with this ifile that computes the flux-mask
+!     based on an HMI synoptic map and your magnetogram diffusion profile
+!   - See this for details on the setup, edit as needed.
+!   - NOTE: The script option for open flux multiplication was experimental. I don't use
+!     this in production runs. keep that turned off unless you are feeling adventurous.
+!
+! C) This heating model was tuned for the recent solar minumum (e.g. 2019).
+!   - This 2021 paper by Ben Boe, found a favorable comparison of the 2019 run
+      to white light observables (https://ui.adsabs.harvard.edu/abs/2021ApJ...912...44B/abstract)
+!   - My conclusion is that the coronal densities are decent.
+!   - Also the EUV comparisons for a non-energized WTD run look decent. They suggest good coronal temps
+!     but maybe a bit cool. You'll have to live with this (corona gets hotter w/ energization).
+!   - Results may vary for very different time-periods.
+!   - Results WILL vary if you use different Br measurements without thinking about how the
+!     WTD Poynting flux should change with the change in Br scaling .
+!
+! D) MAS was already very sensitive to the visc and eta numbers and may be more so in the
+!    WTD setup. --> choose these numbers carefully depending on your mesh!
+!   - for low-to-medium res visc is usually 0.015 or 0.02.
+!   - for the eclipse "high" (699 pts in phi) I use 0.01.
+!   - for sub regions with much higher resolution (e.g. CME cases) I use variable 2D or 3D visc and eta profiles.
+!   - who knows about slund, but 1e5 is usually safe but diffuse for 300+ pts in phi.
+!     -  1e6 can be jagged if resolution is poor. So somewere in this range depending on resolution.
+!
+! RMC edits:  Lowered res, updated to new merged wtd trunk model.
+!
+
+
+Code: MAS
+Version: 0.9.2.1git
+Updated on: 04/23/2025
+Source file: mas.F90
+Run ID: mas
+Run started on: 04/28/2025
+Run started at: 16:04:45
+Ran on machine: PREDSCI-GPU2
+Machine type: x86_64
+Compiler: GCC version 12.3.0
+Compiler Flags: -I /opt/psi/gnu/ext_deps/deps/hdf5/include -I /usr/lib/x86_64-linux-gnu/openmpi/lib/../../fortran/gfortran-mod-15/openmpi -I /usr/lib/x86_64-linux-gnu/openmpi/lib -march=alderlake -mmmx -mpopcnt -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx -mavx2 -mno-sse4a -mno-fma4 -mno-xop -mfma -mno-avx512f -mbmi -mbmi2 -maes -mpclmul -mno-avx512vl -mno-avx512bw -mno-avx512dq -mno-avx512cd -mno-avx512er -mno-avx512pf -mno-avx512vbmi -mno-avx512ifma -mno-avx5124vnniw -mno-avx5124fmaps -mno-avx512vpopcntdq -mno-avx512vbmi2 -mgfni -mvpclmulqdq -mno-avx512vnni -mno-avx512bitalg -mno-avx512bf16 -mno-avx512vp2intersect -mno-3dnow -madx -mabm -mno-cldemote -mclflushopt -mclwb -mno-clzero -mcx16 -mno-enqcmd -mf16c -mfsgsbase -mfxsr -mno-hle -msahf -mno-lwp -mlzcnt -mmovbe -mmovdir64b -mmovdiri -mno-mwaitx -mno-pconfig -mpku -mno-prefetchwt1 -mprfchw -mptwrite -mrdpid -mrdrnd -mrdseed -mno-rtm -mserialize -mno-sgx -msha -mshstk -mno-tbm -mno-tsxldtrk -mvaes -mwaitpkg -mno-wbnoinvd -mxsave -mxsavec -mxsaveopt -mxsaves -mno-a
+
+
+ ------------------------------------------------------------------------
+
+ ### COMMENT from START:
+ ### Timing has been turned ON for this run.
+
+ ### COMMENT from GENMESH:
+ ### Mesh information for coordinate r:
+
+ Number of mesh segments =            6
+
+ Segment      xi0       xi1               r0               r1            ratio
+    1    0.000000  0.061876       1.00000000       1.00899994       0.70015960
+    2    0.061876  0.381279       1.00899994       1.26675366      21.42857000
+    3    0.381279  0.413368       1.26675366       1.35000013       1.00000000
+    4    0.413368  0.713113       1.35000013       3.95857710       7.95799800
+    5    0.713113  0.715119       3.95857710       4.00000070       1.00000000
+    6    0.715119  1.000000       4.00000070      30.00000000      11.97639000
+
+ Mesh-point locations:
+      i                 r                dr             ratio
+      1        1.00000000
+      2        1.00258766        0.00258766
+      3        1.00509942        0.00251176        0.97066812
+      4        1.00752881        0.00242939        0.96720771
+      5        1.00996408        0.00243527        1.00242007
+      6        1.01255876        0.00259468        1.06545794
+      7        1.01547818        0.00291942        1.12515797
+      8        1.01886463        0.00338644        1.15996965
+      9        1.02283696        0.00397233        1.17301011
+     10        1.02750896        0.00467200        1.17613446
+     11        1.03300591        0.00549695        1.17657384
+     12        1.03947362        0.00646772        1.17660127
+     13        1.04708355        0.00760992        1.17660127
+     14        1.05603740        0.00895385        1.17660127
+     15        1.06657250        0.01053511        1.17660127
+     16        1.07896812        0.01239562        1.17660127
+     17        1.09355283        0.01458470        1.17660127
+     18        1.11071321        0.01716038        1.17660127
+     19        1.13090322        0.02019001        1.17654803
+     20        1.15464308        0.02373986        1.17582177
+     21        1.18246168        0.02781860        1.17180982
+     22        1.21471747        0.03225579        1.15950458
+     23        1.25135810        0.03664064        1.13593977
+     24        1.29190826        0.04055016        1.10669909
+     25        1.33590196        0.04399370        1.08492069
+     26        1.38346015        0.04755819        1.08102261
+     27        1.43544428        0.05198412        1.09306353
+     28        1.49309658        0.05765231        1.10903688
+     29        1.55763242        0.06453584        1.11939732
+     30        1.63013191        0.07249949        1.12339888
+     31        1.71164461        0.08151270        1.12432102
+     32        1.80330030        0.09165568        1.12443438
+     33        1.90636157        0.10306127        1.12443955
+     34        2.02224775        0.11588617        1.12443955
+     35        2.15255474        0.13030700        1.12443955
+     36        2.29907708        0.14652234        1.12443955
+     37        2.46383259        0.16475551        1.12443955
+     38        2.64909021        0.18525761        1.12443955
+     39        2.85740051        0.20831030        1.12443586
+     40        3.09163755        0.23423703        1.12446206
+     41        3.35512184        0.26348429        1.12486179
+     42        3.65199149        0.29686965        1.12670723
+     43        3.98787832        0.33588683        1.13142866
+     44        4.37050954        0.38263122        1.13916707
+     45        4.80967261        0.43916307        1.14774500
+     46        5.31659378        0.50692117        1.15428915
+     47        5.90346171        0.58686793        1.15771043
+     48        6.58358455        0.68012284        1.15890272
+     49        7.37195684        0.78837230        1.15916163
+     50        8.28583141        0.91387457        1.15919164
+     51        9.34518827        1.05935685        1.15919283
+     52       10.57318714        1.22799887        1.15919283
+     53       11.99667464        1.42348749        1.15919283
+     54       13.64677114        1.65009650        1.15919283
+     55       15.55955118        1.91278004        1.15919283
+     56       17.77622643        2.21667525        1.15887619
+     57       20.33859572        2.56236929        1.15595159
+     58       23.26936627        2.93077055        1.14377368
+     59       26.53267640        3.26331013        1.11346490
+     60       30.00000000        3.46732360        1.06251734
+
+ ### COMMENT from GENMESH:
+ ### Mesh information for coordinate t:
+
+ Number of mesh segments =            1
+
+ Segment      xi0       xi1               t0               t1            ratio
+    1    0.000000  1.000000       0.00000000       3.14159265       1.00000000
+
+ Mesh-point locations:
+      i                 t                dt             ratio
+      1        0.00000000
+      2        0.10833078        0.10833078
+      3        0.21666156        0.10833078        1.00000000
+      4        0.32499234        0.10833078        1.00000000
+      5        0.43332312        0.10833078        1.00000000
+      6        0.54165391        0.10833078        1.00000000
+      7        0.64998469        0.10833078        1.00000000
+      8        0.75831547        0.10833078        1.00000000
+      9        0.86664625        0.10833078        1.00000000
+     10        0.97497703        0.10833078        1.00000000
+     11        1.08330781        0.10833078        1.00000000
+     12        1.19163859        0.10833078        1.00000000
+     13        1.29996937        0.10833078        1.00000000
+     14        1.40830016        0.10833078        1.00000000
+     15        1.51663094        0.10833078        1.00000000
+     16        1.62496172        0.10833078        1.00000000
+     17        1.73329250        0.10833078        1.00000000
+     18        1.84162328        0.10833078        1.00000000
+     19        1.94995406        0.10833078        1.00000000
+     20        2.05828484        0.10833078        1.00000000
+     21        2.16661562        0.10833078        1.00000000
+     22        2.27494640        0.10833078        1.00000000
+     23        2.38327719        0.10833078        1.00000000
+     24        2.49160797        0.10833078        1.00000000
+     25        2.59993875        0.10833078        1.00000000
+     26        2.70826953        0.10833078        1.00000000
+     27        2.81660031        0.10833078        1.00000000
+     28        2.92493109        0.10833078        1.00000000
+     29        3.03326187        0.10833078        1.00000000
+     30        3.14159265        0.10833078        1.00000000
+
+ ### COMMENT from GENMESH:
+ ### Mesh information for coordinate p:
+
+ Number of mesh segments =            1
+
+ Segment      xi0       xi1               p0               p1            ratio
+    1    0.000000  1.000000       0.00000000       6.28318531       1.00000000
+
+ Mesh-point locations:
+      i                 p                dp             ratio
+      1        0.00000000        0.10649467        1.00000000
+      2        0.10649467        0.10649467        1.00000000
+      3        0.21298933        0.10649467        1.00000000
+      4        0.31948400        0.10649467        1.00000000
+      5        0.42597866        0.10649467        1.00000000
+      6        0.53247333        0.10649467        1.00000000
+      7        0.63896800        0.10649467        1.00000000
+      8        0.74546266        0.10649467        1.00000000
+      9        0.85195733        0.10649467        1.00000000
+     10        0.95845200        0.10649467        1.00000000
+     11        1.06494666        0.10649467        1.00000000
+     12        1.17144133        0.10649467        1.00000000
+     13        1.27793599        0.10649467        1.00000000
+     14        1.38443066        0.10649467        1.00000000
+     15        1.49092533        0.10649467        1.00000000
+     16        1.59741999        0.10649467        1.00000000
+     17        1.70391466        0.10649467        1.00000000
+     18        1.81040933        0.10649467        1.00000000
+     19        1.91690399        0.10649467        1.00000000
+     20        2.02339866        0.10649467        1.00000000
+     21        2.12989332        0.10649467        1.00000000
+     22        2.23638799        0.10649467        1.00000000
+     23        2.34288266        0.10649467        1.00000000
+     24        2.44937732        0.10649467        1.00000000
+     25        2.55587199        0.10649467        1.00000000
+     26        2.66236666        0.10649467        1.00000000
+     27        2.76886132        0.10649467        1.00000000
+     28        2.87535599        0.10649467        1.00000000
+     29        2.98185065        0.10649467        1.00000000
+     30        3.08834532        0.10649467        1.00000000
+     31        3.19483999        0.10649467        1.00000000
+     32        3.30133465        0.10649467        1.00000000
+     33        3.40782932        0.10649467        1.00000000
+     34        3.51432399        0.10649467        1.00000000
+     35        3.62081865        0.10649467        1.00000000
+     36        3.72731332        0.10649467        1.00000000
+     37        3.83380798        0.10649467        1.00000000
+     38        3.94030265        0.10649467        1.00000000
+     39        4.04679732        0.10649467        1.00000000
+     40        4.15329198        0.10649467        1.00000000
+     41        4.25978665        0.10649467        1.00000000
+     42        4.36628132        0.10649467        1.00000000
+     43        4.47277598        0.10649467        1.00000000
+     44        4.57927065        0.10649467        1.00000000
+     45        4.68576531        0.10649467        1.00000000
+     46        4.79225998        0.10649467        1.00000000
+     47        4.89875465        0.10649467        1.00000000
+     48        5.00524931        0.10649467        1.00000000
+     49        5.11174398        0.10649467        1.00000000
+     50        5.21823864        0.10649467        1.00000000
+     51        5.32473331        0.10649467        1.00000000
+     52        5.43122798        0.10649467        1.00000000
+     53        5.53772264        0.10649467        1.00000000
+     54        5.64421731        0.10649467        1.00000000
+     55        5.75071198        0.10649467        1.00000000
+     56        5.85720664        0.10649467        1.00000000
+     57        5.96370131        0.10649467        1.00000000
+     58        6.07019597        0.10649467        1.00000000
+     59        6.17669064        0.10649467        1.00000000
+     60        6.28318531        0.10649467        1.00000000
+
+ ------------------------------------------------------------------------
+
+ ### COMMENT from SET_DIAGNOSTICS:
+ Number of fields to plot =            1
+
+ Fields to plot:
+ zp
+
+ ------------------------------------------------------------------------
+
+ ### COMMENT from SET_DIAGNOSTICS:
+ Number of slice fields to plot =            1
+
+ Fields to plot:
+ rho
+
+ ### COMMENT from SET_DIAGNOSTICS:
+ Slice indices with corresponding TP slice radii:
+ 001    10.000000000000000     
+
+ ------------------------------------------------------------------------
+
+ ### COMMENT from SET_DIAGNOSTICS:
+ Number of diagnostic points =            0
+
+ ------------------------------------------------------------------------
+
+
+ ### COMMENT from START:
+ ### Upwind coefficients for the A equation:
+ UPWIND_AR =    1.0000000000000000     
+ UPWIND_AT =    1.0000000000000000     
+ UPWIND_AP =    1.0000000000000000     
+ UPWIND_A_R0 =    0.0000000000000000     
+
+ ### COMMENT from LOAD_POT2D_SOLVE:
+ ### pot2d preconditioner activated.
+ Matrix size per node (NxN) N:               900
+ Matrix # of non-zeros per node M:          4144
+ Estimated memory usage per node:     0.26 MB
+
+
+ ### COMMENT from LOAD_POT2DH_SOLVE:
+ ### pot2dh preconditioners activated.
+ Matrix size per node (NxN) N:               870
+ Matrix # of non-zeros per node M:          4232
+ Estimated memory usage per node:     0.26 MB
+
+ ### COMMENT from POTFLD_FROM_BNFILE:
+ ### Reading Br at r=R0 from file: br_input.h5
+
+ ### COMMENT from BALANCE_FLUX:
+ ### Normalization factor for the normal magnetic field:
+
+ Maximum field magnitude before normalization  =    31.584887770828189     
+ Maximum field magnitude after normalization   =    14.311935694843825     
+ Scaling factor for the magnetic field, BSCALE =    2.2068913978007396     
+ [Original field = BSCALE * normalized field.]
+
+ ### COMMENT from BALANCE_FLUX:
+ ### Computed flux balance:
+
+ Positive flux =    8.1674451390759337     
+ Negative flux =   -8.1473816089373976     
+
+ ### COMMENT from BALANCE_FLUX:
+ ### Flux balance correction:
+
+ Monopole Br field magnitude =    1.5958261189897664E-003
+
+ ### COMMENT from POTFLD:
+ ### Boundary condition type used at r=R1:
+ POTENTIAL_FIELD_BC = CLOSED_WALL
+
+ ### COMMENT from POTFLD:
+
+ Writing BR0 to file: br_photo.h5
+
+ ### COMMENT from LOAD_RHO_FROM_FILE:
+ ### Reading the density from file: rho3d_initial_1au_rho40k.h5
+
+ ### COMMENT from LOAD_RESISTIVITY:
+ ### Using resistivity profile: UNIFORM
+
+ ### COMMENT from LOAD_VISCOSITY:
+ ### Using viscosity profile: UNIFORM
+
+ ### COMMENT from LOAD_V_ADVANCE:
+ ### Velocity preconditioner activated.
+ Matrix size per node (NxN) N:             77400
+ Matrix # of non-zeros per node M:       1121096
+ Estimated memory usage per node:    39.83 MB
+
+ ### COMMENT from CHECK_TIME_PROFILES:
+ ### The following time profiles are active:
+
+ ### Time profile #            2
+ Time values =    0.0000000000000000        1.0000000000000000     
+ Profile values =    1.0000000000000000        1.0000000000000000     
+ Controlled variables:
+ zw_heat_factor
+
+ ### Time profile #            3
+ Time values =    0.0000000000000000        1.0000000000000000     
+ Profile values =    1.0000000000000000        1.0000000000000000     
+ Controlled variables:
+ zw_pressure_factor
+
+ ### COMMENT from INIT_ZW:
+ ### Initial Condition for z+,z- is: WKB_BR                          
+
+ ### COMMENT from INIT_ZW:
+ ### Reflective BC for z+,z- is: NONE                            
+
+ ### COMMENT from INIT_ZW
+ ### Reading zw0 flux mask profile from file: wtd_flux_mask_tp.h5
+   The square root of this profile will
+   multiply wtd_z0 at the boundary.
+
+ ### COMMENT from INIT_ZW
+ ### Writing sqrt of interpolated flux mask
+ ### wtd_z0_flux_mask
+
+ ### COMMENT from INIT_ZW:
+ ### Flux limiter for z+,z- is: ospre                           
+
+ ### COMMENT from INIT_ZW:
+ zw_heat_factor:     1.0000
+ zw_pressure_factor:     1.0000
+
+ ### COMMENT from INIT_ZW:
+ Reading radial zw limit file: zw_limit_test01.dat
+
+ ### COMMENT from INIT_ZW:
+ zw limit is the following on p0
+ i, rh, zwlimit           1    0.99870617033743914          1.6000000000000001     
+ i, rh, zwlimit           2     1.0012938296625609         0.13099387353561859     
+ i, rh, zwlimit           3     1.0038435385303615         0.13638874689682765     
+ i, rh, zwlimit           4     1.0063141137877067         0.23552188321676035     
+ i, rh, zwlimit           5     1.0087464455447979         0.43848156690634171     
+ i, rh, zwlimit           6     1.0112614208815873         0.62046071240697442     
+ i, rh, zwlimit           7     1.0140184725423955         0.67833484001864397     
+ i, rh, zwlimit           8     1.0171714062299011         0.71462318539382708     
+ i, rh, zwlimit           9     1.0208507940125546         0.73280566650836620     
+ i, rh, zwlimit          10     1.0251729585529055         0.75872827461065162     
+ i, rh, zwlimit          11     1.0302574315999524         0.77980755529942614     
+ i, rh, zwlimit          12     1.0362397649837360         0.77386144125744516     
+ i, rh, zwlimit          13     1.0432785860661566         0.76812044081818143     
+ i, rh, zwlimit          14     1.0515604719210363         0.79662068994990676     
+ i, rh, zwlimit          15     1.0613049493711819         0.85983225634578941     
+ i, rh, zwlimit          16     1.0727703139560418         0.91175432634341080     
+ i, rh, zwlimit          17     1.0862604765364687         0.97073001270162218     
+ i, rh, zwlimit          18     1.1021330190186027          1.0492534095865653     
+ i, rh, zwlimit          19     1.1208082158861441          1.1292628635445765     
+ i, rh, zwlimit          20     1.1427731503901650          1.2124672933909484     
+ i, rh, zwlimit          21     1.1685523770720367          1.3127413672983357     
+ i, rh, zwlimit          22     1.1985895708151260          1.4338128629631608     
+ i, rh, zwlimit          23     1.2330377837396647          1.5542285459977148     
+ i, rh, zwlimit          24     1.2716331802044596          1.6000000000000001     
+ i, rh, zwlimit          25     1.3139051113976958          1.6000000000000001     
+ i, rh, zwlimit          26     1.3596810584926848          1.6000000000000001     
+ i, rh, zwlimit          27     1.4094522143466617          1.6000000000000001     
+ i, rh, zwlimit          28     1.4642704299035190          1.6000000000000001     
+ i, rh, zwlimit          29     1.5253645042699295          1.6000000000000001     
+ i, rh, zwlimit          30     1.5938821692228622          1.6000000000000001     
+ i, rh, zwlimit          31     1.6708882645820169          1.6000000000000001     
+ i, rh, zwlimit          32     1.7574724564386239          1.6000000000000001     
+
+ ### COMMENT from INITIALIZE_RADIATIVE_LOSS:
+ ### Activated radiative loss function.
+ Radiative loss function index:            6
+ Radiative loss function name: CHIANTI_v713_HYBRID
+
+ ### Region over which Q is being modified:
+ Base temperature [K]  =    10000.000000000000     
+ Upper temperature [K] =    40000.000000000000     
+
+ ### COMMENT from INITIALIZE_HEATING:
+ ### Activated a heat source:
+ Heat source index:            1
+ Heat source name: NL
+ Heat source type: exponential-b-photo-dependent
+
+ ### COMMENT from INITIALIZE_HEATING:
+ ### Activated a heat source:
+ Heat source index:            2
+ Heat source name: Quiet Sun Heating
+ Heat source type: br-dependent
+
+ ### COMMENT from INITIALIZE_HEATING:
+ ### Activated a heat source:
+ Heat source index:            3
+ Heat source name: FW
+ Heat source type: exponential
+
+ ### COMMENT from INITIALIZE_HEATING:
+ ### Activated a heat source:
+ Heat source index:            4
+ Heat source name: SS
+ Heat source type: exponential
+
+ ### COMMENT from INITIALIZE_HEATING:
+ ### Activated a heat source:
+ Heat source index:            5
+ Heat source name: Active Region Heating
+ Heat source type: b-dependent
+
+ ### COMMENT from INITIALIZE_HEATING:
+ ### Activated a heat source:
+ Heat source index:            6
+ Heat source name: SS
+ Heat source type: zw-exponential
+
+ ### COMMENT from INITIALIZE_HEATING:
+ ### Activated a heat source:
+ Heat source index:            7
+ Heat source name: FW
+ Heat source type: zw-exponential
+
+ ### COMMENT from INITIALIZE_HEATING:
+ ### Activated chromospheric heating:
+ ### chromo_heat_t_zqc_0:    10000.000000000000     
+ ### chromo_heat_t_zqc_1:    40000.000000000000     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            1
+ NTIME =            0
+ TIME =    0.0000000000000000     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =            1
+ NTIME =            0
+ TIME =    0.0000000000000000     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =            2
+ NTIME =            1
+ TIME =    5.0000000000000001E-003
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            2
+ NTIME =            2
+ TIME =    1.0250000000000000E-002
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =            3
+ NTIME =            2
+ TIME =    1.0250000000000000E-002
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =            4
+ NTIME =            3
+ TIME =    1.5762500000000002E-002
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            3
+ NTIME =            4
+ TIME =    2.1550625000000004E-002
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =            5
+ NTIME =            4
+ TIME =    2.1550625000000004E-002
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =            6
+ NTIME =            5
+ TIME =    2.7628156250000008E-002
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            4
+ NTIME =            6
+ TIME =    3.4009564062500011E-002
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =            7
+ NTIME =            6
+ TIME =    3.4009564062500011E-002
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =            8
+ NTIME =            7
+ TIME =    4.0710042265625017E-002
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            5
+ NTIME =            8
+ TIME =    4.7745544378906268E-002
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =            9
+ NTIME =            8
+ TIME =    4.7745544378906268E-002
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           10
+ NTIME =            9
+ TIME =    5.5132821597851586E-002
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            6
+ NTIME =           10
+ TIME =    6.2889462677744173E-002
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           11
+ NTIME =           10
+ TIME =    6.2889462677744173E-002
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           12
+ NTIME =           11
+ TIME =    7.1033935811631380E-002
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            7
+ NTIME =           12
+ TIME =    7.9585632602212950E-002
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           13
+ NTIME =           12
+ TIME =    7.9585632602212950E-002
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           14
+ NTIME =           13
+ TIME =    8.8564914232323599E-002
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            8
+ NTIME =           14
+ TIME =    9.7993159943939784E-002
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           15
+ NTIME =           14
+ TIME =    9.7993159943939784E-002
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           16
+ NTIME =           15
+ TIME =   0.10789281794113678     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =            9
+ NTIME =           16
+ TIME =   0.11789281794113678     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           17
+ NTIME =           16
+ TIME =   0.11789281794113678     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           18
+ NTIME =           17
+ TIME =   0.12789281794113677     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           10
+ NTIME =           18
+ TIME =   0.13789281794113678     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           19
+ NTIME =           18
+ TIME =   0.13789281794113678     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           20
+ NTIME =           19
+ TIME =   0.14789281794113679     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           11
+ NTIME =           20
+ TIME =   0.15789281794113680     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           21
+ NTIME =           20
+ TIME =   0.15789281794113680     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           22
+ NTIME =           21
+ TIME =   0.16789281794113681     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           12
+ NTIME =           22
+ TIME =   0.17789281794113682     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           23
+ NTIME =           22
+ TIME =   0.17789281794113682     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           24
+ NTIME =           23
+ TIME =   0.18789281794113682     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           13
+ NTIME =           24
+ TIME =   0.19789281794113683     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           25
+ NTIME =           24
+ TIME =   0.19789281794113683     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           26
+ NTIME =           25
+ TIME =   0.20789281794113684     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           14
+ NTIME =           26
+ TIME =   0.21789281794113685     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           27
+ NTIME =           26
+ TIME =   0.21789281794113685     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           28
+ NTIME =           27
+ TIME =   0.22789281794113686     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           15
+ NTIME =           28
+ TIME =   0.23789281794113687     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           29
+ NTIME =           28
+ TIME =   0.23789281794113687     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           30
+ NTIME =           29
+ TIME =   0.24789281794113688     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           16
+ NTIME =           30
+ TIME =   0.25789281794113689     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           31
+ NTIME =           30
+ TIME =   0.25789281794113689     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           32
+ NTIME =           31
+ TIME =   0.26789281794113690     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           17
+ NTIME =           32
+ TIME =   0.27789281794113690     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           33
+ NTIME =           32
+ TIME =   0.27789281794113690     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           34
+ NTIME =           33
+ TIME =   0.28789281794113691     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           18
+ NTIME =           34
+ TIME =   0.29789281794113692     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           35
+ NTIME =           34
+ TIME =   0.29789281794113692     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           36
+ NTIME =           35
+ TIME =   0.30789281794113693     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           19
+ NTIME =           36
+ TIME =   0.31789281794113694     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           37
+ NTIME =           36
+ TIME =   0.31789281794113694     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           38
+ NTIME =           37
+ TIME =   0.32789281794113695     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           20
+ NTIME =           38
+ TIME =   0.33789281794113696     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           39
+ NTIME =           38
+ TIME =   0.33789281794113696     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           40
+ NTIME =           39
+ TIME =   0.34789281794113697     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           21
+ NTIME =           40
+ TIME =   0.35789281794113698     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           41
+ NTIME =           40
+ TIME =   0.35789281794113698     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           42
+ NTIME =           41
+ TIME =   0.36789281794113698     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           22
+ NTIME =           42
+ TIME =   0.37789281794113699     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           43
+ NTIME =           42
+ TIME =   0.37789281794113699     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           44
+ NTIME =           43
+ TIME =   0.38789281794113700     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           23
+ NTIME =           44
+ TIME =   0.39789281794113701     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           45
+ NTIME =           44
+ TIME =   0.39789281794113701     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           46
+ NTIME =           45
+ TIME =   0.40789281794113702     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           24
+ NTIME =           46
+ TIME =   0.41789281794113703     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           47
+ NTIME =           46
+ TIME =   0.41789281794113703     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           48
+ NTIME =           47
+ TIME =   0.42789281794113704     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           25
+ NTIME =           48
+ TIME =   0.43789281794113705     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           49
+ NTIME =           48
+ TIME =   0.43789281794113705     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           50
+ NTIME =           49
+ TIME =   0.44789281794113706     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           26
+ NTIME =           50
+ TIME =   0.45789281794113706     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           51
+ NTIME =           50
+ TIME =   0.45789281794113706     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           52
+ NTIME =           51
+ TIME =   0.46789281794113707     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           27
+ NTIME =           52
+ TIME =   0.47789281794113708     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           53
+ NTIME =           52
+ TIME =   0.47789281794113708     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           54
+ NTIME =           53
+ TIME =   0.48789281794113709     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           28
+ NTIME =           54
+ TIME =   0.49789281794113710     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           55
+ NTIME =           54
+ TIME =   0.49789281794113710     
+
+ ### COMMENT from SLICE_DUMP:
+ ### Should have written the requested fields
+ ### at requested r slices.
+ File sequence number =           56
+ NTIME =           55
+ TIME =   0.50789281794113705     
+
+ ### COMMENT from PLOT_DUMP:
+ ### Wrote out the requested fields.
+ File sequence number =           29
+ NTIME =           55
+ TIME =   0.50789281794113705     
+
+ ### COMMENT from DUMPHIST:
+ Wrote time histories to file: mas_history_a.out
+ Wrote time histories to file: mas_history_b.out
+
+Code: MAS
+Version: 0.9.2.1git
+Updated on: 04/23/2025
+Source file: mas.F90
+Run ID: mas
+Run ended on: 04/28/2025
+Run ended at: 16:04:52
+Ran on machine: PREDSCI-GPU2
+Machine type: x86_64
+Compiler: GCC version 12.3.0
+Compiler Flags: -I /opt/psi/gnu/ext_deps/deps/hdf5/include -I /usr/lib/x86_64-linux-gnu/openmpi/lib/../../fortran/gfortran-mod-15/openmpi -I /usr/lib/x86_64-linux-gnu/openmpi/lib -march=alderlake -mmmx -mpopcnt -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx -mavx2 -mno-sse4a -mno-fma4 -mno-xop -mfma -mno-avx512f -mbmi -mbmi2 -maes -mpclmul -mno-avx512vl -mno-avx512bw -mno-avx512dq -mno-avx512cd -mno-avx512er -mno-avx512pf -mno-avx512vbmi -mno-avx512ifma -mno-avx5124vnniw -mno-avx5124fmaps -mno-avx512vpopcntdq -mno-avx512vbmi2 -mgfni -mvpclmulqdq -mno-avx512vnni -mno-avx512bitalg -mno-avx512bf16 -mno-avx512vp2intersect -mno-3dnow -madx -mabm -mno-cldemote -mclflushopt -mclwb -mno-clzero -mcx16 -mno-enqcmd -mf16c -mfsgsbase -mfxsr -mno-hle -msahf -mno-lwp -mlzcnt -mmovbe -mmovdir64b -mmovdiri -mno-mwaitx -mno-pconfig -mpku -mno-prefetchwt1 -mprfchw -mptwrite -mrdpid -mrdrnd -mrdseed -mno-rtm -mserialize -mno-sgx -msha -mshstk -mno-tbm -mno-tsxldtrk -mvaes -mwaitpkg -mno-wbnoinvd -mxsave -mxsavec -mxsaveopt -mxsaves -mno-a
+
+
+ ### End of run ...
+
+ NTIME =         55
+ TIME =  5.0789281794E-01
+
+ ### Time advance information:
+ Average time step used =    9.2344148716570311E-003
+
+ ### WTD advance information:
+ Average time step for zp,zm advance =    1.6732584092645408E-003
+
+ -----------------------------------------
+ ### Field solver convergence information:
+ -----------------------------------------
+
+ ### Implicit resistivity advance:
+ Total number of solves =           55
+ Total number of iterations =           63
+ Average number of iterations per solve =            1
+
+ ### Thermal conduction (e) advance:
+ Total number of solves =          188
+ Total number of STS steps  =         4454
+ Average number of STS steps per solve  =           23
+
+ ### Thermal conduction (p) advance:
+ Total number of solves =            0
+ Total number of STS steps  =            0
+ Average number of STS steps per solve  =            0
+
+ ### Semi-implicit advance (predictor):
+ Total number of solves =           55
+ Total number of iterations =          325
+ Average number of iterations per solve =            5
+
+ ### Semi-implicit advance (corrector):
+ Total number of solves =           55
+ Total number of iterations =          348
+ Average number of iterations per solve =            6
+
+ ### Viscosity advance:
+ Total number of solves =          307
+ Total number of STS steps  =         1687
+ Average number of STS steps per solve  =            5
+
+ ### Initial boundary potential field (2D):
+ Total number of solves =            1
+ Total number of iterations =           83
+ Average number of iterations per solve =           83
+
+ ### Initial potential field (3D):
+ Total number of solves =            1
+ Total number of iterations =          327
+ Average number of iterations per solve =          327
+
+ ### Boundary potential field (2D psi evolve):
+ Total number of solves =            0
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### Boundary potential field (2D phi evolve):
+ Total number of solves =            0
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### Divergence cleaning:
+ Total number of solves =            0
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### CPU time used (on IPROC0):         7.43 seconds
+
