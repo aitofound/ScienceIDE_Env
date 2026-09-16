@@ -35,9 +35,11 @@ cp -R "$CHECK_DIR/ic/$IC/." "$PROBLEM/"
 export PLUTO_DIR="$SOURCE_DIR"
 printf 'ARCH         = Linux.gcc.defs\n' >"$PROBLEM/makefile"
 printf 'CFLAGS += -D_DEFAULT_SOURCE -Wno-error=incompatible-pointer-types\n' >"$PROBLEM/local_make"
+BUILD_START=$(date +%s)
 if ! (cd "$PROBLEM" && python3 "$PLUTO_DIR/setup.py" --auto-update  >setup.log 2>&1 && make -j"${SAB_BUILD_JOBS:-2}" >make.log 2>&1); then
   echo "run.sh: build failed" >&2; tail -n 40 "$PROBLEM/setup.log" "$PROBLEM/make.log" >&2; exit 1
 fi
+echo "SAB_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))"   # the driver records and selfcheck excludes the build
 
 # The deck runs from a scratch directory; only the graded files are copied out.
 cp "$PROBLEM/pluto.ini" "$RUN/pluto.ini"

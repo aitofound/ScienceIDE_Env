@@ -1,0 +1,444 @@
+{
+  "schema_version": 1,
+  "report_type": "codebase-metadata",
+  "generated_at": "2026-09-07T04:47:14Z",
+  "informational": true,
+  "non_blocking": true,
+  "codebase": {
+    "id": "raytracing-grff",
+    "title": "GRFFradioSun",
+    "source_root": "code/raytracing-grff/",
+    "upstream_url": "https://github.com/peijin94/raytracingGRFF",
+    "upstream_pin": "3d0306f0cf2484475ee9c7b0a33230eeae1c6330",
+    "license": "Unknown: upstream contains no license file or license metadata",
+    "languages": [
+      "Python"
+    ],
+    "domain": "physics-astronomy",
+    "owner": "peijin94",
+    "source_tree_fingerprint": "237c8634e2e61e32eaec95e028ac2faf9c2367ad450ad7dfdbd5c2474bf6c3c6",
+    "fingerprint_algorithm": "SHA-256 over typed sorted regular-file paths+bytes and symlink paths+safe targets",
+    "measurement_source": "vendored source payload",
+    "agent_authored": {
+      "description": "GRFFradioSun propagates coronal radio rays and samples plasma for solar radio synthesis. CPU and CuPy implementations, GRFF interface helpers, workflows and tests are included; external engines and model data are absent.",
+      "evidence": [
+        "README.md",
+        "raytracingGRFF/build_rays.py",
+        "raytracingGRFF/gpu_raytrace.py"
+      ]
+    }
+  },
+  "measurement": {
+    "scope": "vendored source payload",
+    "regular_file_rule": "all regular files below the source snapshot",
+    "physical_line_rule": "UTF-8/NUL-free bytes: newline count plus one final non-newline line",
+    "text_binary_rule": "NUL-containing or non-UTF-8 files are binary for line accounting",
+    "directory_rule": "count non-root directory ancestors containing an included regular file or symlink",
+    "symlink_rule": "count links without following them; external/parent targets are redacted",
+    "included_paths": [
+      "."
+    ],
+    "excluded_paths": [],
+    "source_extensions": [
+      ".py"
+    ],
+    "test_path_markers": [
+      "tests"
+    ],
+    "test_count_units": [
+      "test_files",
+      "test_definitions",
+      "collected_items",
+      "inner_cases"
+    ],
+    "classification": "CLI-owned rules plus explicitly agent-authored source/test classification",
+    "agent_authored": {
+      "included_paths": [
+        "."
+      ],
+      "excluded_paths": [],
+      "source_extensions": [
+        ".py"
+      ],
+      "test_path_markers": [
+        "tests"
+      ],
+      "generated_vendor_third_party_notes": "Exact tracked upstream tree; Git tree identity checked. No nested Git metadata, local data, build output or external GRFF engine added."
+    }
+  },
+  "size": {
+    "tree_entries": 38,
+    "regular_files": 32,
+    "directories": 6,
+    "symlinks": 0,
+    "symlink_entries": [],
+    "payload_bytes": 295095,
+    "text_files": 32,
+    "text_physical_lines": 7592,
+    "binary_files": 0,
+    "binary_bytes": 0,
+    "source_files": 27,
+    "source_physical_lines": 7094,
+    "implementation_source_files": 24,
+    "implementation_source_physical_lines": 6863,
+    "test_source_files": 3,
+    "test_source_physical_lines": 231,
+    "files_by_extension": [
+      {
+        "extension": ".md",
+        "files": 2,
+        "bytes": 18929,
+        "text_physical_lines": 381
+      },
+      {
+        "extension": ".py",
+        "files": 27,
+        "bytes": 271565,
+        "text_physical_lines": 7094
+      },
+      {
+        "extension": ".toml",
+        "files": 1,
+        "bytes": 484,
+        "text_physical_lines": 17
+      },
+      {
+        "extension": ".txt",
+        "files": 1,
+        "bytes": 3032,
+        "text_physical_lines": 31
+      },
+      {
+        "extension": "[no extension]",
+        "files": 1,
+        "bytes": 1085,
+        "text_physical_lines": 69
+      }
+    ],
+    "classification": "CLI-computed"
+  },
+  "approval": {
+    "proposed_modules": [
+      "ray-transport"
+    ],
+    "approved_modules": [
+      "ray-transport"
+    ],
+    "human_ref": "approve, go ahead",
+    "approved_at": "2026-09-07T04:47:13Z",
+    "classification": "human-owned approval, CLI-copied"
+  },
+  "shared_components": [
+    {
+      "id": "package-support",
+      "purpose": "Package assembly, imports, GRFF loading and image-processing helpers",
+      "paths": [
+        "pyproject.toml",
+        "raytracingGRFF/__init__.py",
+        "raytracingGRFF/grff_ctypes.py",
+        "raytracingGRFF/util.py"
+      ],
+      "used_by": [
+        "ray-transport"
+      ],
+      "relationship": "Build and import support",
+      "evidence": [
+        "pyproject.toml",
+        "raytracingGRFF/__init__.py"
+      ],
+      "classification": "agent-authored description; CLI-computed size",
+      "metrics": {
+        "regular_files": 4,
+        "bytes": 10844,
+        "text_files": 4,
+        "text_physical_lines": 325
+      }
+    }
+  ],
+  "modules": [
+    {
+      "slug": "ray-transport",
+      "title": "Coronal ray propagation and line-of-sight sampling",
+      "entrypoints": [
+        "raytracingGRFF.build_rays.ray_trace",
+        "raytracingGRFF.gpu_raytrace.trace_ray",
+        "raytracingGRFF.gpu_raytrace.sample_model_with_rays",
+        "bench_raytrace.py"
+      ],
+      "expensive_path": "Repeated RK4 ray integration and trilinear sampling across image pixels and recorded ray positions; CPU and CuPy implementations share the same physical data flow.",
+      "rationale": "Ray propagation determines the paths on which coronal plasma is sampled. Keep these coupled stages together because gpu_raytrace.py implements both, with coordinate and GRFF voxel preparation helpers defining their physical output conventions.",
+      "excluded": [
+        "GRFF radiation transfer, whose implementation is an external shared library",
+        "MAS model files and observational data, which are absent from the upstream Git tree",
+        "Publication plotting and full emission-map workflow drivers"
+      ],
+      "hazards": [
+        "The upstream tree has no license file or license declaration",
+        "The official CPU/CUDA parity test fails in the supplied lwa environment",
+        "Official unit tests do not directly exercise RK4 propagation or cross-section evolution",
+        "Runtime imports require more dependencies than the numpy-only pyproject.toml declaration",
+        "An existing CuPy implementation is included and must be considered when defining a later acceleration task"
+      ],
+      "purpose": "Propagate rays, sample plasma fields and prepare observer-directed voxel inputs.",
+      "primary_inputs": [
+        "Cartesian plasma cubes",
+        "Ray launch positions, directions, frequency and integration settings",
+        "Ray records and cross-section ratios"
+      ],
+      "primary_outputs": [
+        "Trajectories and cross-section ratios",
+        "Sampled plasma, path lengths and validity mask",
+        "Ordered GRFF voxel parameters"
+      ],
+      "algorithm_stages": [
+        "Coordinate conversion and Cartesian resampling",
+        "Gradients and RK4 integration",
+        "Trilinear field sampling",
+        "Path lengths and voxel preparation"
+      ],
+      "unique_responsibilities": [
+        "CPU and CuPy propagation and sampling",
+        "Coordinate and field conventions",
+        "Voxel preparation"
+      ],
+      "not_responsible_for": [
+        "External GRFF radiative transfer",
+        "Dataset acquisition",
+        "Publication figures"
+      ],
+      "shared_component_ids": [
+        "package-support"
+      ],
+      "depends_on_modules": [],
+      "differences": "Only proposed module; external emission synthesis consumes its samples and is deferred.",
+      "evidence": [
+        "raytracingGRFF/build_rays.py",
+        "raytracingGRFF/gpu_raytrace.py",
+        "raytracingGRFF/coords.py",
+        "raytracingGRFF/grff_parms.py"
+      ],
+      "approval_status": "approved",
+      "owned_paths": [
+        "raytracingGRFF/build_rays.py",
+        "raytracingGRFF/gpu_raytrace.py",
+        "raytracingGRFF/coords.py",
+        "raytracingGRFF/grff_parms.py",
+        "bench_raytrace.py",
+        "tests"
+      ],
+      "classification": "agent-authored module card; CLI-computed size and approval status",
+      "metrics": {
+        "owned": {
+          "regular_files": 8,
+          "bytes": 65626,
+          "text_files": 8,
+          "text_physical_lines": 1892
+        },
+        "shared": {
+          "regular_files": 4,
+          "bytes": 10844,
+          "text_files": 4,
+          "text_physical_lines": 325
+        },
+        "overlap": {
+          "regular_files": 0,
+          "bytes": 0,
+          "text_files": 0,
+          "text_physical_lines": 0
+        }
+      }
+    }
+  ],
+  "official_tests": {
+    "frameworks": [
+      "pytest",
+      "upstream synthetic example driver"
+    ],
+    "collection_commands": [
+      "python -m pytest --collect-only -q tests"
+    ],
+    "run_commands": [
+      "python -m pytest -q tests --durations=10",
+      "python bench_raytrace.py --n-pix 32 --n-steps 32 --grid-n 32 --repeat 1"
+    ],
+    "counts": {
+      "test_files": {
+        "value": 3,
+        "unit": "files",
+        "semantics": "distinct official test files considered",
+        "classification": "agent-authored/evidenced"
+      },
+      "test_definitions": {
+        "value": 15,
+        "unit": "source-level test definitions",
+        "semantics": "source-level functions or methods, not collected cases",
+        "classification": "agent-authored/evidenced"
+      },
+      "collected_items": {
+        "value": 15,
+        "unit": "framework-collected items",
+        "semantics": "items collected after framework parametrization",
+        "classification": "agent-authored/evidenced"
+      },
+      "inner_cases": {
+        "value": null,
+        "unit": "inner cases",
+        "semantics": "optional cases inside one source-level definition that collection does not expose",
+        "classification": "agent-authored/evidenced"
+      }
+    },
+    "by_module": {
+      "ray-transport": {
+        "sources": [
+          "tests/test_coords.py",
+          "tests/test_gpu_raytrace.py",
+          "tests/test_grff_ray_parms.py",
+          "bench_raytrace.py"
+        ],
+        "selectors": [
+          "tests"
+        ],
+        "counts": {
+          "test_files": {
+            "value": 3,
+            "unit": "files",
+            "semantics": "distinct official test files considered",
+            "classification": "agent-authored/evidenced"
+          },
+          "test_definitions": {
+            "value": 15,
+            "unit": "source-level test definitions",
+            "semantics": "source-level functions or methods, not collected cases",
+            "classification": "agent-authored/evidenced"
+          },
+          "collected_items": {
+            "value": 15,
+            "unit": "framework-collected items",
+            "semantics": "items collected after framework parametrization",
+            "classification": "agent-authored/evidenced"
+          },
+          "inner_cases": {
+            "value": null,
+            "unit": "inner cases",
+            "semantics": "optional cases inside one source-level definition that collection does not expose",
+            "classification": "agent-authored/evidenced"
+          }
+        },
+        "covers": [
+          "Observer coordinates, roundtrip and field directions",
+          "LOS sampling, fills, validity and path-length shapes",
+          "CPU/CUDA agreement",
+          "GRFF flags, angles and ray reversal"
+        ],
+        "known_gaps": [
+          "No direct RK4 or cross-section unit test",
+          "Full emission needs external data and GRFF",
+          "Synthetic example has no scientific reference output",
+          "Inner assertion counts unknown; pytest totals exclude the example driver"
+        ],
+        "execution": [
+          {
+            "command": "python -m pip wheel --no-deps --no-build-isolation .",
+            "result": "Wheel build succeeded in lwa with existing dependencies."
+          },
+          {
+            "command": "python -m pytest -q tests --durations=10",
+            "result": "14 passed, 1 failed, no skips. test_trace_los_gpu_matches_cpu fails on density comparison. Upstream source unchanged."
+          },
+          {
+            "command": "python bench_raytrace.py --n-pix 32 --n-steps 32 --grid-n 32 --repeat 1",
+            "result": "Completed on CPU and CUDA at reduced dimensions; execution check only."
+          }
+        ],
+        "classification": "agent-authored/evidenced, except any explicitly CLI-labelled counts"
+      }
+    },
+    "count_semantics": "test_files, source-level test_definitions, framework-collected items, and hidden inner cases are distinct units"
+  },
+  "classification_and_gaps": {
+    "buckets": {
+      "shared": {
+        "regular_files": 4,
+        "bytes": 10844,
+        "text_files": 4,
+        "text_physical_lines": 325
+      },
+      "owned": {
+        "regular_files": 8,
+        "bytes": 65626,
+        "text_files": 8,
+        "text_physical_lines": 1892
+      },
+      "overlapping_owned": {
+        "regular_files": 0,
+        "bytes": 0,
+        "text_files": 0,
+        "text_physical_lines": 0
+      },
+      "unclassified": {
+        "regular_files": 20,
+        "bytes": 218625,
+        "text_files": 20,
+        "text_physical_lines": 5375
+      }
+    },
+    "overlaps": [],
+    "overlaps_truncated": 0,
+    "unclassified_paths": [
+      ".gitignore",
+      "LOS/grff_image_from_LOS.py",
+      "LOS/resample_MAS_LOS.py",
+      "README.md",
+      "mem.md",
+      "plot_model.py",
+      "script/compare_s_input.py",
+      "script/pub/TbSpectra_gen.py",
+      "script/pub/compare_LOS_raytracing.py",
+      "script/pub/compare_LOS_raytracing_highband.py",
+      "script/pub/compare_Tb_spectra.py",
+      "script/pub/compare_diff_and_slice.py",
+      "script/pub/compare_on_off_scaling_factor.py",
+      "script/pub/compare_ovro_Tb_spec.py",
+      "script/pub/compare_ovro_lwa_with_model_img.py",
+      "script/pub/mfs/TbSpectra_manifest.txt",
+      "script/pub/plot_model_z0_slices.py",
+      "script/resample_with_ray_tracing.py",
+      "script/resampling_MAS_LOS.py",
+      "script/synthetic_FF_map_single_thread.py"
+    ],
+    "unclassified_paths_truncated": 0,
+    "reconciliation": {
+      "regular_files": 32,
+      "classified_files": 32,
+      "reconciliation_ok": true
+    },
+    "not_packaged": [
+      {
+        "what": "GRFF and fastGRFF engines",
+        "why": "External implementations need separate provenance and build preparation."
+      },
+      {
+        "what": "Publication drivers",
+        "why": "Require external model and observation products."
+      }
+    ],
+    "known_review_gaps": [
+      "No upstream license file or declaration",
+      "Existing CPU/CUDA parity failure",
+      "numpy-only packaging declaration omits scipy and matplotlib imports",
+      "MAS data and GRFF shared library absent",
+      "Upstream machine-specific paths preserved for provenance",
+      "Workflow scripts outside proposed module intentionally unclassified"
+    ],
+    "open_questions": [
+      "Which license should the owner declare?",
+      "Which MAS dataset and GRFF pin should support emission tasks?",
+      "How should invalid samples be represented consistently on CPU and CUDA?"
+    ],
+    "classification": "CLI-computed accounting plus agent-authored gaps"
+  },
+  "warnings": [
+    "20 regular file(s) are unclassified; this is visible but non-blocking"
+  ],
+  "notes": "Informational source inventory. Approval is copied only from CLI state; no scientific pass policy has been finalized."
+}

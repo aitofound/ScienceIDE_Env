@@ -10,7 +10,7 @@
 # What it does: copies SOURCE_DIR, builds one MITgcm executable for this
 # configuration with the tree's own genmake2 (build configuration in mods/:
 # SIZE.h, packages.conf and the *_OPTIONS.h headers of the upstream
-# experiment; gfortran optfile linux_amd64_gfortran, single process, tiles
+# experiment; architecture-matched Linux gfortran optfile, single process, tiles
 # only), runs it in a scratch directory holding the deck ic/<ic>/ with
 # nTimeSteps set from SAB_STEPS, and copies the graded files, every
 # <field>.<iteration>.data/.meta pair of the final iteration written by
@@ -40,15 +40,141 @@ cp -R "$SOURCE_DIR/." "$WORK/src"
 # Upstream test this check reproduces: code/mitgcm/verification/offline_exf_seaice/input.dyn_jfnk
 [ -x "$WORK/src/tools/genmake2" ] || { echo "run.sh: $SOURCE_DIR has no tools/genmake2" >&2; exit 2; }
 mkdir "$WORK/build"
-BUILD_START=$(date +%s)
-[ -f "$CHECK_DIR/mods/genmake_local" ] && cp "$CHECK_DIR/mods/genmake_local" "$WORK/build/"   # experiment build flags, read by genmake2 from the build dir
-( cd "$WORK/build" \
-  && "$WORK/src/tools/genmake2" -rootdir "$WORK/src" -mods "$CHECK_DIR/mods" \
-       -optfile "$WORK/src/tools/build_options/linux_amd64_gfortran" ${GENMAKE_EXTRA[@]+"${GENMAKE_EXTRA[@]}"} \
-  && make depend \
-  && make -j "$SAB_BUILD_JOBS" ) >"$WORK/build.log" 2>&1 || { tail -n 60 "$WORK/build.log" >&2; echo "run.sh: build failed" >&2; exit 1; }
-[ -x "$WORK/build/mitgcmuv" ] || { echo "run.sh: build left no mitgcmuv" >&2; exit 1; }
-echo "SAB_BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))"   # the driver records it; the budget counts run time only
+case "$(uname -m)" in
+  aarch64|arm64) BUILD_OPTFILE="$WORK/src/tools/build_options/linux_arm64_gfortran" ;;
+  *) BUILD_OPTFILE="$WORK/src/tools/build_options/linux_amd64_gfortran" ;;
+esac
+[ -f "$BUILD_OPTFILE" ] || { echo "run.sh: missing architecture optfile $BUILD_OPTFILE" >&2; exit 2; }
+
+# Key normal-build reuse by every source and mods entry plus the complete
+# effective genmake2/make recipe and toolchain identity. Byte-identical mods
+# trees therefore share; any package/header/flag/source/tool change cannot.
+normal_build_fingerprint() {
+  python3 - "$SOURCE_DIR" "$CHECK_DIR/mods" "$SAB_BUILD_JOBS" "$BUILD_OPTFILE" <<'PY_FINGERPRINT'
+import hashlib
+import os
+import stat
+import subprocess
+import sys
+
+source, mods, jobs, optfile = sys.argv[1:]
+h = hashlib.sha256()
+
+
+def field(name, value):
+    data = os.fsencode(value)
+    h.update(os.fsencode(name) + b"\0" + str(len(data)).encode("ascii") + b"\0" + data)
+
+
+field("cache-schema", "mitgcm-genmake2-normal-v1")
+field("genmake2-recipe", f"genmake2 -rootdir SOURCE -mods MODS -optfile SOURCE/tools/build_options/{os.path.basename(optfile)}")
+field("make-recipe", f"make depend; make -j {jobs}")
+field("optional-genmake-local", "copy MODS/genmake_local into build directory when present")
+for name, command in (
+    ("gfortran-version", ["gfortran", "--version"]),
+    ("make-version", ["make", "--version"]),
+    ("perl-version", ["perl", "-v"]),
+):
+    proc = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    field(name, os.fsdecode(proc.stdout))
+field("machine", os.uname().machine)
+
+
+def add_tree(label, root):
+    root = os.path.realpath(root)
+
+    def walk(directory, relative="."):
+        with os.scandir(directory) as entries:
+            ordered = sorted(entries, key=lambda entry: os.fsencode(entry.name))
+        for entry in ordered:
+            rel = entry.name if relative == "." else os.path.join(relative, entry.name)
+            st = entry.stat(follow_symlinks=False)
+            field(f"{label}-path", rel)
+            field(f"{label}-mode", format(stat.S_IMODE(st.st_mode), "04o"))
+            if stat.S_ISLNK(st.st_mode):
+                field(f"{label}-kind", "symlink")
+                field(f"{label}-target", os.readlink(entry.path))
+            elif stat.S_ISDIR(st.st_mode):
+                field(f"{label}-kind", "directory")
+                walk(entry.path, rel)
+            elif stat.S_ISREG(st.st_mode):
+                field(f"{label}-kind", "file")
+                h.update(str(st.st_size).encode("ascii") + b"\0")
+                with open(entry.path, "rb") as stream:
+                    while True:
+                        block = stream.read(1024 * 1024)
+                        if not block:
+                            break
+                        h.update(block)
+            else:
+                raise SystemExit(f"run.sh: unsupported {label} cache input: {rel}")
+
+    walk(root)
+
+
+add_tree("source", source)
+add_tree("mods", mods)
+print(h.hexdigest())
+PY_FINGERPRINT
+}
+
+build_mitgcm() {
+  local build_log=$1
+  [ -f "$CHECK_DIR/mods/genmake_local" ] && cp "$CHECK_DIR/mods/genmake_local" "$WORK/build/"
+  ( cd "$WORK/build" \
+    && "$WORK/src/tools/genmake2" -rootdir "$WORK/src" -mods "$CHECK_DIR/mods" \
+         -optfile "$BUILD_OPTFILE" ${GENMAKE_EXTRA[@]+"${GENMAKE_EXTRA[@]}"} \
+    && make depend \
+    && make -j "$SAB_BUILD_JOBS" ) >"$build_log" 2>&1 \
+    || { tail -n 60 "$build_log" >&2; echo "run.sh: build failed" >&2; exit 1; }
+  [ -x "$WORK/build/mitgcmuv" ] || { echo "run.sh: build left no mitgcmuv" >&2; exit 1; }
+}
+
+if [ "$IC" = altbuild ]; then
+  # Every alternative IEEE build remains independent: it never reads or
+  # populates the solve-scoped normal-build cache.
+  echo "SAB_BUILD_CACHE=bypass reason=altbuild"
+  BUILD_START=$(date +%s)
+  build_mitgcm "$WORK/build.log"
+  BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))
+else
+  BUILD_FINGERPRINT="$(normal_build_fingerprint)"
+  CACHE_ROOT="$(dirname "$OUT_DIR")/.mitgcm-normal-build-cache"
+  CACHE_DIR="$CACHE_ROOT/$BUILD_FINGERPRINT"
+  CACHE_BINARY="$CACHE_DIR/mitgcmuv"
+  CACHE_DIGEST_FILE="$CACHE_DIR/mitgcmuv.sha256"
+  CACHE_READY="$CACHE_DIR/ready.sha256"
+  CACHE_HIT=0
+
+  # The ready marker is published last. Missing/malformed metadata, a missing
+  # executable, or a binary-digest mismatch is a cache miss with full fallback.
+  if [ -x "$CACHE_BINARY" ] && [ -f "$CACHE_DIGEST_FILE" ] && [ -f "$CACHE_READY" ]; then
+    READY_FINGERPRINT="$(cat "$CACHE_READY" 2>/dev/null || true)"
+    EXPECTED_BINARY_DIGEST="$(cat "$CACHE_DIGEST_FILE" 2>/dev/null || true)"
+    ACTUAL_BINARY_DIGEST="$(sha256sum "$CACHE_BINARY" | cut -d' ' -f1)"
+    if [ "$READY_FINGERPRINT" = "$BUILD_FINGERPRINT" ] \
+       && [ -n "$EXPECTED_BINARY_DIGEST" ] \
+       && [ "$EXPECTED_BINARY_DIGEST" = "$ACTUAL_BINARY_DIGEST" ]; then
+      CACHE_HIT=1
+    fi
+  fi
+
+  if [ "$CACHE_HIT" -eq 1 ]; then
+    echo "SAB_BUILD_CACHE=hit fingerprint=$BUILD_FINGERPRINT"
+    cp "$CACHE_BINARY" "$WORK/build/mitgcmuv"
+    BUILD_SECONDS=0
+  else
+    echo "SAB_BUILD_CACHE=miss fingerprint=$BUILD_FINGERPRINT"
+    BUILD_START=$(date +%s)
+    build_mitgcm "$WORK/build.log"
+    BUILD_SECONDS=$(( $(date +%s) - BUILD_START ))
+    mkdir -p "$CACHE_DIR"
+    cp "$WORK/build/mitgcmuv" "$CACHE_BINARY"
+    sha256sum "$CACHE_BINARY" | cut -d' ' -f1 >"$CACHE_DIGEST_FILE"
+    printf '%s\n' "$BUILD_FINGERPRINT" >"$CACHE_READY"
+  fi
+fi
+echo "SAB_BUILD_SECONDS=$BUILD_SECONDS"   # nonzero on a compile; exactly zero on verified normal reuse
 
 mkdir "$WORK/run"
 cp "$CHECK_DIR/ic/nominal"/* "$WORK/run/"

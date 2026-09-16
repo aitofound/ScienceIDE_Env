@@ -1,0 +1,156 @@
+Microph:
+  - backend: st:numpy:cpu:IJK
+    max_error: 2e-9
+  - backend: st:gt:cpu:KJI
+    max_error: 1e-12
+  - backend: st:gt:gpu:KJI
+    max_error: 2.2e-8
+    cuda_no_fma: true
+    ignore_near_zero_errors:
+      mph_ql_dt: 1e-8
+      mph_qr_dt: 1e-9
+      mph_qg_dt: 1e-18
+  - backend: orch:dace:cpu:KIJ
+    max_error: 2.2e-8
+    cuda_no_fma: true
+    ignore_near_zero_errors:
+      mph_ql_dt: 1e-8
+      mph_qr_dt: 1e-9
+      mph_qg_dt: 1e-18
+      mph_udt: 1e-8
+      mph_vdt: 1e-8
+  - backend: orch:dace:gpu:KJI
+    max_error: 2.2e-8
+    cuda_no_fma: true
+    ignore_near_zero_errors:
+      mph_ql_dt: 1e-8
+      mph_qr_dt: 1e-9
+      mph_qg_dt: 1e-18
+      mph_udt: 1e-8
+      mph_vdt: 1e-8
+
+SurfaceSeaIce_iter1:
+  - backend: st:numpy:cpu:IJK
+    max_error: 2e-16
+Microphysics3:
+  - backend: st:numpy:cpu:IJK
+    ignore_near_zero_errors:
+      mp_qv: 1e-20
+      mp_ql: 1e-20
+      mp_qr: 1e-20
+      mp_qi: 1e-20
+      mp_qs: 1e-20
+      mp_qg: 1e-20
+
+Sedimentation:
+  - backend: st:numpy:cpu:IJK
+    ignore_near_zero_errors:
+      sd_qv: 1e-14
+      sd_ql: 1e-14
+      sd_qr: 1e-14
+      sd_qi: 1e-14
+      sd_qs: 1e-14
+      sd_qg: 1e-14
+      sd_pfw: 1e-14
+      sd_pfr: 1e-14
+      sd_pfi: 1e-14
+      sd_pfs: 1e-14
+      sd_pfg: 1e-14
+      sd_w1: 1e-14
+      sd_r1: 1e-14
+      sd_i1: 1e-14
+      sd_s1: 1e-14
+      sd_g1: 1e-14
+      sd_dte: 1e-14
+
+TerminalFall:
+  - backend: st:numpy:cpu:IJK
+    ignore_near_zero_errors:
+      tf_qv: 1e-14
+      tf_ql: 1e-14
+      tf_qr: 1e-14
+      tf_qi: 1e-14
+      tf_qs: 1e-14
+      tf_qg: 1e-14
+      tf_pt: 1e-14
+      tf_ua: 1e-14
+      tf_va: 1e-14
+      tf_wa: 1e-14
+      tf_pfi: 1e-14
+      tf_i1: 1e-14
+      tf_dte: 1e-14
+
+WarmRain:
+  - backend: st:numpy:cpu:IJK
+    ignore_near_zero_errors:
+      wr_qr: 2e-7
+
+SubgridZProc:
+  - backend: st:numpy:cpu:IJK
+    near_zero: 1.e-15
+    ignore_near_zero_errors:
+      - sz_qv
+      - sz_ql
+      - sz_qr
+      - sz_qi
+      - sz_qs
+      - sz_qg
+
+SubgridZSubs:
+  - backend: st:numpy:cpu:IJK
+    near_zero: 1.e-15
+    ignore_near_zero_errors:
+      - szs_qv
+      - szs_ql
+      - szs_qr
+      - szs_qi
+      - szs_qs
+      - szs_qg
+
+MPFull:
+  - backend: st:numpy:cpu:IJK
+    near_zero: 1.e-20
+    ignore_near_zero_errors:
+      - mpf_qv
+      - mpf_ql
+      - mpf_qr
+      - mpf_qi
+      - mpf_qs
+      - mpf_qg
+      - mpf_ua
+      - mpf_va
+      - mpf_wa
+      - mpf_ccn
+      - mpf_cin
+      - mpf_pfw
+      - mpf_pfr
+      - mpf_pfi
+      - mpf_pfs
+      - mpf_pfg
+      - mpf_dte
+      - mpf_water
+      - mpf_rain
+      - mpf_ice
+      - mpf_snow
+      - mpf_graupel
+      - mpf_cond
+      - mpf_dep
+      - mpf_evap
+      - mpf_sub
+
+MPSub:
+  - backend: st:numpy:cpu:IJK
+    near_zero: 1.e-20
+    ignore_near_zero_errors:
+      - mps_qv
+      - mps_ql
+      - mps_qr
+      - mps_qi
+      - mps_qs
+      - mps_qg
+
+FinalCalculations:
+  - backend: st:numpy:cpu:IJK
+    near_zero: 1.e-20
+    ignore_near_zero_errors:
+      - column_energy_loss

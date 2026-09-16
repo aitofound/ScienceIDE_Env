@@ -1,0 +1,91 @@
+default_language_version:
+  python: python
+default_stages: [pre-commit, pre-push, manual]
+repos:
+  - repo: https://github.com/ambv/black
+    rev: 22.12.0
+    hooks:
+      - id: black
+        name: black
+        entry: black
+        require_serial: true
+        types: [python]
+        files: \.pyi?$
+
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.3.1
+    hooks:
+      - id: pyupgrade
+        args: ["--py37-plus"]
+        # exclude: "docs/.*"
+
+  - repo: https://github.com/asottile/blacken-docs
+    rev: v1.12.1
+    hooks:
+      - id: blacken-docs
+        additional_dependencies: [black]
+        language: python
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: mixed-line-ending
+      - id: detect-private-key
+      - id: end-of-file-fixer
+        exclude: docs/notebooks/
+      - id: trailing-whitespace
+        types: [text]
+      - id: debug-statements
+        name: Debug Statements (Python)
+        description: Check for debugger imports and py37+ `breakpoint()` calls in python source.
+        entry: debug-statement-hook
+        language: python
+        types: [python]
+
+  - repo: https://github.com/pycqa/flake8
+    rev: "6.0.0"
+    hooks:
+      - id: flake8
+        language: python
+        args:
+          [
+            "--ignore=E402",
+            "--exclude=.eggs/,*.egg,build,src/mrsimulator/__init__.py,examples/*",
+            "--max-line-length=88",
+            "--max-complexity=8",
+            "--select=B,C,E,F,W,T,N8",
+            "--count",
+            "--statistics",
+          ]
+
+  - repo: https://github.com/asottile/reorder_python_imports
+    rev: v3.9.0
+    hooks:
+      - id: reorder-python-imports
+        name: Reorder python imports
+        description: This hook reorders imports in python files.
+        entry: reorder-python-imports
+        language: python
+        types: [python]
+        minimum_pre_commit_version: "0.15.0"
+        exclude: (examples_source|fitting_source|setup.py)
+
+  - repo: https://github.com/pocc/pre-commit-hooks
+    rev: v1.3.5
+    hooks:
+      - id: clang-format
+        name: clang-format
+        # entry: hooks/clang-format
+        description: Formats C/CPP code
+        files: "\\.(c|cc|cxx|cpp|h|hpp|hxx|m)$"
+        # language: script
+        # additional_dependencies: [clang-format]
+        args: [--style=file, -i]
+      # - id: clang-tidy
+      #   args: [-checks=clang-diagnostic-return-type]
+      # - id: oclint
+      #   args: [-enable-clang-static-analyzer, -enable-global-analysis]

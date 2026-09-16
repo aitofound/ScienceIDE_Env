@@ -1,0 +1,214 @@
+//
+// Copyright (c) 2024 INRIA
+//
+#pragma once
+
+// IWYU pragma: private, include "pinocchio/math.hpp"
+
+#ifdef PINOCCHIO_LSP
+  #undef PINOCCHIO_LSP
+  #include "pinocchio/math.hpp"
+#endif // PINOCCHIO_LSP
+
+namespace pinocchio
+{
+  template<typename Scalar, int Options>
+  struct TridiagonalSymmetricMatrixTpl;
+
+  ///
+  /// \brief Computes the spectrum[m1:m2] of the input tridiagonal matrix up to precision eps
+  ///
+  /// \param[in] tridiagonal_mat a Tridiagonal Symmetric matrix
+  /// \param[in] m1 the index of the first eigenvalue to compute (lowest)
+  /// \param[in] m2 the index of the last eigenvalue to compute (largest)
+  /// \param[in] eps tolerance in the estimate of the eigenvalues
+  ///
+  /// \returns The spectrum[m1:m2] of the input tridiagonal matrix
+  ///
+  /// \details This functions implements the seminal work of W. BARTH, R. S. MARTIN and J. H.
+  /// WILKINSON which can be downloaded at
+  /// https://link.springer.com/content/pdf/10.1007/BF02162154.pdf \remarks This function proceeds
+  /// to some minimal memory allocation for efficiency \remarks One potential improvement of this
+  /// implementation of bissec could be fine at
+  /// https://link.springer.com/content/pdf/10.1007/BF01389644.pdf
+  ///
+  template<typename Scalar, int Options>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1, Options> computeSpectrum(
+    const TridiagonalSymmetricMatrixTpl<Scalar, Options> & tridiagonal_mat,
+    const Eigen::Index m1,
+    const Eigen::Index m2,
+    Scalar eps = 1e-4)
+  {
+    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1, Options> ReturnType;
+    typedef TridiagonalSymmetricMatrixTpl<Scalar, Options> TridiagonalSymmetricMatrix;
+    typedef typename TridiagonalSymmetricMatrix::CoeffVectorType CoeffVectorType;
+
+    PINOCCHIO_CHECK_INPUT_ARGUMENT(m1 <= m2, "m1 should be lower than m2.");
+    PINOCCHIO_CHECK_INPUT_ARGUMENT(m1 >= 0, "m1 should be greater than 0.");
+    PINOCCHIO_CHECK_INPUT_ARGUMENT(m2 >= 0, "m2 should be greater than 0.");
+    PINOCCHIO_CHECK_INPUT_ARGUMENT(
+      m2 <= tridiagonal_mat.rows() - 1,
+      "m2 should be lower than the size of the tridiagonal matrix.");
+    PINOCCHIO_CHECK_INPUT_ARGUMENT(
+      check_expression_if_real<Scalar>(eps >= Scalar(0)), "eps should be greater than 0.")
+
+    const Eigen::Index n = tridiagonal_mat.rows();
+    const Eigen::Index dm = m2 - m1 + 1;
+    const Scalar relfeh = 2 * Eigen::NumTraits<Scalar>::epsilon();
+
+    assert(check_expression_if_real<Scalar>((Scalar(1) + relfeh) > Scalar(1)));
+
+    const auto & alphas = tridiagonal_mat.diagonal();
+    const auto & betas_ = tridiagonal_mat.subDiagonal();
+    CoeffVectorType betas_abs = CoeffVectorType::Zero(n);
+    betas_abs.array().tail(n - 1) = betas_.array().abs();
+    CoeffVectorType betas_square = betas_abs.array().square();
+
+    Scalar xmin = alphas[n - 1] - betas_abs[n - 1], xmax = alphas[n - 1] + betas_abs[n - 1];
+
+    for (Eigen::Index i = n - 2; i >= 0; --i)
+    {
+      const Scalar h = betas_abs[i] + betas_abs[i + 1];
+      xmax = math::max(alphas[i] + h, xmax);
+      xmin = math::min(alphas[i] - h, xmin);
+    }
+
+    Scalar eps2 = relfeh * (check_expression_if_real<Scalar>(((xmin + xmax > 0))) ? xmax : xmin);
+    eps2 = 0.5 * eps + 7 * eps2;
+
+    // Inner block
+    Scalar x0 = xmax;
+    ReturnType spectrum = ReturnType::Zero(n);
+    auto & x = spectrum;
+    CoeffVectorType wu = CoeffVectorType::Zero(n);
+
+    x.segment(m1, dm).fill(xmax);
+    wu.segment(m1, dm).fill(xmin);
+
+    //    Eigen::Index z = 0;
+    // Loop for the kth eigenvalue
+    for (Eigen::Index k = m2; k >= m1; --k)
+    {
+      Scalar xu = xmin;
+      for (Eigen::Index i = k; i >= m1; --i)
+      {
+        if (check_expression_if_real<Scalar>(xu <= wu[i]))
+        {
+          xu = wu[i];
+          x0 = math::min(x0, x[k]);
+          while (check_expression_if_real<Scalar>(
+            (x0 - xu) > (2 * relfeh * (math::fabs(xu) + math::fabs(x0)) + eps)))
+          {
+            //            z++;
+            Scalar x1 = Scalar(0.5) * (xu + x0);
+            Eigen::Index a = -1;
+            Scalar q(1.);
+            for (Eigen::Index j = 0; j < n; ++j)
+            {
+              const Scalar dq = check_expression_if_real<Scalar>(q != Scalar(0))
+                                  ? betas_square[j] / q
+                                  : betas_abs[j] / relfeh;
+              q = alphas[j] - x1 - dq;
+              if (check_expression_if_real<Scalar>(q < Scalar(0)))
+                a++;
+            } // end for j
+            if (a < k)
+            {
+              xu = x1;
+              if (a < m1)
+              {
+                wu[m1] = x1;
+              }
+              else
+              {
+                wu[a + 1] = x1;
+                x[a] = math::min(x[a], x1);
+              }
+            }
+            else
+            {
+              x0 = x1;
+            }
+          } // end while
+          x[k] = 0.5 * (xu + x0);
+        }
+      } // end for i
+    } // end for k
+
+    return spectrum;
+  }
+
+  ///
+  /// \brief Computes the full spectrum of the input tridiagonal matrix up to precision eps
+  ///
+  /// \param[in] tridiagonal_mat a Tridiagonal Symmetric matrix
+  /// \param[in] eps tolerance in the estimate of the eigenvalues
+  ///
+  /// \details This functions implements the seminal work of W. BARTH, R. S. MARTIN and J. H.
+  /// WILKINSON which can be downloaded at
+  /// https://link.springer.com/content/pdf/10.1007/BF02162154.pdf \remarks This function proceeds
+  /// to some minimal memory allocation for efficiency
+  ///
+  template<typename Scalar, int Options>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1, Options> computeSpectrum(
+    const TridiagonalSymmetricMatrixTpl<Scalar, Options> & tridiagonal_mat, Scalar eps = 1e-4)
+  {
+    return computeSpectrum(tridiagonal_mat, 0, tridiagonal_mat.cols() - 1, eps);
+  }
+
+  ///
+  ///  \brief Computes the kth eigenvalue associated with the input tridiagonal matrix up to
+  /// precision eps
+  ///
+  /// \param[in] tridiagonal_mat a Tridiagonal Symmetric matrix
+  /// \param[in] eigenvalue_index index of the eigenvalue to compute
+  /// \param[in] eps tolerance in the estimate of the eigenvalues
+  ///
+  /// \returns The kth eigenvalue
+  /// \see computeSpectrum
+  template<typename Scalar, int Options>
+  Scalar computeEigenvalue(
+    const TridiagonalSymmetricMatrixTpl<Scalar, Options> & tridiagonal_mat,
+    const Eigen::Index eigenvalue_index,
+    Scalar eps = 1e-4)
+  {
+    return computeSpectrum(
+      tridiagonal_mat, eigenvalue_index, eigenvalue_index, eps)[eigenvalue_index];
+  }
+
+  ///
+  ///  \brief Computes the lowest eigenvalue associated with the input tridiagonal matrix up to
+  /// precision eps
+  ///
+  /// \param[in] tridiagonal_mat a Tridiagonal Symmetric matrix
+  /// \param[in] eigenvalue_index index of the eigenvalue to compute
+  /// \param[in] eps tolerance in the estimate of the eigenvalues
+  ///
+  /// \returns The lowest eigenvalue
+  /// \see computeSpectrum
+  template<typename Scalar, int Options>
+  Scalar computeLowestEigenvalue(
+    const TridiagonalSymmetricMatrixTpl<Scalar, Options> & tridiagonal_mat, Scalar eps = 1e-4)
+  {
+    return computeSpectrum(tridiagonal_mat, 0, 0, eps)[0];
+  }
+
+  ///
+  ///  \brief Computes the largest eigenvalue associated with the input tridiagonal matrix up to
+  /// precision eps
+  ///
+  /// \param[in] tridiagonal_mat a Tridiagonal Symmetric matrix
+  /// \param[in] eigenvalue_index index of the eigenvalue to compute
+  /// \param[in] eps tolerance in the estimate of the eigenvalues
+  ///
+  /// \returns The largest eigenvalue
+  /// \see computeSpectrum
+  template<typename Scalar, int Options>
+  Scalar computeLargestEigenvalue(
+    const TridiagonalSymmetricMatrixTpl<Scalar, Options> & tridiagonal_mat, Scalar eps = 1e-4)
+  {
+    return computeSpectrum(
+      tridiagonal_mat, tridiagonal_mat.cols() - 1, tridiagonal_mat.cols() - 1,
+      eps)[tridiagonal_mat.cols() - 1];
+  }
+} // namespace pinocchio

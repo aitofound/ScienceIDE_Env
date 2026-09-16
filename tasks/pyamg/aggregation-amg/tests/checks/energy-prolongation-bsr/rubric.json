@@ -1,0 +1,41 @@
+{
+  "altbuild": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0). Measured in the grading image: all 9 C++ translation units carry -O0 and none carries -g or -O2/-O3. -Dbuildtype=debug is deliberately NOT used: it adds -g, and the debug info for pyamg/amg_core/graph_bind.cpp exceeds the check's declared 2 GB container limit, which killed cc1plus in every check of the first altbuild attempt. Per the altbuild-floors-are-host-specific pitfall, a floor of exactly zero on the x86 grading worker is reported as 'not measured', never as 'stable'.",
+  "chaotic": false,
+  "check": "energy-prolongation-bsr",
+  "comparison": {
+    "atol": 1e-12,
+    "files": [
+      {
+        "format": "npy",
+        "path": "observable.npy",
+        "skip_header_bytes": 0
+      }
+    ],
+    "rtol": 1e-10
+  },
+  "configuration": "Task-owned upstream gate TestEnergyMin::test_incomplete_mat_mult_bsr, split from energy-prolongation because it is a distinct low-level BSR kernel test, not a filtering-option test; then energy_prolongation_smoother(krylov='cg', degree=1) on a fixed tentative prolongator built from a 20x20 BSR linear_elasticity operator (blocksize 2x2), reaching the same incomplete_mat_mult_bsr block-sparse kernel the gate calls directly with synthetic tiny matrices, the smoothed prolongator's nonzero entries graded. The aggregates are put in canonical order (each keyed by the smallest fine index it holds) before the graded entries are read.",
+  "default_vs_upstream": "upstream unchanged; the probe reaches the same BSR kernel the gate unit-tests directly, through the solver-level entry point that actually calls it in production, in place of the previous run's unrelated Poisson full-solver sentinel; the graded entries are read in canonical aggregate order rather than in the order standard_aggregation happens to number them.",
+  "evidence": {
+    "floor": 0.0,
+    "floor_how": "measured by selfcheck on 2026-09-08: run.sh altbuild (the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)) against run.sh nominal, graded with the check's own validate.py: bit-identical graded output",
+    "self_validation_bound_fraction": 0.14292785550105183,
+    "self_validation_spread": 1.0514922266224858e-12,
+    "altbuild": {
+      "what": "the same pinned source with the pybind11/C++ core compiled -O0 instead of the pinned optimized build (meson-python -Csetup-args=-Doptimization=0; verified in the build tree's compile_commands.json, falls back to CXXFLAGS=-O0 if meson-python drops the setup-arg)",
+      "distance": 0.0,
+      "bound_fraction": 0.0,
+      "identical": true,
+      "passed": true,
+      "reason": "all graded values within bound",
+      "at": "2026-09-08T00:36:36Z"
+    },
+    "floor_bound_fraction": 0.0
+  },
+  "expected_runtime_s": 3.0,
+  "knobs": "none: a single deterministic prolongator-smoothing call on one fixed BSR operator; there is no iteration count or resolution to scale",
+  "observable": "energy-minimized BSR prolongator matrix entries, in canonical aggregate order, on a linear-elasticity operator",
+  "policy": "pointwise",
+  "upstream_test": "code/pyamg/pyamg/aggregation/tests/test_smooth.py",
+  "variant": "variant_scale multiplies the whole near-null-space candidate B by 1.000000000000001",
+  "warrant": "The graded observable is the energy-minimized BSR prolongator's nonzero entries on a linear-elasticity operator, compared under atol 1e-12 plus rtol 1e-10 after the immutable test_incomplete_mat_mult_bsr case passes. Physical: a wrong block-sparse incomplete matrix product in incomplete_mat_mult_bsr (pyamg/amg_core/smoothed_aggregation.h:970), reached through energy_prolongation_smoother's BSR path (pyamg/aggregation/smooth.py:875), fails the gate's own gold-reference comparison on synthetic matrices or changes many prolongator block entries far beyond this bound on a realistic operator. Achievable: the tentative prolongator and strength matrix are built once, deterministically, before B is perturbed, so only floating-point operation ordering inside the block-sparse product and CG energy minimization sets legitimate sensitivity. Aggregate numbering is storage, not physics: `standard_aggregation` numbers aggregates by the order in which it scans rows (pyamg/aggregation/aggregate.py:12) and a correct implementation that groups the same degrees of freedom may number them differently, exactly as the leaf's aggregate-* checks already assume. The probe therefore puts the aggregates in a canonical order -- each keyed by the smallest fine index it holds, an identity the output itself carries -- and re-sorts the sparse indices before reading the data array, so no graded value is keyed by an aggregate number. Self-tested against a renumbered reference, as the skill's pointwise-grades-physics rule requires: with `standard_aggregation`'s output columns permuted at random -- the same aggregates, numbered differently -- the graded array moves by 1.38e-14 (worst bound_fraction 4.63e-03), against 0.22 when the raw numbering is graded."
+}

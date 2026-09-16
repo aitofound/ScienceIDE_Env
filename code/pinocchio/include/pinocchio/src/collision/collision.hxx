@@ -1,0 +1,245 @@
+//
+// Copyright (c) 2015-2024 CNRS INRIA
+//
+
+#pragma once
+
+// IWYU pragma: private, include "pinocchio/collision/collision.hpp"
+
+#ifdef PINOCCHIO_LSP
+  #undef PINOCCHIO_LSP
+  #include "pinocchio/collision/collision.hpp"
+#endif // PINOCCHIO_LSP
+
+namespace pinocchio
+{
+
+  inline void computeContactPatch(
+    const GeometryModel & geom_model, GeometryData & geom_data, const PairIndex pair_id)
+  {
+    const CollisionPair & pair = geom_model.collisionPairs[pair_id];
+    coal::CollisionResult & collision_result = geom_data.collisionResults[pair_id];
+    const coal::ContactPatchRequest & patch_request = geom_data.contactPatchRequests[pair_id];
+    coal::ContactPatchResult & patch_result = geom_data.contactPatchResults[pair_id];
+    patch_result.clear(); // if a collision did not occur, we still want to clear the patch result
+    if (collision_result.isCollision() && patch_request.max_num_patch > 0)
+    {
+      coal::Transform3s oM1(toCoalTransform3s(geom_data.oMg[pair.first]));
+      coal::Transform3s oM2(toCoalTransform3s(geom_data.oMg[pair.second]));
+      GeometryData::ComputeContactPatch & contact_patch_functor =
+        geom_data.contact_patch_functors[pair_id];
+      contact_patch_functor(oM1, oM2, collision_result, patch_request, patch_result);
+    }
+  }
+
+  inline void computeContactPatches(const GeometryModel & geom_model, GeometryData & geom_data)
+  {
+    PINOCCHIO_CHECK_INPUT_ARGUMENT(
+      geom_model.collisionPairs.size() == geom_data.contactPatchResults.size());
+    PINOCCHIO_CHECK_INPUT_ARGUMENT(
+      geom_model.collisionPairs.size() == geom_data.contactPatchRequests.size());
+    PINOCCHIO_CHECK_INPUT_ARGUMENT(
+      geom_model.collisionPairs.size() == geom_data.contact_patch_functors.size());
+
+    for (std::size_t pair_id = 0; pair_id < geom_model.collisionPairs.size(); ++pair_id)
+    {
+      computeContactPatch(geom_model, geom_data, pair_id);
+    }
+  }
+
+  inline bool computeCollision(
+    const GeometryModel & geom_model,
+    GeometryData & geom_data,
+    const PairIndex pair_id,
+    coal::CollisionRequest & collision_request)
+  {
+    PINOCCHIO_CHECK_INPUT_ARGUMENT(
+      geom_model.collisionPairs.size() == geom_data.collisionResults.size());
+    PINOCCHIO_CHECK_INPUT_ARGUMENT(pair_id < geom_model.collisionPairs.size());
+
+    const CollisionPair & pair = geom_model.collisionPairs[pair_id];
+
+    PINOCCHIO_CHECK_INPUT_ARGUMENT(pair.first < geom_model.ngeoms);
+    PINOCCHIO_CHECK_INPUT_ARGUMENT(pair.second < geom_model.ngeoms);
+
+    collision_request.distance_upper_bound =
+      collision_request.security_margin + 1e-6; // TODO: change the margin
+
+    coal::CollisionResult & collision_result = geom_data.collisionResults[pair_id];
+    collision_result.clear();
+
+    coal::Transform3s oM1(toCoalTransform3s(geom_data.oMg[pair.first])),
+      oM2(toCoalTransform3s(geom_data.oMg[pair.second]));
+
+    try
+    {
+      GeometryData::ComputeCollision & calc_collision = geom_data.collision_functors[pair_id];
+      calc_collision(oM1, oM2, collision_request, collision_result);
+    }
+    catch (std::invalid_argument & e)
+    {
+      PINOCCHIO_THROW_PRETTY(
+        std::invalid_argument, "Problem when trying to check the collision of collision pair #"
+                                 << pair_id << " (" << pair.first << "," << pair.second << ")"
+                                 << std::endl
+                                 << "coal original error:\n"
+                                 << e.what() << std::endl);
+    }
+    catch (std::logic_error & e)
+    {
+      PINOCCHIO_THROW_PRETTY(
+        std::logic_error, "Problem when trying to check the collision of collision pair #"
+                            << pair_id << " (" << pair.first << "," << pair.second << ")"
+                            << std::endl
+                            << "coal original error:\n"
+                            << e.what() << std::endl);
+    }
+
+    return collision_result.isCollision();
+  }
+
+  inline bool computeCollision(
+    const GeometryModel & geom_model, GeometryData & geom_data, const PairIndex pair_id)
+  {
+    PINOCCHIO_CHECK_INPUT_ARGUMENT(pair_id < geom_model.collisionPairs.size());
+    coal::CollisionRequest & collision_request = geom_data.collisionRequests[pair_id];
+
+    return computeCollision(geom_model, geom_data, pair_id, collision_request);
+  }
+
+  inline bool computeCollisions(
+    const GeometryModel & geom_model, GeometryData & geom_data, const bool stopAtFirstCollision)
+  {
+    bool isColliding = false;
+
+    for (std::size_t cp_index = 0; cp_index < geom_model.collisionPairs.size(); ++cp_index)
+    {
+      const CollisionPair & cp = geom_model.collisionPairs[cp_index];
+
+      if (
+        geom_data.activeCollisionPairs[cp_index]
+        && !(
+          geom_model.geometryObjects[cp.first].disableCollision
+          || geom_model.geometryObjects[cp.second].disableCollision))
+      {
+        bool res = computeCollision(geom_model, geom_data, cp_index);
+        if (!isColliding && res)
+        {
+          isColliding = true;
+          geom_data.collisionPairIndex = cp_index; // first pair to be in collision
+          if (stopAtFirstCollision)
+            return true;
+        }
+      }
+    }
+
+    return isColliding;
+  }
+
+  /* --- COLLISIONS ----------------------------------------------------------------- */
+  /* --- COLLISIONS ----------------------------------------------------------------- */
+  /* --- COLLISIONS ----------------------------------------------------------------- */
+
+  // WARNING, if stopAtFirstcollision = true, then the collisions vector will not be fulfilled.
+  template<
+    typename Scalar,
+    int Options,
+    template<typename, int> class JointCollectionTpl,
+    typename ConfigVectorType>
+  inline bool computeCollisions(
+    const ModelTpl<Scalar, Options, JointCollectionTpl> & model,
+    DataTpl<Scalar, Options, JointCollectionTpl> & data,
+    const GeometryModel & geom_model,
+    GeometryData & geom_data,
+    const Eigen::MatrixBase<ConfigVectorType> & q,
+    const bool stopAtFirstCollision)
+  {
+    updateGeometryPlacements(model, data, geom_model, geom_data, q);
+    return computeCollisions(geom_model, geom_data, stopAtFirstCollision);
+  }
+
+  /* --- RADIUS -------------------------------------------------------------------- */
+  /* --- RADIUS -------------------------------------------------------------------- */
+  /* --- RADIUS -------------------------------------------------------------------- */
+
+  /// Given p1..3 being either "min" or "max", return one of the corners of the
+  /// AABB cub of the coal object.
+#define PINOCCHIO_GEOM_AABB(COAL, p1, p2, p3)                                                      \
+  SE3::Vector3(COAL->aabb_local.p1##_[0], COAL->aabb_local.p2##_[1], COAL->aabb_local.p3##_[2])
+
+  /// For all bodies of the model, compute the point of the geometry model
+  /// that is the further from the center of the joint. This quantity is used
+  /// in some continuous collision test.
+  template<typename Scalar, int Options, template<typename, int> class JointCollectionTpl>
+  inline void computeBodyRadius(
+    const ModelTpl<Scalar, Options, JointCollectionTpl> & model,
+    const GeometryModel & geom_model,
+    GeometryData & geom_data)
+  {
+    geom_data.radius.resize(model.joints.size(), 0);
+    BOOST_FOREACH (const GeometryObject & geom_object, geom_model.geometryObjects)
+    {
+      const GeometryObject::CollisionGeometryPtr & geometry = geom_object.geometry;
+
+      // Force computation of the Local AABB
+      // TODO: change for a more elegant solution
+      const_cast<coal::CollisionGeometry &>(*geometry).computeLocalAABB();
+
+      const GeometryModel::SE3 & jMb = geom_object.placement; // placement in joint.
+      const Model::JointIndex i = geom_object.parentJoint;
+      assert(i < geom_data.radius.size());
+
+      Scalar radius = geom_data.radius[i] * geom_data.radius[i];
+
+      // The radius is simply the one of the 8 corners of the AABB cube, expressed
+      // in the joint frame, whose norm is the highest.
+      radius =
+        std::max(jMb.act(PINOCCHIO_GEOM_AABB(geometry, min, min, min)).squaredNorm(), radius);
+      radius =
+        std::max(jMb.act(PINOCCHIO_GEOM_AABB(geometry, min, min, max)).squaredNorm(), radius);
+      radius =
+        std::max(jMb.act(PINOCCHIO_GEOM_AABB(geometry, min, max, min)).squaredNorm(), radius);
+      radius =
+        std::max(jMb.act(PINOCCHIO_GEOM_AABB(geometry, min, max, max)).squaredNorm(), radius);
+      radius =
+        std::max(jMb.act(PINOCCHIO_GEOM_AABB(geometry, max, min, min)).squaredNorm(), radius);
+      radius =
+        std::max(jMb.act(PINOCCHIO_GEOM_AABB(geometry, max, min, max)).squaredNorm(), radius);
+      radius =
+        std::max(jMb.act(PINOCCHIO_GEOM_AABB(geometry, max, max, min)).squaredNorm(), radius);
+      radius =
+        std::max(jMb.act(PINOCCHIO_GEOM_AABB(geometry, max, max, max)).squaredNorm(), radius);
+
+      // Don't forget to sqroot the squared norm before storing it.
+      geom_data.radius[i] = sqrt(radius);
+    }
+  }
+
+#undef PINOCCHIO_GEOM_AABB
+
+} // namespace pinocchio
+
+#ifdef PINOCCHIO_ENABLE_TEMPLATE_INSTANTIATION
+
+namespace pinocchio
+{
+
+  extern template PINOCCHIO_COLLISION_EXPLICIT_INSTANTIATION_DECLARATION_DLLAPI bool
+  computeCollisions<
+    context::Scalar,
+    context::Options,
+    JointCollectionDefaultTpl,
+    context::VectorXs>(
+    const Model &,
+    Data &,
+    const GeometryModel &,
+    GeometryData &,
+    const Eigen::MatrixBase<context::VectorXs> &,
+    const bool stopAtFirstCollision);
+
+  extern template PINOCCHIO_COLLISION_EXPLICIT_INSTANTIATION_DECLARATION_DLLAPI void
+  computeBodyRadius<context::Scalar, context::Options, JointCollectionDefaultTpl>(
+    const Model &, const GeometryModel &, GeometryData &);
+
+} // namespace pinocchio
+#endif // ifdef PINOCCHIO_ENABLE_TEMPLATE_INSTANTIATION

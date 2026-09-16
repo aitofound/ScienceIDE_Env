@@ -1,0 +1,359 @@
+{
+  "schema_version": 1,
+  "report_type": "codebase-metadata",
+  "generated_at": "2026-09-13T12:09:18Z",
+  "informational": true,
+  "non_blocking": true,
+  "codebase": {
+    "id": "itensor",
+    "title": "ITensor",
+    "source_root": "code/itensor/",
+    "upstream_url": "https://github.com/ITensor/ITensor",
+    "upstream_pin": "ea88f512d258ef23b5554950639c5acedf4df1f0",
+    "license": "Apache-2.0",
+    "languages": [
+      "C++"
+    ],
+    "domain": "condensed-matter",
+    "owner": "JunkaiWang-TheoPhy",
+    "source_tree_fingerprint": "840a8c314d58ad95f19693c74b6c40da9dd47a2204c8f9ec56158673d4d973dd",
+    "fingerprint_algorithm": "SHA-256 over typed sorted regular-file paths+bytes and symlink paths+safe targets",
+    "measurement_source": "Step 1 investigation checkout intended for vendoring",
+    "agent_authored": {
+      "description": "",
+      "evidence": []
+    }
+  },
+  "measurement": {
+    "scope": "Step 1 investigation checkout intended for vendoring",
+    "regular_file_rule": "all regular files below the source snapshot",
+    "physical_line_rule": "UTF-8/NUL-free bytes: newline count plus one final non-newline line",
+    "text_binary_rule": "NUL-containing or non-UTF-8 files are binary for line accounting",
+    "directory_rule": "count non-root directory ancestors containing an included regular file or symlink",
+    "symlink_rule": "count links without following them; external/parent targets are redacted",
+    "included_paths": [
+      "."
+    ],
+    "excluded_paths": [],
+    "source_extensions": [],
+    "test_path_markers": [
+      "test",
+      "tests",
+      "tst"
+    ],
+    "test_count_units": [
+      "test_files",
+      "test_definitions",
+      "collected_items",
+      "inner_cases"
+    ],
+    "classification": "CLI-owned rules plus explicitly agent-authored source/test classification",
+    "agent_authored": {
+      "included_paths": [
+        "."
+      ],
+      "excluded_paths": [],
+      "source_extensions": [],
+      "test_path_markers": [
+        "test",
+        "tests",
+        "tst"
+      ],
+      "generated_vendor_third_party_notes": ""
+    }
+  },
+  "size": {
+    "tree_entries": 301,
+    "regular_files": 275,
+    "directories": 26,
+    "symlinks": 0,
+    "symlink_entries": [],
+    "payload_bytes": 2669599,
+    "text_files": 275,
+    "text_physical_lines": 94925,
+    "binary_files": 0,
+    "binary_bytes": 0,
+    "source_files": null,
+    "source_physical_lines": null,
+    "implementation_source_files": null,
+    "implementation_source_physical_lines": null,
+    "test_source_files": null,
+    "test_source_physical_lines": null,
+    "files_by_extension": [
+      {
+        "extension": ".cc",
+        "files": 87,
+        "bytes": 1007957,
+        "text_physical_lines": 38269
+      },
+      {
+        "extension": ".h",
+        "files": 133,
+        "bytes": 893190,
+        "text_physical_lines": 35307
+      },
+      {
+        "extension": ".hpp",
+        "files": 22,
+        "bytes": 705024,
+        "text_physical_lines": 19359
+      },
+      {
+        "extension": ".md",
+        "files": 2,
+        "bytes": 4326,
+        "text_physical_lines": 110
+      },
+      {
+        "extension": ".mk",
+        "files": 2,
+        "bytes": 6767,
+        "text_physical_lines": 223
+      },
+      {
+        "extension": ".sample",
+        "files": 1,
+        "bytes": 6743,
+        "text_physical_lines": 222
+      },
+      {
+        "extension": ".txt",
+        "files": 1,
+        "bytes": 387,
+        "text_physical_lines": 8
+      },
+      {
+        "extension": ".ubuntu",
+        "files": 1,
+        "bytes": 323,
+        "text_physical_lines": 13
+      },
+      {
+        "extension": "[no extension]",
+        "files": 26,
+        "bytes": 44882,
+        "text_physical_lines": 1414
+      }
+    ],
+    "classification": "CLI-computed"
+  },
+  "approval": {
+    "proposed_modules": [
+      "itensor"
+    ],
+    "approved_modules": [
+      "itensor"
+    ],
+    "human_ref": "用户明确要求继续推进：做吧",
+    "approved_at": "2026-09-13T12:09:18Z",
+    "classification": "human-owned approval, CLI-copied"
+  },
+  "shared_components": [
+    {
+      "id": "shared-infrastructure",
+      "title": "Shared infrastructure",
+      "purpose": "",
+      "paths": [],
+      "used_by": [
+        "itensor"
+      ],
+      "relationship": "runtime/build",
+      "evidence": [],
+      "classification": "agent-authored description; CLI-computed size",
+      "metrics": {
+        "regular_files": 0,
+        "bytes": 0,
+        "text_files": 0,
+        "text_physical_lines": 0
+      }
+    }
+  ],
+  "modules": [
+    {
+      "slug": "itensor",
+      "title": "ITensor tensor-network library and algorithms",
+      "entrypoints": [
+        "make",
+        "unittest/test-g",
+        "sample/dmrg",
+        "sample/dmrgj1j2",
+        "tutorial/06_DMRG/dmrg"
+      ],
+      "expensive_path": "BLAS/LAPACK-backed tensor contractions and iterative MPS/MPO ground-state sweeps at nontrivial bond dimension",
+      "rationale": "The repository is a cohesive C++ tensor-network library whose tensor, MPS/MPO, quantum-number and iterative-solver code share one build and one scientific I/O contract. A whole-codebase module preserves the upstream API and lets official unit tests, samples and tutorials define the fixed points without inventing a method-only boundary.",
+      "excluded": [
+        "Documentation-only files and generated build products are not source or checks.",
+        "Optional HDF5 tests remain unmeasured until the dependency is explicitly enabled and shown to be required by an official workflow."
+      ],
+      "hazards": [
+        "BLAS/LAPACK backend and thread count can change reduction order and floating-point output.",
+        "The current macOS host lacks usable C++ standard-library headers; native runtimes require Linux or a repaired toolchain.",
+        "The stable C++ v3 branch is older than the active Julia line; the pin and API line must remain explicit."
+      ],
+      "approval_status": "approved",
+      "purpose": "The repository is a cohesive C++ tensor-network library whose tensor, MPS/MPO, quantum-number and iterative-solver code share one build and one scientific I/O contract. A whole-codebase module preserves the upstream API and lets official unit tests, samples and tutorials define the fixed points without inventing a method-only boundary.",
+      "primary_inputs": [],
+      "primary_outputs": [],
+      "algorithm_stages": [],
+      "unique_responsibilities": [],
+      "not_responsible_for": [
+        "Documentation-only files and generated build products are not source or checks.",
+        "Optional HDF5 tests remain unmeasured until the dependency is explicitly enabled and shown to be required by an official workflow."
+      ],
+      "shared_component_ids": [],
+      "depends_on_modules": [],
+      "differences": {
+        "status": "unknown",
+        "note": "not supplied"
+      },
+      "evidence": [],
+      "owned_paths": [
+        "."
+      ],
+      "classification": "agent-authored module card; CLI-computed size and approval status",
+      "metrics": {
+        "owned": {
+          "regular_files": 275,
+          "bytes": 2669599,
+          "text_files": 275,
+          "text_physical_lines": 94925
+        },
+        "shared": {
+          "regular_files": 0,
+          "bytes": 0,
+          "text_files": 0,
+          "text_physical_lines": 0
+        },
+        "overlap": {
+          "regular_files": 0,
+          "bytes": 0,
+          "text_files": 0,
+          "text_physical_lines": 0
+        }
+      }
+    }
+  ],
+  "official_tests": {
+    "frameworks": [],
+    "collection_commands": [],
+    "run_commands": [],
+    "counts": {
+      "test_files": {
+        "value": null,
+        "unit": "files",
+        "semantics": "distinct official test files considered",
+        "classification": "agent-authored/evidenced"
+      },
+      "test_definitions": {
+        "value": null,
+        "unit": "source-level test definitions",
+        "semantics": "source-level functions or methods, not collected cases",
+        "classification": "agent-authored/evidenced"
+      },
+      "collected_items": {
+        "value": null,
+        "unit": "framework-collected items",
+        "semantics": "items collected after framework parametrization",
+        "classification": "agent-authored/evidenced"
+      },
+      "inner_cases": {
+        "value": null,
+        "unit": "inner cases",
+        "semantics": "optional cases inside one source-level definition that collection does not expose",
+        "classification": "agent-authored/evidenced"
+      }
+    },
+    "by_module": {
+      "itensor": {
+        "sources": [],
+        "selectors": [],
+        "counts": {
+          "test_files": {
+            "value": null,
+            "unit": "files",
+            "semantics": "distinct official test files considered",
+            "classification": "agent-authored/evidenced"
+          },
+          "test_definitions": {
+            "value": null,
+            "unit": "source-level test definitions",
+            "semantics": "source-level functions or methods, not collected cases",
+            "classification": "agent-authored/evidenced"
+          },
+          "collected_items": {
+            "value": null,
+            "unit": "framework-collected items",
+            "semantics": "items collected after framework parametrization",
+            "classification": "agent-authored/evidenced"
+          },
+          "inner_cases": {
+            "value": null,
+            "unit": "inner cases",
+            "semantics": "optional cases inside one source-level definition that collection does not expose",
+            "classification": "agent-authored/evidenced"
+          }
+        },
+        "covers": [],
+        "known_gaps": [],
+        "execution": [],
+        "classification": "agent-authored/evidenced, except any explicitly CLI-labelled counts"
+      }
+    },
+    "count_semantics": "test_files, source-level test_definitions, framework-collected items, and hidden inner cases are distinct units"
+  },
+  "classification_and_gaps": {
+    "buckets": {
+      "shared": {
+        "regular_files": 0,
+        "bytes": 0,
+        "text_files": 0,
+        "text_physical_lines": 0
+      },
+      "owned": {
+        "regular_files": 275,
+        "bytes": 2669599,
+        "text_files": 275,
+        "text_physical_lines": 94925
+      },
+      "overlapping_owned": {
+        "regular_files": 0,
+        "bytes": 0,
+        "text_files": 0,
+        "text_physical_lines": 0
+      },
+      "unclassified": {
+        "regular_files": 0,
+        "bytes": 0,
+        "text_files": 0,
+        "text_physical_lines": 0
+      }
+    },
+    "overlaps": [],
+    "overlaps_truncated": 0,
+    "unclassified_paths": [],
+    "unclassified_paths_truncated": 0,
+    "reconciliation": {
+      "regular_files": 275,
+      "classified_files": 275,
+      "reconciliation_ok": true
+    },
+    "not_packaged": [
+      {
+        "what": "HDF5-enabled paths",
+        "why": "Optional dependency; include only if the native survey finds an official test or example that requires it."
+      },
+      {
+        "what": "External ITensors.jl and related Julia repositories",
+        "why": "They are separate upstream codebases, not part of the pinned C++ ITensor tree."
+      }
+    ],
+    "known_review_gaps": [],
+    "open_questions": [],
+    "classification": "CLI-computed accounting plus agent-authored gaps"
+  },
+  "warnings": [
+    "measurement.source_extensions is empty; source/implementation line totals remain unknown",
+    "repository/cache directory excluded from source accounting: .git"
+  ],
+  "notes": "Fill every field to best effort. Unknown is acceptable; this report is informational and non-blocking."
+}

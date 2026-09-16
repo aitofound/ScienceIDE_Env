@@ -1,0 +1,65 @@
+# Runtime options file for Phantom, written 27/10/2025 12:17:22.4
+# Options not present assume their default values
+# This file is updated automatically after a full dump
+
+# job name
+             logfile =  binary01.log   ! file to which output is directed
+            dumpfile =  binary_00000.tmp   ! dump file to start from
+
+# options controlling run time and input/output
+                tmax =         10.    ! end time
+               dtmax =       1.000    ! time between dumps
+                nmax =          -1    ! maximum number of timesteps (0=just get derivs and stop)
+                nout =          -1    ! write dumpfile every n dtmax (-ve=ignore)
+            twallmax =      000:00    ! maximum wall time (hhh:mm, 000:00=ignore)
+           nfulldump =           1    ! full dump every n dumps
+            iverbose =           0    ! verboseness of log (-1=quiet 0=default 1=allsteps 2=debug 5=max)
+           dtwallmax =      000:02    ! maximum wall time between dumps (hhh:mm, 000:00=ignore)
+
+# options controlling accuracy
+              C_cour =       0.300    ! Courant factor
+             C_force =       0.250    ! dt_force factor
+                tolv =   1.000E-02    ! tolerance on v iterations in timestepping
+       tree_accuracy =       0.550    ! tree opening criterion (0.0-1.0)
+               hfact =       1.200    ! h in units of particle spacing [h = hfact(m/rho)^(1/3)]
+                tolh =   1.000E-04    ! tolerance on h-rho iterations
+
+# shock capturing
+               alpha =       0.000    ! MINIMUM shock viscosity parameter
+            alphamax =       1.000    ! MAXIMUM shock viscosity parameter
+                beta =       2.000    ! non-linear shock viscosity parameter
+              alphau =       0.000    ! shock conductivity parameter
+
+# options controlling equation of state
+                ieos =          12    ! eqn of state (1=isoth;2=adiab;3=locally iso;8=barotropic)
+                  mu =  0.609452253  ! mean molecular weight
+        ipdv_heating =           1    ! heating from PdV work (0=off, 1=on)
+      ishock_heating =           1    ! shock heating (0=off, 1=on)
+
+# options controlling cooling
+            icooling =           0    ! cooling function (0=off, 1=library (step), 2=library (force),3=Gammie, 4=ISM, 5,6=KI02, 7=powerlaw, 9=radiative approx)
+
+# options controlling sink particles
+     isink_potential =           0    ! sink potential (0=1/r,1=surf)
+       icreate_sinks =           0    ! allow automatic sink particle creation
+     h_soft_sinksink =       0.000    ! softening length between sink particles
+               f_acc =       0.800    ! particles < f_acc*h_acc accreted without checks
+
+# options relating to external forces
+      iexternalforce =           0    ! 1=star,2=coro,3=bina,4=prdr,5=toru,6=toys,7=exte,8=spir,9=Lens,10=dens,11=Eins,
+
+# options controlling physical viscosity
+           irealvisc =           0    ! physical viscosity type (0=none,1=const,2=Shakura/Sunyaev)
+          shearparam =       0.100    ! magnitude of shear viscosity (irealvisc=1) or alpha_SS (irealvisc=2)
+            bulkvisc =       0.000    ! magnitude of bulk viscosity
+
+# options for injecting/removing particles
+               rkill =      -1.000    ! deactivate particles outside this radius (<0 is off)
+
+# options controlling dynamic boundaries particles [all values in code units]
+         dynamic_bdy =           F    ! turn on/off dynamic boundaries
+
+# optional outputs
+               curlv =           F    ! output curl v in dump files
+           track_lum =           F    ! write du/dt to dump files (for a "lightcurve")
+                  gw =           F    ! calculate gravitational wave strain

@@ -1,0 +1,233 @@
+{
+  "skimage.measure.label": {
+    "implementation": {
+      "file": "src/skimage/measure/_label.py",
+      "line": 33,
+      "end_line": 125
+    },
+    "description": "Label connected regions of an integer array.",
+    "calls": [
+      "_label_bool",
+      "clabel"
+    ],
+    "branches": [
+      {
+        "line": 117,
+        "expression": "label_image.dtype == bool"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.local_maxima": {
+    "implementation": {
+      "file": "src/skimage/morphology/extrema.py",
+      "line": 275,
+      "end_line": 438
+    },
+    "description": "Find local maxima of n-dimensional array.",
+    "calls": [
+      "_util._set_border_values",
+      "np.nonzero",
+      "any",
+      "np.pad",
+      "_util._resolve_neighborhood",
+      "_util._offsets_to_raveled_neighbors",
+      "crop",
+      "flags.view",
+      "_local_maxima",
+      "image.min",
+      "image.ravel",
+      "flags.ravel"
+    ],
+    "branches": [
+      {
+        "line": 384,
+        "expression": "image.size == 0"
+      },
+      {
+        "line": 392,
+        "expression": "allow_borders"
+      },
+      {
+        "line": 402,
+        "expression": "any((s < 3 for s in image.shape))"
+      },
+      {
+        "line": 428,
+        "expression": "allow_borders"
+      },
+      {
+        "line": 435,
+        "expression": "indices"
+      },
+      {
+        "line": 386,
+        "expression": "indices"
+      },
+      {
+        "line": 419,
+        "expression": "image.dtype == np.float16"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.remove_objects_by_distance": {
+    "implementation": {
+      "file": "src/skimage/morphology/misc.py",
+      "line": 301,
+      "end_line": 509
+    },
+    "description": "Remove objects, in specified order, until remaining are a minimum distance apart.",
+    "calls": [
+      "np.argsort",
+      "ndi.generate_binary_structure",
+      "np.bincount",
+      "out.ravel",
+      "np.flatnonzero",
+      "np.unravel_index",
+      "cKDTree",
+      "_remove_objects_by_distance",
+      "label_image.copy",
+      "(ndi.maximum_filter(out, footprint=footprint) != ndi.minimum_filter(out, footprint=footprint)).ravel",
+      "out_raveled.reshape",
+      "np.all",
+      "np.can_cast",
+      "spacing.min",
+      "out_raveled.astype",
+      "ndi.maximum_filter",
+      "ndi.minimum_filter",
+      "np.amax"
+    ],
+    "branches": [
+      {
+        "line": 409,
+        "expression": "min_distance < 0"
+      },
+      {
+        "line": 411,
+        "expression": "not np.issubdtype(label_image.dtype, np.integer)"
+      },
+      {
+        "line": 415,
+        "expression": "out is None"
+      },
+      {
+        "line": 422,
+        "expression": "spacing is not None"
+      },
+      {
+        "line": 435,
+        "expression": "(spacing is None or np.all(spacing[0] == spacing)) and p_norm <= 2"
+      },
+      {
+        "line": 448,
+        "expression": "border_indices.size == 0"
+      },
+      {
+        "line": 458,
+        "expression": "priority is None"
+      },
+      {
+        "line": 467,
+        "expression": "smallest_id < 0"
+      },
+      {
+        "line": 490,
+        "expression": "spacing is not None"
+      },
+      {
+        "line": 506,
+        "expression": "out_raveled.base is not out"
+      },
+      {
+        "line": 417,
+        "expression": "out is not label_image"
+      },
+      {
+        "line": 424,
+        "expression": "spacing.shape != (out.ndim,) or spacing.min() <= 0"
+      },
+      {
+        "line": 459,
+        "expression": "not np.can_cast(out.dtype, np.intp, casting='safe')"
+      },
+      {
+        "line": 480,
+        "expression": "priority.shape != expected_shape"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.remove_small_holes": {
+    "implementation": {
+      "file": "src/skimage/morphology/misc.py",
+      "line": 182,
+      "end_line": 298
+    },
+    "description": "Remove contiguous holes smaller than the specified size.",
+    "calls": [
+      "np.logical_not",
+      "deprecate_parameter",
+      "_check_dtype_supported",
+      "ar.astype",
+      "warnings.catch_warnings",
+      "warnings.filterwarnings",
+      "remove_small_objects"
+    ],
+    "branches": [
+      {
+        "line": 265,
+        "expression": "ar.dtype != bool"
+      },
+      {
+        "line": 272,
+        "expression": "out is not None"
+      },
+      {
+        "line": 273,
+        "expression": "out.dtype != bool"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.remove_small_objects": {
+    "implementation": {
+      "file": "src/skimage/morphology/misc.py",
+      "line": 60,
+      "end_line": 179
+    },
+    "description": "Remove objects smaller than the specified size.",
+    "calls": [
+      "deprecate_parameter",
+      "_check_dtype_supported",
+      "ar.copy",
+      "ndi.generate_binary_structure",
+      "ndi.label",
+      "np.bincount",
+      "ccs.ravel"
+    ],
+    "branches": [
+      {
+        "line": 140,
+        "expression": "out is None"
+      },
+      {
+        "line": 145,
+        "expression": "max_size == 0"
+      },
+      {
+        "line": 148,
+        "expression": "out.dtype == bool"
+      },
+      {
+        "line": 164,
+        "expression": "len(component_sizes) == 2 and out.dtype != bool"
+      },
+      {
+        "line": 170,
+        "expression": "min_size is not DEPRECATED"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

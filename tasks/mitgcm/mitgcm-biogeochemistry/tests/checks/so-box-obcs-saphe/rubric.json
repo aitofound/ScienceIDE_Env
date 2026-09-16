@@ -26,11 +26,11 @@
     }
   },
   "evidence": {
-    "floor": 3.3586209369218523e-09,
+    "floor": 4.520686047726485e-09,
     "floor_bound_fraction": 0.07230230908834291,
     "floor_field": "dynDiag",
-    "floor_how": "measured by selfcheck on 2026-09-05: run.sh altbuild (genmake2 -ieee: the same source at -O0 -ffloat-store, strict IEEE arithmetic, instead of the optimised optfile) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
-    "self_validation_spread": 4.440892098500626e-16,
+    "floor_how": "measured by selfcheck on 2026-09-08: run.sh altbuild (genmake2 -ieee: the same source at -O0 -ffloat-store, strict IEEE arithmetic, instead of the optimised optfile) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
+    "self_validation_spread": 1.7763568394002505e-15,
     "faults": {
       "cheaper_solver": {
         "change": "cg2dTargetResidual -> 1e-3",
@@ -48,11 +48,12 @@
     },
     "altbuild": {
       "what": "genmake2 -ieee: the same source at -O0 -ffloat-store, strict IEEE arithmetic, instead of the optimised optfile",
-      "distance": 3.3586209369218523e-09,
+      "distance": 4.520686047726485e-09,
+      "bound_fraction": null,
       "identical": false,
       "passed": true,
       "reason": "all graded values within bound",
-      "at": "2026-09-05T02:33:00Z"
+      "at": "2026-09-08T04:16:48Z"
     }
   },
   "warrant": "The observable is every cell of every prognostic field in the final state dump, compared as |c - r| <= 1e-10 + 1e-08|r|; the relative part is the working bound because the graded fields span many orders of magnitude, the absolute part covers cells at or near zero. The bound is physical for this check because the answer being graded is a converged root, not an arbitrary iterate: SOLVE_AT_GENERAL stops when the relative Newton increment on the hydrogen-ion concentration falls below pp_rdel_ah_target = 1e-8, so two correct runs can return values of [H+] that differ by as much as one part in 1e8 if a one-ulp perturbation changes the iteration count at the last step. That is the dominant round-off floor of this check, and it is worth stating plainly because it is larger than the floor of every other check here. It does not, however, reach the graded fields at that size: pH is package state written only into pickup_dic, which this configuration does not write, and the only route from [H+] to a graded field is the surface CO2 flux, which changes DIC in the top cell by roughly 1e-5 mol/m3 per step, so a 1e-8 relative wobble of the flux perturbs a 2.2 mol/m3 tracer by about 1e-13. The rest of the floor is the cg2d solve at 1e-13 and the prescribed boundary interpolation, both bit-identical between the runs since alphaUniform is a biological rate that cannot reach temperature, salinity or momentum. Thirty days is a long window for this module, and it is affordable precisely because of that decoupling: the dynamics, the convective adjustment switch and the open-boundary machinery all replay identically, and the perturbation lives only in five damped tracers advected by an identical flow. A reviewer should check the measured spread on PTRACER01 and PTRACER02 first, since alkalinity is the tracer the solver is most sensitive to. Faults: Stopping SOLVE_AT_GENERAL early, replacing it with the cheaper Follows approximation, or dropping the phosphate, silicate, sulphate or fluoride terms of EQUATION_AT changes surface pH by 1e-3 or more and the resulting CO2 flux by percent, which reaches DIC in the top cell at parts in 1e-5 within a few steps. Losing the alkalinity-dependence of the initial bracket in AHINI_FOR_AT makes the iteration converge to the same root but with a different count, harmless; losing the bracket safeguard entirely makes it diverge, which the deck's error path reports. On the transport side, failing to apply the prescribed open-boundary tracer values (obcs_apply_ptracer.F) or applying them on the wrong index row changes PTRACER01 in the boundary columns by order one, and a wrong sign in the connect mask changes the interior within days. The expensive path under test is pkg/dic/dic_solvesaphe.F SOLVE_AT_GENERAL, the bracketed Newton iteration on total alkalinity with the safeguarded ANW_INFSUP bounds and AHINI_FOR_AT initial guess, called for every surface wet cell every step, together with EQUATION_AT and DIC_COEFFS_SURF; then pkg/obcs (obcs_apply_ptracer.F, obcs_prescribe_read.F and the per-tracer upwind boundary advection) and pkg/dic/dic_biotic_forcing.F with bio_export.F over the box.. The nominal-versus-variant spread recorded by selfcheck is the measurement of the round-off amplification under this exact rule, and the bound is finalised against it with the human."

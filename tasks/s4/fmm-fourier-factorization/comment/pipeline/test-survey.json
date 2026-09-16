@@ -1,0 +1,553 @@
+{
+  "module": "fmm-fourier-factorization",
+  "tests": [
+    {
+      "id": "fmm-crossed-grating-orders",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/2d/Li_JOSA_14_2758_1997/ex3.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "closed-form Fourier factorization of a 2-D crossed rectangular grating, graded as diffraction efficiency per order",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.02,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "The cleanest fmm check: 98 rows of stdout, sub-second, and the only Li 1997 script free of the SetNumG defect because it does not re-set the basis after solving. Li's paper is the reference for the FMM factorization rules this module implements.",
+      "proposed_check": "fmm-crossed-grating-orders"
+    },
+    {
+      "id": "fmm-crossed-grating-convergence",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/2d/Li_JOSA_14_2758_1997/ex1_orig.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "the convergence of diffraction efficiency against Fourier order for a crossed grating, upstream's own demonstration of the FMM factorization rules",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 2.24,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Suitable ONLY rebuilt fresh-per-basis. As shipped it calls SetNumG inside a loop on a solved simulation and prints nan for 9 of its 10 rows (see overview.md); rebuilt with one simulation per basis size the same quantity converges monotonically to 0.1277. The check must therefore restructure the driver loop while keeping the geometry and the graded quantity identical, and that departure has to be stated in the check README.",
+      "proposed_check": "fmm-crossed-grating-convergence"
+    },
+    {
+      "id": "fmm-guided-resonance-fano",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/2d/Fan_PRB_65_2002/fig12.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "guided-resonance lineshapes in a 2-D photonic crystal slab across a frequency sweep",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.02,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Fan & Joannopoulos PRB 65 (2002), a published-figure reproduction. Sharp Fano resonances make the graded output unusually sensitive to any error in the factorized permittivity, which is what this module owns.",
+      "proposed_check": "fmm-guided-resonance-fano"
+    },
+    {
+      "id": "fmm-pc-slab-transmission",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/2d/Suh_APL_82_1999_2003/fig2a.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "a photonic-crystal-slab transmission spectrum through the factorized permittivity",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.02,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Suh, Yanik, Solgaard & Fan, APL 82 (2003). Cheap, published, and patterned, so it reaches the factorization on every frequency.",
+      "proposed_check": "fmm-pc-slab-transmission"
+    },
+    {
+      "id": "fmm-pc-slab-transmission-2",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/2d/Suh_APL_82_1999_2003/fig2b.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "the second configuration of the same displaced-slab study, 110 graded rows",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.01,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Companion to fig2a with different hole geometry; guards against a factorization fix that is tuned to one lattice.",
+      "proposed_check": "fmm-pc-slab-transmission-2"
+    },
+    {
+      "id": "fmm-lamellar-grating-sweep",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/1d/Liu_OE_17_21897_2009/fig3e.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "1-D lamellar grating factorization across a wide sweep, 450 graded rows",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.01,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Liu & Fan, Opt. Express 17 (2009). The heaviest of the working 1-D examples at 1.25 s, and 1-D lamellar gratings are the classic setting where Li's inverse rule versus the direct rule visibly changes the answer.",
+      "proposed_check": "fmm-lamellar-grating-sweep"
+    },
+    {
+      "id": "fmm-lamellar-grating-field",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/1d/Liu_OE_17_21897_2009/fig3f.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "the field-profile counterpart of the same grating, 36800 graded rows",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.02,
+      "runtime_measured": true,
+      "suitable": false,
+      "why": "NOT GRADEABLE at this pin. The script prints x, z and Ey over a field map, and the Ey column is identically zero at every one of its 36600 rows, so the only live columns are the fixed coordinate grid. The cause is upstream printing the one component symmetry forbids: the excitation is pure p-polarised (s-amplitude {0,0}, p-amplitude {1,0}) at normal incidence on a 1-D grating, so the field lies in the x-z plane and Ey vanishes identically. Instrumenting the same run to print all three components confirms it - Ex and Ez are live with max |E| of 2.685 and 2.679 while Ey stays exactly 0. Doubling the silicon permittivity from 12 to 24 leaves the whole output byte-identical, so a check built on it would pass for any port, including one that returns zeros. Printing Ex instead would be authoring physics upstream never ran, so it is recorded unsuitable rather than repaired. The efficiency-sweep scripts from the same paper (fig2a, fig3a, fig3c, fig3e, fig4e) are live and carry this geometry family."
+    },
+    {
+      "id": "fmm-lamellar-grating-2",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/1d/Liu_OE_17_21897_2009/fig4e.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "a second grating geometry from the same paper, 450 graded rows",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.02,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Independent configuration at 1.55 s, the slowest working 1-D example.",
+      "proposed_check": "fmm-lamellar-grating-2"
+    },
+    {
+      "id": "fmm-metallic-grating",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/1d/Bi_OE_18_11969_2010/fig3a.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "a metallic (lossy, complex-permittivity) 1-D grating, 400 graded rows",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.02,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Bi et al., Opt. Express 18 (2010). Metallic gratings are the hard case for Fourier factorization - the permittivity discontinuity is large and complex - so this is the most discriminating 1-D check for the inverse rule.",
+      "proposed_check": "fmm-metallic-grating"
+    },
+    {
+      "id": "fmm-dielectric-grating",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/1d/Oliva_OE_19_14735_2011/fig1c.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "a dielectric grating profile from a third published study, 121 graded rows",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.03,
+      "runtime_measured": true,
+      "suitable": false,
+      "why": "NOT GRADEABLE at this pin. 115 of its 121 rows disagree between two legitimate builds of this same pinned source, by up to 8.5e-4 on transmittances of order 0.1 - close to one percent. Unlike Pietarinen fig2a it is unstable on BOTH build axes, not just one: 2.5e-2 at -O0 and 2.4 with -DHAVE_BLAS -DHAVE_LAPACK. A bound wide enough to accept that build-to-build swing would accept most wrong ports too, so the check cannot discriminate."
+    },
+    {
+      "id": "fmm-binary-grating",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/1d/Pietarinen_OE_14_2583_2006/fig2a.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "a binary grating diffraction sweep, 120 graded rows",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.02,
+      "runtime_measured": true,
+      "suitable": false,
+      "why": "NOT GRADEABLE at this pin: the computation is ill-posed, not merely loose. The graded values are not diffraction efficiencies of order 1 but reach 4.4e17 and 3.7e21, and 117 of its 120 rows disagree between two legitimate builds of this same pinned source. Isolating the two build axes: rebuilt at -O0 the output agrees to 2.2e-9, but rebuilt with -DHAVE_BLAS -DHAVE_LAPACK - upstream's own supported configuration, used by Makefile.Msys2 - it diverges by 3.7e21. A near-singular solve whose answer depends on which eigensolver computes it admits no tolerance that could both accept a correct port and reject a wrong one."
+    },
+    {
+      "id": "fmm-polarization-basis-square",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/polarization_basis/square.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "construction of the smooth normal-vector polarization basis on a square lattice, dumped directly to file",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.02,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "The only test that grades this module in isolation from the eigensolve: SetBasisFieldDumpPrefix makes fmm_PolBasisVL.cpp write the vector field itself (a 6096-byte 'squareSlab'), with no rcwa contribution in the graded bytes. It writes nothing to stdout, so the check must grade the file.",
+      "proposed_check": "fmm-polarization-basis-square"
+    },
+    {
+      "id": "fmm-polarization-basis-triangular",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/polarization_basis/tri.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "the same basis construction on a triangular (non-orthogonal) lattice",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.03,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Companion to square.lua on a non-orthogonal lattice, where the normal-vector field construction is materially harder. Same file-graded shape.",
+      "proposed_check": "fmm-polarization-basis-triangular"
+    },
+    {
+      "id": "fmm-polygon-rasterization",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/patterns/polygon.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "polygon rasterization and exact-predicate intersection, independent of both the factorization and the eigensolve",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 1.29,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Grades S4/pattern/, which this module owns: the abort build shows it reaches no FMMGetEpsilon_* at all, and it never solves. The slowest of the six pattern scripts at 1.29 s. It writes about 1 MB to STDERR, not stdout, so the check must capture stderr.",
+      "proposed_check": "fmm-polygon-rasterization"
+    },
+    {
+      "id": "fmm-composite-shape-rasterization",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/patterns/composite.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "boolean composition of overlapping shapes through the same intersection predicates",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.37,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "The most complex geometry of the six and the best discriminator for Shewchuk's exact predicates, which are sensitive to any relaxation of IEEE-754 rounding by a port. Also stderr-graded.",
+      "proposed_check": "fmm-composite-shape-rasterization"
+    },
+    {
+      "id": "fmm-nonorthogonal-rasterization",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/patterns/nonorth.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "rasterization on a non-orthogonal lattice basis",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.29,
+      "runtime_measured": true,
+      "suitable": false,
+      "why": "NOT GRADEABLE at this pin, same root cause as Li ex2 and worst here because a non-orthogonal lattice has the densest |G| degeneracy. Rebuilt at -O0 the retained reciprocal-lattice set differs enough to move the reconstructed permittivity by 0.21 on both graded files - 8088 of 16384 values in the unit-cell realization and 44211 of 90000 in the real-space map. Unlike the crossed-grating orders check this is not a permutation: the sorted value sets differ, still 0.202 apart after sorting both, so it is a genuinely different Fourier reconstruction rather than the same one re-enumerated. -DHAVE_BLAS -DHAVE_LAPACK alone leaves it bit-identical, confirming the optimisation level as the cause. The five orthogonal-lattice rasterization checks (circle, ellipse, rectangle, polygon, composite) are unaffected and carry the geometry coverage."
+    },
+    {
+      "id": "fmm-quasiguided-modes",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/2d/Tikhodeev_PRB_66_45102_2002/fig4.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "quasi-guided modes of a photonic crystal slab with the polarization decomposition at SetResolution(8)",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 6.41,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Suitable ONLY de-threaded. As shipped it segfaults, but through S:Clone() plus S4.SolveInParallel rather than the factorization: rewritten as a single simulation over the identical geometry it runs clean and converging. This is also the geometry used to measure the SetResolution cost curve, where factorization reaches 69 percent of total wall time at res 64, so it is the natural home for this module's expensive check. The rewrite must be stated in the check README.",
+      "proposed_check": "fmm-quasiguided-modes"
+    },
+    {
+      "id": "threading-parallel",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/threading/parallel.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "not reached - the script fails before producing gradeable output",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.02,
+      "runtime_measured": true,
+      "suitable": false,
+      "why": "Segfaults. It is the dedicated test of the S:Clone plus S4.SolveInParallel path, which is broken in this build - the same crash as the shipped Tikhodeev fig4. Unlike fig4 there is nothing left to grade once the threading is removed, because threading is the entire subject of the test."
+    },
+    {
+      "id": "mpi-example-mpi-simple",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/MPI_example/mpi_simple.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "not reached - the script fails before producing gradeable output",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.02,
+      "runtime_measured": true,
+      "suitable": false,
+      "why": "Requires the S4mpi binary; under the serial build it produces no stdout at all. The MPI front end is not packaged - it is a build variant of the same Lua entry point rather than distinct physics."
+    },
+    {
+      "id": "mpi-example-binary-grating-mpi",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/MPI_example/binary_grating_mpi.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "not reached - the script fails before producing gradeable output",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.01,
+      "runtime_measured": true,
+      "suitable": false,
+      "why": "Same: needs S4mpi, silent under the serial build."
+    },
+    {
+      "id": "fmm-lamellar-fig2a",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/1d/Liu_OE_17_21897_2009/fig2a.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "a lamellar grating efficiency sweep, 100 graded rows",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.5,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Runs clean at 0.50 s. Same paper and factorization path as fig3e, different configuration; kept because the budget is not binding (the whole suitable suite is well under the 900 s default) and a suitable test is not dropped for redundancy.",
+      "proposed_check": "fmm-lamellar-fig2a"
+    },
+    {
+      "id": "fmm-lamellar-fig3a",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/1d/Liu_OE_17_21897_2009/fig3a.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "a second lamellar configuration, 90 graded rows",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.15,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Runs clean at 0.15 s; independent geometry within the same study.",
+      "proposed_check": "fmm-lamellar-fig3a"
+    },
+    {
+      "id": "fmm-lamellar-fig3b",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/1d/Liu_OE_17_21897_2009/fig3b.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "the field-map counterpart of fig3a, 25200 graded rows",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.14,
+      "runtime_measured": true,
+      "suitable": false,
+      "why": "NOT GRADEABLE at this pin. The script prints x, z and Ey over a field map, and the Ey column is identically zero at every one of its 25000 rows, so the only live columns are the fixed coordinate grid. The cause is upstream printing the one component symmetry forbids: the excitation is pure p-polarised (s-amplitude {0,0}, p-amplitude {1,0}) at normal incidence on a 1-D grating, so the field lies in the x-z plane and Ey vanishes identically. Instrumenting the same run to print all three components confirms it - Ex and Ez are live with max |E| of 2.685 and 2.679 while Ey stays exactly 0. Doubling the silicon permittivity from 12 to 24 leaves the whole output byte-identical, so a check built on it would pass for any port, including one that returns zeros. Printing Ex instead would be authoring physics upstream never ran, so it is recorded unsuitable rather than repaired. The efficiency-sweep scripts from the same paper (fig2a, fig3a, fig3c, fig3e, fig4e) are live and carry this geometry family."
+    },
+    {
+      "id": "fmm-lamellar-fig3c",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/1d/Liu_OE_17_21897_2009/fig3c.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "a third lamellar configuration, 90 graded rows",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.25,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Runs clean at 0.25 s.",
+      "proposed_check": "fmm-lamellar-fig3c"
+    },
+    {
+      "id": "fmm-lamellar-fig3d",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/1d/Liu_OE_17_21897_2009/fig3d.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "the field-map counterpart of fig3c, 35200 graded rows",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.25,
+      "runtime_measured": true,
+      "suitable": false,
+      "why": "NOT GRADEABLE at this pin. The script prints x, z and Ey over a field map, and the Ey column is identically zero at every one of its 35000 rows, so the only live columns are the fixed coordinate grid. The cause is upstream printing the one component symmetry forbids: the excitation is pure p-polarised (s-amplitude {0,0}, p-amplitude {1,0}) at normal incidence on a 1-D grating, so the field lies in the x-z plane and Ey vanishes identically. Instrumenting the same run to print all three components confirms it - Ex and Ez are live with max |E| of 2.685 and 2.679 while Ey stays exactly 0. Doubling the silicon permittivity from 12 to 24 leaves the whole output byte-identical, so a check built on it would pass for any port, including one that returns zeros. Printing Ex instead would be authoring physics upstream never ran, so it is recorded unsuitable rather than repaired. The efficiency-sweep scripts from the same paper (fig2a, fig3a, fig3c, fig3e, fig4e) are live and carry this geometry family."
+    },
+    {
+      "id": "fmm-crossed-grating-convergence-new",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/2d/Li_JOSA_14_2758_1997/ex1_new.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "the same crossed-grating convergence study under the 'new' FMM formulation of Li's paper",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 2.24,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Suitable only rebuilt fresh-per-basis, exactly like ex1_orig: as shipped it prints nan for 9 of 10 rows. Worth keeping because ex1_orig, ex1_new and ex1_normal are precisely the three factorization formulations Li's paper compares, so together they discriminate between the rules this module owns in a way no single one does.",
+      "proposed_check": "fmm-crossed-grating-convergence-new"
+    },
+    {
+      "id": "fmm-crossed-grating-convergence-normal",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/2d/Li_JOSA_14_2758_1997/ex1_normal.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "the same study under the normal-vector formulation",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 2.24,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Suitable only rebuilt fresh-per-basis. The third arm of Li's three-way formulation comparison; see ex1_new.",
+      "proposed_check": "fmm-crossed-grating-convergence-normal"
+    },
+    {
+      "id": "fmm-crossed-grating-ex2",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/2d/Li_JOSA_14_2758_1997/ex2.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "a second crossed-grating geometry graded on two efficiency columns",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 2.24,
+      "runtime_measured": true,
+      "suitable": false,
+      "why": "NOT GRADEABLE at this pin, for a reason found only by the alternative-build solve. S4/gsel.c ranks the retained reciprocal-lattice vectors by a floating-point length (Gcmp_d, gsel.c:42) and sorts them with the non-stable quicksort in S4/sort.c; the operative path here is the circular truncation Gsel_circular (sort at gsel.c:147) with the tie test G_same (gsel.c:74-90), so vectors sharing a |G| shell are ordered - and at the truncation boundary counted - according to how the comparison rounds. Rebuilding the identical source at -O0 instead of -O2 is enough: this deck's own GetNumG() column then reports 81 where the -O2 build reports 77, and 160 where it reports 159, so the two builds solve at genuinely different basis sizes and the graded efficiencies are not the same physics. Isolated, -O0 alone moves the output by 4.0 while -DHAVE_BLAS -DHAVE_LAPACK alone moves it by 1.7e-13, so the optimisation level and not the eigensolver is the cause. No tolerance or comparison rule can reconcile two different truncations of the same Fourier series. Its sibling ex3 (fmm-crossed-grating-orders) is affected only in row ORDER, with the G-vector set identical and every matched efficiency within 3.0e-16, and is kept with a G-index-keyed comparison."
+    },
+    {
+      "id": "fmm-circle-rasterization",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/patterns/circle.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "rasterization of a curved shape against the exact-arithmetic predicates",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.46,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Runs clean at 0.46 s, fmm-free but squarely in S4/pattern/ which this module owns. Curved boundaries stress the predicates differently from polygons. Roughly 1 MB to stderr, so the check must capture stderr.",
+      "proposed_check": "fmm-circle-rasterization"
+    },
+    {
+      "id": "fmm-ellipse-rasterization",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/patterns/ellipse.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "rasterization of an anisotropic curved shape",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.35,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Runs clean at 0.35 s; the ellipse exercises the non-uniform scaling path the circle does not. Also stderr-graded.",
+      "proposed_check": "fmm-ellipse-rasterization"
+    },
+    {
+      "id": "fmm-rectangle-rasterization",
+      "module": "fmm-fourier-factorization",
+      "path": "examples/patterns/rectangle.lua",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "rasterization of the axis-aligned primitive used by most patterned examples",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 1.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.45,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Runs clean at 0.45 s. The simplest geometry and therefore the cleanest regression signal if a port breaks the rasterizer outright. Also stderr-graded.",
+      "proposed_check": "fmm-rectangle-rasterization"
+    }
+  ]
+}

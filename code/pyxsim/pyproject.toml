@@ -1,0 +1,88 @@
+[build-system]
+requires = [
+    "setuptools>=61.2",
+    "setuptools_scm[toml]>=7.0.1",
+    "wheel>=0.36.2",
+    "Cython>=0.29.21", "numpy>=2.0.0,<3"
+]
+
+[project]
+name = "pyxsim"
+dynamic = ["version"]
+requires-python = ">=3.11"
+description = "Python package for simulating X-ray observations from astrophysical sources"
+authors = [
+    { name = "John ZuHone", email = "jzuhone@gmail.com" },
+]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+dependencies = [
+    "numpy",
+    "astropy>=4.0",
+    "h5py>=3.0",
+    "scipy",
+    "yt>=4.4",
+    "unyt>=2.9.5",
+    "soxs>=5.1.0",
+    "tqdm",
+]
+
+[tool.setuptools_scm]
+
+[tool.ruff]
+line-length = 110
+exclude = [
+    "doc",
+]
+
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "W",
+    "C4",   # flake8-comprehensions
+    "B",    # flake8-bugbear
+    "G",    # flake8-logging-format
+    "TCH",  # flake8-type-checking
+    "YTT",  # flake8-2020
+    "UP",   # pyupgrade
+    "I",    # isort
+    "NPY",  # numpy specific rules
+    "RUF031"# incorrectly-parenthesized-tuple-in-subscript
+]
+ignore = [
+    "E741",  # Do not use variables named 'I', 'O', or 'l'
+]
+
+[tool.ruff.lint.per-file-ignores]
+"test_*" = ["NPY002"]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+known-third-party = [
+  "IPython",
+  "numpy",
+  "sympy",
+  "matplotlib",
+  "unyt",
+  "git",
+  "yaml",
+  "dateutil",
+  "requests",
+  "coverage",
+  "pytest",
+  "astropy",
+  "scipy",
+  "pathlib",
+  "yt",
+  "soxs",
+]
+known-first-party = ["pyxsim"]
+
+[tool.ruff.lint.extend-per-file-ignores]
+"__init__.py" = ["E402", "F401", "F403"]

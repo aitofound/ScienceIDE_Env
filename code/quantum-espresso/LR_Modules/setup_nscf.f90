@@ -1,0 +1,192 @@
+!
+! Copyright (C) 2001-2018 Quantum ESPRESSO group
+! This file is distributed under the terms of the
+! GNU General Public License. See the file `License'
+! in the root directory of the present distribution,
+! or http://www.gnu.org/copyleft/gpl.txt .
+!
+!----------------------------------------------------------------------------
+SUBROUTINE setup_nscf ( newgrid, xq, dont_use_ibz )
+  !----------------------------------------------------------------------------
+  !
+  ! ... This routine initializes variables for the non-scf calculations at k
+  ! ... and k+q required by the linear response calculation at finite q.
+  ! ... In particular: finds the symmetry group of the crystal that leaves
+  ! ... the phonon q-vector (xq) or the single atomic displacement (modenum)
+  ! ... unchanged; determines the k- and k+q points in the irreducible BZ
+  ! ... Needed on input (read from data file):
+  ! ... "nsym" crystal symmetries s, t_rev, "nrot" lattice symetries "s"
+  ! ... "nkstot" k-points in the irreducible BZ wrt lattice symmetry
+  ! ... Produced on output:
+  ! ... symmetries ordered with the "nsymq" phonon symmetries first
+  ! ... "nkstot" k- and k+q-points in the IBZ calculated for the phonon sym.)
+  ! ... Misc. data needed for running the non-scf calculation
+  !
+  USE kinds,              ONLY : DP
+  USE parameters,         ONLY : npk
+  USE constants,          ONLY : pi, degspin
+  USE cell_base,          ONLY : at, bg, tpiba
+  USE ions_base,          ONLY : nat
+  USE force_mod,          ONLY : force
+  USE klist,              ONLY : xk, wk, nks, degauss, lgauss, &
+                                 ltetra, nkstot, qnorm
+  USE lsda_mod,           ONLY : lsda, nspin, current_spin, isk
+  USE symm_base,          ONLY : s, t_rev, nrot, nsym, time_reversal
+  USE wvfct,              ONLY : nbnd, nbndx
+  USE control_flags,      ONLY : ethr, isolve, david, max_cg_iter, &
+                                 noinv, use_para_diag
+  USE mp_pools,           ONLY : kunit
+  USE noncollin_module,   ONLY : noncolin, domag
+  USE start_k,            ONLY : nks_start, xk_start, wk_start, &
+                                 nk1, nk2, nk3, k1, k2, k3
+  USE ktetra,             ONLY : tetra, tetra_type, opt_tetra_init
+  USE lr_symm_base,       ONLY : nsymq, invsymq, minus_q
+  USE control_lr,         ONLY : lgamma, ethr_nscf
+  !
+  IMPLICIT NONE
+  !
+  REAL (DP), INTENT(IN) :: xq(3)
+  LOGICAL, INTENT (IN) :: newgrid
+  LOGICAL, INTENT (IN) :: dont_use_ibz
+  !! If .FALSE., use irreducible BZ (with symmetries that preserve q).
+  !! - If newgrid is .FALSE., start with the k mesh of the previous pw.x calculation
+  !!   (read from xml), and unfold it to add k points needed because some symmetries are broken by q.
+  !! - If newgrid is .TRUE., create an IBZ of q using nk1, ... in start_k.
+  !! If .TRUE., do not use symmetry to unfold or reduce k points.
+  !! - If newgrid is .FALSE., use the k points of the previous pw.x calculation
+  !!   (read from xml). The k points may or may not have symmetry.
+  !! - If newgrid is .TRUE., create a full BZ using nk1, ... in start_k.
+  !
+  LOGICAL  :: skip_equivalence
+  !
+  IF ( .NOT. ALLOCATED( force ) ) ALLOCATE( force( 3, nat ) )
+  !
+  ! ... threshold for diagonalization ethr
+  !
+  ethr = ethr_nscf
+  !
+  ! ... variables for iterative diagonalization
+  ! ... Davidson: isolve=0, david=4 ; CG: isolve=1, david=1
+  IF (isolve == 0) THEN
+     david = 4
+  ELSE IF (isolve == 1) THEN
+     david = 1
+   ELSE IF (isolve == 5) THEN
+     david = -1  ! direct diagonalization, nbndx not used
+  ELSE
+     call errore('setup_nscf','erroneous value for diagonalization method. &
+                               Should be isolve=0 (david) or 1 (cg) or 5 (direct)',1)
+  END IF
+  nbndx = david*nbnd
+  max_cg_iter=20
+  !
+  CALL set_para_diag( nbnd, use_para_diag )
+  !
+  ! ... Symmetry and k-point section
+  !
+  ! ... smallg_q flags in symmetry operations of the crystal
+  ! ... that are not symmetry operations of the small group of q
+  !
+  CALL set_small_group_of_q(nsymq,invsymq,minus_q)
+  !
+  ! ... Input k-points are assumed to be  given in the IBZ of the Bravais
+  ! ... lattice, with the full point symmetry of the lattice.
+  !
+  if( nks_start > 0 .AND. .NOT. newgrid ) then
+     !
+     !  In this case I keep the same points of the Charge density
+     !  calculations
+     !
+     nkstot = nks_start
+     xk(:,1:nkstot) = xk_start(:,1:nkstot)
+     wk(1:nkstot)   = wk_start(1:nkstot)
+  else
+     !
+     ! In this case I generate a new set of k-points
+     !
+     ! In the case of electron-phonon matrix element with wannier functions
+     ! (and possibly in other cases as well) the k-points should not be reduced
+     !
+     skip_equivalence = dont_use_ibz  ! If true, skip removal of symmetry-equivalent k ponints
+     CALL kpoint_grid ( nrot, time_reversal, skip_equivalence, s, t_rev, &
+                      bg, nk1*nk2*nk3, k1,k2,k3, nk1,nk2,nk3, nkstot, xk, wk)
+  endif
+  !
+  ! ... If some symmetries of the lattice are missing in the crystal,
+  ! ... "irreducible_BZ" computes the missing k-points.
+  !
+  if (.NOT. dont_use_ibz) CALL irreducible_BZ(nrot, s, nsymq, minus_q, noncolin .AND. domag, &
+                                          at, bg, npk, nkstot, xk, wk, t_rev)
+  !
+  ! ... add k+q to the list of k
+  !
+  IF (noncolin.AND.domag) THEN
+     CALL set_kplusq_nc( xk, wk, xq, nkstot, npk)
+  ELSE
+     CALL set_kplusq( xk, wk, xq, nkstot, npk)
+  ENDIF
+  !
+  ! ... set the granularity for k-point distribution
+  !
+  IF ( lgamma  ) THEN
+     !
+     kunit = 1
+     IF (noncolin.AND.domag) kunit = 2
+     !
+  ELSE
+     !
+     kunit = 2
+     IF (noncolin.AND.domag) kunit = 4
+     !
+  ENDIF
+  !
+  ! ... Map each k point in the irr.-BZ into tetrahedra
+  !
+  IF ( ltetra .AND. (tetra_type /= 0) ) THEN
+     IF (ALLOCATED(tetra)) DEALLOCATE(tetra)
+     CALL opt_tetra_init(nsymq, s, time_reversal .AND. minus_q, t_rev, at, bg,&
+          npk, k1, k2, k3, nk1, nk2, nk3, nkstot, xk, kunit)
+  END IF
+  !
+  IF ( lsda ) THEN
+     !
+     ! ... LSDA case: two different spin polarizations,
+     ! ...            each with its own kpoints
+     !
+     if (nspin /= 2) call errore ('setup_nscf','nspin should be 2; check iosys',1)
+     !
+     CALL set_kup_and_kdw( xk, wk, isk, nkstot, npk )
+     !
+  ELSE IF ( noncolin ) THEN
+     !
+     ! ... noncolinear magnetism: potential and charge have dimension 4 (1+3)
+     !
+     if (nspin /= 4) call errore ('setup_nscf','nspin should be 4; check iosys',1)
+     current_spin = 1
+     !
+  ELSE
+     !
+     ! ... LDA case: the two spin polarizations are identical
+     !
+     wk(1:nkstot)    = wk(1:nkstot) * degspin
+     current_spin = 1
+     !
+     IF ( nspin /= 1 ) &
+        CALL errore( 'setup_nscf', 'nspin should be 1; check iosys', 1 )
+     !
+  END IF
+  !
+  IF ( nkstot > npk ) CALL errore( 'setup_nscf', 'too many k points', nkstot )
+  !
+  ! ...notice: qnorm is used to determine the correct size
+  ! ...of the interpolation tables (tab_beta, tab_qrad, etc.)
+  !
+  qnorm = sqrt(xq(1)**2 + xq(2)**2 + xq(3)**2) * tpiba
+  !
+  ! ... distribute k-points (and their weights and spin indices)
+  !
+  CALL divide_et_impera( nkstot, xk, wk, isk, nks )
+  !
+  RETURN
+  !
+END SUBROUTINE setup_nscf

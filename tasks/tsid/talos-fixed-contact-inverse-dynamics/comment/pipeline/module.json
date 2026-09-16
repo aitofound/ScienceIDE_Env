@@ -1,0 +1,79 @@
+{
+  "module": {
+    "slug": "talos-fixed-contact-inverse-dynamics",
+    "title": "TALOS fixed-contact whole-body inverse dynamics",
+    "paths": [
+      "src/formulations/inverse-dynamics-formulation-acc-force.cpp",
+      "include/tsid/formulations/inverse-dynamics-formulation-acc-force.hpp",
+      "src/contacts/contact-6d.cpp",
+      "include/tsid/contacts/contact-6d.hpp",
+      "src/tasks/task-com-equality.cpp",
+      "include/tsid/tasks/task-com-equality.hpp",
+      "src/tasks/task-se3-equality.cpp",
+      "include/tsid/tasks/task-se3-equality.hpp",
+      "src/tasks/task-joint-posture.cpp",
+      "include/tsid/tasks/task-joint-posture.hpp",
+      "src/tasks/task-actuation-bounds.cpp",
+      "include/tsid/tasks/task-actuation-bounds.hpp",
+      "src/tasks/task-joint-bounds.cpp",
+      "include/tsid/tasks/task-joint-bounds.hpp",
+      "src/solvers/solver-HQP-eiquadprog-fast.cpp",
+      "include/tsid/solvers/solver-HQP-eiquadprog-fast.hpp",
+      "exercizes/tsid_biped.py",
+      "exercizes/talos_conf.py"
+    ],
+    "entrypoints": [
+      "exercizes/tsid_biped.py:TsidBiped(viewer=False)",
+      "exercizes/ex_3_biped_balance_with_gui.py (scientific setup reference; GUI not executed)",
+      "tests/tsid-formulation.cpp",
+      "tests/contacts.cpp",
+      "tests/tasks.cpp"
+    ],
+    "expensive_path": "Repeated assembly and active-set solution of the floating-base acceleration/contact-force HQP, including rigid-contact Jacobians and inverse-dynamics constraints. Cost and acceleration value remain unmeasured until the Linux native probe; no speedup or benchmark timing is claimed.",
+    "rationale": "One controller module maps a floating-base state and task references to acceleration, actuator torques and two rigid-foot contact-force distributions. CoM, hand/torso SE3 and posture objectives share the same hard dynamics/contact/actuation feasibility problem, so they are one module rather than separate robot or scenario modules.",
+    "excluded": [
+      "Walking, contact transitions, external disturbances and measured external forces",
+      "Other robot embodiments and standalone manipulator/quadruped task families",
+      "Alternative solver backend comparison, MPC, RL and GPU implementation",
+      "GUI, forward torque simulator, collisions, objects and grasp contacts"
+    ],
+    "hazards": [
+      "PROVISIONAL: no native build or short test has run; Linux SSH connection is pending.",
+      "The curator directed proceeding on GitHub after the scope and source draft were presented; native evidence remains pending and PR #524 stays Draft.",
+      "Root BSD-2-Clause license coexists with historical LGPL notices; TALOS data has its own LGPL-3.0 notice.",
+      "The upstream model-path join needs a scratch adapter; source payload must remain unchanged.",
+      "Upstream scales effort limits by 1.45 and disables the velocity-bounds task; final scenario semantics need evidence.",
+      "Exact HQP output is non-unique; physical feasibility and task behavior must be checked without imposing optimizer identity.",
+      "The benchmark's NumPy-only verifier contract requires an explicit independent dynamics/FK design.",
+      "Right-hand and torso additions are proposed adaptations; official-test coverage and any custom-check status remain to be determined."
+    ]
+  },
+  "approval": {
+    "modules": [
+      "talos-fixed-contact-inverse-dynamics"
+    ],
+    "human_ref": "你不能登录我给的github看详细要求吗 不要来问我 按照我给你的github地址的repo进行操作",
+    "at": "2026-09-07T03:44:22Z"
+  },
+  "shared_infrastructure": [
+    "src/math",
+    "include/tsid/math",
+    "src/robots",
+    "include/tsid/robots",
+    "src/trajectories",
+    "include/tsid/trajectories",
+    "src/utils",
+    "bindings/python",
+    "include/tsid/bindings",
+    "CMakeLists.txt",
+    "src/tasks/task-base.cpp",
+    "src/tasks/task-motion.cpp",
+    "src/tasks/task-actuation.cpp",
+    "src/tasks/task-contact-force.cpp",
+    "src/tasks/task-angular-momentum-equality.cpp",
+    "src/tasks/task-cop-equality.cpp",
+    "src/solvers/solver-HQP-base.cpp",
+    "src/solvers/solver-HQP-factory.cpp",
+    "src/solvers/utils.cpp"
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "module": {
+    "slug": "nesc-6dof-flight-dynamics",
+    "title": "NESC six-degree-of-freedom flight dynamics and unaugmented F-16 trim",
+    "paths": [
+      "simupy_flight/__init__.py",
+      "simupy_flight/kinematics.py",
+      "simupy_flight/dynamics.py",
+      "nesc_test_cases/F16_model.py",
+      "nesc_test_cases/F16_aero.py",
+      "nesc_test_cases/F16_prop.py",
+      "nesc_test_cases/F16_inertia.py",
+      "nesc_test_cases/F16_control.py",
+      "nesc_test_cases/nesc_case01.py",
+      "nesc_test_cases/nesc_case02.py",
+      "nesc_test_cases/nesc_case09.py",
+      "nesc_test_cases/nesc_case11.py"
+    ],
+    "entrypoints": [
+      "nesc_test_cases/nesc_case01.py",
+      "nesc_test_cases/nesc_case02.py",
+      "nesc_test_cases/nesc_case09.py",
+      "nesc_test_cases/nesc_case11.py",
+      "nesc_test_cases/F16_aero.py"
+    ],
+    "expensive_path": "Repeated coupled Planet/Vehicle right-hand-side evaluation and F-16 multidimensional aerodynamic interpolation during trajectory integration and trim. The full official 180-second Case 11 took 58.195 and 53.637 seconds in two native executions including trim, versus about 1-2 seconds for each 30-second sphere/brick case. This is measured end-to-end cost, not a function-level profile or speedup claim.",
+    "rationale": "One coupled rigid-body flight-dynamics module: Planet propagates inertial position, quaternion, inertial velocity and body-resolved inertial angular rate; Vehicle supplies accelerations and moments. The four selected cases progressively exercise the same equations and the F-16 callback interface rather than defining four independent modules. The user-specified initial focus is Cases 1, 2, 9 and 11; the later official-test survey must explicitly address other upstream cases that exercise these same paths.",
+    "excluded": [
+      "DAVE-ML parser development and symbolic re-derivation; retain generated runtime equations unchanged",
+      "Closed-loop guidance, stability augmentation, autopilot maneuvers and Cases 13.*, 15 and 16 as initial grading scenarios",
+      "F16_control.py is retained only as the existing Case 11 trim/control-routing dependency with SAS and autopilot disabled, not as a new control-system task",
+      "GPU implementation, Monte Carlo infrastructure, new aircraft and new atmosphere or wind models"
+    ],
+    "hazards": [
+      "NASA-1.3 root license, notices and nested third-party notices must be retained; no NASA endorsement is asserted",
+      "NESC CSVs have heterogeneous columns and different reference simulators; they are not interchangeable exact ground truth",
+      "The pristine Case 11 passes upstream regression but differs from NASA SIM 05 over 180 seconds; reference selection, trim/model differences and a scientifically warranted comparison remain unresolved",
+      "Upstream uses rounded ft_per_m=3.28084 while external SI conversion should use exact 0.3048 m/ft; distinguish model constants from data conversion",
+      "Case 2 has diagonal inertia and covers no nonzero products of inertia; Case 9 has aerodynamic drag and is not energy conserving",
+      "Quaternion sign, Euler wrapping and adaptive integration timestamps must not create false failures",
+      "The official variant is numerical-noise calibration, not a percent-level physical change; never compare materially changed initial conditions to nominal NASA trajectories",
+      "Upstream regression compares position and quaternion only; it does not certify all flight states or agreement with NASA reference data",
+      "Native Windows evidence is preliminary; Docker, cross-build calibration, final tolerances and mutation rejection are pending"
+    ]
+  },
+  "approval": {
+    "modules": [
+      "nesc-6dof-flight-dynamics"
+    ],
+    "human_ref": "可以提交PR了 等reviewer审核",
+    "at": "2026-09-07T06:42:39Z"
+  },
+  "shared_infrastructure": [
+    "setup.py",
+    "pyproject.toml",
+    "simupy_flight/version.py",
+    "nesc_test_cases/nesc_testcase_helper.py",
+    "nesc_test_cases/run_nesc_cases.py",
+    "NESC_data",
+    "regression_data"
+  ]
+}

@@ -87,17 +87,18 @@
     ]
   },
   "evidence": {
-    "floor": 0.0,
-    "floor_how": "measured by selfcheck on 2026-09-05: run.sh altbuild (configure.py -debug: Athena++'s own -O0 -g build with the same compiler instead of the default optimized build; all other configure switches unchanged) against run.sh nominal, graded with the check's own validate.py: bit-identical graded output",
-    "self_validation_spread": 9.85878045867139e-14,
+    "floor": 9.85878045867139e-14,
+    "floor_how": "measured by selfcheck on 2026-09-08: run.sh altbuild (configure.py -debug: Athena++'s own -O0 -g build with the same compiler instead of the default optimized build; all other configure switches unchanged) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
+    "self_validation_spread": 9.237055564881302e-14,
     "variant_preview_spread": 9.859e-14,
     "altbuild": {
       "what": "configure.py -debug: Athena++'s own -O0 -g build with the same compiler instead of the default optimized build; all other configure switches unchanged",
-      "distance": 0.0,
-      "identical": true,
+      "distance": 9.85878045867139e-14,
+      "bound_fraction": null,
+      "identical": false,
       "passed": true,
       "reason": "all graded values within bound",
-      "at": "2026-09-05T02:34:44Z"
+      "at": "2026-09-08T04:56:59Z"
     }
   },
   "warrant": "The graded observable is the final primitive state of every cell of every run of the series (14 runs, 14 files), compared value by value under an absolute bound of 1e-11 with no relative term. Physical: the wave amplitude is 1e-6 and the numerical error of the low-resolution runs is a few per cent of it, so a wrong Riemann flux, a wrong eigenvector in the initialisation, a dropped term in the SR inversion or a lower-order reconstruction changes the final state by 1e-8 or more, three orders above the bound; the bound therefore discriminates errors that the upstream convergence-order criterion would never see. Achievable: the flow is smooth and the SR inversion converges to 1e-12 in pressure (src/eos/adiabatic_mhd_sr.cpp, ConservedToPrimitiveNormal, tol = 1.0e-12), so legitimate runs differ only by round-off of order 1e-15 per operation; the -O3 and -O2 builds are bit-identical on every run (floor 0) and a 1e-15 perturbation of the background density changes the final state by at most 9.9e-14 (variant preview), 101 times below the bound of 1e-11. Finalized with the curator on 2026-09-02 after the calibration selfcheck on the x86 worker recorded an in-container nominal-versus-variant spread of 9.9e-14, equal to the preview."

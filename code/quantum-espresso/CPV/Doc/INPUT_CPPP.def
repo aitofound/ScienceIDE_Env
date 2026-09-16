@@ -1,0 +1,175 @@
+input_description -distribution {Quantum ESPRESSO} -package CP -program cppp.x {
+
+    toc {}
+
+    intro {
+=============================================================================
+                            CP Post-Processing code (cppp.x)
+=============================================================================
+
+The cppp.x code is an utility that can be used to extract data from the CP
+restart and CP trajectory files.
+
+INPUT:
+=====
+
+the program read the input parameters from the standard input or from
+any other file specified through the usual "-input" command line flag.
+The input parameters, in the input file, should be specified in the inputpp
+namelist follow:
+
+&INPUTPP
+  ...
+  cppp_input_parameter
+  ...
+/
+    }
+
+    namelist INPUTPP {
+
+	var prefix  -type         CHARACTER {
+	    default { 'cp' }
+	    info {
+		basename prepended to cp.x output filenames: cp.evp, cp.pos ....
+	    }
+	}
+
+	var fileout  -type        CHARACTER {
+	    default { 'out' }
+	    info {
+		basename of the cppp.x output files
+	    }
+	}
+
+	var output  -type         CHARACTER {
+	    default { 'xsf' }
+
+	    options {
+		info {
+		    A string describing the output format to be performed.
+		}
+		opt -val 'xsf' {
+		    xcrysden format
+		}
+		opt -val 'xyz' {
+		    XMOL format
+		}
+	    }
+	}
+
+	var outdir  -type         CHARACTER {
+	    default -kind conditional {
+		case -test {ESPRESSO_TMPDIR environment variable is set} {
+		    value of the ESPRESSO_TMPDIR environment variable
+		}
+		case { './' }
+	    }
+	    info {
+		directory containing the CP trajectory files (.evp .pos .cel ...)
+		and restart files ( .save ) to be processed
+	    }
+	}
+
+	var lcharge  -type        LOGICAL {
+	    default { .false. }
+	    info {
+		OBSOLETE - no longer implemented. Use "pp.x" instead.
+	    }
+	}
+
+	var lforces  -type        LOGICAL {
+	    default { .false. }
+	    info {
+               This logical flag control the processing of forces.
+
+		   .TRUE.  extract forces from trajectory files and write
+                           them to xcrysden file
+
+		   .FALSE. do not process forces
+	    }
+	}
+
+	var ldynamics  -type      LOGICAL {
+	    default { .true. }
+	    info {
+		This logical flag control the processing of atoms trajectory.
+
+		    .TRUE.  process CP trajectory files and generate a trajectory
+		            file for xcrysden (.axsf)
+
+		    .FALSE. do not process trajectory
+	    }
+	}
+
+	var lpdb  -type           LOGICAL {
+	    default { .false. }
+	    info {
+		This logical flag control the generation of a pdb file.
+
+		    .TRUE.  generate a pdb file containing positions and cell
+		            of the simulated system
+
+		    .FALSE. do not generate pdb file
+	    }
+	}
+
+	var lrotation  -type      LOGICAL {
+	    default { .false. }
+	    info {
+		This logical flag control the rotation of the cell
+
+		    .TRUE.  rotate the system cell in space in order to have
+		            the a lattice parameter laying on the x axis,
+                            the b lattice parameter laying on the xy plane
+
+		    .FALSE. do not rotate cell
+	    }
+	}
+
+	vargroup -type INTEGER {
+	    var np1
+	    var np2
+	    var np3
+	    default { 1 }
+	    info {
+		Number of replicas of atomic positions along cell parameters.
+                CURRENTLY DISABLED
+
+		If np1, np2, np3 are 1 or not specified, cppp.x does not
+		replicate atomic positions in space.
+
+		If np1, np2, np3 are > 1 cppp.x replicates the atomic
+                positions used in the simulation np1 times along "a",
+                np2 times along "b", np3 times along "c".
+	    }
+	}
+
+	var nframes  -type        INTEGER {
+	    default { 1 }
+	    info {
+		number of MD step to be read to build the trajectory
+                CURRENTLY MUST BE > 1
+	    }
+	}
+
+	var ndr  -type            INTEGER {
+	    default { 51 }
+	    info {
+		CP restart file number to post process
+	    }
+	}
+
+	dimension atomic_number -start 1 -end ntyp -type  INTEGER {
+	    default { 1 }
+	    info {
+		Specify the atomic number of the species in CP trajectory and
+		restart file.
+
+		atomic_number(1)  specify the atomic number of the first specie
+		atomic_number(2)  specify the atomic number of the second specie
+		....
+	    }
+	}
+
+    }
+}

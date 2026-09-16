@@ -1,0 +1,164 @@
+{
+  "kind": "native_investigation_not_cli_selfcheck",
+  "source_pin": "14625beca2ce0918f88d1fc84a3c0cdb591e0729",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "build": "pinned native Windows wheel installed in investigation environment; no candidate acceleration or Linux build claim",
+  "numerical_threads": 1,
+  "timeout_per_process_s": 180,
+  "source_build_included": false,
+  "commands": {
+    "nominal": "SOURCE_DIR=<pinned-source> OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 python producer.py --ic ic/nominal --out <nominal-output> --author-manifests",
+    "variant": "SOURCE_DIR=<pinned-source> OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 python producer.py --ic ic/variant --out <variant-output>",
+    "repeat": "SOURCE_DIR=<pinned-source> OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 python producer.py --ic ic/nominal --out <repeat-output>"
+  },
+  "runs": {
+    "nominal": {
+      "check": "benchmarks-bench-ik-humanoid",
+      "mode": "author",
+      "exit_code": 0,
+      "timeout": false,
+      "wall_s": 3.375258299987763
+    },
+    "variant": {
+      "check": "benchmarks-bench-ik-humanoid",
+      "mode": "variant",
+      "exit_code": 0,
+      "timeout": false,
+      "wall_s": 3.9057974999886937
+    },
+    "repeat": {
+      "check": "benchmarks-bench-ik-humanoid",
+      "mode": "repeat",
+      "exit_code": 0,
+      "timeout": false,
+      "wall_s": 3.8505946999648586
+    }
+  },
+  "input_change": {
+    "nominal": {
+      "kind": "scalar_q0",
+      "index": 7,
+      "value_hex": "-0x1.3f7ced916872bp-2"
+    },
+    "variant": {
+      "kind": "scalar_q0",
+      "index": 7,
+      "value_hex": "-0x1.3f7ced9168729p-2"
+    },
+    "ulp_steps": 2,
+    "direction": "positive infinity",
+    "applied_once": true
+  },
+  "selected_pose_spreads": {
+    "check": "benchmarks-bench-ik-humanoid",
+    "groups": [
+      {
+        "prefix": "g0_",
+        "trace_shape_nominal": [
+          2500,
+          6,
+          4,
+          4
+        ],
+        "trace_shape_variant": [
+          2500,
+          6,
+          4,
+          4
+        ],
+        "steps_nominal": 2500,
+        "steps_variant": 2500,
+        "steps_repeat": 2500,
+        "variant_selected_pose_abs": 3.411024240840277e-11,
+        "repeat_selected_pose_abs": 0.0,
+        "variant_identical": false
+      }
+    ],
+    "max_variant_selected_pose_abs": 3.411024240840277e-11,
+    "max_repeat_selected_pose_abs": 0.0,
+    "selected_pose_variant_identical": false,
+    "trace_shapes_equal": true
+  },
+  "output_contract": {
+    "format": "mink_official_kinematic_trace_v1",
+    "groups": [
+      {
+        "prefix": "g0_",
+        "manifest": "model_manifest_g0.npz",
+        "nq": 36,
+        "nv": 35,
+        "nframes": 6,
+        "trace_count": 2500,
+        "trace_mode": "fixed_source_loop_steps",
+        "task_types": [
+          "FrameTask",
+          "FrameTask",
+          "PostureTask",
+          "ComTask",
+          "FrameTask",
+          "FrameTask",
+          "FrameTask",
+          "RelativeFrameTask"
+        ],
+        "pose_selection": [
+          {
+            "translation": false,
+            "rotation": true
+          },
+          {
+            "translation": false,
+            "rotation": true
+          },
+          {
+            "translation": true,
+            "rotation": true
+          },
+          {
+            "translation": true,
+            "rotation": true
+          },
+          {
+            "translation": true,
+            "rotation": true
+          },
+          {
+            "translation": true,
+            "rotation": true,
+            "relative_to": 1
+          }
+        ],
+        "external_transition_at_outer_boundary": false,
+        "target_width": 80,
+        "nominal_step_count": 2500,
+        "min_steps": 1,
+        "max_steps": 80000,
+        "preloop_settle_steps": 0
+      }
+    ]
+  },
+  "files_sha256": {
+    "producer.py": "5d5cc1218595df1b5313187c608200130a178ca3fd826362ce014ef7f9bf55a9",
+    "upstream_example.py": "3b1d38948fd461c01ed0dbf5fa1ee6fa6f0ab4d9b3a85d09c6241092061af541",
+    "kinematics.py": "c9e9bd0a62dd5876aa270832642f60a1ba109e07589fcdf2084a25df2bda2f7b",
+    "ic/nominal/input.json": "2343b55e7dcf86d223fb0878a7e54382f66a0b5212a76e39ba20615ef23c0f1c",
+    "ic/variant/input.json": "6a4760a54a720d553a7df2f542390768e01f3981c8e0228a3eb39c7b30967cb7",
+    "schema.json": "b472cb5a14ef8770ff59dc6c0d74eba9fd70e8b321ae23af6924a7235b26f674",
+    "model_manifest_g0.npz": "a96edf492182d15a9e3271fd4446df6f47eaac09297551dbc0bd8909fd851e62",
+    "upstream_common.py": "a4077f36bce43c57c7e63f3b1a4c953be9c7e19ccb96c10895a8b211d8718d62",
+    "upstream_scenes.py": "fb42f1b65e3bd5355056fd7baa5f70047efdb67c6929b5272fbd3ebd9765544a"
+  },
+  "formal_selfcheck": "not run; CLI-owned evidence fields remain untouched",
+  "curator_finalized": false,
+  "python_version": "3.12.14",
+  "installed_packages": {
+    "mink": "1.3.0",
+    "numpy": "2.3.5",
+    "mujoco": "3.11.0",
+    "qpsolvers": "4.12.0",
+    "daqp": "0.8.5",
+    "loop-rate-limiters": "1.2.0"
+  },
+  "knob_probe_runs": [],
+  "nominal_timing_includes_trusted_model_fact_export": true,
+  "repeat_timing_excludes_trusted_model_fact_export": true
+}

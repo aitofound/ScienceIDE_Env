@@ -1,0 +1,220 @@
+name: CI - Linux via APT
+
+on:
+  push:
+    branches:
+      - devel
+    paths-ignore:
+      - doc/**
+      - .gitlab-ci.yml
+      - .gitignore
+      - '**.md'
+      - CITATION.*
+      - COPYING.LESSER
+      - colcon.pkg
+      - .pre-commit-config.yaml
+  pull_request:
+    paths-ignore:
+      - doc/**
+      - .gitlab-ci.yml
+      - .gitignore
+      - '**.md'
+      - CITATION.*
+      - COPYING.LESSER
+      - colcon.pkg
+      - .pre-commit-config.yaml
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    container: ${{ matrix.container }}
+    strategy:
+      fail-fast: false
+      matrix:
+        container: ['ubuntu:22.04', 'ubuntu:24.04']
+
+    env:
+      CCACHE_BASEDIR: ${GITHUB_WORKSPACE}
+      CCACHE_DIR: ${GITHUB_WORKSPACE}/.ccache
+      CCACHE_COMPRESS: true
+      CCACHE_COMPRESSLEVEL: 5
+      # Help ccache manage generated files and PCH (https://ccache.dev/manual/latest.html#_precompiled_headers)
+      CCACHE_SLOPPINESS: include_file_ctime,include_file_mtime,pch_defines,time_macros
+
+    steps:
+      - name: Setup Container
+        run: |
+          apt-get -qq update
+          DEBIAN_FRONTEND="noninteractive" apt-get -qq install -y lsb-release gnupg2 cmake git python3
+
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup ccache
+        uses: actions/cache@v6
+        with:
+          path: .ccache
+          save-always: true
+          key: ccache-linux-${{ matrix.container }}-${{ github.sha }}
+          restore-keys: ccache-linux-${{ matrix.container }}-
+
+    # extract branch name
+      - name: Get branch name (merge)
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+
+    # extract branch name on pull request
+      - name: Get branch name (pull request)
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF})" >> $GITHUB_ENV
+
+    # print branch name
+      - name: Debug
+        run: echo ${{ env.BRANCH_NAME }}
+
+      - name: Register robotpkg
+        run: |
+          sh -c "echo \"deb [arch=amd64] http://robotpkg.openrobots.org/packages/debian/pub $(lsb_release -cs) robotpkg\" >> /etc/apt/sources.list "
+          apt-key adv --fetch-keys http://robotpkg.openrobots.org/packages/debian/robotpkg.key
+
+      - name: Set and install dependencies
+        run: |
+          export PYTHON3_VERSION=$(python3 -c "import sys; print(str(sys.version_info.major)+str(sys.version_info.minor))")
+          export APT_DEPENDENCIES="doxygen \
+                                   ccache \
+                                   curl \
+                                   cppcheck \
+                                   libomp-dev \
+                                   libomp5 \
+                                   libboost-system-dev \
+                                   libboost-test-dev \
+                                   libboost-filesystem-dev \
+                                   libboost-program-options-dev \
+                                   libeigen3-dev \
+                                   liburdfdom-dev \
+                                   texlive-font-utils \
+                                   libboost-python-dev \
+                                   python3-numpy \
+                                   python3-matplotlib \
+                                   robotpkg-py${PYTHON3_VERSION}-eigenpy \
+                                   robotpkg-py${PYTHON3_VERSION}-coal \
+                                   robotpkg-py${PYTHON3_VERSION}-casadi"
+          echo $APT_DEPENDENCIES
+
+          apt-get update -qq
+          DEBIAN_FRONTEND="noninteractive" apt-get install -qq ${APT_DEPENDENCIES}
+
+      - name: Free disk space
+        run: |
+          apt clean
+          df -h
+
+      - name: Run cmake
+        run: |
+          # Add cloned repo to safe.directory, since it was not cloned by the container
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git submodule update --init
+          export PATH=$PATH:/opt/openrobots/bin
+          export PYTHON3_DOT_VERSION=$(python3 -c "import sys; print(str(sys.version_info.major)+'.'+str(sys.version_info.minor))")
+          export PYTHONPATH=${PYTHONPATH}:/opt/openrobots/lib/python$PYTHON3_DOT_VERSION/site-packages
+          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/openrobots/lib:/usr/local/lib:/usr/lib:/usr/lib/x86_64-linux-gnu
+          export CMAKE_PREFIX_PATH=/opt/openrobots/lib
+
+          # Clear ccache statistics
+          ccache -z
+
+          mkdir build
+          cd build
+          cmake .. \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DBUILD_WITH_COLLISION_SUPPORT=ON \
+            -DBUILD_ADVANCED_TESTING=OFF \
+            -DBUILD_WITH_CASADI_SUPPORT=ON \
+            -DPYTHON_EXECUTABLE=$(which python3) \
+            -DBUILD_WITH_OPENMP_SUPPORT=ON \
+            -DINSTALL_DOCUMENTATION=ON \
+            -DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/.github/workflows/cmake/linux-debug-toolchain.cmake
+          make -j2
+          make -j2 build_tests
+          export CTEST_OUTPUT_ON_FAILURE=1
+          make test
+          make install
+
+      - name: Test packaging
+        run: |
+          export PATH=$PATH:/opt/openrobots/bin
+          export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/opt/openrobots/lib/pkgconfig
+          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/openrobots/lib:/usr/local/lib:/usr/lib:/usr/lib/x86_64-linux-gnu
+          export CMAKE_PREFIX_PATH=/opt/openrobots/lib
+          cd ./unittest/packaging/cmake
+          mkdir build
+          cd build
+          export CMAKE_PREFIX_PATH=/usr/local
+          # Test CMake module packaging
+          echo === Test CMake module packaging ===
+          cmake .. \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DPYTHON_EXECUTABLE=$(which python3)
+          make -j2
+          ./run_rnea
+          ./load_urdf
+
+          # Test FetchContent packaging
+          echo === Test FetchContent packaging ===
+          cd ../../external
+          export PINOCCHIO_GIT_REPOSITORY="file://"$GITHUB_WORKSPACE
+          #export PINOCCHIO_GIT_REPOSITORY=$(git remote get-url origin)
+          export PINOCCHIO_GIT_TAG="test-external-"$(git rev-parse --short HEAD)
+          git tag $PINOCCHIO_GIT_TAG
+          mkdir build
+          cd build
+          cmake .. \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DPYTHON_EXECUTABLE=$(which python3)
+          make -j2
+          ./run_rnea
+          ./load_urdf
+
+          # Test CMake module packaging and pinocchio_header target
+          echo === Test CMake module packaging and pinocchio_header target ===
+          cd ../../pinocchio_header
+          mkdir build
+          cd build
+          cmake .. \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DPYTHON_EXECUTABLE=$(which python3)
+          make -j2
+          ./run_fk
+
+      - name: Uninstall project
+        run: |
+          cd build
+          make uninstall
+
+      - name: Display ccache statistics
+        run: |
+          ccache -sv
+
+  check:
+    if: always()
+    name: check-linux-apt
+
+    needs:
+      - build
+
+    runs-on: Ubuntu-latest
+
+    steps:
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@release/v1
+        with:
+          jobs: ${{ toJSON(needs) }}

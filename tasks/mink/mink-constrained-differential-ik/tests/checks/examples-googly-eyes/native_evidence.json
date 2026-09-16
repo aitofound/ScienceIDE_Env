@@ -1,0 +1,152 @@
+{
+  "kind": "native_investigation_not_cli_selfcheck",
+  "source_pin": "14625beca2ce0918f88d1fc84a3c0cdb591e0729",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "build": "pinned native Windows wheel installed in investigation environment; no candidate acceleration or Linux build claim",
+  "numerical_threads": 1,
+  "timeout_per_process_s": 180,
+  "source_build_included": false,
+  "commands": {
+    "nominal": "SOURCE_DIR=<pinned-source> OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 python producer.py --ic ic/nominal --out <nominal-output> --author-manifests",
+    "variant": "SOURCE_DIR=<pinned-source> OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 python producer.py --ic ic/variant --out <variant-output>",
+    "repeat": "SOURCE_DIR=<pinned-source> OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 python producer.py --ic ic/nominal --out <repeat-output>"
+  },
+  "runs": {
+    "nominal": {
+      "check": "examples-googly-eyes",
+      "mode": "author",
+      "exit_code": 0,
+      "timeout": false,
+      "wall_s": 2.53571040002862
+    },
+    "variant": {
+      "check": "examples-googly-eyes",
+      "mode": "variant",
+      "exit_code": 0,
+      "timeout": false,
+      "wall_s": 2.898128400032874
+    },
+    "repeat": {
+      "check": "examples-googly-eyes",
+      "mode": "repeat",
+      "exit_code": 0,
+      "timeout": false,
+      "wall_s": 2.8945701000047848
+    }
+  },
+  "input_change": {
+    "nominal": {
+      "kind": "first_target_coordinate",
+      "task_index": 0,
+      "index": 0,
+      "value_hex": "0x1.3333333333333p+0"
+    },
+    "variant": {
+      "kind": "first_target_coordinate",
+      "task_index": 0,
+      "index": 0,
+      "value_hex": "0x1.3333333333335p+0"
+    },
+    "ulp_steps": 2,
+    "direction": "positive infinity",
+    "applied_once": true
+  },
+  "selected_pose_spreads": {
+    "check": "examples-googly-eyes",
+    "groups": [
+      {
+        "prefix": "g0_",
+        "trace_shape_nominal": [
+          3000,
+          2,
+          4,
+          4
+        ],
+        "trace_shape_variant": [
+          3000,
+          2,
+          4,
+          4
+        ],
+        "steps_nominal": 3000,
+        "steps_variant": 3000,
+        "steps_repeat": 3000,
+        "variant_selected_pose_abs": 1.1102230246251565e-16,
+        "repeat_selected_pose_abs": 0.0,
+        "variant_identical": false
+      }
+    ],
+    "max_variant_selected_pose_abs": 1.1102230246251565e-16,
+    "max_repeat_selected_pose_abs": 0.0,
+    "selected_pose_variant_identical": false,
+    "trace_shapes_equal": true
+  },
+  "output_contract": {
+    "format": "mink_official_kinematic_trace_v1",
+    "groups": [
+      {
+        "prefix": "g0_",
+        "manifest": "model_manifest_g0.npz",
+        "nq": 8,
+        "nv": 6,
+        "nframes": 2,
+        "trace_count": 3000,
+        "trace_mode": "fixed_viewer_sync_prefix",
+        "task_types": [
+          "LookAtTask",
+          "LookAtTask",
+          "PostureTask"
+        ],
+        "pose_selection": [
+          {
+            "translation": false,
+            "rotation": false,
+            "axis": [
+              1.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "translation": false,
+            "rotation": false,
+            "axis": [
+              1.0,
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "external_transition_at_outer_boundary": false,
+        "target_width": 6,
+        "nominal_step_count": 3000,
+        "min_steps": 1,
+        "max_steps": 120000,
+        "preloop_settle_steps": 0
+      }
+    ]
+  },
+  "files_sha256": {
+    "producer.py": "5d5cc1218595df1b5313187c608200130a178ca3fd826362ce014ef7f9bf55a9",
+    "upstream_example.py": "7e406be7ff4b65793e898aefdc527c3a2a493f07cdc787f6b96f25f04ccd93f2",
+    "kinematics.py": "c9e9bd0a62dd5876aa270832642f60a1ba109e07589fcdf2084a25df2bda2f7b",
+    "ic/nominal/input.json": "f6b0972cffb471a2c437e485a9067a0570441181c09985f65dc9e0b504aeb445",
+    "ic/variant/input.json": "d5355966e0061233c4ef3b590f03d7cc597be567583b4f5a07732e55a14b103d",
+    "schema.json": "b3fc70f6015e755bbd447584fff29eff0295962af65f2dcc18eef19d5424d438",
+    "model_manifest_g0.npz": "c8c92e4d3734d5515dffeaa9e27a7678def85df4f25414237a4e383868e41d94"
+  },
+  "formal_selfcheck": "not run; CLI-owned evidence fields remain untouched",
+  "curator_finalized": false,
+  "python_version": "3.12.14",
+  "installed_packages": {
+    "mink": "1.3.0",
+    "numpy": "2.3.5",
+    "mujoco": "3.11.0",
+    "qpsolvers": "4.12.0",
+    "daqp": "0.8.5",
+    "loop-rate-limiters": "1.2.0"
+  },
+  "knob_probe_runs": [],
+  "nominal_timing_includes_trusted_model_fact_export": true,
+  "repeat_timing_excludes_trusted_model_fact_export": true
+}

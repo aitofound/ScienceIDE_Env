@@ -31,20 +31,35 @@
     ]
   },
   "evidence": {
-    "floor": 2.886579864025407e-15,
-    "floor_how": "measured by selfcheck on 2026-09-06: run.sh altbuild (same source, gcc -O2 strict IEEE: no -ffast-math, -ffp-contract=off, no -march=native (build-ieee/)) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
-    "self_validation_spread": 9.992007221626409e-16,
-    "self_validation_bound_fraction": 6.386111418908105e-05,
+    "floor": {
+      "value": 2.9976021664879227e-15,
+      "knob_overrides": {
+        "SAB_SLOT_CLASS": "instruction"
+      }
+    },
+    "floor_how": "measured by selfcheck on 2026-09-08: run.sh altbuild (same source, gcc -O2 strict IEEE: no -ffast-math, -ffp-contract=off, no -march=native (build-ieee/)) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
+    "self_validation_spread": {
+      "value": 8.881784197001252e-16,
+      "knob_overrides": {
+        "SAB_SLOT_CLASS": "instruction"
+      }
+    },
+    "self_validation_bound_fraction": {
+      "value": 5.6823291878451524e-05,
+      "knob_overrides": {
+        "SAB_SLOT_CLASS": "instruction"
+      }
+    },
     "altbuild": {
       "what": "same source, gcc -O2 strict IEEE: no -ffast-math, -ffp-contract=off, no -march=native (build-ieee/)",
-      "distance": 2.886579864025407e-15,
-      "bound_fraction": 0.00018439793773401757,
+      "distance": 2.9976021664879227e-15,
+      "bound_fraction": 0.0001914901661084028,
       "identical": false,
       "passed": true,
       "reason": "all graded values within bound",
-      "at": "2026-09-06T02:04:48Z"
+      "at": "2026-09-08T08:23:37Z"
     },
-    "floor_bound_fraction": 0.00018439793773401757
+    "floor_bound_fraction": 0.0001914901661084028
   },
   "warrant": "Every payload value of the electron and ion integrated ten-moment histories (107,800 values each) and the field-energy history (64,680 values) is compared pointwise after ignoring timestamps with exact length required. Measured on x86 on one core (2026-09-05): the two-ULP variant moves the history by at most 1.0e-15 absolute on the ion moments (1.8e-15 relative), 6e-19 electron, 2e-19 field energy; the strict-IEEE build differs by 2.9e-15 ion (5e-15 relative), 7.9e-18 electron, 2.3e-18 field energy. The largest fraction of the bound used is 1.8e-04, so atol=rtol=1e-11 is 5556x over the floor. A wrong gradient-closure heat flux, collision relaxation or Maxwell coupling (moments/zero/wv_ten_moment.c, moments/zero/moment_em_coupling.c) moves the history at the 1e-6 level or more."
 }

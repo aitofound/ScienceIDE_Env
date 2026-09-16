@@ -1,0 +1,204 @@
+{
+  "skimage.color.hsv2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 350,
+      "end_line": 416
+    },
+    "description": "HSV to RGB color space conversion.",
+    "calls": [
+      "np.stack",
+      "channel_as_last_axis",
+      "_prepare_colorarray",
+      "np.floor",
+      "np.choose",
+      "np.stack([hi, hi, hi], axis=-1).astype"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.color.rgb2hsv": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 260,
+      "end_line": 347
+    },
+    "description": "RGB to HSV color space conversion.",
+    "calls": [
+      "np.seterr",
+      "channel_as_last_axis",
+      "_prepare_colorarray",
+      "arr.max",
+      "np.ptp",
+      "np.isnan",
+      "np.squeeze"
+    ],
+    "branches": [
+      {
+        "line": 303,
+        "expression": "input_is_one_pixel"
+      },
+      {
+        "line": 344,
+        "expression": "input_is_one_pixel"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.sobel": {
+    "implementation": {
+      "file": "src/skimage/filters/edges.py",
+      "line": 199,
+      "end_line": 253
+    },
+    "description": "Find edges in an image using the Sobel filter.",
+    "calls": [
+      "_generic_edge_filter",
+      "_mask_filter_result"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.closing": {
+    "implementation": {
+      "file": "src/skimage/morphology/gray.py",
+      "line": 364,
+      "end_line": 438
+    },
+    "description": "Return grayscale morphological closing of an image.",
+    "calls": [
+      "pad_footprint",
+      "dilation",
+      "erosion",
+      "mirror_footprint"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.disk": {
+    "implementation": {
+      "file": "src/skimage/morphology/footprints.py",
+      "line": 508,
+      "end_line": 597
+    },
+    "description": "Generates a flat, disk-shaped footprint.",
+    "calls": [
+      "np.arange",
+      "np.meshgrid",
+      "_nsphere_series_decomposition",
+      "disk",
+      "_cross_decomposition"
+    ],
+    "branches": [
+      {
+        "line": 586,
+        "expression": "decomposition is None"
+      },
+      {
+        "line": 589,
+        "expression": "not strict_radius"
+      },
+      {
+        "line": 592,
+        "expression": "decomposition == 'sequence'"
+      },
+      {
+        "line": 594,
+        "expression": "decomposition == 'crosses'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.flood": {
+    "implementation": {
+      "file": "src/skimage/morphology/_flood_fill.py",
+      "line": 129,
+      "end_line": 310
+    },
+    "description": "Mask corresponding to a flood fill.",
+    "calls": [
+      "working_image.ravel",
+      "flags.ravel",
+      "seed_value.item",
+      "_resolve_neighborhood",
+      "np.pad",
+      "np.ravel_multi_index",
+      "_offsets_to_raveled_neighbors",
+      "_set_border_values",
+      "crop(flags, pad_width, copy=False).view",
+      "iter",
+      "np.ascontiguousarray",
+      "image.min",
+      "abs",
+      "numeric_dtype_min_max",
+      "max",
+      "min",
+      "_flood_fill_tolerance",
+      "_flood_fill_equal",
+      "crop",
+      "np.max",
+      "np.nonzero",
+      "min_value.item",
+      "max_value.item",
+      "np.abs"
+    ],
+    "branches": [
+      {
+        "line": 224,
+        "expression": "image.flags.f_contiguous is True"
+      },
+      {
+        "line": 233,
+        "expression": "0 in image.shape"
+      },
+      {
+        "line": 226,
+        "expression": "image.flags.c_contiguous is True"
+      },
+      {
+        "line": 274,
+        "expression": "tolerance is not None"
+      },
+      {
+        "line": 300,
+        "expression": "working_image.dtype == np.float16"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.flood_fill": {
+    "implementation": {
+      "file": "src/skimage/morphology/_flood_fill.py",
+      "line": 19,
+      "end_line": 126
+    },
+    "description": "Perform flood filling on an image.",
+    "calls": [
+      "flood",
+      "image.copy"
+    ],
+    "branches": [
+      {
+        "line": 122,
+        "expression": "not in_place"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.opening": {
+    "implementation": {
+      "file": "src/skimage/morphology/gray.py",
+      "line": 287,
+      "end_line": 361
+    },
+    "description": "Return grayscale morphological opening of an image.",
+    "calls": [
+      "pad_footprint",
+      "erosion",
+      "dilation",
+      "mirror_footprint"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

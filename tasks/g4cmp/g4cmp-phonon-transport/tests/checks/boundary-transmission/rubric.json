@@ -1,0 +1,105 @@
+{
+  "check": "boundary-transmission",
+  "policy": "invariants",
+  "chaotic": false,
+  "upstream_test": "code/g4cmp/validation/G4Macros/Validation_BoundaryTransmission.mac",
+  "configuration": "validation g4cmpValidation with Validation_BoundaryTransmission.mac (/vis lines removed): geometry 1, a 1 mm Si cylinder of radius 1 cm on a 1 mm Ge cylinder with Al and Nb films below; 10,000 fast-transverse phonons of 4 meV launched isotropically from the Si centre with every scattering process inactivated and phononBounces 100, so only G4CMPPhononBoundaryProcess acts at the Si/Ge interface (z = -0.5 mm) and the outer surfaces; the step file is reduced by reduce.py with the rule of validation/AnalysisTools/ValidationAnalysis.cc; graded: summary.txt",
+  "observable": "surface-incident count at the Si/Ge interface, transmitted fraction, fraction incident from the Si side and mean incident energy",
+  "expected_runtime_s": 15,
+  "default_vs_upstream": "upstream event count; /random/setSeeds added; the /vis lines removed; /run/verbose 1 added so the end-of-run event count is printed",
+  "variant": "ic/variant is the same macro with a different random seed; launch directions and the transmit-or-reflect decision at every incidence are draws, so a different seed calibrates the distance between two correct runs",
+  "altbuild": "none: the floor of a stochastic check is the seed-to-seed spread of its invariants, not a build difference",
+  "comparison": {
+    "invariants": [
+      {
+        "name": "n_incident",
+        "file": "summary.txt",
+        "format": "text",
+        "column": 0,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 0.02,
+        "atol": 0.0
+      },
+      {
+        "name": "frac_transmitted",
+        "file": "summary.txt",
+        "format": "text",
+        "column": 1,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 0.04,
+        "atol": 0.0
+      },
+      {
+        "name": "frac_from_above",
+        "file": "summary.txt",
+        "format": "text",
+        "column": 2,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 0.01,
+        "atol": 0.0
+      },
+      {
+        "name": "mean_incident_energy_eV",
+        "file": "summary.txt",
+        "format": "text",
+        "column": 3,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 1e-09,
+        "atol": 0.0
+      },
+      {
+        "name": "n_classified",
+        "file": "summary.txt",
+        "format": "text",
+        "column": 4,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 0.02,
+        "atol": 0.0
+      }
+    ]
+  },
+  "evidence": {
+    "spread": {
+      "n_incident": {
+        "mean": 790793.8571428572,
+        "max_pairwise_abs": 2106.0,
+        "max_pairwise_rel": 0.0026631466354695653,
+        "seeds": 7
+      },
+      "frac_transmitted": {
+        "mean": 0.333574949571659,
+        "max_pairwise_abs": 0.0022416159408065184,
+        "max_pairwise_rel": 0.00671997685583093,
+        "seeds": 7
+      },
+      "frac_from_above": {
+        "mean": 0.3406424166761929,
+        "max_pairwise_abs": 0.0006422499734550224,
+        "max_pairwise_rel": 0.001885408105431365,
+        "seeds": 7
+      },
+      "mean_incident_energy_eV": {
+        "mean": 0.0040000000000000036,
+        "max_pairwise_abs": 8.673617379884035e-19,
+        "max_pairwise_rel": 2.168404344971007e-16,
+        "seeds": 7
+      },
+      "n_classified": {
+        "mean": 785606.1428571428,
+        "max_pairwise_abs": 2113.0,
+        "max_pairwise_rel": 0.002689642919943709,
+        "seeds": 7
+      }
+    },
+    "spread_how": "Seven runs: five native runs of this check's own reduction on the pinned source (Apple M3 Pro, clang 21, Geant4 11.3.0, 2026-09-07) at the graded event count with /random/setSeeds 11, 22, 33, 44, 55 (second seed 1) plus the calibration selfcheck's in-container nominal (20260907 1) and variant (20260908 2) runs of 2026-09-08, which reproduce their native twins exactly for the ballistic checks; per invariant the largest pairwise |difference| over the ten pairs, absolute and relative to the five-run mean, is recorded under spread. Bounds are five times that spread rounded up to one significant figure (the curator's rule of 2026-09-07), finalized at STOP 4 from the in-container calibration. Bounds revised at STOP 4 (2026-09-08) to five times the seven-seed spread: frac_transmitted rtol 0.03->0.04.",
+    "self_validation_spread": 0.0037798814052811087,
+    "self_validation_bound_fraction": 0.09449703513202772,
+    "exit_fault": "The program can fault in a static destructor during exit() on Linux after every event is processed and every output file is closed (backtrace: G4CMPPhononBoundaryProcess::~G4CMPPhononBoundaryProcess called from G4ProcessTable::~G4ProcessTable at exit, a lifetime bug of the pinned source that macOS's allocator tolerates); run.sh accepts a nonzero exit only after verifying the end-of-run event count in the log and a complete last line in the output file, and prints a warning; any other failure fails the check. Ruled by the curator on 2026-09-07; no repository precedent either way."
+  },
+  "warrant": "The launch directions and the transmit-or-reflect decision at every incidence on the Si/Ge interface are random draws (library/src/G4CMPPhononBoundaryProcess.cc, which compares a uniform draw with the transmission probability of the surface property), so two correct runs differ from the first step and the check grades what the upstream validation grades: the surface-incident count at the interface and the transmitted fraction, classified with the rule of validation/AnalysisTools/ValidationAnalysis.cc (post-step point on z = -0.5 mm inside r < 9.9 mm; the next step continuing in the same z direction is a transmission, turning back is a reflection), plus the fraction incident from the Si side and the number of incidences the rule could classify. A wrong transmission probability, a boundary process that forgets the acoustic mismatch or one that reflects specularly where it should scatter moves the transmitted fraction by tens of per cent and the incident count with it; the five-seed spreads are 0.2 to 0.6 per cent and each bound is five times its spread. The incident energy is a conservation identity (monoenergetic 4 meV primaries and no process changes energy) held to 1e-9. The 390 MB step file is reduced inside the check and never copied."
+}

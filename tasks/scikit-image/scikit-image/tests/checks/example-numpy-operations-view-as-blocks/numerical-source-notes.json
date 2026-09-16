@@ -1,0 +1,49 @@
+{
+  "skimage.color.rgb2gray": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 941,
+      "end_line": 984
+    },
+    "description": "Compute luminance of an RGB image.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.view_as_blocks": {
+    "implementation": {
+      "file": "src/skimage/util/shape.py",
+      "line": 8,
+      "end_line": 93
+    },
+    "description": "Block view of the input n-dimensional array (using re-striding).",
+    "calls": [
+      "(block_shape <= 0).any",
+      "as_strided",
+      "isinstance",
+      "(arr_shape % block_shape).sum"
+    ],
+    "branches": [
+      {
+        "line": 73,
+        "expression": "not isinstance(block_shape, tuple)"
+      },
+      {
+        "line": 77,
+        "expression": "(block_shape <= 0).any()"
+      },
+      {
+        "line": 80,
+        "expression": "block_shape.size != arr_in.ndim"
+      },
+      {
+        "line": 84,
+        "expression": "(arr_shape % block_shape).sum() != 0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

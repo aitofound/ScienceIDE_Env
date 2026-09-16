@@ -1,0 +1,60 @@
+!+p102_foil.fh
+!+ start piece for add to p102particles_initiate_foil_move.f90
+!+
+!
+do jPlas=nSavePlas,nPlas !for all plasma profiles
+   !
+   if (j .eq. 1 .and. jPlas .gt. 1 .and. mpiProc == mpiHost) &
+        write(*,*) 'MINMAX ',jPlas-1,minval(R(1,1:nn)),maxval(R(1,1:nn))
+   if (mpiProc == mpiHost .and. .false.) &
+        write(*,*) 'jPlas,xMin(1),xMax(1), dx(1)*iBound1(1) = ',&
+        jPlas,xMin(1),xMax(1), dx(1)*iBound1(1)
+   tmp2=ZERO
+   x(1)=ZERO 
+   !+
+   do i1=1,ceiling(pl_len(jPlas)*mx)*nPart(1) !run through all/ max 
+      iIndex(1)=i1
+      !++
+      x(1)=x(1)+dx(1)/nPart(1)
+      !
+      tmp = coordinate( x(1), pl_len(jPlas) &
+           ,pl_n(jPlas-1), pl_n(jPlas), iPlas(jPlas) )
+      !
+      tmp3 = xMin(1)+sum(pl_len(0:jPlas-1)) + tmp
+      !
+      logCond(1)=( tmp3 < dx(1)*iBound1(1) )
+      logCond(2)=( tmp3 >= xMax(1)-dx(1)*(iBound2(1)-nMask(1)) )
+      logCond(3)=( tmp >= pl_len(jPlas) )
+      !
+      if (mpiProc == mpiHost .and. &
+           j == 0 .and. any(logCond .eqv. .false.) .and. .false.) &
+           write(*,*) n,logCond,'  ',&
+           any(logCond .eqv. .false.), &
+           'LIN PL=',jPlas,x(1),tmp,tmp3
+      !
+      if(logCond(1)) cycle !left limit
+      !
+      if ( any( logCond(2:3) ) ) exit !right limit 
+      !+-
+      n=n+1
+      if (j /= 0) then !j=1: real distribution  
+         if (mod(n,mpiProcN) == mpiProc) then
+            nn=nn+1 !index for local proc particles
+            !
+            R(1,nn) = tmp3 
+            !
+            R(nDim+1:nDim+3,nn)=ZERO
+         end if
+      end if
+      !+ 
+      tmp2=tmp
+      !+
+   end do
+   !
+end do
+
+   if (j .eq. 1 .and. jPlas .gt. 1 .and. mpiProc == mpiHost) &
+        write(*,*) 'MINMAX ',jPlas-1,minval(R(1,1:nn)),maxval(R(1,1:nn))
+
+!+ end piece for add >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  

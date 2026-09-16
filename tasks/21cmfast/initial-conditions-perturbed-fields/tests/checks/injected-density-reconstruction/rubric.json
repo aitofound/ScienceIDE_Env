@@ -1,0 +1,66 @@
+{
+  "check": "injected-density-reconstruction",
+  "policy": "pointwise",
+  "chaotic": false,
+  "upstream_test": "code/21cmfast/tests/test_initial_conditions.py",
+  "configuration": "A deterministic float32 density on DIM=70 superposes the three fundamental axis modes and the diagonal (1,1,1) mode with total amplitude below 0.12, exact half-box antisymmetry and exact zero mean; it is supplied to compute_initial_conditions with HII_DIM=35, BOX_LEN=50 Mpc and two threads, and all eight upstream-tested density and 1LPT/2LPT displacement grids are retained.",
+  "observable": "every physical cell of the supplied/reconstructed high- and low-resolution density and displacement grids",
+  "expected_runtime_s": 2,
+  "default_vs_upstream": "Derived from upstream test_initial_density_array; replaces the upstream single-pixel array with a smooth low-amplitude multi-mode field for physically meaningful LPT calibration while retaining the same API path and eight output fields.",
+  "knobs": "SAB_DIM, SAB_HII_DIM and SAB_THREADS expose the two grid sides and OpenMP worker count; defaults are the graded values.",
+  "variant": "the amplitude of the fundamental x mode is moved two float32 ulps toward positive infinity before the smooth field is regenerated; exact pairwise antisymmetry keeps the float32 input sum at zero while one active low-frequency input degree of freedom changes byte-wise.",
+  "altbuild": "none: the first calibration isolates two-float32-ulp input sensitivity; an alternative compiler build is deferred because this single arm64 host cannot establish a portable cross-build floor.",
+  "comparison": {
+    "atol": 2e-05,
+    "rtol": 0,
+    "files": [
+      {
+        "path": "hires_density.npy",
+        "format": "npy",
+        "skip_header_bytes": 0
+      },
+      {
+        "path": "lowres_density.npy",
+        "format": "npy",
+        "skip_header_bytes": 0
+      },
+      {
+        "path": "lowres_vx.npy",
+        "format": "npy",
+        "skip_header_bytes": 0
+      },
+      {
+        "path": "lowres_vy.npy",
+        "format": "npy",
+        "skip_header_bytes": 0
+      },
+      {
+        "path": "lowres_vz.npy",
+        "format": "npy",
+        "skip_header_bytes": 0
+      },
+      {
+        "path": "lowres_vx_2LPT.npy",
+        "format": "npy",
+        "skip_header_bytes": 0
+      },
+      {
+        "path": "lowres_vy_2LPT.npy",
+        "format": "npy",
+        "skip_header_bytes": 0
+      },
+      {
+        "path": "lowres_vz_2LPT.npy",
+        "format": "npy",
+        "skip_header_bytes": 0
+      }
+    ]
+  },
+  "evidence": {
+    "floor": null,
+    "floor_how": "No altbuild floor is claimed: calibration was performed only on one arm64 host. The two-float32-ulp smooth-field variant moved every graded array; sab.py task selfcheck records its pointwise spread.",
+    "self_validation_spread": 2.384185791015625e-07,
+    "self_validation_bound_fraction": 0.011920928955078123
+  },
+  "warrant": "Every cell of all eight structured density and 1LPT/2LPT displacement grids is compared with the human-approved atol=2e-5 and rtol=0. The smooth low-frequency, exactly zero-mean field stays below |delta|=0.12 and activates all gradient directions plus mixed Hessian terms; its two-float32-ulp variant had a largest measured pointwise spread of 2.384185791015625e-7, leaving at least 83.9-fold headroom. The bound still rejects representative implementation faults: removing all 2LPT grids exceeded it by a factor of 615.8 with more than 42000 cells failing per component, swapping x/y displacement components exceeded it by 37218, doubling the density normalization by 5851, and shifting every grid by one cell by 4638. Float32 storage, FFT/IFFT arithmetic and the Hessian products in InitialConditions.c:240-544 and 619-752 set the achievable floor. The former single-cell impulse with delta=342999 injected broad Fourier support outside the useful perturbative regime, so its 0.5 2LPT response is explicitly rejected as tolerance evidence. No cross-build or cross-architecture floor is claimed from this single arm64 host."
+}

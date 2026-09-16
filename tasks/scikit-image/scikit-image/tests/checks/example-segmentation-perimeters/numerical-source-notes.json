@@ -1,0 +1,93 @@
+{
+  "skimage.measure.perimeter": {
+    "implementation": {
+      "file": "src/skimage/measure/_regionprops_utils.py",
+      "line": 417,
+      "end_line": 481
+    },
+    "description": "Calculate total perimeter of all objects in binary image.",
+    "calls": [
+      "sqrt",
+      "image.astype",
+      "ndi.binary_erosion",
+      "ndi.convolve",
+      "np.bincount",
+      "NotImplementedError",
+      "perimeter_image.ravel"
+    ],
+    "branches": [
+      {
+        "line": 452,
+        "expression": "image.ndim != 2"
+      },
+      {
+        "line": 455,
+        "expression": "neighborhood == 4"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.perimeter_crofton": {
+    "implementation": {
+      "file": "src/skimage/measure/_regionprops_utils.py",
+      "line": 484,
+      "end_line": 586
+    },
+    "description": "Calculate total Crofton perimeter of all objects in binary image.",
+    "calls": [
+      "np.sqrt",
+      "(image > 0).astype",
+      "np.pad",
+      "ndi.convolve",
+      "np.bincount",
+      "NotImplementedError",
+      "XF.ravel"
+    ],
+    "branches": [
+      {
+        "line": 533,
+        "expression": "image.ndim != 2"
+      },
+      {
+        "line": 546,
+        "expression": "directions == 2"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.transform.rotate": {
+    "implementation": {
+      "file": "src/skimage/transform/_warps.py",
+      "line": 346,
+      "end_line": 469
+    },
+    "description": "Rotate image by a certain angle around its center.",
+    "calls": [
+      "SimilarityTransform",
+      "warp",
+      "image.astype",
+      "tform.inverse",
+      "corners[:, 0].min",
+      "corners[:, 1].min",
+      "corners[:, 0].max",
+      "corners[:, 1].max",
+      "np.around",
+      "np.deg2rad"
+    ],
+    "branches": [
+      {
+        "line": 426,
+        "expression": "image.dtype == np.float16"
+      },
+      {
+        "line": 430,
+        "expression": "center is None"
+      },
+      {
+        "line": 440,
+        "expression": "resize"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

@@ -1,0 +1,29 @@
+!==p999main.f90
+           rCommArray(1:nAngleProd)=(/radAngle(1:nAngle,1:nAngle2)/)
+           call MPIreduce_sum_r(rCommArray,rCommArrayGlob, &
+                nAngleProd)
+           if(mpiProc == mpiHost) then
+              open(unit=1,file='f_rad'//nameTimeStep//'.'//nameProcOut, &
+                   form='formatted')
+              rCommArrayGlob(1:nAngleProd)=rCommArrayGlob(1:nAngleProd)&
+                   *TWO/nPartCell*omega**2*mass(1)*radConst !!! radiation coef
+              write(1,*) nAngle,nAngle2,maxval(rCommArrayGlob(1:nAngleProd))
+              write(1,*) rCommArrayGlob(1:nAngleProd)
+              close(1)
+           end if
+           !
+           rCommArray(1:nFreqProd)=(/radFreq(1:nAngle,1:nAngle2,1:nFreq)/)
+           call MPIreduce_sum_r(rCommArray,rCommArrayGlob, &
+                nFreqProd)
+           if(mpiProc == mpiHost) then
+              open(unit=1,file='f_req'//nameTimeStep//'.'//nameProcOut, &
+                   form='formatted')
+              rCommArrayGlob(1:nFreqProd)=rCommArrayGlob(1:nFreqProd)&
+                   *TWO/nPartCell*omega**2*mass(1)*radConst !!! radiation coef
+              write(1,*) nAngle,nAngle2,nFreq &
+                   ,maxval(rCommArrayGlob(1:nFreqProd)),FreqMax
+              write(1,*) rCommArrayGlob(1:nFreqProd)
+              close(1)
+           end if
+!==p999main.f90
+

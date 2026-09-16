@@ -1,0 +1,42 @@
+--- pinned/fortran/eftcamb/09_EFTCAMB_IC.f90
++++ both-arms/fortran/eftcamb/09_EFTCAMB_IC.f90
+@@ -323,6 +323,17 @@
+             end select
+         end if
+ 
++        ! SAB diagnostic only: observe initialization without changing y/cache.
++!$omp critical(sab_ic_trace)
++        write(*,'(A,1X,*(ES25.16E3,1X))') 'SAB_IC_TRACE', &
++            k, a, tau, EV%eft_cache%EFTpiC, EV%eft_cache%EFTpiD1, &
++            EV%eft_cache%EFTpiD2, EV%eft_cache%EFTpiE, &
++            EV%eft_cache%EFTpiA1, EV%eft_cache%EFTpiA2, &
++            EV%eft_cache%EFTOmegaV, EV%eft_cache%EFTGamma1V, &
++            y(EV%w_ix), y(EV%w_ix+1), z, dz, clxc, clxb, clxg, &
++            adotoa, CP%eft_par_cache%h0_Mpc, EFTpiEdot, real(CP%EFTCAMB%EFT_IC_type,dl)
++!$omp end critical(sab_ic_trace)
++
+         ! reset the cache:
+         call EV%eft_cache%initialize()
+ 
+@@ -587,6 +598,10 @@
+         real(dl) err
+ 
+         EFTpiCdotfunction = dfridr( dummy_helper, a, 0.03_dl*a, err )
++!$omp critical(sab_ic_trace)
++        write(*,'(A,1X,*(ES25.16E3,1X))') 'SAB_IC_C_DERIV', &
++            k, a, EFTpiCdotfunction, err
++!$omp end critical(sab_ic_trace)
+ 
+         return
+ 
+@@ -614,6 +629,10 @@
+         real(dl) err
+ 
+         EFTpiDdotfunction = dfridr( dummy_helper, a, 0.03_dl*a, err )
++!$omp critical(sab_ic_trace)
++        write(*,'(A,1X,*(ES25.16E3,1X))') 'SAB_IC_D_DERIV', &
++            k, a, EFTpiDdotfunction, err
++!$omp end critical(sab_ic_trace)
+ 
+         return
+ 

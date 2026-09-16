@@ -1,0 +1,48 @@
+[envs.default]
+installer = "uv"
+dependency-groups = ["dev"]
+
+[envs.docs]
+dependency-groups = ["docs"]
+scripts.build = "sphinx-build -M html docs docs/_build -W {args}"
+scripts.open = "python3 -m webbrowser -t docs/_build/html/index.html"
+scripts.clean = "git clean -fdX -- {args:docs}"
+
+[envs.data]
+scripts.download = "python ./.scripts/ci/download_data.py {args}"
+
+[envs.hatch-test]
+dependency-groups = ["test"]
+extra-dependencies = ["diff-cover"]
+matrix = [
+  { deps = ["stable"], python = ["3.12", "3.13", "3.14"] },
+  { deps = ["pre"], python = ["3.14"] },
+]
+overrides.matrix.deps.env-vars = [
+  { key = "UV_PRERELEASE", value = "allow", if = ["pre"] },
+]
+# default commands (only `cov-report` is overridden)
+scripts.run = "pytest{env:HATCH_TEST_ARGS:} -p no:cov {args}"
+scripts.run-cov = "coverage run -m pytest{env:HATCH_TEST_ARGS:} -p no:cov {args}"
+scripts.cov-combine = ["coverage combine"]
+scripts.cov-report = [
+    "coverage report",
+    "coverage xml -o coverage.xml",
+    "diff-cover --compare-branch origin/main coverage.xml",
+]
+# extra commands
+scripts.cov-erase = "coverage erase"
+scripts.download = "python ./.scripts/ci/download_data.py {args}"
+
+[envs.notebooks]
+extra-dependencies = [
+    "ipykernel",
+    "jupytext",
+    "nbconvert",
+    "leidenalg",
+    "watermark",
+    "napari-spatialdata",
+]
+extras = ["docs"]
+scripts.setup-squidpy-kernel = "python -m ipykernel install --user --name=squidpy"
+scripts.run-notebooks = "python ./.scripts/ci/run_notebooks.py docs/notebooks"

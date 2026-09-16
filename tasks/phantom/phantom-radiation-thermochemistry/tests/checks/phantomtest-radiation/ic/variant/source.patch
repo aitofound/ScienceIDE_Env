@@ -1,0 +1,17 @@
+Variant initial condition: the background gas density of the sinusoidal
+radiation-diffusion problem, rho0, moved by two ulps of binary64
+(2.5e-24 * (1 + 4.4e-16) = 2.500000000000001e-24 g/cm^3). rho0 sets the
+particle mass, the equilibrium radiation energy xi0 = a*Tref^4/rho0 and the
+diffusion coefficient D0 = c/(3*kappa*rho), so it perturbs every assertion of
+the diffusion and implicit-matches-explicit blocks at the level of round-off.
+--- a/src/tests/test_radiation.f90
++++ b/src/tests/test_radiation.f90
+@@ -459,7 +459,7 @@
+                   hfact,npart,xyzh,periodic,mask=i_belong)
+  nptot = reduceall_mpi('+',npart)
+ 
+- rho0 = 2.5e-24
++ rho0 = 2.500000000000001e-24
+  massoftype(igas) = rho0*dxbound*dybound*dzbound/nptot
+  pmassi = massoftype(igas)
+  if (maxphase==maxp) iphase(1:npart) = isetphase(igas,iactive=.true.)

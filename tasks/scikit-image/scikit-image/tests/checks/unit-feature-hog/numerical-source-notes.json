@@ -1,0 +1,141 @@
+{
+  "skimage.color.rgb2gray": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 941,
+      "end_line": 984
+    },
+    "description": "Compute luminance of an RGB image.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.draw.disk": {
+    "implementation": {
+      "file": "src/skimage/draw/draw.py",
+      "line": 155,
+      "end_line": 216
+    },
+    "description": "Generate coordinates of pixels within circle.",
+    "calls": [
+      "ellipse"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.feature.hog": {
+    "implementation": {
+      "file": "src/skimage/feature/_hog.py",
+      "line": 48,
+      "end_line": 341
+    },
+    "description": "Extract Histogram of Oriented Gradients (HOG) for a given image.",
+    "calls": [
+      "np.arange",
+      "_hog_channel_gradient",
+      "utils.channel_as_last_axis",
+      "np.atleast_2d",
+      "utils._supported_float_type",
+      "image.astype",
+      "g_row.astype",
+      "g_col.astype",
+      "_hoghistogram.hog_histograms",
+      "np.sqrt",
+      "g_magn.argmax",
+      "np.meshgrid",
+      "normalized_blocks.ravel",
+      "np.hypot",
+      "np.sin",
+      "np.cos",
+      "_hog_normalize_block",
+      "min",
+      "draw.line"
+    ],
+    "branches": [
+      {
+        "line": 170,
+        "expression": "ndim_spatial != 2"
+      },
+      {
+        "line": 187,
+        "expression": "transform_sqrt"
+      },
+      {
+        "line": 200,
+        "expression": "multichannel"
+      },
+      {
+        "line": 272,
+        "expression": "visualize"
+      },
+      {
+        "line": 311,
+        "expression": "n_blocks_col <= 0 or n_blocks_row <= 0"
+      },
+      {
+        "line": 335,
+        "expression": "feature_vector"
+      },
+      {
+        "line": 338,
+        "expression": "visualize"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.gaussian": {
+    "implementation": {
+      "file": "src/skimage/_shared/filters.py",
+      "line": 19,
+      "end_line": 136
+    },
+    "description": "Multi-dimensional Gaussian filter.",
+    "calls": [
+      "np.any",
+      "convert_to_float",
+      "image.astype",
+      "ndi.gaussian_filter",
+      "isinstance",
+      "sigma.insert"
+    ],
+    "branches": [
+      {
+        "line": 120,
+        "expression": "np.any(np.asarray(sigma) < 0.0)"
+      },
+      {
+        "line": 122,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 132,
+        "expression": "out is not None and (not np.issubdtype(out.dtype, np.floating))"
+      },
+      {
+        "line": 124,
+        "expression": "not isinstance(sigma, Iterable)"
+      },
+      {
+        "line": 126,
+        "expression": "len(sigma) == image.ndim - 1"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 479,
+      "end_line": 505
+    },
+    "description": "Convert an image to floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

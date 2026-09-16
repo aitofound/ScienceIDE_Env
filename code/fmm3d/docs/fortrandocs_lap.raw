@@ -1,0 +1,2622 @@
+.. _lscp:
+
+lfmm3d_s_c_p
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Sources
+- Interaction kernel: Charges
+- Outputs requested: Potential
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_s_c_p(eps,nsource,source,charge,pot,ier)
+
+This subroutine evaluates the potential 
+
+
+  .. math::
+
+      u(x) = \sum_{j=1}^{N} c_{j} \frac{1}{4\pi\|x-x_{j}\|}
+
+at the source locations $x=x_{j}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    charge: double precision(nsource)
+          Charge strengths, $c_{j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nsource)
+          Potential at source locations, $u(x_{j})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_s_c_p_vec(nd,eps,nsource,source,charge,pot,ier)
+
+This subroutine evaluates the potential 
+
+
+  .. math::
+
+      u_{\ell}(x) = \sum_{j=1}^{N} c_{\ell,j} \frac{1}{4\pi\|x-x_{j}\|}
+
+at the source locations $x=x_{j}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    charge: double precision(nd,nsource)
+          Charge strengths, $c_{\ell,j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nd,nsource)
+          Potential at source locations, $u_{\ell}(x_{j})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _lscg:
+
+lfmm3d_s_c_g
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Sources
+- Interaction kernel: Charges
+- Outputs requested: Potential and Gradient
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_s_c_g(eps,nsource,source,charge,pot,grad,ier)
+
+This subroutine evaluates the potential and its gradient 
+
+
+  .. math::
+
+      u(x) = \sum_{j=1}^{N} c_{j} \frac{1}{4\pi\|x-x_{j}\|}
+
+at the source locations $x=x_{j}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    charge: double precision(nsource)
+          Charge strengths, $c_{j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nsource)
+          Potential at source locations, $u(x_{j})$
+  -    grad: double precision(3,nsource)
+          Gradient at source locations, $\nabla u(x_{j})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_s_c_g_vec(nd,eps,nsource,source,charge,pot,grad,ier)
+
+This subroutine evaluates the potential and its gradient 
+
+
+  .. math::
+
+      u_{\ell}(x) = \sum_{j=1}^{N} c_{\ell,j} \frac{1}{4\pi\|x-x_{j}\|}
+
+at the source locations $x=x_{j}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    charge: double precision(nd,nsource)
+          Charge strengths, $c_{\ell,j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nd,nsource)
+          Potential at source locations, $u_{\ell}(x_{j})$
+  -    grad: double precision(nd,3,nsource)
+          Gradient at source locations, $\nabla u_{\ell}(x_{j})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _lsch:
+
+lfmm3d_s_c_h
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Sources
+- Interaction kernel: Charges
+- Outputs requested: Potential, Gradient and Hessians
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_s_c_h(eps,nsource,source,charge,pot,grad,hess,ier)
+
+This subroutine evaluates the potential, its gradient and its hessian
+
+
+  .. math::
+
+      u(x) = \sum_{j=1}^{N} c_{j} \frac{1}{4\pi\|x-x_{j}\|}
+
+at the source locations $x=x_{j}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    charge: double precision(nsource)
+          Charge strengths, $c_{j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nsource)
+          Potential at source locations, $u(x_{j})$
+  -    grad: double precision(3,nsource)
+          Gradient at source locations, $\nabla u(x_{j})$
+  -    hess: double precision(6,nsource)
+          Hessian at source locations, $\nabla \nabla u(x_{j})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_s_c_h_vec(nd,eps,nsource,source,charge,pot,grad,hess,ier)
+
+This subroutine evaluates the potential, its gradient and its hessian
+
+
+  .. math::
+
+      u_{\ell}(x) = \sum_{j=1}^{N} c_{\ell,j} \frac{1}{4\pi\|x-x_{j}\|}
+
+at the source locations $x=x_{j}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    charge: double precision(nd,nsource)
+          Charge strengths, $c_{\ell,j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nd,nsource)
+          Potential at source locations, $u_{\ell}(x_{j})$
+  -    grad: double precision(nd,3,nsource)
+          Gradient at source locations, $\nabla u_{\ell}(x_{j})$
+  -    hess: double precision(nd,6,nsource)
+          Gradient at source locations, $\nabla \nabla u_{\ell}(x_{j})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _lsdp:
+
+lfmm3d_s_d_p
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Sources
+- Interaction kernel: Dipoles
+- Outputs requested: Potential
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_s_d_p(eps,nsource,source,dipvec,pot,ier)
+
+This subroutine evaluates the potential 
+
+
+  .. math::
+
+      u(x) = -\sum_{j=1}^{N} v_{j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source locations $x=x_{j}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    dipvec: double precision(3,nsource)
+          Dipole strengths, $v_{j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nsource)
+          Potential at source locations, $u(x_{j})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_s_d_p_vec(nd,eps,nsource,source,dipvec,pot,ier)
+
+This subroutine evaluates the potential 
+
+
+  .. math::
+
+      u_{\ell}(x) = -\sum_{j=1}^{N} v_{\ell,j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source locations $x=x_{j}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    dipvec: double precision(nd,3,nsource)
+          Dipole strengths, $v_{\ell,j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nd,nsource)
+          Potential at source locations, $u_{\ell}(x_{j})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _lsdg:
+
+lfmm3d_s_d_g
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Sources
+- Interaction kernel: Dipoles
+- Outputs requested: Potential and Gradient
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_s_d_g(eps,nsource,source,dipvec,pot,grad,ier)
+
+This subroutine evaluates the potential and its gradient 
+
+
+  .. math::
+
+      u(x) = -\sum_{j=1}^{N} v_{j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source locations $x=x_{j}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    dipvec: double precision(3,nsource)
+          Dipole strengths, $v_{j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nsource)
+          Potential at source locations, $u(x_{j})$
+  -    grad: double precision(3,nsource)
+          Gradient at source locations, $\nabla u(x_{j})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_s_d_g_vec(nd,eps,nsource,source,dipvec,pot,grad,ier)
+
+This subroutine evaluates the potential and its gradient 
+
+
+  .. math::
+
+      u_{\ell}(x) = -\sum_{j=1}^{N} v_{\ell,j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source locations $x=x_{j}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    dipvec: double precision(nd,3,nsource)
+          Dipole strengths, $v_{\ell,j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nd,nsource)
+          Potential at source locations, $u_{\ell}(x_{j})$
+  -    grad: double precision(nd,3,nsource)
+          Gradient at source locations, $\nabla u_{\ell}(x_{j})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _lsdh:
+
+lfmm3d_s_d_h
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Sources
+- Interaction kernel: Dipoles
+- Outputs requested: Potential, Gradient and Hessians
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_s_d_h(eps,nsource,source,dipvec,pot,grad,hess,ier)
+
+This subroutine evaluates the potential, its gradient and its hessian
+
+
+  .. math::
+
+      u(x) = -\sum_{j=1}^{N} v_{j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source locations $x=x_{j}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    dipvec: double precision(3,nsource)
+          Dipole strengths, $v_{j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nsource)
+          Potential at source locations, $u(x_{j})$
+  -    grad: double precision(3,nsource)
+          Gradient at source locations, $\nabla u(x_{j})$
+  -    hess: double precision(6,nsource)
+          Hessian at source locations, $\nabla \nabla u(x_{j})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_s_d_h_vec(nd,eps,nsource,source,dipvec,pot,grad,hess,ier)
+
+This subroutine evaluates the potential, its gradient and its hessian
+
+
+  .. math::
+
+      u_{\ell}(x) = -\sum_{j=1}^{N} v_{\ell,j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source locations $x=x_{j}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    dipvec: double precision(nd,3,nsource)
+          Dipole strengths, $v_{\ell,j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nd,nsource)
+          Potential at source locations, $u_{\ell}(x_{j})$
+  -    grad: double precision(nd,3,nsource)
+          Gradient at source locations, $\nabla u_{\ell}(x_{j})$
+  -    hess: double precision(nd,6,nsource)
+          Gradient at source locations, $\nabla \nabla u_{\ell}(x_{j})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _lscdp:
+
+lfmm3d_s_cd_p
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Sources
+- Interaction kernel: Charges and Dipoles
+- Outputs requested: Potential
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_s_cd_p(eps,nsource,source,charge,dipvec,pot,ier)
+
+This subroutine evaluates the potential 
+
+
+  .. math::
+
+      u(x) = \sum_{j=1}^{N} c_{j} \frac{1}{4\pi\|x-x_{j}\|} - v_{j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source locations $x=x_{j}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    charge: double precision(nsource)
+          Charge strengths, $c_{j}$
+  -    dipvec: double precision(3,nsource)
+          Dipole strengths, $v_{j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nsource)
+          Potential at source locations, $u(x_{j})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_s_cd_p_vec(nd,eps,nsource,source,charge,dipvec,pot,ier)
+
+This subroutine evaluates the potential 
+
+
+  .. math::
+
+      u_{\ell}(x) = \sum_{j=1}^{N} c_{\ell,j} \frac{1}{4\pi\|x-x_{j}\|} - v_{\ell,j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source locations $x=x_{j}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    charge: double precision(nd,nsource)
+          Charge strengths, $c_{\ell,j}$
+  -    dipvec: double precision(nd,3,nsource)
+          Dipole strengths, $v_{\ell,j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nd,nsource)
+          Potential at source locations, $u_{\ell}(x_{j})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _lscdg:
+
+lfmm3d_s_cd_g
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Sources
+- Interaction kernel: Charges and Dipoles
+- Outputs requested: Potential and Gradient
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_s_cd_g(eps,nsource,source,charge,dipvec,pot,grad,ier)
+
+This subroutine evaluates the potential and its gradient 
+
+
+  .. math::
+
+      u(x) = \sum_{j=1}^{N} c_{j} \frac{1}{4\pi\|x-x_{j}\|} - v_{j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source locations $x=x_{j}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    charge: double precision(nsource)
+          Charge strengths, $c_{j}$
+  -    dipvec: double precision(3,nsource)
+          Dipole strengths, $v_{j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nsource)
+          Potential at source locations, $u(x_{j})$
+  -    grad: double precision(3,nsource)
+          Gradient at source locations, $\nabla u(x_{j})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_s_cd_g_vec(nd,eps,nsource,source,charge,dipvec,pot,grad,ier)
+
+This subroutine evaluates the potential and its gradient 
+
+
+  .. math::
+
+      u_{\ell}(x) = \sum_{j=1}^{N} c_{\ell,j} \frac{1}{4\pi\|x-x_{j}\|} - v_{\ell,j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source locations $x=x_{j}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    charge: double precision(nd,nsource)
+          Charge strengths, $c_{\ell,j}$
+  -    dipvec: double precision(nd,3,nsource)
+          Dipole strengths, $v_{\ell,j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nd,nsource)
+          Potential at source locations, $u_{\ell}(x_{j})$
+  -    grad: double precision(nd,3,nsource)
+          Gradient at source locations, $\nabla u_{\ell}(x_{j})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _lscdh:
+
+lfmm3d_s_cd_h
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Sources
+- Interaction kernel: Charges and Dipoles
+- Outputs requested: Potential, Gradient and Hessians
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_s_cd_h(eps,nsource,source,charge,dipvec,pot,grad,hess,ier)
+
+This subroutine evaluates the potential, its gradient and its hessian
+
+
+  .. math::
+
+      u(x) = \sum_{j=1}^{N} c_{j} \frac{1}{4\pi\|x-x_{j}\|} - v_{j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source locations $x=x_{j}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    charge: double precision(nsource)
+          Charge strengths, $c_{j}$
+  -    dipvec: double precision(3,nsource)
+          Dipole strengths, $v_{j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nsource)
+          Potential at source locations, $u(x_{j})$
+  -    grad: double precision(3,nsource)
+          Gradient at source locations, $\nabla u(x_{j})$
+  -    hess: double precision(6,nsource)
+          Hessian at source locations, $\nabla \nabla u(x_{j})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_s_cd_h_vec(nd,eps,nsource,source,charge,dipvec,pot,grad,hess,ier)
+
+This subroutine evaluates the potential, its gradient and its hessian
+
+
+  .. math::
+
+      u_{\ell}(x) = \sum_{j=1}^{N} c_{\ell,j} \frac{1}{4\pi\|x-x_{j}\|} - v_{\ell,j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source locations $x=x_{j}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    charge: double precision(nd,nsource)
+          Charge strengths, $c_{\ell,j}$
+  -    dipvec: double precision(nd,3,nsource)
+          Dipole strengths, $v_{\ell,j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nd,nsource)
+          Potential at source locations, $u_{\ell}(x_{j})$
+  -    grad: double precision(nd,3,nsource)
+          Gradient at source locations, $\nabla u_{\ell}(x_{j})$
+  -    hess: double precision(nd,6,nsource)
+          Gradient at source locations, $\nabla \nabla u_{\ell}(x_{j})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _ltcp:
+
+lfmm3d_t_c_p
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Targets
+- Interaction kernel: Charges
+- Outputs requested: Potential
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_t_c_p(eps,nsource,source,charge,ntarg,targ,pottarg,ier)
+
+This subroutine evaluates the potential 
+
+
+  .. math::
+
+      u(x) = \sum_{j=1}^{N} c_{j} \frac{1}{4\pi\|x-x_{j}\|}
+
+at the target locations $x=t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    charge: double precision(nsource)
+          Charge strengths, $c_{j}$
+  -    ntarg: integer
+          Number of targets
+  -    targ: double precision(3,ntarg)
+          Target locations, $t_{i}$
+
+
+Output arguments:
+
+  -    pottarg: double precision(ntarg)
+          Potential at target locations, $u(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_t_c_p_vec(nd,eps,nsource,source,charge,ntarg,targ,pottarg,ier)
+
+This subroutine evaluates the potential 
+
+
+  .. math::
+
+      u_{\ell}(x) = \sum_{j=1}^{N} c_{\ell,j} \frac{1}{4\pi\|x-x_{j}\|}
+
+at the target locations $x=t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    charge: double precision(nd,nsource)
+          Charge strengths, $c_{\ell,j}$
+
+
+Output arguments:
+
+  -    pottarg: double precision(nd,ntarg)
+          Potential at target locations, $u_{\ell}(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _ltcg:
+
+lfmm3d_t_c_g
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Targets
+- Interaction kernel: Charges
+- Outputs requested: Potential and Gradient
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_t_c_g(eps,nsource,source,charge,ntarg,targ,pottarg,gradtarg,ier)
+
+This subroutine evaluates the potential and its gradient 
+
+
+  .. math::
+
+      u(x) = \sum_{j=1}^{N} c_{j} \frac{1}{4\pi\|x-x_{j}\|}
+
+at the target locations $x=t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    charge: double precision(nsource)
+          Charge strengths, $c_{j}$
+  -    ntarg: integer
+          Number of targets
+  -    targ: double precision(3,ntarg)
+          Target locations, $t_{i}$
+
+
+Output arguments:
+
+  -    pottarg: double precision(ntarg)
+          Potential at target locations, $u(t_{i})$
+  -    gradtarg: double precision(3,ntarg)
+          Gradient at target locations, $\nabla u(t_{i})$
+  -    hesstarg: double precision(6,ntarg)
+          Hessian at target locations, $\nabla \nabla u(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_t_c_g_vec(nd,eps,nsource,source,charge,ntarg,targ,pottarg,gradtarg,ier)
+
+This subroutine evaluates the potential and its gradient 
+
+
+  .. math::
+
+      u_{\ell}(x) = \sum_{j=1}^{N} c_{\ell,j} \frac{1}{4\pi\|x-x_{j}\|}
+
+at the target locations $x=t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    charge: double precision(nd,nsource)
+          Charge strengths, $c_{\ell,j}$
+
+
+Output arguments:
+
+  -    pottarg: double precision(nd,ntarg)
+          Potential at target locations, $u_{\ell}(t_{i})$
+  -    gradtarg: double precision(nd,3,ntarg)
+          Gradient at target locations, $\nabla u_{\ell}(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _ltch:
+
+lfmm3d_t_c_h
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Targets
+- Interaction kernel: Charges
+- Outputs requested: Potential, Gradient and Hessians
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_t_c_h(eps,nsource,source,charge,ntarg,targ,pottarg,gradtarg,hesstarg,ier)
+
+This subroutine evaluates the potential, its gradient and its hessian
+
+
+  .. math::
+
+      u(x) = \sum_{j=1}^{N} c_{j} \frac{1}{4\pi\|x-x_{j}\|}
+
+at the target locations $x=t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    charge: double precision(nsource)
+          Charge strengths, $c_{j}$
+  -    ntarg: integer
+          Number of targets
+  -    targ: double precision(3,ntarg)
+          Target locations, $t_{i}$
+
+
+Output arguments:
+
+  -    pottarg: double precision(ntarg)
+          Potential at target locations, $u(t_{i})$
+  -    gradtarg: double precision(3,ntarg)
+          Gradient at target locations, $\nabla u(t_{i})$
+  -    hesstarg: double precision(6,ntarg)
+          Hessian at target locations, $\nabla \nabla u(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_t_c_h_vec(nd,eps,nsource,source,charge,ntarg,targ,pottarg,gradtarg,hesstarg,ier)
+
+This subroutine evaluates the potential, its gradient and its hessian
+
+
+  .. math::
+
+      u_{\ell}(x) = \sum_{j=1}^{N} c_{\ell,j} \frac{1}{4\pi\|x-x_{j}\|}
+
+at the target locations $x=t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    charge: double precision(nd,nsource)
+          Charge strengths, $c_{\ell,j}$
+
+
+Output arguments:
+
+  -    pottarg: double precision(nd,ntarg)
+          Potential at target locations, $u_{\ell}(t_{i})$
+  -    gradtarg: double precision(nd,3,ntarg)
+          Gradient at target locations, $\nabla u_{\ell}(t_{i})$
+  -    hesstarg: double precision(nd,3,ntarg)
+          Hessian at target locations, $\nabla \nabla u_{\ell}(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _ltdp:
+
+lfmm3d_t_d_p
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Targets
+- Interaction kernel: Dipoles
+- Outputs requested: Potential
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_t_d_p(eps,nsource,source,dipvec,ntarg,targ,pottarg,ier)
+
+This subroutine evaluates the potential 
+
+
+  .. math::
+
+      u(x) = -\sum_{j=1}^{N} v_{j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the target locations $x=t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    dipvec: double precision(3,nsource)
+          Dipole strengths, $v_{j}$
+  -    ntarg: integer
+          Number of targets
+  -    targ: double precision(3,ntarg)
+          Target locations, $t_{i}$
+
+
+Output arguments:
+
+  -    pottarg: double precision(ntarg)
+          Potential at target locations, $u(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_t_d_p_vec(nd,eps,nsource,source,dipvec,ntarg,targ,pottarg,ier)
+
+This subroutine evaluates the potential 
+
+
+  .. math::
+
+      u_{\ell}(x) = -\sum_{j=1}^{N} v_{\ell,j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the target locations $x=t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    dipvec: double precision(nd,3,nsource)
+          Dipole strengths, $v_{\ell,j}$
+
+
+Output arguments:
+
+  -    pottarg: double precision(nd,ntarg)
+          Potential at target locations, $u_{\ell}(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _ltdg:
+
+lfmm3d_t_d_g
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Targets
+- Interaction kernel: Dipoles
+- Outputs requested: Potential and Gradient
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_t_d_g(eps,nsource,source,dipvec,ntarg,targ,pottarg,gradtarg,ier)
+
+This subroutine evaluates the potential and its gradient 
+
+
+  .. math::
+
+      u(x) = -\sum_{j=1}^{N} v_{j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the target locations $x=t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    dipvec: double precision(3,nsource)
+          Dipole strengths, $v_{j}$
+  -    ntarg: integer
+          Number of targets
+  -    targ: double precision(3,ntarg)
+          Target locations, $t_{i}$
+
+
+Output arguments:
+
+  -    pottarg: double precision(ntarg)
+          Potential at target locations, $u(t_{i})$
+  -    gradtarg: double precision(3,ntarg)
+          Gradient at target locations, $\nabla u(t_{i})$
+  -    hesstarg: double precision(6,ntarg)
+          Hessian at target locations, $\nabla \nabla u(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_t_d_g_vec(nd,eps,nsource,source,dipvec,ntarg,targ,pottarg,gradtarg,ier)
+
+This subroutine evaluates the potential and its gradient 
+
+
+  .. math::
+
+      u_{\ell}(x) = -\sum_{j=1}^{N} v_{\ell,j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the target locations $x=t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    dipvec: double precision(nd,3,nsource)
+          Dipole strengths, $v_{\ell,j}$
+
+
+Output arguments:
+
+  -    pottarg: double precision(nd,ntarg)
+          Potential at target locations, $u_{\ell}(t_{i})$
+  -    gradtarg: double precision(nd,3,ntarg)
+          Gradient at target locations, $\nabla u_{\ell}(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _ltdh:
+
+lfmm3d_t_d_h
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Targets
+- Interaction kernel: Dipoles
+- Outputs requested: Potential, Gradient and Hessians
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_t_d_h(eps,nsource,source,dipvec,ntarg,targ,pottarg,gradtarg,hesstarg,ier)
+
+This subroutine evaluates the potential, its gradient and its hessian
+
+
+  .. math::
+
+      u(x) = -\sum_{j=1}^{N} v_{j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the target locations $x=t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    dipvec: double precision(3,nsource)
+          Dipole strengths, $v_{j}$
+  -    ntarg: integer
+          Number of targets
+  -    targ: double precision(3,ntarg)
+          Target locations, $t_{i}$
+
+
+Output arguments:
+
+  -    pottarg: double precision(ntarg)
+          Potential at target locations, $u(t_{i})$
+  -    gradtarg: double precision(3,ntarg)
+          Gradient at target locations, $\nabla u(t_{i})$
+  -    hesstarg: double precision(6,ntarg)
+          Hessian at target locations, $\nabla \nabla u(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_t_d_h_vec(nd,eps,nsource,source,dipvec,ntarg,targ,pottarg,gradtarg,hesstarg,ier)
+
+This subroutine evaluates the potential, its gradient and its hessian
+
+
+  .. math::
+
+      u_{\ell}(x) = -\sum_{j=1}^{N} v_{\ell,j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the target locations $x=t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    dipvec: double precision(nd,3,nsource)
+          Dipole strengths, $v_{\ell,j}$
+
+
+Output arguments:
+
+  -    pottarg: double precision(nd,ntarg)
+          Potential at target locations, $u_{\ell}(t_{i})$
+  -    gradtarg: double precision(nd,3,ntarg)
+          Gradient at target locations, $\nabla u_{\ell}(t_{i})$
+  -    hesstarg: double precision(nd,3,ntarg)
+          Hessian at target locations, $\nabla \nabla u_{\ell}(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _ltcdp:
+
+lfmm3d_t_cd_p
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Targets
+- Interaction kernel: Charges and Dipoles
+- Outputs requested: Potential
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_t_cd_p(eps,nsource,source,charge,dipvec,ntarg,targ,pottarg,ier)
+
+This subroutine evaluates the potential 
+
+
+  .. math::
+
+      u(x) = \sum_{j=1}^{N} c_{j} \frac{1}{4\pi\|x-x_{j}\|} - v_{j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the target locations $x=t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    charge: double precision(nsource)
+          Charge strengths, $c_{j}$
+  -    dipvec: double precision(3,nsource)
+          Dipole strengths, $v_{j}$
+  -    ntarg: integer
+          Number of targets
+  -    targ: double precision(3,ntarg)
+          Target locations, $t_{i}$
+
+
+Output arguments:
+
+  -    pottarg: double precision(ntarg)
+          Potential at target locations, $u(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_t_cd_p_vec(nd,eps,nsource,source,charge,dipvec,ntarg,targ,pottarg,ier)
+
+This subroutine evaluates the potential 
+
+
+  .. math::
+
+      u_{\ell}(x) = \sum_{j=1}^{N} c_{\ell,j} \frac{1}{4\pi\|x-x_{j}\|} - v_{\ell,j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the target locations $x=t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    charge: double precision(nd,nsource)
+          Charge strengths, $c_{\ell,j}$
+  -    dipvec: double precision(nd,3,nsource)
+          Dipole strengths, $v_{\ell,j}$
+
+
+Output arguments:
+
+  -    pottarg: double precision(nd,ntarg)
+          Potential at target locations, $u_{\ell}(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _ltcdg:
+
+lfmm3d_t_cd_g
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Targets
+- Interaction kernel: Charges and Dipoles
+- Outputs requested: Potential and Gradient
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_t_cd_g(eps,nsource,source,charge,dipvec,ntarg,targ,pottarg,gradtarg,ier)
+
+This subroutine evaluates the potential and its gradient 
+
+
+  .. math::
+
+      u(x) = \sum_{j=1}^{N} c_{j} \frac{1}{4\pi\|x-x_{j}\|} - v_{j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the target locations $x=t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    charge: double precision(nsource)
+          Charge strengths, $c_{j}$
+  -    dipvec: double precision(3,nsource)
+          Dipole strengths, $v_{j}$
+  -    ntarg: integer
+          Number of targets
+  -    targ: double precision(3,ntarg)
+          Target locations, $t_{i}$
+
+
+Output arguments:
+
+  -    pottarg: double precision(ntarg)
+          Potential at target locations, $u(t_{i})$
+  -    gradtarg: double precision(3,ntarg)
+          Gradient at target locations, $\nabla u(t_{i})$
+  -    hesstarg: double precision(6,ntarg)
+          Hessian at target locations, $\nabla \nabla u(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_t_cd_g_vec(nd,eps,nsource,source,charge,dipvec,ntarg,targ,pottarg,gradtarg,ier)
+
+This subroutine evaluates the potential and its gradient 
+
+
+  .. math::
+
+      u_{\ell}(x) = \sum_{j=1}^{N} c_{\ell,j} \frac{1}{4\pi\|x-x_{j}\|} - v_{\ell,j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the target locations $x=t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    charge: double precision(nd,nsource)
+          Charge strengths, $c_{\ell,j}$
+  -    dipvec: double precision(nd,3,nsource)
+          Dipole strengths, $v_{\ell,j}$
+
+
+Output arguments:
+
+  -    pottarg: double precision(nd,ntarg)
+          Potential at target locations, $u_{\ell}(t_{i})$
+  -    gradtarg: double precision(nd,3,ntarg)
+          Gradient at target locations, $\nabla u_{\ell}(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _ltcdh:
+
+lfmm3d_t_cd_h
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Targets
+- Interaction kernel: Charges and Dipoles
+- Outputs requested: Potential, Gradient and Hessians
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_t_cd_h(eps,nsource,source,charge,dipvec,ntarg,targ,pottarg,gradtarg,hesstarg,ier)
+
+This subroutine evaluates the potential, its gradient and its hessian
+
+
+  .. math::
+
+      u(x) = \sum_{j=1}^{N} c_{j} \frac{1}{4\pi\|x-x_{j}\|} - v_{j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the target locations $x=t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    charge: double precision(nsource)
+          Charge strengths, $c_{j}$
+  -    dipvec: double precision(3,nsource)
+          Dipole strengths, $v_{j}$
+  -    ntarg: integer
+          Number of targets
+  -    targ: double precision(3,ntarg)
+          Target locations, $t_{i}$
+
+
+Output arguments:
+
+  -    pottarg: double precision(ntarg)
+          Potential at target locations, $u(t_{i})$
+  -    gradtarg: double precision(3,ntarg)
+          Gradient at target locations, $\nabla u(t_{i})$
+  -    hesstarg: double precision(6,ntarg)
+          Hessian at target locations, $\nabla \nabla u(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_t_cd_h_vec(nd,eps,nsource,source,charge,dipvec,ntarg,targ,pottarg,gradtarg,hesstarg,ier)
+
+This subroutine evaluates the potential, its gradient and its hessian
+
+
+  .. math::
+
+      u_{\ell}(x) = \sum_{j=1}^{N} c_{\ell,j} \frac{1}{4\pi\|x-x_{j}\|} - v_{\ell,j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the target locations $x=t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    charge: double precision(nd,nsource)
+          Charge strengths, $c_{\ell,j}$
+  -    dipvec: double precision(nd,3,nsource)
+          Dipole strengths, $v_{\ell,j}$
+
+
+Output arguments:
+
+  -    pottarg: double precision(nd,ntarg)
+          Potential at target locations, $u_{\ell}(t_{i})$
+  -    gradtarg: double precision(nd,3,ntarg)
+          Gradient at target locations, $\nabla u_{\ell}(t_{i})$
+  -    hesstarg: double precision(nd,3,ntarg)
+          Hessian at target locations, $\nabla \nabla u_{\ell}(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _lstcp:
+
+lfmm3d_st_c_p
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Sources and Targets
+- Interaction kernel: Charges
+- Outputs requested: Potential
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_st_c_p(eps,nsource,source,charge,pot,ntarg,targ,pottarg,ier)
+
+This subroutine evaluates the potential 
+
+
+  .. math::
+
+      u(x) = \sum_{j=1}^{N} c_{j} \frac{1}{4\pi\|x-x_{j}\|}
+
+at the source and target locations $x=x_{j},t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    charge: double precision(nsource)
+          Charge strengths, $c_{j}$
+  -    ntarg: integer
+          Number of targets
+  -    targ: double precision(3,ntarg)
+          Target locations, $t_{i}$
+
+
+Output arguments:
+
+  -    pot: double precision(nsource)
+          Potential at source locations, $u(x_{j})$
+  -    pottarg: double precision(ntarg)
+          Potential at target locations, $u(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_st_c_p_vec(nd,eps,nsource,source,charge,pot,ntarg,targ,pottarg,ier)
+
+This subroutine evaluates the potential 
+
+
+  .. math::
+
+      u_{\ell}(x) = \sum_{j=1}^{N} c_{\ell,j} \frac{1}{4\pi\|x-x_{j}\|}
+
+at the source and target locations $x=x_{j},t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    charge: double precision(nd,nsource)
+          Charge strengths, $c_{\ell,j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nd,nsource)
+          Potential at source locations, $u_{\ell}(x_{j})$
+  -    pottarg: double precision(nd,ntarg)
+          Potential at target locations, $u_{\ell}(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _lstcg:
+
+lfmm3d_st_c_g
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Sources and Targets
+- Interaction kernel: Charges
+- Outputs requested: Potential and Gradient
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_st_c_g(eps,nsource,source,charge,pot,grad,ntarg,targ,pottarg,gradtarg,ier)
+
+This subroutine evaluates the potential and its gradient 
+
+
+  .. math::
+
+      u(x) = \sum_{j=1}^{N} c_{j} \frac{1}{4\pi\|x-x_{j}\|}
+
+at the source and target locations $x=x_{j},t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    charge: double precision(nsource)
+          Charge strengths, $c_{j}$
+  -    ntarg: integer
+          Number of targets
+  -    targ: double precision(3,ntarg)
+          Target locations, $t_{i}$
+
+
+Output arguments:
+
+  -    pot: double precision(nsource)
+          Potential at source locations, $u(x_{j})$
+  -    grad: double precision(3,nsource)
+          Gradient at source locations, $\nabla u(x_{j})$
+  -    pottarg: double precision(ntarg)
+          Potential at target locations, $u(t_{i})$
+  -    gradtarg: double precision(3,ntarg)
+          Gradient at target locations, $\nabla u(t_{i})$
+  -    hesstarg: double precision(6,ntarg)
+          Hessian at target locations, $\nabla \nabla u(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_st_c_g_vec(nd,eps,nsource,source,charge,pot,grad,ntarg,targ,pottarg,gradtarg,ier)
+
+This subroutine evaluates the potential and its gradient 
+
+
+  .. math::
+
+      u_{\ell}(x) = \sum_{j=1}^{N} c_{\ell,j} \frac{1}{4\pi\|x-x_{j}\|}
+
+at the source and target locations $x=x_{j},t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    charge: double precision(nd,nsource)
+          Charge strengths, $c_{\ell,j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nd,nsource)
+          Potential at source locations, $u_{\ell}(x_{j})$
+  -    grad: double precision(nd,3,nsource)
+          Gradient at source locations, $\nabla u_{\ell}(x_{j})$
+  -    pottarg: double precision(nd,ntarg)
+          Potential at target locations, $u_{\ell}(t_{i})$
+  -    gradtarg: double precision(nd,3,ntarg)
+          Gradient at target locations, $\nabla u_{\ell}(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _lstch:
+
+lfmm3d_st_c_h
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Sources and Targets
+- Interaction kernel: Charges
+- Outputs requested: Potential, Gradient and Hessians
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_st_c_h(eps,nsource,source,charge,pot,grad,hess,ntarg,targ,pottarg,gradtarg,hesstarg,ier)
+
+This subroutine evaluates the potential, its gradient and its hessian
+
+
+  .. math::
+
+      u(x) = \sum_{j=1}^{N} c_{j} \frac{1}{4\pi\|x-x_{j}\|}
+
+at the source and target locations $x=x_{j},t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    charge: double precision(nsource)
+          Charge strengths, $c_{j}$
+  -    ntarg: integer
+          Number of targets
+  -    targ: double precision(3,ntarg)
+          Target locations, $t_{i}$
+
+
+Output arguments:
+
+  -    pot: double precision(nsource)
+          Potential at source locations, $u(x_{j})$
+  -    grad: double precision(3,nsource)
+          Gradient at source locations, $\nabla u(x_{j})$
+  -    hess: double precision(6,nsource)
+          Hessian at source locations, $\nabla \nabla u(x_{j})$
+  -    pottarg: double precision(ntarg)
+          Potential at target locations, $u(t_{i})$
+  -    gradtarg: double precision(3,ntarg)
+          Gradient at target locations, $\nabla u(t_{i})$
+  -    hesstarg: double precision(6,ntarg)
+          Hessian at target locations, $\nabla \nabla u(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_st_c_h_vec(nd,eps,nsource,source,charge,pot,grad,hess,ntarg,targ,pottarg,gradtarg,hesstarg,ier)
+
+This subroutine evaluates the potential, its gradient and its hessian
+
+
+  .. math::
+
+      u_{\ell}(x) = \sum_{j=1}^{N} c_{\ell,j} \frac{1}{4\pi\|x-x_{j}\|}
+
+at the source and target locations $x=x_{j},t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    charge: double precision(nd,nsource)
+          Charge strengths, $c_{\ell,j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nd,nsource)
+          Potential at source locations, $u_{\ell}(x_{j})$
+  -    grad: double precision(nd,3,nsource)
+          Gradient at source locations, $\nabla u_{\ell}(x_{j})$
+  -    hess: double precision(nd,6,nsource)
+          Gradient at source locations, $\nabla \nabla u_{\ell}(x_{j})$
+  -    pottarg: double precision(nd,ntarg)
+          Potential at target locations, $u_{\ell}(t_{i})$
+  -    gradtarg: double precision(nd,3,ntarg)
+          Gradient at target locations, $\nabla u_{\ell}(t_{i})$
+  -    hesstarg: double precision(nd,3,ntarg)
+          Hessian at target locations, $\nabla \nabla u_{\ell}(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _lstdp:
+
+lfmm3d_st_d_p
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Sources and Targets
+- Interaction kernel: Dipoles
+- Outputs requested: Potential
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_st_d_p(eps,nsource,source,dipvec,pot,ntarg,targ,pottarg,ier)
+
+This subroutine evaluates the potential 
+
+
+  .. math::
+
+      u(x) = -\sum_{j=1}^{N} v_{j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source and target locations $x=x_{j},t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    dipvec: double precision(3,nsource)
+          Dipole strengths, $v_{j}$
+  -    ntarg: integer
+          Number of targets
+  -    targ: double precision(3,ntarg)
+          Target locations, $t_{i}$
+
+
+Output arguments:
+
+  -    pot: double precision(nsource)
+          Potential at source locations, $u(x_{j})$
+  -    pottarg: double precision(ntarg)
+          Potential at target locations, $u(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_st_d_p_vec(nd,eps,nsource,source,dipvec,pot,ntarg,targ,pottarg,ier)
+
+This subroutine evaluates the potential 
+
+
+  .. math::
+
+      u_{\ell}(x) = -\sum_{j=1}^{N} v_{\ell,j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source and target locations $x=x_{j},t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    dipvec: double precision(nd,3,nsource)
+          Dipole strengths, $v_{\ell,j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nd,nsource)
+          Potential at source locations, $u_{\ell}(x_{j})$
+  -    pottarg: double precision(nd,ntarg)
+          Potential at target locations, $u_{\ell}(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _lstdg:
+
+lfmm3d_st_d_g
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Sources and Targets
+- Interaction kernel: Dipoles
+- Outputs requested: Potential and Gradient
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_st_d_g(eps,nsource,source,dipvec,pot,grad,ntarg,targ,pottarg,gradtarg,ier)
+
+This subroutine evaluates the potential and its gradient 
+
+
+  .. math::
+
+      u(x) = -\sum_{j=1}^{N} v_{j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source and target locations $x=x_{j},t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    dipvec: double precision(3,nsource)
+          Dipole strengths, $v_{j}$
+  -    ntarg: integer
+          Number of targets
+  -    targ: double precision(3,ntarg)
+          Target locations, $t_{i}$
+
+
+Output arguments:
+
+  -    pot: double precision(nsource)
+          Potential at source locations, $u(x_{j})$
+  -    grad: double precision(3,nsource)
+          Gradient at source locations, $\nabla u(x_{j})$
+  -    pottarg: double precision(ntarg)
+          Potential at target locations, $u(t_{i})$
+  -    gradtarg: double precision(3,ntarg)
+          Gradient at target locations, $\nabla u(t_{i})$
+  -    hesstarg: double precision(6,ntarg)
+          Hessian at target locations, $\nabla \nabla u(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_st_d_g_vec(nd,eps,nsource,source,dipvec,pot,grad,ntarg,targ,pottarg,gradtarg,ier)
+
+This subroutine evaluates the potential and its gradient 
+
+
+  .. math::
+
+      u_{\ell}(x) = -\sum_{j=1}^{N} v_{\ell,j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source and target locations $x=x_{j},t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    dipvec: double precision(nd,3,nsource)
+          Dipole strengths, $v_{\ell,j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nd,nsource)
+          Potential at source locations, $u_{\ell}(x_{j})$
+  -    grad: double precision(nd,3,nsource)
+          Gradient at source locations, $\nabla u_{\ell}(x_{j})$
+  -    pottarg: double precision(nd,ntarg)
+          Potential at target locations, $u_{\ell}(t_{i})$
+  -    gradtarg: double precision(nd,3,ntarg)
+          Gradient at target locations, $\nabla u_{\ell}(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _lstdh:
+
+lfmm3d_st_d_h
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Sources and Targets
+- Interaction kernel: Dipoles
+- Outputs requested: Potential, Gradient and Hessians
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_st_d_h(eps,nsource,source,dipvec,pot,grad,hess,ntarg,targ,pottarg,gradtarg,hesstarg,ier)
+
+This subroutine evaluates the potential, its gradient and its hessian
+
+
+  .. math::
+
+      u(x) = -\sum_{j=1}^{N} v_{j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source and target locations $x=x_{j},t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    dipvec: double precision(3,nsource)
+          Dipole strengths, $v_{j}$
+  -    ntarg: integer
+          Number of targets
+  -    targ: double precision(3,ntarg)
+          Target locations, $t_{i}$
+
+
+Output arguments:
+
+  -    pot: double precision(nsource)
+          Potential at source locations, $u(x_{j})$
+  -    grad: double precision(3,nsource)
+          Gradient at source locations, $\nabla u(x_{j})$
+  -    hess: double precision(6,nsource)
+          Hessian at source locations, $\nabla \nabla u(x_{j})$
+  -    pottarg: double precision(ntarg)
+          Potential at target locations, $u(t_{i})$
+  -    gradtarg: double precision(3,ntarg)
+          Gradient at target locations, $\nabla u(t_{i})$
+  -    hesstarg: double precision(6,ntarg)
+          Hessian at target locations, $\nabla \nabla u(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_st_d_h_vec(nd,eps,nsource,source,dipvec,pot,grad,hess,ntarg,targ,pottarg,gradtarg,hesstarg,ier)
+
+This subroutine evaluates the potential, its gradient and its hessian
+
+
+  .. math::
+
+      u_{\ell}(x) = -\sum_{j=1}^{N} v_{\ell,j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source and target locations $x=x_{j},t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    dipvec: double precision(nd,3,nsource)
+          Dipole strengths, $v_{\ell,j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nd,nsource)
+          Potential at source locations, $u_{\ell}(x_{j})$
+  -    grad: double precision(nd,3,nsource)
+          Gradient at source locations, $\nabla u_{\ell}(x_{j})$
+  -    hess: double precision(nd,6,nsource)
+          Gradient at source locations, $\nabla \nabla u_{\ell}(x_{j})$
+  -    pottarg: double precision(nd,ntarg)
+          Potential at target locations, $u_{\ell}(t_{i})$
+  -    gradtarg: double precision(nd,3,ntarg)
+          Gradient at target locations, $\nabla u_{\ell}(t_{i})$
+  -    hesstarg: double precision(nd,3,ntarg)
+          Hessian at target locations, $\nabla \nabla u_{\ell}(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _lstcdp:
+
+lfmm3d_st_cd_p
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Sources and Targets
+- Interaction kernel: Charges and Dipoles
+- Outputs requested: Potential
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_st_cd_p(eps,nsource,source,charge,dipvec,pot,ntarg,targ,pottarg,ier)
+
+This subroutine evaluates the potential 
+
+
+  .. math::
+
+      u(x) = \sum_{j=1}^{N} c_{j} \frac{1}{4\pi\|x-x_{j}\|} - v_{j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source and target locations $x=x_{j},t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    charge: double precision(nsource)
+          Charge strengths, $c_{j}$
+  -    dipvec: double precision(3,nsource)
+          Dipole strengths, $v_{j}$
+  -    ntarg: integer
+          Number of targets
+  -    targ: double precision(3,ntarg)
+          Target locations, $t_{i}$
+
+
+Output arguments:
+
+  -    pot: double precision(nsource)
+          Potential at source locations, $u(x_{j})$
+  -    pottarg: double precision(ntarg)
+          Potential at target locations, $u(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_st_cd_p_vec(nd,eps,nsource,source,charge,dipvec,pot,ntarg,targ,pottarg,ier)
+
+This subroutine evaluates the potential 
+
+
+  .. math::
+
+      u_{\ell}(x) = \sum_{j=1}^{N} c_{\ell,j} \frac{1}{4\pi\|x-x_{j}\|} - v_{\ell,j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source and target locations $x=x_{j},t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    charge: double precision(nd,nsource)
+          Charge strengths, $c_{\ell,j}$
+  -    dipvec: double precision(nd,3,nsource)
+          Dipole strengths, $v_{\ell,j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nd,nsource)
+          Potential at source locations, $u_{\ell}(x_{j})$
+  -    pottarg: double precision(nd,ntarg)
+          Potential at target locations, $u_{\ell}(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _lstcdg:
+
+lfmm3d_st_cd_g
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Sources and Targets
+- Interaction kernel: Charges and Dipoles
+- Outputs requested: Potential and Gradient
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_st_cd_g(eps,nsource,source,charge,dipvec,pot,grad,ntarg,targ,pottarg,gradtarg,ier)
+
+This subroutine evaluates the potential and its gradient 
+
+
+  .. math::
+
+      u(x) = \sum_{j=1}^{N} c_{j} \frac{1}{4\pi\|x-x_{j}\|} - v_{j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source and target locations $x=x_{j},t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    charge: double precision(nsource)
+          Charge strengths, $c_{j}$
+  -    dipvec: double precision(3,nsource)
+          Dipole strengths, $v_{j}$
+  -    ntarg: integer
+          Number of targets
+  -    targ: double precision(3,ntarg)
+          Target locations, $t_{i}$
+
+
+Output arguments:
+
+  -    pot: double precision(nsource)
+          Potential at source locations, $u(x_{j})$
+  -    grad: double precision(3,nsource)
+          Gradient at source locations, $\nabla u(x_{j})$
+  -    pottarg: double precision(ntarg)
+          Potential at target locations, $u(t_{i})$
+  -    gradtarg: double precision(3,ntarg)
+          Gradient at target locations, $\nabla u(t_{i})$
+  -    hesstarg: double precision(6,ntarg)
+          Hessian at target locations, $\nabla \nabla u(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_st_cd_g_vec(nd,eps,nsource,source,charge,dipvec,pot,grad,ntarg,targ,pottarg,gradtarg,ier)
+
+This subroutine evaluates the potential and its gradient 
+
+
+  .. math::
+
+      u_{\ell}(x) = \sum_{j=1}^{N} c_{\ell,j} \frac{1}{4\pi\|x-x_{j}\|} - v_{\ell,j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source and target locations $x=x_{j},t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    charge: double precision(nd,nsource)
+          Charge strengths, $c_{\ell,j}$
+  -    dipvec: double precision(nd,3,nsource)
+          Dipole strengths, $v_{\ell,j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nd,nsource)
+          Potential at source locations, $u_{\ell}(x_{j})$
+  -    grad: double precision(nd,3,nsource)
+          Gradient at source locations, $\nabla u_{\ell}(x_{j})$
+  -    pottarg: double precision(nd,ntarg)
+          Potential at target locations, $u_{\ell}(t_{i})$
+  -    gradtarg: double precision(nd,3,ntarg)
+          Gradient at target locations, $\nabla u_{\ell}(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+
+.. _lstcdh:
+
+lfmm3d_st_cd_h
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Evaluation points: Sources and Targets
+- Interaction kernel: Charges and Dipoles
+- Outputs requested: Potential, Gradient and Hessians
+
+-------------------------------------
+
+.. code:: fortran
+
+  subroutine lfmm3d_st_cd_h(eps,nsource,source,charge,dipvec,pot,grad,hess,ntarg,targ,pottarg,gradtarg,hesstarg,ier)
+
+This subroutine evaluates the potential, its gradient and its hessian
+
+
+  .. math::
+
+      u(x) = \sum_{j=1}^{N} c_{j} \frac{1}{4\pi\|x-x_{j}\|} - v_{j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source and target locations $x=x_{j},t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    eps: double precision
+          precision requested
+  -    nsource: integer
+          Number of sources
+  -    source: double precision(3,nsource)
+          Source locations, $x_{j}$
+  -    charge: double precision(nsource)
+          Charge strengths, $c_{j}$
+  -    dipvec: double precision(3,nsource)
+          Dipole strengths, $v_{j}$
+  -    ntarg: integer
+          Number of targets
+  -    targ: double precision(3,ntarg)
+          Target locations, $t_{i}$
+
+
+Output arguments:
+
+  -    pot: double precision(nsource)
+          Potential at source locations, $u(x_{j})$
+  -    grad: double precision(3,nsource)
+          Gradient at source locations, $\nabla u(x_{j})$
+  -    hess: double precision(6,nsource)
+          Hessian at source locations, $\nabla \nabla u(x_{j})$
+  -    pottarg: double precision(ntarg)
+          Potential at target locations, $u(t_{i})$
+  -    gradtarg: double precision(3,ntarg)
+          Gradient at target locations, $\nabla u(t_{i})$
+  -    hesstarg: double precision(6,ntarg)
+          Hessian at target locations, $\nabla \nabla u(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+--------------------------------
+
+Vectorized version: 
+
+.. code:: fortran
+
+  subroutine lfmm3d_st_cd_h_vec(nd,eps,nsource,source,charge,dipvec,pot,grad,hess,ntarg,targ,pottarg,gradtarg,hesstarg,ier)
+
+This subroutine evaluates the potential, its gradient and its hessian
+
+
+  .. math::
+
+      u_{\ell}(x) = \sum_{j=1}^{N} c_{\ell,j} \frac{1}{4\pi\|x-x_{j}\|} - v_{\ell,j} \cdot \nabla \left( \frac{1}{4\pi\|x-x_{j}\|}\right)
+
+at the source and target locations $x=x_{j},t_{i}$. When $x=x_{j}$, the term corresponding to $x_{j}$ is dropped from the sum.
+
+Input arguments:
+
+  -    nd: integer
+          number of densities
+  -    charge: double precision(nd,nsource)
+          Charge strengths, $c_{\ell,j}$
+  -    dipvec: double precision(nd,3,nsource)
+          Dipole strengths, $v_{\ell,j}$
+
+
+Output arguments:
+
+  -    pot: double precision(nd,nsource)
+          Potential at source locations, $u_{\ell}(x_{j})$
+  -    grad: double precision(nd,3,nsource)
+          Gradient at source locations, $\nabla u_{\ell}(x_{j})$
+  -    hess: double precision(nd,6,nsource)
+          Gradient at source locations, $\nabla \nabla u_{\ell}(x_{j})$
+  -    pottarg: double precision(nd,ntarg)
+          Potential at target locations, $u_{\ell}(t_{i})$
+  -    gradtarg: double precision(nd,3,ntarg)
+          Gradient at target locations, $\nabla u_{\ell}(t_{i})$
+  -    hesstarg: double precision(nd,3,ntarg)
+          Hessian at target locations, $\nabla \nabla u_{\ell}(t_{i})$
+  -    ier: integer
+          Error flag; ier=0 implies successful execution, and ier=4/8 implies insufficient memory  
+
+
+.. container:: rttext
+
+  `Back to Laplace FMM <fortran-c.html#lap>`__
+
+.. container:: rttext
+
+  `Back to top <fortran-c.html#fcexmp>`__
+
+

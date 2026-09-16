@@ -36,17 +36,28 @@
     ]
   },
   "evidence": {
-    "floor": 0.0,
-    "floor_how": "measured by selfcheck on 2026-09-05: run.sh altbuild (configure.py -debug: Athena++'s own -O0 -g build with the same compiler and all other configure switches unchanged) against run.sh nominal, graded with the check's own validate.py: bit-identical graded output",
+    "floor": {
+      "value": 1.2718714970105793e-12,
+      "knob_overrides": {
+        "SAB_SLOT_CLASS": "instruction"
+      }
+    },
+    "floor_how": "measured by selfcheck on 2026-09-08: run.sh altbuild (configure.py -debug: Athena++'s own -O0 -g build with the same compiler and all other configure switches unchanged) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
     "variant_preview_spread": 1.6076029396572267e-13,
-    "self_validation_spread": 1.6076029396572267e-13,
+    "self_validation_spread": {
+      "value": 1.545430450278218e-13,
+      "knob_overrides": {
+        "SAB_SLOT_CLASS": "instruction"
+      }
+    },
     "altbuild": {
       "what": "configure.py -debug: Athena++'s own -O0 -g build with the same compiler and all other configure switches unchanged",
-      "distance": 0.0,
-      "identical": true,
+      "distance": 1.2718714970105793e-12,
+      "bound_fraction": null,
+      "identical": false,
       "passed": true,
       "reason": "all graded values within bound",
-      "at": "2026-09-05T02:45:10Z"
+      "at": "2026-09-08T08:38:49Z"
     }
   },
   "warrant": "The graded observable is the full-precision history file (101 rows at intervals of 0.03 in time, carrying the timestep, the conserved volume integrals and the max-v2 column upstream fits the decay rate to) and the final primitive and cell-centred magnetic state of every cell of 2 runs (linwave3d_mhd_sts_32, linwave3d_mhd_sts_64), the upstream test's own settings, written by the pinned code at full double precision and compared value by value under an absolute bound of 1e-10 with no relative term. Physical: The wave starts at amplitude 1e-4 and viscosity, Ohmic resistivity and thermal conduction together damp it to about 3.3e-5 by t = 3, so the decay this test exists to measure is a 1e-4-scale signal in the graded values. A wrong viscous stress, a dropped conduction term, a wrong Ohmic EMF or a wrong RKL2 stage coefficient changes the damping by a per cent or more, which moves the max-v2 history and the final state by 1e-7 and up, three orders above the bound; upstream's own criterion accepts a 5 to 22 per cent error in the fitted rate, so this bound is far stricter than the test it is derived from. Achievable: explicit diffusion in Athena++ has no iterative solve and no convergence tolerance anywhere — the diffusive fluxes are straight-line stencil evaluations (src/hydro/hydro_diffusion/viscosity.cpp:26, src/hydro/hydro_diffusion/conduction.cpp:25, src/field/field_diffusion/diffusivity.cpp:166, src/scalars/scalar_diffusion.cpp:67) and the parabolic timestep is a plain minimum over cells (HydroDiffusion::NewDiffusionDt, src/hydro/hydro_diffusion/hydro_diffusion.cpp:239; FieldDiffusion::NewDiffusionDt, src/field/field_diffusion/field_diffusion.cpp:236; PassiveScalars::NewDiffusionDt, src/scalars/scalar_diffusion.cpp:164; combined in src/hydro/new_blockdt.cpp:195-226) — so the floor is pure round-off accumulated over the steps of the run and nothing in the source lifts it above that. Super-time-stepping adds one discrete mechanism on top of that: the number of RKL stages in a cycle is `static_cast<int>(...)` of a square root of the ratio of the hyperbolic to the parabolic timestep, forced odd (src/main.cpp:462-474), and the stage coefficients follow from that integer (SuperTimeStepTaskList::StartupTaskList, src/task_list/sts_task_list.cpp:578-610). A port that computes the parabolic timestep even slightly differently therefore lands on a different stage schedule and a discretely different answer, which this bound catches at once, while a correct port reproduces the schedule exactly and stays at the round-off floor. Absolute rather than relative because the noise is absolute and the graded files mix O(1) volume integrals and background state with a 1e-5 wave amplitude. The two builds are bit-identical on every deck (floor 0), while the one-ulp perturbation of the wave amplitude grows through the few thousand steps of the run to a largest absolute difference of 1.61e-13, so the bound sits 622 times above the largest legitimate spread measured and 1000 times below the smallest fault named above. Finalized on 2026-09-02 after the calibration selfcheck on the x86 worker (8 cpus, 4 GB) recorded an in-container nominal-versus-variant spread of 1.61e-13, equal to the preview."

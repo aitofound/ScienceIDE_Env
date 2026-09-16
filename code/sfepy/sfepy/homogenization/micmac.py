@@ -1,0 +1,206 @@
+import os.path as op
+import numpy as nm
+import tables as pt
+from sfepy.base.base import output, Struct
+from sfepy.base.conf import ProblemConf, get_standard_keywords
+from sfepy.homogenization.homogen_app import HomogenizationApp
+from sfepy.homogenization.engine import HomogenizationEngine
+from sfepy.homogenization.coefficients import Coefficients
+from sfepy.discrete import Problem
+from sfepy.discrete.fem.meshio import HDF5MeshIO
+
+homogen_app_cache = {}
+
+
+def get_homogen_app_form_cache(micro_filename):
+    return homogen_app_cache.get(micro_filename, None)
+
+
+def get_micro_conf(micro_filename, define_args, output_dir):
+    required, other = get_standard_keywords()
+    required.remove('equations')
+    conf = ProblemConf.from_file(micro_filename, required, other,
+                                 verbose=False, define_args=define_args)
+    if output_dir is not None:
+        conf.options.output_dir = output_dir
+
+    return conf
+
+
+def coefs_to_dict(coefs, mode, n):
+    out = {}
+    if mode == None:
+        for key, val in coefs.__dict__.items():
+            out[key] = val
+
+    elif mode == 'qp':
+        for key, val in coefs.__dict__.items():
+            if type( val ) == nm.ndarray or type(val) == nm.float64:
+                out[key] = nm.tile( val, (n, 1, 1) )
+            elif type(val) == dict:
+                for key2, val2 in val.items():
+                    if type(val2) == nm.ndarray or type(val2) == nm.float64:
+                        out[key+'_'+key2] = nm.tile(val2, (n, 1, 1))
+    else:
+        out = None
+
+    return out
+
+
+def get_homog_coefs_linear(ts, coor, mode,
+                           micro_filename=None, regenerate=False,
+                           coefs_filename=None, define_args=None,
+                           output_dir=None):
+
+    nc = None if coor is None else coor.shape[0]
+    if micro_filename in homogen_app_cache:
+        return coefs_to_dict(homogen_app_cache[micro_filename][0], mode, nc)
+
+    oprefix = output.prefix
+    output.prefix = 'micro:'
+
+    conf = get_micro_conf(micro_filename, define_args, output_dir)
+
+    if coefs_filename is None:
+        coefs_filename = conf.options.get('coefs_filename', 'coefs')
+        coefs_filename = op.join(conf.options.get('output_dir', '.'),
+                                 coefs_filename) + '.h5'
+
+    if not regenerate:
+        if op.exists( coefs_filename ):
+            if not pt.is_hdf5_file( coefs_filename ):
+                regenerate = True
+        else:
+            regenerate = True
+
+    recovery_hook = conf.options.get('recovery_hook', None)
+
+    if regenerate:
+        options = Struct( output_filename_trunk = None )
+
+        app = HomogenizationApp( conf, options, 'micro:' )
+        coefs, deps = app(ret_all=True)
+        if type(coefs) is tuple:
+            coefs = coefs[0]
+
+        coefs.to_file_hdf5( coefs_filename )
+
+        rhook = (None if recovery_hook is None else
+                 conf.get_function(recovery_hook))
+        homogen_app_cache[micro_filename] = (coefs, app.he, deps, rhook)
+    else:
+        coefs = Coefficients.from_file_hdf5( coefs_filename )
+        recovery_hook = conf.options.get('recovery_hook', None)
+        if recovery_hook is not None:
+            corrs = get_correctors_from_file_hdf5(dump_names=coefs.save_names)
+            rhook = conf.get_function(recovery_hook)
+            problem = Problem.from_conf(conf, init_equations=False,
+                                        init_solvers=False)
+            options = Struct(output_filename_trunk=None)
+            he = HomogenizationEngine(problem, options)
+            homogen_app_cache[micro_filename] = (coefs, he, corrs, rhook)
+        else:
+            homogen_app_cache[micro_filename] = (coefs, None, None, None)
+
+    output.prefix = oprefix
+
+    return coefs_to_dict(coefs, mode, nc)
+
+
+def get_homog_coefs_nonlinear(ts, coor, mode, macro_data=None,
+                              term=None, problem=None,
+                              iteration=None, define_args=None,
+                              output_dir=None, ret_corrs=False, **kwargs):
+    if not (mode == 'qp'):
+        return
+
+    oprefix = output.prefix
+    output.prefix = 'micro:'
+
+    micro_filename = problem.conf.options.micro_filename
+    if micro_filename not in homogen_app_cache:
+        conf = get_micro_conf(micro_filename, define_args, output_dir)
+        options = Struct(output_filename_trunk=None)
+        app = HomogenizationApp(conf, options, 'micro:', n_micro=coor.shape[0])
+        homogen_app_cache[micro_filename] = app
+    else:
+        app = homogen_app_cache[micro_filename]
+
+    if macro_data is not None:
+        macro_data['macro_time_step'] = ts.step
+
+    app.setup_macro_data(macro_data)
+
+    coefs, deps = app(ret_all=True, itime=ts.step, iiter=iteration)
+
+    if type(coefs) is tuple:
+        coefs = coefs[0]
+
+    out = {}
+    for key, val in coefs.__dict__.items():
+        if isinstance(val, list):
+            out[key] = nm.array(val)
+        elif isinstance(val, dict):
+            for key2, val2 in val.items():
+                out[key+'_'+key2] = nm.array(val2)
+
+    for key in out.keys():
+        shape = out[key].shape
+        if len(shape) == 1:
+            out[key] = out[key].reshape(shape + (1, 1))
+        elif len(shape) == 2:
+            out[key] = out[key].reshape(shape + (1,))
+
+    output.prefix = oprefix
+
+    if ret_corrs:
+        return out, deps
+    else:
+        return out
+
+def get_correctors_from_file_hdf5(coefs_filename='coefs.h5',
+                                  dump_names=None):
+
+    if dump_names == None:
+        coefs = Coefficients.from_file_hdf5( coefs_filename )
+        if hasattr(coefs, 'save_names'):
+            dump_names = coefs.save_names
+        else:
+            raise ValueError( ' "filenames" coefficient must be used!' )
+
+    out = {}
+
+    for key, val in dump_names.items():
+        if type(val) in [tuple, list]:
+            h5name, corr_name = val
+        else:
+            h5name, corr_name = val, op.split(val)[-1]
+
+        io = HDF5MeshIO(h5name + '.h5')
+        try:
+            ts = io.read_time_stepper()
+        except ValueError:
+            ts = None
+
+        if ts is None:
+            data = io.read_data(0)
+            dkeys = list(data.keys())
+            corr = {}
+            for dk in dkeys:
+                corr[dk] = data[dk].data.reshape(data[dk].shape)
+
+            out[corr_name] = corr
+        else:
+            n_step = ts[3]
+            out[corr_name] = []
+            for step in range(n_step):
+                data = io.read_data(step)
+                dkeys = list(data.keys())
+                corr = {}
+                for dk in dkeys:
+                    corr[dk] = data[dk].data.reshape(data[dk].shape)
+
+                out[corr_name].append(corr)
+            out[corr_name + '_ts'] = ts
+
+    return out

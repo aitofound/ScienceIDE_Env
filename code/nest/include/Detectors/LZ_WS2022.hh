@@ -1,0 +1,228 @@
+//
+// LZ_WS2022.hh
+//
+// Adapted from Quentin Riffard and Jacob Cutter by Greg Rischbieter, June 2022
+//
+// This file serves as a NEST input to reproduce LZ's WS2022 result
+//
+// Please reach out to
+// Matthew Szydagis (mszydagis@albany.edu) with any questions.
+//
+//////////////////////////////  IMPORTANT !!
+/////////////////////////////////////////
+//  To match our calibration data, we needed to reduce the ER and NR band
+//  widths. To make these changes in your copy of NEST, make sure NEST.cpp is
+//  calling an edited NRERWidthsParams vector when using the GetQuanta(...)
+//  function: {0.4.,0.4.,0.04,0.5,0.19,2.25, -0.0015, 0.046452, 0.45, 0.205,
+//  -0.2, 0.,0.};
+//
+//  If using execNEST to simulate results, these changes can be made manually
+//  to execNEST.cpp at lines 183-194 in NESTv2.3.7
+//
+//  Additonally, we disabled skewed-recombination to better match our tritium
+//  data To make this change in v2.3.7 or earlier, replace lines 353-358 of
+//  NEST.cpp with "skewness = 0.0;"
+//
+//  as of NESTv2.3.8, the GetQuanta(...) function takes skewness to be a
+//  function input. If using this version of NEST, simply make sure GetQuanta
+//  uses "skewnessER = 0.0" for ER simulations (this variable is the last
+//  argument to GetQuanta).
+///////////////////////////////////////////////////////////////////////////////////
+//
+//  To add this file into execNEST, make sure it is copied into the directory
+//                        nest/include/Detectors/
+//  and add the line ' #include "LZ_WS2022.hh" ' , and make sure the "auto
+//  detector" variable is the "LZ_Detector_2022()" object.
+//
+////////////////////////////////////////////////////////////////////////////////////
+
+#ifndef LZ_Detector_2022_hh
+#define LZ_Detector_2022_hh 1
+
+#include "VDetector.hh"
+
+using namespace std;
+
+class LZ_Detector_2022 : public VDetector {
+ public:
+  LZ_Detector_2022() {
+    // Call the initialization of all the parameters
+    Initialization();
+  };
+  ~LZ_Detector_2022() override = default;
+
+  // Do here the initialization of all the parameters that are not varying as a
+  // function of time
+  void Initialization() override {
+    name = "LZ SR1 or WS2022";
+    // Primary Scintillation (S1) parameters
+    g1 = 0.113569;  // 0.114 +/- 0.002  // phd per S1 phot at dtCntr (not phe).
+                    // Divide out 2-PE effect
+    sPEres = 0.31;  // single phe resolution (Gaussian assumed)
+    sPEthr = 0.10;  // POD threshold in phe, usually used IN PLACE of sPEeff
+    sPEeff = 1.0;   // actual efficiency, can be used in lieu of POD threshold
+    noiseBaseline[0] = 0.0;  // baseline noise mean and width in PE (Gaussian)
+    noiseBaseline[1] = 0.0;  // baseline noise mean and width in PE (Gaussian)
+    noiseBaseline[2] = 0.;
+    noiseBaseline[3] = 0.;
+    P_dphe =
+        0.214;  // chance 1 photon makes 2 phe instead of 1 in Hamamatsu PMT
+
+    coinWind = 300;  // S1 coincidence window in ns
+    coinLevel = 3;   // how many PMTs have to fire for an S1 to count
+    numPMTs = 484;  // Taking into account turned-off PMTs    // For coincidence
+                    // calculation
+
+    OldW13eV = true;
+    noiseLinear[0] = 0.;
+    noiseLinear[1] = 0.;
+
+    // Ionization and Secondary Scintillation (S2) parameters
+    g1_gas = 0.092103545;  // 0.092 +/- 0.002 // phd per S2 photon in gas, used
+                           // to get SE size
+    s2Fano = 2.0;          // Fano-like fudge factor for SE width
+    s2_thr =
+        600. *
+        (1.0 +
+         P_dphe);  // the S2 threshold in phe or PE, *not* phd. Affects NR most
+    E_gas = 8.42417;   // effective field in kV/cm between liquid/gas border and anode
+    eLife_us = 6500.;  // the drift electron mean lifetime in micro-seconds
+
+    // Thermodynamic Properties
+    inGas = false;
+    T_Kelvin = 174.1;  // for liquid drift speed calculation
+    p_bar = 1.79;      // gas pressure in units of bars, it controls S2 size
+    // if you are getting warnings about being in gas, lower T and/or raise p
+
+    // Data Analysis Parameters and Geometry
+    dtCntr = 462.5;  // central correction bin is between 425-500us // center of
+                     // detector for S1 corrections, in usec.
+    dt_min = 86.;    // minimum. Top of detector fiducial volume
+    dt_max = 936.5;  // maximum. Bottom of detector fiducial volume
+
+    radius = 688.;  // millimeters (fiducial radius)
+    radmax = 728.;  // actual physical geo. limit
+
+    TopDrift = 1461.;  // mm not cm or us (but, this *is* where dt=0)
+    // a z-axis value of 0 means the bottom of the detector (cathode OR bottom
+    // PMTs)
+    // In 2-phase, TopDrift=liquid/gas border. In gas detector it's GATE, not
+    // anode!
+    anode = 1469.;  // the level of the anode grid-wire plane in mm
+    // In a gas TPC, this is not TopDrift (top of drift region), but a few mm
+    // above it
+    gate = 1456.;  // mm. This is where the E-field changes (higher)
+    // in gas detectors, the gate is still the gate, but it's where S2 starts
+    cathode = 0.;  // mm. Defines point below which events are gamma-X
+
+    // 2-D (X & Y) Position Reconstruction
+    // Set these to zero to implement "perfect" position corrections
+    // Note: LZ used spatial maps to implement S1 and S2 corrections
+    PosResFlat = 0.000;  // constant syst unc in position recon res, mm
+    PosResBase = 120.6;  // amplitude in mm, divided by sqrt of S2 area
+  }
+
+  // S1 PDE custom fit for function of z
+  // s1polA + s1polB*z[mm] + s1polC*z^2+... (QE included, for binom dist) e.g.
+  double FitS1(double xPos_mm, double yPos_mm, double zPos_mm, LCE map) override {
+    //Based on S1 Map from C. Nedlik using MDC3 83m-Kr data
+    double zPos_cm = zPos_mm/10;
+    double Rsq_cm = xPos_mm*xPos_mm/10./10. + yPos_mm*yPos_mm/10/10.;
+    double Rsq_max = (get_radmax()/10.)*(get_radmax()/10.);
+    if (Rsq_cm > Rsq_max)
+      Rsq_cm = Rsq_max;
+    double p0 = 1.3198 + -5.2742e-05*Rsq_cm + 2.2966e-08*pow(Rsq_cm, 2.) + -6.8098e-12*pow(Rsq_cm, 3.) + 6.4871e-16*pow(Rsq_cm, 4.);
+    double p1 = -6.2930e-03 + 2.9826e-06*Rsq_cm + -1.8987e-09*pow(Rsq_cm, 2.) + 5.2800e-13*pow(Rsq_cm, 3.) + -4.4126e-17*pow(Rsq_cm, 4.);
+    double p2 = 3.0634e-05 + -8.1693e-08*Rsq_cm + 6.1091e-11*pow(Rsq_cm, 2.) + -1.7352e-14*pow(Rsq_cm, 3.) + 1.4823e-18*pow(Rsq_cm, 4.);
+    double p3 = -8.0736e-08 + 8.5948e-10*Rsq_cm + -6.8764e-13*pow(Rsq_cm, 2.) + 1.9889e-16*pow(Rsq_cm, 3.) + -1.7312e-20*pow(Rsq_cm, 4.);
+    double p4 = 1.3926e-10 + -2.9924e-12*Rsq_cm + 2.4693e-15*pow(Rsq_cm, 2.) + -7.2454e-19*pow(Rsq_cm, 3.) + 6.3858e-23*pow(Rsq_cm, 4.);
+    return p0 + p1*zPos_cm + p2*pow(zPos_cm, 2.) + p3*pow(zPos_cm, 3.) + p4*pow(zPos_cm, 4.);
+  }
+
+  // Drift electric field as function of Z in mm
+  double FitEF(double xPos_mm, double yPos_mm,
+               double zPos_mm) override {  // in V/cm
+    return 192.;
+  }
+
+  // S2 PDE custom fit for function of r
+  // s2polA + s2polB*r[mm] + s2polC*r^2+... (QE included, for binom dist) e.g.
+  double FitS2(double xPos_mm, double yPos_mm, LCE map) override {
+    double Rsq_cm = xPos_mm*xPos_mm/10./10. + yPos_mm*yPos_mm/10./10.;
+    double Rsq_max = (get_radmax()/10.)*(get_radmax()/10.);
+    if (Rsq_cm > Rsq_max)
+      Rsq_cm = Rsq_max;
+    double p0 =  1.01728; //   +/-   0.00951576
+    double p1 = -0.000148818;//   +/-   3.73192e-05
+    double p2 =  1.11934e-07;//   +/-   4.70456e-08
+    double p3 = -4.27149e-11;//  +/-   2.50216e-11
+    double p4 =  6.89494e-15;//   +/-   5.85633e-15
+    double p5 = -4.29735e-19;//  +/-   4.97409e-19
+    //polynomial fit by A. Stevens, using April MDC3 Xe-131m data
+    return p0 + Rsq_cm*p1 + Rsq_cm*Rsq_cm*p2 + pow(Rsq_cm, 3.)*p3 + pow(Rsq_cm, 4.)*p4 + pow(Rsq_cm, 5.)*p5; //unitless: `S2(x,y)/S2(0,0)
+  }
+
+  vector<double> FitTBA(double xPos_mm, double yPos_mm,
+                        double zPos_mm) override {
+    vector<double> BotTotRat(2);
+
+    BotTotRat[0] = 0.6;    // S1 bottom-to-total ratio
+    BotTotRat[1] = 0.323;  // S2 bottom-to-total ratio, typically only used for
+                           // position recon (1-this)
+
+    return BotTotRat;
+  }
+  
+  double OptTrans(double xPos_mm, double yPos_mm, double zPos_mm) override {
+    return 0.; //copy LZ SR3 photon timing model for SR1 if you need something
+  }
+  
+  // The following function was not used in LZ's WS2022. It has been copied from the public NEST file for LUX, just so that NEST has it available, in order to prevent an error.
+  vector<double> SinglePEWaveForm(double area, double t0) override {
+    vector<double> PEperBin;
+
+    double threshold = PULSEHEIGHT;  // photo-electrons
+    double sigma = PULSE_WIDTH;      // ns
+    area *= 10. * (1. + threshold);
+    double amplitude = area / (sigma * sqrt(2. * M_PI)),
+           signal;  // assumes perfect Gaussian
+
+    double tStep1 = SAMPLE_SIZE / 1e2;  // ns, make sure much smaller than
+                                        // sample size; used to generate MC-true
+                                        // pulses essentially
+    double tStep2 =
+        SAMPLE_SIZE;  // ns; 1 over digitization rate, 100 MHz assumed here
+
+    double time = -5. * sigma;
+    bool digitizeMe = false;
+    while (true) {
+      signal = amplitude * exp(-pow(time, 2.) / (2. * sigma * sigma));
+      if (signal < threshold) {
+        if (digitizeMe)
+          break;
+        else
+          ;  // do nothing - goes down to advancing time block
+      } else {
+        if (digitizeMe)
+          PEperBin.push_back(signal);
+        else {
+          if (RandomGen::rndm()->rand_uniform() < 2. * (tStep1 / tStep2)) {
+            PEperBin.push_back(time + t0);
+            PEperBin.push_back(signal);
+            digitizeMe = true;
+          } else {
+          }
+        }
+      }
+      if (digitizeMe)
+        time += tStep2;
+      else
+        time += tStep1;
+      if (time > 5. * sigma) break;
+    }
+
+    return PEperBin;
+  }
+};
+
+#endif

@@ -1,0 +1,226 @@
+{
+  "skimage.feature.ORB.detect": {
+    "implementation": {
+      "file": "src/skimage/feature/orb.py",
+      "line": 172,
+      "end_line": 226
+    },
+    "description": "Detect oriented FAST keypoints along with the corresponding scale.",
+    "calls": [
+      "np.hstack",
+      "self._build_pyramid",
+      "np.vstack",
+      "np.ascontiguousarray",
+      "self._detect_octave",
+      "keypoints_list.append",
+      "orientations_list.append",
+      "scales_list.append",
+      "responses_list.append",
+      "np.full",
+      "np.squeeze",
+      "responses.argsort"
+    ],
+    "branches": [
+      {
+        "line": 215,
+        "expression": "keypoints.shape[0] < self.n_keypoints"
+      },
+      {
+        "line": 193,
+        "expression": "np.squeeze(octave_image).ndim < 2"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.feature.ORB.detect_and_extract": {
+    "implementation": {
+      "file": "src/skimage/feature/orb.py",
+      "line": 290,
+      "end_line": 366
+    },
+    "description": "Detect oriented FAST keypoints and extract rBRIEF descriptors.",
+    "calls": [
+      "np.hstack",
+      "np.vstack",
+      "keypoints_list.append",
+      "responses_list.append",
+      "descriptors_list.append",
+      "self._build_pyramid",
+      "np.vstack(descriptors_list).view",
+      "np.ascontiguousarray",
+      "self._detect_octave",
+      "self._extract_octave",
+      "orientations_list.append",
+      "scales_list.append",
+      "RuntimeError",
+      "np.squeeze",
+      "responses.argsort"
+    ],
+    "branches": [
+      {
+        "line": 341,
+        "expression": "len(scales_list) == 0"
+      },
+      {
+        "line": 353,
+        "expression": "keypoints.shape[0] < self.n_keypoints"
+      },
+      {
+        "line": 315,
+        "expression": "np.squeeze(octave_image).ndim < 2"
+      },
+      {
+        "line": 321,
+        "expression": "len(keypoints) == 0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.feature.ORB.extract": {
+    "implementation": {
+      "file": "src/skimage/feature/orb.py",
+      "line": 239,
+      "end_line": 288
+    },
+    "description": "Extract rBRIEF binary descriptors for given keypoints in image.",
+    "calls": [
+      "np.log",
+      "self._build_pyramid",
+      "(np.log(scales) / np.log(self.downscale)).astype",
+      "np.vstack(descriptors_list).view",
+      "np.hstack",
+      "np.sum",
+      "np.ascontiguousarray",
+      "self._extract_octave",
+      "descriptors_list.append",
+      "mask_list.append",
+      "np.vstack"
+    ],
+    "branches": [
+      {
+        "line": 273,
+        "expression": "np.sum(octave_mask) > 0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.dtype._convert": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 209,
+      "end_line": 396
+    },
+    "description": "Convert an image to the requested data-type.",
+    "calls": [
+      "np.multiply",
+      "_scale",
+      "image.astype",
+      "np.iinfo",
+      "np.clip",
+      "_dtype_itemsize",
+      "np.maximum",
+      "image_out.astype",
+      "_dtype_bits",
+      "image.copy",
+      "dtype_in",
+      "dtype_out",
+      "np.rint",
+      "image.view",
+      "np.min",
+      "np.max",
+      "np.floor",
+      "np.add"
+    ],
+    "branches": [
+      {
+        "line": 261,
+        "expression": "dtype is np.floating"
+      },
+      {
+        "line": 281,
+        "expression": "np.issubdtype(dtype_in, dtype)"
+      },
+      {
+        "line": 286,
+        "expression": "not (dtype_in in _supported_types and dtype_out in _supported_types)"
+      },
+      {
+        "line": 289,
+        "expression": "kind_in in 'ui'"
+      },
+      {
+        "line": 292,
+        "expression": "kind_out in 'ui'"
+      },
+      {
+        "line": 297,
+        "expression": "kind_out == 'b'"
+      },
+      {
+        "line": 301,
+        "expression": "kind_in == 'b'"
+      },
+      {
+        "line": 308,
+        "expression": "kind_in == 'f'"
+      },
+      {
+        "line": 343,
+        "expression": "kind_out == 'f'"
+      },
+      {
+        "line": 372,
+        "expression": "kind_in == 'u'"
+      },
+      {
+        "line": 382,
+        "expression": "kind_out == 'u'"
+      },
+      {
+        "line": 389,
+        "expression": "itemsize_in > itemsize_out"
+      },
+      {
+        "line": 282,
+        "expression": "force_copy"
+      },
+      {
+        "line": 303,
+        "expression": "kind_out != 'f'"
+      },
+      {
+        "line": 309,
+        "expression": "kind_out == 'f'"
+      },
+      {
+        "line": 313,
+        "expression": "np.min(image) < -1.0 or np.max(image) > 1.0"
+      },
+      {
+        "line": 321,
+        "expression": "not uniform"
+      },
+      {
+        "line": 349,
+        "expression": "kind_in == 'u'"
+      },
+      {
+        "line": 373,
+        "expression": "kind_out == 'i'"
+      },
+      {
+        "line": 322,
+        "expression": "kind_out == 'u'"
+      },
+      {
+        "line": 331,
+        "expression": "kind_out == 'u'"
+      },
+      {
+        "line": 356,
+        "expression": "kind_in == 'i'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

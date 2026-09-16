@@ -1,0 +1,42 @@
+#!/bin/sh
+# \
+exec tclsh "$0" "$@"
+
+# ----------------------------------------------------------------------
+#  PROGRAM: PWgui
+#  PURPOSE: A GUI input builder for PWscf / Quantum ESPRESSO
+# ----------------------------------------------------------------------
+#  Anton Kokalj
+#  Jozef Stefan Institute, Ljubljana, Slovenia
+#  Email: tone.kokalj@ijs.si
+# ======================================================================
+#  Copyright (c) 2003--2023 Anton Kokalj
+# ======================================================================
+#
+#
+# This file is distributed under the terms of the GNU General Public
+# License. See the file `COPYING' in the root directory of the present
+# distribution, or http://www.gnu.org/copyleft/gpl.txt .
+#
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT.  IN NO EVENT SHALL ANTON KOKALJ BE LIABLE FOR ANY
+# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+
+if { ! [info exists env(PWGUI)] } {
+       set _file $argv0
+       while { [file type $_file] == "link" } {
+           set dir   [file dirname $_file]                 
+           set _file [file join $dir [file readlink $_file]]
+       }
+    set _pwguipath [auto_execok [file normalize $_file]]
+    set env(PWGUI) [file dirname $_pwguipath]
+}
+
+source $env(PWGUI)/pwgui.tcl
+

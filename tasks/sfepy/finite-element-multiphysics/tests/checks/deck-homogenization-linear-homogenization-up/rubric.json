@@ -1,0 +1,41 @@
+{
+  "check": "deck-homogenization-linear-homogenization-up",
+  "policy": "pointwise",
+  "chaotic": false,
+  "upstream_test": "code/sfepy/sfepy/examples/homogenization/linear_homogenization_up.py",
+  "configuration": "{\"application\": \"homogenization\", \"coefficient_outputs\": [\"elastic_u\", \"elastic_p\", \"D\"], \"define_args\": {}, \"family\": \"elastic-homogenization\", \"material_inputs\": {\"mat\": [\"D\"]}, \"name\": \"deck-homogenization-linear-homogenization-up\", \"options\": {\"multiprocessing\": false}, \"upstream\": \"sfepy/examples/homogenization/linear_homogenization_up.py\"}",
+  "observable": "coefficient/D, coefficient/elastic_p, coefficient/elastic_u",
+  "expected_runtime_s": 4.072,
+  "default_vs_upstream": "Official physical case and resolution; SuperLU.",
+  "variant": "Two-ULP active input; scale=1.0000000000000004 (two binary64 ulps above one) applied only to the explicit physical inputs in case.json; nominal uses scale=1.0. All other physics and discretization settings are fixed.",
+  "altbuild": "Nominal inputs on the same compiler and dependencies with C/Cython extensions compiled at -O0 instead of the normal optimized build. CMAKE_C_FLAGS and CMAKE_C_FLAGS_RELEASE are explicitly overridden; the build cache includes these settings.",
+  "comparison": {
+    "atol": 1e-10,
+    "rtol": 1e-08,
+    "files": [
+      {
+        "path": "physics.json",
+        "format": "physical-json"
+      }
+    ],
+    "field_scale_atol": 0.0001
+  },
+  "evidence": {
+    "floor": 42496.087646484375,
+    "floor_how": "measured by selfcheck on 2026-09-09: run.sh altbuild (nominal inputs; same compiler and dependencies, C/Cython extensions compiled with -O0.) against run.sh nominal, graded with the check's own validate.py: all physical values within bound",
+    "self_validation_spread": 19587.301303863525,
+    "self_validation_bound_fraction": 0.010669236437245811,
+    "altbuild": {
+      "what": "nominal inputs; same compiler and dependencies, C/Cython extensions compiled with -O0.",
+      "distance": 42496.087646484375,
+      "bound_fraction": 0.02345891961115517,
+      "identical": false,
+      "graded_identical": false,
+      "passed": true,
+      "reason": "all physical values within bound",
+      "at": "2026-09-09T20:48:04Z"
+    },
+    "floor_bound_fraction": 0.02345891961115517
+  },
+  "warrant": "The official case exercises elastic-homogenization through sfepy/examples/homogenization/linear_homogenization_up.py. The exporter records physical fields, constitutive coefficients, integrals or ordered eigenvalues from that calculation. Coordinate identities and declared tensor/component axes define the comparison; iterative diagnostics and eigenvector signs are excluded. A missing operator, changed forcing or a percent-level constitutive error changes these outputs beyond the proposed numerical allowance. The initial bound allows floating-point quadrature and sparse-factorization error; native perturbation and the alternative compiler configuration supply calibration evidence, with final scientific acceptance reserved for the curator. The mixed systems couple blocks with very different units and magnitudes (stiffness against compressibility or dielectric response); sparse pivoting and, for dynamics, time differentiation amplify binary64 input noise. Each observation therefore adds 1e-4 times its largest reference magnitude to the pointwise allowance. This is 0.01 percent of that physical field scale, not a bound set mechanically from the two-ulp spread, and still rejects percent-level physical faults. Cross-build evidence and fault rejection must be assessed before accepting this proposal."
+}

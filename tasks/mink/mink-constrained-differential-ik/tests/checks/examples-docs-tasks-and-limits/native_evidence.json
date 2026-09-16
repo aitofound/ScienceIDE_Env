@@ -1,0 +1,135 @@
+{
+  "kind": "native_investigation_not_cli_selfcheck",
+  "source_pin": "14625beca2ce0918f88d1fc84a3c0cdb591e0729",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "build": "pinned native Windows wheel installed in investigation environment; no candidate acceleration or Linux build claim",
+  "numerical_threads": 1,
+  "timeout_per_process_s": 180,
+  "source_build_included": false,
+  "commands": {
+    "nominal": "SOURCE_DIR=<pinned-source> OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 python producer.py --ic ic/nominal --out <nominal-output> --author-manifests",
+    "variant": "SOURCE_DIR=<pinned-source> OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 python producer.py --ic ic/variant --out <variant-output>",
+    "repeat": "SOURCE_DIR=<pinned-source> OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 python producer.py --ic ic/nominal --out <repeat-output>"
+  },
+  "runs": {
+    "nominal": {
+      "check": "examples-docs-tasks-and-limits",
+      "mode": "author",
+      "exit_code": 0,
+      "timeout": false,
+      "wall_s": 1.3285861000185832
+    },
+    "variant": {
+      "check": "examples-docs-tasks-and-limits",
+      "mode": "variant",
+      "exit_code": 0,
+      "timeout": false,
+      "wall_s": 1.4365279999910854
+    },
+    "repeat": {
+      "check": "examples-docs-tasks-and-limits",
+      "mode": "repeat",
+      "exit_code": 0,
+      "timeout": false,
+      "wall_s": 1.4456454000319354
+    }
+  },
+  "input_change": {
+    "nominal": {
+      "kind": "scalar_q0",
+      "index": 3,
+      "value_hex": "-0x1.921f4b1ee2435p+0"
+    },
+    "variant": {
+      "kind": "scalar_q0",
+      "index": 3,
+      "value_hex": "-0x1.921f4b1ee2433p+0"
+    },
+    "ulp_steps": 2,
+    "direction": "positive infinity",
+    "applied_once": true
+  },
+  "selected_pose_spreads": {
+    "check": "examples-docs-tasks-and-limits",
+    "groups": [
+      {
+        "prefix": "g0_",
+        "trace_shape_nominal": [
+          200,
+          1,
+          4,
+          4
+        ],
+        "trace_shape_variant": [
+          200,
+          1,
+          4,
+          4
+        ],
+        "steps_nominal": 200,
+        "steps_variant": 200,
+        "steps_repeat": 200,
+        "variant_selected_pose_abs": 1.851852005074761e-13,
+        "repeat_selected_pose_abs": 0.0,
+        "variant_identical": false
+      }
+    ],
+    "max_variant_selected_pose_abs": 1.851852005074761e-13,
+    "max_repeat_selected_pose_abs": 0.0,
+    "selected_pose_variant_identical": false,
+    "trace_shapes_equal": true
+  },
+  "output_contract": {
+    "format": "mink_official_kinematic_trace_v1",
+    "groups": [
+      {
+        "prefix": "g0_",
+        "manifest": "model_manifest_g0.npz",
+        "nq": 9,
+        "nv": 9,
+        "nframes": 1,
+        "trace_count": 200,
+        "trace_mode": "fixed_source_loop_steps",
+        "task_types": [
+          "FrameTask",
+          "PostureTask"
+        ],
+        "pose_selection": [
+          {
+            "translation": true,
+            "rotation": true
+          }
+        ],
+        "external_transition_at_outer_boundary": false,
+        "target_width": 16,
+        "nominal_step_count": 200,
+        "min_steps": 1,
+        "max_steps": 10000,
+        "preloop_settle_steps": 0
+      }
+    ]
+  },
+  "files_sha256": {
+    "producer.py": "5d5cc1218595df1b5313187c608200130a178ca3fd826362ce014ef7f9bf55a9",
+    "upstream_example.py": "94e956b49a193bfa20c3a6891aab62fe5a4d64a1a09c5444821350da26b669ac",
+    "kinematics.py": "c9e9bd0a62dd5876aa270832642f60a1ba109e07589fcdf2084a25df2bda2f7b",
+    "ic/nominal/input.json": "0b60d74fd379aae6cf6e27de90f5e79f64b56f1159c7ddf6b96576f0f9ad39ba",
+    "ic/variant/input.json": "4cea1396ba5b3cebcb629815ffef98b30188d3f8329ce8f924c3d3e6cb343bfd",
+    "schema.json": "d8e9fa67f8d6c8f28a593cde15eb21e5d3dcc53e17742b8f86f82b653fb30e4a",
+    "model_manifest_g0.npz": "663ad704e43d4e9b6fd05b6c102235dfe0cf2d78dbd7827960be2596a0089b96"
+  },
+  "formal_selfcheck": "not run; CLI-owned evidence fields remain untouched",
+  "curator_finalized": false,
+  "python_version": "3.12.14",
+  "installed_packages": {
+    "mink": "1.3.0",
+    "numpy": "2.3.5",
+    "mujoco": "3.11.0",
+    "qpsolvers": "4.12.0",
+    "daqp": "0.8.5",
+    "loop-rate-limiters": "1.2.0"
+  },
+  "knob_probe_runs": [],
+  "nominal_timing_includes_trusted_model_fact_export": true,
+  "repeat_timing_excludes_trusted_model_fact_export": true
+}

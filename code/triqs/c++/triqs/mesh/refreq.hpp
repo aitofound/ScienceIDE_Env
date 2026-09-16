@@ -1,0 +1,154 @@
+// Copyright (c) 2014-2018 Commissariat à l'énergie atomique et aux énergies alternatives (CEA)
+// Copyright (c) 2014-2018 Centre national de la recherche scientifique (CNRS)
+// Copyright (c) 2018-2023 Simons Foundation
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You may obtain a copy of the License at
+//     https://www.gnu.org/licenses/gpl-3.0.txt
+//
+// Authors: Philipp Dumitrescu, Olivier Parcollet, Nils Wentzell
+
+/**
+ * @file
+ * @brief Provides a mesh type on the real frequency axis.
+ */
+
+#pragma once
+
+#include "./bases/linear.hpp"
+#include "./tail_fitter.hpp"
+#include "../utility/macros.hpp"
+
+#include <fmt/format.h>
+#include <h5/h5.hpp>
+
+#include <iostream>
+#include <string>
+#include <utility>
+
+namespace triqs::mesh {
+
+  /**
+   * @addtogroup triqs-meshes-real
+   * @{
+   */
+
+  /**
+   * @brief Real frequency mesh type.
+   *
+   * @details A real frequency mesh is defined by its size \f$ N \geq 0 \f$ and a frequency interval
+   * \f$ [\omega_{\mathrm{min}}, \omega_{\mathrm{max}}] \f$. It contains \f$ N \f$ equally spaced mesh points on the
+   * interval \f$ [\omega_{\mathrm{min}}, \omega_{\mathrm{max}}] \f$ such that the distance between two consecutive mesh
+   * points (step size) is constant.
+   *
+   * A real frequency mesh has the following properties:
+   *
+   * - Each mesh point is identified by a unique index \f$ n \in \{0, 1, \ldots, N-1\} \f$.
+   * - An index \f$ n \f$ is mapped to the corresponding data index \f$ d \f$ by the identity function \f$ d(n) = n \f$
+   *   and vice versa.
+   * - An index \f$ n \f$ is mapped to the corresponding value \f$ \omega \f$ by the linear function
+   *   \f$ \omega(n) = \omega_{\mathrm{min}} + n \cdot \Delta \f$ such that \f$ \omega(0) = \omega_{\mathrm{min}} \f$
+   *   and \f$ \omega(N - 1) = \omega_{\mathrm{max}} \f$. The step size of the mesh is
+   *   \f$ \Delta = \frac{\omega_{\mathrm{max}} - \omega_{\mathrm{min}}}{N - 1} \f$ for \f$ N > 1 \f$, otherwise it is
+   *   undefined. For implementation purposes, we set \f$ \Delta = 0 \f$ and \f$ \Delta^{-1} = 0 \f$ for \f$ N = 0 \f$
+   *   and \f$ \Delta = 0 \f$ and \f$ \Delta^{-1} = \infty \f$ for \f$ N = 1 \f$.
+   * - An arbitrary value \f$ \omega \in [\omega_{\mathrm{min}}, \omega_{\mathrm{max}}] \f$ is mapped to the closest
+   *   mesh point with index \f$ n \f$ by the function
+   *   \f$ n(\omega) = \left\lfloor \frac{\omega - \omega_{\mathrm{min}}}{\Delta} + 0.5 \right\rfloor \f$.
+   *
+   * Green's function containers that are based on a real frequency mesh store the function values at the discrete
+   * frequency points \f$ \omega(n) \f$, i.e. \f$ f_n = f(\omega(n)) \f$, and use linear interpolation to evaluate the
+   * function at an arbitrary frequency \f$ \omega \in [\omega_{\mathrm{min}}, \omega_{\mathrm{max}}] \f$.
+   */
+  class C2PY_RENAME(MeshReFreq) refreq : public detail::linear<refreq, double>, public tail_fitter_handle {
+    public:
+    /// %Mesh point type of a triqs::mesh::refreq mesh (see triqs::mesh::detail::linear::mesh_point_t).
+    using mesh_point_t = detail::linear<refreq, double>::mesh_point_t;
+
+    /**
+     * @brief Construct a real frequency mesh on the interval \f$ [\omega_{\text{min}}, \omega_{\text{max}}] \f$ with
+     * \f$ N \geq 0 \f$ equally spaced mesh points.
+     *
+     * @param w_min Lower bound \f$ \omega_{\mathrm{min}} \f$ of the frequency interval.
+     * @param w_max Upper bound \f$ \omega_{\mathrm{max}} \f$ of the frequency interval.
+     * @param n_w Size of the mesh.
+     */
+    C2PY_DEPRECATED_PARAMETER_NAME(n_max : n_w)
+    refreq(double w_min = 0.0, double w_max = 0.0, long n_w = 0) : linear(w_min, w_max, n_w) {}
+
+    /**
+     * @brief Construct a real frequency mesh on the interval \f$ [\omega_{\text{min}}, \omega_{\text{max}}] \f$ with
+     * \f$ N \geq 0 \f$ equally spaced mesh points.
+     *
+     * @param window Pair containing the lower and upper bounds of the frequency interval.
+     * @param n_w Size of the mesh.
+     */
+    refreq(std::pair<double, double> window, int n_w) : refreq(window.first, window.second, n_w) {}
+
+    /// Is the mesh restricted to positive frequencies?
+    static constexpr bool positive_only() { return false; }
+
+    /// Get the lower bound of the interval \f$ \omega_{\text{min}} \f$, i.e. the value of the first mesh point.
+    [[nodiscard]] C2PY_PROPERTY_GET(w_min) double w_min() const { return a_; }
+
+    /// Get the upper bound of the interval \f$ \omega_{\text{max}} \f$, i.e. the value of the last mesh point.
+    [[nodiscard]] C2PY_PROPERTY_GET(w_max) double w_max() const { return b_; }
+
+    /// Get the HDF5 format tag.
+    [[nodiscard]] static std::string hdf5_format() { return "MeshReFreq"; }
+
+    /**
+     * @brief Write a triqs::mesh::refreq mesh to HDF5.
+     *
+     * @param g `h5::group` to be written to.
+     * @param name Name of the subgroup.
+     * @param m %Mesh object to be written.
+     */
+    friend void h5_write(h5::group g, std::string const &name, refreq const &m) { m.h5_write_impl(g, name, "MeshReFreq"); }
+
+    /**
+     * @brief Read a triqs::mesh::refreq mesh from HDF5.
+     *
+     * @param g `h5::group` to be read from.
+     * @param name Name of the subgroup.
+     * @param m %Mesh object to be read into.
+     */
+    friend void h5_read(h5::group g, std::string const &name, refreq &m) { m.h5_read_impl(g, name, "MeshReFreq"); }
+
+    /**
+     * @brief Write a triqs::mesh::refreq mesh to a `std::ostream`.
+     *
+     * @param sout `std::ostream` object.
+     * @param m %Mesh to be written.
+     * @return Reference to `std::ostream` object.
+     */
+    friend std::ostream &operator<<(std::ostream &sout, refreq const &m) {
+      return sout << fmt::format("Real frequency mesh with w_min = {}, w_max = {}, N = {}", m.a_, m.b_, m.N_);
+    }
+  };
+
+  /**
+   * @brief Linear interpolation of a function \f$ f \f$ defined on a triqs::mesh::refreq mesh at a real frequency \f$
+   * \omega \in [\omega_{\text{min}}, \omega_{\text{max}}] \f$.
+   *
+   * @details It simply calls the triqs::mesh::refreq::evaluate method of the mesh.
+   *
+   * @param m triqs::mesh::refreq mesh.
+   * @param f Callable object \f$ f \f$ containing the function values \f$ f_n = f(\omega(n)) \f$ at the mesh points.
+   * @param w Real frequency \f$ \omega \f$ at which to interpolate the function.
+   * @return Linear interpolation of \f$ f(\omega) \f$.
+   */
+  auto evaluate(refreq const &m, auto const &f, double w) { return m.evaluate(f, w); }
+
+  /** @} */
+
+} // namespace triqs::mesh

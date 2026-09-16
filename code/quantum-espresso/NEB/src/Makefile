@@ -1,0 +1,74 @@
+# Makefile for NEB
+
+include ../../make.inc
+
+VPATH = @srcdir@
+
+# location of needed modules and included files (if any)
+MODFLAGS= $(BASEMOD_FLAGS) \
+          $(MOD_FLAG)../../PW/src \
+          $(MOD_FLAG)../../dft-d3/
+
+NEBOBJS = \
+neb.o \
+
+NEBLIBS = \
+bcast_file.o \
+compute_scf.o \
+engine_to_path_pos.o \
+engine_to_path_alat.o \
+engine_to_path_nat.o \
+engine_to_path_fix_atom_pos.o \
+engine_to_path_tot_charge.o \
+fcp_opt_routines.o \
+fcp_variables.o \
+gcscf_variables.o \
+neb_input.o \
+path_base.o \
+path_formats.o \
+path_gen_inputs.o \
+path_input_parameters_module.o \
+path_io_routines.o \
+path_io_tools.o \
+path_io_units_module.o \
+path_opt_routines.o \
+path_reparametrisation.o \
+path_read_cards_module.o \
+path_read_namelists_module.o \
+path_to_engine_fix_atom_pos.o \
+path_variables.o \
+set_defaults.o \
+stop_run_path.o 
+
+PWOBJS= ../../PW/src/libpw.a ../../KS_Solvers/libks_solvers.a ../../dft-d3/libdftd3qe.a
+QEMODS = $(BASEMODS)
+
+# see comments in file tldeps for explanations
+TLDEPS=pwlibs
+include ../../install/tldeps
+
+all : neb.x path_interpolation.x
+
+neb.x : $(NEBOBJS) libneb.a $(PWOBJS) $(QEMODS)
+	$(LD) $(LDFLAGS) -o $@ \
+	$(NEBOBJS) libneb.a $(PWOBJS) $(QEMODS) $(QELIBS)
+	- ( cd ../../bin; ln -fs ../NEB/src/$@ . )
+
+path_interpolation.x : path_interpolation.o libneb.a $(PWOBJS) $(QEMODS)
+	$(LD) $(LDFLAGS) -o $@ \
+	path_interpolation.o libneb.a $(PWOBJS) $(QEMODS) $(QELIBS)
+	- ( cd ../../bin ; ln -fs ../NEB/src/$@ . )
+
+libneb.a : $(NEBLIBS)
+	$(AR) $(ARFLAGS) $@ $?
+	$(RANLIB) $@
+
+clean :
+	- /bin/rm -f *.x *.o *.a *~ *_tmp.f90 *.d *.mod *.i *.L
+	- /bin/rm -f ../../bin/neb.x
+	- /bin/rm -f ../../bin/path_interpolation.x
+
+
+include make.depend
+
+

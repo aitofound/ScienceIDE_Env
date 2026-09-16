@@ -1,0 +1,35 @@
+{
+  "module": {
+    "slug": "finite-element-multiphysics",
+    "title": "SfePy finite-element multiphysics",
+    "paths": [
+      "."
+    ],
+    "entrypoints": [
+      "sfepy.applications.solve_pde",
+      "sfepy-run",
+      "sfepy/tests",
+      "sfepy/examples"
+    ],
+    "expensive_path": "Finite-element quadrature, constitutive contractions, sparse assembly and constrained linear, nonlinear, transient, spectral and multiscale solves across all physics families.",
+    "rationale": "One module covers the entire pinned codebase. The physics families use the same discretization, assembly and solver infrastructure, which belongs inside this module.",
+    "excluded": [],
+    "hazards": [
+      "The complete 219-item suite and all 137 example Python files have not been executed. Helpers, initializers and alternate interfaces are not automatically independent checks.",
+      "Optional igakit, PETSc, MPI, IPC, PRIMME and JAX branches have no native execution evidence in this report.",
+      "Flexoelectric operators are included in the module, but no dedicated official physics example was identified.",
+      "Standalone driver completion records execution and output production, not an independent assertion of physical correctness.",
+      "Pin the direct solver backend and preserve mesh/node identities in future checks; order eigenvalues and avoid eigenvector sign or phase conventions.",
+      "Contact, nonlinear stepping, discontinuous Galerkin limiters, spectral degeneracy and ill conditioning need further investigation with short official cases.",
+      "Future coverage should include as many official tests and examples as possible across every physics family; unexecuted cases require execution and physical-output evidence before being counted as implemented checks."
+    ]
+  },
+  "approval": {
+    "modules": [
+      "finite-element-multiphysics"
+    ],
+    "human_ref": "this is the point actually, the shared part is way too large.... I should take back my previous concern that this can be cut into various modules, recommend only ONE module that covers ALL of the code base. And say this is a gigantic code base, please include as many official tests and examples as checks as possible.",
+    "at": "2026-09-09T07:20:27Z"
+  },
+  "shared_infrastructure": []
+}

@@ -1,0 +1,140 @@
+{
+  "skimage.color.rgb2gray": {
+    "implementation": {
+      "file": "src/skimage/color/colorconv.py",
+      "line": 941,
+      "end_line": 984
+    },
+    "description": "Compute luminance of an RGB image.",
+    "calls": [
+      "channel_as_last_axis",
+      "_prepare_colorarray"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.gaussian": {
+    "implementation": {
+      "file": "src/skimage/_shared/filters.py",
+      "line": 19,
+      "end_line": 136
+    },
+    "description": "Multi-dimensional Gaussian filter.",
+    "calls": [
+      "np.any",
+      "convert_to_float",
+      "image.astype",
+      "ndi.gaussian_filter",
+      "isinstance",
+      "sigma.insert"
+    ],
+    "branches": [
+      {
+        "line": 120,
+        "expression": "np.any(np.asarray(sigma) < 0.0)"
+      },
+      {
+        "line": 122,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 132,
+        "expression": "out is not None and (not np.issubdtype(out.dtype, np.floating))"
+      },
+      {
+        "line": 124,
+        "expression": "not isinstance(sigma, Iterable)"
+      },
+      {
+        "line": 126,
+        "expression": "len(sigma) == image.ndim - 1"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.restoration.richardson_lucy": {
+    "implementation": {
+      "file": "src/skimage/restoration/deconvolution.py",
+      "line": 359,
+      "end_line": 422
+    },
+    "description": "Richardson-Lucy deconvolution.",
+    "calls": [
+      "convolve",
+      "image.astype",
+      "psf.astype",
+      "np.full",
+      "np.flip",
+      "np.where"
+    ],
+    "branches": [
+      {
+        "line": 418,
+        "expression": "clip"
+      },
+      {
+        "line": 412,
+        "expression": "filter_epsilon"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.restoration.wiener": {
+    "implementation": {
+      "file": "src/skimage/restoration/deconvolution.py",
+      "line": 10,
+      "end_line": 140
+    },
+    "description": "Restore image using Wiener\u2013Hunt deconvolution.",
+    "calls": [
+      "uft.ir2tf",
+      "np.abs",
+      "image.astype",
+      "psf.real.astype",
+      "reg.real.astype",
+      "uft.laplacian",
+      "np.iscomplexobj",
+      "np.conj",
+      "uft.uirfftn",
+      "uft.uifftn",
+      "uft.urfftn",
+      "uft.ufftn"
+    ],
+    "branches": [
+      {
+        "line": 114,
+        "expression": "reg is None"
+      },
+      {
+        "line": 116,
+        "expression": "not np.iscomplexobj(reg)"
+      },
+      {
+        "line": 123,
+        "expression": "psf.shape != reg.shape"
+      },
+      {
+        "line": 131,
+        "expression": "is_real"
+      },
+      {
+        "line": 136,
+        "expression": "clip"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 479,
+      "end_line": 505
+    },
+    "description": "Convert an image to floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

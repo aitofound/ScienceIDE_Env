@@ -26,11 +26,11 @@
     }
   },
   "evidence": {
-    "floor": 3.3586209369218523e-09,
+    "floor": 4.520686047726485e-09,
     "floor_bound_fraction": 0.07230230908834291,
     "floor_field": "dynDiag",
-    "floor_how": "measured by selfcheck on 2026-09-05: run.sh altbuild (genmake2 -ieee: the same source at -O0 -ffloat-store, strict IEEE arithmetic, instead of the optimised optfile) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
-    "self_validation_spread": 4.440892098500626e-16,
+    "floor_how": "measured by selfcheck on 2026-09-08: run.sh altbuild (genmake2 -ieee: the same source at -O0 -ffloat-store, strict IEEE arithmetic, instead of the optimised optfile) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
+    "self_validation_spread": 3.552713678800501e-15,
     "faults": {
       "cheaper_solver": {
         "change": "cg2dTargetResidual -> 1e-3",
@@ -48,11 +48,12 @@
     },
     "altbuild": {
       "what": "genmake2 -ieee: the same source at -O0 -ffloat-store, strict IEEE arithmetic, instead of the optimised optfile",
-      "distance": 3.3586209369218523e-09,
+      "distance": 4.520686047726485e-09,
+      "bound_fraction": null,
       "identical": false,
       "passed": true,
       "reason": "all graded values within bound",
-      "at": "2026-09-05T02:32:59Z"
+      "at": "2026-09-08T04:16:48Z"
     }
   },
   "warrant": "The observable is every cell of every prognostic field in the final state dump, compared as |c - r| <= 1e-10 + 1e-08|r|; the relative part is the working bound because the graded fields span many orders of magnitude, the absolute part covers cells at or near zero. The observable is every cell of the final state dump plus the surfDiag and dynDiag averages compared as |c - r| <= atol + rtol|r|, and the bound is physical because the perturbed quantity, the uniform biological production timescale alpha, feeds a conserved and damped tracer system: production is a bounded pointwise function of light and phosphate evaluated from the current tracer values, remineralisation is a fixed power law of depth, and there is no prognostic biomass anywhere, so a two-ulp change of alpha is advected, diffused and flushed through the open boundaries rather than amplified. The decisive structural fact is that alpha is biogeochemical and cannot reach temperature, salinity, momentum or the free surface, so the entire dynamical core replays bit-identically between nominal and variant: the cg2d solve at cg2dTargetResidual=1e-13, the ivdc_kappa convective-adjustment switch, the GM/Redi tapering branches of gkw91 and the obcs prescription all produce identical numbers, and only the five passive tracers differ. That is why thirty days of model time is affordable and still pointwise: the tracer response is linear-in-the-perturbation over this window, far short of the months over which the biology would set up a new equilibrium. The round-off floor of this check is set by the Follows fixed-point pH iteration, which unlike the SolveSAPHE Newton solver used by the sibling check has no convergence test at all: CALC_PCO2_APPROX performs a fixed, branch-free algebraic update of the carried pH, so it contributes a smooth round-off contribution rather than the 1e-8 iteration-count wobble that so-box-obcs-saphe has to live with, and this check should therefore come back with a tighter measured spread than its own saphe overlay. The remaining contributors are the continuous min/max branches of the scheme-77 flux limiter and the first-order upwind boundary advection, neither of which can jump. Faults: Dropping the light limitation or the PO4 Michaelis-Menten factor in pkg/dic/bio_export.F, or applying alpha outside the euphotic zone defined by zcrit, changes PO4, DOP and DIC in the top layers by percent within a single step. Mis-coding the Martin exponent in phos_flux.F moves the vertical redistribution of PO4 and DIC by parts in 1e-2. Reverting DIC_COEFFS_SURF to the legacy seawater-pH-scale CARBON_COEFFS of carbon_chem.F, which is what the same source compiles when CARBONCHEM_SOLVESAPHE is undefined, shifts the surface pH by a few thousandths and DICPCO2 and DICCFLX by percent, and reaches DIC in the top cell at parts in 1e-6 per step; this is the fault that distinguishes this check from global-dic, which is the deck compiled without CARBONCHEM_SOLVESAPHE. Failing to apply the prescribed open-boundary tracer values in obcs_apply_ptracer.F, or applying them one index row inside the boundary, changes PTRACER01 in the boundary columns by order one. Carrying the tracers in single precision shows up in PTRACER01 to PTRACER05 at parts in 1e-7. The expensive path under test is pkg/dic/dic_biotic_forcing.F over the whole box each step, with bio_export.F (the light and PO4 limitation, where alpha multiplies the production directly), phos_flux.F (the Martin power law), car_flux.F and dic_surfforcing.F, and inside the latter pkg/dic/carbon_chem.F DIC_COEFFS_SURF for the solvesaphe dissociation constants followed by CALC_PCO2_APPROX over every surface wet cell; then pkg/obcs (obcs_prescribe_read.F, obcs_apply_ptracer.F and the per-tracer upwind boundary advection) and, on the transport side, five gad_advection.F sweeps with the flux-limited scheme 77, five GM/Redi tensor applications and five tridiagonal implicit vertical-diffusion solves per step.. The nominal-versus-variant spread recorded by selfcheck is the measurement of the round-off amplification under this exact rule, and the bound is finalised against it with the human."

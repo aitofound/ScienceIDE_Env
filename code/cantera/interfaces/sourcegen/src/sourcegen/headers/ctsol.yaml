@@ -1,0 +1,38 @@
+# This file is part of Cantera. See License.txt in the top-level directory or
+# at https://cantera.org/license.txt for license and copyright information.
+
+docstring: |-
+  Generated CLib API for Cantera's Solution class.
+prefix: sol
+base: Solution
+parents: []  # List of parent classes
+derived: {Interface: sol}  # Specialization/prefix dictionary
+recipes:
+- name: newSolution
+  wraps: newSolution(const string&, const string&, const string&)
+- name: newInterface
+  wraps:
+    newInterface(const string&, const string&, const vector<shared_ptr<Solution>>&)
+- name: name
+- name: setName
+- name: thermo
+  what: accessor
+- name: kinetics
+  what: accessor
+- name: transport
+  what: accessor
+- name: transportModel
+- name: setTransportModel
+- name: nAdjacent
+- name: adjacent
+  wraps: adjacent(size_t)
+  uses: nAdjacent
+  what: accessor
+- name: adjacentByName
+  wraps: adjacent(const string&)
+  what: accessor
+- name: adjacentName
+- name: source
+# service functions
+- name: del
+- name: cabinetSize

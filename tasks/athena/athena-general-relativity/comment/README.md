@@ -19,6 +19,13 @@ full conserved state at the end time from the full-precision tab output instead
 of the upstream L1-against-stored-solution criterion, which is coarser (1e-2
 relative) than a port can be held to.
 
+## Build
+
+Build reuse was evaluated and does not apply to this leaf: every check has a
+distinct `configure.py` recipe. The recipes differ in `--flux` (`hllc`,
+`hlld`, `hlle`, or `llf`), the MHD-only `-b` switch, and/or the frame-transform
+`-t` switch, so each check must compile its own configuration.
+
 ## Tolerances
 
 The floor was measured on the x86 worker in the survey image by building the

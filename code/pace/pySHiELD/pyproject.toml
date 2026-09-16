@@ -1,0 +1,102 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools >= 77.0.3"]
+
+[project]
+authors = [{name = "NOAA - Geophysical Fluid Dynamics Laboratory", email = "oliver.elbert@noaa.gov"}]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Intended Audience :: Developers",
+  "Natural Language :: English",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13"
+]
+dependencies = [
+  "f90nml>=1.1.0",
+  "numpy>=2",
+  "xarray",
+  "pyrte-rrtmgp @ git+https://github.com/NOAA-GFDL/pyRTE-RRTMGP.git@main"
+]
+description = "pySHiELD is a collection of NDSL-based physical parameterizations"
+license = "Apache-2.0"
+license-files = ["LICENSE.md"]
+name = "pyshield"
+readme = "README.md"
+requires-python = ">=3.12, <3.14"
+version = "0.2.0"
+
+[project.optional-dependencies]
+dev = [
+  "pyshield[test]",
+  "pyshield[ndsl]",
+  "pyshield[pyfv3]",
+  "pre-commit",
+  "flake8-pyproject"
+]
+extras = [
+  "pyshield[dev]",
+  "pyshield[ndsl]",
+  "pyshield[pyfv3]",
+  "pyshield[test]"
+]
+ndsl = ["ndsl @ git+https://github.com/NOAA-GFDL/NDSL.git@2026.08.00"]
+pyfv3 = ["pyfv3 @ git+https://github.com/NOAA-GFDL/pyFV3.git@develop"]
+test = [
+  "coverage",
+  "pytest",
+  "pytest-subtests"
+]
+
+[project.urls]
+Repository = "https://github.com/NOAA-GFDL/PySHiELD"
+
+[tool.aliases]
+
+[tool.black]
+target-version = ["py312", "py313"]
+
+[tool.coverage.run]
+branch = true
+omit = [
+  "tests/*",
+  "*gt_cache*",
+  ".dacecache*",
+  "external/*",
+  "__init__.py"
+]
+parallel = true
+source_pkgs = ["pyshield"]
+
+[tool.flake8]
+exclude = ["docs"]
+extend-ignore = ["W503", "E302", "E203", "F841"]
+max-line-length = 88
+
+[tool.isort]
+default_section = "THIRDPARTY"
+known_first_party = "pyfv3,ndsl,pyshield"
+known_third_party = "f90nml,pytest,xarray,numpy,mpi4py,gt4py"
+profile = "black"
+sections = "FUTURE,STDLIB,THIRDPARTY,FIRSTPARTY,LOCALFOLDER"
+
+[tool.mypy]
+explicit_package_bases = true
+follow_imports = "normal"
+ignore_missing_imports = true
+namespace_packages = true
+strict_optional = false
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+ignore_errors = true
+module = [
+  # We currently can't type tracers correctly
+  "pyshield.stencils.*"
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["pyshield", "pyshield.*"]

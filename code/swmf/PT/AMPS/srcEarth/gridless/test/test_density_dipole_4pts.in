@@ -1,0 +1,145 @@
+#==============================================================================
+# test_density_dipole_4pts.in
+# AMPS_PARAM input file — Analytic density/spectrum test cases
+#
+# PURPOSE
+#   Run the gridless density/spectrum solver at four carefully chosen
+#   observation points where the analytic expected density is known exactly
+#   (TC1–TC3) or bounded above (TC4). All tests use a DIPOLE magnetic field
+#   so that Størmer theory provides the analytic cutoff predictions.
+#
+# COMPANION SCRIPT
+#   test_density_analytic.py — reads the AMPS output files and compares
+#   each point against its analytic prediction.
+#
+# PHYSICS SUMMARY (see README_density_tests.md for full derivation)
+#
+#   The solver computes:
+#     J_loc(E; x0) = T(E; x0) * J_b(E)
+#     n_tot(x0)    = 4pi * int[Emin,Emax] T(E;x0) * J_b(E) / v(E) dE
+#
+#   where T = fraction of backtraced trajectories that escape the outer box.
+#
+#   For locations where ALL energies are above the maximum Størmer cutoff:
+#     T(E; x0) = T_geo(r)  for all E
+#     T_geo(r) = (1 + sqrt(1 - (r_inner/r)^2)) / 2
+#     n_tot    = T_geo * 4pi * int J_b(E)/v(E) dE     [EXACT ANALYTIC]
+#
+#   TEST CASES (DIPOLE, r_inner=1.01 Re, outer box 9 Re):
+#
+#   TC1 — (8Re, 0, 0) equator, E=2–20 GeV
+#     Rc_max(8Re)=0.93 GV → 384 MeV;  all E >> Rc_max  →  T = T_geo = 0.9960
+#     n_expected = 1.9234e-03 m^-3
+#
+#   TC2 — (0, 0, 5Re) magnetic pole, E=50–500 MeV
+#     Pole: cos(lam)=0 → Størmer Rc=0 for ALL directions → T = T_geo = 0.9897
+#     n_expected = 1.7751e-01 m^-3
+#
+#   TC3 — (6Re, 0, 0) equator, E=3–30 GeV
+#     Rc_max(6Re)=1.66 GV → 965 MeV;  all E >> Rc_max  →  T = T_geo = 0.9929
+#     n_expected = 1.2639e-03 m^-3
+#
+#   TC4 — (2Re, 0, 0) equator, E=10–500 MeV
+#     Rc_vert(2Re)=3.73 GV;  R(500MeV)=1.09 GV << Rc_vert  →  deep shielding
+#     n_model << T_geo * n_free = 1.81e+00 m^-3   [UPPER BOUND TEST only]
+#
+# IMPORTANT: The energy ranges of TC1, TC2, TC3, TC4 differ. This single
+# input file uses a UNIFIED energy grid spanning 10 MeV – 20 GeV. The
+# comparison script integrates only over the relevant sub-range for each
+# test. The transmissivity T(E) per energy bin is read from the spectrum
+# output file.
+#
+# See README_density_tests.md for:
+#   - Størmer cutoff formula derivation
+#   - Geometric shadow derivation
+#   - Effect of Earth's inner boundary on the density estimate
+#   - Tolerances and expected deviations
+#==============================================================================
+
+#CALCULATION_MODE
+  CALC_TARGET        DENSITY_SPECTRUM
+  FIELD_EVAL_METHOD  GRIDLESS
+
+#BACKGROUND_FIELD
+  FIELD_MODEL        DIPOLE
+  DIPOLE_MOMENT      1.0       ! multiples of M_E  (B_eq(Re) = 3.12e-5 T)
+  DIPOLE_TILT        0.0       ! degrees; 0 = dipole axis aligned with +Z_GSM
+
+#DOMAIN_BOUNDARY
+  DOMAIN_X_MAX       57340.8   ! km = 9.0 Re  (outer box, dayside)
+  DOMAIN_X_MIN      -57340.8   ! km = -9.0 Re (outer box, nightside)
+  DOMAIN_Y_MAX       57340.8   ! km = 9.0 Re
+  DOMAIN_Y_MIN      -57340.8   ! km = -9.0 Re
+  DOMAIN_Z_MAX       57340.8   ! km = 9.0 Re
+  DOMAIN_Z_MIN      -57340.8   ! km = -9.0 Re
+  R_INNER            6434.9    ! km = 1.01 Re  (inner loss sphere)
+
+#DENSITY_SPECTRUM
+  DS_EMIN            10.0      ! MeV — lower bound (TC2 needs 50+, TC4 needs 10+)
+  DS_EMAX            20000.0   ! MeV = 20 GeV — upper bound (TC1 needs up to 20 GeV)
+  DS_NINTERVALS      60        ! 61 log-spaced energy points over 3 decades
+  DS_ENERGY_SPACING  LOG
+  DS_BOUNDARY_MODE   ISOTROPIC
+
+#ENERGY_CHANNELS
+  ! User-defined integral-flux channels for comparing F_ch = 4pi*int[E1,E2] T*Jb dE
+  !
+  ! Physics:  Omnidirectional integral flux  F_ch [m^-2 s^-1]
+  !   = 4π ∫_{E1}^{E2} T(E;x0) · J_b(E) dE
+  !
+  ! Analytic (power-law J_b = J0*(E/E0)^{-γ}, γ=2, T=T_geo):
+  !   F_ch = 4π · T_geo · J0 · E0² · (1/E1 − 1/E2)    [m^-2 s^-1]
+  !
+  ! Channel selection rationale:
+  !   CH1 (10-100 MeV): dominated by sub-cutoff region for equatorial points
+  !      TC1 and TC3; tests the shielded regime. TC2 (pole) has Rc=0, so
+  !      CH1 tests the unshielded low-energy limit there.
+  !   CH2 (100 MeV-1 GeV): spans the transition through the Størmer cutoff
+  !      for equatorial points. TC2 fully above cutoff.
+  !   CH3 (1-10 GeV): all four test points have T = T_geo in this range.
+  !      Provides the cleanest analytic comparison.
+  !   CH4 (10-20 GeV): near the upper bound of the grid. TC1/TC3 above-cutoff.
+  !      Tests accurate integration at the top of the energy grid.
+  !
+  ! NAME    E1_MeV    E2_MeV
+  CH_BEGIN
+    CH1       10.0     100.0   ! 10–100 MeV  (low energy, shielded at equator)
+    CH2      100.0    1000.0   ! 100 MeV–1 GeV  (transition through Størmer cutoff)
+    CH3     1000.0   10000.0   ! 1–10 GeV  (above cutoff at all test points)
+    CH4    10000.0   20000.0   ! 10–20 GeV (high energy, near grid upper bound)
+  CH_END
+
+#SPECTRUM
+  ! Power-law differential intensity: J_b(E) = J0 * (E/E0)^(-GAMMA)
+  ! Units as registered by the solver: J0 in m^-2 s^-1 sr^-1 MeV^-1
+  !
+  ! IMPORTANT: Verify that these key names match your spectrum.h
+  ! InitGlobalSpectrumFromKeyValueMap() implementation. Common alternatives:
+  !   SPECTRAL_INDEX instead of GAMMA
+  !   E_REFERENCE instead of E0_MEV
+  !   J_REFERENCE instead of J0
+  !
+  SPECTRUM_TYPE      POWER_LAW
+  SPEC_J0                1.00e+4   ! p/cm2/s/sr/(MeV/n)
+  SPEC_GAMMA             3.50         ! spectral index
+  SPEC_E0                10.0          ! MeV/n pivot
+  SPEC_EMIN              1.0          ! MeV/n
+  SPEC_EMAX              20000.0       ! MeV/n
+
+#NUMERICAL
+  DT_TRACE           0.5       ! s — initial time step for particle integration
+  MAX_STEPS          200000    ! hard cap on integration steps per trajectory
+  MAX_TRACE_TIME     60.0     ! s — hard cap on integration time per trajectory
+
+#OUTPUT_DOMAIN
+  OUTPUT_MODE   POINTS
+
+  POINTS_BEGIN
+  !  X_km        Y_km    Z_km     Description
+  !  -------     ------  -----    -----------------------------------------------
+  POINT  50969.6      0.0     0.0      ! TC1: 8 Re equator  — above-cutoff free space
+  POINT      0.0      0.0  31856.0     ! TC2: 5 Re pole     — magnetic pole, Rc=0
+  POINT  38227.2      0.0     0.0      ! TC3: 6 Re equator  — above-cutoff, closer-in
+  POINT  12742.4      0.0     0.0      ! TC4: 2 Re equator  — deep Størmer shielding
+  POINT  7742.4      0.0     0.0
+  POINTS_END

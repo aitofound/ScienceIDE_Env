@@ -7,13 +7,14 @@ from pathlib import Path
 from . import config, harbor_validate
 from .lint import lint
 from .runplan import compute_plan, consent_matches, consent_path, review_dir
-from .util import approved_modules, contract_fingerprint, die, leaf_of, read_json, rel, task_codebase
+from .util import approved_modules, contract_fingerprint, die, generated_paths, leaf_of, read_json, rel, task_codebase
 
 
 def task_status(leaf: Path, allow_custom: bool) -> dict:
     errs, warns, infos = lint(leaf, allow_custom)
     sv = leaf / "comment" / "pipeline" / "self-validation.json"
     state = {"task": rel(leaf), "checks": len(infos), "lint_errors": len(errs), "lint_warnings": len(warns), "self_validation": None}
+    state["generated_files"] = [rel(p) for p in generated_paths(leaf)]
     fp = contract_fingerprint(leaf)
     if sv.is_file():
         doc = read_json(sv)
@@ -35,6 +36,8 @@ def task_status(leaf: Path, allow_custom: bool) -> dict:
         nxt = f"sab.py task add-check --task {rel(leaf)} ... (one per suitable test)"
     elif errs:
         nxt = f"sab.py task lint --task {rel(leaf)}  (fix the {len(errs)} error(s))"
+    elif state["generated_files"]:
+        nxt = f"remove the {len(state['generated_files'])} generated file(s) listed under generated_files (selfcheck refuses them; a commit never carries them)"
     elif state["self_validation"] is None or not state["self_validation"]["fresh"]:
         # A run is needed: consent comes first. A consent given here for another host reads as invalid on this
         # machine by design (the run happens there), so the stop is reported only when no run has been made under it.
@@ -80,7 +83,8 @@ def cmd_status(a) -> None:
                         ("codebase-metadata.json", "codebase-metadata.html", "codebase-metadata.md")}
         line = {"codebase": cb_id, "source": f"code/{cb['source']}", "vendored": (config.ROOT / "code" / cb["source"]).is_dir(),
                 "source_merged": (cb.get("source_pr") or {}).get("merge_commit"),
-                "overview": (d / "overview.md").is_file(), "modules_proposed": len(mdoc["modules"]) if mdoc else 0,
+                "overview": (d / "overview.md").is_file(), "build_and_run": (d / "runs.json").is_file(),
+                "modules_proposed": len(mdoc["modules"]) if mdoc else 0,
                 "modules_approved": approved,
                 "metadata_report": {"informational": True, "non_blocking": True, "files": report_files,
                                     "complete": all(report_files.values())},
@@ -89,14 +93,13 @@ def cmd_status(a) -> None:
             leaf = config.ROOT / "tasks" / cb_id / m
             line["tasks"][m] = task_status(leaf, True)["next"] if (leaf / "task.toml").is_file() else "not scaffolded"
         if not line["overview"] or mdoc is None:
-            nxt = f"Step 1: sab.py codebase propose-modules --codebase {cb_id}"
+            nxt = (f"Step 1: investigate; Step 1.2: build natively, actually run tests and examples, write runs.json, sab.py codebase build-and-run --codebase {cb_id}"
+                   f"{' (DONE)' if line['build_and_run'] else ' (NOT DONE, strongly advised against skipping)'}; then sab.py codebase propose-modules --codebase {cb_id}")
+        elif not line["build_and_run"] and not (cb.get("source_pr") or {}).get("human_ref"):
+            nxt = (f"Step 1.2 (strongly advised, before the report and the source PR): build natively, actually run tests and examples, "
+                   f"record the landscape and pitfalls in {d / 'runs.json'}, then sab.py codebase build-and-run --codebase {cb_id}")
         elif not approved:
-            nxt = f"STOP: human approval of the module cut (sab.py codebase approve-modules --codebase {cb_id} --human-ref ...)"
-        elif not (cb.get("source_pr") or {}).get("human_ref") and cb.get("source_gate_bypass"):
-            byp = cb["source_gate_bypass"]
-            line["source_gate_bypassed"] = byp
-            nxt = (f"WARNING: Step 1.5 gate bypassed on {byp.get('at')} (\"{byp.get('human_ref')}\"); the task PR must not merge before the source PR; "
-                   f"once merged: sab.py codebase source-merged --codebase {cb_id} --human-ref ...; meanwhile Step 2/3 continue")
+            nxt = f"STOP 1: a multi-module cut awaits the human's approval (sab.py codebase approve-modules --codebase {cb_id} --human-ref ...); a single-module cut is recorded by propose-modules"
         elif not (cb.get("source_pr") or {}).get("human_ref") and not line["metadata_report"]["complete"]:
             nxt = (f"Step 1.5 informational (non-blocking): recommended fill {d / 'codebase-metadata.json'}, run "
                    f"sab.py codebase report --codebase {cb_id}, and present its HTML plus bounded Markdown to the human; "

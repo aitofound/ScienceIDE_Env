@@ -1,0 +1,643 @@
+version: 2.1
+orbs:
+  gcp-cli: circleci/gcp-cli@2.4.1
+  gcp-gcr: circleci/gcp-gcr@0.15.0
+
+commands:
+  setup_environment_mpi:
+    description: "Setup environment with MPI"
+    steps:
+      - run:
+          name: setup mpi
+          command: |
+            sudo apt-get update && sudo apt-get install -y make \
+              software-properties-common \
+              libopenmpi3 \
+              libopenmpi-dev \
+              python3 \
+              python3-pip \
+      - run:
+          name: save python_version.txt
+          command: python --version | awk '{print $2;}' > python_version.txt
+      - restore_cache:
+          keys:
+            - v1-venv-{{ checksum "requirements_dev.txt" }}-{{ checksum "constraints.txt" }}-{{ checksum "python_version.txt" }}
+      - run:
+          name: setup python environment
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip3 install --upgrade setuptools wheel
+            pip3 install -r requirements_dev.txt -c constraints.txt
+      - save_cache:
+          key: v1-venv-{{ checksum "requirements_dev.txt" }}-{{ checksum "constraints.txt" }}-{{ checksum "python_version.txt" }}
+          paths:
+            - venv
+            - /root/.cache/pip
+  build_docker_image:
+    description: "Setup savepoints"
+    steps:
+      - gcp-cli/install:
+        version: 323.0.0
+      - run:
+          name: gcloud auth
+          command: |
+            echo $ENCODED_GCR_KEY
+            echo $ENCODED_GCR_KEY | base64 -d > $GOOGLE_APPLICATION_CREDENTIALS
+            gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+            gcloud auth configure-docker
+      - run:
+          name: Update Submodules
+          command: git submodule update --init
+      - run:
+          name: build image
+          command: |
+            .circleci/build_and_push_image.sh
+  restore_gt_cache:
+    description: "Restore .gt_cache"
+    parameters:
+      key:
+        type: string
+    steps:
+      - run:
+          name: save gt4py_version.txt
+          command: git submodule status external/gt4py | awk '{print $1;}' > gt4py_version.txt
+      - run:
+          name: save week.txt
+          command: date +"week_%U_of_%Y" > week.txt
+      - restore_cache:
+          keys:
+            - v4-gt_cache-<<parameters.key>>-{{ checksum "gt4py_version.txt" }}-{{ checksum "week.txt"}}
+  save_gt_cache:
+    description: "Save .gt_cache"
+    parameters:
+      key:
+        type: string
+    steps:
+      - save_cache:
+          key: v4-gt_cache-<<parameters.key>>-{{ checksum "gt4py_version.txt" }}-{{ checksum "week.txt"}}
+          paths:
+            - .gt_cache
+  make_savepoints:
+    description: "Setup and run a savepoints test make target"
+    parameters:
+      backend:
+        description: "gt4py backend"
+        default: "numpy"
+        type: enum
+        enum: ["numpy", "gt:cpu_ifirst"]
+      experiment:
+        description: "experiment data to use"
+        type: enum
+        enum:
+          - "c12_6ranks_standard"
+          - "c12_54ranks_standard"
+          - "c12_6ranks_baroclinic_dycore_microphysics"
+          - "c12_54ranks_baroclinic_dycore_microphysics"
+      target:
+        description: "make target to run"
+        type: enum
+        enum:
+          - "test_main"
+          - "test_savepoint"
+          - "savepoint_tests"
+          - "savepoint_tests_mpi"
+          - "physics_savepoint_tests"
+          - "physics_savepoint_tests_mpi"
+          - "driver_savepoint_tests"
+          - "driver_savepoint_tests_mpi"
+      num_ranks:
+        description: "number of ranks required"
+        type: integer
+        default: 6
+    steps:
+      - build_docker_image
+      - restore_gt_cache:
+          key: <<parameters.backend>>-<<parameters.target>>-<<parameters.experiment>>
+      - restore_cache:
+          keys:
+            - v1-test_data-<<parameters.experiment>>-{{ checksum "Makefile.data_download" }}
+      - run:
+          name: run savepoint tests
+          command: |
+            TEST_ARGS="--backend=<<parameters.backend>> -v -s" DEV=y EXPERIMENT=<<parameters.experiment>> NUM_RANKS=<<parameters.num_ranks>> make <<parameters.target>>
+          no_output_timeout: 2h
+      - save_gt_cache:
+          key: <<parameters.backend>>-<<parameters.target>>-<<parameters.experiment>>
+      - save_cache:
+          key: v1-test_data-<<parameters.experiment>>-{{ checksum "Makefile.data_download" }}
+          paths:
+            - test_data
+
+jobs:
+
+  lint:
+    docker:
+      - image: cimg/python:3.8
+    resource_class: small
+    steps:
+      - checkout
+      - run:
+          name: save python_version.txt
+          command: python --version | awk '{print $2;}' > python_version.txt
+      - restore_cache:
+          keys:
+            - v3-lint-{{ checksum ".pre-commit-config.yaml" }}-{{ checksum "constraints.txt" }}-{{ checksum "python_version.txt" }}
+      - run:
+          name: run linting
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip3 install pre-commit -c constraints.txt
+            pre-commit run --all-files
+      - save_cache:
+          key: v3-lint-{{ checksum ".pre-commit-config.yaml" }}-{{ checksum "constraints.txt" }}-{{ checksum "python_version.txt" }}
+          paths:
+            - ~/.cache/pre-commit
+            - venv
+
+  doctest:
+    docker:
+      - image: cimg/python:3.8
+    steps:
+      - checkout
+      - run:
+          name: Update Submodules
+          command: git submodule update --init
+      - setup_environment_mpi
+      - run:
+          name: Install doc requirements
+          command: |
+            . venv/bin/activate
+            pip install -r requirements_docs.txt -c constraints.txt
+      - run:
+          name: run doctest
+          command: |
+            . venv/bin/activate
+            make doctest
+
+  dycore_savepoints:
+    machine:
+      image: ubuntu-2004:202111-02
+      resource_class: medium
+    parameters:
+      backend:
+        description: "gt4py backend"
+        default: "numpy"
+        type: enum
+        enum: ["numpy", "gt:cpu_ifirst"]
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /tmp/key.json
+    steps:
+      - checkout
+      - make_savepoints:
+          backend: <<parameters.backend>>
+          experiment: c12_54ranks_standard
+          target: savepoint_tests
+
+  physics_savepoints:
+    machine:
+      image: ubuntu-2004:202111-02
+      resource_class: medium
+    parameters:
+      backend:
+        description: "gt4py backend"
+        default: "numpy"
+        type: enum
+        enum: ["numpy", "gt:cpu_ifirst"]
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /tmp/key.json
+    steps:
+      - checkout
+      - make_savepoints:
+          backend: <<parameters.backend>>
+          experiment: c12_6ranks_baroclinic_dycore_microphysics
+          target: physics_savepoint_tests
+
+  dycore_savepoints_mpi:
+    machine:
+      image: ubuntu-2004:202111-02
+      resource_class: large
+    parameters:
+      backend:
+        description: "gt4py backend"
+        default: "numpy"
+        type: enum
+        enum: ["numpy", "gt:cpu_ifirst"]
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /tmp/key.json
+    steps:
+      - checkout
+      - make_savepoints:
+          backend: <<parameters.backend>>
+          experiment: c12_6ranks_standard
+          target: savepoint_tests_mpi
+
+  physics_savepoints_mpi:
+    machine:
+      image: ubuntu-2004:202111-02
+      resource_class: large
+    parameters:
+      backend:
+        description: "gt4py backend"
+        default: "numpy"
+        type: enum
+        enum: ["numpy", "gt:cpu_ifirst"]
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /tmp/key.json
+    steps:
+      - checkout
+      - make_savepoints:
+          backend: <<parameters.backend>>
+          experiment: c12_6ranks_baroclinic_dycore_microphysics
+          target: physics_savepoint_tests_mpi
+
+  driver_savepoints_mpi:
+    machine:
+      image: ubuntu-2004:202111-02
+      resource_class: xlarge
+    parameters:
+      backend:
+        description: "gt4py backend"
+        default: "numpy"
+        type: enum
+        enum: ["numpy", "gt:cpu_ifirst"]
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /tmp/key.json
+    steps:
+      - checkout
+      - make_savepoints:
+          backend: <<parameters.backend>>
+          experiment: c12_6ranks_baroclinic_dycore_microphysics
+          target: driver_savepoint_tests_mpi
+
+  dycore_savepoints_mpi_54rank:
+    machine:
+      image: ubuntu-2004:202111-02
+      resource_class: xlarge
+    parameters:
+      backend:
+        description: "gt4py backend"
+        default: "numpy"
+        type: enum
+        enum: ["numpy", "gt:cpu_ifirst"]
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /tmp/key.json
+    steps:
+      - checkout
+      - make_savepoints:
+          backend: <<parameters.backend>>
+          experiment: c12_54ranks_standard
+          target: savepoint_tests_mpi
+          num_ranks: 54
+
+  physics_savepoints_mpi_54rank:
+    machine:
+      image: ubuntu-2004:202111-02
+      resource_class: xlarge
+    parameters:
+      backend:
+        description: "gt4py backend"
+        default: "numpy"
+        type: enum
+        enum: ["numpy", "gt:cpu_ifirst"]
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /tmp/key.json
+    steps:
+      - checkout
+      - make_savepoints:
+          backend: <<parameters.backend>>
+          experiment: c12_54ranks_baroclinic_dycore_microphysics
+          target: physics_savepoint_tests_mpi
+          num_ranks: 54
+
+  driver_savepoints_mpi_54rank:
+    machine:
+      image: ubuntu-2004:202111-02
+      resource_class: xlarge
+    parameters:
+      backend:
+        description: "gt4py backend"
+        default: "numpy"
+        type: enum
+        enum: ["numpy", "gt:cpu_ifirst"]
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /tmp/key.json
+    steps:
+      - checkout
+      - make_savepoints:
+          backend: <<parameters.backend>>
+          experiment: c12_54ranks_baroclinic_dycore_microphysics
+          target: driver_savepoint_tests_mpi
+          num_ranks: 54
+
+  test_util:
+    docker:
+      - image: cimg/python:3.8
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run:
+          name: Install Submodules
+          command: git submodule update --init
+      - restore_cache:
+          keys:
+            - v2-{{ checksum "util/tox.ini" }}-{{ checksum "constraints.txt" }}-{{ checksum "util/setup.py" }}
+      - run:
+          name: install tox and MPI
+          command: |
+            if [ $(python changed_from_main.py util) != false ]; then
+              sudo apt-get update
+              sudo apt-get install libopenmpi3 libopenmpi-dev
+              pip3 install --upgrade setuptools wheel
+              python3 -m venv util/venv
+              . util/venv/bin/activate
+              pip3 install tox -c constraints.txt
+            fi
+      - run:
+          name: run tests
+          command: |
+            if [ $(python changed_from_main.py util) != false ]; then
+              cd util
+              . venv/bin/activate
+              tox --recreate -e test -e test_no_extras
+            fi
+      - save_cache:
+          key: v2-{{ checksum "util/tox.ini" }}-{{ checksum "constraints.txt" }}
+          paths:
+            - util/.tox
+            - util/venv
+
+  test_driver:
+    docker:
+      - image: cimg/python:3.8
+    resource_class: large
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run:
+          name: Install Submodules
+          command: git submodule update --init
+      - setup_environment_mpi
+      - restore_gt_cache:
+          key: v1-gt_cache_driver
+      - run:
+          name: run tests
+          command: |
+            . venv/bin/activate
+            cd pace
+            GT_CACHE_ROOT=$(pwd)/.gt_cache MPIRUN_CALL="mpirun -n 6 --mca btl_vader_single_copy_mechanism none" make test_mpi
+      - save_gt_cache:
+          key: v1-gt_cache_driver
+
+  test_driver_orch_cpu:
+    docker:
+      - image: cimg/python:3.8
+    resource_class: xlarge
+    working_directory: ~/repo
+    environment:
+      - FV3_DACEMODE: BuildAndRun
+    steps:
+      - checkout
+      - run:
+          name: Install Submodules
+          command: git submodule update --init
+      - setup_environment_mpi
+      - run:
+          no_output_timeout: 20m #update to gt4py v1 mysteriously lead to long print time. Can't be reproduced outside of circleci
+          name: run tests
+          command: |
+            . venv/bin/activate
+            cd pace
+            mpirun -n 6 --mca btl_vader_single_copy_mechanism none \
+              python3 -m mpi4py -m pace.run examples/configs/baroclinic_c12_orch_cpu.yaml
+
+  test_main:
+    machine:
+      image: ubuntu-2004:202111-02
+      resource_class: medium
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /tmp/key.json
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - make_savepoints:
+          backend: numpy
+          experiment: c12_6ranks_standard
+          target: test_main
+          num_ranks: 1
+
+  test_mpi_54rank:
+    docker:
+      - image: cimg/python:3.8
+    resource_class: xlarge
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run:
+          name: Install Submodules
+          command: git submodule update --init
+      - setup_environment_mpi
+      - run:
+          name: run tests
+          command: |
+            . venv/bin/activate
+            mpirun -n 54 --oversubscribe --mca btl_vader_single_copy_mechanism none python3 -m mpi4py -m pytest tests/mpi_54rank
+
+  test_savepoint:
+    machine:
+      image: ubuntu-2004:202111-02
+      resource_class: large
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /tmp/key.json
+    steps:
+      - checkout
+      - make_savepoints:
+          backend: numpy
+          experiment: c12_6ranks_standard
+          target: test_savepoint
+          num_ranks: 6
+
+  test_notebooks:
+    docker:
+      - image: gcr.io/vcm-ml/pace_notebook_examples
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run:
+          name: Test notebooks
+          command: make test_notebooks
+
+  push_docs:
+    docker:
+      - image: cimg/python:3.8
+    steps:
+      - checkout
+      - run:
+          name: Update Submodules
+          command: git submodule update --init
+      - setup_environment_mpi
+      - run:
+          name: Install doc requirements
+          command: |
+            . venv/bin/activate
+            pip install -r requirements_docs.txt -c constraints.txt
+      - run:
+          name: Make docs
+          command: |
+            . venv/bin/activate
+            make docs
+      - add_ssh_keys:
+          fingerprints:
+            - "ed:d1:6a:54:37:66:26:d0:f7:fc:69:a7:c6:89:53:78"
+
+      - run:
+          name: Move into place
+          command: |
+            git clone --branch gh-pages git@github.com:ai2cm/pace.git gh-pages
+            rm -rf gh-pages/docs
+            mv docs/_build/html gh-pages/docs
+            touch gh-pages/docs/.nojekyll
+            hash=$(git rev-parse --short HEAD)
+            git config --global user.name "CircleCI"
+            git config --global user.email "ai2cm@allenai.org"
+            git -C gh-pages add docs/
+            git -C gh-pages commit -a -m "Docs for $hash" || echo "No changes"
+            git -C gh-pages push
+
+workflows:
+  version: 2
+  tagged-build:
+    jobs:
+      - lint:
+          filters:
+            tags:
+              only: /^v.*/
+      - doctest:
+          filters:
+            tags:
+              only: /^v.*/
+      - dycore_savepoints:
+          matrix:
+            parameters:
+              backend:
+                - numpy
+                - gt:cpu_ifirst
+          context:
+            - GCLOUD_ENCODED_KEY
+          filters:
+            tags:
+              only: /^v.*/
+      - physics_savepoints:
+          matrix:
+            parameters:
+              backend:
+                - numpy
+                - gt:cpu_ifirst
+          context:
+            - GCLOUD_ENCODED_KEY
+          filters:
+            tags:
+              only: /^v.*/
+      - dycore_savepoints_mpi:
+          matrix:
+            parameters:
+              backend:
+                - numpy
+                - gt:cpu_ifirst
+          context:
+            - GCLOUD_ENCODED_KEY
+          filters:
+            tags:
+              only: /^v.*/
+      - physics_savepoints_mpi:
+          matrix:
+            parameters:
+              backend:
+                - numpy
+                - gt:cpu_ifirst
+          context:
+            - GCLOUD_ENCODED_KEY
+          filters:
+            tags:
+              only: /^v.*/
+      - driver_savepoints_mpi:
+          matrix:
+            parameters:
+              backend:
+                - numpy
+                - gt:cpu_ifirst
+          context:
+            - GCLOUD_ENCODED_KEY
+          filters:
+            tags:
+              only: /^v.*/
+      - dycore_savepoints_mpi_54rank:
+          matrix:
+            parameters:
+              backend:
+                - numpy
+          context:
+            - GCLOUD_ENCODED_KEY
+          filters:
+            tags:
+              only: /^v.*/
+      - physics_savepoints_mpi_54rank:
+          matrix:
+            parameters:
+              backend:
+                - numpy
+          context:
+            - GCLOUD_ENCODED_KEY
+          filters:
+            tags:
+              only: /^v.*/
+      - driver_savepoints_mpi_54rank:
+          matrix:
+            parameters:
+              backend:
+                - numpy
+          context:
+            - GCLOUD_ENCODED_KEY
+          filters:
+            tags:
+              only: /^v.*/
+      - test_savepoint:
+          context:
+            - GCLOUD_ENCODED_KEY
+          filters:
+            tags:
+              only: /^v.*/
+      - test_util:
+          filters:
+            tags:
+              only: /^v.*/
+      - test_main:
+          context:
+            - GCLOUD_ENCODED_KEY
+          filters:
+            tags:
+              only: /^v.*/
+      - test_mpi_54rank:
+          filters:
+            tags:
+              only: /^v.*/
+      - test_driver:
+          filters:
+            tags:
+              only: /^v.*/
+      - test_driver_orch_cpu:
+          filters:
+            tags:
+              only: /^v.*/
+      - test_notebooks:
+          filters:
+            tags:
+              only: /^v.*/
+      - push_docs:
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              only:
+                - main

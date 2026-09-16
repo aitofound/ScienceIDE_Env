@@ -1,0 +1,203 @@
+{
+  "module": "eftcamb-linear-perturbations",
+  "tests": [
+    {
+      "id": "linear-gr-baseline",
+      "module": "eftcamb-linear-perturbations",
+      "path": "fortran/eftcamb_test/parameters",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The 1_EFT_GR deck exercises GR scalar and tensor evolution in equations.f90 and emits transfer, matter-power and CMB spectra. get_vector_cls=F: initialv/derivsv/outputv are owned without direct coverage.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 4,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 1.6,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "This is the official GR baseline for the selected scalar and tensor paths. Fixed ODE inputs and tabulated observables support pointwise comparison; byte-identical repeatability was tested only for 2_PEFT_Omega_const_1.ini, not this GR deck.",
+      "proposed_check": "gr-baseline"
+    },
+    {
+      "id": "linear-pure-eft-omega",
+      "module": "eftcamb-linear-perturbations",
+      "path": "fortran/eftcamb_test/parameters",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "All seven 2_PEFT_Omega decks force constant, exponential, linear, and power-law Omega couplings through the modified scalar perturbation system.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 4,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 24.2,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "These official decks cover the distinct Omega parametrization branches entering the modified perturbation equations. Their deterministic ODE trajectories and tabulated observables support pointwise comparison.",
+      "proposed_check": "pure-eft-omega"
+    },
+    {
+      "id": "linear-pure-eft-gamma",
+      "module": "eftcamb-linear-perturbations",
+      "path": "fortran/eftcamb_test/parameters",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "All 21 2_PEFT_gamma decks cover the gamma1 and gamma3-gamma6 constant, exponential, linear, and power-law perturbation couplings.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 4,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 47.5,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "The gamma family is the broadest official branch coverage of the EFT-modified scalar system and would expose missing or incorrect coupling terms. Fixed ODE inputs support pointwise comparison; repeat-run byte identity has only been measured for 2_PEFT_Omega_const_1.ini.",
+      "proposed_check": "pure-eft-gamma"
+    },
+    {
+      "id": "linear-pure-eft-wde",
+      "module": "eftcamb-linear-perturbations",
+      "path": "fortran/eftcamb_test/parameters",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The two 2_PEFT_wDE decks exercise LCDM and wCDM background histories as inputs to the EFT perturbation evolution.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 4,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 5.8,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "This official pair tests that the perturbation system remains correct across the two supported dark-energy histories. Its fixed ODE solve and printed outputs make pointwise comparison suitable.",
+      "proposed_check": "pure-eft-wde"
+    },
+    {
+      "id": "linear-rph-alpha-basis",
+      "module": "eftcamb-linear-perturbations",
+      "path": "fortran/eftcamb_test/parameters",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "All seven 3_RPH decks drive kineticity, braiding, Planck-mass, and tensor alpha-basis combinations through the scalar perturbation equations.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 4,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 42.3,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "The alpha-basis decks cover a numerically sensitive perturbation interface and showed the largest measured cross-machine lensed-spectrum spread. The evolution is still deterministic, so pointwise comparison with calibrated near-zero handling is proposed.",
+      "proposed_check": "rph-alpha-basis"
+    },
+    {
+      "id": "linear-designer-fr",
+      "module": "eftcamb-linear-perturbations",
+      "path": "fortran/eftcamb_test/parameters",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "All four 4_Des_F_R decks feed designer f(R) solutions on LCDM and wCDM backgrounds into the modified perturbation evolution.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 4,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 16.8,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "The official f(R) cases supply distinct designer solutions to the same linear evolution path and would expose an incorrect coupling or initial condition. Pointwise comparison fits the deterministic solver.",
+      "proposed_check": "designer-fr"
+    },
+    {
+      "id": "linear-designer-mc5e",
+      "module": "eftcamb-linear-perturbations",
+      "path": "fortran/eftcamb_test/parameters",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "All eight 4_Des_mc5e decks cover CPL, Taylor, turning-point, and wCDM designer quintessence histories coupled to perturbations.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 4,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 33.6,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "This family covers four independent designer-history branches and their paired parameters while grading the resulting transfer and spectra tables. The fixed ODE calculation supports pointwise comparison; only 2_PEFT_Omega_const_1.ini has repeat-run byte-identity evidence.",
+      "proposed_check": "designer-mc5e"
+    },
+    {
+      "id": "linear-horava",
+      "module": "eftcamb-linear-perturbations",
+      "path": "fortran/eftcamb_test/parameters",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "All seven 5_Horava decks exercise solar-system and eta branches of the full-mapping model through linear perturbation evolution.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 4,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 25.5,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "The Horava decks force model-specific coefficients into the owned evolution code across seven official parameter regimes. Their reproducible tables make pointwise comparison appropriate.",
+      "proposed_check": "horava"
+    },
+    {
+      "id": "linear-kmouflage-kmimic",
+      "module": "eftcamb-linear-perturbations",
+      "path": "fortran/eftcamb_test/parameters",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The six 5_Kmouflage and 5_Kmimic decks drive both screening-model branches through the scalar perturbation system.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 4,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 29.2,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "These official screening-model cases cover two related but distinct coefficient paths and grade their transfer, matter-power, and spectra consequences. Pointwise comparison matches the deterministic computation.",
+      "proposed_check": "kmouflage-kmimic"
+    },
+    {
+      "id": "linear-quintessence-galileon",
+      "module": "eftcamb-linear-perturbations",
+      "path": "fortran/eftcamb_test/parameters",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Five quintessence potential decks plus the scaling-cubic Galileon deck exercise scalar-field initial conditions and evolution across six model forms.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 4,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 24.5,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "The family spans several scalar potentials and a Galileon branch, giving official coverage of materially different source terms in the owned evolution file. The fixed solver path supports pointwise comparison.",
+      "proposed_check": "quintessence-galileon"
+    },
+    {
+      "id": "linear-horndeski-full",
+      "module": "eftcamb-linear-perturbations",
+      "path": "fortran/eftcamb_test/parameters",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The ADE deck and three 5_hdsk_TG decks exercise the full covariant Horndeski coefficient path and its costly per-k modified evolution.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 4,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 44.5,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "This is the strongest official end-to-end test of the acceleration target: it drives the full Horndeski coefficient machinery through the per-k ODE system and grades transfer, power, and spectra tables. The solve is deterministic, so pointwise comparison is proposed.",
+      "proposed_check": "horndeski-full"
+    }
+  ]
+}

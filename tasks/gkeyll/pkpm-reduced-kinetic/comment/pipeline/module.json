@@ -1,0 +1,42 @@
+{
+  "module": {
+    "slug": "pkpm-reduced-kinetic",
+    "title": "Parallel-Kinetic-Perpendicular-Moment Solvers",
+    "paths": [
+      "pkpm/"
+    ],
+    "entrypoints": [
+      "pkpm/creg/ (compiled PKPM simulation drivers)",
+      "pkpm/luareg/ (Lua PKPM inputs through the gkeyll executable)"
+    ],
+    "expensive_path": "Coupled parallel kinetic distribution updates and perpendicular fluid-moment/Maxwell updates, including DG fluxes, primitive-moment recovery, limiters, source coupling, and velocity-space reductions.",
+    "rationale": "PKPM is a separate reduced kinetic formulation with a smaller phase-space representation and a dedicated application layer and regression corpus, making it a coherent task boundary despite depending on lower Gkeyll layers.",
+    "excluded": [
+      "General full-f gyrokinetic and full Vlasov solvers are separate modules.",
+      "Shared communication, arrays, basis, and I/O remain in core."
+    ],
+    "hazards": [
+      "PKPM transitively builds all lower physics layers, increasing build time and task-image size.",
+      "No PKPM executable was completed within the bounded local full-stack build investigation."
+    ]
+  },
+  "approval": {
+    "modules": [
+      "fluid-mhd-moments",
+      "vlasov-maxwell-dg",
+      "gyrokinetic-dg",
+      "pkpm-reduced-kinetic"
+    ],
+    "human_ref": "同意这四个模块",
+    "at": "2026-09-03T01:35:26Z"
+  },
+  "shared_infrastructure": [
+    "core/",
+    "gkeyll/",
+    "Makefile",
+    "alltargets.mak",
+    "configure",
+    "install-deps/",
+    "machines/"
+  ]
+}

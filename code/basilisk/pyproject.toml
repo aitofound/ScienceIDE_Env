@@ -1,0 +1,120 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [
+    "setuptools>=77.0.3,<=82.0.1",   # Required for "bdist_wheel" to work correctly and for PEP 639 license metadata.
+    "setuptools-scm>=8.0,<=10.0.5",  # Automatically include all Git-controlled files in sdist
+    "packaging>=24.0,<=26.2",
+
+    # needed to find the numpy include headers,
+    # pin to lowest runtime allowed version to take advantage of backwards compatibility
+    "numpy>=1.24.4,<2.4.0;  python_version < '3.13'",
+    "numpy>=2.0,<2.4.0;     python_version >= '3.13'",
+
+    # Requirements for building Basilisk through conanfile
+    "conan>=2.0.5,<=2.28.1",
+    "cmake>=3.26,<=4.3.2",
+    "swig>=4.4.1,<5",  # Require SWIG ABI 5 support for Basilisk and compatible plugins.
+    "libclang>=15.0.6.1,<=18.1.1"  # Required by generatePayloadMetaJson.py (message code generation)
+]
+
+[project]
+name        = 'bsk'
+dynamic     = ["version", "dependencies"]
+requires-python = ">=3.9, <3.15"
+
+readme      = "README.md"
+license     = "ISC"
+license-files = ["LICENSE"]
+description = "Basilisk: an Astrodynamics Simulation Framework"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Scientific/Engineering",
+]
+
+[project.urls]
+homepage = 'https://avslab.github.io/basilisk/'
+documentation = 'https://avslab.github.io/basilisk/'
+source = "https://github.com/AVSLab/basilisk"
+tracker = "https://github.com/AVSLab/basilisk/issues"
+
+# Define console scripts here
+[project.scripts]
+bskLargeData = "Basilisk.utilities.bskLargeData:main"
+bskExamples = "Basilisk.utilities.bskExamples:main"
+
+[tool.setuptools]
+packages = []  # XXX: Leave blank, populated automatically by setup.py.
+include-package-data = true
+
+[tool.setuptools.package-data]
+"*" = ["*.so", "*.dll", "*.lib", "*.pyd", "*.a", "*.dylib"]  # Include all built objects.
+
+[tool.setuptools.dynamic]
+version = {file = "docs/source/bskVersion.txt"}
+dependencies = {file = "requirements.txt"}
+
+[project.optional-dependencies]
+test = [
+  "psutil",
+  "pytest-error-for-skips",
+  "pytest",
+]
+examples = [
+  'scipy==1.13.1; python_version < "3.10"',
+  'scipy==1.15.3; python_version >= "3.10" and python_version < "3.11"',
+  'scipy==1.17.1; python_version >= "3.11"',
+  'numba',
+]
+opnav = [
+  "bsk-opnav",
+]
+all = [
+  "bsk-opnav",
+]
+
+[tool.cibuildwheel]
+build = ["cp39-*", "cp310-*", "cp311-*", "cp312-*", "cp313-*", "cp314-*"]
+skip  = ["*-win32", "*-musllinux_*"]
+build-verbosity = 1
+before-build = "python .github/scripts/configure_conan_retries.py && pip install \"libclang>=15.0.6.1,<=18.1.1\""
+test-extras = ["test"]
+test-command = "bskLargeData && pytest -v {project}/src/tests -m \"not ciSkip and not scenarioTest\""
+
+[tool.cibuildwheel.environment]
+CMAKE_BUILD_TYPE = "Release"
+
+[tool.cibuildwheel.macos.environment]
+MACOSX_DEPLOYMENT_TARGET = "11.0"
+CMAKE_OSX_DEPLOYMENT_TARGET = "11.0"
+
+[tool.cibuildwheel.windows]
+before-build = "python .github/scripts/configure_conan_retries.py && pip install \"libclang>=15.0.6.1,<=18.1.1\" delvewheel ninja"
+repair-wheel-command = "python -m delvewheel repair -v --ignore-existing --analyze-existing -w {dest_dir} {wheel}"
+
+[tool.cibuildwheel.linux]
+archs = ["native"]
+before-all = "mkdir -p ~/.conan2 && printf '%s\\n' 'tools.system.package_manager:mode=install' 'tools.system.package_manager:sudo=False' >> ~/.conan2/global.conf"
+repair-wheel-command = [
+  "auditwheel repair --strip -w {dest_dir} {wheel}"
+]
+manylinux-x86_64-image  = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+# cibuildwheel runs Linux builds inside a manylinux container so host env vars
+# that toggles MuJoCo/OpNav aren't visible to the build unless explicitly
+# forwarded.
+environment-pass = ["CONAN_ARGS", "CMAKE_C_COMPILER_LAUNCHER", "CMAKE_CXX_COMPILER_LAUNCHER"]
+
+[tool.pytest.ini_options]
+markers = [
+  "slowtest: mark a test as a slow unit test.",
+  "scenarioTest: mark a test as a tutorial scenario test.",
+  "ciSkip: mark a test that should be skipped on the CI test runs",
+]

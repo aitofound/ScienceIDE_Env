@@ -1,0 +1,3 @@
+# xppm
+
+::: stencils.xppm

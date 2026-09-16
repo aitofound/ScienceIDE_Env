@@ -21,20 +21,35 @@
     ]
   },
   "evidence": {
-    "floor": 2.6645352591003757e-15,
-    "floor_how": "measured by selfcheck on 2026-09-06: run.sh altbuild (same source, gcc -O2 strict IEEE: no -ffast-math, -ffp-contract=off, no -march=native (build-ieee/)) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
-    "self_validation_spread": 1.7763568394002505e-15,
-    "self_validation_bound_fraction": 6.80384718406637e-05,
+    "floor": {
+      "value": 2.6645352591003757e-15,
+      "knob_overrides": {
+        "SAB_SLOT_CLASS": "instruction"
+      }
+    },
+    "floor_how": "measured by selfcheck on 2026-09-08: run.sh altbuild (same source, gcc -O2 strict IEEE: no -ffast-math, -ffp-contract=off, no -march=native (build-ieee/)) against run.sh nominal, graded with the check's own validate.py: all graded values within bound",
+    "self_validation_spread": {
+      "value": 2.220446049250313e-15,
+      "knob_overrides": {
+        "SAB_SLOT_CLASS": "instruction"
+      }
+    },
+    "self_validation_bound_fraction": {
+      "value": 4.9217643628890364e-05,
+      "knob_overrides": {
+        "SAB_SLOT_CLASS": "instruction"
+      }
+    },
     "altbuild": {
       "what": "same source, gcc -O2 strict IEEE: no -ffast-math, -ffp-contract=off, no -march=native (build-ieee/)",
       "distance": 2.6645352591003757e-15,
-      "bound_fraction": 6.367007960316558e-05,
+      "bound_fraction": 5.8187252722537244e-05,
       "identical": false,
       "passed": true,
       "reason": "all graded values within bound",
-      "at": "2026-09-06T02:04:48Z"
+      "at": "2026-09-08T08:23:37Z"
     },
-    "floor_bound_fraction": 6.367007960316558e-05
+    "floor_bound_fraction": 5.8187252722537244e-05
   },
   "warrant": "Every payload value of the complete integrated ideal-MHD diagnostic history (2976 values) is compared pointwise after ignoring timestamps with exact length required. Measured on x86 on one core (2026-09-05): the two-ULP rhol variant moves the history by at most 1.8e-15 absolute (5e-16 relative on a value of order 3.5); the strict-IEEE build differs by 2.7e-15 (7e-16 relative). The largest fraction of the bound used is 6.8e-5, so atol=rtol=1e-11 is 1.5e4x over the floor. A wrong MHD wave decomposition, rotational-discontinuity handling or magnetic flux (moments/zero/wv_mhd.c) moves the history at the 1e-6 level or more."
 }

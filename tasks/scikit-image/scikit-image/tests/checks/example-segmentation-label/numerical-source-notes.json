@@ -1,0 +1,176 @@
+{
+  "skimage.color.label2rgb": {
+    "implementation": {
+      "file": "src/skimage/color/colorlabel.py",
+      "line": 85,
+      "end_line": 156
+    },
+    "description": "Return an RGB image where color-coded labels are painted over the image.",
+    "calls": [
+      "np.moveaxis",
+      "_label2rgb_overlay",
+      "_label2rgb_avg"
+    ],
+    "branches": [
+      {
+        "line": 146,
+        "expression": "image is not None"
+      },
+      {
+        "line": 148,
+        "expression": "kind == 'overlay'"
+      },
+      {
+        "line": 152,
+        "expression": "kind == 'avg'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.filters.threshold_otsu": {
+    "implementation": {
+      "file": "src/skimage/filters/thresholding.py",
+      "line": 336,
+      "end_line": 407
+    },
+    "description": "Return threshold value based on Otsu's method.",
+    "calls": [
+      "np.cumsum",
+      "_validate_image_histogram",
+      "np.argmax",
+      "np.all",
+      "image.reshape"
+    ],
+    "branches": [
+      {
+        "line": 376,
+        "expression": "image is not None and image.ndim > 2 and (image.shape[-1] in (3, 4))"
+      },
+      {
+        "line": 385,
+        "expression": "image is not None"
+      },
+      {
+        "line": 387,
+        "expression": "np.all(image == first_pixel)"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.measure.label": {
+    "implementation": {
+      "file": "src/skimage/measure/_label.py",
+      "line": 33,
+      "end_line": 125
+    },
+    "description": "Label connected regions of an integer array.",
+    "calls": [
+      "_label_bool",
+      "clabel"
+    ],
+    "branches": [
+      {
+        "line": 117,
+        "expression": "label_image.dtype == bool"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.closing": {
+    "implementation": {
+      "file": "src/skimage/morphology/gray.py",
+      "line": 364,
+      "end_line": 438
+    },
+    "description": "Return grayscale morphological closing of an image.",
+    "calls": [
+      "pad_footprint",
+      "dilation",
+      "erosion",
+      "mirror_footprint"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.morphology.footprint_rectangle": {
+    "implementation": {
+      "file": "src/skimage/morphology/footprints.py",
+      "line": 101,
+      "end_line": 199
+    },
+    "description": "Generate a rectangular or hyper-rectangular footprint.",
+    "calls": [
+      "partial_footprint",
+      "any",
+      "warnings.warn",
+      "min",
+      "_decompose_size",
+      "footprint.append"
+    ],
+    "branches": [
+      {
+        "line": 164,
+        "expression": "decomposition == 'sequence' and has_even_width"
+      },
+      {
+        "line": 177,
+        "expression": "decomposition is None"
+      },
+      {
+        "line": 180,
+        "expression": "decomposition in ('separable', 'sequence_fallback')"
+      },
+      {
+        "line": 185,
+        "expression": "decomposition == 'sequence'"
+      },
+      {
+        "line": 190,
+        "expression": "width > min_width"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.segmentation.clear_border": {
+    "implementation": {
+      "file": "src/skimage/segmentation/_clear_border.py",
+      "line": 6,
+      "end_line": 109
+    },
+    "description": "Clear objects connected to the label image border.",
+    "calls": [
+      "slice",
+      "label",
+      "np.unique",
+      "np.arange",
+      "np.isin",
+      "label_mask[labels.reshape(-1)].reshape",
+      "any",
+      "labels.copy",
+      "labels.reshape"
+    ],
+    "branches": [
+      {
+        "line": 63,
+        "expression": "any((buffer_size >= s for s in labels.shape)) and mask is None"
+      },
+      {
+        "line": 67,
+        "expression": "out is None"
+      },
+      {
+        "line": 70,
+        "expression": "mask is not None"
+      },
+      {
+        "line": 75,
+        "expression": "out.shape != mask.shape"
+      },
+      {
+        "line": 77,
+        "expression": "mask.dtype != bool"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

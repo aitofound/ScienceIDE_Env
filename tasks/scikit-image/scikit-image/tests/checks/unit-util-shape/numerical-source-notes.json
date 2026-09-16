@@ -1,0 +1,85 @@
+{
+  "skimage.util.view_as_blocks": {
+    "implementation": {
+      "file": "src/skimage/util/shape.py",
+      "line": 8,
+      "end_line": 93
+    },
+    "description": "Block view of the input n-dimensional array (using re-striding).",
+    "calls": [
+      "(block_shape <= 0).any",
+      "as_strided",
+      "isinstance",
+      "(arr_shape % block_shape).sum"
+    ],
+    "branches": [
+      {
+        "line": 73,
+        "expression": "not isinstance(block_shape, tuple)"
+      },
+      {
+        "line": 77,
+        "expression": "(block_shape <= 0).any()"
+      },
+      {
+        "line": 80,
+        "expression": "block_shape.size != arr_in.ndim"
+      },
+      {
+        "line": 84,
+        "expression": "(arr_shape % block_shape).sum() != 0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.view_as_windows": {
+    "implementation": {
+      "file": "src/skimage/util/shape.py",
+      "line": 96,
+      "end_line": 247
+    },
+    "description": "Rolling window view of the input n-dimensional array.",
+    "calls": [
+      "isinstance",
+      "(arr_shape - window_shape < 0).any",
+      "(window_shape - 1 < 0).any",
+      "as_strided",
+      "slice"
+    ],
+    "branches": [
+      {
+        "line": 207,
+        "expression": "not isinstance(arr_in, np.ndarray)"
+      },
+      {
+        "line": 212,
+        "expression": "isinstance(window_shape, numbers.Number)"
+      },
+      {
+        "line": 214,
+        "expression": "not len(window_shape) == ndim"
+      },
+      {
+        "line": 217,
+        "expression": "isinstance(step, numbers.Number)"
+      },
+      {
+        "line": 221,
+        "expression": "len(step) != ndim"
+      },
+      {
+        "line": 227,
+        "expression": "(arr_shape - window_shape < 0).any()"
+      },
+      {
+        "line": 230,
+        "expression": "(window_shape - 1 < 0).any()"
+      },
+      {
+        "line": 218,
+        "expression": "step < 1"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

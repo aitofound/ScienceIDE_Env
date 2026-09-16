@@ -1,0 +1,197 @@
+{
+  "check": "perturb-zeldovich",
+  "policy": "invariants",
+  "chaotic": false,
+  "upstream_test": "code/21cmfast/tests/test_integration_features.py::test_perturb_field_data[no2lpt]",
+  "configuration": "Seed 12345, z=10, HII_DIM=50, DIM=150, BOX_LEN=100 Mpc, two threads, PERTURB_ALGORITHM=ZELDOVICH with all three production velocity components retained.",
+  "observable": "Mass conservation; mode-count-weighted low/mid/high-k density and total-vector velocity power; continuous summaries; initial--final density coherence; density--velocity Fourier relations; longitudinal dominance; and a paired same-seed Zel'dovich-minus-LINEAR correction fraction.",
+  "expected_runtime_s": 8,
+  "default_vs_upstream": "Derived from the upstream no2lpt perturb-field golden case; replaces realization-specific spectrum/PDF bins with broad bands and internal physics, enables KEEP_3D_VELOCITIES, and adds a same-seed LINEAR baseline.",
+  "knobs": "SAB_DIM, SAB_HII_DIM and SAB_THREADS expose grid sizes and OpenMP workers; thread changes are calibration probes, not formal variants.",
+  "variant": "BOX_LEN, grid geometry, k bands, mode counts and seed remain fixed. SIGMA_8 moves upward by exactly two float32 ulps, changing amplitude without changing phases or the Zel'dovich branch.",
+  "altbuild": "none: this single arm64 host cannot establish a portable compiler/FFT cross-build floor.",
+  "comparison": {
+    "files": [
+      {
+        "path": "spectrum-density-bands.npy",
+        "format": "npy",
+        "rtol": 0.0,
+        "atol": 0.0
+      },
+      {
+        "path": "power-density-low.npy",
+        "format": "npy",
+        "rtol": 0.3,
+        "atol": 1e-08
+      },
+      {
+        "path": "power-density-mid.npy",
+        "format": "npy",
+        "rtol": 0.08,
+        "atol": 1e-08
+      },
+      {
+        "path": "power-density-high.npy",
+        "format": "npy",
+        "rtol": 0.1,
+        "atol": 1e-08
+      },
+      {
+        "path": "density-summary.npy",
+        "format": "npy",
+        "rtol": 0.25,
+        "atol": 0.02
+      },
+      {
+        "path": "spectrum-velocity-total-bands.npy",
+        "format": "npy",
+        "rtol": 0.0,
+        "atol": 0.0
+      },
+      {
+        "path": "power-velocity-total-low.npy",
+        "format": "npy",
+        "rtol": 0.35,
+        "atol": 1e-08
+      },
+      {
+        "path": "power-velocity-total-mid.npy",
+        "format": "npy",
+        "rtol": 0.08,
+        "atol": 1e-08
+      },
+      {
+        "path": "power-velocity-total-high.npy",
+        "format": "npy",
+        "rtol": 0.1,
+        "atol": 1e-08
+      },
+      {
+        "path": "velocity-magnitude-summary.npy",
+        "format": "npy",
+        "rtol": 0.25,
+        "atol": 0.02
+      },
+      {
+        "path": "density-mass-summary.npy",
+        "format": "npy",
+        "rtol": 0.001,
+        "atol": 0.0005
+      },
+      {
+        "path": "initial-final-density-relation.npy",
+        "format": "npy",
+        "rtol": 0.05,
+        "atol": 0.002
+      },
+      {
+        "path": "density-velocity-relation.npy",
+        "format": "npy",
+        "rtol": 0.01,
+        "atol": 0.001
+      },
+      {
+        "path": "velocity-longitudinal-ratio.npy",
+        "format": "npy",
+        "rtol": 0.1,
+        "atol": 0.002
+      },
+      {
+        "path": "zeldovich-correction-summary.npy",
+        "format": "npy",
+        "rtol": 0.1,
+        "atol": 0.005
+      }
+    ]
+  },
+  "physics_bounds": [
+    {
+      "path": "density-mass-summary.npy",
+      "index": 0,
+      "label": "mean Zel'dovich overdensity",
+      "abs_maximum": 0.001
+    },
+    {
+      "path": "density-mass-summary.npy",
+      "index": 1,
+      "label": "mean Zel'dovich mass weight",
+      "minimum": 0.999,
+      "maximum": 1.001
+    },
+    {
+      "path": "initial-final-density-relation.npy",
+      "index": 0,
+      "label": "low-k initial--final density coherence",
+      "minimum": 0.97
+    },
+    {
+      "path": "initial-final-density-relation.npy",
+      "index": 1,
+      "label": "low-k initial--final density transfer",
+      "minimum": 0.05
+    },
+    {
+      "path": "initial-final-density-relation.npy",
+      "index": 2,
+      "label": "mid-k initial--final density coherence",
+      "minimum": 0.8
+    },
+    {
+      "path": "initial-final-density-relation.npy",
+      "index": 3,
+      "label": "mid-k initial--final density transfer",
+      "minimum": 0.05
+    },
+    {
+      "path": "density-velocity-relation.npy",
+      "index": 0,
+      "label": "low-k density--velocity-divergence coherence",
+      "minimum": 0.98
+    },
+    {
+      "path": "density-velocity-relation.npy",
+      "index": 1,
+      "label": "low-k density--velocity-divergence sign",
+      "maximum": -0.1
+    },
+    {
+      "path": "density-velocity-relation.npy",
+      "index": 2,
+      "label": "mid-k density--velocity-divergence coherence",
+      "minimum": 0.98
+    },
+    {
+      "path": "density-velocity-relation.npy",
+      "index": 3,
+      "label": "mid-k density--velocity-divergence sign",
+      "maximum": -0.1
+    },
+    {
+      "path": "velocity-longitudinal-ratio.npy",
+      "index": 0,
+      "label": "velocity curl/divergence amplitude ratio",
+      "maximum": 0.05
+    },
+    {
+      "path": "zeldovich-correction-summary.npy",
+      "index": 0,
+      "label": "Zel'dovich density correction relative to LINEAR",
+      "minimum": 0.6,
+      "maximum": 0.9
+    },
+    {
+      "path": "zeldovich-correction-summary.npy",
+      "index": 1,
+      "label": "Zel'dovich velocity correction relative to LINEAR",
+      "minimum": 0.1,
+      "maximum": 0.25
+    }
+  ],
+  "evidence": {
+    "spread": null,
+    "spread_how": "The completed two-ulp SIGMA_8 selfcheck had bound_fraction 4.00e-6. Across one thread-layout probe and five additional seeds, low-k density/velocity powers moved by at most 19.7%/25.2%, mid-k by 4.2%/7.7%, high-k by 4.2%/4.3%, velocity summaries by 17.6%, initial--final relations by 2.6%, and the paired correction by 4.6%; all six realizations passed, with the closest at bound_fraction 0.963. Density--velocity relations remained far tighter. Collapsing Zel'dovich into LINEAR made both corrections zero and failed at 39.2 times the bound.",
+    "self_validation_spread": 1.5172771575812782e-06,
+    "self_validation_bound_fraction": 3.9963321829035e-06
+  },
+  "warrant": "Broad bands and continuous summaries avoid identifying a random realization by phase. Mass conservation tests periodic CIC deposition. Low/mid-k initial--final coherence retains large-scale displacement physics; density--velocity and longitudinal tests retain the production Fourier relation. The paired LINEAR solve measures the nonzero first-order displacement/CIC correction directly: accidentally entering LINEAR makes it vanish, while entering 2LPT changes it and the retained invariants."
+}

@@ -1,0 +1,25 @@
+[coal]
+url = "github:coal-library"
+
+[casadi]
+url = "github:casadi"
+
+[cppad]
+url = "github:coin-or"
+
+[cppadcodegen]
+url = "github:joaoleal"
+src_deps = ["cppad"]
+
+[pinocchio]
+url = "."
+apt_deps = ["libmpfr-dev", "liburdfdom-dev"]
+src_deps = ["casadi", "coal", "cppadcodegen"]
+configure_args = [
+  "-DBUILD_EXAMPLES=OFF",
+  "-DBUILD_PYTHON_BINDINGS_WITH_BOOST_MPFR_SUPPORT=ON",
+  "-DBUILD_WITH_AUTODIFF_SUPPORT=ON",
+  "-DBUILD_WITH_CODEGEN_SUPPORT=ON",
+  "-DBUILD_WITH_COLLISION_SUPPORT=ON",
+  "-DBUILD_WITH_OPENMP_SUPPORT=ON",
+]

@@ -1,0 +1,18 @@
+Variant initial condition: the mean molecular weight of the ideal-gas-plus-
+radiation block, mu, moved by two ulps of binary64
+(0.6 * (1 + 4.4e-16) = 0.6000000000000002). mu enters every call of
+get_idealplusrad_enfromtemp / _pres, of the inversions T(rho,P) and (T,P)(rho,s),
+and of the entropy, so it perturbs the printed max errors of the eight
+'from rho' assertions of that block at the level of round-off, while leaving
+the rho-T grid, the equation-of-state selection loop and every verdict alone.
+--- a/src/tests/test_eos.f90
++++ b/src/tests/test_eos.f90
+@@ -216,7 +216,7 @@
+  if (id==master) write(*,"(/,a)") '--> testing ideal gas + radiation equation of state'
+ 
+  ieos = 12
+- mu = 0.6
++ mu = 0.6000000000000002
+ 
+  call get_rhoT_grid(npts,rhogrid,Tgrid)
+  dum = 0.

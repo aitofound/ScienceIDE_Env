@@ -1,0 +1,47 @@
+default_language_version:
+  python: python3
+
+repos:
+  # Use mypyc-compiled black, which is about 2x faster
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 26.5.1
+    hooks:
+      - id: black-jupyter
+        additional_dependencies: ["black[jupyter]"]
+
+  - repo: https://github.com/pycqa/isort
+    rev: 8.0.1
+    hooks:
+      - id: isort
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v2.3.0
+    hooks:
+      - id: mypy
+        additional_dependencies: [types-PyYAML]
+        args: ["--config-file", "pyproject.toml"]
+        files: pace
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-toml
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.3.0
+    hooks:
+      - id: flake8
+        language_version: python3
+        additional_dependencies: [Flake8-pyproject, flake8-bugbear]
+
+  - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+    rev: v2.16.0
+    hooks:
+      - id: pretty-format-toml
+        args: [--autofix, --indent, "2"]
+      - id: pretty-format-yaml
+        args: [--autofix, --preserve-quotes, --indent, "2", --offset, "2"]
+        exclude: ^tests/savepoint/thresholds

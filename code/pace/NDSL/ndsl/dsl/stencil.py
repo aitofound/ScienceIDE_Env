@@ -1,0 +1,1134 @@
+from __future__ import annotations
+
+import copy
+import dataclasses
+import inspect
+import numbers
+import warnings
+from collections.abc import Callable, Iterable, Mapping, Sequence
+from typing import Any, cast
+
+import numpy as np
+from dace.config import Config as DaceConfig
+from gt4py.cartesian import config as gt_config
+from gt4py.cartesian import definitions as gt_definitions
+from gt4py.cartesian import gtscript
+from gt4py.cartesian.definitions import FieldInfo
+from gt4py.cartesian.gtc.passes.oir_pipeline import DefaultPipeline, OirPipeline
+from gt4py.cartesian.stencil_object import StencilObject
+
+from ndsl import ndsl_log
+from ndsl.comm.comm_abc import Comm
+from ndsl.comm.communicator import Communicator
+from ndsl.comm.decomposition import block_waiting_for_compilation, unblock_waiting_tiles
+from ndsl.comm.mpi import MPI
+from ndsl.config.backend import Backend, BackendFramework
+from ndsl.constants import (
+    I_DIM,
+    I_DIMS,
+    I_INTERFACE_DIM,
+    J_DIM,
+    J_DIMS,
+    J_INTERFACE_DIM,
+    K_DIM,
+    K_DIMS,
+    K_INTERFACE_DIM,
+)
+from ndsl.debug import get_debugger
+from ndsl.dsl.dace.orchestration import SDFGConvertible
+from ndsl.dsl.stencil_config import CompilationConfig, RunMode, StencilConfig
+from ndsl.dsl.typing import (
+    BoolFieldIJ,
+    Float,
+    FloatFieldIJ,
+    FloatFieldIJ32,
+    FloatFieldIJ64,
+    Index3D,
+    Int,
+    IntFieldIJ,
+    IntFieldIJ32,
+    IntFieldIJ64,
+    cast_to_index3d,
+)
+from ndsl.initialization import GridSizer
+from ndsl.internal.deferred_type import resolve_deferred_types
+from ndsl.quantity import Quantity
+from ndsl.testing.comparison import LegacyMetric
+
+
+def report_difference(args, kwargs, args_copy, kwargs_copy, function_name, gt_id):  # type: ignore[no-untyped-def]
+    report_head = f"comparing against numpy for func {function_name}, gt_id {gt_id}:"
+    report_segments = []
+    for i, (arg, numpy_arg) in enumerate(zip(args, args_copy)):
+        if isinstance(arg, Quantity):
+            arg = arg[:]
+            numpy_arg = numpy_arg.data
+        if isinstance(arg, np.ndarray):
+            report_segments.append(report_diff(arg, numpy_arg, label=f"arg {i}"))
+    for name in kwargs:
+        if isinstance(kwargs[name], Quantity):
+            kwarg = kwargs[name]._data
+            numpy_kwarg = kwargs_copy[name].data
+        else:
+            kwarg = kwargs[name]
+            numpy_kwarg = kwargs_copy[name]
+        if isinstance(kwarg, np.ndarray):
+            report_segments.append(
+                report_diff(kwarg, numpy_kwarg, label=f"kwarg {name}")
+            )
+    report_body = "".join(report_segments)
+    if len(report_body) > 0:
+        print("")  # newline
+        print(report_head + report_body)
+
+
+def report_diff(arg: np.ndarray, numpy_arg: np.ndarray, label: str) -> str:
+    metric = LegacyMetric(
+        reference_values=arg,
+        computed_values=numpy_arg,
+        eps=1e-13,
+        ignore_near_zero_errors=False,
+        near_zero=0,
+    )
+    return f"{label}: {metric.__repr__()}"
+
+
+@dataclasses.dataclass
+class TimingCollector:
+    """
+    Attributes:
+        build_info: contains info about the generation process for each stencil.
+        exec_info: contains info about the execution of each stencil.
+    """
+
+    build_info: dict[str, dict] = dataclasses.field(default_factory=dict)
+    exec_info: dict[str, Any] = dataclasses.field(
+        default_factory=lambda: {"__aggregate_data": True}
+    )
+
+    def build_report(self, key: str = "build_time", **kwargs: Any) -> str:
+        return type(self)._show_report(
+            self.build_info, self.build_info.keys(), key, **kwargs
+        )
+
+    def exec_report(self, key: str = "total_run_time", **kwargs: Any) -> str:
+        # NOTE: Uses the build_info keys to distinguish stencils
+        return type(self)._show_report(
+            self.exec_info, self.build_info.keys(), key, **kwargs
+        )
+
+    @staticmethod
+    def _show_report(
+        infos: dict[str, Any],
+        keys: Iterable[str],
+        secondary_key: str,
+        *,
+        name_width: int = 40,
+        bar_width: int = 40,
+        delimiter: str = " | ",
+        show_bar: bool = True,
+        reverse: bool = True,
+        digits: int = 3,
+    ) -> str:
+        assert name_width > 10
+
+        data = [(key, infos[key][secondary_key]) for key in keys]
+        sorted_data = tuple(
+            sorted(data, key=lambda name_time: name_time[1], reverse=reverse)
+        )
+        max_val = sorted_data[0 if reverse else -1][1]
+
+        format = f".{digits}e"
+
+        outputs: list[str] = [f"Total: {sum(d[1] for d in data):{format}}"]
+        for name, val in sorted_data:
+            if len(name) > name_width:
+                width = int(name_width / 2) - 3
+                disp_name = f"{name[:width]}...{name[-width:]:{format}}"
+            else:
+                disp_name = name
+            line = f"{disp_name.rjust(name_width)}{delimiter}{val:{format}}"
+            if show_bar and max_val > 0:
+                bar_data = bar = "█" * int(val / max_val * bar_width)
+                line += f"{delimiter}{bar_data}"
+            outputs.append(line)
+
+        return "\n".join(outputs)
+
+
+class CompareToNumpyStencil:
+    """
+    A wrapper over FrozenStencil which executes a numpy version of the stencil as well,
+    and compares the results.
+    """
+
+    def __init__(
+        self,
+        func: Callable[..., None],
+        origin: tuple[int, ...] | Mapping[str, tuple[int, ...]],
+        domain: tuple[int, ...],
+        stencil_config: StencilConfig,
+        externals: Mapping[str, Any] | None = None,
+        skip_passes: tuple[str, ...] = (),
+        timing_collector: TimingCollector | None = None,
+        comm: Comm | None = None,
+    ):
+        self._actual = FrozenStencil(
+            func=func,
+            origin=origin,
+            domain=domain,
+            stencil_config=stencil_config,
+            externals=externals,
+            skip_passes=skip_passes,
+            timing_collector=timing_collector,
+            comm=comm,
+        )
+        compilation_config = CompilationConfig(
+            backend=Backend.python(),
+            rebuild=stencil_config.compilation_config.rebuild,
+            validate_args=stencil_config.compilation_config.validate_args,
+            format_source=True,
+            run_mode=RunMode.BuildAndRun,
+            use_minimal_caching=False,
+        )
+        numpy_stencil_config = StencilConfig(
+            dace_config=stencil_config.dace_config,
+            compilation_config=compilation_config,
+        )
+        self._numpy = FrozenStencil(
+            func=func,
+            origin=origin,
+            domain=domain,
+            stencil_config=numpy_stencil_config,
+            externals=externals,
+            skip_passes=skip_passes,
+            timing_collector=timing_collector,
+            comm=comm,
+        )
+        self._func_name = func.__name__
+
+    def __call__(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        args_copy = copy.deepcopy(args)
+        kwargs_copy = copy.deepcopy(kwargs)
+        self._actual(*args, **kwargs)
+        self._numpy(*args_copy, **kwargs_copy)
+        report_difference(
+            args,
+            kwargs,
+            args_copy,
+            kwargs_copy,
+            self._func_name,
+            self._actual.stencil_object._gt_id_,
+        )
+
+
+def _stencil_object_name(stencil_object: StencilObject) -> str:
+    """Returns a unique name for each gt4py stencil object, including the hash."""
+    return type(stencil_object).__name__
+
+
+def get_pair_rank(rank: int, size: int) -> int:
+    dycore_ranks = size // 2
+    if rank < dycore_ranks:
+        return rank + dycore_ranks
+    else:
+        return rank - dycore_ranks
+
+
+def compare_ranks(comm: Comm, data: dict) -> Mapping[str, int]:
+    rank = comm.Get_rank()
+    size = comm.Get_size()
+    pair_rank = get_pair_rank(rank, size)
+    differences = {}
+    for name, maybe_array in sorted(data.items(), key=lambda x: x[0]):
+        if isinstance(maybe_array, Quantity):
+            maybe_array = maybe_array._data
+        if hasattr(maybe_array, "data") and isinstance(maybe_array.data, np.ndarray):
+            array = maybe_array.data
+            other = comm.sendrecv(array, pair_rank)
+            arr_diffs = np.sum(np.logical_and(~np.isnan(array), array != other))
+            if arr_diffs > 0:
+                differences[name] = arr_diffs
+    return differences
+
+
+_DEPRECATED_STENCILS: list[Callable] = []
+"""Collect deprecated stencils"""
+
+
+def deprecated_stencil(func: Callable) -> Callable:
+    """Wrapper to mark a stencil as deprecated: use as `@deprecated_stencil`."""
+    _DEPRECATED_STENCILS.append(func)
+    return func
+
+
+class FrozenStencil(SDFGConvertible):
+    """
+    Wrapper for gt4py stencils which stores origin and domain at compile time,
+    and uses their stored values at call time.
+
+    This is useful when the stencil itself is meant to be used on a certain
+    grid, for example if a compile-time external variable is tied to the
+    values of origin and domain.
+    """
+
+    def __init__(
+        self,
+        func: Callable[..., None],
+        origin: tuple[int, ...] | Mapping[str, tuple[int, ...]],
+        domain: tuple[int, ...],
+        stencil_config: StencilConfig,
+        externals: Mapping[str, Any] | None = None,
+        skip_passes: tuple[str, ...] = (),
+        timing_collector: TimingCollector | None = None,
+        comm: Comm | None = None,
+    ):
+        """
+        Args:
+            func: stencil definition function
+            origin: gt4py origin to use at call time
+            domain: gt4py domain to use at call time
+            stencil_config: container for stencil configuration
+            externals: compile-time external variables required by stencil
+            skip_passes: compiler passes to skip when building stencil
+            timing_collector: Optional object that accumulates timings
+            comm: if given, inputs and outputs will be compared to the "twin"
+                rank of this rank
+        """
+        # Check for deprecation
+        if func in _DEPRECATED_STENCILS:
+            # We use a UserWarning because this is not meant for DSL internals but
+            # for user code
+            warnings.warn(
+                f"Stencil {func} is deprecated and will be removed in a future version.",
+                UserWarning,
+                stacklevel=2,
+            )
+            _DEPRECATED_STENCILS.remove(func)  # Warn only once
+
+        if isinstance(origin, tuple):
+            origin = cast_to_index3d(origin)
+        self.origin = origin
+        self.domain: Index3D = cast_to_index3d(domain)
+        self.stencil_config: StencilConfig = stencil_config
+        self.comm = comm
+
+        if timing_collector is None:
+            self._timing_collector = TimingCollector()
+        else:
+            self._timing_collector = timing_collector
+
+        self._arguments_already_checked = False
+
+        if externals is None:
+            externals = {}
+        self.externals = externals
+        self._func_name = func.__name__
+        self._func_qualname = func.__qualname__
+        stencil_kwargs = self.stencil_config.stencil_kwargs(
+            skip_passes=skip_passes, func=func
+        )
+        self.stencil_object: StencilObject
+
+        self._argument_names = tuple(inspect.getfullargspec(func).args)
+
+        # NOTE: this is also down in `dace/build.py` for orchestration
+        # This is still needed for non-orchestrated used of DaCe.
+        # A better build system would take care of BOTH of those at the same time
+        if (
+            BackendFramework.DACE
+            == self.stencil_config.compilation_config.backend.framework
+        ):
+            DaceConfig.set(
+                "default_build_folder",
+                value="{gt_root}/{gt_cache}/dacecache".format(
+                    gt_root=gt_config.cache_settings["root_path"],
+                    gt_cache=gt_config.cache_settings["dir_name"],
+                ),
+            )
+
+        assert (
+            len(self._argument_names) > 0
+        ), "A stencil with no arguments? You may be double decorating"
+
+        # Overloading `dtypes` to allow parsing of NDSL concepts
+        ndsl_dtypes = {
+            # Mixed precision
+            float: Float,
+            int: Int,
+            # 2D temporaries
+            "FloatFieldIJ": FloatFieldIJ,
+            "FloatFieldIJ32": FloatFieldIJ32,
+            "FloatFieldIJ64": FloatFieldIJ64,
+            "IntFieldIJ": IntFieldIJ,
+            "IntFieldIJ32": IntFieldIJ32,
+            "IntFieldIJ64": IntFieldIJ64,
+            "BoolFieldIJ": BoolFieldIJ,
+        }
+
+        # Deal with placeholder/markup type by resolving their true types
+        resolve_deferred_types(func)
+
+        # Keep compilation at __init__ if we are not orchestrated.
+        # If we orchestrate, move the compilation at call time to make sure
+        # disable_codegen do not lead to call to uncompiled stencils, which fails
+        # silently
+        if self.stencil_config.dace_config.is_dace_orchestrated():
+            self.stencil_object = gtscript.lazy_stencil(
+                definition=func,
+                externals=externals,
+                dtypes=ndsl_dtypes,
+                **stencil_kwargs,
+                build_info=(build_info := {}),  # type: ignore
+            )
+        else:
+            compilation_config = stencil_config.compilation_config
+            if (
+                compilation_config.use_minimal_caching
+                and not compilation_config.is_compiling
+                and compilation_config.run_mode != RunMode.Run
+            ):
+                block_waiting_for_compilation(MPI.COMM_WORLD, compilation_config)
+
+            self.stencil_object = gtscript.stencil(
+                definition=func,
+                externals=externals,
+                dtypes=ndsl_dtypes,
+                **stencil_kwargs,
+                build_info=(build_info := {}),
+            )
+
+            if (
+                compilation_config.use_minimal_caching
+                and compilation_config.is_compiling
+                and compilation_config.run_mode != RunMode.Run
+            ):
+                unblock_waiting_tiles(MPI.COMM_WORLD)
+
+        self._timing_collector.build_info[_stencil_object_name(self.stencil_object)] = (
+            build_info
+        )
+        field_info = self.stencil_object.field_info
+
+        self._field_origins: dict[str, tuple[int, ...]] = (
+            FrozenStencil._compute_field_origins(field_info, self.origin)
+        )
+        """Mapping from field names to field origins"""
+
+        self._stencil_run_kwargs: dict[str, Any] = {
+            "_origin_": self._field_origins,
+            "_domain_": self.domain,
+        }
+
+        self._written_fields = FrozenStencil._get_written_fields(field_info)
+
+        if stencil_config.compilation_config.run_mode == RunMode.Build:
+
+            def nothing_function(*args, **kwargs):  # type: ignore[no-untyped-def]
+                pass
+
+            setattr(self, "__call__", nothing_function)  # noqa: B010
+
+    def __call__(self, *args: Any, **kwargs: Any) -> None:
+        # Verbose stencil execution
+        if self.stencil_config.verbose:
+            ndsl_log.debug(f"Running {self._func_name}")
+
+        if (
+            not self._arguments_already_checked
+            and self.stencil_config.compilation_config.validate_args
+        ):
+            self._validate_quantity_sizes(*args, **kwargs)
+
+        # Marshal arguments
+        args_list = list(args)
+        _convert_quantities_to_storage(args_list, kwargs)
+        args = tuple(args_list)
+        args_as_kwargs = dict(zip(self._argument_names, args))
+
+        # Ranks comparison tool
+        if self.comm is not None:
+            differences = compare_ranks(self.comm, {**args_as_kwargs, **kwargs})
+            if len(differences) > 0:
+                raise ValueError(
+                    f"rank {self.comm.Get_rank()} has differences {differences} "
+                    f"before calling {self._func_name}"
+                )
+
+        # Debugger actions if turned on
+        debugger = get_debugger()
+        if debugger:
+            all_args = args_as_kwargs | kwargs
+            debugger.save_as_dataset(all_args, self._func_qualname, is_in=True)
+
+        # Execute stencil
+        if (
+            not self._arguments_already_checked
+            and self.stencil_config.compilation_config.validate_args
+        ):
+            if __debug__ and "origin" in kwargs:
+                raise TypeError("origin cannot be passed to FrozenStencil call")
+            if __debug__ and "domain" in kwargs:
+                raise TypeError("domain cannot be passed to FrozenStencil call")
+            self.stencil_object(
+                *args,
+                **kwargs,
+                origin=self._field_origins,
+                domain=self.domain,
+                validate_args=True,
+                exec_info=self._timing_collector.exec_info,
+            )
+            self._arguments_already_checked = True
+        else:
+            self.stencil_object.run(
+                **args_as_kwargs,
+                **kwargs,
+                **self._stencil_run_kwargs,
+                exec_info=self._timing_collector.exec_info,
+            )
+
+        # Debugger actions if turned on
+        if debugger:
+            all_args = args_as_kwargs | kwargs
+            debugger.save_as_dataset(all_args, self._func_qualname, is_in=False)
+
+        # Ranks comparison tool
+        if self.comm is not None:
+            differences = compare_ranks(self.comm, {**args_as_kwargs, **kwargs})
+            if len(differences) > 0:
+                raise ValueError(
+                    f"rank {self.comm.Get_rank()} has differences {differences} "
+                    f"after calling {self._func_name}"
+                )
+
+    @classmethod
+    def _compute_field_origins(
+        cls,
+        field_info_mapping: dict[str, gt_definitions.FieldInfo],
+        origin: Index3D | Mapping[str, tuple[int, ...]],
+    ) -> dict[str, tuple[int, ...]]:
+        """
+        Computes the origin for each field in the stencil call.
+
+        Args:
+            field_info_mapping: from stencil.field_info, a mapping which gives the
+                dimensionality of each input field
+            origin: the (i, j, k) coordinate of the origin
+
+        Returns:
+            origin_mapping: a mapping from field names to origins
+        """
+        if isinstance(origin, tuple):
+            field_origins: dict[str, tuple[int, ...]] = {"_all_": origin}
+            origin_tuple: tuple[int, ...] = origin
+        else:
+            field_origins = {**origin}
+            origin_tuple = origin["_all_"]
+        field_names = tuple(field_info_mapping.keys())
+        for i, field_name in enumerate(field_names):
+            if field_name not in field_origins:
+                field_info = field_info_mapping[field_name]
+                if field_info is not None:
+                    field_origin_list = []
+                    for ax in field_info.axes:
+                        origin_index = {"I": 0, "J": 1, "K": 2}[ax]
+                        field_origin_list.append(origin_tuple[origin_index])
+                    for i, _data_dim in enumerate(field_info.data_dims):
+                        if field_info.mask[len(field_info.domain_mask) + i]:
+                            field_origin_list.append(0)
+                    field_origin = tuple(field_origin_list)
+                else:
+                    field_origin = origin_tuple
+                field_origins[field_name] = field_origin
+        return field_origins
+
+    @classmethod
+    def _get_written_fields(cls, field_info: dict[str, FieldInfo]) -> list[str]:
+        """Returns the list of fields that are written.
+
+        Args:
+            field_info: field_info attribute of gt4py stencil object
+        """
+        write_fields = [
+            field_name
+            for field_name in field_info
+            if field_info[field_name]
+            and bool(field_info[field_name].access & gt_definitions.AccessKind.WRITE)
+        ]
+        return write_fields
+
+    @classmethod
+    def _get_oir_pipeline(cls, skip_passes: Sequence[str]) -> OirPipeline:
+        step_map = {step.__name__: step for step in DefaultPipeline.all_steps()}
+        skip_steps = [step_map[pass_name] for pass_name in skip_passes]
+        return DefaultPipeline(skip=skip_steps)
+
+    def __sdfg__(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+        """Implemented SDFG generation"""
+        args_as_kwargs = dict(zip(self._argument_names, args))
+        return self.stencil_object.__sdfg__(
+            origin=self._field_origins,
+            domain=self.domain,
+            **args_as_kwargs,
+            **kwargs,
+        )
+
+    def __sdfg_signature__(self):  # type: ignore[no-untyped-def]
+        """Implemented SDFG signature lookup"""
+        return self.stencil_object.__sdfg_signature__()
+
+    def __sdfg_closure__(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+        """Implemented SDFG closure build"""
+        return self.stencil_object.__sdfg_closure__(*args, **kwargs)
+
+    def closure_resolver(self, constant_args, given_args, parent_closure=None):  # type: ignore[no-untyped-def]
+        """Implemented SDFG closure resolver build"""
+        return self.stencil_object.closure_resolver(
+            constant_args, given_args, parent_closure=parent_closure
+        )
+
+    def _validate_quantity_sizes(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+        """Checks that the sizes of quantities are compatible with the domain of the stencil.
+
+        This function emits a warning in case one of the dimensions does not match.
+
+        """
+        all_args_as_kwargs = dict(zip(self._argument_names, tuple(list(args)))) | kwargs
+
+        domain_sizes = {
+            axis_name: axis_size
+            for axis_names, axis_size in zip([I_DIMS, J_DIMS, K_DIMS], self.domain)
+            for axis_name in axis_names
+        }
+
+        for name, argument in all_args_as_kwargs.items():
+            if isinstance(argument, Quantity):
+                for axis, quantity_size in zip(argument.dims, argument.extent):
+                    full_size = quantity_size
+                    if axis in (I_DIMS + J_DIMS):
+                        full_size += 2 * argument.metadata.n_halo
+                    if (
+                        axis in (I_DIMS + J_DIMS + K_DIMS)
+                        and full_size < domain_sizes[axis]
+                    ):
+                        ndsl_log.warning(
+                            f"Quantity `{name}` is too small for the targeted "
+                            f"domain in axis {axis}: {full_size} < {domain_sizes[axis]}."
+                        )
+            elif not isinstance(argument, numbers.Real):
+                ndsl_log.warning(
+                    f"Found an array-type argument {name} that is not a Quantity. Some domain-size checks are omitted."
+                )
+
+
+def _convert_quantities_to_storage(args, kwargs):  # type: ignore[no-untyped-def]
+    for i, arg in enumerate(args):
+        try:
+            # Check that 'dims' is an attribute of arg. If so,
+            # this means it's a Quantity, so we need
+            # to pull off the ndarray.
+            arg.dims
+            args[i] = arg._data
+        except AttributeError:
+            pass
+    for name, arg in kwargs.items():
+        try:
+            # Check that 'dims' is an attribute of arg. If so,
+            # this means it's a Quantity, so we need
+            # to pull off the ndarray.
+            arg.dims
+            kwargs[name] = arg._data
+        except AttributeError:
+            pass
+
+
+class GridIndexing:
+    """
+    Provides indices for cell-centered variables with halos.
+
+    These indices can be used with horizontal interface variables by adding 1
+    to the domain shape along any interface axis.
+    """
+
+    def __init__(
+        self,
+        domain: Index3D,
+        n_halo: int,
+        south_edge: bool,
+        north_edge: bool,
+        west_edge: bool,
+        east_edge: bool,
+        *,
+        k_start: int = 0,
+    ):
+        """
+        Initialize a grid indexing object.
+
+        Args:
+            domain: size of the compute domain for cell-centered variables
+            n_halo: number of halo points
+            south_edge: whether the current rank is on the south edge of a tile
+            north_edge: whether the current rank is on the north edge of a tile
+            west_edge: whether the current rank is on the west edge of a tile
+            east_edge: whether the current rank is on the east edge of a tile
+        """
+        self.origin = (n_halo, n_halo, k_start)
+        self.n_halo = n_halo
+        self.domain = domain
+        self.south_edge = south_edge
+        self.north_edge = north_edge
+        self.west_edge = west_edge
+        self.east_edge = east_edge
+
+    @classmethod
+    def from_sizer_and_communicator(
+        cls, sizer: GridSizer, comm: Communicator
+    ) -> GridIndexing:
+        # TODO: if this class is refactored to split off the *_edge booleans,
+        # this init routine can be refactored to require only a GridSizer
+        domain = cast(
+            tuple[int, int, int],
+            sizer.get_extent([I_DIM, J_DIM, K_DIM]),
+        )
+        return cls(
+            domain=domain,
+            n_halo=sizer.n_halo,
+            south_edge=comm.tile.partitioner.on_tile_bottom(comm.rank),
+            north_edge=comm.tile.partitioner.on_tile_top(comm.rank),
+            west_edge=comm.tile.partitioner.on_tile_left(comm.rank),
+            east_edge=comm.tile.partitioner.on_tile_right(comm.rank),
+        )
+
+    @property
+    def max_shape(self) -> Index3D:
+        """
+        Maximum required storage shape, corresponding to the shape of a cell-corner
+        variable with maximum halo points.
+
+        This should rarely be required, consider using appropriate calls to helper
+        methods that get the correct shape for your particular variable.
+        """
+        # need to add back origin as buffer points, what we're returning here
+        # isn't a domain - it's an array size
+        return self.domain_full(add=(1, 1, 1 + self.origin[2]))
+
+    @property
+    def isc(self) -> int:
+        """Start of the compute domain along the x-axis"""
+        return self.origin[0]
+
+    @property
+    def iec(self) -> int:
+        """Last index of the compute domain along the x-axis"""
+        return self.origin[0] + self.domain[0] - 1
+
+    @property
+    def jsc(self) -> int:
+        """Start of the compute domain along the y-axis"""
+        return self.origin[1]
+
+    @property
+    def jec(self) -> int:
+        """Last index of the compute domain along the y-axis"""
+        return self.origin[1] + self.domain[1] - 1
+
+    @property
+    def isd(self) -> int:
+        """Start of the full domain including halos along the x-axis"""
+        return self.origin[0] - self.n_halo
+
+    @property
+    def ied(self) -> int:
+        """Index of the last data point along the x-axis"""
+        return self.isd + self.domain[0] + 2 * self.n_halo - 1
+
+    @property
+    def jsd(self) -> int:
+        """Start of the full domain including halos along the y-axis"""
+        return self.origin[1] - self.n_halo
+
+    @property
+    def jed(self) -> int:
+        """Index of the last data point along the y-axis"""
+        return self.jsd + self.domain[1] + 2 * self.n_halo - 1
+
+    @property
+    def nw_corner(self) -> bool:
+        return self.north_edge and self.west_edge
+
+    @property
+    def sw_corner(self) -> bool:
+        return self.south_edge and self.west_edge
+
+    @property
+    def ne_corner(self) -> bool:
+        return self.north_edge and self.east_edge
+
+    @property
+    def se_corner(self) -> bool:
+        return self.south_edge and self.east_edge
+
+    def origin_full(self, add: Index3D = (0, 0, 0)) -> Index3D:
+        """
+        Returns the origin of the full domain including halos, plus an optional offset.
+        """
+        return (self.isd + add[0], self.jsd + add[1], self.origin[2] + add[2])
+
+    def origin_compute(self, add: Index3D = (0, 0, 0)) -> Index3D:
+        """
+        Returns the origin of the compute domain, plus an optional offset
+        """
+        return (self.isc + add[0], self.jsc + add[1], self.origin[2] + add[2])
+
+    def domain_full(self, add: Index3D = (0, 0, 0)) -> Index3D:
+        """
+        Returns the shape of the full domain including halos, plus an optional offset.
+        """
+        return (
+            self.ied + 1 - self.isd + add[0],
+            self.jed + 1 - self.jsd + add[1],
+            self.domain[2] + add[2],
+        )
+
+    def domain_compute(self, add: Index3D = (0, 0, 0)) -> Index3D:
+        """
+        Returns the shape of the compute domain, plus an optional offset.
+        """
+        return (
+            self.iec + 1 - self.isc + add[0],
+            self.jec + 1 - self.jsc + add[1],
+            self.domain[2] + add[2],
+        )
+
+    def axis_offsets(
+        self, origin: tuple[int, ...], domain: tuple[int, ...]
+    ) -> dict[str, Any]:
+        if self.west_edge:
+            i_start = gtscript.I[0] + self.origin[0] - origin[0]
+        else:
+            i_start = gtscript.I[0] - np.iinfo(np.int16).max
+
+        if self.east_edge:
+            i_end = (
+                gtscript.I[-1]
+                + (self.origin[0] + self.domain[0])
+                - (origin[0] + domain[0])
+            )
+        else:
+            i_end = gtscript.I[-1] + np.iinfo(np.int16).max
+
+        if self.south_edge:
+            j_start = gtscript.J[0] + self.origin[1] - origin[1]
+        else:
+            j_start = gtscript.J[0] - np.iinfo(np.int16).max
+
+        if self.north_edge:
+            j_end = (
+                gtscript.J[-1]
+                + (self.origin[1] + self.domain[1])
+                - (origin[1] + domain[1])
+            )
+        else:
+            j_end = gtscript.J[-1] + np.iinfo(np.int16).max
+
+        return {
+            "i_start": i_start,
+            "local_is": gtscript.I[0] + self.isc - origin[0],
+            "i_end": i_end,
+            "local_ie": gtscript.I[-1] + self.iec - origin[0] - domain[0] + 1,
+            "j_start": j_start,
+            "local_js": gtscript.J[0] + self.jsc - origin[1],
+            "j_end": j_end,
+            "local_je": gtscript.J[-1] + self.jec - origin[1] - domain[1] + 1,
+            "k_start": origin[2] if len(origin) > 2 else 0,
+            "k_end": (origin[2] if len(origin) > 2 else 0)
+            + (domain[2] - 1 if len(domain) > 2 else 0),
+        }
+
+    def get_origin_domain(
+        self, dims: Sequence[str], halos: Sequence[int] = tuple()
+    ) -> tuple[tuple[int, ...], tuple[int, ...]]:
+        """
+        Get the origin and domain for a computation that occurs over a certain grid
+        configuration (given by dims) and a certain number of halo points.
+
+        Args:
+            dims: dimension names, using dimension constants from ndsl.constants
+            halos: number of halo points for each dimension, defaults to zero
+
+        Returns:
+            origin: origin of the computation
+            domain: shape of the computation
+        """
+        origin = self._origin_from_dims(dims)
+        domain = self._domain_from_dims(dims)
+        for i, n in enumerate(halos):
+            origin[i] -= n
+            domain[i] += 2 * n
+        return tuple(origin), tuple(domain)
+
+    def get_2d_compute_origin_domain(
+        self,
+        klevel: int = 0,
+    ) -> tuple[tuple[int, ...], tuple[int, ...]]:
+        """
+        Get the origin and domain for a computation that occurs on the lowest klevel over a certain grid
+        configuration (given by dims) and a certain number of halo points.
+
+        Args:
+            klevel: the vertical level of the domain, defaults to zero
+
+        Returns:
+            origin: origin of the computation
+            domain: shape of the computation
+        """
+        origin = (self.isc, self.jsc, klevel)
+        domain = (self.iec + 1 - self.isc, self.jec + 1 - self.jsc, 1)
+        return (origin, domain)
+
+    def _origin_from_dims(self, dims: Iterable[str]) -> list[int]:
+        return_origin = []
+        for dim in dims:
+            if dim in I_DIMS:
+                return_origin.append(self.origin[0])
+            elif dim in J_DIMS:
+                return_origin.append(self.origin[1])
+            elif dim in K_DIMS:
+                return_origin.append(self.origin[2])
+            else:
+                raise ValueError(f"Unknown dimension '{dim}'.")
+        return return_origin
+
+    def _domain_from_dims(self, dimensions: Iterable[str]) -> list[int]:
+        result = []
+        for dimension in dimensions:
+            if dimension == I_DIM:
+                result.append(self.domain[0])
+            elif dimension == I_INTERFACE_DIM:
+                result.append(self.domain[0] + 1)
+            elif dimension == J_DIM:
+                result.append(self.domain[1])
+            elif dimension == J_INTERFACE_DIM:
+                result.append(self.domain[1] + 1)
+            elif dimension == K_DIM:
+                result.append(self.domain[2])
+            elif dimension == K_INTERFACE_DIM:
+                result.append(self.domain[2] + 1)
+            else:
+                raise ValueError(f"Unknown dimension '{dimension}'.")
+        return result
+
+    def get_shape(
+        self, dims: Sequence[str], halos: Sequence[int] = tuple()
+    ) -> tuple[int, ...]:
+        """
+        Get the storage shape required for an array with the given dimensions
+        which is accessed up to a given number of halo points.
+
+        Args:
+            dims: dimension names, using dimension constants from ndsl.constants
+            halos: number of halo points for each dimension, defaults to zero
+
+        Returns:
+            shape: storage required for an array with the given dimensions
+        """
+        shape = self._domain_from_dims(dims)
+        for i, d in enumerate(dims):
+            # need n_halo points at the start of the domain, regardless of whether
+            # they are read, so that data is aligned in memory
+            if d in (I_DIMS + J_DIMS):
+                shape[i] += self.n_halo
+        for i, n in enumerate(halos):
+            shape[i] += n
+        return tuple(shape)
+
+    def restrict_vertical(
+        self, k_start: int = 0, nk: int | None = None
+    ) -> GridIndexing:
+        """
+        Returns a copy of itself with modified vertical origin and domain.
+
+        Args:
+            k_start: offset to apply to current vertical origin, must be
+                greater than 0 and less than the size of the vertical domain
+            nk: new vertical domain size as a number of grid cells,
+                defaults to remaining grid cells in the current domain,
+                can be at most the size of the vertical domain minus k_start
+        """
+        if k_start < 0:
+            raise ValueError("k_start must be positive")
+        if k_start > self.domain[2]:
+            raise ValueError(
+                "k_start must be less than the number of vertical levels "
+                f"(received {k_start} for {self.domain[2]} vertical levels"
+            )
+        if nk is None:
+            nk = self.domain[2] - k_start
+        elif nk < 0:
+            raise ValueError("number of vertical levels should be positive")
+        elif nk > (self.domain[2] - k_start):
+            raise ValueError(
+                "nk can be at most the size of the vertical domain minus k_start"
+            )
+
+        return GridIndexing(
+            self.domain[:2] + (nk,),
+            self.n_halo,
+            self.south_edge,
+            self.north_edge,
+            self.west_edge,
+            self.east_edge,
+            k_start=self.origin[2] + k_start,
+        )
+
+
+class StencilFactory:
+    """Configurable class which creates stencil objects."""
+
+    def __init__(
+        self,
+        config: StencilConfig,
+        grid_indexing: GridIndexing,
+        comm: Comm | None = None,
+    ):
+        """
+        Args:
+            config: gt4py-specific stencil configuration
+            grid_indexing: configuration for domain and halo indexing
+            comm: if given, stencils will compare all data before and after
+                stencil execution to their "pair" rank on the comm. This is very
+                expensive and only used for debugging.
+        """
+        self.config: StencilConfig = config
+        self.grid_indexing: GridIndexing = grid_indexing
+        self.timing_collector = TimingCollector()
+        self.comm = comm
+
+    @property
+    def backend(self) -> Backend:
+        return self.config.compilation_config.backend
+
+    def from_origin_domain(
+        self,
+        func: Callable[..., None],
+        origin: tuple[int, ...] | Mapping[str, tuple[int, ...]],
+        domain: tuple[int, ...],
+        externals: Mapping[str, Any] | None = None,
+        skip_passes: tuple[str, ...] = (),
+    ) -> FrozenStencil | CompareToNumpyStencil:
+        """
+        Args:
+            func: stencil definition function
+            origin: gt4py origin to use at call time
+            domain: gt4py domain to use at call time
+            externals: compile-time external variables required by stencil
+            skip_passes: compiler passes to skip when building stencil
+        """
+        if self.config.compare_to_numpy:
+            cls: type = CompareToNumpyStencil
+        else:
+            cls = FrozenStencil
+        return cls(
+            func=func,
+            origin=origin,
+            domain=domain,
+            stencil_config=self.config,
+            externals=externals,
+            skip_passes=skip_passes,
+            timing_collector=self.timing_collector,
+            comm=self.comm,
+        )
+
+    def from_dims_halo(
+        self,
+        func: Callable[..., None],
+        compute_dims: Sequence[str],
+        compute_halos: Sequence[int] = tuple(),
+        externals: Mapping[str, Any] | None = None,
+        skip_passes: tuple[str, ...] = (),
+    ) -> FrozenStencil | CompareToNumpyStencil:
+        """
+        Initialize a stencil from dimensions and number of halo points.
+
+        Automatically injects axis_offsets into stencil externals.
+
+        Args:
+            func: stencil definition function
+            compute_dims: dimensionality of compute domain
+            compute_halos: number of halo points to include in compute domain
+            externals: compile-time external variables required by stencil
+            skip_passes: compiler passes to skip when building stencil
+        """
+        if externals is None:
+            externals = {}
+        if len(compute_dims) != 3:
+            raise ValueError(
+                f"must have 3 dimensions to create stencil, got {compute_dims}"
+            )
+        origin, domain = self.grid_indexing.get_origin_domain(
+            dims=compute_dims, halos=compute_halos
+        )
+        origin = cast_to_index3d(origin)
+        domain = cast_to_index3d(domain)
+        all_externals = self.grid_indexing.axis_offsets(origin=origin, domain=domain)
+        all_externals.update(externals)
+        return self.from_origin_domain(
+            func=func,
+            origin=origin,
+            domain=domain,
+            externals=all_externals,
+            skip_passes=skip_passes,
+        )
+
+    def restrict_vertical(
+        self, k_start: int = 0, nk: int | None = None
+    ) -> StencilFactory:
+        return StencilFactory(
+            config=self.config,
+            grid_indexing=self.grid_indexing.restrict_vertical(k_start=k_start, nk=nk),
+            comm=self.comm,
+        )
+
+    def build_report(self, key: str = "build_time", **kwargs: Any) -> str:
+        """Report all stencils built by this factory."""
+        return self.timing_collector.build_report(key, **kwargs)
+
+    def exec_report(self, key: str = "total_run_time", **kwargs: Any) -> str:
+        """Report all stencils executed that were built by this factory."""
+        return self.timing_collector.exec_report(key, **kwargs)
+
+
+def get_stencils_with_varied_bounds(
+    func: Callable[..., None],
+    origins: list[Index3D],
+    domains: list[Index3D],
+    stencil_factory: StencilFactory,
+    externals: Mapping[str, Any] | None = None,
+) -> list[FrozenStencil | CompareToNumpyStencil]:
+    assert len(origins) == len(domains), (
+        "Lists of origins and domains need to have the same length, you provided "
+        + str(len(origins))
+        + " origins and "
+        + str(len(domains))
+        + " domains"
+    )
+    if externals is None:
+        externals = {}
+    stencils = []
+    for origin, domain in zip(origins, domains):
+        ax_offsets = stencil_factory.grid_indexing.axis_offsets(
+            origin=origin, domain=domain
+        )
+        stencils.append(
+            stencil_factory.from_origin_domain(
+                func,
+                origin=origin,
+                domain=domain,
+                externals={**externals, **ax_offsets},
+            )
+        )
+    return stencils

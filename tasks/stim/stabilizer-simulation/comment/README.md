@@ -367,24 +367,42 @@ hit, noted above: there grep's *success* masked a cmake failure, here grep's
 *failure* masked everything.
 
 
-## Runtime, and why wall time is mostly compilation
+## Build
 
-Declared `expected_runtime_s` is measured with builds excluded. Wall time is
-dominated by compilation because **each check rebuilds stim from source**: the
-four algebra checks build `stim_python_bindings` with pybind11 and `-flto` at
-about 4 minutes each, the four sampling checks build only the `stim` CLI at
-about 90 seconds. Every check prints `SAB_BUILD_SECONDS` so the two can be
-separated. On the official run the two example checks cost 79.7 s and 80.4 s of
-wall time each, builds included, so they add about 2.7 minutes per solve.
+This leaf has **two solve-scoped build groups**, after checking the effective
+recipes instead of assuming every check can share. `bit-table-transpose`,
+`pauli-string-multiplication`, `simd-word-primitives` and
+`tableau-algebra-composition` all configure the pinned tree as Release with the
+same `pybind11_DIR` and build the `stim_python_bindings` target.
+`detection-event-sampling`, `frame-simulator-shot-batch`,
+`repetition-code-memory` and `two-detector-error-probability` configure the same
+Release tree without the pybind11 setting and build only the `stim` CLI target.
+Those targets and configure arguments are different recipes, so artifacts never
+cross between the two groups.
 
-The build is also the reason the leaf now sets `SAB_BUILD_JOBS`. `cmake --build`
-with Ninja and no `-j` uses ninja's own default of `nproc + 2`, and `nproc`
-reports the **host's** cores inside a container even under `docker run --cpus 2`.
-On the 88-core grading host that started about 90 `g++` processes inside the
-declared 4 GB and the container was OOM-killed, with an empty `run.log` and no
-`run.failed` marker to say why. The leaf built on the packaging Mac only because
-Docker there had 4 cores. Every `run.sh` now takes the job count from the
-container's own cgroup v2 `cpu.max`.
+Within each fresh solve container, each `run.sh` hashes the complete staged
+`SOURCE_DIR` contents and combines that digest with its build group and build
+mode. The first check in each exact group builds into
+`/tmp/sab-build-stim/<group>-<mode>-<source-hash>/`, publishes `BUILD_OK` only
+after its expected executable or extension module exists, and reports the
+nonzero elapsed compile time. Later checks in that group use the completed
+artifact and report `SAB_BUILD_SECONDS=0`. If the shared location is not
+writable or an incomplete concurrent build does not become ready, every check
+retains the original full configure-and-build path in its private work
+directory. Thus a check invoked alone remains self-contained and a source
+change always misses the cache.
+
+The normal `release` cache and the alternative `simd-width-128` cache have
+distinct keys and live in distinct solve containers. Altbuild therefore never
+reuses a normal artifact: its first Python-bindings check and first CLI check
+each configure and build `-DSIMD_WIDTH=128`, while later checks reuse only the
+matching alternative recipe. Before this change the nominal solve reported
+1,029 build seconds and 1,059.93 seconds of wall time because all eight checks
+compiled independently. The fresh 2026-09-08 x86 validation reports 244 build
+seconds and 321.034 seconds of nominal wall time: 167 seconds for the first
+Python-bindings check, 77 seconds for the first CLI check, and exactly 0 build
+seconds for each of the remaining six checks. `comment/pipeline/` is the
+authoritative machine record.
 
 ## The official run
 

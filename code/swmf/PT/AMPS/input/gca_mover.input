@@ -1,0 +1,144 @@
+
+#main
+
+SpeciesList=H_PLUS_HIGH,H_PLUS_THERMAL
+!,O_PLUS_HIGH,O_PLUS_THERMAL
+
+
+makefile  SPICE=/Users/vtenishe/SPICE/cspice
+
+
+
+ErrorLog=error.log
+Prefix=AMPS
+DiagnosticStream=amps.log !!!screen !!screen, filename 'something like amps.log' 
+OutputDirectory=out
+
+
+DebuggerMode=off !on,off
+ForceRepeatableSimulationPath=on ! on,off 
+
+
+makefile  SOURCES=src
+makefile  SPICE=/Users/vtenishe/SPICE/Toolkit/cspice
+makefile  RUNDIR=run
+makefile  MPIRUN=mpirun -np 4
+makefile ExternalModules=models/exosphere
+
+ProjectSourceDirectory=srcMoverTest
+TrajectoryIntersectionWithBlockFaces=off !on, off
+
+WorkingSourceDirectory=srcTemp   !. !srcTemp !the location of the code that will be compiled (current directory == ".")
+SourceDirectory=src
+
+!ErrorLog=amps_error.log
+Prefix=AMPS
+!DiagnosticStream=output/PT/amps.log !!!screen !!screen, filename 'something like amps.log'
+!OutputDirectory=output/PT
+
+!PT/plots
+ErrorLog=PT/amps_error.log
+DiagnosticStream=PT
+OutputDirectory=PT/plots
+
+
+DebuggerMode=off !on,off
+ForceRepeatableSimulationPath=off ! on,off
+
+StdoutErrorLog=off !on,off -> print out error message on the screen
+
+
+!CouplerMode=off  !!!ices !!off, ices, swmf
+
+TimeStepMode=SpeciesGlobalTimeStep
+ParticleWeightMode=SpeciesGlobalParticleWeight
+ParticleWeightCorrectionMode=on
+
+#endmain
+
+#include species.input
+
+#UserDefinitions
+  PIC=on ! on, off
+  Mesh=on ! on, off
+#endUserDefinitions
+
+
+
+#Mesh
+  define _INTERNAL_BOUNDARY_SPHERE_ZENITH_ANGLE_MODE_  _INTERNAL_BOUNDARY_SPHERE_ZENITH_ANGLE_UNIFORM_DISTRIBUTION_
+#endMesh
+
+#General
+  RequestedParticleBufferLength=1000000	
+  ReferenceInjectionParticleNumber=1000 
+  MaxMeshRefinmentLevel=12
+  EnforceRequestedMeshResolution=on !on,off
+  OutputMode=SingleFile !!SingleFile !SingleFile,DistributedFiles
+
+! ReferenceInjectionParticleNumber=200
+! MaxMeshRefinmentLevel=8! 2 !4
+! EnforceRequestedMeshResolution=off !on,off
+
+  BlockCells=5,5,5
+  GhostCells=2,2,2
+! CutCellVolumeCalculationMaxRefinmentLevel=1
+
+  NastranSurfaceUserData=on !!!on, off
+  ControlParticleInsideNastranSurface=off !!!on,of
+
+  TrajectoryTracing=on			  
+  MaxSampledTrajectoryNumber=3000
+
+  define _PIC_DEBUGGER_MODE_ _PIC_DEBUGGER_MODE_ON_
+  define _PIC_DEBUGGER_MODE__CHECK_FINITE_NUMBER_ _PIC_DEBUGGER_MODE_ON_
+  define _PIC_PARTICLE_TRACKER_MODE_ _PIC_MODE_ON_
+  define _PIC_PARTICLE_TRACKER__RUNTIME_OUTPUT_ _PIC_MODE_ON_  
+  define _PIC_LOGGER_MODE_ _PIC_MODE_OFF_ 
+!  define _PIC_PARTICLE_TRACKER__TRACKING_CONDITION_(x,v,spec,ParticleData) Europa::ParticleTracker::TrajectoryTrackingCondition(x,v,spec,ParticleData)
+
+  define _PIC_SYMMETRY_MODE_ _PIC_SYMMETRY_MODE__NONE_
+
+!   define _PIC_OUTPUT_MACROSCOPIC_FLOW_DATA_MODE_ _PIC_OUTPUT_MACROSCOPIC_FLOW_DATA_MODE__SAMPLING_DATA_RESTART_FILE_
+
+
+!  define _PIC_PARTICLE_DOMAIN_BOUNDARY_INTERSECTION_PROCESSING_MODE_  _PIC_PARTICLE_DOMAIN_BOUNDARY_INTERSECTION_PROCESSING_MODE__USER_FUNCTION_
+  define  _PIC_PARTICLE_DOMAIN_BOUNDARY_INTERSECTION_PROCESSING_MODE_  _PIC_PARTICLE_DOMAIN_BOUNDARY_INTERSECTION_PROCESSING_MODE__DELETE_
+  define  _PIC_MOVER_INTEGRATOR_MODE_  _PIC_MOVER_INTEGRATOR_MODE__RELATIVISTIC_GCA_
+  define _PIC_COUPLER_MODE_ _PIC_COUPLER_MODE__DATAFILE_
+  RecoverMacroscopicSampledData=off  \\ !!on, off
+    execution=stop \\ ! continue \\ !stop \\ !stop,continue
+    file=pic.SamplingDataRestart.out=2.dat
+
+
+  RecoverParticleData=off  \\ !on, off
+    file=ParticleData.restart=223.restart=2
+
+
+  SaveParticleRestartFile=off \\  !on,off
+    file=ParticleData.restart=223 \\
+    SaveMode=newfile  \\ !overwrite, newfile
+    IterationInterval=20
+
+
+  define _PIC_GENERIC_PARTICLE_TRANSFORMATION_MODE_  _PIC_GENERIC_PARTICLE_TRANSFORMATION_MODE_ON_
+
+  define _PIC_PARTICLE_MOVER__MOVE_PARTICLE_TIME_STEP_(ptr,LocalTimeStep,node)  MoverTest::ParticleMover(ptr,LocalTimeStep,node) 	  
+
+
+#endGeneral
+
+
+#block ../exosphere.pl !process the data block with the setting of the exospehre model 
+  SPICE=off !on, off
+
+  define _TARGET_ _TARGET_NONE_
+
+  addPhysicalModelHeader=MoverTest.h
+
+#endblock
+
+#end
+
+
+

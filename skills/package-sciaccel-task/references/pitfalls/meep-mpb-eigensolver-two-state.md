@@ -20,9 +20,14 @@ unchanged: 119x headroom, a 1e-3 fault still 20,000x over. Two of the leaf's
 via `solve_cw`.
 
 **How to detect it.** Any graded quantity that passes through an iterative
-eigensolver, root finder or `solve_cw`. Sweep the perturbation size across a
-few ulps; a distance that does not move with the sweep is a two-state solver.
-Then rerun on the other architecture.
+eigensolver, root finder or `solve_cw`. First rule out an unseeded start
+vector, which produces the same non-scaling distance for a different reason
+([pyamg-spectral-radius-global-rng](pyamg-spectral-radius-global-rng.md)).
+Then sweep the perturbation size across a few ulps; a distance that does not
+move with the sweep is a two-state solver. Then rerun on the other
+architecture. A fitted quantity whose distance does scale, but a hundred
+times faster than its input, is
+[meep-harminv-fitted-outputs](meep-harminv-fitted-outputs.md).
 
 **What to do in the check.** Set the bound to the state gap with headroom,
 and say in the rubric that the check is solver-limited. Do not tighten to the

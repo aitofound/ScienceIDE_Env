@@ -1,0 +1,64 @@
+[build-system]
+requires = ["poetry-core", "poetry-dynamic-versioning", "cffi", "setuptools"]
+build-backend = "poetry_dynamic_versioning.backend"
+
+[tool.poetry]
+name = "pymbd"
+version = "0.0.0"
+description = "Many-body dispersion library"
+authors = ["Jan Hermann <dev@jan.hermann.name>"]
+readme = "README.md"
+packages = [{ include = "pymbd", from = "src" }]
+repository = "https://github.com/libmbd/libmbd"
+documentation = "https://libmbd.github.io/pymbd"
+license = "MPL-2.0"
+include = [
+    { path = "src/mbd.h" },
+    { path = "src/pymbd/*.so", format = "wheel" },
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Fortran",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+
+[tool.poetry.build]
+script = "build.py"
+generate-setup-file = false
+
+[tool.poetry.dependencies]
+python = "^3.8"
+scipy = "^1.6"
+numpy = "^1.20"
+cffi = "^1"
+pytest = { version = "^6", optional = true }
+mpi4py = { version = "^3", optional = true }
+
+[tool.poetry.extras]
+mpi = ["mpi4py"]
+test = ["pytest"]
+
+[tool.poetry.dev-dependencies]
+flake8 = "^4"
+flake8-bugbear = "^21"
+flake8-comprehensions = "^3"
+flake8-quotes = "^3"
+pep8-naming = "^0.12"
+black = ">=22"
+pydocstyle = "^5"
+isort = "^5"
+fprettify = { git = "https://github.com/jhrmnn/fprettify.git", rev = "fix-config-search" }
+
+[tool.poetry-dynamic-versioning]
+enable = true
+dirty = true
+pattern = '^(?P<base>\d+\.\d+\.\d+)$'
+
+[tool.black]
+target-version = ["py38"]
+skip-string-normalization = true

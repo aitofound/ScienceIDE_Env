@@ -1,0 +1,145 @@
+{
+  "check": "phonon-example-ballistic",
+  "policy": "invariants",
+  "chaotic": false,
+  "upstream_test": "code/g4cmp/examples/phonon/single.mac",
+  "configuration": "examples/phonon g4cmpPhonon single.mac: one 2.7 meV phonon per event from the centre of the Ge cylinder with phononScattering and phononDownconversion inactivated and /g4cmp/phononBounces raised to 1e7, so only the anisotropic propagation and the boundary process (specular or diffuse reflection, absorption by the Al caps) act; 50,000 events (SAB_EVENTS) with an explicit seed, tracking verbosity 0; graded: summary.txt reduced by reduce.py from the hits file",
+  "observable": "absorbed-energy fractions per end cap and per polarization, arrival-time and end-radius moments of ballistic phonons absorbed by the Al end caps",
+  "expected_runtime_s": 6,
+  "default_vs_upstream": "upstream runs 100 events with tracking verbose 1 and no seed; 50,000 events (SAB_EVENTS=100 restores the count), verbose 0 and /random/setSeeds added; /run/verbose 1 added so the end-of-run event count is printed",
+  "variant": "ic/variant is the same macro with a different random seed; the primary polarization and direction and every diffuse reflection are draws, so a different seed calibrates the distance between two correct runs",
+  "altbuild": "none: the floor of a stochastic check is the seed-to-seed spread of its invariants, not a build difference",
+  "comparison": {
+    "invariants": [
+      {
+        "name": "n_hits",
+        "file": "summary.txt",
+        "format": "text",
+        "column": 0,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 0.04,
+        "atol": 0.0
+      },
+      {
+        "name": "e_absorbed_eV",
+        "file": "summary.txt",
+        "format": "text",
+        "column": 1,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 1e-06,
+        "atol": 0.0
+      },
+      {
+        "name": "frac_e_top_cap",
+        "file": "summary.txt",
+        "format": "text",
+        "column": 2,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 0.04,
+        "atol": 0.0
+      },
+      {
+        "name": "frac_e_L",
+        "file": "summary.txt",
+        "format": "text",
+        "column": 5,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 0.2,
+        "atol": 0.0
+      },
+      {
+        "name": "mean_end_radius_m",
+        "file": "summary.txt",
+        "format": "text",
+        "column": 8,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 0.04,
+        "atol": 0.0
+      },
+      {
+        "name": "mean_hit_energy_eV",
+        "file": "summary.txt",
+        "format": "text",
+        "column": 9,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 0.04,
+        "atol": 0.0
+      }
+    ]
+  },
+  "evidence": {
+    "spread": {
+      "n_hits": {
+        "mean": 224288.0,
+        "max_pairwise_abs": 1685.0,
+        "max_pairwise_rel": 0.0075126622913397065,
+        "seeds": 7
+      },
+      "e_absorbed_eV": {
+        "mean": 135.00000009590659,
+        "max_pairwise_abs": 1.07341259081295e-06,
+        "max_pairwise_rel": 7.951204370743533e-09,
+        "seeds": 7
+      },
+      "frac_e_top_cap": {
+        "mean": 0.5014909925127636,
+        "max_pairwise_abs": 0.0035319004004917276,
+        "max_pairwise_rel": 0.007042799278995696,
+        "seeds": 7
+      },
+      "frac_e_TS": {
+        "mean": 0.42815802015214627,
+        "max_pairwise_abs": 0.7962514131123194,
+        "max_pairwise_rel": 1.8597138804719129,
+        "seeds": 5
+      },
+      "frac_e_TF": {
+        "mean": 0.5516699950512025,
+        "max_pairwise_abs": 0.7962160999829192,
+        "max_pairwise_rel": 1.4432833163402687,
+        "seeds": 5
+      },
+      "frac_e_L": {
+        "mean": 0.020170265093055893,
+        "max_pairwise_abs": 0.000607513960744252,
+        "max_pairwise_rel": 0.03011928489494189,
+        "seeds": 7
+      },
+      "mean_final_time_ns": {
+        "mean": 102009.13146029669,
+        "max_pairwise_abs": 6239.56518130553,
+        "max_pairwise_rel": 0.061166731761989876,
+        "seeds": 5
+      },
+      "rms_final_time_ns": {
+        "mean": 583311.9779814897,
+        "max_pairwise_abs": 514090.441794553,
+        "max_pairwise_rel": 0.8813301649891144,
+        "seeds": 5
+      },
+      "mean_end_radius_m": {
+        "mean": 0.0243487244428637,
+        "max_pairwise_abs": 0.00015802536070601975,
+        "max_pairwise_rel": 0.006490087851494617,
+        "seeds": 7
+      },
+      "mean_hit_energy_eV": {
+        "mean": 0.0006019076646535084,
+        "max_pairwise_abs": 4.522312288721868e-06,
+        "max_pairwise_rel": 0.007513299056135401,
+        "seeds": 7
+      }
+    },
+    "spread_how": "Seven runs: five native runs of this check's own reduction on the pinned source (Apple M3 Pro, clang 21, Geant4 11.3.0, 2026-09-07) at the graded event count with /random/setSeeds 11, 22, 33, 44, 55 (second seed 1) plus the calibration selfcheck's in-container nominal (20260907 1) and variant (20260908 2) runs of 2026-09-08, which reproduce their native twins exactly for the ballistic checks; per invariant the largest pairwise |difference| over the ten pairs, absolute and relative to the five-run mean, is recorded under spread. Bounds are five times that spread rounded up to one significant figure (the curator's rule of 2026-09-07), finalized at STOP 4 from the in-container calibration. Excluded from grading on the curator's decision of 2026-09-07: frac_e_TS and frac_e_TF, because examples/phonon/src/PhononPrimaryGeneratorAction.cc draws the primary polarization once per run (the geantino is replaced on the first event and never reset), so the TS/TF split is a single Bernoulli draw per run (measured 0.11 or 0.90 across the five seeds); and mean_final_time_ns and rms_final_time_ns, whose five-seed spreads are 6 and 88 per cent because a few phonons survive up to 1e7 bounces. Bounds revised at STOP 4 (2026-09-08) to five times the seven-seed spread: frac_e_top_cap rtol 0.03->0.04; mean_end_radius_m rtol 0.03->0.04.",
+    "self_validation_spread": 0.004037050629562247,
+    "self_validation_bound_fraction": 0.05589223528889232,
+    "exit_fault": "The program can fault in a static destructor during exit() on Linux after every event is processed and every output file is closed (backtrace: G4CMPPhononBoundaryProcess::~G4CMPPhononBoundaryProcess called from G4ProcessTable::~G4ProcessTable at exit, a lifetime bug of the pinned source that macOS's allocator tolerates); run.sh accepts a nonzero exit only after verifying the end-of-run event count in the log and a complete last line in the output file, and prints a warning; any other failure fails the check. Ruled by the curator on 2026-09-07; no repository precedent either way."
+  },
+  "warrant": "With scattering and downconversion off, every phonon travels ballistically with its anisotropic group velocity and reflects at the crystal surface until an Al cap absorbs it; the primary direction and every diffuse reflection (library/src/G4CMPPhononBoundaryProcess.cc) are random draws, so two correct runs differ from the first step and no pointwise bound applies. The graded invariants isolate the kinematics and the boundary process from the scattering cascade: the hit count and the mean hit energy (how many phonons the caps collect at the cutoff of 1e7 bounces), the top-cap fraction (the symmetry of the geometry and of the reflection law), the L fraction (the upstream generator draws the polarization once per run, so only the small longitudinal admixture is a per-event statistic) and the mean end radius on the caps (the focusing of the anisotropic group velocities: a wrong elastic tensor or a Cartesian isotropic velocity moves it by several per cent). The absorbed energy is a conservation identity, 50,000 phonons of 2.7 meV all absorbed, and is held to 1e-6. Each other bound is five times its five-seed spread (0.4 to 3 per cent), so a correct port uses a fifth of it. The polarization fractions and the arrival-time moments are computed but not graded: the first because the generator's per-run draw makes them a coin flip, the second because a handful of phonons that survive 1e7 bounces give them an 88 per cent spread."
+}

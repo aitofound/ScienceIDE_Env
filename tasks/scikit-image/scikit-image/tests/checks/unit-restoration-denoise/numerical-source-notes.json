@@ -1,0 +1,538 @@
+{
+  "skimage.metrics.peak_signal_noise_ratio": {
+    "implementation": {
+      "file": "src/skimage/metrics/simple_metrics.py",
+      "line": 115,
+      "end_line": 171
+    },
+    "description": "Compute the peak signal to noise ratio (PSNR) for an image.",
+    "calls": [
+      "check_shape_equality",
+      "_as_floats",
+      "mean_squared_error",
+      "np.log10",
+      "np.min",
+      "np.max"
+    ],
+    "branches": [
+      {
+        "line": 148,
+        "expression": "data_range is None"
+      },
+      {
+        "line": 149,
+        "expression": "image_true.dtype != image_test.dtype"
+      },
+      {
+        "line": 156,
+        "expression": "true_max > dmax or true_min < dmin"
+      },
+      {
+        "line": 161,
+        "expression": "true_min >= 0"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.metrics.structural_similarity": {
+    "implementation": {
+      "file": "src/skimage/metrics/_structural_similarity.py",
+      "line": 15,
+      "end_line": 292
+    },
+    "description": "Compute the mean structural similarity index between two images.",
+    "calls": [
+      "filter_func",
+      "_at",
+      "kwargs.pop",
+      "check_shape_equality",
+      "np.any",
+      "im1.astype",
+      "im2.astype",
+      "crop(S, pad).mean",
+      "dict",
+      "args.update",
+      "functools.partial",
+      "mssim.mean",
+      "structural_similarity",
+      "crop"
+    ],
+    "branches": [
+      {
+        "line": 121,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 164,
+        "expression": "K1 < 0"
+      },
+      {
+        "line": 166,
+        "expression": "K2 < 0"
+      },
+      {
+        "line": 168,
+        "expression": "sigma < 0"
+      },
+      {
+        "line": 172,
+        "expression": "gaussian_weights"
+      },
+      {
+        "line": 177,
+        "expression": "win_size is None"
+      },
+      {
+        "line": 185,
+        "expression": "np.any(np.asarray(im1.shape) - win_size < 0)"
+      },
+      {
+        "line": 197,
+        "expression": "not win_size % 2 == 1"
+      },
+      {
+        "line": 200,
+        "expression": "data_range is None"
+      },
+      {
+        "line": 227,
+        "expression": "gaussian_weights"
+      },
+      {
+        "line": 241,
+        "expression": "use_sample_covariance"
+      },
+      {
+        "line": 277,
+        "expression": "gradient"
+      },
+      {
+        "line": 135,
+        "expression": "gradient"
+      },
+      {
+        "line": 137,
+        "expression": "full"
+      },
+      {
+        "line": 152,
+        "expression": "gradient and full"
+      },
+      {
+        "line": 178,
+        "expression": "gaussian_weights"
+      },
+      {
+        "line": 201,
+        "expression": "np.issubdtype(im1.dtype, np.floating) or np.issubdtype(im2.dtype, np.floating)"
+      },
+      {
+        "line": 210,
+        "expression": "im1.dtype != im2.dtype"
+      },
+      {
+        "line": 217,
+        "expression": "np.issubdtype(im1.dtype, np.integer) and im1.dtype != np.uint8"
+      },
+      {
+        "line": 284,
+        "expression": "full"
+      },
+      {
+        "line": 289,
+        "expression": "full"
+      },
+      {
+        "line": 143,
+        "expression": "gradient and full"
+      },
+      {
+        "line": 154,
+        "expression": "gradient"
+      },
+      {
+        "line": 145,
+        "expression": "gradient"
+      },
+      {
+        "line": 156,
+        "expression": "full"
+      },
+      {
+        "line": 147,
+        "expression": "full"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.restoration._denoise._wavelet_threshold": {
+    "implementation": {
+      "file": "src/skimage/restoration/_denoise.py",
+      "line": 659,
+      "end_line": 796
+    },
+    "description": "Perform wavelet thresholding.",
+    "calls": [
+      "pywt.threshold",
+      "pywt.Wavelet",
+      "pywt.wavedecn",
+      "np.isscalar",
+      "out.astype",
+      "pywt.dwtn_max_level",
+      "max",
+      "_sigma_est_dwt",
+      "pywt.waverecn",
+      "ImportError",
+      "slice",
+      "_universal_thresh",
+      "_bayes_thresh"
+    ],
+    "branches": [
+      {
+        "line": 724,
+        "expression": "not wavelet.orthogonal"
+      },
+      {
+        "line": 737,
+        "expression": "wavelet_levels is None"
+      },
+      {
+        "line": 748,
+        "expression": "sigma is None"
+      },
+      {
+        "line": 753,
+        "expression": "method is not None and threshold is not None"
+      },
+      {
+        "line": 759,
+        "expression": "threshold is None"
+      },
+      {
+        "line": 775,
+        "expression": "np.isscalar(threshold)"
+      },
+      {
+        "line": 761,
+        "expression": "method is None"
+      },
+      {
+        "line": 763,
+        "expression": "method == 'BayesShrink'"
+      },
+      {
+        "line": 769,
+        "expression": "method == 'VisuShrink'"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.restoration.cycle_spin": {
+    "implementation": {
+      "file": "src/skimage/restoration/_cycle_spin.py",
+      "line": 50,
+      "end_line": 172
+    },
+    "description": "Cycle spinning (repeatedly apply func to shifted versions of x).",
+    "calls": [
+      "np.roll",
+      "_run_one_shift",
+      "deprecate_parameter",
+      "utils.channel_as_last_axis",
+      "np.asanyarray",
+      "_generate_shifts",
+      "func",
+      "mean.compute",
+      "dask.delayed(_run_one_shift)",
+      "sum",
+      "dask.delayed"
+    ],
+    "branches": [
+      {
+        "line": 136,
+        "expression": "func_kw is None"
+      },
+      {
+        "line": 151,
+        "expression": "not dask_available and (workers is None or workers > 1)"
+      },
+      {
+        "line": 161,
+        "expression": "workers == 1"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.restoration.denoise_bilateral": {
+    "implementation": {
+      "file": "src/skimage/restoration/_denoise.py",
+      "line": 97,
+      "end_line": 281
+    },
+    "description": "Denoise image using bilateral filter.",
+    "calls": [
+      "utils.channel_as_last_axis",
+      "image.min",
+      "image.max",
+      "np.atleast_3d",
+      "np.ascontiguousarray",
+      "_compute_color_lut",
+      "_compute_spatial_lut",
+      "_denoise_bilateral",
+      "np.squeeze",
+      "max",
+      "img_as_float",
+      "image.std",
+      "ceil"
+    ],
+    "branches": [
+      {
+        "line": 187,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 228,
+        "expression": "win_size is None"
+      },
+      {
+        "line": 234,
+        "expression": "min_value == max_value"
+      },
+      {
+        "line": 260,
+        "expression": "min_value < 0"
+      },
+      {
+        "line": 279,
+        "expression": "min_value < 0"
+      },
+      {
+        "line": 188,
+        "expression": "image.ndim != 3"
+      },
+      {
+        "line": 220,
+        "expression": "image.ndim > 2"
+      },
+      {
+        "line": 189,
+        "expression": "image.ndim == 2"
+      },
+      {
+        "line": 203,
+        "expression": "image.shape[2] not in (3, 4)"
+      },
+      {
+        "line": 204,
+        "expression": "image.shape[2] > 4"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.restoration.denoise_nl_means": {
+    "implementation": {
+      "file": "src/skimage/restoration/non_local_means.py",
+      "line": 14,
+      "end_line": 187
+    },
+    "description": "Perform non-local means denoising on 2D-4D grayscale or RGB images.",
+    "calls": [
+      "NotImplementedError",
+      "utils.channel_as_last_axis",
+      "convert_to_float",
+      "dict",
+      "np.ascontiguousarray",
+      "nlm_func"
+    ],
+    "branches": [
+      {
+        "line": 152,
+        "expression": "channel_axis is None"
+      },
+      {
+        "line": 159,
+        "expression": "ndim_no_channel < 2 or ndim_no_channel > 4"
+      },
+      {
+        "line": 166,
+        "expression": "not image.flags.c_contiguous"
+      },
+      {
+        "line": 170,
+        "expression": "ndim_no_channel == 2"
+      },
+      {
+        "line": 172,
+        "expression": "ndim_no_channel == 3"
+      },
+      {
+        "line": 173,
+        "expression": "multichannel and (not fast_mode)"
+      },
+      {
+        "line": 175,
+        "expression": "fast_mode"
+      },
+      {
+        "line": 181,
+        "expression": "ndim_no_channel == 4"
+      },
+      {
+        "line": 182,
+        "expression": "fast_mode"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.restoration.denoise_tv_bregman": {
+    "implementation": {
+      "file": "src/skimage/restoration/_denoise.py",
+      "line": 284,
+      "end_line": 402
+    },
+    "description": "Perform total variation denoising using split-Bregman optimization.",
+    "calls": [
+      "np.ascontiguousarray",
+      "_denoise_tv_bregman",
+      "image.dtype.type",
+      "utils.channel_as_last_axis",
+      "np.atleast_3d",
+      "np.squeeze",
+      "img_as_float"
+    ],
+    "branches": [
+      {
+        "line": 376,
+        "expression": "channel_axis is not None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.restoration.denoise_tv_chambolle": {
+    "implementation": {
+      "file": "src/skimage/restoration/_denoise.py",
+      "line": 492,
+      "end_line": 608
+    },
+    "description": "Perform total variation denoising in nD.",
+    "calls": [
+      "_denoise_tv_chambolle_nd",
+      "_at",
+      "image.astype",
+      "img_as_float",
+      "functools.partial"
+    ],
+    "branches": [
+      {
+        "line": 591,
+        "expression": "not im_type.kind == 'f'"
+      },
+      {
+        "line": 598,
+        "expression": "channel_axis is not None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.restoration.denoise_wavelet": {
+    "implementation": {
+      "file": "src/skimage/restoration/_denoise.py",
+      "line": 852,
+      "end_line": 1046
+    },
+    "description": "Perform wavelet denoising on an image.",
+    "calls": [
+      "_wavelet_threshold",
+      "utils.channel_as_last_axis",
+      "_scale_sigma_and_image_consistently",
+      "np.clip",
+      "color.rgb2ycbcr",
+      "color.ycbcr2rgb",
+      "_rescale_sigma_rgb2ycbcr",
+      "denoise_wavelet",
+      "image.min",
+      "out[..., i].min",
+      "out[..., i].max"
+    ],
+    "branches": [
+      {
+        "line": 977,
+        "expression": "method not in ['BayesShrink', 'VisuShrink']"
+      },
+      {
+        "line": 986,
+        "expression": "convert2ycbcr and (not multichannel)"
+      },
+      {
+        "line": 992,
+        "expression": "multichannel"
+      },
+      {
+        "line": 1043,
+        "expression": "clip_output"
+      },
+      {
+        "line": 993,
+        "expression": "convert2ycbcr"
+      },
+      {
+        "line": 996,
+        "expression": "rescale_sigma"
+      },
+      {
+        "line": 1002,
+        "expression": "scale_factor == 0"
+      },
+      {
+        "line": 1008,
+        "expression": "sigma_channel is not None"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.restoration.estimate_sigma": {
+    "implementation": {
+      "file": "src/skimage/restoration/_denoise.py",
+      "line": 1049,
+      "end_line": 1125
+    },
+    "description": "Robust wavelet-based estimator of the (Gaussian) noise standard deviation.",
+    "calls": [
+      "pywt.dwtn",
+      "_sigma_est_dwt",
+      "functools.partial",
+      "ImportError",
+      "estimate_sigma",
+      "np.mean",
+      "_at"
+    ],
+    "branches": [
+      {
+        "line": 1106,
+        "expression": "channel_axis is not None"
+      },
+      {
+        "line": 1113,
+        "expression": "average_sigmas"
+      },
+      {
+        "line": 1116,
+        "expression": "image.shape[-1] <= 4"
+      }
+    ],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  },
+  "skimage.util.img_as_float": {
+    "implementation": {
+      "file": "src/skimage/util/dtype.py",
+      "line": 479,
+      "end_line": 505
+    },
+    "description": "Convert an image to floating point format.",
+    "calls": [
+      "_convert"
+    ],
+    "branches": [],
+    "inspection": "Literal Python entry-point facts only; helper calls and compiled kernels must be read through their source references, not inferred to be numerically equivalent."
+  }
+}

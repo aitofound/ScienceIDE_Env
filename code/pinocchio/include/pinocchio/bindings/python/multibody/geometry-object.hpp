@@ -1,0 +1,253 @@
+//
+// Copyright (c) 2017-2023 CNRS INRIA, 2025 INRIA
+//
+
+#pragma once
+
+#include <eigenpy/memory.hpp>
+#include <eigenpy/eigen-from-python.hpp>
+#include <eigenpy/eigen-to-python.hpp>
+#include <eigenpy/variant.hpp>
+#include <eigenpy/copyable.hpp>
+#include <eigenpy/deprecation-policy.hpp>
+
+#include "pinocchio/bindings/python/utils/address.hpp"
+#include "pinocchio/bindings/python/utils/pickle.hpp"
+#include "pinocchio/bindings/python/serialization/serializable.hpp"
+
+#include "pinocchio/geometry.hpp"
+
+namespace pinocchio
+{
+  namespace python
+  {
+    namespace bp = boost::python;
+    using ::eigenpy::CopyableVisitor;
+
+    struct GeometryObjectPythonVisitor
+    : public boost::python::def_visitor<GeometryObjectPythonVisitor>
+    {
+
+      typedef GeometryObject::CollisionGeometryPtr CollisionGeometryPtr;
+
+      template<class PyClass>
+      void visit(PyClass & cl) const
+      {
+        typedef eigenpy::VariantConverter<GeometryMaterial> Converter;
+        Converter::registration();
+
+        cl.def(
+            bp::init<
+              std::string, JointIndex, FrameIndex, const SE3 &, CollisionGeometryPtr,
+              bp::optional<
+                std::string, const Eigen::Vector3d &, bool, const Eigen::Vector4d &, std::string,
+                GeometryMaterial>>(
+              bp::args(
+                "self", "name", "parent_joint", "parent_frame", "placement", "collision_geometry",
+                "mesh_path", "mesh_scale", "override_material", "mesh_color", "mesh_texture_path",
+                "mesh_material"),
+              "Full constructor of a GeometryObject."))
+          .def(
+            bp::init<
+              std::string, JointIndex, const SE3 &, CollisionGeometryPtr,
+              bp::optional<
+                std::string, const Eigen::Vector3d &, bool, const Eigen::Vector4d &, std::string,
+                GeometryMaterial>>(
+              bp::args(
+                "self", "name", "parent_joint", "placement", "collision_geometry", "mesh_path",
+                "mesh_scale", "override_material", "mesh_color", "mesh_texture_path",
+                "mesh_material"),
+              "Reduced constructor of a GeometryObject. This constructor does not require to "
+              "specify "
+              "the parent frame index."))
+          .def(
+            bp::init<const GeometryObject &>(
+              bp::args("self", "otherGeometryObject"), "Copy constructor"))
+          .add_property(
+            "meshScale",
+            bp::make_getter(&GeometryObject::meshScale, bp::return_internal_reference<>()),
+            bp::make_setter(&GeometryObject::meshScale), "Scaling parameter of the mesh.")
+          .add_property(
+            "meshColor",
+            bp::make_getter(&GeometryObject::meshColor, bp::return_internal_reference<>()),
+            bp::make_setter(&GeometryObject::meshColor), "Color rgba of the mesh.")
+          .def_readwrite(
+            "geometry", &GeometryObject::geometry,
+            "The coal CollisionGeometry associated to the given GeometryObject.")
+          .def_readwrite(
+            "name", &GeometryObject::name, "Name associated to the given GeometryObject.")
+          .def_readwrite("parentJoint", &GeometryObject::parentJoint, "Index of the parent joint.")
+          .def_readwrite("parentFrame", &GeometryObject::parentFrame, "Index of the parent frame.")
+          .def_readwrite(
+            "placement", &GeometryObject::placement,
+            "Position of geometry object in parent joint's frame.")
+          .def_readwrite("meshPath", &GeometryObject::meshPath, "Path to the mesh file.")
+          .def_readwrite(
+            "overrideMaterial", &GeometryObject::overrideMaterial,
+            "Boolean that tells whether material information is stored inside the given "
+            "GeometryObject.")
+          .def_readwrite(
+            "meshTexturePath", &GeometryObject::meshTexturePath, "Path to the mesh texture file.")
+          .def_readwrite(
+            "disableCollision", &GeometryObject::disableCollision,
+            "If true, no collision or distance check will be done between the Geometry and any "
+            "other geometry.")
+          .def(
+            "clone", &GeometryObject::clone, bp::arg("self"),
+            "Perform a deep copy of this. It will create a copy of the underlying coal geometry.")
+          .add_property(
+            "meshMaterial",
+            bp::make_getter(&GeometryObject::meshMaterial, Converter::return_internal_reference()),
+            bp::make_setter(&GeometryObject::meshMaterial),
+            "Material associated to the mesh (applied only if overrideMaterial is True)")
+          .def_readwrite(
+            "physicsMaterial", &GeometryObject::physicsMaterial,
+            "Physics material of the GeometryObject.")
+
+          .def(bp::self == bp::self)
+          .def(bp::self != bp::self)
+
+#ifdef PINOCCHIO_WITH_COLLISION
+          .def("CreateCapsule", &GeometryObjectPythonVisitor::maker_capsule)
+          .staticmethod("CreateCapsule")
+#endif // PINOCCHIO_WITH_COLLISION
+          ;
+
+        // Check registration
+        {
+          const bp::type_info info = bp::type_id<CollisionGeometryPtr>();
+          const bp::converter::registration * reg = bp::converter::registry::query(info);
+          // We just need to check if the type shared_ptr<CollisionGeometry> exist in the registry
+          if (!reg)
+            bp::register_ptr_to_python<CollisionGeometryPtr>();
+        }
+      }
+
+#ifdef PINOCCHIO_WITH_COLLISION
+      static GeometryObject maker_capsule(const double radius, const double length)
+      {
+        return GeometryObject(
+          "", JointIndex(0), FrameIndex(0), SE3::Identity(),
+          std::shared_ptr<coal::CollisionGeometry>(new coal::Capsule(radius, length)));
+      }
+#endif // PINOCCHIO_WITH_COLLISION
+
+      static void expose()
+      {
+        if (!register_symbolic_link_to_registered_type<GeometryObject>())
+        {
+          bp::class_<GeometryObject>(
+            "GeometryObject",
+            "A wrapper on a collision geometry including its parent joint, parent frame, placement "
+            "in parent joint's frame.\n\n",
+            bp::no_init)
+            .def(GeometryObjectPythonVisitor())
+            .def(::eigenpy::CopyableVisitor<GeometryObject>())
+            .def(AddressVisitor<GeometryObject>())
+            .def(SerializableVisitor<GeometryObject>())
+#ifndef PINOCCHIO_PYTHON_NO_SERIALIZATION
+            .def_pickle(PickleFromStringSerialization<GeometryObject>())
+#endif
+            ;
+        }
+
+#ifdef PINOCCHIO_WITH_COLLISION
+        if (!register_symbolic_link_to_registered_type<CollisionObject>())
+        {
+          bp::class_<CollisionObject, bp::bases<::coal::CollisionObject>>(
+            "CollisionObject", "A Pinocchio collision object derived from coal CollisionObject.",
+            bp::no_init)
+            .def(
+              bp::init<
+                const std::shared_ptr<::coal::CollisionGeometry> &,
+                bp::optional<const size_t, bool>>(
+                (bp::arg("self"), bp::arg("collision_geometry"),
+                 bp::arg("geometryObjectIndex") = (std::numeric_limits<size_t>::max)(),
+                 bp::arg("compute_local_aabb") = true),
+                "Constructor"))
+            .def(
+              bp::init<
+                const std::shared_ptr<::coal::CollisionGeometry> &, SE3,
+                bp::optional<const size_t, bool>>(
+                (bp::arg("self"), bp::arg("collision_geometry"), bp::arg("placement"),
+                 bp::arg("geometryObjectIndex") = (std::numeric_limits<size_t>::max)(),
+                 bp::arg("compute_local_aabb") = true),
+                "Constructor"));
+        }
+#endif
+
+        if (!register_symbolic_link_to_registered_type<GeometryNoMaterial>())
+        {
+          /// Define material types
+          bp::class_<GeometryNoMaterial>("GeometryNoMaterial", bp::init<>())
+            .def(bp::init<GeometryNoMaterial>());
+        }
+
+        if (!register_symbolic_link_to_registered_type<GeometryPhongMaterial>())
+        {
+          bp::class_<GeometryPhongMaterial>("GeometryPhongMaterial", bp::init<>())
+            .def(bp::init<GeometryPhongMaterial>())
+            .def(bp::init<Eigen::Vector4d, Eigen::Vector4d, double>())
+            .add_property(
+              "meshEmissionColor",
+              bp::make_getter(
+                &GeometryPhongMaterial::meshEmissionColor, bp::return_internal_reference<>()),
+              bp::make_setter(&GeometryPhongMaterial::meshEmissionColor),
+              "RGBA emission (ambient) color value of the mesh")
+            .add_property(
+              "meshSpecularColor",
+              bp::make_getter(
+                &GeometryPhongMaterial::meshSpecularColor, bp::return_internal_reference<>()),
+              bp::make_setter(&GeometryPhongMaterial::meshSpecularColor),
+              "RGBA specular value of the mesh")
+            .def_readwrite(
+              "meshShininess", &GeometryPhongMaterial::meshShininess,
+              "Shininess associated to the specular lighting model (between 0 and 1)");
+        }
+        if (!register_symbolic_link_to_registered_type<GeometryType>())
+        {
+          bp::enum_<GeometryType>("GeometryType")
+            .value("VISUAL", VISUAL)
+            .value("COLLISION", COLLISION)
+            .export_values();
+        }
+
+        if (!register_symbolic_link_to_registered_type<PhysicsMaterialType>())
+        {
+          bp::enum_<PhysicsMaterialType>("PhysicsMaterialType")
+            .value("ICE", ICE)
+            .value("METAL", METAL)
+            .value("PLASTIC", PLASTIC)
+            .value("WOOD", WOOD)
+            .value("CONCRETE", CONCRETE)
+            .export_values();
+        }
+
+        if (!register_symbolic_link_to_registered_type<PhysicsMaterial>())
+        {
+          bp::class_<PhysicsMaterial>("PhysicsMaterial", bp::init<>())
+            .def(bp::init<PhysicsMaterial>())
+            .def(bp::init<PhysicsMaterialType, double, double>())
+            .def_readwrite("materialType", &PhysicsMaterial::materialType, "Type of the material")
+            .def_readwrite("compliance", &PhysicsMaterial::compliance, "Compliance of the material")
+            .def_readwrite(
+              "elasticity", &PhysicsMaterial::elasticity, "Elasticity of the material");
+        }
+
+        if (!register_symbolic_link_to_registered_type<FrictionCoefficientMatrix>())
+        {
+          bp::class_<FrictionCoefficientMatrix>("FrictionCoefficientMatrix", bp::no_init)
+            .def(
+              "getFrictionFromMaterialPair",
+              &FrictionCoefficientMatrix::getFrictionFromMaterialPair,
+              bp::args("self", "type1", "type2"));
+
+          bp::def(
+            "getFrictionCoefficientMatrix", getFrictionCoefficientMatrix,
+            bp::return_value_policy<bp::reference_existing_object>());
+        }
+      }
+    };
+
+  } // namespace python
+} // namespace pinocchio

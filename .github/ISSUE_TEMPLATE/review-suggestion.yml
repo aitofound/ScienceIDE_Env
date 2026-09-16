@@ -1,0 +1,51 @@
+# A suggestion for the review process itself: a question the review brief
+# should ask and does not, a verdict that is ill-defined, a number the CLI
+# should compute instead of the agent typing it, a shape that wastes the
+# human's time. The review preamble the CLI prints points here. Accepted
+# suggestions change the brief in the next skill revision.
+#
+# Not for a measured failure mode on a leaf (use the Known pitfall form) and
+# not for a finding about one PR (comment on that PR).
+name: SciAccel-Bench — review process suggestion
+description: "A change to what the review brief asks, computes or presents at STOP 2 or STOP 6."
+title: "review: <the change in one line>"
+labels: [review-suggestion]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        One suggestion per issue. Say which stop it concerns and which of the
+        brief's questions it touches, or that it is a new one. Read the current
+        brief first: `skills/package-sciaccel-task/templates/review-task.md`
+        and `review-codebase.md`.
+  - type: dropdown
+    id: stop
+    attributes:
+      label: Which review
+      options:
+        - STOP 6, the task PR (review task)
+        - STOP 2, the source PR (review codebase)
+        - both
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What the review does today that fell short
+      description: What you had to ask for, look up, compute or wait for that the brief should have given you, on which PR.
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: The change you want
+      description: The question, verdict, computed number or shape, as you would want to read it.
+    validations:
+      required: true
+  - type: textarea
+    id: owner
+    attributes:
+      label: Who should produce it
+      description: The CLI (computed from the tree and the records), the reviewing agent (read and judged), or the human (a decision).
+    validations:
+      required: false

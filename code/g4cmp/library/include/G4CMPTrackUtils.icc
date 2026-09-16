@@ -1,0 +1,34 @@
+/***********************************************************************\
+ * This software is licensed under the terms of the GNU General Public *
+ * License version 3 or later. See G4CMP/LICENSE for the full license. *
+\***********************************************************************/
+
+/// \file library/include/G4CMPTrackUtils.icc
+/// \brief Free standing functions that perform operations on G4Tracks
+///
+//
+// $Id$
+//
+// 20161111 Initial commit - R. Agnese
+// 20170313 static_assert() first arg must be wrapped in parentheses
+// 20170622 Make AttachTrackInfo non-templated, move to .cc file
+
+#include "G4CMPConfigManager.hh"
+#include "G4CMPVTrackInfo.hh"
+#include "G4Track.hh"
+#include <assert.h>
+#include <type_traits>
+
+
+template<class T> T* G4CMP::GetTrackInfo(const G4Track* track) {
+  return (track ? GetTrackInfo<T>(*track) : nullptr);
+}
+
+template<class T> T* G4CMP::GetTrackInfo(const G4Track& track) {
+  static_assert((std::is_base_of<G4CMPVTrackInfo,T>::value ||
+		 std::is_same<G4CMPVTrackInfo,T>::value),
+                "Generic type must be a strict subtype of G4CMPVTrackInfo.");
+
+  return dynamic_cast<T*>(track.GetAuxiliaryTrackInformation(
+                            G4CMPConfigManager::GetPhysicsModelID()));
+}

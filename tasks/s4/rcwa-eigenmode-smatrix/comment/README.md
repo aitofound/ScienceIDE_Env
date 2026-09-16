@@ -57,6 +57,35 @@ by either module: `rcwa.cpp:28` includes `fft_iface.h` and uses
 `fft_plan_dft_2d` at `rcwa.cpp:2114` for real-space field reconstruction,
 independently of any factorization.
 
+## Build
+
+The seven normal (`nominal` or `variant`) checks cooperate only through a
+private cache under their current solve's output root,
+`.s4-normal-build-cache/<fingerprint>/build/S4`.  The output root starts empty
+for every solve, so no build crosses from nominal to variant or from one solve
+to another.  Whichever check encounters the cache miss first copies the pinned
+source to its own scratch tree and performs the complete gcc/g++ `make
+build/S4`; each of the other scripts contains that same full fallback and can
+therefore be started alone on an empty output root.
+
+The cache key is SHA-256 over a schema tag, the complete normal make target and
+arguments, the full gcc, g++ and make version output, the machine architecture,
+and every source entry's relative path, kind, permission mode and bytes (or
+symlink target).  A cache hit additionally requires an executable `build/S4`,
+a ready marker equal to that fingerprint, and a matching SHA-256 of the cached
+binary.  The builder writes the binary digest and publishes the ready marker
+last.  Any changed source/build input, absent or malformed marker, missing
+binary, or digest mismatch therefore selects a different entry or takes the
+complete independent build path rather than reusing questionable output.
+`SAB_BUILD_SECONDS` is the measured compile time on that miss and exactly `0`
+on a verified reuse hit.
+
+`altbuild` is intentionally outside this cache.  Every `run.sh altbuild` keeps
+its existing independent scratch-tree clang/clang++ compile of the same pinned
+source and nominal deck; it neither reads nor populates the shared normal gcc
+build, so the compiler-floor experiment can never be satisfied by substituting
+the normal binary.
+
 ## Tolerances
 
 Two numbers were measured for every check before any bound was chosen. Both

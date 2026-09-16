@@ -1,0 +1,429 @@
+#include "G4CMPBlockData.hh"
+#include <algorithm>
+#include <cstdlib>
+#include <utility>
+#include <cassert>
+
+// Constructors
+
+template <class T>
+inline G4CMPBlockData<T>::G4CMPBlockData() : data(std::vector<T>()), ncols(0) {;}
+
+template <class T>
+inline G4CMPBlockData<T>::G4CMPBlockData(size_t nrows, size_t cols, const T& val) :
+  data(std::vector<T>(nrows*cols, val)), ncols(cols) {;}
+
+template <class T>
+inline G4CMPBlockData<T>::G4CMPBlockData(const std::vector<T>& vec, size_t cols) :
+  data(vec), ncols(cols) {;}
+
+template <class T>
+inline G4CMPBlockData<T>::G4CMPBlockData(const std::vector<T>& vec) :
+  data(vec), ncols(vec.size()) {;}
+
+
+// Copy and assignment
+
+template <class T>
+inline G4CMPBlockData<T>::G4CMPBlockData(const G4CMPBlockData<T> &rhs)
+  : data(rhs.data), ncols(rhs.ncols) {;}
+
+template <class T>
+inline G4CMPBlockData<T>& G4CMPBlockData<T>::operator=(const G4CMPBlockData<T> &rhs) {
+  if (&rhs != this) {
+    data = rhs.data;
+    ncols = rhs.ncols;
+  }
+  return *this;
+}
+
+template <class T>
+inline G4CMPBlockData<T>& G4CMPBlockData<T>::operator=(G4CMPBlockData<T>&& rhs) {
+  data = std::move(rhs.data);	// Is this right?
+  ncols = rhs.ncols;
+  return *this;
+}
+
+template <class T>
+inline G4CMPBlockData<T>& G4CMPBlockData<T>::operator=(const std::vector<T>& rhs) {
+  data = rhs;
+  ncols = rhs.size();
+  return *this;
+}
+
+template <class T>
+inline G4CMPBlockData<T>& G4CMPBlockData<T>::operator=(const T& a) {	// Fill
+  std::fill(begin(), end(), a);
+  return *this;
+}
+
+// Iterators
+
+template <class T>
+inline typename G4CMPBlockData<T>::iterator G4CMPBlockData<T>::begin() {
+  return data.begin();
+}
+
+template <class T>
+inline typename G4CMPBlockData<T>::const_iterator G4CMPBlockData<T>::begin() const {
+  return data.begin();
+}
+
+template <class T>
+inline typename G4CMPBlockData<T>::iterator G4CMPBlockData<T>::end() {
+  return data.end();
+}
+
+template <class T>
+inline typename G4CMPBlockData<T>::const_iterator G4CMPBlockData<T>::end() const {
+  return data.end();
+}
+
+// Compound assignment
+
+template <class T>
+inline G4CMPBlockData<T>& G4CMPBlockData<T>::operator+=(const G4CMPBlockData<T>& rhs) {
+  assert((rhs.columns() == ncols && rhs.size() == size()));
+  for (size_t i = 0; i < data.size(); ++i)
+    data[i] += rhs.data[i];
+  return *this;
+}
+
+template <class T>
+inline G4CMPBlockData<T>& G4CMPBlockData<T>::operator-=(const G4CMPBlockData<T>& rhs) {
+  assert((rhs.columns() == ncols && rhs.size() == size()));
+  for (size_t i = 0; i < data.size(); ++i)
+    data[i] -= rhs.data[i];
+  return *this;
+}
+
+template <class T>
+inline G4CMPBlockData<T>& G4CMPBlockData<T>::operator+=(const T& rhs) {
+  for (size_t i = 0; i < data.size(); ++i)
+    data[i] += rhs;
+  return *this;
+}
+
+template <class T>
+inline G4CMPBlockData<T>& G4CMPBlockData<T>::operator-=(const T& rhs) {
+  for (size_t i = 0; i < data.size(); ++i)
+    data[i] -= rhs;
+  return *this;
+}
+
+template <class T>
+inline G4CMPBlockData<T>& G4CMPBlockData<T>::operator*=(const T& rhs) {
+  for (size_t i = 0; i < data.size(); ++i)
+    data[i] *= rhs;
+  return *this;
+}
+
+template <class T>
+inline G4CMPBlockData<T>& G4CMPBlockData<T>::operator/=(const T& rhs) {
+  for (size_t i = 0; i < data.size(); ++i)
+    data[i] /= rhs;
+  return *this;
+}
+
+// Access
+template <class T>
+inline T& G4CMPBlockData<T>::operator()(size_t i, size_t j) {
+  return data[i*ncols + j];
+}
+
+template <class T>
+inline const T& G4CMPBlockData<T>::operator()(size_t i, size_t j) const {
+  return data[i*ncols + j];
+}
+
+template <class T>
+inline T& G4CMPBlockData<T>::operator()(size_t i) {
+  return data[i];
+}
+
+template <class T>
+inline const T& G4CMPBlockData<T>::operator()(size_t i) const {
+  return data[i];
+}
+
+template <class T>
+inline T& G4CMPBlockData<T>::operator[](size_t i) {
+  return data[i];
+}
+
+template <class T>
+inline const T& G4CMPBlockData<T>::operator[](size_t i) const {
+  return data[i];
+}
+
+// Modify
+template <class T>
+inline void G4CMPBlockData<T>::push_back(const std::vector<T>& vec) {
+  // special case for ncols == 0 means we're just initializing the block data.
+  assert(vec.size() == ncols || ncols == 0);
+  // Supposedly no need for data.reserve(). insert() will precalculate size.
+  data.insert(data.end(), vec.begin(), vec.end());
+  if (ncols == 0) {
+    ncols = vec.size();
+  }
+}
+
+template <class T>
+inline void G4CMPBlockData<T>::push_back(std::vector<T>&& vec) {
+  // special case for ncols == 0 means we're just initializing the block data.
+  assert(vec.size() == ncols || ncols == 0);
+  data.insert(data.end(), std::make_move_iterator(vec.begin()),
+                          std::make_move_iterator(vec.end()));
+  if (ncols == 0) {
+    ncols = data.size();
+  }
+}
+
+template <class T>
+inline void G4CMPBlockData<T>::vert_cat(const G4CMPBlockData<T>& rhs) {
+  assert((rhs.ncols == ncols));
+  // Supposedly no need for data.reserve(). insert() will precalculate size.
+  data.insert(data.end(), rhs.data.begin(), rhs.data.end());
+  if (ncols == 0) {
+    ncols = rhs.size();
+  }
+}
+
+template <class T>
+inline void G4CMPBlockData<T>::vert_cat(G4CMPBlockData<T>&& rhs) {
+  assert((rhs.ncols == ncols));
+  // Supposedly no need for data.reserve(). insert() will precalculate size.
+  data.insert(data.end(), std::make_move_iterator(rhs.data.begin()),
+                          std::make_move_iterator(rhs.data.end()));
+  if (ncols == 0) {
+    ncols = rhs.size();
+  }
+}
+
+template <class T>
+inline void G4CMPBlockData<T>::horiz_cat(const G4CMPBlockData<T>& rhs) {
+  assert((rhs.rows() == rows()));
+  G4CMPBlockData<T> tmp(rows(), ncols + rhs.ncols);
+  for (size_t i = 0; i < rows(); ++i) {
+      for (size_t j = 0; j < ncols; ++j) {
+        tmp(i, j) = *this(i, j);
+      }
+      for (size_t j = ncols; j < tmp.ncols; ++j) {
+        tmp(i, j) = rhs(i, j-ncols);
+      }
+  }
+  std::swap(*this, tmp);
+}
+
+// Comparison
+template <class T>
+inline bool G4CMPBlockData<T>::operator==(const G4CMPBlockData<T>& rhs) const {
+  return (data == rhs.data) && (ncols == rhs.ncols);
+}
+
+template <class T>
+inline bool G4CMPBlockData<T>::operator!=(const G4CMPBlockData<T>& rhs) const {
+  return !(*this == rhs);
+}
+
+template <class T>
+inline bool G4CMPBlockData<T>::operator<(const G4CMPBlockData<T>& rhs) const {
+  return (data < rhs.data);
+}
+
+template <class T>
+inline bool G4CMPBlockData<T>::operator<=(const G4CMPBlockData<T>& rhs) const {
+  return (data <= rhs.data);
+}
+
+template <class T>
+inline bool G4CMPBlockData<T>::operator>(const G4CMPBlockData<T>& rhs) const {
+  return (data > rhs.data);
+}
+
+template <class T>
+inline bool G4CMPBlockData<T>::operator>=(const G4CMPBlockData<T>& rhs) const {
+  return (data >= rhs.data);
+}
+
+// Negate
+template <class T>
+inline G4CMPBlockData<T>& operator-(G4CMPBlockData<T>& lhs) {
+  return lhs *= T(-1);
+}
+
+// Matrix-Matrix math:
+template <class T>
+inline G4CMPBlockData<T> operator+(const G4CMPBlockData<T>& lhs, 
+                                   const G4CMPBlockData<T>& rhs) {
+  G4CMPBlockData<T> out(lhs);
+  return out += rhs;
+}
+
+template <class T>
+inline G4CMPBlockData<T> operator+(G4CMPBlockData<T>&& lhs,
+                                   G4CMPBlockData<T>&& rhs) {
+  return lhs += rhs;
+}
+
+template <class T>
+inline G4CMPBlockData<T> operator-(const G4CMPBlockData<T>& lhs, 
+                                   const G4CMPBlockData<T>& rhs) {
+  G4CMPBlockData<T> out(lhs);
+  return out -= rhs;
+}
+
+template <class T>
+inline G4CMPBlockData<T> operator-(G4CMPBlockData<T>&& lhs,
+                                   G4CMPBlockData<T>&& rhs) {
+  return lhs -= rhs;
+}
+
+template <class T>
+inline G4CMPBlockData<T> operator*(const G4CMPBlockData<T>& lhs, 
+                                   const G4CMPBlockData<T>& rhs) {
+  assert((lhs.columns() == rhs.rows()));
+  // Naive algorithm with some cache friendliness. Still pretty slow.
+  G4CMPBlockData<T> out(lhs.rows(), rhs.columns());
+  for (size_t i = 0; i < out.rows(); ++i)
+  for (size_t k = 0; k < lhs.columns(); ++k) // lhs.columns() == rhs.rows()
+  for (size_t j = 0; j < out.columns(); ++j)
+    out(i,j) += lhs(i,k) * rhs(k,j);
+
+  return out;
+}
+
+// Matrix-Number math:
+template <class T>
+inline G4CMPBlockData<T> operator+(const G4CMPBlockData<T>& lhs, const T& rhs) {
+  G4CMPBlockData<T> out(lhs);
+  return out += rhs;
+}
+
+template <class T>
+inline G4CMPBlockData<T> operator+(G4CMPBlockData<T>&& lhs, const T& rhs) {
+  return lhs += rhs;
+}
+
+template <class T>
+inline G4CMPBlockData<T> operator+(const T& lhs, const G4CMPBlockData<T>& rhs) {
+  return rhs + lhs;
+}
+
+template <class T>
+inline G4CMPBlockData<T> operator+(const T& lhs, G4CMPBlockData<T>&& rhs) {
+  return rhs + lhs;
+}
+
+template <class T>
+inline G4CMPBlockData<T> operator-(const G4CMPBlockData<T>& lhs, const T& rhs) {
+  G4CMPBlockData<T> out(lhs);
+  return out -= rhs;
+}
+
+template <class T>
+inline G4CMPBlockData<T> operator-(G4CMPBlockData<T>&& lhs, const T& rhs) {
+  return lhs -= rhs;
+}
+
+template <class T>
+inline G4CMPBlockData<T> operator-(const T& lhs, const G4CMPBlockData<T>& rhs) {
+  return rhs - lhs;
+}
+
+template <class T>
+inline G4CMPBlockData<T> operator-(const T& lhs, G4CMPBlockData<T>&& rhs) {
+  return rhs - lhs;
+}
+
+template <class T>
+inline G4CMPBlockData<T> operator*(const G4CMPBlockData<T>& lhs, const T& rhs) {
+  G4CMPBlockData<T> out(lhs);
+  return out *= rhs;
+}
+
+template <class T>
+inline G4CMPBlockData<T> operator*(G4CMPBlockData<T>&& lhs, const T& rhs) {
+  return lhs *= rhs;
+}
+
+template <class T>
+inline G4CMPBlockData<T> operator*(const T& lhs, const G4CMPBlockData<T>& rhs) {
+  return rhs * lhs;
+}
+
+template <class T>
+inline G4CMPBlockData<T> operator*(const T& lhs, G4CMPBlockData<T>&& rhs) {
+  return rhs * lhs;
+}
+
+template <class T>
+inline G4CMPBlockData<T> operator/(const G4CMPBlockData<T>& lhs, const T& rhs) {
+  G4CMPBlockData<T> out(lhs);
+  return out /= rhs;
+}
+
+template <class T>
+inline G4CMPBlockData<T> operator/(G4CMPBlockData<T>&& lhs, const T& rhs) {
+  return lhs /= rhs;
+}
+
+template <class T>
+inline G4CMPBlockData<T> operator/(const T& lhs, const G4CMPBlockData<T>& rhs) {
+  return rhs / lhs;
+}
+
+template <class T>
+inline G4CMPBlockData<T> operator/(const T& lhs, G4CMPBlockData<T>&& rhs) {
+  return rhs / lhs;
+}
+
+// Matrix-Matrix operations:
+template <class T>
+inline G4CMPBlockData<T> vert_cat(const G4CMPBlockData<T>& lhs, 
+                                  const G4CMPBlockData<T>& rhs) {
+  assert((lhs.columns() == rhs.columns()));
+  G4CMPBlockData<T> out(lhs);
+  out.vert_cat(rhs);
+  return out;
+}
+
+template <class T>
+inline G4CMPBlockData<T> vert_cat(G4CMPBlockData<T>&& lhs,
+                                  G4CMPBlockData<T>&& rhs) {
+  assert((lhs.columns() == rhs.columns()));
+  lhs.vert_cat(rhs);
+  return lhs;
+}
+
+template <class T>
+inline G4CMPBlockData<T> horiz_cat(const G4CMPBlockData<T>& lhs, 
+                                   const G4CMPBlockData<T>& rhs) {
+  assert((lhs.rows() == rhs.rows()));
+
+  size_t newCols = lhs.columns() + rhs.columns();
+  G4CMPBlockData<T> newMat(lhs.rows(), newCols);
+  for (size_t i = 0; i < lhs.rows(); ++i) {
+    size_t j = 0;
+    for (; j < lhs.columns(); ++j) 
+      newMat(i,j) = lhs(i,j);
+    for (; j < newCols; ++j) 
+      newMat(i,j) = rhs(i,j - lhs.columns());
+  }
+  return newMat;
+}
+
+template <class T>
+std::ostream& operator<<(std::ostream& out, const G4CMPBlockData<T>& rhs) {
+  out << "[";
+  for (size_t i = 0; i < rhs.rows(); ++i) {
+    out << "[ ";
+    for (size_t j = 0; j < rhs.columns()-1; ++j)
+      out << rhs(i,j) << ", ";
+
+    out << rhs(i, rhs.columns()-1) << " ]";
+    if (i < rhs.rows()-1) out << std::endl;
+  }
+  out << "]" << std::endl;
+  return out;
+}

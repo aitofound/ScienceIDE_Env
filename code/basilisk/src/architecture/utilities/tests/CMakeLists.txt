@@ -1,0 +1,54 @@
+add_executable(test_discretize test_discretize.cpp)
+target_link_libraries(test_discretize GTest::gtest_main)
+target_link_libraries(test_discretize ArchitectureUtilities)
+
+add_executable(test_gaussMarkov test_gaussMarkov.cpp)
+target_link_libraries(test_gaussMarkov GTest::gtest_main)
+target_link_libraries(test_gaussMarkov ArchitectureUtilities)
+
+add_executable(test_orbitalMotion test_orbitalMotion.cpp)
+target_link_libraries(test_orbitalMotion GTest::gtest_main)
+target_link_libraries(test_orbitalMotion ArchitectureUtilities)
+
+add_executable(test_saturate test_saturate.cpp)
+target_link_libraries(test_saturate GTest::gtest_main)
+target_link_libraries(test_saturate ArchitectureUtilities)
+
+add_executable(test_geodeticConversion test_geodeticConversion.cpp)
+target_link_libraries(test_geodeticConversion GTest::gtest_main)
+target_link_libraries(test_geodeticConversion ArchitectureUtilities)
+
+add_executable(test_avsEigenMRP test_avsEigenMRP.cpp)
+target_link_libraries(test_avsEigenMRP GTest::gtest_main)
+target_link_libraries(test_avsEigenMRP ArchitectureUtilities)
+
+add_executable(test_avsEigenSupport test_avsEigenSupport.cpp)
+target_link_libraries(test_avsEigenSupport GTest::gtest_main)
+target_link_libraries(test_avsEigenSupport ArchitectureUtilities)
+
+add_executable(test_linearInterpolation test_linearInterpolation.cpp)
+target_link_libraries(test_linearInterpolation GTest::gtest_main)
+target_link_libraries(test_linearInterpolation ArchitectureUtilities)
+
+add_executable(test_bilinearInterpolation test_bilinearInterpolation.cpp)
+target_link_libraries(test_bilinearInterpolation GTest::gtest_main)
+target_link_libraries(test_bilinearInterpolation ArchitectureUtilities)
+
+add_executable(test_bskLogging test_bskLogging.cpp)
+target_link_libraries(test_bskLogging GTest::gtest_main)
+target_link_libraries(test_bskLogging ArchitectureUtilities)
+
+if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64" AND CMAKE_GENERATOR STREQUAL "Xcode")
+    set(CMAKE_GTEST_DISCOVER_TESTS_DISCOVERY_MODE PRE_TEST)
+endif()
+
+gtest_discover_tests(test_discretize)
+gtest_discover_tests(test_gaussMarkov)
+gtest_discover_tests(test_orbitalMotion)
+gtest_discover_tests(test_saturate)
+gtest_discover_tests(test_geodeticConversion)
+gtest_discover_tests(test_avsEigenMRP)
+gtest_discover_tests(test_avsEigenSupport)
+gtest_discover_tests(test_linearInterpolation)
+gtest_discover_tests(test_bilinearInterpolation)
+gtest_discover_tests(test_bskLogging)

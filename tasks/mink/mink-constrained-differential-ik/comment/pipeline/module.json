@@ -1,0 +1,62 @@
+{
+  "module": {
+    "slug": "mink-constrained-differential-ik",
+    "title": "Constrained differential inverse kinematics with Panda SE(3) workloads",
+    "paths": [
+      "src/mink/solve_ik.py",
+      "src/mink/configuration.py",
+      "src/mink/tasks/task.py",
+      "src/mink/tasks/frame_task.py",
+      "src/mink/tasks/posture_task.py",
+      "src/mink/limits/limit.py",
+      "src/mink/limits/configuration_limit.py",
+      "src/mink/limits/velocity_limit.py"
+    ],
+    "entrypoints": [
+      "mink.build_ik",
+      "mink.solve_ik",
+      "mink.Configuration.integrate_inplace",
+      "examples/arm_panda.py:converge_ik",
+      "examples/docs/quickstart.py",
+      "examples/docs/tasks_and_limits.py"
+    ],
+    "expensive_path": "Repeated SE(3) residual/Jacobian evaluation, weighted and dense QP objective assembly, joint/velocity inequality construction, QP solve and configuration update. Native-C Windows baseline measures median 146.96 microseconds for one fixed-state 9-DoF solve (five blocks of 1000); separately instrumented 1000 calls spend 59.11 ms in objective assembly and 36.97 ms in inequalities out of 152.93 ms total. These are native investigation timings, not a validated acceleration workload or a target speedup. A meaningful official-example-derived bank of independent target queries or continuous trajectories must be measured and justified in the subsequent task phase; a single tiny QP is insufficient evidence.",
+    "rationale": "These eight files form a 1456-line source-based module spanning robot state, pose/posture objectives, constrained QP construction, solve, and integration. Panda is the principal redundant-arm workload, not the module boundary. The generic APIs include dense-objective fallback, equality hooks, scalar/ball/free-joint handling and native/fallback paths; official tests of those owned behaviors remain in scope even when their fixtures use other robots. Nonunique joint solutions are assessed through task-space and feasibility observables, not equality to one reference joint vector.",
+    "excluded": [
+      "Dedicated collision-avoidance benchmark semantics and contact/dynamics tasks; existing collision/specialist tests that exercise owned or shared behavior still require explicit relevance accounting in the later survey.",
+      "Humanoid whole-body control, retargeting, dual-arm coordination and reinforcement-learning training as new task families.",
+      "Reimplementation of MuJoCo or DAQP internals; these remain external dependencies whose overhead must be reported.",
+      "An actual GPU/accelerator port in this contribution; the deliverable is the task environment and scientific contract.",
+      "Final check policies, tolerances and check counts; these await the source gate, survey, calibration and human finalization."
+    ],
+    "hazards": [
+      "Upstream sparse checkout is not the full payload: git tree has 772 files / 415770537 bytes. All 26 example Python scripts and the full Panda model were separately fetched and Git-blob-verified for investigation. A source PR must account for its actual payload and all retained licenses.",
+      "Panda MJCF has nine scalar coordinates (seven arm joints plus two fingers), not a seven-coordinate model. Any future independent FK/trajectory checker must validate coordinate order, units, body/site transforms, finite values and finger handling.",
+      "Official model-backed tests require UR5e, G1, Talos and other assets through robot_descriptions. 262 official cases collected, but only 54 distinct cases have been executed so far; the remaining cases are not claimed passed.",
+      "The original Panda convergence function did not attain 1e-4 in one original 20-step call on a phase-zero circular-offset probe. The official documentation scripts execute but do not assert scientific convergence. These are limitations of using smoke results as scientific evidence.",
+      "Pose and posture are soft weighted objectives. Keeping the original 1e-2 posture cost can leave a residual floor; 1e-3 with a fixed home anchor and velocity limits converged on the measured reachable targets. This is a proposed configuration, not a finalized tolerance.",
+      "The formal variant is numerical-noise calibration. Meaningful q0 perturbation is a separate experiment with the posture target held fixed. No Docker selfcheck or reward record exists yet.",
+      "validate.py is stdlib/NumPy-only. Independent FK is feasible and was compared with the pinned full model, but the final validator, malformed-output tests and anti-hardcoding design are not yet authored.",
+      "Native optimized code already exists upstream. Python-fallback profiling cannot establish acceleration headroom; CPU native baseline and end-to-end target execution must remain part of the argument.",
+      "Docker is not currently on PATH and has not been installed or run; the actual run location/resources must be agreed at the repository's run-plan stop."
+    ]
+  },
+  "approval": {
+    "modules": [
+      "mink-constrained-differential-ik"
+    ],
+    "human_ref": "继续吧",
+    "at": "2026-09-05T11:41:31Z"
+  },
+  "shared_infrastructure": [
+    "src/mink/lie",
+    "src/mink/constants.py",
+    "src/mink/exceptions.py",
+    "src/mink/utils.py",
+    "src/mink/__init__.py",
+    "src/mink/tasks/__init__.py",
+    "src/mink/limits/__init__.py",
+    "pyproject.toml",
+    "CMakeLists.txt"
+  ]
+}

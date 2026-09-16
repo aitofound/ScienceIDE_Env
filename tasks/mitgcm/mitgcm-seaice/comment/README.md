@@ -21,6 +21,35 @@ considered and left out:
 - `global_ocean.cs32x15/input.viscA4`: The biharmonic-viscosity variant of the ocean-only cubed-sphere deck: no sea ice, and its subject is the lateral momentum closure. It belongs to mitgcm-ocean-dynamics.
 - `lab_sea/input.natl_box and lab_sea/input.longstep`: these two lab_sea decks run no sea ice (data.pkg enables KPP, GM/Redi and diagnostics only); they belong to mitgcm-ocean-dynamics and are checks there
 
+
+## Build
+
+Normal (`nominal` or `variant`) checks reuse `mitgcmuv` only inside the current
+solve and only when their complete build configurations are byte-identical.
+Each `run.sh` keys `.mitgcm-normal-build-cache/<fingerprint>/mitgcmuv` beside
+its solve output by SHA-256 over every source entry and every `mods/` entry
+(path, kind, mode and bytes or symlink target), including `packages.conf`,
+option headers and any `genmake_local`; the exact genmake2 command, optfile and
+make commands; `SAB_BUILD_JOBS`; full gfortran, make and Perl identities; and
+the machine architecture (selecting MITgcm’s Linux ARM64 or AMD64 optfile). A hit also requires the published fingerprint and
+a matching executable digest. The ready marker is written last. Any differing
+input or invalid cache metadata takes that check's complete independent
+`genmake2`, `make depend`, and `make` fallback.
+
+The verified exact groups are: `cs32-icedyn`, `cs32-seaice`, and `cs32-thsice`;
+`lab-sea-freedrift`, `lab-sea-salt-plume`, and `lab-sea-seaice`; all nine
+`offline-*` checks; both `seaice-itd-*` checks; and all four `seaice-obcs-*`
+checks. `column-1d-thermo` has a distinct configuration and shares with no
+other check. These six groups differ in their `SIZE.h`, package set and option
+headers (and the lab-sea group additionally has `genmake_local`), so no binary
+crosses a group. In sorted execution order the first check in each group
+reports its measured nonzero build time and later exact matches report
+`SAB_BUILD_SECONDS=0`.
+
+`altbuild` always performs its original per-check `genmake2 -ieee` scratch
+build and neither reads nor populates the normal cache, preserving an
+independent compiler-floor measurement.
+
 ## Tolerances
 
 1e-10 + 1e-08 |reference| pointwise on every prognostic field of the final state dump, the same rule on every check except offline-jfnk, whose absolute part is 1e-09 (its warrant says why): the relative part is the working bound because the graded fields span many orders of magnitude, the absolute part covers cells at or near zero. Every variant is a two-ulp change of a parameter that enters the tendency from the first step. The floors (two legitimate builds), the fault probes (a cheapened solver, a wrong coefficient) and the nominal-versus-variant spreads are measured on the consented host and finalised with the human after the calibration run.

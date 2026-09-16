@@ -1,0 +1,2427 @@
+  !
+  ! Copyright (C) 2023-2026 EPW-Collaboration
+  ! Copyright (C) 2016-2023 EPW-Collaboration
+  ! Copyright (C) 2010-2019 Samuel Ponce', Roxana Margine, Carla Verdi, Feliciano Giustino
+  !
+  ! This file is distributed under the terms of the GNU General Public
+  ! License. See the file `LICENSE' in the root directory of the
+  ! present distribution, or http://www.gnu.org/copyleft.gpl.txt .
+  !
+  !----------------------------------------------------------------------
+  MODULE printing
+  !----------------------------------------------------------------------
+  !!
+  !! This module contains various printing routines
+  !!
+  IMPLICIT NONE
+  !
+  CONTAINS
+    !
+    !-----------------------------------------------------------------------
+    SUBROUTINE print_gkk(iq)
+    !-----------------------------------------------------------------------
+    !!
+    !! Print the |g| vertex for all n,n' and modes in meV and do average
+    !! on degenerate states.
+    !!
+    !-----------------------------------------------------------------------
+    USE kinds,         ONLY : DP
+    USE io_global,     ONLY : stdout
+    USE modes,         ONLY : nmodes
+    USE input,         ONLY : nbndsub
+    USE global_var,    ONLY : etf, ibndmin, nkqf, xqf, nbndfst,    &
+                              nkf, epf17, xkf, nkqtotf, wf, nktotf
+    USE ep_constants,  ONLY : ryd2mev, ryd2ev, two, zero
+    USE mp,            ONLY : mp_barrier, mp_sum
+    USE mp_global,     ONLY : inter_pool_comm
+    USE mp_world,      ONLY : mpime
+    USE io_global,     ONLY : ionode_id
+    USE parallelism,   ONLY : fkbounds
+    USE parallelism,  ONLY : poolgather2
+    !
+    IMPLICIT NONE
+    !
+    INTEGER, INTENT(in) :: iq
+    !! Current q-point index
+    !
+    ! Local variables
+    INTEGER :: lower_bnd
+    !! Lower bounds index after k or q paral
+    INTEGER :: upper_bnd
+    !! Upper bounds index after k or q paral
+    INTEGER :: ik
+    !! K-point index
+    INTEGER :: ikk
+    !! K-point index
+    INTEGER :: ikq
+    !! K+q-point index
+    INTEGER :: ibnd
+    !! Band index
+    INTEGER :: jbnd
+    !! Band index
+    INTEGER :: pbnd
+    !! Band index
+    INTEGER :: nu
+    !! Mode index
+    INTEGER :: mu
+    !! Mode index
+    INTEGER :: n
+    !! Number of modes
+    INTEGER :: ierr
+    !! Error status
+    REAL(KIND = DP) :: xkf_all(3, nkqtotf)
+    !! Collect k-point coordinate from all pools in parallel case
+    REAL(KIND = DP) :: etf_all(nbndsub, nkqtotf)
+    !! Collect eigenenergies from all pools in parallel case
+    REAL(KIND = DP) :: wq
+    !! Phonon frequency
+    REAL(KIND = DP) :: w_1
+    !! Temporary phonon freq. 1
+    REAL(KIND = DP) :: w_2
+    !! Temporary phonon freq. 2
+    REAL(KIND = DP) :: gamma
+    !! Temporary electron-phonon matrix element
+    REAL(KIND = DP) :: ekk
+    !! Eigenenergies at k
+    REAL(KIND = DP) :: ekq
+    !! Eigenenergies at k+q
+    REAL(KIND = DP) :: g2
+    !! Temporary electron-phonon matrix element square
+    REAL(KIND = DP), ALLOCATABLE :: epc(:, :, :, :)
+    !! g vectex accross all pools
+    REAL(KIND = DP), ALLOCATABLE :: epc_sym(:, :, :)
+    !! Temporary g-vertex for each pool
+    REAL(KIND = DP), ALLOCATABLE :: epc_unsym(:, :, :, :)
+    !! unsymmetrized electron-phonon matrix, absolute value - KL
+    REAL(KIND = DP), ALLOCATABLE :: epc_real(:, :, :, :)
+    !! unsymmetrized electron-phonon matrix, real part - KL
+    REAL(KIND = DP), ALLOCATABLE :: epc_imag(:, :, :, :)
+    !! unsymmetrized electron-phonon matrix, imaginary part - KL
+    !
+    ! find the bounds of k-dependent arrays in the parallel case in each pool
+    CALL fkbounds(nktotf, lower_bnd, upper_bnd)
+    !
+    ALLOCATE(epc(nbndfst, nbndfst, nmodes, nktotf), STAT = ierr)
+    IF (ierr /= 0) CALL errore('print_gkk', 'Error allocating epc', 1)
+    ALLOCATE(epc_sym(nbndfst, nbndfst, nmodes), STAT = ierr)
+    IF (ierr /= 0) CALL errore('print_gkk', 'Error allocating epc_sym', 1)
+    ALLOCATE(epc_unsym(nbndfst, nbndfst, nmodes, nktotf), STAT = ierr)
+    IF (ierr /= 0) CALL errore('print_gkk', 'Error allocating epc_unsym',1)
+    ALLOCATE(epc_real(nbndfst, nbndfst, nmodes, nktotf), STAT = ierr)
+    IF (ierr /= 0) CALL errore('print_gkk', 'Error allocating epc_real', 1)
+    ALLOCATE(epc_imag(nbndfst, nbndfst, nmodes, nktotf), STAT = ierr)
+    IF (ierr /= 0) CALL errore('print_gkk', 'Error allocating epc_imag', 1)
+    !
+    epc(:, :, :, :)  = zero
+    epc_sym(:, :, :) = zero
+    epc_unsym(:, :, :, :)  = zero
+    epc_real(:, :, :, :) = zero
+    epc_imag(:, :, :, :) = zero
+    !
+    ! First do the average over bands and modes for each pool
+    DO ik = 1, nkf
+      ikk = 2 * ik - 1
+      ikq = ikk + 1
+      !
+      DO nu = 1, nmodes
+        wq = wf(nu, iq)
+        DO ibnd = 1, nbndfst
+          DO jbnd = 1, nbndfst
+            gamma = (ABS(epf17(jbnd, ibnd, nu, ik)))**two
+            IF (wq > 0.d0) THEN
+              gamma = gamma / (two * wq)
+              epc_real(ibnd, jbnd, nu, ik + lower_bnd - 1) = &
+                       REAL(epf17(jbnd, ibnd, nu, ik) / DSQRT(two * wq))
+              epc_imag(ibnd, jbnd, nu, ik + lower_bnd - 1) = &
+                       IMAG(epf17(jbnd, ibnd, nu, ik) / DSQRT(two * wq))
+            ELSE
+              gamma = 0.d0
+              epc_real(ibnd, jbnd, nu, ik + lower_bnd - 1) = 0.d0
+              epc_imag(ibnd, jbnd, nu, ik + lower_bnd - 1) = 0.d0
+            ENDIF
+            gamma = DSQRT(gamma)
+            ! gamma = |g| [Ry]
+            epc(ibnd, jbnd, nu, ik + lower_bnd - 1) = gamma
+            epc_unsym(ibnd, jbnd, nu, ik + lower_bnd - 1) = gamma
+          ENDDO ! jbnd
+        ENDDO   ! ibnd
+      ENDDO ! loop on modes
+      !
+      ! Here we "SYMMETRIZE": actually we simply take the averages over
+      ! degenerate states, it is only a convention because g is gauge-dependent!
+      !
+      ! first the phonons
+      DO ibnd = 1, nbndfst
+        DO jbnd = 1, nbndfst
+          DO nu = 1, nmodes
+            w_1 = wf(nu, iq)
+            g2 = 0.d0
+            n  = 0
+            DO mu = 1, nmodes
+              w_2 = wf(mu, iq)
+              IF (ABS(w_2 - w_1) < 0.01/ryd2mev) THEN
+                n = n + 1
+                g2 = g2 + epc(ibnd, jbnd, mu, ik + lower_bnd - 1) * epc(ibnd, jbnd, mu, ik + lower_bnd - 1)
+              ENDIF
+            ENDDO
+            g2 = g2 / FLOAT(n)
+            epc_sym(ibnd, jbnd, nu) = DSQRT(g2)
+          ENDDO
+        ENDDO
+      ENDDO
+      epc(:, :, :, ik + lower_bnd - 1) = epc_sym
+      ! Then the k electrons
+      DO nu = 1, nmodes
+        DO jbnd = 1, nbndfst
+          DO ibnd = 1, nbndfst
+            w_1 = etf(ibndmin - 1 + ibnd, ikk)
+            g2 = 0.d0
+            n  = 0
+            DO pbnd = 1, nbndfst
+              w_2 = etf(ibndmin - 1 + pbnd, ikk)
+              IF (ABS(w_2 - w_1) < 0.01/ryd2mev) THEN
+                n = n + 1
+                g2 = g2 + epc(pbnd, jbnd, nu, ik + lower_bnd - 1) * epc(pbnd, jbnd, nu, ik + lower_bnd - 1)
+              ENDIF
+            ENDDO
+            g2 = g2 / FLOAT(n)
+            epc_sym(ibnd, jbnd, nu) = DSQRT(g2)
+          ENDDO
+        ENDDO
+      ENDDO
+      epc(:, :, :, ik + lower_bnd - 1) = epc_sym
+      !
+      ! and finally the k+q electrons
+      DO nu = 1, nmodes
+        DO ibnd = 1, nbndfst
+          DO jbnd = 1, nbndfst
+            w_1 = etf(ibndmin - 1 + jbnd, ikq)
+            g2 = 0.d0
+            n  = 0
+            DO pbnd = 1, nbndfst
+              w_2 = etf(ibndmin - 1 + pbnd, ikq)
+              IF (ABS(w_2 - w_1) < 0.01/ryd2mev) then
+                n = n + 1
+                g2 = g2 + epc(ibnd, pbnd, nu, ik + lower_bnd - 1) * epc(ibnd, pbnd, nu, ik + lower_bnd - 1)
+              ENDIF
+            ENDDO
+            g2 = g2 / FLOAT(n)
+            epc_sym(ibnd, jbnd, nu) = DSQRT(g2)
+          ENDDO
+        ENDDO
+      ENDDO
+      epc(:, :, :, ik + lower_bnd - 1) = epc_sym
+      !
+    ENDDO ! k-points
+    !
+    ! We need quantity from all the pools
+    xkf_all(:, :) = zero
+    etf_all(:, :) = zero
+    !
+#if defined(__MPI)
+    !
+    ! Note that poolgather2 works with the doubled grid (k and k+q)
+    !
+    CALL poolgather2(3,       nkqtotf, nkqf, xkf, xkf_all)
+    CALL poolgather2(nbndsub, nkqtotf, nkqf, etf, etf_all)
+    CALL mp_sum(epc, inter_pool_comm )
+    CALL mp_sum(epc_unsym, inter_pool_comm ) 
+    CALL mp_sum(epc_real, inter_pool_comm ) 
+    CALL mp_sum(epc_imag, inter_pool_comm ) 
+    CALL mp_barrier(inter_pool_comm)
+    !
+#else
+    !
+    xkf_all = xkf
+    etf_all = etf
+    !
+#endif
+    !
+    ! Only master writes
+    IF (mpime == ionode_id) THEN
+      !
+      WRITE(stdout, '(5x, a)') ' Electron-phonon vertex |g| (meV)'
+      !
+      WRITE(stdout, '(/5x, "iq = ", i7, " coord.: ", 3f12.7)') iq, xqf(:, iq)
+      DO ik = 1, nktotf
+        !
+        ikk = 2 * ik - 1
+        ikq = ikk + 1
+        !
+        WRITE(stdout, '(5x, "ik = ", i7, " coord.: ", 3f12.7)') ik, xkf_all(:, ikk)
+        ! WRITE(stdout, '(5x, a)') ' ibnd     jbnd     imode   enk[eV]    enk+q[eV]  omega(q)[meV]   |g|[meV]'
+        WRITE(stdout, '(5x, a)') ' ibnd     jbnd     imode   enk[eV]    enk+q[eV]  omega(q)[meV]   &
+                                   |g_sym|[meV]   |g|[meV]   Re(g)[meV]   Im(g)[meV]'
+        WRITE(stdout, '(5x, a)') REPEAT('-', 78)
+        !
+        DO ibnd = 1, nbndfst
+          ekk = etf_all(ibndmin - 1 + ibnd, ikk)
+          DO jbnd = 1, nbndfst
+            ekq = etf_all(ibndmin - 1 + jbnd, ikq)
+            DO nu = 1, nmodes
+              !WRITE(stdout, '(3i9, 2f12.4, 1f20.10, 1e20.10)') ibndmin - 1 + ibnd, ibndmin - 1 + jbnd, &
+              !     nu, ryd2ev * ekk, ryd2ev * ekq, ryd2mev * wf(nu, iq), ryd2mev * epc(ibnd, jbnd, nu, ik)
+              WRITE(stdout, '(3i9, 2f12.4, 1f20.10, 1e20.10, 3e20.10)') ibndmin - 1 + ibnd, ibndmin - 1 + jbnd, &
+                   nu, ryd2ev * ekk, ryd2ev * ekq, ryd2mev * wf(nu, iq), ryd2mev * epc(ibnd, jbnd, nu, ik), &
+                   ryd2mev * epc_unsym(ibnd, jbnd, nu, ik), &
+                   ryd2mev * epc_real(ibnd, jbnd, nu, ik), &
+                   ryd2mev * epc_imag(ibnd, jbnd, nu, ik)  
+            ENDDO
+          ENDDO
+          !
+        ENDDO
+        WRITE(stdout, '(5x, a/)') REPEAT('-', 78)
+        !
+      ENDDO
+    ENDIF ! master node
+    !
+    DEALLOCATE(epc, STAT = ierr)
+    IF (ierr /= 0) CALL errore('print_gkk', 'Error deallocating epc', 1)
+    DEALLOCATE(epc_sym, STAT = ierr)
+    IF (ierr /= 0) CALL errore('print_gkk', 'Error deallocating epc_sym', 1)
+    DEALLOCATE(epc_unsym, STAT = ierr)
+    IF (ierr /= 0) CALL errore('print_gkk', 'Error deallocating epc_unsym', 1)
+    DEALLOCATE(epc_real, STAT = ierr)
+    IF (ierr /= 0) CALL errore('print_gkk', 'Error deallocating epc_real', 1)
+    DEALLOCATE(epc_imag, STAT = ierr)
+    IF (ierr /= 0) CALL errore('print_gkk', 'Error deallocating epc_imag', 1)
+    !
+    RETURN
+    !
+    !-----------------------------------------------------------------------
+    END SUBROUTINE print_gkk
+    !-----------------------------------------------------------------------
+    !
+    !-----------------------------------------------------------------------
+    SUBROUTINE print_vkk(iq)
+    !-----------------------------------------------------------------------
+    !!
+    !! Print the VME for all n,n'
+    !! 07/2025 KL
+    !!
+    !-----------------------------------------------------------------------
+    USE kinds,         ONLY : DP
+    USE io_global,     ONLY : stdout
+    USE input,         ONLY : nbndsub
+    USE global_var,    ONLY : etf, ibndmin, nkqf, xqf, nbndfst,    &
+                              nkf, xkf, nkqtotf, nktotf, vmef
+    USE ep_constants,  ONLY : ryd2ev, zero
+    USE mp,            ONLY : mp_barrier, mp_sum
+    USE mp_global,     ONLY : inter_pool_comm
+    USE mp_world,      ONLY : mpime
+    USE io_global,     ONLY : ionode_id
+    USE io_var,        ONLY : iufilvkk
+    USE parallelism,   ONLY : fkbounds, poolgather2
+    !
+    IMPLICIT NONE
+    !
+    INTEGER, INTENT(in) :: iq
+    !! Current q-point index
+    !
+    ! Local variables
+    INTEGER :: lower_bnd
+    !! Lower bounds index after k or q paral
+    INTEGER :: upper_bnd
+    !! Upper bounds index after k or q paral
+    INTEGER :: ik
+    !! K-point index
+    INTEGER :: ikk
+    !! K-point index
+    INTEGER :: ikq
+    !! K+q-point index
+    INTEGER :: ibnd
+    !! Band index
+    INTEGER :: jbnd
+    !! Band index
+    INTEGER :: ierr
+    !! Error status
+    REAL(KIND = DP) :: xkf_all(3, nkqtotf)
+    !! Collect k-point coordinate from all pools in parallel case
+    REAL(KIND = DP) :: etf_all(nbndsub, nkqtotf)
+    !! Collect eigenenergies from all pools in parallel case
+    REAL(KIND = DP) :: ekk
+    !! Eigenenergies at k
+    REAL(KIND = DP) :: ekq
+    !! Eigenenergies at k+q
+    REAL(KIND = DP), ALLOCATABLE :: vmn_real(:, :, :, :)
+    !! real part of the volecity matrix
+    REAL(KIND = DP), ALLOCATABLE :: vmn_imag(:, :, :, :)
+    !! imaginary part of the volecity matrix
+    !
+    ! find the bounds of k-dependent arrays in the parallel case in each pool
+    CALL fkbounds(nktotf, lower_bnd, upper_bnd)
+    !
+    ALLOCATE(vmn_real(3, nbndfst, nbndfst, nktotf), STAT = ierr)
+    IF (ierr /= 0) CALL errore('print_vkk', 'Error allocating vmn_real', 1)
+    ALLOCATE(vmn_imag(3, nbndfst, nbndfst, nktotf), STAT = ierr)
+    IF (ierr /= 0) CALL errore('print_vkk', 'Error allocating vmn_imag', 1)
+    !
+    vmn_real(:, :, :, :) = zero
+    vmn_imag(:, :, :, :) = zero
+    !
+    ! First do the average over bands and modes for each pool
+    DO ik = 1, nkf
+      ikk = 2 * ik - 1
+      ikq = ikk + 1
+      !
+      DO ibnd = 1, nbndfst
+        DO jbnd = 1, nbndfst
+           vmn_real(:, ibnd, jbnd, ik + lower_bnd - 1) = REAL(vmef(:, ibnd, jbnd, ikk))
+           vmn_imag(:, ibnd, jbnd, ik + lower_bnd - 1) = IMAG(vmef(:, ibnd, jbnd, ikk))
+        ENDDO ! jbnd
+      ENDDO   ! ibnd
+      !
+    ENDDO ! k-points
+    !
+    ! We need quantity from all the pools
+    xkf_all(:, :) = zero
+    etf_all(:, :) = zero
+    !
+#if defined(__MPI)
+    !
+    ! Note that poolgather2 works with the doubled grid (k and k+q)
+    !
+    CALL poolgather2(3,       nkqtotf, nkqf, xkf, xkf_all)
+    CALL poolgather2(nbndsub, nkqtotf, nkqf, etf, etf_all)
+    CALL mp_sum(vmn_real, inter_pool_comm )
+    CALL mp_sum(vmn_imag, inter_pool_comm )
+    CALL mp_barrier(inter_pool_comm)
+    !
+#else
+    !
+    xkf_all = xkf
+    etf_all = etf
+    !
+#endif
+    !
+    ! Only master writes
+    IF (mpime == ionode_id) THEN
+      !
+      OPEN(UNIT = iufilvkk, FILE = 'vmnk.dat')
+      WRITE(iufilvkk, '(5x, a)') ' velocity matrix elements vmnk'
+      !
+      WRITE(iufilvkk, '(/5x, "iq = ", i7, " coord.: ", 3f12.7)') iq, xqf(:, iq)
+      DO ik = 1, nktotf
+        !
+        ikk = 2 * ik - 1
+        ikq = ikk + 1
+        !
+        WRITE(iufilvkk, '(5x, "ik = ", i7, " coord.: ", 3f12.7)') ik, xkf_all(:, ikk)
+        WRITE(iufilvkk, '(5x, a)') ' ibnd     jbnd    enk[eV]   enk+q[eV]    Re[vmn] (m/s)   Im[vmn] (m/s)'
+        WRITE(iufilvkk, '(5x, a)') REPEAT('-', 78)
+        !
+        DO ibnd = 1, nbndfst
+          ekk = etf_all(ibndmin - 1 + ibnd, ikk)
+          DO jbnd = 1, nbndfst
+            ekq = etf_all(ibndmin - 1 + jbnd, ikq)
+            WRITE(iufilvkk, '(2i9, 2f12.4, 6e20.10)')  &
+                 ibndmin - 1 + ibnd, ibndmin - 1 + jbnd, &
+                 ryd2ev * ekk, ryd2ev * ekq, &
+                 vmn_real(:, ibnd, jbnd, ik)*1093845.65, &
+                 vmn_imag(:, ibnd, jbnd, ik)*1093845.65  !! from rydberg unit to m/s
+          ENDDO
+          !
+        ENDDO
+        WRITE(iufilvkk, '(5x, a/)') REPEAT('-', 78)
+        !
+      ENDDO
+    ENDIF ! master node
+    !
+    DEALLOCATE(vmn_real, STAT = ierr)
+    IF (ierr /= 0) CALL errore('print_vkk', 'Error deallocating vmn_real', 1)
+    DEALLOCATE(vmn_imag, STAT = ierr)
+    IF (ierr /= 0) CALL errore('print_vkk', 'Error deallocating vmn_imag', 1)
+    !
+    RETURN
+    !
+    !-----------------------------------------------------------------------
+    END SUBROUTINE print_vkk
+    !-----------------------------------------------------------------------
+    !
+    !-----------------------------------------------------------------------
+    SUBROUTINE print_uf(iq, uf)
+    !-----------------------------------------------------------------------
+    !!
+    !! Print the phonon eigenmodes
+    !! 03/28/2026 KL
+    !!
+    !-----------------------------------------------------------------------
+    USE kinds,         ONLY : DP
+    USE io_global,     ONLY : stdout
+    USE global_var,    ONLY : xqf, wf
+    USE modes,         ONLY : nmodes
+    USE ions_base,     ONLY : nat, amass, ityp, tau
+    USE ep_constants,  ONLY : ryd2mev, zero
+    USE mp_world,      ONLY : mpime
+    USE io_global,     ONLY : ionode_id
+    !
+    IMPLICIT NONE
+    !
+    COMPLEX(KIND = DP), INTENT(in) :: uf(nmodes, nmodes)
+    !! Rotation matrix for phonons
+    INTEGER, INTENT(in) :: iq
+    !! Current q-point index
+    !
+    ! Local variables
+    INTEGER :: nu
+    !! Mode index
+    INTEGER :: mu
+    !! Mode index
+    INTEGER :: iat
+    !! Atom index
+    REAL(KIND = DP) :: norm
+    !! Norm of eigenvector
+    COMPLEX(KIND = DP) :: uf_norm(nmodes, nmodes)
+    !! Normalized phonon eigenvectors
+    INTEGER :: ierr
+    !! Error status
+    REAL(KIND = DP) :: wq
+    !! Phonon frequency
+    !
+    ! Only master writes
+    IF (mpime == ionode_id) THEN
+      !
+      ! Normalize each eigenmode
+      DO nu = 1, nmodes
+        norm = zero
+        DO mu = 1, nmodes
+          norm = norm + REAL(uf(mu, nu) * CONJG(uf(mu, nu)), KIND = DP)
+        ENDDO
+        norm = DSQRT(norm)
+        IF (norm > zero) THEN
+          uf_norm(:, nu) = uf(:, nu) / norm
+        ELSE
+          uf_norm(:, nu) = uf(:, nu)
+        ENDIF
+      ENDDO
+      !
+      WRITE(stdout, '(5x, a)') ' Normalized phonon eigenmodes '
+      !
+      WRITE(stdout, '(/5x, "iq = ", i7, " coord.: ", 3f12.7)') iq, xqf(:, iq)
+        WRITE(stdout, '(5x, a)') REPEAT('-', 78)
+        !
+        DO nu = 1, nmodes
+          DO iat = 1, nat
+            WRITE(stdout, '(5x, a, i4, a, i4, a, 3("(", 2f10.6, ")", 2x))') &
+              'mode ', nu, ' atom ', iat, ' : ', &
+              uf_norm(3 * (iat - 1) + 1, nu), &
+              uf_norm(3 * (iat - 1) + 2, nu), &
+              uf_norm(3 * (iat - 1) + 3, nu)
+          ENDDO
+        ENDDO
+        WRITE(stdout, '(5x, a/)') REPEAT('-', 78)
+        !
+    ENDIF ! master node
+    !
+    !-----------------------------------------------------------------------
+    END SUBROUTINE print_uf
+    !-----------------------------------------------------------------------
+    !
+    !-----------------------------------------------------------------------
+    SUBROUTINE print_eigdiff(iq)
+    !-----------------------------------------------------------------------
+    !!   
+    !! Print the eigenvalues and their differences for all n,n',k,q
+    !! 07/07/2025 KL
+    !!   
+    !-----------------------------------------------------------------------
+    USE kinds,         ONLY : DP 
+    USE io_global,     ONLY : stdout
+    USE modes,         ONLY : nmodes
+    USE input,         ONLY : nbndsub
+    USE global_var,    ONLY : etf, ibndmin, nkqf, xqf, nbndfst,    &    
+                              nkf, xkf, nkqtotf, nktotf 
+    USE ep_constants,  ONLY : ryd2ev, zero 
+    USE mp,            ONLY : mp_barrier, mp_sum
+    USE mp_global,     ONLY : inter_pool_comm
+    USE mp_world,      ONLY : mpime
+    USE io_global,     ONLY : ionode_id
+    USE io_var,        ONLY : iufileigdiff
+    USE parallelism,   ONLY : fkbounds, poolgather2
+    !    
+    IMPLICIT NONE 
+    !    
+    INTEGER, INTENT(in) :: iq
+    !! Current q-point index
+    !    
+    ! Local variables
+    INTEGER :: lower_bnd
+    !! Lower bounds index after k or q paral
+    INTEGER :: upper_bnd
+    !! Upper bounds index after k or q paral
+    INTEGER :: ik
+    !! K-point index
+    INTEGER :: ikk
+    !! K-point index
+    INTEGER :: ikq
+    !! K+q-point index
+    INTEGER :: ibnd 
+    !! Band index
+    INTEGER :: jbnd 
+    !! Band index
+    INTEGER :: ierr 
+    !! Error status
+    REAL(KIND = DP) :: xkf_all(3, nkqtotf)
+    !! Collect k-point coordinate from all pools in parallel case
+    REAL(KIND = DP) :: etf_all(nbndsub, nkqtotf)
+    !! Collect eigenenergies from all pools in parallel case
+    REAL(KIND = DP) :: ekk
+    !! Eigenenergies at k
+    REAL(KIND = DP) :: ekq
+    !! Eigenenergies at k+q
+    !    
+    ! find the bounds of k-dependent arrays in the parallel case in each pool
+    CALL fkbounds(nktotf, lower_bnd, upper_bnd)
+    !    
+    ! We need quantity from all the pools
+    xkf_all(:, :) = zero
+    etf_all(:, :) = zero
+    !
+#if defined(__MPI)
+    !
+    ! Note that poolgather2 works with the doubled grid (k and k+q)
+    !
+    CALL poolgather2(3,       nkqtotf, nkqf, xkf, xkf_all)
+    CALL poolgather2(nbndsub, nkqtotf, nkqf, etf, etf_all)
+    CALL mp_barrier(inter_pool_comm)
+    !
+#else
+    !
+    xkf_all = xkf
+    etf_all = etf
+    !
+#endif
+    !
+    ! Only master writes
+    IF (mpime == ionode_id) THEN
+      !
+      OPEN(UNIT = iufileigdiff, FILE = 'eigdiff.dat')
+      WRITE(iufileigdiff, '(5x, a)') ' eigenvalues and their differences'
+      !
+      WRITE(iufileigdiff, '(/5x, "iq = ", i7, " coord.: ", 3f12.7)') iq, xqf(:, iq)
+      DO ik = 1, nktotf
+        !
+        ikk = 2 * ik - 1
+        ikq = ikk + 1
+        !
+        WRITE(iufileigdiff, '(5x, "ik = ", i7, " coord.: ", 3f12.7)') ik, xkf_all(:, ikk)
+        WRITE(iufileigdiff, '(5x, a)') '   n      m      enk[eV]     emk+q[eV]       emk+q - enk[eV]'
+        WRITE(iufileigdiff, '(5x, a)') REPEAT('-', 78)
+        !
+        DO ibnd = 1, nbndfst
+          ekk = etf_all(ibndmin - 1 + ibnd, ikk)
+          DO jbnd = 1, nbndfst
+            ekq = etf_all(ibndmin - 1 + jbnd, ikq)
+            WRITE(iufileigdiff, '(2i9, 3f20.10)')  &
+                 ibndmin - 1 + ibnd, ibndmin - 1 + jbnd, &
+                 ryd2ev * ekk, ryd2ev * ekq, ryd2ev * (ekq-ekk)
+          ENDDO
+          !
+        ENDDO
+        WRITE(iufileigdiff, '(5x, a/)') REPEAT('-', 78)
+        !
+      ENDDO
+    ENDIF ! master node
+    !
+    RETURN
+    !
+    !-----------------------------------------------------------------------
+    END SUBROUTINE print_eigdiff
+    !-----------------------------------------------------------------------
+    !
+    !-----------------------------------------------------------------------
+    SUBROUTINE print_meff_sym(f_out, bztoibz_mat, vkk_all, etf_all, wkf_all, &
+                             ef0, sigma, max_mob, xkf_all)
+    !-----------------------------------------------------------------------
+    !!
+    !! This routine prints the conductivity effective mass using k-point symmetry.
+    !!
+    USE kinds,         ONLY : DP
+    USE io_global,     ONLY : stdout
+    USE input,         ONLY : ncarrier, nstemp, assume_metal, lsda
+    USE global_var,    ONLY : nbndfst, gtemp, nktotf, evbm, ecbm
+    USE ep_constants,  ONLY : zero, two, pi, kelvin2eV, ryd2ev, eps10, &
+                              bohr2ang, ang2cm, hbarJ
+    USE constants,     ONLY : electron_si
+    USE symmetry,      ONLY : nsym => nsym_k
+    USE mp,            ONLY : mp_sum
+    USE mp_world,      ONLY : mpime
+    USE io_global,     ONLY : meta_ionode
+    USE io_var,        ONLY : iufilmu_meff
+    !
+    IMPLICIT NONE
+    !
+    INTEGER, INTENT(in) :: bztoibz_mat(nsym, nktotf)
+    !! For a given k-point from the IBZ, given the index of all k from full BZ
+    REAL(KIND = DP), INTENT(in) :: f_out(3, nbndfst, nktotf, nstemp)
+    !! occupations factor produced by SERTA or IBTE
+    REAL(KIND = DP), INTENT(in) :: vkk_all(3, nbndfst, nktotf)
+    !! Velocity
+    REAL(KIND = DP), INTENT(in) :: etf_all(nbndfst, nktotf)
+    !! Eigenenergies of k
+    REAL(KIND = DP), INTENT(in) :: wkf_all(nktotf)
+    !! Weight of k
+    REAL(KIND = DP), INTENT(in) :: ef0(nstemp)
+    !! The Fermi level
+    REAL(KIND = DP), INTENT(inout) :: sigma(3, 3, nstemp)
+    !! Conductivity
+    REAL(KIND = DP), INTENT(inout), OPTIONAL :: max_mob(nstemp)
+    !! Maximum mobility
+    REAL(KIND = DP), INTENT(in), OPTIONAL :: xkf_all(3, nktotf)
+    !! K-point coordinate. If passed it will compute state resolved mobility
+    !
+    ! Local variables
+    INTEGER :: itemp
+    !! temperature index
+    INTEGER :: ik
+    !! k-point index
+    INTEGER :: ibnd
+    !! band index
+    REAL(KIND = DP) :: etemp
+    !! Temperature in Ry (this includes division by kb)
+    REAL(KIND = DP) :: sigma_tmp(3, 3)
+    !! Electrical conductivity
+    REAL(KIND = DP) :: ekk
+    !! Energy relative to Fermi level: $$\varepsilon_{n\mathbf{k}}-\varepsilon_F$$
+    REAL(KIND = DP) :: carrier_density
+    !! Carrier density [nb of carrier per unit cell]
+    REAL(KIND = DP) :: fnk
+    !! Fermi-Dirac occupation function
+    REAL(KIND = DP), EXTERNAL :: wgauss
+    !! Compute the approximate theta function. Here computes Fermi-Dirac
+    REAL(KIND = DP), EXTERNAL :: w0gauss
+    !! The derivative of wgauss:  an approximation to the delta function
+    REAL(KIND = DP) :: fi_check(3)
+    !! Sum rule on population
+    CHARACTER(LEN = 256) :: fnm
+    !! Buffer file name
+    !
+    IF (PRESENT(max_mob)) THEN
+      max_mob(:) = zero
+    ENDIF
+    !
+    fnm = ''
+    IF (TRIM(lsda) == 'down') fnm = '.down'
+    !
+    ! compute conductivity
+    IF (meta_ionode) THEN
+      OPEN(UNIT = iufilmu_meff, FILE = 'm_effective'// TRIM(fnm) // '.fmt')
+      WRITE(iufilmu_meff, '(a)') '# Conductivity effective mass (Unit: free electron mass)'
+      WRITE(iufilmu_meff, '(a)') '# Temperature [K]     M(alpha, beta) [m_e]'
+      DO itemp = 1, nstemp
+        carrier_density = 0.0
+        etemp = gtemp(itemp)
+        sigma_tmp(:, :) = zero
+        fi_check(:) = zero
+        DO ik = 1,  nktotf
+          DO ibnd = 1, nbndfst
+            !  energy at k (relative to Ef)
+            ekk = etf_all(ibnd, ik) - ef0(itemp)
+            fnk = wgauss(-ekk / etemp, -99)
+            IF (etf_all(ibnd, ik) < (evbm + eps10) .AND. ncarrier < -1E5 .AND. .NOT. assume_metal) THEN
+              CALL compute_sigma_sym(f_out(:, ibnd, ik, itemp), bztoibz_mat(:, ik), &
+                                     vkk_all(:, ibnd, ik), sigma_tmp, fi_check)
+              ! The wkf(ikk) already include a factor 2
+              carrier_density = carrier_density + wkf_all(ik) * (1.0d0 - fnk)
+            ELSE IF (etf_all(ibnd, ik) > (ecbm - eps10) .AND. ncarrier > 1E5 .AND. .NOT. assume_metal) THEN
+              CALL compute_sigma_sym(f_out(:, ibnd, ik, itemp), bztoibz_mat(:, ik), &
+                                     vkk_all(:, ibnd, ik), sigma_tmp, fi_check)
+              carrier_density = carrier_density + wkf_all(ik) * fnk
+            ELSE IF (assume_metal) THEN
+              ! just sum on all bands for metals
+              CALL compute_sigma_sym(f_out(:, ibnd, ik, itemp), bztoibz_mat(:, ik), &
+                                     vkk_all(:, ibnd, ik), sigma_tmp, fi_check)
+              carrier_density = carrier_density + wkf_all(ik) * fnk
+            ENDIF
+          ENDDO ! ibnd
+        ENDDO ! ik
+        ! Print the state-resolved mobility to file
+        IF (.NOT. PRESENT(xkf_all)) THEN
+        !  CALL prtmob_nk(itemp, f_out(:, :, :, itemp), vkk_all, bztoibz_mat, carrier_density, ef0(itemp), xkf_all, etemp, etf_all)
+        !ELSE
+          ! Print the resulting mobility
+          IF (PRESENT(max_mob)) THEN
+            CALL prtmeff(itemp, sigma_tmp, carrier_density, fi_check, ef0(itemp), etemp, max_mob(itemp))
+          ELSE
+            CALL prtmeff(itemp, sigma_tmp, carrier_density, fi_check, ef0(itemp), etemp)
+          ENDIF
+        ENDIF
+        sigma(:, :, itemp) = sigma_tmp(:, :)
+      ENDDO ! temp
+      IF (itemp == nstemp) CLOSE(iufilmu_meff)
+    ENDIF  
+    !
+    !-----------------------------------------------------------------------
+    END SUBROUTINE print_meff_sym
+    !-----------------------------------------------------------------------
+    !
+    !-----------------------------------------------------------------------
+    SUBROUTINE print_mob_sym(f_out, bztoibz_mat, vkk_all, etf_all, wkf_all, &
+                             ef0, sigma, max_mob, xkf_all)
+    !-----------------------------------------------------------------------
+    !!
+    !! This routine prints the mobility using k-point symmetry.
+    !!
+    USE kinds,         ONLY : DP
+    USE io_global,     ONLY : stdout
+    USE input,         ONLY : ncarrier, nstemp, assume_metal, lsda
+    USE global_var,    ONLY : nbndfst, gtemp, nktotf, evbm, ecbm
+    USE ep_constants,  ONLY : zero, two, pi, kelvin2eV, ryd2ev, eps10, &
+                              bohr2ang, ang2cm, hbarJ
+    USE constants,     ONLY : electron_si
+    USE symmetry,      ONLY : nsym => nsym_k
+    USE mp,            ONLY : mp_sum
+    !
+    IMPLICIT NONE
+    !
+    INTEGER, INTENT(in) :: bztoibz_mat(nsym, nktotf)
+    !! For a given k-point from the IBZ, given the index of all k from full BZ
+    REAL(KIND = DP), INTENT(in) :: f_out(3, nbndfst, nktotf, nstemp)
+    !! occupations factor produced by SERTA or IBTE
+    REAL(KIND = DP), INTENT(in) :: vkk_all(3, nbndfst, nktotf)
+    !! Velocity
+    REAL(KIND = DP), INTENT(in) :: etf_all(nbndfst, nktotf)
+    !! Eigenenergies of k
+    REAL(KIND = DP), INTENT(in) :: wkf_all(nktotf)
+    !! Weight of k
+    REAL(KIND = DP), INTENT(in) :: ef0(nstemp)
+    !! The Fermi level
+    REAL(KIND = DP), INTENT(inout) :: sigma(3, 3, nstemp)
+    !! Conductivity
+    REAL(KIND = DP), INTENT(inout), OPTIONAL :: max_mob(nstemp)
+    !! Maximum mobility
+    REAL(KIND = DP), INTENT(in), OPTIONAL :: xkf_all(3, nktotf)
+    !! K-point coordinate. If passed it will compute state resolved mobility
+    !
+    ! Local variables
+    INTEGER :: itemp
+    !! temperature index
+    INTEGER :: ik
+    !! k-point index
+    INTEGER :: ibnd
+    !! band index
+    REAL(KIND = DP) :: etemp
+    !! Temperature in Ry (this includes division by kb)
+    REAL(KIND = DP) :: sigma_tmp(3, 3)
+    !! Electrical conductivity
+    REAL(KIND = DP) :: ekk
+    !! Energy relative to Fermi level: $$\varepsilon_{n\mathbf{k}}-\varepsilon_F$$
+    REAL(KIND = DP) :: carrier_density
+    !! Carrier density [nb of carrier per unit cell]
+    REAL(KIND = DP) :: fnk
+    !! Fermi-Dirac occupation function
+    REAL(KIND = DP), EXTERNAL :: wgauss
+    !! Compute the approximate theta function. Here computes Fermi-Dirac
+    REAL(KIND = DP), EXTERNAL :: w0gauss
+    !! The derivative of wgauss:  an approximation to the delta function
+    REAL(KIND = DP) :: fi_check(3)
+    !! Sum rule on population
+    CHARACTER(LEN = 256) :: fnm
+    !! Buffer file name
+    !
+    fnm = ''
+    IF (TRIM(lsda) == 'down') fnm = 'down'
+    !
+    IF (PRESENT(max_mob)) THEN
+      max_mob(:) = zero
+    ENDIF
+    IF (PRESENT(xkf_all)) THEN
+      WRITE(stdout, '(a)') ' '
+      WRITE(stdout, '(5x, a)') 'Printing the state-resolved mobility to mobility_nk'// TRIM(fnm) // '.fmt file'
+    ELSE
+      CALL prtheader_mob()
+    ENDIF
+    ! compute conductivity
+    DO itemp = 1, nstemp
+      carrier_density = 0.0
+      etemp = gtemp(itemp)
+      sigma_tmp(:, :) = zero
+      fi_check(:) = zero
+      !$omp parallel do collapse(2) reduction(+:carrier_density,sigma_tmp,fi_check) &
+      !$omp private(ekk,fnk)
+      DO ik = 1,  nktotf
+        DO ibnd = 1, nbndfst
+          !  energy at k (relative to Ef)
+          ekk = etf_all(ibnd, ik) - ef0(itemp)
+          fnk = wgauss(-ekk / etemp, -99)
+          IF (etf_all(ibnd, ik) < (evbm + eps10) .AND. ncarrier < -1E5 .AND. .NOT. assume_metal) THEN
+            CALL compute_sigma_sym(f_out(:, ibnd, ik, itemp), bztoibz_mat(:, ik), &
+                                   vkk_all(:, ibnd, ik), sigma_tmp, fi_check)
+            ! The wkf(ikk) already include a factor 2
+            carrier_density = carrier_density + wkf_all(ik) * (1.0d0 - fnk)
+          ELSE IF (etf_all(ibnd, ik) > (ecbm - eps10) .AND. ncarrier > 1E5 .AND. .NOT. assume_metal) THEN
+            CALL compute_sigma_sym(f_out(:, ibnd, ik, itemp), bztoibz_mat(:, ik), &
+                                   vkk_all(:, ibnd, ik), sigma_tmp, fi_check)
+            carrier_density = carrier_density + wkf_all(ik) * fnk
+          ELSE IF (assume_metal) THEN
+            ! just sum on all bands for metals
+            CALL compute_sigma_sym(f_out(:, ibnd, ik, itemp), bztoibz_mat(:, ik), &
+                                   vkk_all(:, ibnd, ik), sigma_tmp, fi_check)
+            carrier_density = carrier_density + wkf_all(ik) * fnk
+          ENDIF
+        ENDDO ! ibnd
+      ENDDO ! ik
+      !$omp end parallel do
+      ! Print the state-resolved mobility to file
+      IF (PRESENT(xkf_all)) THEN
+        CALL prtmob_nk(itemp, f_out(:, :, :, itemp), vkk_all, bztoibz_mat, carrier_density, ef0(itemp), xkf_all, etemp, etf_all)
+      ELSE
+        ! Print the resulting mobility
+        IF (PRESENT(max_mob)) THEN
+          CALL prtmob(itemp, sigma_tmp, carrier_density, fi_check, ef0(itemp), etemp, max_mob(itemp))
+        ELSE
+          CALL prtmob(itemp, sigma_tmp, carrier_density, fi_check, ef0(itemp), etemp)
+        ENDIF
+      ENDIF
+      sigma(:, :, itemp) = sigma_tmp(:, :)
+    ENDDO ! temp
+    !
+    !-----------------------------------------------------------------------
+    END SUBROUTINE print_mob_sym
+    !-----------------------------------------------------------------------
+    !
+    !-----------------------------------------------------------------------
+    SUBROUTINE compute_sigma_sym(f_out, bztoibz_mat, vkk_all, sigma, fi_check)
+    !-----------------------------------------------------------------------
+    !!
+    !!  Computes one element of the sigma tensor when using symmetries.
+    !!
+    !----------------------------------------------------------------------
+    USE kinds,            ONLY : DP
+    USE cell_base,        ONLY : at, bg
+    USE input,            ONLY : nkf1, nkf2, nkf3, lsda
+    USE global_var,       ONLY : s_bztoibz, spin_fac
+    USE symmetry,         ONLY : s => s_k, nsym => nsym_k
+    !
+    IMPLICIT NONE
+    !
+    INTEGER, INTENT(in) :: bztoibz_mat(nsym)
+    !! For a given k-point from the IBZ, given the index of all k from full BZ
+    REAL(KIND = DP), INTENT(in) :: f_out(3)
+    !! Occupation function produced by SERTA or IBTE
+    REAL(KIND = DP), INTENT(in) :: vkk_all(3)
+    !! Velocity
+    REAL(KIND = DP), INTENT(inout) :: sigma(3, 3)
+    !! Electrical conductivity
+    REAL(KIND = DP), INTENT(inout) :: fi_check(3)
+    !! Sum rule on population
+    !
+    ! Local variables
+    !
+    INTEGER :: nb
+    !! Number of points equivalent by sym from BZ to IBTZ
+    INTEGER :: ikbz
+    !! Index of full BZ points
+    INTEGER :: i,j
+    !! Cartesian index
+    REAL(KIND = DP) :: vk_cart(3)
+    !! veloctiy in cartesian coordinate
+    REAL(KIND = DP) :: fi_cart(3)
+    !! Cartesian Fi_all
+    REAL(KIND = DP) :: fi_rot(3)
+    !! Rotated Fi_all by the symmetry operation
+    REAL(KIND = DP) :: v_rot(3)
+    !! Rotated velocity by the symmetry operation
+    REAL(KIND = DP) :: sa(3, 3)
+    !! Symmetry matrix in crystal
+    REAL(KIND = DP) :: sb(3, 3)
+    !! Symmetry matrix (intermediate step)
+    REAL(KIND = DP) :: sr(3, 3)
+    !! Symmetry matrix in cartesian coordinate
+    !
+    vk_cart = vkk_all
+    fi_cart = f_out
+    !
+    ! Loop on the point equivalent by symmetry in the full BZ
+    DO nb = 1, nsym
+      IF (bztoibz_mat(nb) > 0) THEN
+        ikbz = bztoibz_mat(nb)
+        !
+        ! Transform the symmetry matrix from Crystal to cartesian
+        sa(:, :) = DBLE(s(:, :, s_bztoibz(ikbz)))
+        sb       = MATMUL(bg, sa)
+        sr(:, :) = MATMUL(at, TRANSPOSE(sb))
+        sr       = TRANSPOSE(sr)
+        !
+        CALL DGEMV('n', 3, 3, 1.d0, sr, 3, vk_cart, 1 ,0.d0 , v_rot, 1)
+        CALL DGEMV('n', 3, 3, 1.d0, sr, 3, fi_cart, 1 ,0.d0 , fi_rot, 1)
+        !
+        DO j = 1, 3
+          DO i = 1, 3
+            ! The factor two in the weight at the end is to
+            ! account for spin
+            sigma(i, j) = sigma(i, j) - (v_rot(j) * fi_rot(i)) * spin_fac / (nkf1 * nkf2 * nkf3)
+          ENDDO
+        ENDDO
+        !
+        fi_check(:) = fi_check(:) + fi_rot(:) * spin_fac / (nkf1 * nkf2 * nkf3)
+      ENDIF ! BZ
+    ENDDO ! ikb
+    !
+    !-----------------------------------------------------------------------
+    END SUBROUTINE compute_sigma_sym
+    !-----------------------------------------------------------------------
+    !
+    !-----------------------------------------------------------------------
+    SUBROUTINE print_meff(f_out, vkk_all, etf_all, wkf_all, ef0, sigma, max_mob)
+    !-----------------------------------------------------------------------
+    !!
+    !! This routine prints the conductivity effective mass without k-point symmetry
+    !!
+    !-----------------------------------------------------------------------
+    USE kinds,         ONLY : DP
+    USE input,         ONLY : ncarrier, nstemp, assume_metal, lsda
+    USE global_var,    ONLY : nbndfst, gtemp, nktotf, evbm, ecbm
+    USE ep_constants,  ONLY : zero, two, pi, kelvin2eV, ryd2ev, eps10, &
+                              bohr2ang, ang2cm, hbarJ
+    USE constants,     ONLY : electron_si
+    USE mp,            ONLY : mp_sum
+    USE mp_world,      ONLY : mpime
+    USE io_global,     ONLY : meta_ionode
+    USE io_var,        ONLY : iufilmu_meff
+    !
+    IMPLICIT NONE
+    !
+    REAL(KIND = DP), INTENT(in) :: f_out(3, nbndfst, nktotf, nstemp)
+    !! Occupation function produced by SERTA or IBTE
+    REAL(KIND = DP), INTENT(in) :: vkk_all(3, nbndfst, nktotf)
+    !! Velocity
+    REAL(KIND = DP), INTENT(in) :: etf_all(nbndfst, nktotf)
+    !! Eigenenergies of k
+    REAL(KIND = DP), INTENT(in) :: wkf_all(nktotf)
+    !! Weight of k
+    REAL(KIND = DP), INTENT(in) :: ef0(nstemp)
+    !! The Fermi level
+    REAL(KIND = DP), INTENT(inout) :: sigma(3, 3, nstemp)
+    !! Conductivity
+    REAL(KIND = DP), INTENT(inout), OPTIONAL :: max_mob(nstemp)
+    !! The maximum mobility computed by thr prtmob routine.
+    !
+    ! Local variables
+    INTEGER :: itemp
+    !! temperature index
+    INTEGER :: ik
+    !! k-point index
+    INTEGER :: ibnd
+    !! band index
+    !! Cartesian index
+    REAL(KIND = DP) :: etemp
+    !! Temperature in Ry (this includes division by kb)
+    REAL(KIND = DP) :: sigma_tmp(3, 3)
+    !! Electrical conductivity
+    REAL(KIND = DP) :: ekk
+    !! Energy relative to Fermi level: $$\varepsilon_{n\mathbf{k}}-\varepsilon_F$$
+    REAL(KIND = DP) :: carrier_density
+    !! Carrier density [nb of carrier per unit cell]
+    REAL(KIND = DP) :: fnk
+    !! Fermi-Dirac occupation function
+    REAL(KIND = DP) :: Fi_check(3)
+    !! Sum rule on population
+    REAL(KIND = DP), EXTERNAL :: wgauss
+    !! Compute the approximate theta function. Here computes Fermi-Dirac
+    REAL(KIND = DP), EXTERNAL :: w0gauss
+    !! The derivative of wgauss:  an approximation to the delta function
+    CHARACTER(LEN = 256) :: fnm
+    !! Buffer file name
+    !
+    IF (PRESENT(max_mob)) THEN
+      max_mob(:) = zero
+    ENDIF
+    !
+    fnm = ''
+    IF (TRIM(lsda) == 'down') fnm = '.down'
+    !
+    IF (meta_ionode) THEN
+      OPEN(UNIT = iufilmu_meff, FILE = 'm_effective'// TRIM(fnm) //'.fmt')
+      WRITE(iufilmu_meff, '(a)') '# Conductivity effective mass (Unit: free electron mass)'
+      WRITE(iufilmu_meff, '(a)') '# Temperature [K]     M(alpha, beta) [m_e]'
+      DO itemp = 1, nstemp
+        carrier_density = 0.0
+        etemp = gtemp(itemp)
+        sigma_tmp(:, :) = zero
+        fi_check(:) = zero
+        DO ik = 1,  nktotf
+          DO ibnd = 1, nbndfst
+            !  energy at k (relative to Ef)
+            ekk = etf_all(ibnd, ik) - ef0(itemp)
+            fnk = wgauss(-ekk / etemp, -99)
+            IF (etf_all(ibnd, ik) < (evbm + eps10) .AND. ncarrier < -1E5 .AND. .NOT. assume_metal) THEN
+              CALL compute_sigma(f_out(:, ibnd, ik, itemp), vkk_all(:, ibnd, ik), wkf_all(ik), sigma_tmp, fi_check)
+              ! The wkf(ikk) already include a factor 2
+              carrier_density = carrier_density + wkf_all(ik) * (1.0d0 - fnk)
+            ELSE IF (etf_all(ibnd, ik) > (ecbm - eps10) .AND. ncarrier > 1E5 .AND. .NOT. assume_metal) THEN
+              CALL compute_sigma(f_out(:, ibnd, ik, itemp), vkk_all(:, ibnd, ik), wkf_all(ik), sigma_tmp, fi_check)
+              ! The wkf(ikk) already include a factor 2
+              carrier_density = carrier_density + wkf_all(ik) * fnk
+            ELSE IF (assume_metal) THEN
+              ! sum on all bands for metals
+              CALL compute_sigma(f_out(:, ibnd, ik, itemp), vkk_all(:, ibnd, ik), wkf_all(ik), sigma_tmp, fi_check)
+              carrier_density = carrier_density + wkf_all(ik) * fnk
+            ENDIF
+          ENDDO ! ibnd
+        ENDDO ! ik
+        IF (PRESENT(max_mob)) THEN
+          CALL prtmeff(itemp, sigma_tmp, carrier_density, fi_check, ef0(itemp), etemp, max_mob(itemp))
+        ELSE
+          CALL prtmeff(itemp, sigma_tmp, carrier_density, fi_check, ef0(itemp), etemp)
+        ENDIF
+        sigma(:, :, itemp) = sigma_tmp(:, :)
+      ENDDO ! itemp
+      IF (itemp == nstemp) CLOSE(iufilmu_meff)
+    ENDIF  
+    !-----------------------------------------------------------------------
+    END SUBROUTINE print_meff
+    !-----------------------------------------------------------------------
+    !
+    !-----------------------------------------------------------------------
+    SUBROUTINE print_mob(f_out, vkk_all, etf_all, wkf_all, ef0, sigma, max_mob)
+    !-----------------------------------------------------------------------
+    !!
+    !! This routine prints the mobility without k-point symmetry
+    !!
+    !-----------------------------------------------------------------------
+    USE kinds,         ONLY : DP
+    USE input,         ONLY : ncarrier, nstemp, assume_metal
+    USE global_var,    ONLY : nbndfst, gtemp, nktotf, evbm, ecbm
+    USE ep_constants,  ONLY : zero, two, pi, kelvin2eV, ryd2ev, eps10, &
+                              bohr2ang, ang2cm, hbarJ
+    USE constants,     ONLY : electron_si
+    USE mp,            ONLY : mp_sum
+    !
+    IMPLICIT NONE
+    !
+    REAL(KIND = DP), INTENT(in) :: f_out(3, nbndfst, nktotf, nstemp)
+    !! Occupation function produced by SERTA or IBTE
+    REAL(KIND = DP), INTENT(in) :: vkk_all(3, nbndfst, nktotf)
+    !! Velocity
+    REAL(KIND = DP), INTENT(in) :: etf_all(nbndfst, nktotf)
+    !! Eigenenergies of k
+    REAL(KIND = DP), INTENT(in) :: wkf_all(nktotf)
+    !! Weight of k
+    REAL(KIND = DP), INTENT(in) :: ef0(nstemp)
+    !! The Fermi level
+    REAL(KIND = DP), INTENT(inout) :: sigma(3, 3, nstemp)
+    !! Conductivity
+    REAL(KIND = DP), INTENT(inout), OPTIONAL :: max_mob(nstemp)
+    !! The maximum mobility computed by thr prtmob routine.
+    !
+    ! Local variables
+    INTEGER :: itemp
+    !! temperature index
+    INTEGER :: ik
+    !! k-point index
+    INTEGER :: ibnd
+    !! band index
+    !! Cartesian index
+    REAL(KIND = DP) :: etemp
+    !! Temperature in Ry (this includes division by kb)
+    REAL(KIND = DP) :: sigma_tmp(3, 3)
+    !! Electrical conductivity
+    REAL(KIND = DP) :: ekk
+    !! Energy relative to Fermi level: $$\varepsilon_{n\mathbf{k}}-\varepsilon_F$$
+    REAL(KIND = DP) :: carrier_density
+    !! Carrier density [nb of carrier per unit cell]
+    REAL(KIND = DP) :: fnk
+    !! Fermi-Dirac occupation function
+    REAL(KIND = DP) :: Fi_check(3)
+    !! Sum rule on population
+    REAL(KIND = DP), EXTERNAL :: wgauss
+    !! Compute the approximate theta function. Here computes Fermi-Dirac
+    REAL(KIND = DP), EXTERNAL :: w0gauss
+    !! The derivative of wgauss:  an approximation to the delta function
+    !
+    IF (PRESENT(max_mob)) THEN
+      max_mob(:) = zero
+    ENDIF
+    CALL prtheader_mob()
+    DO itemp = 1, nstemp
+      carrier_density = 0.0
+      etemp = gtemp(itemp)
+      sigma_tmp(:, :) = zero
+      fi_check(:) = zero
+      DO ik = 1,  nktotf
+        DO ibnd = 1, nbndfst
+          !  energy at k (relative to Ef)
+          ekk = etf_all(ibnd, ik) - ef0(itemp)
+          fnk = wgauss(-ekk / etemp, -99)
+          IF (etf_all(ibnd, ik) < (evbm + eps10) .AND. ncarrier < -1E5 .AND. .NOT. assume_metal) THEN
+            CALL compute_sigma(f_out(:, ibnd, ik, itemp), vkk_all(:, ibnd, ik), wkf_all(ik), sigma_tmp, fi_check)
+            ! The wkf(ikk) already include a factor 2
+            carrier_density = carrier_density + wkf_all(ik) * (1.0d0 - fnk)
+          ELSE IF (etf_all(ibnd, ik) > (ecbm - eps10) .AND. ncarrier > 1E5 .AND. .NOT. assume_metal) THEN
+            CALL compute_sigma(f_out(:, ibnd, ik, itemp), vkk_all(:, ibnd, ik), wkf_all(ik), sigma_tmp, fi_check)
+            ! The wkf(ikk) already include a factor 2
+            carrier_density = carrier_density + wkf_all(ik) * fnk
+          ELSE IF (assume_metal) THEN
+            ! sum on all bands for metals
+            CALL compute_sigma(f_out(:, ibnd, ik, itemp), vkk_all(:, ibnd, ik), wkf_all(ik), sigma_tmp, fi_check)
+            carrier_density = carrier_density + wkf_all(ik) * fnk
+          ENDIF
+        ENDDO ! ibnd
+      ENDDO ! ik
+      IF (PRESENT(max_mob)) THEN
+        CALL prtmob(itemp, sigma_tmp, carrier_density, fi_check, ef0(itemp), etemp, max_mob(itemp))
+      ELSE
+        CALL prtmob(itemp, sigma_tmp, carrier_density, fi_check, ef0(itemp), etemp)
+      ENDIF
+      sigma(:, :, itemp) = sigma_tmp(:, :)
+    ENDDO ! itemp
+    !-----------------------------------------------------------------------
+    END SUBROUTINE print_mob
+    !-----------------------------------------------------------------------
+    !
+    !-----------------------------------------------------------------------
+    SUBROUTINE compute_sigma(f_out, vkk_all, wkf_all, sigma, fi_check)
+    !-----------------------------------------------------------------------
+    !!
+    !! Computes the conductivity tensor without using symetries
+    !! With or without B-field
+    !!
+    !----------------------------------------------------------------------
+    USE kinds,            ONLY : DP
+    USE input,            ONLY : nkf1, nkf2, nkf3, lsda
+    USE global_var,       ONLY : spin_fac
+    !
+    IMPLICIT NONE
+    !
+    REAL(KIND = DP), INTENT(in) :: f_out(3)
+    !! Occupation function produced by SERTA or IBTE for a given k-point and band index
+    REAL(KIND = DP), INTENT(INOUT) :: sigma(3, 3)
+    !! Electrical conductivity
+    REAL(KIND = DP), INTENT(INOUT) :: fi_check(3)
+    !! Sum rule on population
+    REAL(KIND = DP), INTENT(in) :: vkk_all(3)
+    !! Velocity for a given k-point and band
+    REAL(KIND = DP), INTENT(in) :: wkf_all
+    !! Weight of k
+    !
+    ! Local variables
+    !
+    INTEGER :: i, j
+    !! Dimension loop indices
+    !
+    DO j = 1, 3
+      DO i = 1, 3
+        sigma(i, j) = sigma(i, j) - vkk_all(i) * f_out(j) * wkf_all
+      ENDDO
+    ENDDO
+    fi_check(:) = fi_check(:) + f_out(:) * spin_fac / (nkf1 * nkf2 * nkf3)
+    !-----------------------------------------------------------------------
+    END SUBROUTINE compute_sigma
+    !-----------------------------------------------------------------------
+    !
+    !-----------------------------------------------------------------------
+    SUBROUTINE prtmeff(itemp, sigma, carrier_density, fi_check, ef0, etemp, max_mob)
+    !-----------------------------------------------------------------------
+    !!
+    !! This routine print the conductivity effective mass 
+    !! in a nice format and in proper units.
+    !!
+    USE kinds,         ONLY : DP
+    USE input,         ONLY : assume_metal, system_2d
+    USE io_global,     ONLY : stdout
+    USE cell_base,     ONLY : omega, at, alat
+    USE global_var,    ONLY : dos
+    USE ep_constants,  ONLY : zero, kelvin2eV, ryd2ev, eps80, &
+                              bohr2ang, ang2cm, hbarJ
+    USE constants,     ONLY : electron_si, electronmass_si
+    USE io_var,        ONLY : iufilmu_meff
+    !
+    IMPLICIT NONE
+    !
+    INTEGER, INTENT(in) :: itemp
+    !! Temperature index
+    REAL(KIND = DP), INTENT(in) :: sigma(3, 3)
+    !! Conductivity tensor
+    REAL(KIND = DP), INTENT(in) :: carrier_density
+    !! Carrier density in a.u.
+    REAL(KIND = DP), INTENT(in) :: fi_check(3)
+    !! Integrated population vector
+    REAL(KIND = DP), INTENT(in) :: ef0
+    !! Fermi-level
+    REAL(KIND = DP), INTENT(in) :: etemp
+    !! Temperature in Ry (this includes division by kb)
+    REAL(KIND = DP), INTENT(inout), OPTIONAL :: max_mob
+    !! Maximum error for all temperature
+    !
+    ! Local variables
+    REAL(KIND = DP) :: mobility(3, 3)
+    !! mobility
+    REAL(KIND = DP) :: inv_cell
+    !! Inverse of the volume in [Bohr^{-3}]
+    REAL(KIND = DP) :: nden
+    !! Carrier density in cm^-3
+    INTEGER, PARAMETER :: lwork = 37
+    !! Workspace (work) size
+    INTEGER, PARAMETER :: liwork = 18
+    !! Worksapce (iwork) size
+    INTEGER :: info
+    !! Error status from diagonalization
+    INTEGER :: i
+    !! Counter for cartesian directions
+    REAL(KIND = DP) :: work(lwork)
+    !! Workspace for diagonalization
+    INTEGER :: iwork(liwork)
+    !! Workspace for diagonalization
+    REAL(KIND = DP) :: u(3, 3)
+    !! Eigenvectors of the conductivity tensor
+    REAL(KIND = DP) :: w(3)
+    !! Eigenvalues of the conductivity tensor
+    REAL(KIND = DP), PARAMETER :: reltol = 1.0d-7
+    !! Relative threshhold for the truncation of the eigenvalues
+    REAL(KIND = DP) :: maxw
+    !! Maximum magnitude of the eigenvalues
+    REAL(KIND = DP) :: abstol
+    !! Absolute threshhold for the truncation of the eigenvalues
+    REAL(KIND = DP) :: d(3, 3)
+    !! Temporary matrix for the truncated eigenvalues
+    REAL(KIND = DP) :: d_ut(3, 3)
+    !! Temporary matrix for d * TRANSPOSE(u)
+    !
+    IF (system_2d == 'no') THEN
+      inv_cell = 1.0d0 / omega
+    ELSE
+      ! for 2d system need to divide by area (vacuum in z-direction)
+      inv_cell = ( 1.0d0 / omega ) * at(3, 3) * alat
+    ENDIF
+    ! carrier_density in cm^-1
+    IF (system_2d == 'no') THEN
+      nden = carrier_density * inv_cell / (bohr2ang * ang2cm) ** 3
+    ELSE
+      nden = carrier_density * inv_cell / (bohr2ang * ang2cm) ** 2
+    ENDIF
+    mobility(:, :) = (sigma(:, :) * electron_si ** 2 * inv_cell) / (hbarJ * bohr2ang * ang2cm)
+    mobility(:, :) = (mobility(:, :) * electronmass_si * 20670.6944033E12 *1.0d-4) / electron_si
+    !
+    ! Copy the conductivity tensor to u
+    u(:, :) = mobility(:, :)
+    !
+    CALL DSYEVD('V', 'U', 3, u, 3, w, work, lwork, iwork, liwork, info)
+    IF (info /= 0) CALL errore('prtmeff', 'Diagonalization of the conductivity tensor failed', info)
+    !
+    ! Find the maximum manitude of w
+    maxw = 0.0d0
+    DO i = 1, 3
+      IF (ABS(w(i)) > maxw) THEN
+        maxw = ABS(w(i))
+      ENDIF
+    ENDDO
+    abstol = maxw * reltol
+    !
+    ! Construct the truncated digonal matrix
+    d(:, :) = 0.0d0
+    DO i = 1, 3
+      IF (ABS(w(i)) > abstol) THEN
+        d(i, i) = 1.0d0 / w(i)
+      ENDIF
+    ENDDO
+    !
+    ! Calculate the effective mass tensor
+    ! m_eff = u * d * TRANSPOSE(u)
+    CALL DGEMM('N', 'T', 3, 3, 3, 1.0d0, d, 3, u, 3, 0.0d0, d_ut, 3)
+    CALL DGEMM('N', 'N', 3, 3, 3, 1.0d0, u, 3, d_ut, 3, 0.0d0, mobility, 3)
+    !
+    IF (.NOT. assume_metal) THEN
+      ! for insulators print mobility so just divide by carrier density
+      IF (ABS(nden) < eps80) CALL errore('prtmeff', 'The carrier density is 0', 1)
+      mobility(:, :) = (mobility(:, :) * (electron_si * carrier_density * inv_cell)) / (bohr2ang * ang2cm) ** 3
+    ENDIF
+    !
+    WRITE(iufilmu_meff, '(5x, 1f8.3, 3E16.6)') etemp * ryd2ev / kelvin2eV, &
+                                         mobility(1, 1), mobility(1, 2), mobility(1, 3)
+    WRITE(iufilmu_meff, '(13x, 3E16.6)') mobility(2, 1), mobility(2, 2), mobility(2, 3)
+    WRITE(iufilmu_meff, '(13x, 3E16.6)') mobility(3, 1), mobility(3, 2), mobility(3, 3)
+    IF (PRESENT(max_mob)) THEN
+      max_mob = MAXVAL(mobility(:,:))
+    ENDIF
+    !
+    !-----------------------------------------------------------------------
+    END SUBROUTINE prtmeff
+    !-----------------------------------------------------------------------
+    !
+    !-----------------------------------------------------------------------
+    SUBROUTINE prtmob(itemp, sigma, carrier_density, fi_check, ef0, etemp, max_mob)
+    !-----------------------------------------------------------------------
+    !!
+    !! This routine print the mobility (or conducrtivity for metals) in a
+    !! nice format and in proper units.
+    !!
+    USE kinds,         ONLY : DP
+    USE input,         ONLY : assume_metal, system_2d
+    USE io_global,     ONLY : stdout
+    USE cell_base,     ONLY : omega, at, alat
+    USE global_var,    ONLY : dos
+    USE ep_constants,  ONLY : zero, kelvin2eV, ryd2ev, eps80, &
+                              bohr2ang, ang2cm, hbarJ
+    USE constants,     ONLY : electron_si
+    !
+    IMPLICIT NONE
+    !
+    INTEGER, INTENT(in) :: itemp
+    !! Temperature index
+    REAL(KIND = DP), INTENT(in) :: sigma(3, 3)
+    !! Conductivity tensor
+    REAL(KIND = DP), INTENT(in) :: carrier_density
+    !! Carrier density in a.u.
+    REAL(KIND = DP), INTENT(in) :: fi_check(3)
+    !! Integrated population vector
+    REAL(KIND = DP), INTENT(in) :: ef0
+    !! Fermi-level
+    REAL(KIND = DP), INTENT(in) :: etemp
+    !! Temperature in Ry (this includes division by kb)
+    REAL(KIND = DP), INTENT(inout), OPTIONAL :: max_mob
+    !! Maximum error for all temperature
+    !
+    ! Local variables
+    REAL(KIND = DP) :: mobility(3, 3)
+    !! mobility
+    REAL(KIND = DP) :: inv_cell
+    !! Inverse of the volume in [Bohr^{-3}]
+    REAL(KIND = DP) :: nden
+    !! Carrier density in cm^-3
+    !
+    IF (system_2d == 'no') THEN
+      inv_cell = 1.0d0 / omega
+    ELSE
+      ! for 2d system need to divide by area (vacuum in z-direction)
+      inv_cell = ( 1.0d0 / omega ) * at(3, 3) * alat
+    ENDIF
+    ! carrier_density in cm^-1
+    IF (system_2d == 'no') THEN
+      nden = carrier_density * inv_cell * (bohr2ang * ang2cm)**(-3.0d0)
+    ELSE
+      nden = carrier_density * inv_cell * (bohr2ang * ang2cm)**(-2.0d0)
+    ENDIF
+    mobility(:, :) = (sigma(:, :) * electron_si ** 2 * inv_cell) / (hbarJ * bohr2ang * ang2cm)
+    IF (.NOT. assume_metal) THEN
+      ! for insulators print mobility so just divide by carrier density
+      IF (ABS(nden) < eps80) CALL errore('prtmob', 'The carrier density is 0', 1)
+      mobility(:, :) = (mobility(:, :) / (electron_si * carrier_density * inv_cell)) * (bohr2ang * ang2cm) ** 3
+      WRITE(stdout, '(5x, 1f8.3, 1f9.4, 1E14.5, 1E14.5, 3E16.6)') etemp * ryd2ev / kelvin2eV, ef0 * ryd2ev, &
+           nden, fi_check(1), mobility(1, 1), mobility(1, 2), mobility(1, 3)
+    ELSE
+      WRITE(stdout, '(5x, 1f8.3, 1f9.4, 1E14.5, 1E14.5, 3E16.6)') etemp * ryd2ev / kelvin2eV, ef0 * ryd2ev, &
+           dos(itemp), fi_check(1), mobility(1, 1), mobility(1, 2), mobility(1, 3)
+    ENDIF
+    WRITE(stdout, '(36x, 1E14.5, 3E16.6)') fi_check(2), mobility(2, 1), mobility(2, 2), mobility(2, 3)
+    WRITE(stdout, '(36x, 1E14.5, 3E16.6)') fi_check(3), mobility(3, 1), mobility(3, 2), mobility(3, 3)
+    IF (PRESENT(max_mob)) THEN
+      max_mob = MAXVAL(mobility(:,:))
+    ENDIF
+    !
+    !-----------------------------------------------------------------------
+    END SUBROUTINE prtmob
+    !-----------------------------------------------------------------------
+    !
+    !-----------------------------------------------------------------------
+    SUBROUTINE prtmob_nk(itemp, f_out, vkk_all, bztoibz_mat, carrier_density, ef0, xkf_all, etemp, etf_all)
+    !-----------------------------------------------------------------------
+    !!
+    !! This routine print the state resolved (nk) mobility in a file called
+    !! nice format and in proper units.
+    !!
+    USE kinds,            ONLY : DP
+    USE input,            ONLY : system_2d, ncarrier, nkf1, nkf2, nkf3, nstemp, lsda
+    USE cell_base,        ONLY : omega, at, alat, bg
+    USE global_var,       ONLY : s_bztoibz, nbndfst, nktotf, spin_fac
+    USE io_var,           ONLY : iufilmu_nk
+    USE symmetry,         ONLY : s => s_k, nsym => nsym_k
+    USE mp_world,         ONLY : mpime
+    USE io_global,        ONLY : ionode_id
+    USE ep_constants,     ONLY : zero, kelvin2eV, ryd2ev, eps80, eps10, &
+                                 bohr2ang, ang2cm, hbarJ
+    USE constants,        ONLY : electron_si
+    !
+    IMPLICIT NONE
+    !
+    INTEGER, INTENT(in) :: itemp
+    !! Temperature index
+    INTEGER, INTENT(in) :: bztoibz_mat(nsym, nktotf)
+    !! For a given k-point from the IBZ, given the index of all k from full BZ
+    REAL(KIND = DP), INTENT(in) :: f_out(3, nbndfst, nktotf)
+    !! occupations factor produced by SERTA or IBTE
+    REAL(KIND = DP), INTENT(in) :: vkk_all(3, nbndfst, nktotf)
+    !! Velocity
+    REAL(KIND = DP), INTENT(in) :: carrier_density
+    !! Carrier density in a.u.
+    REAL(KIND = DP), INTENT(in) :: ef0
+    !! Fermi-level
+    REAL(KIND = DP), INTENT(in) :: xkf_all(3, nktotf)
+    !! Collect k-point coordinate (and k+q) from all pools in parallel case
+    REAL(KIND = DP), INTENT(in) :: etemp
+    !! Temperature in Ry (this includes division by kb)
+    REAL(KIND = DP), INTENT(in) :: etf_all(nbndfst, nktotf)
+    !! Eigenenergies of k
+    !
+    ! Local variables
+    INTEGER :: ik
+    !! K-point index
+    INTEGER :: ibnd
+    !! Band index
+    INTEGER :: nb
+    !! Number of points equivalent by sym from BZ to IBTZ
+    INTEGER :: ikbz
+    !! Index of full BZ points
+    INTEGER :: i,j
+    !! Cartesian index
+    REAL(KIND = DP) :: xkk_cart(3)
+    !! k-point in cartesian coordinate
+    REAL(KIND = DP) :: vk_cart(3)
+    !! veloctiy in cartesian coordinate
+    REAL(KIND = DP) :: fi_cart(3)
+    !! Cartesian Fi_all
+    REAL(KIND = DP) :: xkk_rot(3)
+    !! Rotated k-point by the symmetry operation
+    REAL(KIND = DP) :: v_rot(3)
+    !! Rotated velocity by the symmetry operation
+    REAL(KIND = DP) :: fi_rot(3)
+    !! Rotated Fi_all by the symmetry operation
+    REAL(KIND = DP) :: sa(3, 3)
+    !! Symmetry matrix in crystal
+    REAL(KIND = DP) :: sb(3, 3)
+    !! Symmetry matrix (intermediate step)
+    REAL(KIND = DP) :: sr(3, 3)
+    !! Symmetry matrix in cartesian coordinate
+    REAL(KIND = DP) :: ekk
+    !! Energy relative to Fermi level: $$\varepsilon_{n\mathbf{k}}-\varepsilon_F$$
+    REAL(KIND = DP) :: sigma(3, 3)
+    !! Conductivity
+    REAL(KIND = DP) :: mobility(3, 3)
+    !! Mobility in cm^2/Vs
+    REAL(KIND = DP) :: mobility_nk(3, 3)
+    !! State-resovled (nk) mobility in cm^s/Vs
+    REAL(KIND = DP) :: inv_cell
+    !! Inverse of the volume in [Bohr^{-3} or Bohr^{-2}]
+    CHARACTER(LEN = 256) :: fnm
+    !! Buffer file name
+    !
+    fnm = ''
+    IF (TRIM(lsda) == 'down') fnm = '.down'
+    ! Write to file
+    IF (mpime == ionode_id) THEN
+      IF (itemp == 1) THEN
+        OPEN(UNIT = iufilmu_nk, FILE = 'mobility_nk'// TRIM(fnm) //'.fmt')
+        WRITE(iufilmu_nk, '(a)') '# State-resolved carrier mobility'
+      ENDIF
+      WRITE(iufilmu_nk, '(a, 1f12.6, a)') '# Temperature', etemp * ryd2ev / kelvin2eV, ' K'
+      WRITE(iufilmu_nk, '(a)') &
+      '# k-point band isym          k-point (Cartesian)      Energy - ef (eV)             mu_nk(alpha, beta) (cm^2/Vs)'
+      !
+      IF (system_2d == 'no') THEN
+        inv_cell = 1.0d0 / omega
+      ELSE
+        ! for 2d system need to divide by area (vacuum in z-direction)
+        inv_cell = ( 1.0d0 / omega ) * at(3, 3) * alat
+      ENDIF
+      !
+      mobility(:, :) = zero
+      DO ik = 1, nktotf
+        DO ibnd = 1, nbndfst
+          ekk = etf_all(ibnd, ik) - ef0
+          vk_cart = vkk_all(:, ibnd, ik)
+          fi_cart = f_out(:, ibnd, ik)
+          xkk_cart = xkf_all(:, ik)
+          CALL cryst_to_cart(1, xkk_cart, bg, 1)
+          DO nb = 1, nsym
+            IF (bztoibz_mat(nb, ik) > 0) THEN
+              sigma(:, :) = zero
+              mobility_nk(:, :) = zero
+              ikbz = bztoibz_mat(nb, ik)
+              ! Transform the symmetry matrix from Crystal to cartesian
+              sa(:, :) = DBLE(s(:, :, s_bztoibz(ikbz)))
+              sb       = MATMUL(bg, sa)
+              sr(:, :) = MATMUL(at, TRANSPOSE(sb))
+              sr       = TRANSPOSE(sr)
+              CALL DGEMV('n', 3, 3, 1.d0, sr, 3, xkk_cart, 1 ,0.d0 , xkk_rot, 1)
+              CALL DGEMV('n', 3, 3, 1.d0, sr, 3, vk_cart, 1 ,0.d0 , v_rot, 1)
+              CALL DGEMV('n', 3, 3, 1.d0, sr, 3, fi_cart, 1 ,0.d0 , fi_rot, 1)
+              DO j = 1, 3
+                DO i = 1, 3
+                  ! The factor two in the weight at the end is to
+                  ! account for spin
+                  sigma(i, j) = - (v_rot(j) * fi_rot(i)) * spin_fac / (nkf1 * nkf2 * nkf3)
+                ENDDO
+              ENDDO
+              ! nk-resolved mobility $\mu_{nk}^{\alpha\beta}$
+              mobility_nk(:, :) = sigma(:, :) * electron_si * (bohr2ang * ang2cm) ** 2 / (hbarJ * carrier_density)
+              !
+              IF (ekk < eps10 .AND. ncarrier < -1E5 .AND. (mobility_nk(1,1) + mobility_nk(2,2) + mobility_nk(3,3)) > eps80) THEN
+                WRITE(iufilmu_nk, '(i9, 2i5, 4f12.8, 3E18.8)') ik, ibnd, nb, xkk_rot(:), ekk * ryd2ev, &
+                                                                       mobility_nk(1, 1), mobility_nk(1, 2), mobility_nk(1, 3)
+                WRITE(iufilmu_nk, '(67x, 3E18.8)') mobility_nk(2, 1), mobility_nk(2, 2), mobility_nk(2, 3)
+                WRITE(iufilmu_nk, '(67x, 3E18.8)') mobility_nk(3, 1), mobility_nk(3, 2), mobility_nk(3, 3)
+                mobility(:, :) =  mobility(:, :) + mobility_nk(:, :)
+              ELSE IF (ekk > eps10 .AND. ncarrier > 1E5 .AND. (mobility_nk(1,1) + mobility_nk(2,2) + mobility_nk(3,3)) > eps80) THEN
+                WRITE(iufilmu_nk, '(i9, 2i5, 4f12.8, 3E18.8)') ik, ibnd, nb, xkk_rot(:), ekk * ryd2ev, &
+                                                                       mobility_nk(1, 1), mobility_nk(1, 2), mobility_nk(1, 3)
+                WRITE(iufilmu_nk, '(67x, 3E18.8)') mobility_nk(2, 1), mobility_nk(2, 2), mobility_nk(2, 3)
+                WRITE(iufilmu_nk, '(67x, 3E18.8)') mobility_nk(3, 1), mobility_nk(3, 2), mobility_nk(3, 3)
+                mobility(:, :) =  mobility(:, :) + mobility_nk(:, :)
+              ENDIF
+            ENDIF ! bztoibz_mat
+          ENDDO ! nb
+        ENDDO ! ibnd
+      ENDDO ! ik
+      !
+      ! Integrated mobility
+      WRITE(iufilmu_nk, '(a)') ' '
+      WRITE(iufilmu_nk, '(a)') '# Integrated mobility (cm^/Vs) - Should be the same as in the output. '
+      WRITE(iufilmu_nk, '(a, 3E16.6)') 'mu(alpha, beta) = ', mobility(1, 1), mobility(1, 2), mobility(1, 3)
+      WRITE(iufilmu_nk, '(a, 3E16.6)') '                  ', mobility(2, 1), mobility(2, 2), mobility(2, 3)
+      WRITE(iufilmu_nk, '(a, 3E16.6)') '                  ', mobility(3, 1), mobility(3, 2), mobility(3, 3)
+      WRITE(iufilmu_nk, '(a)') ' '
+      IF (itemp == nstemp) CLOSE(iufilmu_nk)
+    ENDIF ! master core
+    !-----------------------------------------------------------------------
+    END SUBROUTINE prtmob_nk
+    !-----------------------------------------------------------------------
+    !
+    !-----------------------------------------------------------------------
+    SUBROUTINE prtheader_mob()
+    !-----------------------------------------------------------------------
+    !!
+    !! This routine print a header for mobility calculation
+    !!
+    USE io_global,     ONLY : stdout
+    USE input,         ONLY : assume_metal, ncarrier, system_2d
+    !
+    IMPLICIT NONE
+    !
+    WRITE(stdout, '(/5x, a)') REPEAT('=', 93)
+    IF (.NOT. assume_metal) THEN
+      IF (ncarrier < -1E5) THEN
+        WRITE(stdout, '(5x, "  Temp     Fermi   Hole density  Population SR            Drift Hole mobility ")')
+        IF (system_2d == 'no') THEN
+          WRITE(stdout, '(5x, "   [K]      [eV]     [cm^-3]      [h per cell]                    [cm^2/Vs]")')
+        ELSE
+          WRITE(stdout, '(5x, "   [K]      [eV]     [cm^-2]      [h per cell]                    [cm^2/Vs]")')
+        ENDIF
+      ELSE
+        WRITE(stdout, '(5x, "  Temp     Fermi   Elec density  Population SR            Drift Elec mobility ")')
+        IF (system_2d == 'no') THEN
+          WRITE(stdout, '(5x, "   [K]      [eV]     [cm^-3]      [e per cell]                    [cm^2/Vs]")')
+        ELSE
+          WRITE(stdout, '(5x, "   [K]      [eV]     [cm^-2]      [e per cell]                    [cm^2/Vs]")')
+        ENDIF
+      ENDIF
+    ELSE
+      WRITE(stdout, '(5x, "  Temp     Fermi        DOS        Population SR                 Conductivity ")')
+      WRITE(stdout, '(5x, "   [K]      [eV]    [states/Ry] [carriers per cell]               [Ohm.cm]^-1 ")')
+    ENDIF
+    WRITE(stdout, '(5x, a/)') REPEAT('=', 93)
+    !
+    RETURN
+    !
+    !-----------------------------------------------------------------------
+    END SUBROUTINE prtheader_mob
+    !-----------------------------------------------------------------------
+    !
+    !-----------------------------------------------------------------------
+    SUBROUTINE prtheader_supercond(itemp, cal_type)
+    !-----------------------------------------------------------------------
+    !!
+    !! This routine print a header for superconductivity calculation
+    !!
+    USE io_global,     ONLY : stdout
+    USE input,         ONLY : liso, laniso, lreal, imag_read, wscut, &
+                              fbw, broyden_beta, gridsamp, icoulomb, &
+                              eps_cut_ir
+    USE global_var,    ONLY : gtemp
+    USE supercond_common,     ONLY : nsiw, nsw, wsi, nlambda, ndigit
+    USE ep_constants,  ONLY : kelvin2eV, zero
+    USE constants,     ONLY : pi
+    !
+    IMPLICIT NONE
+    !
+    INTEGER, INTENT(in) :: itemp
+    !! Counter on temperature
+    INTEGER, INTENT(in) :: cal_type
+    !! 1 = limag, 2 = lpade, 3 = lacon, 4 = lreal
+    !
+    IF (cal_type == 1) THEN
+      WRITE(stdout, '(a)') '    '
+      WRITE(stdout, '(5x, a, i3, a, f12.5, a, a, i3, a)') 'temp(', itemp, ') = ', gtemp(itemp) / kelvin2eV, ' K'
+      WRITE(stdout, '(a)') '    '
+      IF (liso .AND. .NOT. fbw) &
+        WRITE(stdout, '(5x, a)') 'Solve isotropic Eliashberg equations on imaginary-axis'
+      IF (liso .AND. fbw) &
+        WRITE(stdout, '(5x, a)') 'Solve full-bandwidth isotropic Eliashberg equations on imaginary-axis'
+      IF (laniso .AND. .NOT. fbw .AND. .NOT. imag_read) &
+        WRITE(stdout, '(5x, a)') 'Solve anisotropic Eliashberg equations on imaginary-axis'
+      IF (laniso .AND. fbw .AND. .NOT. imag_read) &
+        WRITE(stdout, '(5x, a)') 'Solve full-bandwidth anisotropic Eliashberg equations on imaginary-axis'
+      IF (laniso .AND. .NOT. fbw .AND. imag_read .AND. itemp == 1) &
+        WRITE(stdout, '(5x, a)') 'Read from file delta and znorm on imaginary-axis'
+      IF (laniso .AND. fbw .AND. imag_read .AND. itemp == 1) &
+        WRITE(stdout, '(5x, a)') 'Read from file delta and znorm and shift on imaginary-axis'
+      WRITE(stdout, '(a)') '    '
+      WRITE(stdout, '(5x, a, i6, a, i6)') 'Total number of frequency points nsiw(', itemp, ') = ', nsiw(itemp)
+      IF ((.NOT. fbw) .OR. ((gridsamp == 0) .OR. (gridsamp == 1) .OR. (gridsamp == 3))) THEN
+        ! uniform sampling
+        WRITE(stdout, '(5x, a, f10.4, a)') 'Cutoff frequency wscut = ', wscut, ' eV'
+        WRITE(stdout, '(5x, a, f14.4, a)') 'Maximum frequency = ', wsi(nsiw(itemp)), ' eV'
+      ELSEIF (fbw) THEN
+        IF ((gridsamp == 2)) THEN
+          WRITE(stdout, '(5x, a, ES12.2, a, ES12.2)') &
+                'Parameters for IR basis: Lambda = ', 1.0d1 ** nlambda, ', eps_IR = ', 1.0d-1 ** ndigit
+          IF (eps_cut_ir > zero) THEN
+            WRITE(stdout, '(5x, a, ES12.2)') 'The noise reduction will be performed using the threshold of ', eps_cut_ir
+          ELSE
+            WRITE(stdout, '(5x, a, ES12.2)') 'The noise reduction will not be performed.'
+          ENDIF
+        ENDIF
+        ! any other sampling (freqs read from a file, sparse sampling, sparse-ir sampling)
+        WRITE(stdout, '(5x, a, f14.4, a)') 'Maximum frequency = ', wsi(nsiw(itemp)), ' eV'
+      ENDIF
+      IF (broyden_beta < zero ) THEN
+        WRITE(stdout, '(5x, a, f12.5)') 'linear mixing factor = ', DABS(broyden_beta)
+      ELSE
+        WRITE(stdout, '(5x, a, f12.5)') 'broyden mixing factor = ', broyden_beta
+      ENDIF
+      IF ((icoulomb == 1) .AND. (broyden_beta  < -0.2d0)) THEN
+        WRITE(stdout, '(5x, a)') 'mixing factor = 0.2 is used for the first five iterations.'
+      ELSEIF ((broyden_beta  < -0.2d0)) THEN
+        WRITE(stdout, '(5x, a)') 'mixing factor = 0.2 is used for the first three iterations.'
+      ENDIF
+      WRITE(stdout, '(a)') '    '
+    ENDIF
+    !
+    IF (cal_type == 2) THEN
+      WRITE(stdout, '(a)') '    '
+      IF (liso .AND. .NOT. fbw) WRITE(stdout, '(5x, a)') &
+        'Pade approximant of isotropic Eliashberg equations from imaginary-axis to real-axis'
+      IF (laniso .AND. .NOT. fbw) WRITE(stdout, '(5x, a)') &
+        'Pade approximant of anisotropic Eliashberg equations from imaginary-axis to real-axis'
+      IF (liso .AND. fbw) WRITE(stdout, '(5x, a)') &
+        'Pade approximant of full-bandwidth isotropic Eliashberg equations from imaginary-axis to real-axis'
+      IF (laniso .AND. fbw) WRITE(stdout, '(5x, a)') &
+        'Pade approximant of full-bandwidth anisotropic Eliashberg equations from imaginary-axis to real-axis'
+      WRITE(stdout, '(5x, a, f10.4)') 'Cutoff frequency wscut = ', wscut
+      WRITE(stdout, '(a)') '    '
+    ENDIF
+    !
+    IF (cal_type == 3) THEN
+      WRITE(stdout, '(a)') '    '
+      IF (liso) &
+        WRITE(stdout, '(5x, a)') 'Analytic continuation of isotropic Eliashberg equations from imaginary-axis to real-axis'
+      IF (laniso) &
+        WRITE(stdout, '(5x, a)') 'Analytic continuation of anisotropic Eliashberg equations from imaginary-axis to real-axis'
+      WRITE(stdout, '(a)') '    '
+      WRITE(stdout, '(5x, a, i6)') 'Total number of frequency points nsw = ', nsw
+      WRITE(stdout, '(5x, a, f10.4)') 'Cutoff frequency wscut = ', wscut
+      WRITE(stdout, '(a)') '    '
+    ENDIF
+    !
+    IF (cal_type == 4) THEN
+      WRITE(stdout, '(a)') '    '
+      WRITE(stdout, '(5x, a, i3, a, f12.5, a, a, i3, a)') 'temp(', itemp, ') = ', gtemp(itemp) / kelvin2eV, ' K'
+      WRITE(stdout, '(a)') '    '
+      IF (liso .AND. lreal) &
+        WRITE(stdout, '(5x, a)') 'Solve isotropic Eliashberg equations on real-axis'
+      WRITE(stdout, '(a)') '    '
+    ENDIF
+    !
+    RETURN
+    !
+    !-----------------------------------------------------------------------
+    END SUBROUTINE prtheader_supercond
+    !-----------------------------------------------------------------------
+    !
+    !-----------------------------------------------------------------------
+    SUBROUTINE print_clock_epw
+    !-----------------------------------------------------------------------
+    !!
+    !! Adapted from the code PH/print_clock_ph - Quantum-ESPRESSO group
+    !!
+    USE io_global,     ONLY : stdout
+    USE uspp,          ONLY : nlcc_any
+    !
+    IMPLICIT NONE
+    !
+    WRITE(stdout, '(5x)')
+    WRITE(stdout, '(5x, a)') 'Unfolding on the coarse grid'
+    CALL print_clock('dvanqq2')
+    CALL print_clock('elphon_wrap')
+    CALL print_clock('dvqpsi_us3')
+    CALL print_clock('com_dvloc')
+    CALL print_clock('dvqpsi_us_on')
+    CALL print_clock('calbec')
+    CALL print_clock('fft')
+    CALL print_clock('ffts')
+    CALL print_clock('fftw')
+    WRITE(stdout, '(5x)')
+    CALL print_clock('ELPHWAN')
+    WRITE(stdout, '(5x, a)') 'INITIALIZATION: '
+    CALL print_clock('epq_init')
+    WRITE(stdout, '(5x)')
+    CALL print_clock('epq_init')
+    IF (nlcc_any) CALL print_clock('set_drhoc')
+    CALL print_clock('init_vloc')
+    CALL print_clock('init_us_1')
+    CALL print_clock('newdq2')
+    CALL print_clock('dvanqq2')
+    CALL print_clock('drho')
+    WRITE(stdout, '(5x)')
+    WRITE(stdout, '(5x)')
+    !
+    ! Electron-Phonon interpolation
+    !
+    WRITE(stdout, '(5x)')
+    WRITE(stdout, '(5x, a)') 'Electron-Phonon interpolation'
+    CALL print_clock('ephwann')
+    CALL print_clock('ep-interp')
+    CALL print_clock('ep-int-ahc')
+    CALL print_clock('PH SELF-ENERGY')
+    CALL print_clock('ABS SPECTRA')
+    CALL print_clock('crys_cart')
+    WRITE(stdout, '(5x)')
+    CALL print_clock('load data')
+    CALL print_clock('Ham: step 1')
+    CALL print_clock('Ham: step 2')
+    CALL print_clock('Ham: step 3')
+    CALL print_clock('Ham: step 4')
+    CALL print_clock('ep: step 1')
+    CALL print_clock('ep: step 2')
+    CALL print_clock('ep: step 3')
+    CALL print_clock('ep: step 4')
+    CALL print_clock('unfold_sthmat')
+    CALL print_clock('collect_sthmat')
+    CALL print_clock('dg: step 1')
+    CALL print_clock('dg: step 2')
+    CALL print_clock('sth: step 1')
+    CALL print_clock('sth: step 2')
+    CALL print_clock('wigner_seitz')
+    CALL print_clock('DynW2B')
+    CALL print_clock('HamW2B')
+    CALL print_clock('ephW2Bp')
+    CALL print_clock('ephW2Bp_opt')
+    CALL print_clock('ephW2Bp_s23')
+    CALL print_clock('ephW2Bp_s3')
+    CALL print_clock('ephW2Bp_g3')
+    CALL print_clock('ephW2B')
+    CALL print_clock('sthW2Bp')
+    CALL print_clock('dgW2B')
+    CALL print_clock('dwW2B')
+    CALL print_clock('vmeW2B')
+    CALL print_clock('vmeW2Bp')
+    CALL print_clock('rgd_blk_epw')
+    CALL print_clock('print_ibte')
+    CALL print_clock('kpoint_paral')
+    !
+    CALL print_clock('selfen_elec_q')
+    !
+    ! Eliashberg equations
+    WRITE(stdout, '(5x)')
+    CALL print_clock('ELIASHBERG')
+    !
+    ! Real-Time Boltzmann Transport Equation
+    WRITE(stdout, '(5x)')
+    CALL print_clock('TDBE')
+    CALL print_clock('3-phonon')
+    CALL print_clock('TDBE: dt')
+    !
+    WRITE(stdout, '(5x)')
+    WRITE(stdout, '(5x, a)') 'Total program execution'
+    CALL print_clock('EPW')
+    !
+    RETURN
+    !
+    !-----------------------------------------------------------------------
+    END SUBROUTINE print_clock_epw
+    !-----------------------------------------------------------------------
+    !
+    !-----------------------------------------------------------------------
+    SUBROUTINE plot_band()
+    !-----------------------------------------------------------------------
+    !!
+    !! This routine writes output files for phonon dispersion and band structure
+    !! SP : Modified so that it works with the current plotband.x of QE 5
+    !!
+    USE kinds,         ONLY : DP
+    USE cell_base,     ONLY : at, bg
+    USE modes,         ONLY : nmodes
+    USE input,         ONLY : nbndsub, filqf, filkf, lsda
+    USE global_var,    ONLY : etf, nkf, nqtotf, wf, xkf, xqf, nkqtotf, nktotf
+    USE ep_constants,  ONLY : ryd2mev, ryd2ev, zero
+    USE io_var,        ONLY : iufilfreq, iufileig
+    USE global_var,    ONLY : nkqf
+    USE io_global,     ONLY : ionode_id
+    USE mp,            ONLY : mp_barrier, mp_sum
+    USE mp_global,     ONLY : inter_pool_comm, my_pool_id, inter_image_comm
+    USE parallelism,  ONLY : poolgather2
+    !
+    IMPLICIT NONE
+    !
+    ! Local variables
+    INTEGER :: ik
+    !! Global k-point index
+    INTEGER :: ikk
+    !! Index for the k-point
+    INTEGER :: ikq
+    !! Index for the q-point
+    INTEGER :: ibnd
+    !! Band index
+    INTEGER :: imode
+    !! Mode index
+    INTEGER :: iq
+    !! Global q-point index
+    INTEGER :: ierr
+    !! Error status
+    REAL(KIND = DP) :: dist
+    !! Distance from G-point
+    REAL(KIND = DP) :: dprev
+    !! Previous distance
+    REAL(KIND = DP) :: dcurr
+    !! Current distance
+    REAL(KIND = DP), ALLOCATABLE :: xkf_all(:, :)
+    !! K-points on the full k grid (all pools)
+    REAL(KIND = DP), ALLOCATABLE :: etf_all(:, :)
+    !! Eigenenergies on the full k grid (all pools)
+    CHARACTER(LEN = 256) :: fnm
+    !! Buffer file name
+    !
+    IF (filqf /= ' ') THEN
+      !
+      CALL mp_sum(wf, inter_image_comm)
+      IF (my_pool_id == ionode_id) THEN
+        !
+        fnm = 'phband.freq'
+        IF (TRIM(lsda) == 'down') fnm = 'phband.down.freq'
+        OPEN(iufilfreq, FILE = TRIM(fnm), FORM = 'formatted')
+        WRITE(iufilfreq, '(" &plot nbnd=", i4, ", nks=", i6, " /")') nmodes, nqtotf
+        !
+        ! crystal to cartesian coordinates
+        CALL cryst_to_cart(nqtotf, xqf, bg, 1)
+        !
+        dist  = zero
+        dprev = zero
+        dcurr = zero
+        DO iq = 1, nqtotf
+          !
+          IF (iq /= 1) THEN
+            dist = DSQRT((xqf(1, iq) - xqf(1, iq - 1)) * (xqf(1, iq) - xqf(1, iq - 1)) &
+                       + (xqf(2, iq) - xqf(2, iq - 1)) * (xqf(2, iq) - xqf(2, iq - 1)) &
+                       + (xqf(3, iq) - xqf(3, iq - 1)) * (xqf(3, iq) - xqf(3, iq - 1)))
+          ELSE
+            dist = zero
+          ENDIF
+          dcurr = dprev + dist
+          dprev = dcurr
+          WRITE(iufilfreq, '(10x, 3f10.6)') xqf(:, iq)
+          WRITE(iufilfreq, '(1000f14.4)') (wf(imode, iq) * ryd2mev, imode = 1, nmodes)
+          !
+        ENDDO
+        CLOSE(iufilfreq)
+        !
+        ! back from cartesian to crystal coordinates
+        CALL cryst_to_cart(nqtotf, xqf, at, -1)
+        !
+      ENDIF
+    ENDIF ! filqf
+    !
+    IF (filkf /= ' ') THEN
+      !
+      DO ik = 1, nkf
+        !
+        ikk = 2 * ik - 1
+        ikq = ikk + 1
+        !
+      ENDDO
+      !
+      ALLOCATE(xkf_all(3, nkqtotf), STAT = ierr)
+      IF (ierr /= 0) CALL errore('plot_band', 'Error allocating xkf_all', 1)
+      ALLOCATE(etf_all(nbndsub, nkqtotf), STAT = ierr)
+      IF (ierr /= 0) CALL errore('plot_band', 'Error allocating etf_all', 1)
+      !
+#if defined(__MPI)
+      CALL poolgather2(3,       nkqtotf, nkqf, xkf, xkf_all)
+      CALL poolgather2(nbndsub, nkqtotf, nkqf, etf, etf_all)
+      CALL mp_barrier(inter_pool_comm)
+#else
+      !
+      xkf_all = xkf
+      etf_all = etf
+#endif
+      !
+      IF (my_pool_id == ionode_id) THEN
+        !
+        fnm = 'band.eig'
+        IF (TRIM(lsda) == 'down') fnm = 'band.down.eig'
+        OPEN(iufileig, FILE = TRIM(fnm), FORM = 'formatted')
+        WRITE(iufileig, '(" &plot nbnd=", i4, ", nks=", i6, " /")') nbndsub, nktotf
+        !
+        ! crystal to cartesian coordinates
+        CALL cryst_to_cart(nkqtotf, xkf_all, bg, 1)
+        !
+        dist  = zero
+        dprev = zero
+        dcurr = zero
+        DO ik = 1, nktotf
+          !
+          ikk = 2 * ik - 1
+          ikq = ikk + 1
+          !
+          IF (ikk /= 1) THEN
+            dist = DSQRT((xkf_all(1, ikk) - xkf_all(1, ikk - 2)) * (xkf_all(1, ikk) - xkf_all(1, ikk - 2)) &
+                       + (xkf_all(2, ikk) - xkf_all(2, ikk - 2)) * (xkf_all(2, ikk) - xkf_all(2, ikk - 2)) &
+                       + (xkf_all(3, ikk) - xkf_all(3, ikk - 2)) * (xkf_all(3, ikk) - xkf_all(3, ikk - 2)))
+          ELSE
+            dist = 0.d0
+          ENDIF
+          dcurr = dprev + dist
+          dprev = dcurr
+          WRITE(iufileig, '(10x, 3f10.6)') xkf_all(:, ikk)
+          WRITE(iufileig, '(1000f20.12)') (etf_all(ibnd, ikk) * ryd2ev, ibnd = 1, nbndsub)
+          !
+        ENDDO
+        CLOSE(iufileig)
+        !
+        ! back from cartesian to crystal coordinates
+        CALL cryst_to_cart(nkqtotf, xkf_all, at, -1)
+        !
+      ENDIF
+      CALL mp_barrier(inter_pool_comm)
+      !
+      DEALLOCATE(xkf_all, STAT = ierr)
+      IF (ierr /= 0) CALL errore('plot_band', 'Error deallocating xkf_all', 1)
+      DEALLOCATE(etf_all, STAT = ierr)
+      IF (ierr /= 0) CALL errore('plot_band', 'Error deallocating etf_all', 1)
+      !
+    ENDIF ! filkf
+    !
+    RETURN
+    !
+    !----------------------------------------------------------------------------
+    END SUBROUTINE plot_band
+    !----------------------------------------------------------------------------
+    !
+    !-----------------------------------------------------------------------
+    SUBROUTINE plot_fermisurface()
+    !-----------------------------------------------------------------------
+    !!
+    !! This routine writes output files (in .cube) to plot Fermi surfaces
+    !! HP : 9/23/2020
+    !!
+    USE kinds,         ONLY : DP
+    USE cell_base,     ONLY : bg
+    USE pwcom,         ONLY : ef
+    USE input,         ONLY : mp_mesh_k, nbndsub, nkf1, nkf2, nkf3, lsda
+    USE global_var,    ONLY : bztoibz, etf, xkf, nkqtotf, nktotf
+    USE ep_constants,  ONLY : ryd2ev, zero
+    USE io_var,        ONLY : iufilFS
+    USE global_var,    ONLY : nkqf, ibndmin, ibndmax
+    USE io_global,     ONLY : ionode_id, stdout
+    USE mp,            ONLY : mp_barrier, mp_sum
+    USE mp_global,     ONLY : inter_pool_comm, my_pool_id
+    USE parallelism,  ONLY : poolgather2
+    USE io_files,      ONLY : prefix
+    !
+    IMPLICIT NONE
+    !
+    ! Local variables
+    CHARACTER(LEN = 256) :: name1
+    !! file name
+    CHARACTER(LEN = 256) :: fnm
+    !! Buffer file name
+    INTEGER :: ios
+    !! IO error message
+    INTEGER :: ik
+    !! Global k-point index
+    INTEGER :: ibnd
+    !! Band index
+    INTEGER :: ierr
+    !! Error status
+    INTEGER :: i
+    !! Counter
+    REAL(KIND = DP), ALLOCATABLE :: xkf_all(:, :)
+    !! K-points on the full k grid (all pools)
+    REAL(KIND = DP), ALLOCATABLE :: etf_all(:, :)
+    !! Eigenenergies on the full k grid (all pools)
+    !
+    WRITE(stdout,'(5x, a38)') 'Fermi surface calculation on fine mesh'
+    WRITE(stdout, '(5x, a32, f10.6)') 'Fermi level (eV) = ', ef * ryd2ev
+    WRITE(stdout,'(5x, i7, a32/)') ibndmax - ibndmin + 1, ' bands within the Fermi window'
+    !
+    ALLOCATE(xkf_all(3, nkqtotf), STAT = ierr)
+    IF (ierr /= 0) CALL errore('plot_fermisurface', 'Error allocating xkf_all', 1)
+    ALLOCATE(etf_all(nbndsub, nkqtotf), STAT = ierr)
+    IF (ierr /= 0) CALL errore('plot_fermisurface', 'Error allocating etf_all', 1)
+    !
+#if defined(__MPI)
+    CALL poolgather2(3,       nkqtotf, nkqf, xkf, xkf_all)
+    CALL poolgather2(nbndsub, nkqtotf, nkqf, etf, etf_all)
+    CALL mp_barrier(inter_pool_comm)
+#else
+    !
+    xkf_all = xkf
+    etf_all = etf
+#endif
+    !
+    IF (my_pool_id == ionode_id) THEN
+      !
+      ! .cube format
+      fnm = TRIM(prefix)
+      IF (TRIM(lsda) == 'down') fnm = TRIM(prefix) // '.down'
+      DO ibnd = ibndmin, ibndmax
+        !
+        IF (ibnd - ibndmin + 1 < 10) THEN
+          WRITE(name1, '(a, a4, i1, a5)') TRIM(fnm), '.fs_', ibnd - ibndmin + 1, '.cube'
+        ELSEIF (ibnd - ibndmin + 1 < 100) THEN
+          WRITE(name1, '(a, a4, i2, a5)') TRIM(fnm), '.fs_', ibnd - ibndmin + 1, '.cube'
+        ELSE
+          CALL errore( 'plot_fermisurface', 'Too many bands ',1)
+        ENDIF
+        !
+        OPEN(iufilFS, FILE = name1, STATUS = 'unknown', FORM = 'formatted', IOSTAT = ios)
+        IF (ios /= 0) CALL errore('plot_fermisurface', 'error opening file ' // name1, iufilFS)
+        WRITE(iufilFS, *) 'Cube file created from EPW calculation'
+        WRITE(iufilFS, '(a20, f10.6)') 'Fermi level (eV) = ', ef * ryd2ev
+        WRITE(iufilFS, '(i5, 3f12.6)') 1, 0.0d0, 0.0d0, 0.0d0
+        WRITE(iufilFS, '(i5, 3f12.6)') nkf1, (bg(i, 1) / DBLE(nkf1), i = 1, 3)
+        WRITE(iufilFS, '(i5, 3f12.6)') nkf2, (bg(i, 2) / DBLE(nkf2), i = 1, 3)
+        WRITE(iufilFS, '(i5, 3f12.6)') nkf3, (bg(i, 3) / DBLE(nkf3), i = 1, 3)
+        WRITE(iufilFS, '(i5, 4f12.6)') 1, 1.0d0, 0.0d0, 0.0d0, 0.0d0
+        IF (mp_mesh_k) THEN
+          WRITE(iufilFS, '(6f12.6)') ((etf_all(ibnd, 2 * bztoibz(ik) - 1) - ef) * ryd2ev, ik = 1, nkf1 * nkf2 * nkf3)
+        ELSE
+          WRITE(iufilFS, '(6f12.6)') ((etf_all(ibnd, ik * 2 - 1) - ef) * ryd2ev, ik = 1, nktotf)
+        ENDIF
+        CLOSE(iufilFS)
+        !
+      ENDDO
+      !
+      ! HP: Write in .frmsf format compatible with fermisurfer program
+      WRITE(name1, '(a, a3, a6)') TRIM(fnm), '.fs', '.frmsf'
+      OPEN(iufilFS, FILE = name1, STATUS = 'unknown', FORM = 'formatted', IOSTAT = ios)
+      IF (ios /= 0) CALL errore('plot_fermisurface', 'error opening file ' // name1, iufilFS)
+      WRITE(iufilFS, '(3i5)') nkf1, nkf2, nkf3
+      WRITE(iufilFS, '(i5)') 1
+      WRITE(iufilFS, '(i5)') ibndmax - ibndmin + 1
+      WRITE(iufilFS, '(3f12.6)') (bg(i, 1), i = 1, 3)
+      WRITE(iufilFS, '(3f12.6)') (bg(i, 2), i = 1, 3)
+      WRITE(iufilFS, '(3f12.6)') (bg(i, 3), i = 1, 3)
+      IF (mp_mesh_k) THEN
+        WRITE(iufilFS, '(6f12.6)') (((etf_all(ibnd, 2 * bztoibz(ik) - 1) - ef) * ryd2ev, &
+                ik = 1, nkf1 * nkf2 * nkf3), ibnd = ibndmin, ibndmax)
+      ELSE
+        WRITE(iufilFS, '(6f12.6)') (((etf_all(ibnd, ik * 2 - 1) - ef) * ryd2ev, &
+                ik = 1, nktotf), ibnd = ibndmin, ibndmax)
+      ENDIF
+      CLOSE(iufilFS)
+      !
+    ENDIF
+    CALL mp_barrier(inter_pool_comm)
+    !
+    DEALLOCATE(xkf_all, STAT = ierr)
+    IF (ierr /= 0) CALL errore('plot_fermisurface', 'Error deallocating xkf_all', 1)
+    DEALLOCATE(etf_all, STAT = ierr)
+    IF (ierr /= 0) CALL errore('plot_fermisurface', 'Error deallocating etf_all', 1)
+    !
+    RETURN
+    !
+    !----------------------------------------------------------------------------
+    END SUBROUTINE plot_fermisurface
+    !----------------------------------------------------------------------------
+    !
+    !-----------------------------------------------------------------------
+    SUBROUTINE print_mob_b(f_out_b, vkk_all_b, etf_all_b, wkf_all_b, ef0, &
+                           carrier_density, sigma, max_mob)
+    !-----------------------------------------------------------------------
+    !!
+    !! This routine prints the mobility without k-point symmetry with finite B-field
+    !!
+    !-----------------------------------------------------------------------
+    USE kinds,         ONLY : DP
+    USE input,         ONLY : ncarrier, nstemp, assume_metal
+    USE global_var,    ONLY : nbndfst, nkpt_bztau_max, gtemp, evbm, ecbm
+    USE ep_constants,  ONLY : zero, two, pi, kelvin2eV, ryd2ev, eps10, &
+                              bohr2ang, ang2cm, hbarJ
+    USE constants,     ONLY : electron_si
+    USE mp,            ONLY : mp_sum
+    !
+    IMPLICIT NONE
+    !
+    REAL(KIND = DP), INTENT(in) :: f_out_b(3, nbndfst, nkpt_bztau_max, nstemp)
+    !! Occupation function produced by SERTA or IBTE
+    REAL(KIND = DP), INTENT(in) :: vkk_all_b(3, nbndfst, nkpt_bztau_max)
+    !! Velocity
+    REAL(KIND = DP), INTENT(in) :: etf_all_b(nbndfst, nkpt_bztau_max)
+    !! Eigenenergies of k
+    REAL(KIND = DP), INTENT(in) :: wkf_all_b(nkpt_bztau_max)
+    !! Weight of k
+    REAL(KIND = DP), INTENT(in) :: ef0(nstemp)
+    !! The Fermi level
+    REAL(KIND = DP), INTENT(inout) :: carrier_density(nstemp)
+    !! Carrier density [nb of carrier per unit cell]
+    REAL(KIND = DP), INTENT(inout) :: sigma(3, 3, nstemp)
+    !! Conductivity
+    REAL(KIND = DP), INTENT(inout), OPTIONAL :: max_mob(nstemp)
+    !! The maximum mobility computed by thr prtmob routine.
+    !
+    ! Local variables
+    INTEGER :: itemp
+    !! temperature index
+    INTEGER :: ik
+    !! k-point index
+    INTEGER :: ibnd
+    !! band index
+    REAL(KIND = DP) :: etemp
+    !! Temperature in Ry (this includes division by kb)
+    REAL(KIND = DP) :: sigma_tmp(3, 3)
+    !! Electrical conductivity
+    REAL(KIND = DP) :: ekk
+    !! Energy relative to Fermi level: $$\varepsilon_{n\mathbf{k}}-\varepsilon_F$$
+    REAL(KIND = DP) :: fnk
+    !! Fermi-Dirac occupation function
+    REAL(KIND = DP) :: Fi_check(3)
+    !! Sum rule on population
+    REAL(KIND = DP), EXTERNAL :: wgauss
+    !! Compute the approximate theta function. Here computes Fermi-Dirac
+    REAL(KIND = DP), EXTERNAL :: w0gauss
+    !! The derivative of wgauss:  an approximation to the delta function
+    !
+    IF (PRESENT(max_mob)) THEN
+      max_mob(:) = zero
+    ENDIF
+    CALL prtheader_mob()
+    DO itemp = 1, nstemp
+      carrier_density(itemp) = 0.0
+      etemp = gtemp(itemp)
+      sigma_tmp(:, :) = zero
+      fi_check(:) = zero
+      DO ik = 1,  nkpt_bztau_max
+        DO ibnd = 1, nbndfst
+          !  energy at k (relative to Ef)
+          ekk = etf_all_b(ibnd, ik) - ef0(itemp)
+          fnk = wgauss(-ekk / etemp, -99)
+          IF (etf_all_b(ibnd, ik) < (evbm + eps10) .AND. ncarrier < -1E5 .AND. .NOT. assume_metal) THEN
+            CALL compute_sigma(f_out_b(:, ibnd, ik, itemp), vkk_all_b(:, ibnd, ik), wkf_all_b(ik), sigma_tmp, fi_check)
+            ! The wkf(ikk) already include a factor 2
+            carrier_density(itemp) = carrier_density(itemp) + wkf_all_b(ik) * (1.0d0 - fnk)
+          ELSEIF (etf_all_b(ibnd, ik) > (ecbm - eps10) .AND. ncarrier > 1E5 .AND. .NOT. assume_metal) THEN
+            CALL compute_sigma(f_out_b(:, ibnd, ik, itemp), vkk_all_b(:, ibnd, ik), wkf_all_b(ik), sigma_tmp, fi_check)
+            ! The wkf(ikk) already include a factor 2
+            carrier_density(itemp) = carrier_density(itemp) + wkf_all_b(ik) * fnk
+          ELSEIF (assume_metal) THEN
+            ! sum on all bands for metals
+            CALL compute_sigma(f_out_b(:, ibnd, ik, itemp), vkk_all_b(:, ibnd, ik), wkf_all_b(ik), sigma_tmp, fi_check)
+            carrier_density(itemp) = carrier_density(itemp) + wkf_all_b(ik) * fnk
+          ENDIF
+        ENDDO ! ibnd
+      ENDDO ! ik
+      IF (PRESENT(max_mob)) THEN
+        CALL prtmob(itemp, sigma_tmp, carrier_density(itemp), fi_check, ef0(itemp), etemp, max_mob(itemp))
+      ELSE
+        CALL prtmob(itemp, sigma_tmp, carrier_density(itemp), fi_check, ef0(itemp), etemp)
+      ENDIF
+      sigma(:, :, itemp) = sigma_tmp(:, :)
+    ENDDO ! itemp
+    !-----------------------------------------------------------------------
+    END SUBROUTINE print_mob_b
+    !-----------------------------------------------------------------------
+    !
+    !-----------------------------------------------------------------------
+    SUBROUTINE print_hall(carrier_density, sigma_serta, sigma_bte, sigmab_serta, sigmab_bte)
+    !-----------------------------------------------------------------------
+    !!
+    !! This routine print the final conductivity, mobility and Hall factor
+    !!
+    USE kinds,         ONLY : DP
+    USE input,         ONLY : system_2d, nstemp, bfieldx, bfieldy, bfieldz
+    USE low_lvl,       ONLY : matinv3
+    USE io_global,     ONLY : stdout
+    USE cell_base,     ONLY : omega, at, alat
+    USE global_var,    ONLY : gtemp
+    USE ep_constants,  ONLY : zero, kelvin2eV, ryd2ev, eps80, cm2m, &
+                              bohr2ang, ang2cm, hbarJ
+    USE constants,     ONLY : electron_si
+    !
+    IMPLICIT NONE
+    !
+    REAL(KIND = DP), INTENT(in) :: carrier_density(nstemp)
+    !! Carrier density [nb of carrier per unit cell]
+    REAL(KIND = DP), INTENT(in) :: sigma_serta(3, 3, nstemp)
+    !! SERTA conductivity tensor without Magnetic field.
+    REAL(KIND = DP), INTENT(in) :: sigma_bte(3, 3, nstemp)
+    !! BTE conductivity tensor without Magnetic field.
+    REAL(KIND = DP), INTENT(in) :: sigmab_serta(3, 3, nstemp)
+    !! SERTA conductivity tensor with Magnetic field.
+    REAL(KIND = DP), INTENT(in) :: sigmab_bte(3, 3, nstemp)
+    !! BTE conductivity tensor with Magnetic field.
+    !
+    ! Local variables
+    INTEGER :: itemp
+    !! Temperature index
+    REAL(KIND = DP) :: carrier_density_cm(nstemp)
+    !! Carrier density (cm^(-d))
+    REAL(KIND = DP) :: etemp
+    !! Temperature value in Ry
+    REAL(KIND = DP) :: b_norm
+    !! Norm of the B-field
+    REAL(KIND = DP) :: inv_cell
+    !! Inverse of the volume or Area
+    REAL(KIND = DP) :: mob_serta(3, 3, nstemp)
+    !! SERTA mobility tensor without Magnetic field.
+    REAL(KIND = DP) :: mob_bte(3, 3, nstemp)
+    !! BTE mobility tensor without Magnetic field.
+    REAL(KIND = DP) :: mobb_serta(3, 3, nstemp)
+    !! SERTA mobility tensor with Magnetic field.
+    REAL(KIND = DP) :: mobb_bte(3, 3, nstemp)
+    !! BTE mobility tensor with Magnetic field.
+    REAL(KIND = DP) :: sigma_serta_si(3, 3, nstemp)
+    !! SERTA conductivity tensor without Magnetic field in SI unit.
+    REAL(KIND = DP) :: sigma_bte_si(3, 3, nstemp)
+    !! BTE conductivity tensor without Magnetic field in SI unit.
+    REAL(KIND = DP) :: sigmab_serta_si(3, 3, nstemp)
+    !! SERTA conductivity tensor with Magnetic field in SI unit.
+    REAL(KIND = DP) :: sigmab_bte_si(3, 3, nstemp)
+    !! BTE conductivity tensor with Magnetic field in SI unit.
+    REAL(KIND = DP) :: hall_serta(3, 3, nstemp)
+    !! Hall factor
+    REAL(KIND = DP) :: hall(3, 3, nstemp)
+    !! Hall factor
+    REAL(KIND = DP) :: mob_hall(3, 3)
+    !! Hall mobility
+    REAL(KIND = DP) :: mob_inv(3, 3, nstemp)
+    !! Inverse mobility tensor
+    !
+    ! Convert carrier number in true carrier density
+    carrier_density_cm(:) = zero
+    DO itemp = 1, nstemp
+      IF (system_2d == 'no') THEN
+        inv_cell = 1.0d0 / omega
+        carrier_density_cm(itemp) = carrier_density(itemp) * (inv_cell * (bohr2ang * ang2cm)**(-3.0d0))
+      ELSE
+        inv_cell = (at(3, 3) * alat) / omega
+        carrier_density_cm(itemp) = carrier_density(itemp) * (inv_cell * (bohr2ang * ang2cm)**(-2.0d0))
+      ENDIF
+      !
+      mob_serta(:, :, itemp)  = (sigma_serta(:, :, itemp) * electron_si * (bohr2ang * ang2cm)**2) &
+                              / (carrier_density(itemp) * hbarJ)
+      mob_bte(:, :, itemp)    = (sigma_bte(:, :, itemp) * electron_si * (bohr2ang * ang2cm)**2) &
+                              / (carrier_density(itemp) * hbarJ)
+      mobb_serta(:, :, itemp) = (sigmab_serta(:, :, itemp) * electron_si * (bohr2ang * ang2cm)**2) &
+                              / (carrier_density(itemp) * hbarJ)
+      mobb_bte(:, :, itemp)   = (sigmab_bte(:, :, itemp) * electron_si * (bohr2ang * ang2cm)**2) &
+                              / (carrier_density(itemp) * hbarJ)
+      !
+      ! Convert conductivity tensor in SI units [Siemens m^-1=Coulomb s^-1 V^-1 m^-d ]
+      ! in 3d: cm^2 s^-1 V^-1 * (cm ^-2  cmtom^-1 C) = Coulomb s^-1 V^-1
+      IF (system_2d == 'no') THEN
+        sigma_serta_si(:, :, itemp)  = mob_serta(:, :, itemp) * (electron_si * carrier_density_cm(itemp) * cm2m**(-1))
+        sigma_bte_si(:, :, itemp)    = mob_bte(:, :, itemp) * (electron_si * carrier_density_cm(itemp) * cm2m**(-1))
+        sigmab_serta_si(:, :, itemp) = mobb_serta(:, :, itemp) * (electron_si * carrier_density_cm(itemp) * cm2m**(-1))
+        sigmab_bte_si(:, :, itemp)   = mobb_bte(:, :, itemp) * (electron_si * carrier_density_cm(itemp) * cm2m**(-1))
+      ELSE
+        sigma_serta_si(:, :, itemp)  = mob_serta(:, :, itemp) * (electron_si * carrier_density_cm(itemp))
+        sigma_bte_si(:, :, itemp)    = mob_bte(:, :, itemp) * (electron_si * carrier_density_cm(itemp))
+        sigmab_serta_si(:, :, itemp) = mobb_serta(:, :, itemp) * (electron_si * carrier_density_cm(itemp))
+        sigmab_bte_si(:, :, itemp)   = mobb_bte(:, :, itemp) * (electron_si * carrier_density_cm(itemp))
+      ENDIF
+      !
+      ! To make the diagonal of mobb zero.
+      mobb_serta(:, :, itemp) = mobb_serta(:, :, itemp) - mob_serta(:, :, itemp)
+      mobb_bte(:, :, itemp) = mobb_bte(:, :, itemp) - mob_bte(:, :, itemp)
+      !
+
+    ENDDO ! itemp
+    !
+    b_norm = SQRT(bfieldx**2 + bfieldy**2 + bfieldz**2)
+    WRITE(stdout, '(/5x, a)') REPEAT('=',93)
+    WRITE(stdout, '(5x, a)') 'BTE in the self-energy relaxation time approximation (SERTA)'
+    WRITE(stdout, '(5x, a)') REPEAT('=',93)
+    DO itemp = 1, nstemp
+      etemp = gtemp(itemp)
+      !
+      IF (system_2d == 'no') THEN ! We suppose vacuum is in the z direction
+        mob_inv(:, :, itemp) = matinv3(mob_serta(:, :, itemp))
+      ELSE
+        mob_serta(3, 3, :) = 1d0
+        mob_inv(:, :, itemp) = matinv3(mob_serta(:, :, itemp))
+        mob_inv(3, 3, :) = 0d0
+      ENDIF
+      hall_serta(:, :, itemp) = MATMUL(MATMUL(mob_inv(:, :, itemp), mobb_serta(:, :, itemp)), &
+                          mob_inv(:, :, itemp)) / (b_norm * hbarJ ) * electron_si * (bohr2ang * ang2cm)**2
+      !
+      mob_hall(:, :)   = MATMUL(hall_serta(:, :, itemp),mob_serta(:, :, itemp))
+      !
+      !
+      WRITE(stdout, '(5x,a)') ' '
+      WRITE(stdout, '(5x,a,1f10.4,a)') 'Temperature: ', etemp * ryd2ev / kelvin2eV, ' K'
+      IF (system_2d == 'no') THEN
+        WRITE(stdout, '(5x,a,1E18.6)') 'Conductivity tensor without magnetic field | with magnetic field [Siemens/m]'
+      ELSE
+        WRITE(stdout, '(5x,a,1E18.6)') 'Conductivity tensor without magnetic field | with magnetic field [Siemens]'
+      ENDIF
+      WRITE(stdout, '(4x,3E14.5,a,3E14.5)') sigma_serta_si(1, :, itemp), '  |', sigmab_serta_si(1, :, itemp)
+      WRITE(stdout, '(4x,3E14.5,a,3E14.5)') sigma_serta_si(2, :, itemp), '  |', sigmab_serta_si(2, :, itemp)
+      WRITE(stdout, '(4x,3E14.5,a,3E14.5)') sigma_serta_si(3, :, itemp), '  |', sigmab_serta_si(3, :, itemp)
+      !
+      WRITE(stdout, '(5x,a)') 'Mobility tensor without magnetic field     | Hall mobility [cm^2/Vs]'
+      WRITE(stdout, '(4x,3E14.5,a,3E14.5)') mob_serta(1, :, itemp), '  |', mob_hall(1, :)
+      WRITE(stdout, '(4x,3E14.5,a,3E14.5)') mob_serta(2, :, itemp), '  |', mob_hall(2, :)
+      WRITE(stdout, '(4x,3E14.5,a,3E14.5)') mob_serta(3, :, itemp), '  |', mob_hall(3, :)
+      !
+      ! bfield is energy*sec/lenght**2, mobility is in cm**2 V**-1 sec**-1.
+      ! To convert bfield to the same units of the mobility I do the same conversion as passing from the sigma
+      ! tensor to the mobility: the energy is converted with electron_SI/hbarJ and the lenght**2 with (bohr2ang * ang2cm)**2
+      WRITE(stdout, '(5x, a, 1E18.6)') 'Hall factor'
+      WRITE(stdout, '(3x, 3E16.6)') hall_serta(1, :, itemp)
+      WRITE(stdout, '(3x, 3E16.6)') hall_serta(2, :, itemp)
+      WRITE(stdout, '(3x, 3E16.6)') hall_serta(3, :, itemp)
+    ENDDO
+    !
+    WRITE(stdout, '(/5x, a)') REPEAT('=',93)
+    WRITE(stdout, '(5x, a)') 'BTE'
+    WRITE(stdout, '(5x, a)') REPEAT('=',93)
+    DO itemp = 1, nstemp
+      etemp = gtemp(itemp)
+      !
+      IF (system_2d == 'no') THEN
+        mob_inv(:, :, itemp) = matinv3(mob_bte(:, :, itemp))
+      ELSE ! We suppose vacuum is in the z direction
+        mob_bte(3, 3, :) = 1d0
+        mob_inv(:, :, itemp) = matinv3(mob_bte(:, :, itemp))
+        mob_inv(3, 3, :) = 0d0
+      ENDIF
+      hall(:, :, itemp) = MATMUL(MATMUL(mob_inv(:, :, itemp), mobb_bte(:, :, itemp)), &
+                          mob_inv(:, :, itemp)) / (b_norm * hbarJ ) * electron_si * (bohr2ang * ang2cm)**2
+      mob_hall(:, :)   = MATMUL(hall(:, :, itemp),mob_bte(:, :, itemp))
+      !
+      WRITE(stdout, '(5x,a)') ' '
+      WRITE(stdout, '(5x,a,1f10.4,a)') 'Temperature: ', etemp * ryd2ev / kelvin2eV, ' K'
+      IF (system_2d == 'no') THEN
+        WRITE(stdout, '(5x,a,1E18.6)') 'Conductivity tensor without magnetic field | with magnetic field [Siemens/m]'
+      ELSE
+        WRITE(stdout, '(5x,a,1E18.6)') 'Conductivity tensor without magnetic field | with magnetic field [Siemens]'
+      ENDIF
+      WRITE(stdout, '(4x,3E14.5,a,3E14.5)') sigma_bte_si(1, :, itemp), '  |', sigmab_bte_si(1, :, itemp)
+      WRITE(stdout, '(4x,3E14.5,a,3E14.5)') sigma_bte_si(2, :, itemp), '  |', sigmab_bte_si(2, :, itemp)
+      WRITE(stdout, '(4x,3E14.5,a,3E14.5)') sigma_bte_si(3, :, itemp), '  |', sigmab_bte_si(3, :, itemp)
+      !
+      WRITE(stdout, '(5x,a)') 'Mobility tensor without magnetic field     | Hall mobility [cm^2/Vs]'
+      WRITE(stdout, '(4x,3E14.5,a,3E14.5)') mob_bte(1, :, itemp), '  |', mob_hall(1, :)
+      WRITE(stdout, '(4x,3E14.5,a,3E14.5)') mob_bte(2, :, itemp), '  |', mob_hall(2, :)
+      WRITE(stdout, '(4x,3E14.5,a,3E14.5)') mob_bte(3, :, itemp), '  |', mob_hall(3, :)
+      !
+      ! bfield is energy*sec/lenght**2, mobility is in cm**2 V**-1 sec**-1.
+      ! To convert bfield to the same units of the mobility I do the same conversion as passing from the sigma
+      ! tensor to the mobility: the energy is converted with electron_SI/hbarJ and the lenght**2 with (bohr2ang * ang2cm)**2
+      WRITE(stdout, '(5x, a, 1E18.6)') 'Hall factor'
+      WRITE(stdout, '(3x, 3E16.6)') hall(1, :, itemp)
+      WRITE(stdout, '(3x, 3E16.6)') hall(2, :, itemp)
+      WRITE(stdout, '(3x, 3E16.6)') hall(3, :, itemp)
+    ENDDO
+    !
+    ! SP: To be removed when adding to the main QE repo.
+    !WRITE(stdout, '(5x, a)')'---------------------------------------'
+    !WRITE(stdout, '(5x, a)')' '
+    !WRITE(stdout, '(4x, 2f12.2, 2f12.3)') mob_serta(1, 1, 1), mob_bte(1, 1, 1), hall_serta(1, 2, 1), hall(1, 2, 1)
+    !WRITE(stdout, '(4x, 2f12.2, 2f12.3)') mob_serta(1, 1, 2), mob_bte(1, 1, 2), hall_serta(1, 2, 2), hall(1, 2, 2)
+    !
+    !-----------------------------------------------------------------------
+    END SUBROUTINE print_hall
+    !-----------------------------------------------------------------------
+  !-------------------------------------------------------------------------
+  END MODULE printing
+  !-------------------------------------------------------------------------

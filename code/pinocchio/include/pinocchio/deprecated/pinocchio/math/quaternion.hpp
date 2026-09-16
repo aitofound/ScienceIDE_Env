@@ -1,0 +1,7 @@
+//
+// Copyright (c) 2026 INRIA
+//
+
+// IWYU pragma: begin_keep
+#include "pinocchio/math.hpp"
+// IWYU pragma: end_keep

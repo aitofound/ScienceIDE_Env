@@ -1,0 +1,44 @@
+
+SHELL=/bin/sh
+COMPILE.f77     = nagfor
+COMPILE.f90     = nagfor
+LINK.f90        = mpif90
+AR = ar -rs
+
+OPT0 = -O0
+OPT1 = -O1
+OPT2 = -O2
+OPT3 = -O3
+OPT4 = -O4
+
+
+SINGLEPREC =
+DOUBLEPREC = -default_kinds:r=64
+PRECISION  = ${DOUBLEPREC}
+
+
+DEBUGFLAG = -C -gline -nan
+DEBUG     = ${DEBUGFLAG}
+
+CFLAG = ${SEARCH} -c -w -ideclient -fpp ${OPENMPFLAG} ${DEBUG} -kind=byte
+
+
+
+Cflag0  = ${CFLAG} ${PRECISION} ${OPT0}
+Cflag1  = ${CFLAG} ${PRECISION} ${OPT1}
+Cflag2  = ${CFLAG} ${PRECISION} ${OPT2}
+Cflag3  = ${CFLAG} ${PRECISION} ${OPT3}
+Cflag4  = ${CFLAG} ${PRECISION} ${OPT4}
+
+.SUFFIXES:
+.SUFFIXES: .f90 .F90 .f .for .ftn .o
+
+.f90.o:
+	${COMPILE.f90} ${Cflag3} $<
+
+.f.o:
+	${COMPILE.f77} -132 ${Cflag3} $<
+
+clean:
+	rm -f *~ core *.o *.mod fort.* a.out *.exe *.a *.so *.protex
+
