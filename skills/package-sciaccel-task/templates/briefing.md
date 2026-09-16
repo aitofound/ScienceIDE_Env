@@ -60,10 +60,8 @@ WHERE YOU ARE NEEDED, AND WHAT YOU WILL BE ASKED
                    back. The same page is what the agent shows you first, before any exploration,
                    both when it opens the PR and when it reviews one. Review and merge it; the tasks
                    wait for it. Recorded in codebase state (source_pr: merge commit,
-                   PR, your words). You may instead lift this gate with your words and let the whole
-                   pipeline run in one shot on the unmerged tree (a recorded, warned bypass); the task PR then
-                   waits for the source PR to merge first. The agent offers this when it reports
-                   the PR link.
+                   PR, your words). The codebase MUST be vendored and merged BEFORE the task
+                   phase: nothing past this stop runs on an unmerged tree, and there is no bypass.
   3 charter        once per host, when the first leaf for it is scaffolded: where the Docker work
                    runs (this machine, or a host you name) and the bounds past which the run plan
                    comes back as a question (suite minutes, image size). Standing: every build,

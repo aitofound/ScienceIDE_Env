@@ -28,11 +28,10 @@ def source_on_main(source: str) -> str | None:
         return None
 
 
-def require_source_merged(cb_id: str, cb: dict, allow_unmerged: bool = False, human_ref: str = "") -> None:
-    """The hard stop of Step 1.5: refuse until the source PR is merged and the human has said so.
+def require_source_merged(cb_id: str, cb: dict) -> None:
+    """The hard stop of Step 1.5: refuse until the source PR is merged into main and the human has said so.
 
-    With --allow-unmerged-source and the human's words the refusal becomes a loud warning, recorded in the codebase
-    state (source_gate_bypass) so that status keeps reporting it until `codebase source-merged` is run."""
+    There is no bypass: the codebase MUST be vendored and merged before the survey and the task phase."""
     rec = cb.get("source_pr")
     merged = bool(rec and rec.get("human_ref")) and source_on_main(cb["source"]) is not None
     if merged:
@@ -40,19 +39,8 @@ def require_source_merged(cb_id: str, cb: dict, allow_unmerged: bool = False, hu
     reason = (f"the source PR for code/{cb['source']}/ is not recorded as merged; after the human merges it run "
               f"`sab.py codebase source-merged --codebase {cb_id} --human-ref ...`" if not (rec and rec.get("human_ref"))
               else f"code/{cb['source']}/ is not on origin/main (recorded merge {rec.get('merge_commit')})")
-    if not allow_unmerged:
-        print(STEP15_BRIEF.format(source=cb["source"], cb=cb_id))
-        die(f"refusing: {reason}; the human can bypass this gate with --allow-unmerged-source --human-ref \"<their words>\"")
-    if not human_ref.strip():
-        die("--allow-unmerged-source needs --human-ref with the human's words")
-    print(f"WARNING: Step 1.5 gate bypassed at the human's request: {reason}.")
-    print("WARNING: everything downstream builds on a source tree that is not on main; the task PR must not merge before the source PR,")
-    print("WARNING: and every Dockerfile must still build from code/<source>/ as it will be vendored. Run `sab.py codebase source-merged` once it lands.")
-    d = state_dir(cb_id) / "codebase.json"
-    if d.is_file():
-        doc = read_json(d)
-        doc["source_gate_bypass"] = {"at": now(), "human_ref": human_ref, "reason": reason}
-        write_json(d, doc)
+    print(STEP15_BRIEF.format(source=cb["source"], cb=cb_id))
+    die(f"refusing: {reason}; the codebase MUST be merged into main before the survey and the task phase, there is no bypass")
 
 
 def cmd_codebase_init(a) -> None:
@@ -524,7 +512,7 @@ def cmd_codebase_survey(a) -> None:
     approved = approved_modules(mdoc)
     if not approved:
         die("no approved modules yet; finish Step 1 first")
-    require_source_merged(a.codebase, cb, getattr(a, "allow_unmerged_source", False), getattr(a, "human_ref", "") or "")
+    require_source_merged(a.codebase, cb)
     source = config.ROOT / "code" / cb["source"]
     if not source.is_dir():
         die(f"code/{cb['source']}/ does not exist in this checkout; pull the merged main first")
