@@ -26,10 +26,10 @@
     ]
   },
   "evidence": {
-    "floor": null,
-    "floor_how": "measured by selfcheck: run.sh altbuild (CFLAGS=-O0) against run.sh nominal with this check's validate.py",
-    "self_validation_spread": null,
-    "self_validation_bound_fraction": null,
+    "floor": 0.0,
+    "floor_how": "measured by selfcheck on 2026-09-16: run.sh altbuild (CFLAGS=-O0 configure of the same pinned source (the graded build is the upstream default -O3 with the SIMD kernels)) against run.sh nominal, graded with the check's own validate.py: every graded value identical, an ungraded file differs",
+    "self_validation_spread": 0.909090909090922,
+    "self_validation_bound_fraction": 0.909090909090922,
     "native_calibration": {
       "host": "arm64 macOS, native build, 2026-09-16",
       "rows_tbl": 67,
@@ -37,7 +37,18 @@
       "variant_bound_fraction": 0.909090909090922,
       "variant_reason": "every keyed scientific row within one printed unit",
       "altbuild_bound_fraction": 0.0
-    }
+    },
+    "altbuild": {
+      "what": "CFLAGS=-O0 configure of the same pinned source (the graded build is the upstream default -O3 with the SIMD kernels)",
+      "distance": 0.0,
+      "bound_fraction": 0.0,
+      "identical": false,
+      "graded_identical": true,
+      "passed": true,
+      "reason": "every keyed scientific row within one printed unit",
+      "at": "2026-09-16T07:53:58Z"
+    },
+    "floor_bound_fraction": 0.0
   },
   "warrant": "Every graded number is a production quantity of the hmmsearch pipeline (src/hmmsearch.c, p7_pipeline.c, p7_domaindef.c, p7_tophits.c): per-target and per-domain bit scores and biases, E-values, envelope/alignment/model coordinates, the per-target domain-count statistics, the mean posterior accuracy, and the target/query identities, accessions and descriptions, keyed by target name, query name and domain number. The bounds are the print precision of p7_tophits.c, not packager choices: scores and biases print %6.1f/%5.1f (p7_tophits.c:1670,1755), so atol 0.11 is one printed unit; E-values print %9.2g, so rtol 0.11 is one unit in the second significant figure; the mean posterior accuracy prints %4.2f, so its bound is 0.011; coordinates, counts, identities and aligned residues are exact. Achievable: the altbuild (the same source at -O0 against the graded -O3 SIMD build) is the measured floor in evidence.floor, and the nominal-versus-variant spread is in evidence.self_validation_spread. Physical: a port fault such as a wrong MSV, Viterbi or Forward filter score, a dropped null2 or bias correction, a wrong envelope or alignment boundary, a mis-scaled Z or a threshold applied to the wrong quantity moves a bit score by whole bits or changes which rows are reported, far outside one printed unit. For this check: the rows that pass the per-sequence reporting bit-score threshold -T 20 (67 of the 73 default rows)."
 }
