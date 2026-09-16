@@ -33,6 +33,21 @@ jobs:
       # also runs gen-index.mjs --check, so registry staleness fails here
       # without a step of its own.
       - run: npm ci
+      # The packaging CLI is not in this repository. skills/package-sciaccel-task/
+      # is a pointer, and its PIPELINE_REVISION names the commit of
+      # huangzesen/sciaccelbench-pipeline that main runs. Check that commit out
+      # under .pipeline/ (gitignored), where scripts/sab.py finds it; every
+      # sab.py line below runs from there. The pipeline repository is private:
+      # PIPELINE_DEPLOY_KEY is a read-only deploy key on it.
+      - name: pipeline pin
+        id: pin
+        run: echo "sha=$(tr -d '[:space:]' < skills/package-sciaccel-task/PIPELINE_REVISION)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          repository: huangzesen/sciaccelbench-pipeline
+          ref: ${{ steps.pin.outputs.sha }}
+          ssh-key: ${{ secrets.PIPELINE_DEPLOY_KEY }}
+          path: .pipeline
       - run: npm run test:report-gate
       # The baseline for the slug-permanence check: a PR may not delete or
       # rename a registered tasks/sa-NNNN/ directory, because its slug is a
