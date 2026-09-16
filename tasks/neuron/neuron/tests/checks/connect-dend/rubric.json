@@ -22,10 +22,21 @@
     ]
   },
   "evidence": {
-    "floor": null,
-    "floor_how": "measured at selfcheck: the largest per-value disagreement between the nominal run and the altbuild run (an -O0 build of the same source), recorded in self-validation.json and copied here at calibration",
-    "self_validation_spread": null,
-    "self_validation_bound_fraction": null
+    "floor": 0.0,
+    "floor_how": "measured by selfcheck on 2026-09-16: run.sh altbuild (same source rebuilt with optimization off: -DCMAKE_C_FLAGS=-O0 and -DCMAKE_CXX_FLAGS=-O0 appended to the same cmake flags) against run.sh nominal, graded with the check's own validate.py: bit-identical output",
+    "self_validation_spread": 0.0,
+    "self_validation_bound_fraction": 0.0,
+    "altbuild": {
+      "what": "same source rebuilt with optimization off: -DCMAKE_C_FLAGS=-O0 and -DCMAKE_CXX_FLAGS=-O0 appended to the same cmake flags",
+      "distance": 0.0,
+      "bound_fraction": 0.0,
+      "identical": true,
+      "graded_identical": false,
+      "passed": true,
+      "reason": "all graded values within bound",
+      "at": "2026-09-16T10:21:42Z"
+    },
+    "floor_bound_fraction": 0.0
   },
   "warrant": "Upstream grades this entry by comparing the written data file byte for byte against a shipped reference, so the file IS the upstream observable; this check grades the same file under a tolerance, which tolerates legitimate build-to-build rounding while keeping the full trajectory graded. The band is achievable because upstream byte-compares this file against a committed reference, so on one platform and build the run is exactly reproducible; the -O0 altbuild moves values only at the measured floor, far below the band. It is discriminating because a real fault in section connection or integration changes the voltage trajectory far outside the band; upstream itself grades this very file, byte for byte."
 }
