@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "report_type": "codebase-metadata",
-  "generated_at": "2026-09-16T05:13:29Z",
+  "generated_at": "2026-09-16T05:51:33Z",
   "informational": true,
   "non_blocking": true,
   "codebase": {
@@ -16,7 +16,7 @@
     ],
     "domain": "physics-astronomy",
     "owner": "taigaoma1997",
-    "source_tree_fingerprint": "aeac557f25691704a2e48cb30844cec204c6296ed6fd6b011c260a26697a3773",
+    "source_tree_fingerprint": "b40cbf753700426f60929d87a00180128ad00ec77f046d2383f693b785d9d422",
     "fingerprint_algorithm": "SHA-256 over typed sorted regular-file paths+bytes and symlink paths+safe targets",
     "measurement_source": "vendored source payload",
     "agent_authored": {
@@ -26,7 +26,8 @@
         "README.rst, __init__.py docstring and the docstrings of tmm_core.py at the pin",
         "pyproject.toml (version 0.2.0, MIT, package tmm mapped onto the repository root)",
         "PyPI sdist tmm-0.2.0.tar.gz (SHA-256 above) equals the git tree at 462b63b file for file modulo CRLF line endings",
-        "runs.json: every test and example run natively under Python 3.12.3 with NumPy 2.5.3"
+        "runs.json: every test and example run natively under Python 3.12.3 with NumPy 2.5.3",
+        "third_party/VENDORING.md: the bundled colorpy fork, its origin commit and licence; the upstream tmm files are untouched"
       ]
     }
   },
@@ -51,7 +52,9 @@
       "examples.py",
       "examples.ipynb"
     ],
-    "third_party_paths": [],
+    "third_party_paths": [
+      "third_party"
+    ],
     "test_count_units": [
       "test_files",
       "test_definitions",
@@ -74,28 +77,36 @@
         "examples.py",
         "examples.ipynb"
       ],
-      "third_party_paths": [],
-      "generated_vendor_third_party_notes": "no third-party code is bundled; NumPy is the only runtime dependency of the core, SciPy and Matplotlib are used by examples.py, and the optional colorpy (PyPI 0.1.1, Python 2 only; the fish2000 ColorPy fork at 4c9e5b2e runs on Python 3, LGPL-3.0) is imported by color.py and examples.sample5 and is installed into the images, never vendored"
+      "third_party_paths": [
+        "third_party"
+      ],
+      "generated_vendor_third_party_notes": "third_party/colorpy is the Python 3 fork of Mark Kness's ColorPy 0.1.1 (LGPL-3.0), github.com/fish2000/ColorPy at commit 4c9e5b2e334851b42626f9a1eda31197739b097e, vendored verbatim with git archive (see third_party/VENDORING.md): tmm.color and examples.sample5 import colorpy, the PyPI release is Python 2 only, and a GitHub fork is not a well-known public package, so it ships with the source instead of being fetched at image build. NumPy is the only runtime dependency of the core; SciPy and Matplotlib are used by examples.py and by colorpy's illuminants module."
     }
   },
   "size": {
-    "tree_entries": 15,
-    "regular_files": 14,
-    "directories": 1,
+    "tree_entries": 43,
+    "regular_files": 40,
+    "directories": 3,
     "symlinks": 0,
     "symlink_entries": [],
-    "payload_bytes": 425905,
-    "text_files": 13,
-    "text_physical_lines": 3158,
+    "payload_bytes": 761237,
+    "text_files": 39,
+    "text_physical_lines": 11180,
     "binary_files": 1,
     "binary_bytes": 112751,
-    "source_files": 5,
-    "source_physical_lines": 1912,
-    "implementation_source_files": 4,
-    "implementation_source_physical_lines": 1486,
-    "test_source_files": 1,
-    "test_source_physical_lines": 426,
+    "source_files": 23,
+    "source_physical_lines": 7068,
+    "implementation_source_files": 16,
+    "implementation_source_physical_lines": 5596,
+    "test_source_files": 7,
+    "test_source_physical_lines": 1472,
     "files_by_extension": [
+      {
+        "extension": ".html",
+        "files": 1,
+        "bytes": 91345,
+        "text_physical_lines": 1868
+      },
       {
         "extension": ".in",
         "files": 1,
@@ -115,6 +126,12 @@
         "text_physical_lines": 632
       },
       {
+        "extension": ".md",
+        "files": 1,
+        "bytes": 1036,
+        "text_physical_lines": 18
+      },
+      {
         "extension": ".pdf",
         "files": 1,
         "bytes": 112751,
@@ -122,15 +139,15 @@
       },
       {
         "extension": ".py",
-        "files": 5,
-        "bytes": 78432,
-        "text_physical_lines": 1912
+        "files": 23,
+        "bytes": 274073,
+        "text_physical_lines": 7068
       },
       {
         "extension": ".rst",
-        "files": 1,
-        "bytes": 1642,
-        "text_physical_lines": 15
+        "files": 2,
+        "bytes": 4398,
+        "text_physical_lines": 96
       },
       {
         "extension": ".toml",
@@ -140,15 +157,15 @@
       },
       {
         "extension": ".txt",
-        "files": 2,
-        "bytes": 3122,
-        "text_physical_lines": 21
+        "files": 5,
+        "bytes": 46646,
+        "text_physical_lines": 880
       },
       {
         "extension": "[no extension]",
-        "files": 1,
-        "bytes": 248,
-        "text_physical_lines": 28
+        "files": 3,
+        "bytes": 1278,
+        "text_physical_lines": 68
       }
     ],
     "breakdown": {
@@ -180,10 +197,23 @@
         "by_language": []
       },
       "third_party": {
-        "files": 0,
-        "text_physical_lines": 0,
-        "by_language": [],
-        "paths": []
+        "files": 26,
+        "text_physical_lines": 8022,
+        "by_language": [
+          {
+            "language": "Python",
+            "files": 18,
+            "text_physical_lines": 5156
+          },
+          {
+            "language": "other",
+            "files": 8,
+            "text_physical_lines": 2866
+          }
+        ],
+        "paths": [
+          "third_party"
+        ]
       },
       "other": {
         "files": 8,
@@ -478,7 +508,7 @@
         ],
         "nondeterminism": "none seen",
         "pitfalls": [
-          "colorpy 0.1.1 from PyPI is Python 2 only: import fails with ModuleNotFoundError: No module named 'colormodels'; the fish2000/ColorPy fork (LGPL-3.0) at commit 4c9e5b2e imports and runs on 3.12",
+          "colorpy 0.1.1 from PyPI is Python 2 only: import fails with ModuleNotFoundError: No module named 'colormodels'; the fish2000 ColorPy fork (LGPL-3.0) at commit 4c9e5b2e334851b42626f9a1eda31197739b097e imports and runs on Python 3 and is now bundled under third_party/colorpy (PYTHONPATH=third_party)",
           "colorpy.plots.spectrum_plot saves temp_plot.png into the current working directory; run in a scratch cwd",
           "the irgb values are gamma-corrected integers 0-255, a discrete output; the linear rgb and xyY are the continuous quantities"
         ]
@@ -531,7 +561,7 @@
       {
         "where": "sample5",
         "symptom": "PyPI colorpy 0.1.1 fails to import on Python 3 (No module named 'colormodels')",
-        "workaround": "pip install the fish2000 ColorPy fork from GitHub at commit 4c9e5b2e334851b42626f9a1eda31197739b097e (github.com/fish2000/ColorPy) (LGPL-3.0); then examples.colors_were_imported is True and sample5 runs in 8.4 s"
+        "workaround": "use the fish2000 ColorPy fork at commit 4c9e5b2e334851b42626f9a1eda31197739b097e (LGPL-3.0), bundled with the source under third_party/colorpy and put on PYTHONPATH; then examples.colors_were_imported is True and sample5 runs in 8.4 s"
       },
       {
         "where": "sample5",
@@ -599,7 +629,7 @@
         "manual.pdf and manual_source/manual.lyx: documentation, nothing runs"
       ],
       "hazards": [
-        "color.py and examples.sample5 need colorpy; the PyPI colorpy 0.1.1 is Python 2 only (import colormodels fails on Python 3); the fish2000/ColorPy fork (LGPL-3.0) at commit 4c9e5b2e334851b42626f9a1eda31197739b097e imports and runs on 3.12, so the colour check adds an LGPL third-party dependency to the images (installed, never vendored)",
+        "color.py and examples.sample5 need colorpy; the PyPI colorpy 0.1.1 is Python 2 only (import colormodels fails on Python 3); the fish2000 ColorPy fork (LGPL-3.0) at commit 4c9e5b2e334851b42626f9a1eda31197739b097e runs on 3.12 and is bundled under third_party/colorpy (388 KB, LGPL-3.0 text included), so the colour check adds no network fetch to the images",
         "is_forward_angle decides the forward wave by a floating-point comparison with a 100*EPSILON threshold, and snell and list_snell flip the angle on it; coh_tmm clamps imag(delta) > 35 and inc_tmm floors P < 1e-30: discrete choices on floating-point values, far from the thresholds in every official deck",
         "coh_tmm prints an opacity warning once per process through a module global; stdout is therefore process-history dependent and is never a graded observable",
         "examples end in matplotlib.pyplot.show() (headless runs need MPLBACKEND=Agg or a stub) and colorpy.plots writes temp_plot.png into the working directory",
@@ -644,10 +674,10 @@
       "classification": "agent-authored module card; CLI-computed size and approval status",
       "metrics": {
         "owned": {
-          "regular_files": 14,
-          "bytes": 425905,
-          "text_files": 13,
-          "text_physical_lines": 3158
+          "regular_files": 40,
+          "bytes": 761237,
+          "text_files": 39,
+          "text_physical_lines": 11180
         },
         "shared": {
           "regular_files": 0,
@@ -767,10 +797,10 @@
         "text_physical_lines": 0
       },
       "owned": {
-        "regular_files": 14,
-        "bytes": 425905,
-        "text_files": 13,
-        "text_physical_lines": 3158
+        "regular_files": 40,
+        "bytes": 761237,
+        "text_files": 39,
+        "text_physical_lines": 11180
       },
       "overlapping_owned": {
         "regular_files": 0,
@@ -790,17 +820,18 @@
     "unclassified_paths": [],
     "unclassified_paths_truncated": 0,
     "reconciliation": {
-      "regular_files": 14,
-      "classified_files": 14,
+      "regular_files": 40,
+      "classified_files": 40,
       "reconciliation_ok": true
     },
     "not_packaged": [],
     "known_review_gaps": [
       "upstream ships reference numbers only inside basic_test and position_resolved_test (Mathematica values); every other check is anchored by the pinned build's own output",
-      "the repository has no tags: the pin is the commit that set version 0.2.0, verified against the PyPI sdist"
+      "the repository has no tags: the pin is the commit that set version 0.2.0, verified against the PyPI sdist",
+      "code/tmm/ carries one addition to the upstream tree: third_party/colorpy (LGPL-3.0, 388 KB), added by the second source PR; the review CLI's tree-against-upstream comparison will list it"
     ],
     "open_questions": [
-      "whether the colour example (sample5) should become a check, since it needs the LGPL-3.0 fish2000 ColorPy fork installed in the images (the packager's default: yes, installed from its pinned commit, never vendored)"
+      "none: the colour example (sample5) becomes a check with the bundled colorpy fork; the packager's default recorded in the survey"
     ],
     "classification": "CLI-computed accounting plus agent-authored gaps"
   },
