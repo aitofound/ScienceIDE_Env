@@ -1,0 +1,162 @@
+{
+  "check": "dissimilarity-map",
+  "policy": "pointwise",
+  "chaotic": false,
+  "upstream_test": "code/cassiopeia/test/data_tests/cassiopeia_tree_test.py",
+  "configuration": "固定10 cells × 8 characters，执行普通、2-worker、ambiguous mean linkage（normalize=False）与重复状态展开四个官方map场景；逐场景导出完整无序cell pair距离，含diagonal。每个场景的完整selector与source anchor见ic/nominal/inputs.json。",
+  "observable": "按无序cell pair身份对齐的四组完整dissimilarity map距离",
+  "expected_runtime_s": 18,
+  "default_vs_upstream": "保留四个官方selector的map数值阶段、原始矩阵和2-worker配置；test_set_dissimilarity_map的setter/getter别名与warning断言不属于此独立map阶段，不声称覆盖。",
+  "variant": "identical: 所选官方map输入全是离散int states、cell IDs与ambiguous tuple；没有浮点priors或weights，不能对整数编码施加2ULP而保持同一科学问题。两个inputs.json逐字节相同，此variant不提供数值噪声校准证据。",
+  "altbuild": "同一pinned source重新构建，NUMBA_DISABLE_JIT=1，在nominal输入上执行Python map路径；原生已验证完整四场景可运行，常规nominal/variant显式NUMBA_DISABLE_JIT=0。此替代模式不改变Cython编译器或浮点flags，也不构成GPU精度测量。",
+  "comparison": {
+    "atol": 1e-05,
+    "rtol": 0.0,
+    "files": [
+      {
+        "path": "ordinary.npz",
+        "format": "cell-pairs-npz",
+        "cell_ids": [
+          "node3",
+          "node7",
+          "node9",
+          "node11",
+          "node13",
+          "node15",
+          "node17",
+          "node18",
+          "node5",
+          "node6"
+        ]
+      },
+      {
+        "path": "parallel.npz",
+        "format": "cell-pairs-npz",
+        "cell_ids": [
+          "node3",
+          "node7",
+          "node9",
+          "node11",
+          "node13",
+          "node15",
+          "node17",
+          "node18",
+          "node5",
+          "node6"
+        ]
+      },
+      {
+        "path": "ambiguous.npz",
+        "format": "cell-pairs-npz",
+        "cell_ids": [
+          "node3",
+          "node7",
+          "node9",
+          "node11",
+          "node13",
+          "node15",
+          "node17",
+          "node18",
+          "node5",
+          "node6"
+        ]
+      },
+      {
+        "path": "duplicated.npz",
+        "format": "cell-pairs-npz",
+        "cell_ids": [
+          "node3",
+          "node7",
+          "node9",
+          "node11",
+          "node13",
+          "node15",
+          "node17",
+          "node18",
+          "node5",
+          "node6"
+        ]
+      }
+    ]
+  },
+  "evidence": {
+    "floor": {
+      "value": 0.0,
+      "knob_overrides": {
+        "SAB_JOBS": "4"
+      }
+    },
+    "floor_how": "measured by selfcheck on 2026-09-15: run.sh altbuild (同一源码重新构建，NUMBA_DISABLE_JIT=1；nominal输入上的Python map路径) against run.sh nominal, graded with the check's own validate.py: bit-identical output",
+    "self_validation_spread": {
+      "value": 0.0,
+      "knob_overrides": {
+        "SAB_JOBS": "4"
+      }
+    },
+    "self_validation_bound_fraction": {
+      "value": 0.0,
+      "knob_overrides": {
+        "SAB_JOBS": "4"
+      }
+    },
+    "status": "provisional：最终policy与tolerance仍需人工校准确认；此代表check不等于完整suite。",
+    "native_environment": "2026-09-10 Linux x86_64, CPython 3.12, NumPy 1.26.4, pandas 2.3.3, Numba 0.67.0, Cython 3.3.0; 系统gcc/g++，仅本地设置动态链接环境，无Docker/GPU。",
+    "native_nominal": {
+      "command": "SOURCE_DIR=<pinned source> OUT_DIR=<nominal output> CHECK_DIR=<check> bash run.sh nominal",
+      "exitcode": 0,
+      "build_seconds": 17.834054708,
+      "nonbuild_wall_seconds": 6.164296638
+    },
+    "native_variant": {
+      "command": "SOURCE_DIR=<pinned source> OUT_DIR=<variant output> CHECK_DIR=<check> bash run.sh variant",
+      "exitcode": 0,
+      "build_seconds": 17.783104897,
+      "nonbuild_wall_seconds": 6.214711722,
+      "distance": 0.0,
+      "bound_fraction": 0.0,
+      "graded_values": 220,
+      "byte_identical_files": 4
+    },
+    "native_altbuild": {
+      "command": "SOURCE_DIR=<pinned source> OUT_DIR=<altbuild output> CHECK_DIR=<check> bash run.sh altbuild",
+      "exitcode": 0,
+      "build_seconds": 18.075442791,
+      "nonbuild_wall_seconds": 3.268736103,
+      "distance": 0.0,
+      "bound_fraction": 0.0,
+      "graded_values": 220,
+      "byte_identical_files": 4
+    },
+    "native_review_revision": "上述计时来自移除正式入口固定180秒timeout及重复计算旋钮后的三入口重跑；180秒限制只由本地取证runner从外部施加，并非graded contract。原生取证线程设置另固定NUMBA_NUM_THREADS=1。旧测量及失败日志保留，不替代本轮证据。",
+    "native_validator": {
+      "command": "python selftest_validate.py",
+      "passed_methods": 11,
+      "comparison_probes": 55,
+      "full_output_permutation": "全部四个NPZ同步重排cells/pairs/payload通过，distance=0；仅重排pairs而未重排payload被拒绝，170个距离超界；全零距离被拒绝，177个距离超界。"
+    },
+    "native_official_tests": {
+      "command": "PYTHONPATH=<built scratch source> python -m pytest --import-mode=importlib -q -p no:cacheprovider <pinned source>/test/data_tests/cassiopeia_tree_test.py -k 'test_set_dissimilarity_map or test_compute_dissimilarity_map_cluster_dissimilarity or test_compute_dissimilarity_map_dedup'",
+      "passed": 4,
+      "deselected": 67,
+      "seconds": 5.16
+    },
+    "numerical_noise_limitation": "variant为离散输入的相同副本；altbuild确实禁用JIT但所有graded值仍完全一致，均不提供非零数值噪声尺度，不能用零spread收紧bound。",
+    "third_leg_coverage": "**220 / 220 全部逐位相同（0.0）**（2026-09-14 新增）：四个 case 各 55 对细胞。**不 import cassiopeia**，两个距离都自己算——`delta` 是朴素 Hamming 计数，`cluster_delta_mean_unnormalized` 逐位点对笛卡尔积取 delta 均值再求和、`normalize=False` 所以不除 `num_present`。",
+    "the_diagonal_is_forced_to_zero_not_computed": "⚠ **对角线是构造性置零的，不是把距离函数作用在 (x, x) 上。** 这两件事对**歧义**字符串并不等价：`node18` 自配对，`cluster_dissimilarity(x, x)` 实测给 **3.9444**（歧义状态的笛卡尔积里含不匹配项），而产物是 0.0。初版按「算出来」写，其余 54 对全对、只有这一对差 3.944，是它证伪了假设。",
+    "duplicated_case_reorders_cells": "`duplicated` 那个 case 里 `compute_dissimilarity_map` 输出的 cell 次序与 `ic/` 不同（矩阵含重复行）。独立重算按**细胞名**建键、不按位置；判分器的 `load` 也是按排序后的无序细胞对取值，所以次序无关。",
+    "third_leg_rejects_two_sided_pollution": "已实证：把全部距离在两侧同样 +0.5，逐值比较 0 超界（结构上拒不掉），第三条腿把两侧都拒下。",
+    "altbuild": {
+      "what": "同一源码重新构建，NUMBA_DISABLE_JIT=1；nominal输入上的Python map路径",
+      "distance": 0.0,
+      "bound_fraction": 0.0,
+      "identical": true,
+      "graded_identical": false,
+      "passed": true,
+      "reason": "all cell-pair distances within bound",
+      "at": "2026-09-15T15:10:52Z"
+    },
+    "floor_bound_fraction": 0.0,
+    "expected_runtime_s_measured": "2026-09-15 并发执行下实测 17 s（不含 build，SAB_JOBS=4）。原声明 12 s。取目前观测到的最大值：实测值随节点负载在 3 倍范围内波动（本条历史上出现过 12 / 14 / 17 s），而告警阈值是 measured > 2 × declared，按最大值声明才稳定。"
+  },
+  "warrant": "比较的是cell-pair身份所指的生产dissimilarity，不是condensed存储下标；CassiopeiaTree.py:1920-1958先去重、计算pair距离再展开至所有cell，而data/utilities.py:349-392执行pair分块计算，原生官方delta_fn:21-31逐character累加不等状态计数。ambiguous场景由solver/dissimilarity_functions.py:370-399保留tuple重数并对至多3个组合取mean后累加8个character，normalize=False；-1在此delta中仍参与比较，不可改为忽略missing。provisional绝对bound 1e-5提供短和与mean跨实现舍入的余量，包括采用binary32中间值而导出binary64的合法实现，远小于漏计一个普通character的单位距离变化或错误去除ambiguous重数带来的分数距离变化；它不是由identical variant的零spread倒推的最终容差。原生nominal/variant及禁用JIT的完整altbuild均通过，220个graded值完全一致，说明该执行模式改变没有带来可测数值差异，而不是跨平台误差必为零；CLI floor尚未产生，不据此声称跨平台验证完成。"
+}

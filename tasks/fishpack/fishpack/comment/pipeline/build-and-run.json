@@ -1,0 +1,334 @@
+{
+  "codebase": "fishpack",
+  "build": {
+    "system": "make (GNU make; one top-level Makefile per library, each including a make.inc that selects the compiler by `uname -s`; src/ builds a static library, test/ compiles and immediately runs every test program)",
+    "commands": [
+      "make MAKE=make AR=ar F90=\"gfortran -fdefault-real-8 -O2 -std=legacy -J LIBDIR -I LIBDIR\" CPP=\"gfortran -cpp -E\"   (double precision, the darwin.dp reference build)",
+      "make MAKE=make AR=ar F90=\"gfortran -O2 -std=legacy -J LIBDIR -I LIBDIR\" CPP=\"gfortran -cpp -E\"   (single precision, the darwin.sp reference build)"
+    ],
+    "wall_s": 12,
+    "ok": true,
+    "pitfalls": [
+      "make.inc chooses the compiler from `uname -s`: on Linux it wants pgf90 or g95, on Darwin gfortran but MAKE := the hard-coded gmake path, which does not exist on current macOS; override MAKE=make AR=ar F90=... on the make command line (all five libraries)",
+      "gfortran 15.2 (and every gfortran >= 10) refuses the Fortran 77 argument-type and rank mismatches in FFTPACK, FISHPACK and SPHEREPACK (\"Type mismatch between actual argument ... REAL(8) vs COMPLEX(8)\", \"Rank mismatch in argument theta\") unless -std=legacy (or -fallow-argument-mismatch) is given; measured: fftpack 12 errors, spherepack 2 errors without it",
+      "the shipped darwin.dp transcripts were produced with -fdefault-real-8; the libraries are written for single precision and the darwin.sp build reproduces fewer digits (FISHPACK 1 to 4 digits, MUDPACK 0 to 2) and mudpack tcud3cr does not converge in single precision (ierror -10 here, ierror -4 and NaN in the shipped darwin.sp)",
+      "wall_s is the double-precision `make` run, which includes the 19 test runs the test Makefile executes (under 2 s in total); the single-precision build took the same"
+    ]
+  },
+  "landscape": [
+    {
+      "family": "fishpack-test",
+      "kind": "test-suite",
+      "path": "test",
+      "count": 19,
+      "how_to_run": "make",
+      "reference_outputs": "shipped",
+      "notes": "output/darwin.dp and darwin.sp transcripts; every program also prints the 64-bit and 32-bit result of the original platform before its own"
+    }
+  ],
+  "runs": [
+    {
+      "id": "tblktri",
+      "family": "fishpack-test",
+      "path": "test/tblktri.f",
+      "command": "cd test && tblktri.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.03,
+      "shortened": null,
+      "reproduced": "yes: all 2 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; BLKTRI generalized block-tridiagonal solver on a separable elliptic PDE; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tcblktri",
+      "family": "fishpack-test",
+      "path": "test/tcblktri.f",
+      "command": "cd test && tcblktri.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.04,
+      "shortened": null,
+      "reproduced": "yes: all 2 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; CBLKTRI, complex BLKTRI; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tcmgnbn",
+      "family": "fishpack-test",
+      "path": "test/tcmgnbn.f",
+      "command": "cd test && tcmgnbn.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.03,
+      "shortened": null,
+      "reproduced": "yes: all 3 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; CMGNBN complex GENBUN; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tgenbun",
+      "family": "fishpack-test",
+      "path": "test/tgenbun.f",
+      "command": "cd test && tgenbun.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.04,
+      "shortened": null,
+      "reproduced": "yes: all 3 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; GENBUN Poisson-type equation with periodic and Neumann conditions; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "thstcrt",
+      "family": "fishpack-test",
+      "path": "test/thstcrt.f",
+      "command": "cd test && thstcrt.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.04,
+      "shortened": null,
+      "reproduced": "yes: all 3 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; HSTCRT staggered-grid Helmholtz in Cartesian coordinates; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "thstcsp",
+      "family": "fishpack-test",
+      "path": "test/thstcsp.f",
+      "command": "cd test && thstcsp.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.04,
+      "shortened": null,
+      "reproduced": "yes: all 3 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; HSTCSP staggered Helmholtz in axisymmetric spherical coordinates; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "thstcyl",
+      "family": "fishpack-test",
+      "path": "test/thstcyl.f",
+      "command": "cd test && thstcyl.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.03,
+      "shortened": null,
+      "reproduced": "yes: all 5 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; HSTCYL staggered Poisson in cylindrical coordinates; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "thstplr",
+      "family": "fishpack-test",
+      "path": "test/thstplr.f",
+      "command": "cd test && thstplr.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.03,
+      "shortened": null,
+      "reproduced": "yes: all 3 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; HSTPLR staggered Poisson in polar coordinates; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "thstssp",
+      "family": "fishpack-test",
+      "path": "test/thstssp.f",
+      "command": "cd test && thstssp.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.03,
+      "shortened": null,
+      "reproduced": "yes: all 5 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; HSTSSP staggered Poisson on the sphere surface (singular problem); prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "thw3crt",
+      "family": "fishpack-test",
+      "path": "test/thw3crt.f",
+      "command": "cd test && thw3crt.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.03,
+      "shortened": null,
+      "reproduced": "yes: all 2 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; HW3CRT 3D Helmholtz in Cartesian coordinates; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "thwscrt",
+      "family": "fishpack-test",
+      "path": "test/thwscrt.f",
+      "command": "cd test && thwscrt.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.03,
+      "shortened": null,
+      "reproduced": "yes: all 3 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; HWSCRT Helmholtz in Cartesian coordinates; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "thwscsp",
+      "family": "fishpack-test",
+      "path": "test/thwscsp.f",
+      "command": "cd test && thwscsp.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.04,
+      "shortened": null,
+      "reproduced": "yes: all 4 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; HWSCSP axisymmetric spherical Helmholtz; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "thwscyl",
+      "family": "fishpack-test",
+      "path": "test/thwscyl.f",
+      "command": "cd test && thwscyl.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.03,
+      "shortened": null,
+      "reproduced": "yes: all 5 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; HWSCYL Poisson in cylindrical coordinates; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "thwsplr",
+      "family": "fishpack-test",
+      "path": "test/thwsplr.f",
+      "command": "cd test && thwsplr.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.03,
+      "shortened": null,
+      "reproduced": "yes: all 3 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; HWSPLR Poisson in polar coordinates; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "thwsssp",
+      "family": "fishpack-test",
+      "path": "test/thwsssp.f",
+      "command": "cd test && thwsssp.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.03,
+      "shortened": null,
+      "reproduced": "yes: all 2 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; HWSSSP Poisson on the sphere surface (singular problem); prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tpois3d",
+      "family": "fishpack-test",
+      "path": "test/tpois3d.f",
+      "command": "cd test && tpois3d.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.03,
+      "shortened": null,
+      "reproduced": "yes: all 2 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; POIS3D 3D Poisson with FFT in two directions; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tpoistg",
+      "family": "fishpack-test",
+      "path": "test/tpoistg.f",
+      "command": "cd test && tpoistg.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.03,
+      "shortened": null,
+      "reproduced": "yes: all 3 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; POISTG staggered-grid Poisson; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tsepeli",
+      "family": "fishpack-test",
+      "path": "test/tsepeli.f",
+      "command": "cd test && tsepeli.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.03,
+      "shortened": null,
+      "reproduced": "yes: all 4 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; SEPELI second and fourth order separable elliptic solver; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tsepx4",
+      "family": "fishpack-test",
+      "path": "test/tsepx4.f",
+      "command": "cd test && tsepx4.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.03,
+      "shortened": null,
+      "reproduced": "yes: all 5 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; SEPX4 separable elliptic solver, fourth order; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    }
+  ],
+  "pitfalls": [
+    {
+      "where": "build",
+      "symptom": "make: pgf90/g95 not found (Linux) or the hard-coded gmake path not found (macOS)",
+      "workaround": "make MAKE=make AR=ar F90=\"gfortran -fdefault-real-8 -O2 -std=legacy -J LIBDIR -I LIBDIR\" CPP=\"gfortran -cpp -E\""
+    },
+    {
+      "where": "build",
+      "symptom": "gfortran >= 10: Error: Type mismatch between actual argument ... (REAL(8) vs COMPLEX(8)); Error: Rank mismatch in argument theta",
+      "workaround": "-std=legacy (or -fallow-argument-mismatch)"
+    },
+    {
+      "where": "general",
+      "symptom": "every test program writes only to stdout; the test Makefile pattern rule runs each executable right after linking it (the pattern rule executes the program it just linked), so `make` in test/ is build plus run and output/darwin.dp is the whole transcript",
+      "workaround": "run the .exe files again by hand to capture per-test stdout"
+    }
+  ],
+  "not_run": []
+}
