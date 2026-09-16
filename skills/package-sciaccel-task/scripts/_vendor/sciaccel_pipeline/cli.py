@@ -11,7 +11,7 @@
     sab.py codebase survey-tests    --codebase <id> [--module <slug>]
     sab.py task scaffold            --codebase <id> --module <slug> [--force]
     sab.py task add-check           --task <leaf> --name <check> --from-test <path> --policy pointwise|invariants
-                                    [--chaotic] [--acceleration] [--custom --reason "..."]
+                                    [--chaotic] [--custom --reason "..."]
     sab.py task lint                --task <leaf> [--write] [--allow-custom-drivers]
     sab.py task plan                --task <leaf>                                   # the run plan for the human, STOP 3
     sab.py task consent             --task <leaf> --where "local"|"<host>" --human-ref "..." [--note "..."]
@@ -126,7 +126,6 @@ def main() -> None:
     p.add_argument("--from-test", default="")
     p.add_argument("--policy", required=True, choices=POLICIES)
     p.add_argument("--chaotic", action="store_true")
-    p.add_argument("--acceleration", action="store_true")
     p.add_argument("--custom", action="store_true")
     p.add_argument("--reason")
     for name in ("lint", "selfcheck"):
