@@ -61,7 +61,11 @@ def tilted_square_transformations(n, m, a_1=None, a_2=None):
 
     def map_disp(disp, eps):
         r_lat_d = R.dot(disp) + eps
-        r_lat_d = R.T.dot(r_lat_d % L).T
+        # Written as x - L*floor(x/L) rather than `%`: numpy's float remainder
+        # calls libm fmod, whose x87 loop never terminates under Rosetta emulation
+        # (measured on an arm64 host); the two agree to rounding and the result is
+        # rounded to integer lattice coordinates on the next line.
+        r_lat_d = R.T.dot(r_lat_d - L * np.floor(r_lat_d / L)).T
         r_lat_d = np.round(r_lat_d).astype(int)
         idx = []
         for r in r_lat_d[:]:
