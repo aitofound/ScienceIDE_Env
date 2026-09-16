@@ -1,0 +1,495 @@
+{
+  "module": "dsm-1d-solver",
+  "tests": [
+    {
+      "id": "pkp-precursor-ulvz-explosion-1d-dsm",
+      "module": "dsm-1d-solver",
+      "path": "example/PKP_precursor_ULVZ_demo/Explosion_demo/OUTPUT_FILES_0.5Hz_DSM1D/1D_DSM",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The 1-D teleseismic synthetics stage (step6_1d_dsm_synthetics.sh) of the PKP-precursor / ULVZ scenario: dsmti integrates the radial equations of a spherically symmetric Earth frequency by frequency (compwave.f, the angular-order loop with its every-500-orders convergence test in param.f check_amp_significance) for an explosion source and writes the complex displacement spectrum of every receiver (savespec.f); spectotime then filters and inverse-transforms them to SAC seismograms. The receivers sit in the PKP precursor (two receivers at 129.998 and 130.000 degrees, source at 600 km, 2401 s window) window. Shipped as 4 byte-identical or whitespace-identical copies: Explosion_demo/OUTPUT_FILES{,_0.5Hz_DSM1D,_0.5Hz_DSM3D} and Explosion_DSM_database_existing_demo/OUTPUT_FILES_0.5Hz_DSM3D.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "Suitable: a complete DATA deck the repository ships (dsm_model, the four depth and distance tables, Par_file_freq2sac, station_list), runs end to end natively with dsmti under MPI and spectotime. The shipped frequency count (2048 to 16384) is hours on hundreds of ranks; the check runs the deck at the frequency count run.sh's SAB_NFREQ sets (a band limit, the same solve per frequency) and regenerates its reference on the pinned build, because the shipped SAC files are full-band and not a reference for a band-limited run. Pointwise: a deterministic linear forward solve on a fixed frequency grid with no time stepping, no iteration and no random draw.",
+      "proposed_check": "pkp-precursor-ulvz-explosion"
+    },
+    {
+      "id": "pkikp-ic-rotation-equatorial-1d-dsm",
+      "module": "dsm-1d-solver",
+      "path": "example/PKIKP_IC_Rotation_Hete_demo/EquatorialPath/OUTPUT_FILES_DSM1D_0.5Hz/1D_DSM",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The 1-D teleseismic synthetics stage (step6_1d_dsm_synthetics.sh) of the PKIKP inner-core rotation scenario: dsmti integrates the radial equations of a spherically symmetric Earth frequency by frequency (compwave.f, the angular-order loop with its every-500-orders convergence test in param.f check_amp_significance) for an explosion source and writes the complex displacement spectrum of every receiver (savespec.f); spectotime then filters and inverse-transforms them to SAC seismograms. The receivers sit in the PKIKP (four receivers at 149.0 to 150.5 degrees, source at 50 km, inner core Vs fixed at 6.0 km/s, 3000 s window) window. Shipped as 9 byte-identical copies across EquatorialPath, EquatorialPath_1.5degRotated_DSM_database_existing, PolarPath_1.5degRotated_DSM_database_existing and PolarPath_DSM_database_existing; EquatorialPath_1.2Hz differs only in the frequency count (4096), which is this check's knob.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "Suitable: a complete DATA deck the repository ships (dsm_model, the four depth and distance tables, Par_file_freq2sac, station_list), runs end to end natively with dsmti under MPI and spectotime. The shipped frequency count (2048 to 16384) is hours on hundreds of ranks; the check runs the deck at the frequency count run.sh's SAB_NFREQ sets (a band limit, the same solve per frequency) and regenerates its reference on the pinned build, because the shipped SAC files are full-band and not a reference for a band-limited run. Pointwise: a deterministic linear forward solve on a fixed frequency grid with no time stepping, no iteration and no random draw.",
+      "proposed_check": "pkikp-ic-rotation-equatorial"
+    },
+    {
+      "id": "pkiikp-ic-heterogeneity-explosion-1d-dsm",
+      "module": "dsm-1d-solver",
+      "path": "example/PKIIKP_IC_heterogeneity_demo/Explosion_demo/OUTPUT_FILES_0.7Hz_DSM1D/1D_DSM",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The 1-D teleseismic synthetics stage (step6_1d_dsm_synthetics.sh) of the PKIIKP inner-core heterogeneity scenario: dsmti integrates the radial equations of a spherically symmetric Earth frequency by frequency (compwave.f, the angular-order loop with its every-500-orders convergence test in param.f check_amp_significance) for an explosion source and writes the complex displacement spectrum of every receiver (savespec.f); spectotime then filters and inverse-transforms them to SAC seismograms. The receivers sit in the PKIIKP (three receivers at 18.0 to 21.0 degrees, source at 600 km, 11-zone model, 8001 s window) window. Shipped as 4 byte-identical copies across Explosion_demo and Explosion_DSM_InjectedWave_database_existing_demo.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "Suitable: a complete DATA deck the repository ships (dsm_model, the four depth and distance tables, Par_file_freq2sac, station_list), runs end to end natively with dsmti under MPI and spectotime. The shipped frequency count (2048 to 16384) is hours on hundreds of ranks; the check runs the deck at the frequency count run.sh's SAB_NFREQ sets (a band limit, the same solve per frequency) and regenerates its reference on the pinned build, because the shipped SAC files are full-band and not a reference for a band-limited run. Pointwise: a deterministic linear forward solve on a fixed frequency grid with no time stepping, no iteration and no random draw.",
+      "proposed_check": "pkiikp-ic-heterogeneity-explosion"
+    },
+    {
+      "id": "pkikp-icb-topography-explosion-1d-dsm",
+      "module": "dsm-1d-solver",
+      "path": "example/PKiKP_ICB_topo_demo/Explosion_demo/OUTPUT_FILES_DSM1D_1.5Hz/1D_DSM",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The 1-D teleseismic synthetics stage (step6_1d_dsm_synthetics.sh) of the PKiKP ICB topography scenario: dsmti integrates the radial equations of a spherically symmetric Earth frequency by frequency (compwave.f, the angular-order loop with its every-500-orders convergence test in param.f check_amp_significance) for an explosion source and writes the complex displacement spectrum of every receiver (savespec.f); spectotime then filters and inverse-transforms them to SAC seismograms. The receivers sit in the PKiKP (41 receivers at 46.0 to 54.0 degrees, source at 600 km, inner-core boundary moved to 1187.1 km, 4001 s window) window. Shipped as OUTPUT_FILES_DSM1D_1.5Hz (8192 frequencies) plus 3 byte-identical 3 Hz copies (16384 frequencies) that differ only in the frequency count, which is this check's knob.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "Suitable: a complete DATA deck the repository ships (dsm_model, the four depth and distance tables, Par_file_freq2sac, station_list), runs end to end natively with dsmti under MPI and spectotime. The shipped frequency count (2048 to 16384) is hours on hundreds of ranks; the check runs the deck at the frequency count run.sh's SAB_NFREQ sets (a band limit, the same solve per frequency) and regenerates its reference on the pinned build, because the shipped SAC files are full-band and not a reference for a band-limited run. Pointwise: a deterministic linear forward solve on a fixed frequency grid with no time stepping, no iteration and no random draw.",
+      "proposed_check": "pkikp-icb-topography-explosion"
+    },
+    {
+      "id": "pkikp-heterogeneity-icb-topography-1d-dsm",
+      "module": "dsm-1d-solver",
+      "path": "example/PKiKP_heterogeneity_ICB_topo_demo/Explosion_demo/OUTPUT_FILES_DSM3D_1Hz/1D_DSM",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The 1-D teleseismic synthetics stage (step6_1d_dsm_synthetics.sh) of the PKiKP heterogeneity + ICB topography scenario: dsmti integrates the radial equations of a spherically symmetric Earth frequency by frequency (compwave.f, the angular-order loop with its every-500-orders convergence test in param.f check_amp_significance) for an explosion source and writes the complex displacement spectrum of every receiver (savespec.f); spectotime then filters and inverse-transforms them to SAC seismograms. The receivers sit in the PKiKP (21 real KZ network receivers near 60 degrees, source at 200 km, 404.6 km inner zone, 4200 s window) window. Shipped once.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "Suitable: a complete DATA deck the repository ships (dsm_model, the four depth and distance tables, Par_file_freq2sac, station_list), runs end to end natively with dsmti under MPI and spectotime. The shipped frequency count (2048 to 16384) is hours on hundreds of ranks; the check runs the deck at the frequency count run.sh's SAB_NFREQ sets (a band limit, the same solve per frequency) and regenerates its reference on the pinned build, because the shipped SAC files are full-band and not a reference for a band-limited run. Pointwise: a deterministic linear forward solve on a fixed frequency grid with no time stepping, no iteration and no random draw.",
+      "proposed_check": "pkikp-heterogeneity-icb-topography"
+    },
+    {
+      "id": "pcp-cmb-topography-explosion-1d-dsm",
+      "module": "dsm-1d-solver",
+      "path": "example/PcP_heterogeneity_CMB_topography_demo/Explosion_demo/OUTPUT_FILES_DSM1D_1Hz/1D_DSM",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The 1-D teleseismic synthetics stage (step6_1d_dsm_synthetics.sh) of the PcP CMB topography scenario: dsmti integrates the radial equations of a spherically symmetric Earth frequency by frequency (compwave.f, the angular-order loop with its every-500-orders convergence test in param.f check_amp_significance) for an explosion source and writes the complex displacement spectrum of every receiver (savespec.f); spectotime then filters and inverse-transforms them to SAC seismograms. The receivers sit in the PcP (two near receivers at 1.4 and 4.1 degrees, source at 600 km, 4001 s window) window. Shipped as 3 byte-identical copies across Explosion_demo and Explosion_DSM_database_existing_demo.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "Suitable: a complete DATA deck the repository ships (dsm_model, the four depth and distance tables, Par_file_freq2sac, station_list), runs end to end natively with dsmti under MPI and spectotime. The shipped frequency count (2048 to 16384) is hours on hundreds of ranks; the check runs the deck at the frequency count run.sh's SAB_NFREQ sets (a band limit, the same solve per frequency) and regenerates its reference on the pinned build, because the shipped SAC files are full-band and not a reference for a band-limited run. Pointwise: a deterministic linear forward solve on a fixed frequency grid with no time stepping, no iteration and no random draw.",
+      "proposed_check": "pcp-cmb-topography-explosion"
+    },
+    {
+      "id": "slab-pp-reflection-1d-dsm",
+      "module": "dsm-1d-solver",
+      "path": "example/Slab_PP_Reflection/Slab_PP_model1/OUTPUT_FILES_DSM3D_0.5Hz/1D_DSM",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The 1-D teleseismic synthetics stage (step6_1d_dsm_synthetics.sh) of the slab PP reflection scenario: dsmti integrates the radial equations of a spherically symmetric Earth frequency by frequency (compwave.f, the angular-order loop with its every-500-orders convergence test in param.f check_amp_significance) for an explosion source and writes the complex displacement spectrum of every receiver (savespec.f); spectotime then filters and inverse-transforms them to SAC seismograms. The receivers sit in the PP (one receiver, GE.VSU at 67.9 degrees, source at 98.82 km, 13-zone model, 3000 s window) window. Shipped once.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "Suitable: a complete DATA deck the repository ships (dsm_model, the four depth and distance tables, Par_file_freq2sac, station_list), runs end to end natively with dsmti under MPI and spectotime. The shipped frequency count (2048 to 16384) is hours on hundreds of ranks; the check runs the deck at the frequency count run.sh's SAB_NFREQ sets (a band limit, the same solve per frequency) and regenerates its reference on the pinned build, because the shipped SAC files are full-band and not a reference for a band-limited run. Pointwise: a deterministic linear forward solve on a fixed frequency grid with no time stepping, no iteration and no random draw.",
+      "proposed_check": "slab-pp-reflection"
+    },
+    {
+      "id": "pkp660pkp-scattering-explosion-1d-dsm",
+      "module": "dsm-1d-solver",
+      "path": "example/PKP660PKP_scattering_demo/660km_topography_pudding_heterogeneity/step6_1d_dsm_synthetics.sh",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The 1-D teleseismic synthetics stage (step6_1d_dsm_synthetics.sh) of the PKP660PKP 660-km scattering scenario: dsmti integrates the radial equations of a spherically symmetric Earth frequency by frequency (compwave.f, the angular-order loop with its every-500-orders convergence test in param.f check_amp_significance) for an explosion source and writes the complex displacement spectrum of every receiver (savespec.f); spectotime then filters and inverse-transforms them to SAC seismograms. The receivers sit in the PKP (six Hi network receivers at 62.6 to 66.0 degrees, source at 630 km, 8-zone base model, 4000 s window) window. The scenario ships its 1-D SAC products under OUTPUT_FILES_DSM1D_1.1Hz/1D_DSM but not the DATA deck; the deck is what its own step6 writes from DATA/dsm_model_base, DATA/CMTSOLUTION and DATA/tele_station.txt (WORK/DSM/1D_tele_syn/explosion/DATA), reproduced with a stub sbatch.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "Suitable once the deck is regenerated with the scenario's own step6: the shipped Par_file_SEM_DSM is internally inconsistent (TIME_LENGTH_DSM_SOURCE_TO_BOX + TIME_LENGTH_DSM_BOX_TO_RECEIVER = 6000 s exceeds TIME_LENGTH_DSM_1D = 4000 s, which step6 rejects), so the deck was generated with stage metadata step6 accepts and the 4000 s window the scenario declares; recorded as a pitfall.",
+      "proposed_check": "pkp660pkp-scattering-explosion"
+    },
+    {
+      "id": "pkp-precursor-ulvz-moment-tensor-1d-dsm",
+      "module": "dsm-1d-solver",
+      "path": "example/PKP_precursor_ULVZ_demo/MomentTensor_demo/step6_1d_dsm_synthetics.sh",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The 1-D synthetics stage of the PKP-precursor / ULVZ scenario in its moment-tensor mode (SINGLE_FORCE_ENZ=0): step6 runs dsmti six times, once per unit moment-tensor component (Mzz, Mrr, Mtt, Mzr, Mzt, Mrt), converts each to SAC and combines them with the CMTSOLUTION. The off-diagonal components excite the toroidal (SH) system and the m = +-1, +-2 azimuthal orders that no explosion deck reaches (compwave.f comp_excitation, comp_wavefield with whole_matrix_tor). two receivers at 130 degrees, source at 600 km, 2401 s window. MomentTensor_DSM_database_existing_demo is the same scenario with the same DATA (dsm_model_base, CMTSOLUTION, tele_station.txt, Par_file) and is covered by this row.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "Suitable: the six decks are what step6 writes (reproduced with a stub sbatch and the step-1 model the scenario's explosion sibling ships); the check runs the six elementary sources at SAB_NFREQ frequencies each and grades all six spectra and seismograms. The CMTSOLUTION synthesis script lives outside the module (auxiliary/) and is not graded. Pointwise for the same reason as the explosion decks.",
+      "proposed_check": "pkp-precursor-ulvz-moment-tensor"
+    },
+    {
+      "id": "pkiikp-ic-heterogeneity-moment-tensor-1d-dsm",
+      "module": "dsm-1d-solver",
+      "path": "example/PKIIKP_IC_heterogeneity_demo/MomentTensor_demo/step6_1d_dsm_synthetics.sh",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The 1-D synthetics stage of the PKIIKP inner-core heterogeneity scenario in its moment-tensor mode (SINGLE_FORCE_ENZ=0): step6 runs dsmti six times, once per unit moment-tensor component (Mzz, Mrr, Mtt, Mzr, Mzt, Mrt), converts each to SAC and combines them with the CMTSOLUTION. The off-diagonal components excite the toroidal (SH) system and the m = +-1, +-2 azimuthal orders that no explosion deck reaches (compwave.f comp_excitation, comp_wavefield with whole_matrix_tor). three receivers at 18 to 21 degrees, source at 600 km, 8001 s window.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "Suitable: the six decks are what step6 writes (reproduced with a stub sbatch and the step-1 model the scenario's explosion sibling ships); the check runs the six elementary sources at SAB_NFREQ frequencies each and grades all six spectra and seismograms. The CMTSOLUTION synthesis script lives outside the module (auxiliary/) and is not graded. Pointwise for the same reason as the explosion decks.",
+      "proposed_check": "pkiikp-ic-heterogeneity-moment-tensor"
+    },
+    {
+      "id": "pcp-cmb-topography-moment-tensor-1d-dsm",
+      "module": "dsm-1d-solver",
+      "path": "example/PcP_heterogeneity_CMB_topography_demo/MomentTensor_demo/step6_1d_dsm_synthetics.sh",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The 1-D synthetics stage of the PcP CMB topography scenario in its moment-tensor mode (SINGLE_FORCE_ENZ=0): step6 runs dsmti six times, once per unit moment-tensor component (Mzz, Mrr, Mtt, Mzr, Mzt, Mrt), converts each to SAC and combines them with the CMTSOLUTION. The off-diagonal components excite the toroidal (SH) system and the m = +-1, +-2 azimuthal orders that no explosion deck reaches (compwave.f comp_excitation, comp_wavefield with whole_matrix_tor). two receivers at 1.4 and 4.1 degrees, source at 600 km, 4001 s window.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "Suitable: the six decks are what step6 writes (reproduced with a stub sbatch and the step-1 model the scenario's explosion sibling ships); the check runs the six elementary sources at SAB_NFREQ frequencies each and grades all six spectra and seismograms. The CMTSOLUTION synthesis script lives outside the module (auxiliary/) and is not graded. Pointwise for the same reason as the explosion decks.",
+      "proposed_check": "pcp-cmb-topography-moment-tensor"
+    },
+    {
+      "id": "pkp-precursor-ulvz-source-to-box",
+      "module": "dsm-1d-solver",
+      "path": "example/PKP_precursor_ULVZ_demo/Explosion_demo/step4_dsm_src_to_box.sh",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Step 4 of every scenario, the source-to-box Green's-function database: dsmti for the explosion source with receivers on the SEM box's radial nodes (26 lower-mantle depths in zone 3 and 5 outer-core depths in zone 2 at 3 epicentral distances), saving velocity instead of displacement (save_velo=2), the six strain components (stress/), and the fluid displacement, potential and pressure (disp_fluid/, potential/, pressure/), which the 1-D synthetics never write; 1400 s window.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "Suitable with the scenario's own knobs: prepare_src_to_box.py sizes the tables from the Par_file (DSM_DISTANCE_SPACING_DEGREES=1.0, DSM_BOX_DISTANCE_SAMPLES=2, DSM_DISTANCE_MARGIN_DEGREES=1.0 shrink the 1143 distances of the demo to 3; the depth rule keeps at least 5 nodes per zone), the script needs the step-1 product WORK/SPECFEM3D/DATA/dsm_model_input, taken from the shipped 1D_DSM deck of the same scenario (a pitfall: steps 4 and 5 have no fallback to dsm_model_base). Every other scenario's step 4 is the same mode on its own model and box, left out below.",
+      "proposed_check": "pkp-precursor-ulvz-source-to-box"
+    },
+    {
+      "id": "pkp-precursor-ulvz-box-to-receiver",
+      "module": "dsm-1d-solver",
+      "path": "example/PKP_precursor_ULVZ_demo/Explosion_demo/step5_dsm_box_to_recv.sh",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Step 5 of every scenario, the box-to-receiver Green's-function database by reciprocity: dsmti with a vertical single force (source_type 2, Fz, comp_excitation_single_force) at the free surface and receivers on the SEM box's radial nodes (26 lower-mantle and 5 outer-core depths at 8 distances of 12.75 to 19.53 degrees), displacement saved; 1000 s window.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "Suitable with the same shrunk tables as step 4 (prepare_box_to_recv.py, DSM_BOX_TO_RECEIVER_DISTANCE_BUFFER_DEGREES=0); TELESEISMIC_COMPONENT=Z as shipped runs the Fz force only, so Fr and Ft are not exercised by any demo scenario as configured. Every other scenario's step 5 is the same mode, left out below.",
+      "proposed_check": "pkp-precursor-ulvz-box-to-receiver"
+    },
+    {
+      "id": "jgr-410km-triplication-1d-dsm",
+      "module": "dsm-1d-solver",
+      "path": "example/JGR_Wu2026/410km_Topography_Triplication/410km_Topography_Triplication/DSM/1D_tele_syn/run.sh",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The paper's 410-km discontinuity triplication case: an explosion at 100 km depth in a 10-zone upper-mantle model (SPECFEM3D/DATA/dsm_model_input, the only model family in the tree with a modified transition zone), recorded on a record section of 89 distances from 11.7 to 16.15 degrees at two depths (0 and 1 km), 2048 s window, 4096 frequencies upstream, 512 ranks.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": true,
+      "why": "Suitable after assembling the deck the script means to build: run.sh writes the distance and depth tables but its relative paths to dsmti and to dsm_model_input are one directory short (pitfall), so the check carries the tables it wrote plus the model it names, edited by the script's own awk (2048 s, source 100 km, explosion, displacement). Runs at SAB_NFREQ frequencies. This family's other cases are left out below.",
+      "proposed_check": "jgr-410km-triplication"
+    },
+    {
+      "id": "pkikp-ic-rotation-equatorial-1p2hz",
+      "module": "dsm-1d-solver",
+      "path": "example/PKIKP_IC_Rotation_Hete_demo/EquatorialPath_1.2Hz/OUTPUT_FILES_DSM3D/1D_DSM",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Same model, source and receivers as the 0.5 Hz PKIKP deck; only n_frequency differs (4096 against 2048).",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "Not a separate check: the frequency count is the SAB_NFREQ knob of pkikp-ic-rotation-equatorial, so this deck forces the same path at another band."
+    },
+    {
+      "id": "pkikp-icb-topography-3hz",
+      "module": "dsm-1d-solver",
+      "path": "example/PKiKP_ICB_topo_demo/Explosion_demo/OUTPUT_FILES_DSM1D_3Hz/1D_DSM",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Same model, source and receivers as the 1.5 Hz PKiKP deck; only n_frequency differs (16384 against 8192); two more byte-identical copies under OUTPUT_FILES_DSM3D_3Hz and Explosion_DSM_database_existing_demo.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "Not a separate check: covered by pkikp-icb-topography-explosion through its SAB_NFREQ knob."
+    },
+    {
+      "id": "step4-source-to-box-other-scenarios",
+      "module": "dsm-1d-solver",
+      "path": "example/PKiKP_ICB_topo_demo/Explosion_demo/step4_dsm_src_to_box.sh",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Step 4 in the 12 other scenario roots that carry it (PKIIKP x2, PKIKP x2, PKP660PKP, ULVZ MomentTensor, PKiKP x2, PcP x2, Slab_PP): the same database mode (prepare_src_to_box.py, explosion or six moment-tensor sources, save_velo=2, stress, fluid quantities) on each scenario's model and SEM box.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "Left out: same code path and output set as pkp-precursor-ulvz-source-to-box; the per-scenario differences (model, source, box position) are graded by that scenario's 1-D synthetics check. Upstream each is a 256-512 rank Slurm job of 9 to 45 minutes; running twelve more shrunk copies would add cost without a new path."
+    },
+    {
+      "id": "step5-box-to-receiver-other-scenarios",
+      "module": "dsm-1d-solver",
+      "path": "example/PKiKP_ICB_topo_demo/Explosion_demo/step5_dsm_box_to_recv.sh",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Step 5 in the 12 other scenario roots that carry it: the same single-force reciprocity database (prepare_box_to_recv.py, Fz) on each scenario's box and receivers.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "Left out for the same reason as step 4: one check grades the single-force path; the scenario-specific physics is graded by the synthetics checks."
+    },
+    {
+      "id": "src-dsm-example-pkp-ulvz-src-to-box",
+      "module": "dsm-1d-solver",
+      "path": "src/DSM/example/PKP_precursor_ULVZ/src_to_box/run.sh",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The older standalone form of the source-to-box database for the ULVZ case (361 lower-mantle depths x 41 outer-core depths x 1143 distances, 512 ranks, 24 h), driven from a Slurm script with hard-coded SPECFEM3D example paths.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "Left out: the same mode as step 4 of the demo, which pkp-precursor-ulvz-source-to-box grades; its full table is a day of 512 ranks and its dir_SEM path points at src/SPECFEM3D/EXAMPLES_COUPLING, which the pinned tree does not carry."
+    },
+    {
+      "id": "dsm-coeftotime-auxiliary",
+      "module": "dsm-1d-solver",
+      "path": "src/DSM/auxiliary/DSM_CoefToTime/readme",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "CoefToTime and Resave_Coef: post-processors that turn the coef_cAnddcdr/ harmonic coefficients into time series at extra distances, with their own CMB_NEZ40 example.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "Left out: outside the module's owned paths (src/DSM/auxiliary is not part of dsm-1d-solver) and consumers of the solver's output rather than the solver; the coefficients they read are written by every check but are not graded (an intermediate, not a production quantity)."
+    },
+    {
+      "id": "cmtsolution-timesac-synthesis",
+      "module": "dsm-1d-solver",
+      "path": "src/DSM/auxiliary/CMTSOLUTION_TimeSac/synthesize_cmtsolution_sac.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The linear combination of the six elementary SAC sets with a CMTSOLUTION that closes step6 in moment-tensor mode.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "Left out: outside the module's owned paths and a linear post-step of the six graded elementary solutions; grading it would grade the same numbers twice."
+    },
+    {
+      "id": "jgr-pkikp-150deg-vs6ic",
+      "module": "dsm-1d-solver",
+      "path": "example/JGR_Wu2026/PKIKP_150deg_IC_Rotation_Vs6.0IC/DSM/1D_tele_syn_Vs6.0IC/run.sh",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The paper's PKIKP inner-core rotation 1-D synthetics (and the withAttenuation twin): explosion at 600 km, 200 distances from 130 to 150 degrees, the inner-core Vs=6.0 km/s model family of the PKIKP demo.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "Left out: the same scenario family as pkikp-ic-rotation-equatorial (same inner-core Vs=6.0 model idea, PKIKP window), driven by 256-512 rank Slurm scripts whose relative paths point outside the pinned tree; the demo deck is the maintained form of this case."
+    },
+    {
+      "id": "jgr-pkp-precursor-ulvz",
+      "module": "dsm-1d-solver",
+      "path": "example/JGR_Wu2026/PKP_precursor_ULVZ/DSM/1D_tele_syn/run.sh",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The paper's PKP-precursor ULVZ 1-D synthetics and its test_Stacey twin (and a testQ variant): explosion at 600 km, 200 distances from 130 to 150 degrees, the ULVZ model.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "Left out: the same scenario as pkp-precursor-ulvz-explosion, whose demo deck is the maintained form; 256-rank Slurm scripts with paths outside the pinned tree."
+    },
+    {
+      "id": "jgr-pkikp-3hz-dist50deg",
+      "module": "dsm-1d-solver",
+      "path": "example/JGR_Wu2026/PKiKP_3Hz_Dist50deg/DSM/1D_tele_syn/run.sh",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The paper's 3 Hz PKiKP case at 40 to 60 degrees, 512 ranks, the PKiKP demo's model family.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "Left out: the same scenario family as the two PKiKP demo decks; Slurm-only driver."
+    },
+    {
+      "id": "jgr-database-stages",
+      "module": "dsm-1d-solver",
+      "path": "example/JGR_Wu2026/PKP_precursor_ULVZ/DSM/src_to_box/run.sh",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "src_to_box and box_to_recv drivers of every JGR case (410km, PKIKP x2 plus withAttenuation, ULVZ, test_Stacey x3, PKiKP_3Hz x2).",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "Left out: the same two database modes the two ULVZ database checks grade, at full 512-rank size on Slurm."
+    },
+    {
+      "id": "legacy-410km-3d-sem-dsm",
+      "module": "dsm-1d-solver",
+      "path": "example/410km_Topography_Triplication/3D_SEM_DSM/DSM/1D_tele_syn/run_mij_tele_syn.py",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "An older Python driver of the 410-km case's six-component 1-D synthetics (with src_to_box and box_to_recv siblings); the same model and stations as the JGR 410km case.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "Left out: superseded by the JGR_Wu2026 copy of the same case, which jgr-410km-triplication grades; the driver submits Slurm jobs and reads a CMTSOLUTION from paths the pinned tree does not carry."
+    },
+    {
+      "id": "input-example-template",
+      "module": "dsm-1d-solver",
+      "path": "example/Input_Example/WORK/SPECFEM3D/DATA/dsm_model_input",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "A template WORK/ tree (Par_file, CMTSOLUTION, dsm_model_input, mesh files) showing the layout step 1 produces.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "Left out: a layout template, not a runnable case; it carries no DSM deck, station list or driver."
+    },
+    {
+      "id": "specfem3d-coupling-examples",
+      "module": "dsm-1d-solver",
+      "path": "src/SPECFEM3D",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "SPECFEM3D meshing and solver examples, the InjectedWaves and Coupling stages (steps 1-3 and 7-10 of every scenario).",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 18.0,
+        "mpi_ranks": 8
+      },
+      "upstream_runtime_s": 300.0,
+      "runtime_measured": false,
+      "suitable": false,
+      "why": "Left out: outside the approved module (dsm-1d-solver owns src/DSM/src/DSM_Solver and src/DSM/src/DSM_FreqToTimeSac only); they need hundreds of MPI ranks and hours per run."
+    }
+  ]
+}

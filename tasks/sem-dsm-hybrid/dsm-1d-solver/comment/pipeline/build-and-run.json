@@ -1,0 +1,421 @@
+{
+  "codebase": "sem-dsm-hybrid",
+  "build": {
+    "system": "make",
+    "commands": [
+      "cd src/DSM/src/DSM_Solver && rm -f *.o *.mod dsmti && make FFLAGS=-O",
+      "cd src/DSM/src/DSM_FreqToTimeSac && rm -f *.o *.mod spectotime && make FFLAGS='-O3 -fallow-argument-mismatch -std=legacy'"
+    ],
+    "wall_s": 3.0,
+    "ok": true,
+    "pitfalls": [
+      "stale committed objects and executables must be removed first",
+      "the SAC side needs -fallow-argument-mismatch -std=legacy with gfortran 13",
+      "gfortran 13.3.0 and OpenMPI 4.1.6 (Ubuntu 24.04, x86-64); the rest of the repository (SPECFEM3D, InjectedWaves, Coupling) was not built: outside the module"
+    ],
+    "host": "88-core x86-64 worker, Ubuntu 24.04"
+  },
+  "landscape": [
+    {
+      "family": "shipped 1D_DSM decks (step 6 output directories)",
+      "kind": "examples",
+      "path": "example/PKP_precursor_ULVZ_demo/Explosion_demo/OUTPUT_FILES_0.5Hz_DSM1D/1D_DSM",
+      "how_to_run": "cd <deck>; mkdir OUTPUT_FILES/{disp_solid,velo_solid,disp_fluid,stress,pressure,potential,coef_cAnddcdr,disp_solid_time_sac}; mpirun -np N ./dsmti < DATA/dsm_model; ./spectotime",
+      "count": 27,
+      "reference_outputs": "shipped",
+      "notes": "27 complete DATA decks under OUTPUT_FILES* of 15 scenario roots: 10 distinct by git blob, 7 distinct in physics (three differ from a sibling only in the frequency count or trailing whitespace); full-band SAC products shipped beside them"
+    },
+    {
+      "family": "scenario workflows, step 6 (1-D teleseismic synthetics)",
+      "kind": "examples",
+      "path": "example/PKP_precursor_ULVZ_demo/Explosion_demo/step6_1d_dsm_synthetics.sh",
+      "how_to_run": "bash step6_1d_dsm_synthetics.sh (Slurm sbatch; 256-512 ranks, about 3 hours upstream); explosion mode runs dsmti once, moment-tensor mode six times plus a CMTSOLUTION synthesis",
+      "count": 16,
+      "reference_outputs": "partial",
+      "notes": "16 scenario roots carry step6: 12 explosion mode (8 distinct configurations incl. PKP660PKP without a shipped deck), 4 moment-tensor mode (3 distinct)"
+    },
+    {
+      "family": "scenario workflows, steps 4 and 5 (Green's-function databases)",
+      "kind": "examples",
+      "path": "example/PKP_precursor_ULVZ_demo/Explosion_demo/step4_dsm_src_to_box.sh",
+      "how_to_run": "bash step4_dsm_src_to_box.sh; bash step5_dsm_box_to_recv.sh (prepare_*.py writes the deck from Par_file_SEM_DSM; sbatch of 128-512 ranks, 5-45 minutes upstream)",
+      "count": 26,
+      "reference_outputs": "none",
+      "notes": "13 scenario roots carry both stages; source-to-box is an explosion or six moment-tensor sources with velocity, stress and fluid outputs, box-to-receiver a single force by reciprocity"
+    },
+    {
+      "family": "JGR_Wu2026 paper drivers",
+      "kind": "examples",
+      "path": "example/JGR_Wu2026",
+      "how_to_run": "bash <case>/DSM/{1D_tele_syn,src_to_box,box_to_recv}/run.sh (Slurm; 256-512 ranks)",
+      "count": 24,
+      "reference_outputs": "partial",
+      "notes": "5 cases (410km triplication, PKIKP 150 deg Vs6.0 IC with and without attenuation, PKP precursor ULVZ and its test_Stacey variants, PKiKP 3 Hz 50 deg) with 1D_tele_syn, src_to_box and box_to_recv drivers; several relative paths broken"
+    },
+    {
+      "family": "410km_Topography_Triplication/3D_SEM_DSM (older driver)",
+      "kind": "examples",
+      "path": "example/410km_Topography_Triplication/3D_SEM_DSM/DSM",
+      "how_to_run": "python3 run_mij_tele_syn.py (Slurm); run.sh in src_to_box and box_to_recv",
+      "count": 3,
+      "reference_outputs": "partial"
+    },
+    {
+      "family": "src/DSM/example and auxiliary",
+      "kind": "examples",
+      "path": "src/DSM/example/PKP_precursor_ULVZ/src_to_box/run.sh",
+      "how_to_run": "bash run.sh (Slurm, 512 ranks, 24 h); DSM_CoefToTime and CMTSOLUTION_TimeSac are post-processors outside the module",
+      "count": 3,
+      "reference_outputs": "none"
+    },
+    {
+      "family": "Input_Example",
+      "kind": "other",
+      "path": "example/Input_Example",
+      "how_to_run": "not runnable: a layout template of the WORK tree",
+      "count": 0,
+      "reference_outputs": "none"
+    },
+    {
+      "family": "SPECFEM3D, InjectedWaves, Coupling stages",
+      "kind": "examples",
+      "path": "src/SPECFEM3D",
+      "how_to_run": "steps 1-3 and 7-10 of every scenario (Slurm, hundreds of ranks)",
+      "count": 16,
+      "reference_outputs": "partial",
+      "notes": "outside the approved module dsm-1d-solver"
+    }
+  ],
+  "runs": [
+    {
+      "id": "ulvz-explosion-1d",
+      "path": "example/PKP_precursor_ULVZ_demo/Explosion_demo/OUTPUT_FILES_0.5Hz_DSM1D/1D_DSM",
+      "command": "mpirun -np 4 ./dsmti < DATA/dsm_model (line 1 of dsm_model set to 32 frequencies, the eight OUTPUT_FILES subdirectories created first); ./spectotime (Par_file_freq2sac line 2 set to 32)",
+      "ran": true,
+      "pitfalls": [
+        "run with 7 concurrent 4-rank jobs; 170 s of the 392 s were OpenMPI's start-up (see pitfalls); 30 s per frequency per rank at angular-order cutoff 1000",
+        "spectotime wrote 3 SAC files for 2 receivers: the runner names stations dist%.2f, so receivers 0.002 degrees apart collide and the second overwrites the first"
+      ],
+      "wall_s": 392.0,
+      "reproduced": "no reference at this band: the shipped SAC products are full-band (2048 to 16384 frequencies) and a band-limited run is a low-passed answer, not a coarser one; the frequency-1 spectrum is bit-identical between a 1-rank 2-frequency run and a 4-rank 32-frequency run (deterministic, no rank dependence)",
+      "outputs": [
+        "OUTPUT_FILES/disp_solid/freq_00000..00032 (Fortran unformatted complex*16, 3 records x 2 receivers)",
+        "OUTPUT_FILES/stress, coef_cAnddcdr, DSM_Par_file",
+        "OUTPUT_FILES/disp_solid_time_sac/L12_dep0.00_dist130.00.{bhz,bhr,bht} (2048 real*4 samples; one file pair for two receivers)"
+      ]
+    },
+    {
+      "id": "pkikp-ic-rotation-1d",
+      "path": "example/PKIKP_IC_Rotation_Hete_demo/EquatorialPath/OUTPUT_FILES_DSM1D_0.5Hz/1D_DSM",
+      "command": "mpirun -np 4 ./dsmti < DATA/dsm_model (line 1 of dsm_model set to 32 frequencies, the eight OUTPUT_FILES subdirectories created first); ./spectotime (Par_file_freq2sac line 2 set to 32)",
+      "ran": true,
+      "pitfalls": [
+        "angular-order cutoff 3000 (source at 50 km): 65 s per frequency per rank, twice the other decks; the run was stopped at 25 of 33 frequencies after 17 minutes under the three-minute rule, the timing being the point"
+      ],
+      "wall_s": 1030.0,
+      "reproduced": "no reference at this band: the shipped SAC products are full-band (2048 to 16384 frequencies) and a band-limited run is a low-passed answer, not a coarser one; the frequency-1 spectrum is bit-identical between a 1-rank 2-frequency run and a 4-rank 32-frequency run (deterministic, no rank dependence)",
+      "outputs": [
+        "OUTPUT_FILES/disp_solid/freq_00000..00032 (4 receivers)",
+        "SAC IC_dist149.00.. (4 receivers)"
+      ]
+    },
+    {
+      "id": "pkiikp-explosion-1d",
+      "path": "example/PKIIKP_IC_heterogeneity_demo/Explosion_demo/OUTPUT_FILES_0.7Hz_DSM1D/1D_DSM",
+      "command": "mpirun -np 4 ./dsmti < DATA/dsm_model (line 1 of dsm_model set to 32 frequencies, the eight OUTPUT_FILES subdirectories created first); ./spectotime (Par_file_freq2sac line 2 set to 32)",
+      "ran": true,
+      "pitfalls": [],
+      "wall_s": 394.0,
+      "reproduced": "no reference at this band: the shipped SAC products are full-band (2048 to 16384 frequencies) and a band-limited run is a low-passed answer, not a coarser one; the frequency-1 spectrum is bit-identical between a 1-rank 2-frequency run and a 4-rank 32-frequency run (deterministic, no rank dependence)",
+      "outputs": [
+        "disp_solid freq_00000..00032 (3 receivers)",
+        "SAC (3 receivers)"
+      ]
+    },
+    {
+      "id": "pkikp-icb-topo-1d",
+      "path": "example/PKiKP_ICB_topo_demo/Explosion_demo/OUTPUT_FILES_DSM1D_1.5Hz/1D_DSM",
+      "command": "mpirun -np 4 ./dsmti < DATA/dsm_model (line 1 of dsm_model set to 32 frequencies, the eight OUTPUT_FILES subdirectories created first); ./spectotime (Par_file_freq2sac line 2 set to 32)",
+      "ran": true,
+      "pitfalls": [],
+      "wall_s": 405.0,
+      "reproduced": "no reference at this band: the shipped SAC products are full-band (2048 to 16384 frequencies) and a band-limited run is a low-passed answer, not a coarser one; the frequency-1 spectrum is bit-identical between a 1-rank 2-frequency run and a 4-rank 32-frequency run (deterministic, no rank dependence)",
+      "outputs": [
+        "disp_solid freq_00000..00032 (41 receivers)",
+        "SAC (41 receivers)"
+      ]
+    },
+    {
+      "id": "pkikp-hetero-icb-1d",
+      "path": "example/PKiKP_heterogeneity_ICB_topo_demo/Explosion_demo/OUTPUT_FILES_DSM3D_1Hz/1D_DSM",
+      "command": "mpirun -np 4 ./dsmti < DATA/dsm_model (line 1 of dsm_model set to 32 frequencies, the eight OUTPUT_FILES subdirectories created first); ./spectotime (Par_file_freq2sac line 2 set to 32)",
+      "ran": true,
+      "pitfalls": [
+        "angular-order cutoff 1500: 41 s per frequency per rank"
+      ],
+      "wall_s": 450.0,
+      "reproduced": "no reference at this band: the shipped SAC products are full-band (2048 to 16384 frequencies) and a band-limited run is a low-passed answer, not a coarser one; the frequency-1 spectrum is bit-identical between a 1-rank 2-frequency run and a 4-rank 32-frequency run (deterministic, no rank dependence)",
+      "outputs": [
+        "disp_solid freq_00000..00032 (21 receivers)",
+        "SAC (21 receivers)"
+      ]
+    },
+    {
+      "id": "pcp-explosion-1d",
+      "path": "example/PcP_heterogeneity_CMB_topography_demo/Explosion_demo/OUTPUT_FILES_DSM1D_1Hz/1D_DSM",
+      "command": "mpirun -np 4 ./dsmti < DATA/dsm_model (line 1 of dsm_model set to 32 frequencies, the eight OUTPUT_FILES subdirectories created first); ./spectotime (Par_file_freq2sac line 2 set to 32)",
+      "ran": true,
+      "pitfalls": [],
+      "wall_s": 396.0,
+      "reproduced": "no reference at this band: the shipped SAC products are full-band (2048 to 16384 frequencies) and a band-limited run is a low-passed answer, not a coarser one; the frequency-1 spectrum is bit-identical between a 1-rank 2-frequency run and a 4-rank 32-frequency run (deterministic, no rank dependence)",
+      "outputs": [
+        "disp_solid freq_00000..00032 (2 receivers)",
+        "SAC (2 receivers)"
+      ]
+    },
+    {
+      "id": "slab-pp-1d",
+      "path": "example/Slab_PP_Reflection/Slab_PP_model1/OUTPUT_FILES_DSM3D_0.5Hz/1D_DSM",
+      "command": "mpirun -np 4 ./dsmti < DATA/dsm_model (line 1 of dsm_model set to 32 frequencies, the eight OUTPUT_FILES subdirectories created first); ./spectotime (Par_file_freq2sac line 2 set to 32)",
+      "ran": true,
+      "pitfalls": [
+        "angular-order cutoff 2000 (source at 98.8 km): 45 s per frequency per rank"
+      ],
+      "wall_s": 478.0,
+      "reproduced": "no reference at this band: the shipped SAC products are full-band (2048 to 16384 frequencies) and a band-limited run is a low-passed answer, not a coarser one; the frequency-1 spectrum is bit-identical between a 1-rank 2-frequency run and a 4-rank 32-frequency run (deterministic, no rank dependence)",
+      "outputs": [
+        "disp_solid freq_00000..00032 (1 receiver)",
+        "SAC GE_VSU"
+      ]
+    },
+    {
+      "id": "pkp660pkp-step6-explosion",
+      "path": "example/PKP660PKP_scattering_demo/660km_topography_pudding_heterogeneity/step6_1d_dsm_synthetics.sh",
+      "command": "bash step6_1d_dsm_synthetics.sh with a stub sbatch on PATH (writes WORK/DSM/1D_tele_syn/explosion/DATA), then mpirun -np 4 ./dsmti < DATA/dsm_model at 16 frequencies and ./spectotime",
+      "ran": true,
+      "pitfalls": [
+        "step6 as shipped exits: its Par_file's TIME_LENGTH_DSM_SOURCE_TO_BOX + TIME_LENGTH_DSM_BOX_TO_RECEIVER (3000 + 3000) exceeds TIME_LENGTH_DSM_1D (4000), which the script rejects; stage metadata of 1000 s each let it write the 4000 s deck the scenario declares",
+        "step6 dies with 'src_window: unbound variable' (set -u) whenever WORK/DSM/src_to_box/DATA/src_to_box_metadata.env and WORK/DSM/box_to_recv/DATA/box_to_recv_metadata_*.env from steps 4 and 5 are absent, even when both stage lengths are in the Par_file; one-line metadata files (TIME_SERIES_LENGTH=...) unblock it",
+        "26 s per frequency per rank"
+      ],
+      "wall_s": 276.0,
+      "reproduced": "no reference at this band (the scenario ships full-band SAC under OUTPUT_FILES_DSM1D_1.1Hz/1D_DSM, 8192 samples per second... 524288 samples over 8192 s)",
+      "outputs": [
+        "disp_solid freq_00000..00016 (6 receivers)",
+        "SAC Hi (6 receivers)"
+      ]
+    },
+    {
+      "id": "ulvz-step6-moment-tensor",
+      "path": "example/PKP_precursor_ULVZ_demo/MomentTensor_demo/step6_1d_dsm_synthetics.sh",
+      "command": "bash step6_1d_dsm_synthetics.sh with a stub sbatch (writes six WORK/DSM/1D_tele_syn/M*/DATA decks); mpirun -np 4 ./dsmti < DATA/dsm_model at 4 to 8 frequencies for Mzz, Mrr, Mtt, Mzr, Mzt, Mrt; ./spectotime on each",
+      "ran": true,
+      "pitfalls": [
+        "step6 falls back to DATA/dsm_model_base with a warning when WORK/SPECFEM3D/DATA/dsm_model_input (the step-1 product) is absent; the explosion sibling's shipped 1D_DSM/DATA/dsm_model_input is that product and was supplied",
+        "38 to 40 s per frequency per rank (toroidal system on top of the spheroidal one)",
+        "unit-moment (1 N m) amplitudes are 1e-27 m: eighteen decades below the explosion decks (1e25 dyn cm), still normal binary32 in the SAC export"
+      ],
+      "wall_s": 300.0,
+      "reproduced": "no reference (the scenario ships only the final combined SAC under OUTPUT_FILES_DSM1D_0.5Hz/1D_DSM, full band)",
+      "outputs": [
+        "per component: disp_solid freq_* (2 receivers); SAC .bhz/.bhr for Mzz, Mrr, Mtt, Mzr and .bht for Mzt, Mrt; the other components are identically zero (receivers on the source azimuth)"
+      ]
+    },
+    {
+      "id": "pkiikp-step6-moment-tensor",
+      "path": "example/PKIIKP_IC_heterogeneity_demo/MomentTensor_demo/step6_1d_dsm_synthetics.sh",
+      "command": "bash step6_1d_dsm_synthetics.sh with a stub sbatch (six decks written, model = dsm_model_base, identical to the explosion sibling's step-1 model)",
+      "ran": true,
+      "pitfalls": [],
+      "wall_s": 3.0,
+      "reproduced": "not compared (deck generation only)",
+      "outputs": [
+        "WORK/DSM/1D_tele_syn/{Mzz,Mrr,Mtt,Mzr,Mzt,Mrt}/DATA"
+      ]
+    },
+    {
+      "id": "pcp-step6-moment-tensor",
+      "path": "example/PcP_heterogeneity_CMB_topography_demo/MomentTensor_demo/step6_1d_dsm_synthetics.sh",
+      "command": "bash step6_1d_dsm_synthetics.sh with a stub sbatch; mpirun -np 4 ./dsmti at 4 frequencies for Mzz and Mzt",
+      "ran": true,
+      "pitfalls": [],
+      "wall_s": 200.0,
+      "reproduced": "no reference at this band",
+      "outputs": [
+        "six decks; disp_solid for Mzz (records 1, 2 non-zero) and Mzt (record 3 non-zero)"
+      ]
+    },
+    {
+      "id": "ulvz-step4-source-to-box",
+      "path": "example/PKP_precursor_ULVZ_demo/Explosion_demo/step4_dsm_src_to_box.sh",
+      "command": "bash step4_dsm_src_to_box.sh with a stub sbatch and Par_file knobs DSM_DISTANCE_SPACING_DEGREES=1.0, DSM_BOX_DISTANCE_SAMPLES=2, DSM_DISTANCE_MARGIN_DEGREES=1.0 (writes WORK/DSM/src_to_box/DATA); mpirun -np 4 ./dsmti < DATA/dsm_model at 16 frequencies",
+      "ran": true,
+      "pitfalls": [
+        "prepare_src_to_box.py requires WORK/SPECFEM3D/DATA/dsm_model_input from step 1 and has no fallback to dsm_model_base (step6 has one); the shipped 1D_DSM deck's dsm_model_input is that file",
+        "the depth rule keeps at least 5 nodes per zone (26 lower-mantle, 5 outer-core here); the distance table shrinks from 1143 to 3 with the spacing and margin knobs",
+        "30 s per frequency per rank with 93 stations"
+      ],
+      "wall_s": 286.0,
+      "reproduced": "no reference (the stage's product feeds step 7; nothing shipped)",
+      "outputs": [
+        "velo_solid, stress (6 records), disp_fluid, potential, pressure, coef_cAnddcdr freq_00000..00016 for 26 solid x 3 and 5 fluid x 3 nodes"
+      ]
+    },
+    {
+      "id": "ulvz-step5-box-to-receiver",
+      "path": "example/PKP_precursor_ULVZ_demo/Explosion_demo/step5_dsm_box_to_recv.sh",
+      "command": "bash step5_dsm_box_to_recv.sh with a stub sbatch and DSM_BOX_TO_RECEIVER_DISTANCE_BUFFER_DEGREES=0 (writes WORK/DSM/box_to_recv/DATA/dsm_model_Fz); mpirun -np 4 ./dsmti < DATA/dsm_model at 16 frequencies",
+      "ran": true,
+      "pitfalls": [
+        "same step-1 model requirement as step 4",
+        "TELESEISMIC_COMPONENT=Z as shipped runs Fz only; Fr and Ft are never exercised by a demo scenario",
+        "27 s per frequency per rank with 248 stations"
+      ],
+      "wall_s": 275.0,
+      "reproduced": "no reference (nothing shipped)",
+      "outputs": [
+        "disp_solid, disp_fluid, stress, potential, pressure freq_00000..00016 for 26 solid x 8 and 5 fluid x 8 nodes; single force Fz (source_type 2) at 0 km"
+      ]
+    },
+    {
+      "id": "jgr-410km-1d-tele-syn",
+      "path": "example/JGR_Wu2026/410km_Topography_Triplication/410km_Topography_Triplication/DSM/1D_tele_syn/run.sh",
+      "command": "bash run.sh with a stub sbatch (writes the distance and depth tables; its cp of dsmti and dsm_model_input fail); deck assembled from those tables, SPECFEM3D/DATA/dsm_model_input and the script's own awk edit; mpirun -np 4 ./dsmti at 16 frequencies; ./spectotime",
+      "ran": true,
+      "pitfalls": [
+        "run.sh's relative paths dir_src=../../../../../../src/DSM/src/DSM_Solver and dir_SEM=../../SPECFEM3D are one directory short from the tensor directory it cds into: 'cannot stat' for both, and the awk that edits the model then reads a missing file",
+        "60 s per frequency per rank: the receiver loop over 178 stations doubles the cost of the l-sum"
+      ],
+      "wall_s": 377.0,
+      "reproduced": "no reference at this band",
+      "outputs": [
+        "disp_solid freq_00000..00016 (178 receivers: 89 distances x 2 depths)",
+        "SAC for 178 receivers (528 files)"
+      ]
+    },
+    {
+      "id": "ulvz-fault-and-floor-probes",
+      "path": "example/PKP_precursor_ULVZ_demo/Explosion_demo/OUTPUT_FILES_0.5Hz_DSM1D/1D_DSM",
+      "command": "eight 8-rank runs at 32 frequencies: nominal, -O2 -mfma rebuild, receiver distances +1e-6 and +1e-7 degrees, lmax0 400 and 2000 (angular-order cutoff 100 and 500), omega_imag 0, ngrid_r 6000 and 30000; each graded against nominal as |err| / file peak",
+      "ran": true,
+      "pitfalls": [
+        "8 concurrent 8-rank runs (64 ranks) tripled the per-frequency cost against a lone run (23 s): the solver streams 60000-point banded matrices and is memory-bandwidth bound",
+        "cutoff at l=500 changes no value: the l-sum has converged before 500 at this band, so the every-500-orders convergence test cannot flip a graded value"
+      ],
+      "wall_s": 270.0,
+      "reproduced": "n/a (probes against the nominal run): FMA 1.0e-8 (spectra) / 2.9e-8 (SAC); +1e-6 deg 1.5e-6 / 4.9e-7; +1e-7 deg see meas; cutoff 500 identical; cutoff 100 1.3e-3 / 1.3e-4; omega_imag 0: 263 / 1.7; ngrid 30000: 2.0e-4 / 2.4e-4; ngrid 6000: 9.8e-4 / 1.2e-3",
+      "outputs": [
+        "OUTPUT_FILES of each probe"
+      ]
+    },
+    {
+      "id": "mpi-startup-probe",
+      "path": "src/DSM/src/DSM_Solver",
+      "command": "mpirun -np {1,4} ./dsmti < DATA/dsm_model at 1 to 4 frequencies with GFORTRAN_UNBUFFERED_ALL=y and timestamps; then with --mca btl self,vader, with --mca btl_tcp_if_include lo, with --stdin 0",
+      "ran": true,
+      "pitfalls": [
+        "OpenMPI 4.1.6 probes every interface (docker bridges, veth pairs) before the first message; --mca btl self,vader removes 150 s per launch; not stdin forwarding (the same with --stdin 0 and with each rank reading the file)"
+      ],
+      "wall_s": 200.0,
+      "reproduced": "n/a: 1 rank reaches the first frequency in 0.75 s; 4 ranks take 143 to 178 s before the first frequency with OpenMPI's default transports and 0.4 s with the on-node ones",
+      "outputs": [
+        "timing logs"
+      ]
+    }
+  ],
+  "pitfalls": [
+    {
+      "where": "build",
+      "symptom": "173 .o files, .mod files and the executables dsmti and spectotime are committed; git restores no mtimes, so make relinks the stale objects (or fails: 'relocation R_X86_64_32S against ... can not be used when making a PIE object') and a changed FFLAGS has no effect",
+      "workaround": "rm -f *.o *.mod dsmti spectotime before every make"
+    },
+    {
+      "where": "build",
+      "symptom": "DSM_FreqToTimeSac fails to compile with gfortran 13 when FFLAGS is overridden wholesale: sacconv.f passes COMPLEX(8) arrays to REAL(8) dummies",
+      "workaround": "keep the Makefile's -fallow-argument-mismatch -std=legacy and vary only the optimisation level"
+    },
+    {
+      "where": "general",
+      "symptom": "dsmti stops with 'error saving GREENS' when any of OUTPUT_FILES/{disp_solid,velo_solid,disp_fluid,stress,pressure,potential,coef_cAnddcdr} is missing (savespec.f opens with status='unknown' and does not mkdir)",
+      "workaround": "create all eight OUTPUT_FILES subdirectories before the run"
+    },
+    {
+      "where": "general",
+      "symptom": "spectotime prints 'Job completed!' and exits 0 having written nothing when the SAC output directory named in Par_file_freq2sac does not exist",
+      "workaround": "mkdir the SAC directory first; check the file count after the run"
+    },
+    {
+      "where": "general",
+      "symptom": "run_freq_to_time_sac.sh names stations dist%.2f: two receivers less than 0.01 degrees apart get the same SAC filename and spectotime overwrites the first (the ULVZ deck's receivers are 0.002 degrees apart: 3 files for 2 receivers)",
+      "workaround": "write station_list with five decimals of distance"
+    },
+    {
+      "where": "general",
+      "symptom": "OpenMPI 4.1.6 spends 143 to 178 s before dsmti's first frequency on a host with docker bridge and veth interfaces (TCP transport probing every interface before the first message); 1 rank is unaffected (0.75 s)",
+      "workaround": "mpirun --mca btl self,vader (0.4 s); not a stdin issue"
+    },
+    {
+      "where": "general",
+      "symptom": "the first packager measured 851 s in the container against 314 s natively for the same 4-rank run; the 150 s MPI start-up plus 4 ranks under a 4-cpu cgroup quota with the default core binding are the likely causes",
+      "workaround": "on-node transports and --bind-to none; measure in the selfcheck"
+    },
+    {
+      "where": "general",
+      "symptom": "gfortran buffers stdout when it is a pipe: per-frequency progress lines arrive only at exit",
+      "workaround": "GFORTRAN_UNBUFFERED_ALL=y for timing; file mtimes of OUTPUT_FILES/disp_solid/freq_* give completion times"
+    },
+    {
+      "where": "general",
+      "symptom": "spectotime aborts at exit (munmap_chunk(): invalid pointer, SIGABRT) when the frequency count is not a power of two (24 and 6 measured; 4, 8, 16, 32 run): its FFT length is 64 x n_frequency and the transform assumes a power of two",
+      "workaround": "keep n_frequency a power of two"
+    },
+    {
+      "where": "general",
+      "symptom": "dist_solid_list and dist_fluid_list must agree entry by entry (param.f stops when they differ by more than 1e-10 rad), even when no fluid receiver exists",
+      "workaround": "perturb or edit both tables identically"
+    },
+    {
+      "where": "general",
+      "symptom": "each rank holds about 1.9 GB of static arrays sized for max_ndep x max_ntheta = 9e6 stations (maxngrid_r 140000, maxlmax 40000), touched during the first frequency: RSS 36 MB at start, 1966 MB by the second frequency",
+      "workaround": "declare about 2 GB per rank; 8 ranks need 16 GB"
+    },
+    {
+      "where": "general",
+      "symptom": "the solver keeps ngrid_r = 60000 for every frequency (the per-band grid scaling in dsmti.f is commented out) and only lmax scales by band, so cost is 20 to 65 s per frequency per rank whatever the frequency; the angular-order cutoff the convergence test picks is a multiple of 500 (1000 for most decks, 1500, 2000, 3000 for the shallow-source PKIKP and slab decks)",
+      "workaround": "the frequency count is the only cheap knob; choose it per deck for the 300 s line"
+    },
+    {
+      "where": "pkp660pkp-step6-explosion",
+      "symptom": "step6 dies with 'src_window: unbound variable' when steps 4 and 5 have not run (their metadata .env files are missing), whatever the Par_file says; and PKP660PKP's Par_file stage lengths (3000 + 3000) exceed its TIME_LENGTH_DSM_1D (4000), which step6 rejects",
+      "workaround": "one-line metadata files TIME_SERIES_LENGTH=... under WORK/DSM/{src_to_box,box_to_recv}/DATA, sized so the sum stays under the 1-D window"
+    },
+    {
+      "where": "ulvz-step4-source-to-box",
+      "symptom": "prepare_src_to_box.py and prepare_box_to_recv.py require WORK/SPECFEM3D/DATA/dsm_model_input from step 1 and exit without it (step6 falls back to dsm_model_base)",
+      "workaround": "copy the scenario's shipped 1D_DSM/DATA/dsm_model_input (the step-1 product) there"
+    },
+    {
+      "where": "jgr-410km-1d-tele-syn",
+      "symptom": "JGR_Wu2026 run.sh drivers cd into a tensor directory and then use relative paths written for the directory above: dsmti and dsm_model_input are not found",
+      "workaround": "assemble the deck from the tables the script writes, the model it names and its awk edit"
+    }
+  ],
+  "not_run": [
+    {
+      "what": "steps 1-3 and 7-10 of every scenario (SPECFEM3D meshing and solver, InjectedWaves, Coupling)",
+      "why": "outside the approved module; hundreds of MPI ranks and hours per run"
+    },
+    {
+      "what": "any deck at its shipped frequency count (2048 to 16384)",
+      "why": "hours on 256-512 ranks upstream; 30 s per frequency per rank here"
+    },
+    {
+      "what": "JGR_Wu2026 PKIKP, ULVZ, test_Stacey and PKiKP_3Hz drivers; src/DSM/example src_to_box; 410km 3D_SEM_DSM python driver",
+      "why": "Slurm drivers of the same three stages on the same scenario families with broken or cluster-specific paths; the 410km JGR case was the one distinct model and was assembled by hand"
+    },
+    {
+      "what": "DSM_CoefToTime and CMTSOLUTION_TimeSac post-processors",
+      "why": "outside the module's owned paths"
+    }
+  ]
+}

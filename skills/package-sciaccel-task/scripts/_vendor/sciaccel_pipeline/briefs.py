@@ -266,7 +266,7 @@ STEP 2  Survey the official tests of every approved module.
         "id": "<lower-kebab-case, unique>",
         "module": "<approved module slug>",
         "path": "<test file or example directory relative to code/{source}/>",
-        "policy": "pointwise | invariants",
+        "policy": "pointwise | invariants   (provisional: read off the driver as shipped; re-derived at add-check from what the check writes, this row corrected if it changes)",
         "chaotic": false,
         "exercises": "<which production path, algorithm or configuration family it forces>",
         "resources": {{"cpus": 1, "memory_gb": 1.0, "mpi_ranks": 1}},

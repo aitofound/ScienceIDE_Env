@@ -1,0 +1,599 @@
+{
+  "codebase": "mudpack",
+  "build": {
+    "system": "make (GNU make; one top-level Makefile per library, each including a make.inc that selects the compiler by `uname -s`; src/ builds a static library, test/ compiles and immediately runs every test program)",
+    "commands": [
+      "make MAKE=make AR=ar F90=\"gfortran -fdefault-real-8 -O2 -std=legacy -J LIBDIR -I LIBDIR\" CPP=\"gfortran -cpp -E\"   (double precision, the darwin.dp reference build)",
+      "make MAKE=make AR=ar F90=\"gfortran -O2 -std=legacy -J LIBDIR -I LIBDIR\" CPP=\"gfortran -cpp -E\"   (single precision, the darwin.sp reference build)"
+    ],
+    "wall_s": 53,
+    "ok": true,
+    "pitfalls": [
+      "make.inc chooses the compiler from `uname -s`: on Linux it wants pgf90 or g95, on Darwin gfortran but MAKE := the hard-coded gmake path, which does not exist on current macOS; override MAKE=make AR=ar F90=... on the make command line (all five libraries)",
+      "gfortran 15.2 (and every gfortran >= 10) refuses the Fortran 77 argument-type and rank mismatches in FFTPACK, FISHPACK and SPHEREPACK (\"Type mismatch between actual argument ... REAL(8) vs COMPLEX(8)\", \"Rank mismatch in argument theta\") unless -std=legacy (or -fallow-argument-mismatch) is given; measured: fftpack 12 errors, spherepack 2 errors without it",
+      "the shipped darwin.dp transcripts were produced with -fdefault-real-8; the libraries are written for single precision and the darwin.sp build reproduces fewer digits (FISHPACK 1 to 4 digits, MUDPACK 0 to 2) and mudpack tcud3cr does not converge in single precision (ierror -10 here, ierror -4 and NaN in the shipped darwin.sp)",
+      "wall_s is the double-precision `make` run, which includes the 36 test runs the test Makefile executes (under 2 s in total); the single-precision build took the same"
+    ]
+  },
+  "landscape": [
+    {
+      "family": "mudpack-test",
+      "kind": "test-suite",
+      "path": "test",
+      "count": 36,
+      "how_to_run": "make",
+      "reference_outputs": "shipped",
+      "notes": "one driver per solver (mud/cud x d/h x 2/3 x 2nd/4th order x cr/sp/sa variants); output/darwin.dp and darwin.sp; OpenMP directives (515 lines in 53 source files) are inactive without -fopenmp"
+    }
+  ],
+  "runs": [
+    {
+      "id": "tcud2",
+      "family": "mudpack-test",
+      "path": "test/tcud2.f",
+      "command": "cd test && tcud2.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.04,
+      "shortened": null,
+      "reproduced": "yes: all 7 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; cud2: complex second-order multigrid solver, 2D nonseparable elliptic PDE; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tcud24",
+      "family": "mudpack-test",
+      "path": "test/tcud24.f",
+      "command": "cd test && tcud24.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.03,
+      "shortened": null,
+      "reproduced": "yes: all 8 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; cud24: complex fourth-order multigrid solver, 2D nonseparable elliptic PDE; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tcud24cr",
+      "family": "mudpack-test",
+      "path": "test/tcud24cr.f",
+      "command": "cd test && tcud24cr.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.04,
+      "shortened": null,
+      "reproduced": "yes: all 8 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; cud24cr: complex fourth-order multigrid solver, 2D nonseparable elliptic PDE with cross derivative; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tcud24sp",
+      "family": "mudpack-test",
+      "path": "test/tcud24sp.f",
+      "command": "cd test && tcud24sp.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.04,
+      "shortened": null,
+      "reproduced": "yes: all 7 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; cud24sp: complex fourth-order multigrid solver, 2D nonseparable elliptic PDE, separable; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tcud2cr",
+      "family": "mudpack-test",
+      "path": "test/tcud2cr.f",
+      "command": "cd test && tcud2cr.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.04,
+      "shortened": null,
+      "reproduced": "yes: all 6 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; cud2cr: complex second-order multigrid solver, 2D nonseparable elliptic PDE with cross derivative; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tcud2sp",
+      "family": "mudpack-test",
+      "path": "test/tcud2sp.f",
+      "command": "cd test && tcud2sp.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.04,
+      "shortened": null,
+      "reproduced": "yes: all 6 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; cud2sp: complex second-order multigrid solver, 2D nonseparable elliptic PDE, separable; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tcud3",
+      "family": "mudpack-test",
+      "path": "test/tcud3.f",
+      "command": "cd test && tcud3.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.06,
+      "shortened": null,
+      "reproduced": "yes: all 9 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; cud3: complex second-order multigrid solver, 3D nonseparable elliptic PDE; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tcud34",
+      "family": "mudpack-test",
+      "path": "test/tcud34.f",
+      "command": "cd test && tcud34.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.09,
+      "shortened": null,
+      "reproduced": "yes: all 11 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; cud34: complex fourth-order multigrid solver, 3D nonseparable elliptic PDE; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tcud34sp",
+      "family": "mudpack-test",
+      "path": "test/tcud34sp.f",
+      "command": "cd test && tcud34sp.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.05,
+      "shortened": null,
+      "reproduced": "yes: all 9 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; cud34sp: complex fourth-order multigrid solver, 3D nonseparable elliptic PDE, separable; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tcud3cr",
+      "family": "mudpack-test",
+      "path": "test/tcud3cr.f",
+      "command": "cd test && tcud3cr.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.06,
+      "shortened": null,
+      "reproduced": "yes: all 19 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; cud3cr: complex second-order multigrid solver, 3D nonseparable elliptic PDE with cross derivative; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tcud3sp",
+      "family": "mudpack-test",
+      "path": "test/tcud3sp.f",
+      "command": "cd test && tcud3sp.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.05,
+      "shortened": null,
+      "reproduced": "yes: all 8 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; cud3sp: complex second-order multigrid solver, 3D nonseparable elliptic PDE, separable; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tcuh2",
+      "family": "mudpack-test",
+      "path": "test/tcuh2.f",
+      "command": "cd test && tcuh2.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.03,
+      "shortened": null,
+      "reproduced": "yes: all 7 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; cuh2: complex second-order hybrid multigrid/direct solver, 2D nonseparable elliptic PDE; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tcuh24",
+      "family": "mudpack-test",
+      "path": "test/tcuh24.f",
+      "command": "cd test && tcuh24.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.04,
+      "shortened": null,
+      "reproduced": "yes: all 8 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; cuh24: complex fourth-order hybrid multigrid/direct solver, 2D nonseparable elliptic PDE; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tcuh24cr",
+      "family": "mudpack-test",
+      "path": "test/tcuh24cr.f",
+      "command": "cd test && tcuh24cr.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.04,
+      "shortened": null,
+      "reproduced": "yes: all 7 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; cuh24cr: complex fourth-order hybrid multigrid/direct solver, 2D nonseparable elliptic PDE with cross derivative; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tcuh2cr",
+      "family": "mudpack-test",
+      "path": "test/tcuh2cr.f",
+      "command": "cd test && tcuh2cr.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.04,
+      "shortened": null,
+      "reproduced": "yes: all 6 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; cuh2cr: complex second-order hybrid multigrid/direct solver, 2D nonseparable elliptic PDE with cross derivative; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tcuh3",
+      "family": "mudpack-test",
+      "path": "test/tcuh3.f",
+      "command": "cd test && tcuh3.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.04,
+      "shortened": null,
+      "reproduced": "yes: all 9 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; cuh3: complex second-order hybrid multigrid/direct solver, 3D nonseparable elliptic PDE; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tcuh34",
+      "family": "mudpack-test",
+      "path": "test/tcuh34.f",
+      "command": "cd test && tcuh34.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.05,
+      "shortened": null,
+      "reproduced": "yes: all 10 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; cuh34: complex fourth-order hybrid multigrid/direct solver, 3D nonseparable elliptic PDE; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tmud2",
+      "family": "mudpack-test",
+      "path": "test/tmud2.f",
+      "command": "cd test && tmud2.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.03,
+      "shortened": null,
+      "reproduced": "yes: all 7 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; mud2: real second-order multigrid solver, 2D nonseparable elliptic PDE; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tmud24",
+      "family": "mudpack-test",
+      "path": "test/tmud24.f",
+      "command": "cd test && tmud24.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.03,
+      "shortened": null,
+      "reproduced": "yes: all 8 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; mud24: real fourth-order multigrid solver, 2D nonseparable elliptic PDE; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tmud24cr",
+      "family": "mudpack-test",
+      "path": "test/tmud24cr.f",
+      "command": "cd test && tmud24cr.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.03,
+      "shortened": null,
+      "reproduced": "yes: all 7 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; mud24cr: real fourth-order multigrid solver, 2D nonseparable elliptic PDE with cross derivative; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tmud24sp",
+      "family": "mudpack-test",
+      "path": "test/tmud24sp.f",
+      "command": "cd test && tmud24sp.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.03,
+      "shortened": null,
+      "reproduced": "yes: all 7 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; mud24sp: real fourth-order multigrid solver, 2D nonseparable elliptic PDE, separable; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tmud2cr",
+      "family": "mudpack-test",
+      "path": "test/tmud2cr.f",
+      "command": "cd test && tmud2cr.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.03,
+      "shortened": null,
+      "reproduced": "yes: all 6 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; mud2cr: real second-order multigrid solver, 2D nonseparable elliptic PDE with cross derivative; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tmud2sa",
+      "family": "mudpack-test",
+      "path": "test/tmud2sa.f",
+      "command": "cd test && tmud2sa.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.04,
+      "shortened": null,
+      "reproduced": "yes: all 7 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; mud2sa: real second-order multigrid solver, 2D nonseparable elliptic PDE, self-adjoint; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tmud2sp",
+      "family": "mudpack-test",
+      "path": "test/tmud2sp.f",
+      "command": "cd test && tmud2sp.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.03,
+      "shortened": null,
+      "reproduced": "yes: all 6 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; mud2sp: real second-order multigrid solver, 2D nonseparable elliptic PDE, separable; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tmud3",
+      "family": "mudpack-test",
+      "path": "test/tmud3.f",
+      "command": "cd test && tmud3.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.04,
+      "shortened": null,
+      "reproduced": "yes: all 9 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; mud3: real second-order multigrid solver, 3D nonseparable elliptic PDE; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tmud34",
+      "family": "mudpack-test",
+      "path": "test/tmud34.f",
+      "command": "cd test && tmud34.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.04,
+      "shortened": null,
+      "reproduced": "yes: all 11 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; mud34: real fourth-order multigrid solver, 3D nonseparable elliptic PDE; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tmud34sp",
+      "family": "mudpack-test",
+      "path": "test/tmud34sp.f",
+      "command": "cd test && tmud34sp.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.05,
+      "shortened": null,
+      "reproduced": "yes: all 9 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; mud34sp: real fourth-order multigrid solver, 3D nonseparable elliptic PDE, separable; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tmud3cr",
+      "family": "mudpack-test",
+      "path": "test/tmud3cr.f",
+      "command": "cd test && tmud3cr.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.09,
+      "shortened": null,
+      "reproduced": "yes: all 17 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; mud3cr: real second-order multigrid solver, 3D nonseparable elliptic PDE with cross derivative; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tmud3sa",
+      "family": "mudpack-test",
+      "path": "test/tmud3sa.f",
+      "command": "cd test && tmud3sa.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.05,
+      "shortened": null,
+      "reproduced": "yes: all 8 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; mud3sa: real second-order multigrid solver, 3D nonseparable elliptic PDE, self-adjoint; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tmud3sp",
+      "family": "mudpack-test",
+      "path": "test/tmud3sp.f",
+      "command": "cd test && tmud3sp.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.04,
+      "shortened": null,
+      "reproduced": "yes: all 8 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; mud3sp: real second-order multigrid solver, 3D nonseparable elliptic PDE, separable; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tmuh2",
+      "family": "mudpack-test",
+      "path": "test/tmuh2.f",
+      "command": "cd test && tmuh2.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.04,
+      "shortened": null,
+      "reproduced": "yes: all 8 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; muh2: real second-order hybrid multigrid/direct solver, 2D nonseparable elliptic PDE; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tmuh24",
+      "family": "mudpack-test",
+      "path": "test/tmuh24.f",
+      "command": "cd test && tmuh24.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.05,
+      "shortened": null,
+      "reproduced": "yes: all 11 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; muh24: real fourth-order hybrid multigrid/direct solver, 2D nonseparable elliptic PDE; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tmuh24cr",
+      "family": "mudpack-test",
+      "path": "test/tmuh24cr.f",
+      "command": "cd test && tmuh24cr.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.04,
+      "shortened": null,
+      "reproduced": "yes: all 7 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; muh24cr: real fourth-order hybrid multigrid/direct solver, 2D nonseparable elliptic PDE with cross derivative; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tmuh2cr",
+      "family": "mudpack-test",
+      "path": "test/tmuh2cr.f",
+      "command": "cd test && tmuh2cr.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.04,
+      "shortened": null,
+      "reproduced": "yes: all 6 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; muh2cr: real second-order hybrid multigrid/direct solver, 2D nonseparable elliptic PDE with cross derivative; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tmuh3",
+      "family": "mudpack-test",
+      "path": "test/tmuh3.f",
+      "command": "cd test && tmuh3.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.04,
+      "shortened": null,
+      "reproduced": "yes: all 9 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; muh3: real second-order hybrid multigrid/direct solver, 3D nonseparable elliptic PDE; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    },
+    {
+      "id": "tmuh34",
+      "family": "mudpack-test",
+      "path": "test/tmuh34.f",
+      "command": "cd test && tmuh34.exe   (built and first run by `make` through the test Makefile pattern rule)",
+      "ran": true,
+      "wall_s": 0.04,
+      "shortened": null,
+      "reproduced": "yes: all 10 printed values identical to darwin.dp (16 digits)",
+      "outputs": [
+        "stdout: text; muh34: real fourth-order hybrid multigrid/direct solver, 3D nonseparable elliptic PDE; prints the routine error flag and the max/discretization error, in FISHPACK, FISHPACK90 and MUDPACK also the expected 64-bit and 32-bit values from the original platform"
+      ],
+      "nondeterminism": "none seen (two runs identical)",
+      "pitfalls": []
+    }
+  ],
+  "pitfalls": [
+    {
+      "where": "build",
+      "symptom": "make: pgf90/g95 not found (Linux) or the hard-coded gmake path not found (macOS)",
+      "workaround": "make MAKE=make AR=ar F90=\"gfortran -fdefault-real-8 -O2 -std=legacy -J LIBDIR -I LIBDIR\" CPP=\"gfortran -cpp -E\""
+    },
+    {
+      "where": "build",
+      "symptom": "gfortran >= 10: Error: Type mismatch between actual argument ... (REAL(8) vs COMPLEX(8)); Error: Rank mismatch in argument theta",
+      "workaround": "-std=legacy (or -fallow-argument-mismatch)"
+    },
+    {
+      "where": "general",
+      "symptom": "single-precision (default) build gives 0 to 4 matching digits and mudpack tcud3cr fails to converge",
+      "workaround": "build with -fdefault-real-8 as the shipped darwin.dp references were"
+    },
+    {
+      "where": "general",
+      "symptom": "every test program writes only to stdout; the test Makefile pattern rule runs each executable right after linking it (the pattern rule executes the program it just linked), so `make` in test/ is build plus run and output/darwin.dp is the whole transcript",
+      "workaround": "run the .exe files again by hand to capture per-test stdout"
+    }
+  ],
+  "not_run": [
+    {
+      "what": "MUDPACK with OpenMP (-fopenmp)",
+      "why": "the OpenMP directives are opt-in; all 36 drivers ran serially, the thread-parallel build was not attempted in Step 1.2"
+    }
+  ]
+}

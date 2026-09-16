@@ -1,0 +1,208 @@
+{
+  "check": "umi-sequence-resolution",
+  "policy": "pointwise",
+  "chaotic": false,
+  "upstream_test": "code/cassiopeia/test/preprocess_tests/resolve_umi_sequence_test.py",
+  "configuration": "原始七行collapsed table及两个官方resolve_umi_sequence调用：min_umi_per_cell=1，avg coverage阈值2.0/30.0，plot=False/True。先按cellBC/UMI选唯一最高readCount的已有seq，保留赢家行支持数，再按所选UMI数与平均支持整体过滤cell；不是UMI barcode纠错，也不累计竞争序列支持。",
+  "observable": "按cellBC/UMI身份对齐的完整保留分子集合、所选DNA序列与所选行整数支持数",
+  "expected_runtime_s": 13,
+  "default_vs_upstream": "原七行fixture未变，默认avg阈值2.0显式物化，第二调用30以等值float控制参数表示；plot=False/True原样执行，PNG仅写scratch且不grade。不以readName格式、grpFlag、qual或DataFrame索引作为输出科学identity。",
+  "variant": "两个min_avg_reads_per_umi浮点cutoff各向正无穷移动binary64两ULP，其他参数/fixture均不变。观测平均值远离cutoffs，预期retained表相同；必须如实记录graded-zero结果，不把日志或plot变化当noise，不扰动整数readCount或DNA符号。",
+  "altbuild": "none: 当前科学路径为Python/Pandas的选择与filter_cells，不执行Cassiopeia自定义Cython/Numba数值核心；仅改CFLAGS/JIT开关不能构成这条路径的有效替代构建，未验证不同runtime/dependency build。",
+  "comparison": {
+    "atol": 0,
+    "rtol": 0,
+    "files": [
+      {
+        "path": "resolve-default.npz",
+        "format": "resolved-sequences-npz",
+        "scenario": "resolve-default"
+      },
+      {
+        "path": "filter-by-reads.npz",
+        "format": "resolved-sequences-npz",
+        "scenario": "filter-by-reads"
+      }
+    ]
+  },
+  "evidence": {
+    "floor": null,
+    "floor_how": "未声明有效altbuild，未运行CLI selfcheck；不写入虚构的编译floor。",
+    "self_validation_spread": {
+      "value": 0,
+      "knob_overrides": {
+        "SAB_JOBS": "4"
+      }
+    },
+    "self_validation_bound_fraction": {
+      "value": 0.0,
+      "knob_overrides": {
+        "SAB_JOBS": "4"
+      }
+    },
+    "status": "provisional：exact DNA/support与当前无tie前提仍待人工最终review，不代表完整suite。",
+    "fixture_preconditions": "原fixture七个readName均唯一；六个cellBC/UMI组都有唯一最大readCount。validator重验该前提；未知最大tie或readName碰撞不套用当前唯一赢家合同。",
+    "coverage_limits": "当前min_umi_per_cell=1不实际筛掉任何cell，且所选平均值不等于2/30 cutoff；不声称验证所有UMI-count阈值、比较符边界或等价输出的内部筛选顺序。只grade返回table的最终保留seq/support，不grade被过滤cell的内部候选或diagnostic统计量。",
+    "original_quality_metadata": "cell3两条seq长7而qual长6；保留原输入。源选择/filter不读取qual作判据，该不一致不被擅自修补，也不作为本check质量值等价声明。",
+    "native_environment": "2026-09-10 Linux x86_64，CPython3.12/NumPy1.26.4/pandas2.3.3/Cython3.3.0；system gcc/g++，原生headless Agg绘图；没有Docker/GPU。",
+    "native_nominal": {
+      "build_seconds": 14.943408012,
+      "total_seconds": 18.93942975299433,
+      "nonbuild_wall_seconds": 3.996021740994328,
+      "scenario_shapes_and_pngs": [
+        [
+          "resolve-default",
+          "4",
+          "0"
+        ],
+        [
+          "filter-by-reads",
+          "2",
+          "3"
+        ]
+      ],
+      "command": "SOURCE_DIR=<pinned source> CHECK_DIR=<check> OUT_DIR=<output> bash run.sh nominal",
+      "exitcode": 0
+    },
+    "native_variant": {
+      "build_seconds": 14.94359827,
+      "total_seconds": 18.893037220928818,
+      "nonbuild_wall_seconds": 3.9494389509288172,
+      "scenario_shapes_and_pngs": [
+        [
+          "resolve-default",
+          "4",
+          "0"
+        ],
+        [
+          "filter-by-reads",
+          "2",
+          "3"
+        ]
+      ],
+      "command": "SOURCE_DIR=<pinned source> CHECK_DIR=<check> OUT_DIR=<output> bash run.sh variant",
+      "exitcode": 0,
+      "distance": 0,
+      "bound_fraction": 0.0,
+      "byte_identical_files": 2
+    },
+    "native_official_tests": {
+      "command": "PYTHONPATH=<built scratch source> python -m pytest --import-mode=importlib -q -p no:cacheprovider <pinned source>/test/preprocess_tests/resolve_umi_sequence_test.py",
+      "passed": 2,
+      "seconds": 2.91
+    },
+    "native_validator": {
+      "command": "python selftest_validate.py",
+      "methods": 16,
+      "cli_comparison_probes": 89,
+      "red_green_cycles": 4,
+      "scope": "科学seq/support及完整retained集合、重排、错选择/支持/阈值/缺失/重复/shape/dtype、两侧健康/坏DEFLATE/LZMA/加密/CRC/缺失，以及普通意外Exception、非finite结果和坏Unicode在写入前的最终安全边界。"
+    },
+    "final_cli_protocol": "保留正常判分和预期错误分类；最终Exception边界内先严格ensure_ascii JSON及UTF8编码为bytes，再在边界外write_bytes。异常fresh passed=false/None距离/files={}并保留qualified type/context/traceback；不捕获BaseException。",
+    "native_table_probes": {
+      "permuted": {
+        "passed": true,
+        "distance": 0,
+        "sequence_mismatches": 0,
+        "support_mismatches": 0
+      },
+      "sequence-only-mismatch": {
+        "passed": false,
+        "distance": null,
+        "sequence_mismatches": 6,
+        "support_mismatches": 0
+      },
+      "support-error": {
+        "passed": false,
+        "distance": 1,
+        "sequence_mismatches": 0,
+        "support_mismatches": 2
+      },
+      "cross-cell": {
+        "passed": false,
+        "distance": null,
+        "sequence_mismatches": 0,
+        "support_mismatches": 0
+      },
+      "missing-molecule": {
+        "passed": false,
+        "distance": null,
+        "sequence_mismatches": 0,
+        "support_mismatches": 0
+      },
+      "extra-molecule": {
+        "passed": false,
+        "distance": null,
+        "sequence_mismatches": 0,
+        "support_mismatches": 0
+      },
+      "duplicate-molecule": {
+        "passed": false,
+        "distance": null,
+        "sequence_mismatches": 0,
+        "support_mismatches": 0
+      }
+    },
+    "native_production_probes": {
+      "production-reordered-input": {
+        "passed": true,
+        "distance": 0,
+        "modified_calls": 2,
+        "sequence_mismatches": 0,
+        "support_mismatches": 0,
+        "max_support_error": 0
+      },
+      "production-renamed-readname": {
+        "passed": true,
+        "distance": 0,
+        "modified_calls": 2,
+        "sequence_mismatches": 0,
+        "support_mismatches": 0,
+        "max_support_error": 0
+      },
+      "production-lowest-sequence": {
+        "passed": false,
+        "distance": null,
+        "modified_calls": 2,
+        "sequence_mismatches": 1,
+        "support_mismatches": 1,
+        "max_support_error": 11
+      },
+      "production-aggregate-support": {
+        "passed": false,
+        "distance": 9,
+        "modified_calls": 2,
+        "sequence_mismatches": 0,
+        "support_mismatches": 1,
+        "max_support_error": 9
+      },
+      "production-per-read-filter": {
+        "passed": false,
+        "distance": null,
+        "modified_calls": 2,
+        "sequence_mismatches": 0,
+        "support_mismatches": 0,
+        "max_support_error": 0
+      },
+      "production-low-cutoff": {
+        "passed": false,
+        "distance": null,
+        "modified_calls": 2,
+        "sequence_mismatches": 0,
+        "support_mismatches": 0,
+        "max_support_error": 0
+      },
+      "production-quality-truncation": {
+        "passed": false,
+        "distance": null,
+        "modified_calls": 2,
+        "sequence_mismatches": 4,
+        "support_mismatches": 0,
+        "max_support_error": 0
+      }
+    },
+    "graded_identity_limitation": "真实float cutoff输入已各改变两ULP，六条保留seq及六个所选support均未变，两NPZ文件byte-identical；source统计均远离cutoff，因此没有nonzero输出噪声尺度。图像只在scratch创建，不掩盖graded-zero。",
+    "expected_runtime_s_measured": "2026-09-15 并发执行下实测 12 s（不含 build，SAB_JOBS=4）。原声明 10 s。取目前观测到的最大值：实测值随节点负载在 3 倍范围内波动（本条历史上出现过 12 / 14 / 12 s），而告警阈值是 measured > 2 × declared，按最大值声明才稳定。"
+  },
+  "warrant": "pipeline.py:382-425按(cellBC,UMI)分组并选readCount最高的已有序列；total_numReads只供plots，返回表仍使用所选行的原readCount，不能像error_correct_umis那样累计竞争序列。utilities.py:111-140随后以所选字符串UMI行数及其readCount平均值执行>=阈值的整cell过滤。当前官方fixture的每个组都有唯一最大支持，输入readName也唯一，所以无需强制任意tie-break，正确实现应给出相同的完整保留身份、DNA序列和整数支持；有新tie或输入名称碰撞时先拒绝适用此前提而非擅自猜答案。provisional atol=rtol=0适用于此离散选择结果：不同DNA字符、错选低支持seq、把竞争支持累加、错误保留cell或一条read的支持偏差都是科学变化，不是浮点舍入。只有coverage控制阈值为连续量，两ULP扰动远小于当前分类边界间距；即使graded值相同也不能据此虚构nonzero noise尺度。"
+}
