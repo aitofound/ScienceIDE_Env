@@ -19,10 +19,12 @@ Repository path ownership is documented in [`docs/root-layout.md`](docs/root-lay
 ## Design
 
 The packaging pipeline is specified in
-[`skills/package-sciaccel-task/SPEC.html`](skills/package-sciaccel-task/SPEC.html).
-That document is the canonical source: the skill and its CLI are written
-against it, and a change of design is a change to it first. The skill and
-its CLI (`sab.py`) implement it.
+[`SPEC.html`](https://github.com/huangzesen/sciaccelbench-pipeline/blob/main/skill/package-sciaccel-task/SPEC.html)
+in `huangzesen/sciaccelbench-pipeline`. That document is the canonical
+source: the skill and its CLI are written against it, and a change of design
+is a change to it first. The skill and its CLI (`sab.py`) implement it; this
+repository pins the commit it runs in
+[`skills/package-sciaccel-task/PIPELINE_REVISION`](skills/package-sciaccel-task/PIPELINE_REVISION).
 
 ## Vocabulary
 

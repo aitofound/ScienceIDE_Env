@@ -4,10 +4,12 @@
 
 This repository registers scientific acceleration tasks. For packaging work,
 read and follow [`skills/package-sciaccel-task/SKILL.md`](skills/package-sciaccel-task/SKILL.md);
-it is the canonical procedure and owns the exact Harbor leaf tree. That whole
-directory is a generated export from `aitofound/sciaccelbench-pipeline`
-(see its `README.md`): never edit it here; change the pipeline there and land
-it with `tools/release.py`.
+it is the canonical procedure and owns the exact Harbor leaf tree. The skill,
+its SPEC and its CLI live in `huangzesen/sciaccelbench-pipeline`; that
+directory holds only a pointer, the commit pin `PIPELINE_REVISION` and the
+loader `scripts/sab.py` (see its `README.md` for how to get the clone). Never
+put pipeline text or code here; change the pipeline there and land the pin
+with its `tools/release.py`.
 
 ## Packaging a codebase
 

@@ -29,14 +29,14 @@ The CLI (`skills/package-sciaccel-task/scripts/sab.py`) guides every step and
 validates what is written; the human owns every tolerance and the policy type
 of every check, finalized from the calibration run.
 
-The pipeline itself is **not maintained in this repository**. Everything under
-`skills/package-sciaccel-task/` (SKILL, SPEC, templates, CLI) is a generated
-export from the private canonical repository `aitofound/sciaccelbench-pipeline`,
-pinned by `vendor-manifest.json`; `npm run check` verifies it and fails on any
-hand edit. To change the pipeline, open a PR there and land it with its
-`tools/release.py`, which opens the sync PR here. `python3
-skills/package-sciaccel-task/scripts/vendor_sync.py status` says whether this
-copy is current.
+The pipeline itself is **not maintained in this repository**. The skill, the
+SPEC, the templates and the CLI live in the private canonical repository
+`huangzesen/sciaccelbench-pipeline`; `skills/package-sciaccel-task/` here is a
+pointer with the commit pin `PIPELINE_REVISION` and the loader `scripts/sab.py`,
+which runs the CLI from a clone of that repository (a sibling
+`../sciaccelbench-pipeline`, `.pipeline/`, or `$SAB_PIPELINE`) and warns when
+the clone is not on the pinned commit. To change the pipeline, open a PR there
+and land it with its `tools/release.py`, which bumps the pin here.
 
 Merge does **not** require Claude, Codex, or any other implementation attempt,
 one-shot run, candidate port, or raw session transcript.
