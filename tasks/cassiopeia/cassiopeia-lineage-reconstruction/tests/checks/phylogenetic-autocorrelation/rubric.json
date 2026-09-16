@@ -1,0 +1,138 @@
+{
+  "check": "phylogenetic-autocorrelation",
+  "policy": "pointwise",
+  "chaotic": false,
+  "upstream_test": "code/cassiopeia/test/tools_tests/autocorrelation_test.py",
+  "configuration": "完整保留四叶tree/X及三个科学调用：默认tree权重+nUMI scalar、默认tree权重+完整3变量3x3矩阵、原4x4 custom W+nUMI scalar。每方法fresh tree/X/W，生产API自己生成默认W、全矩阵sum归一、ddof0标准化及矩阵乘法；总11数值，不按元素拆check。",
+  "observable": "按独立行/列变量角色ID对齐的两个Moran scalar及完整3x3自/交叉相关矩阵",
+  "expected_runtime_s": 11,
+  "default_vs_upstream": "upstream；原整数X、四叶及五条length边、custom W完整保留。内部节点名称/树与DataFrame存储顺序不作为输出identity；四异常调用只记账而不评分passbits。",
+  "variant": "最小活跃浮点集：F→E branch length 0.5向正无穷两ULP，供两个default-W阶段；custom W的同一对称A↔B物理权重在两个存储位置各向正无穷两ULP，供custom阶段。原integer X不变。仅实际数值传播可计校准，不把tree/计时sidecar变化当科学变化。",
+  "altbuild": "none: 当前路径为Python/NetworkX/Pandas及预装BLAS，未验证有效的同科学路径替代构建；重编译未执行的Cassiopeia Cython扩展或关闭无关JIT不作floor。",
+  "comparison": {
+    "atol": 1e-06,
+    "rtol": 0.0,
+    "files": [
+      {
+        "path": "default-single.npz",
+        "format": "moran-matrix-npz",
+        "row_variables": [
+          "nUMI"
+        ],
+        "column_variables": [
+          "nUMI"
+        ]
+      },
+      {
+        "path": "default-multivariate.npz",
+        "format": "moran-matrix-npz",
+        "row_variables": [
+          "nUMI",
+          "GeneX",
+          "GeneY"
+        ],
+        "column_variables": [
+          "nUMI",
+          "GeneX",
+          "GeneY"
+        ]
+      },
+      {
+        "path": "custom-single.npz",
+        "format": "moran-matrix-npz",
+        "row_variables": [
+          "nUMI"
+        ],
+        "column_variables": [
+          "nUMI"
+        ]
+      }
+    ]
+  },
+  "evidence": {
+    "floor": null,
+    "floor_how": "未声明或运行有效altbuild，未运行CLI selfcheck；native证据另列。",
+    "self_validation_spread": {
+      "value": 1.3877787807814457e-16,
+      "knob_overrides": {
+        "SAB_JOBS": "4"
+      }
+    },
+    "self_validation_bound_fraction": {
+      "value": 1.3877787807814457e-10,
+      "knob_overrides": {
+        "SAB_JOBS": "4"
+      }
+    },
+    "status": "provisional：已有native记录核对后待独立审查；policy/bound未获最终人工批准，不代表整个suite；冻结收尾不重跑科学。",
+    "native_record": "phylogenetic-autocorrelation-20260911T023706Z；原commands/*.command.json、*.log、*.result.json及artifacts保留，review-index.json和freeze.json在本地evidence目录索引。它们是离线审查证据，不是运行输入。",
+    "native_runtime": {
+      "nominal_build_seconds": 16.273137903,
+      "nominal_science_process_seconds": 3.388691197,
+      "variant_build_seconds": 15.881824663,
+      "variant_science_process_seconds": 3.344196925,
+      "how": "原run.sh日志SAB_BUILD_SECONDS与SAB_RUN_SECONDS；科学进程含导入和序列化，BLAS/OpenMP线程数为1；expected_runtime_s取已测nominal科学进程时间。CPU affinity与峰值内存未测，不能推定。",
+      "runtime_tunability": "四叶、三变量、三个固定官方调用已是保留这些路径的最小fixture；SAB_PYTHON只选解释器，不缩减科学覆盖。"
+    },
+    "native_variant": {
+      "distance": 1.3877787807814457e-16,
+      "bound_fraction": 1.3877787807814457e-10,
+      "changed_values": 11,
+      "total_values": 11,
+      "default_stage_changed_values": 10,
+      "default_stage_max_abs_error": 1.3877787807814457e-16,
+      "custom_stage_changed_values": 1,
+      "custom_stage_max_abs_error": 1.1102230246251565e-16,
+      "how": "原commands/compare-variant.result.json与proofs/native-audit.result.json；独立native nominal/variant生产输出，非CLI selfcheck、非GPU或altbuild。"
+    },
+    "native_software_tests": {
+      "official_methods_passed": 4,
+      "official_pytest_seconds": 2.23,
+      "validator_methods_passed": 15,
+      "validator_cli_probes": 83,
+      "how": "原commands/official.log与validator-full.log；人工非对称软件fixture不计新增科学覆盖。旧TDD失败日志仍保留。"
+    },
+    "native_representation_and_precision_proxies": {
+      "neutral_api_observer_distance": 0.0,
+      "relabel_reorder_distance": 1.1102230246251565e-16,
+      "float32_input_operation_proxy_distance": 2.6825028198729228e-08,
+      "how": "原API中性观测、保持身份的树/X/W/变量重排及float32 X/W运算输入分别比较；均通过现有bound。精度代理不是源码替代实现、跨架构floor、GPU或altbuild。"
+    },
+    "native_fault_proxies": {
+      "ddof_one": {
+        "kind": "Pandas std依赖运算故障代理",
+        "values_over_bound": 11,
+        "distance": 0.07952678278015121
+      },
+      "row_normalization": {
+        "kind": "Pandas除法依赖运算故障代理",
+        "values_over_bound": 11,
+        "distance": 1.234963260005387
+      },
+      "wrong_variable_binding": {
+        "kind": "API返回后交换GeneX/nUMI完整矩阵数值但不换角色标签；非源码mutation",
+        "values_over_bound": 6,
+        "distance": 0.4025632599408479
+      },
+      "wrong_custom_W_binding": {
+        "kind": "custom W叶行数值错绑的API输入反事实",
+        "values_over_bound": 1,
+        "distance": 0.1428571428571429
+      },
+      "ignored_length": {
+        "kind": "用weight而非length重建树的构造器输入反事实；custom阶段不受影响",
+        "values_over_bound": 10,
+        "distance": 0.22731327167738608
+      },
+      "how": "原commands/compare-production-*.result.json与scripts/production_probe.py；源码文件未修改，不把输入/依赖运算/后处理代理统称源码算法mutation。"
+    },
+    "constructor_path": "CassiopeiaTree.__init__:131-133深拷贝后populate_tree；:192-203仅补缺失length并按length重建root-relative times；get_distances:2119-2128使用NetworkX weight='length'。producer记录实际get_branch_length/get_times，不把无效weight/time图属性当相同输入。",
+    "coverage_limits": "只覆盖三个给定科学调用。meta_columns成功路径、constant列、零offdiag距离/零总W与仅W列标签错误未覆盖。原nUMI与GeneY标准化向量相同，某些角色交换不可数值区分；原W对称，也不声称科学fixture区分所有转置/方向性错误。人工不对称validator矩阵不算新增科学案例。",
+    "exception_inventory": "test_moran_exceptions四调用完整locator存IC other_methods；含concat产生的nonnumeric/NaN、无数据与缺叶W，不把它们当科学数值或夸称完整标签错误覆盖。",
+    "expected_runtime_s_measured": "2026-09-15 并发执行下实测 10 s（不含 build，SAB_JOBS=4）。原声明 10 s。取目前观测到的最大值：实测值随节点负载在 3 倍范围内波动（本条历史上出现过 12 / 14 / 10 s），而告警阈值是 measured > 2 × declared，按最大值声明才稳定。",
+    "third_leg_coverage": "**11 / 11（100%），gap ≤ 1.7e-16**（2026-09-14 新增）。三个 scenario 的 Moran's I 全部从 `ic/inputs.json` 独立重算，不 import cassiopeia 也不用 networkx。对齐 `tools/autocorrelation.py:86-110` 与 `data/utilities.py:554-590`：W[i,j] = 1/d(i,j)（i≠j 且 d>0，否则 inf），对角强制 0；`_W = W / W.sum().sum()`；`_X` 按列中心化并除以**总体**标准差（ddof=0）；`I = _Xᵀ _W _X`。**换了一条路**：叶间树距离用纯 Python 走父指针算 `depth(i)+depth(j)-2·depth(LCA)`，而被测实现走 `tree.get_distances`。实测 default-single 5.6e-17、default-multivariate 1.1e-16、custom-single 0.0，容差是 atol=1e-6。两侧各自匹配到自己的 IC（reference→nominal、candidate→variant）。",
+    "third_leg_rejection_evidence": "两侧同污染时逐点比较 `values_over_bound` 恒为 0，第三条腿两侧都拒：两侧同加 1e-4、3×3 矩阵的交叉项被挪位，均被拒。**⚠ 一处构造上不可检的故障，如实记下**：真实的 Moran 矩阵是**对称**的（`I = XᵀW_nX` 配对称 `W_n` 必然对称），所以**转置是恒等操作，不是可检故障**。原 selftest 有一条「转置必须被拒」，它只因为旧夹具是人工写的非对称数才看着有效；换成真实重算值后当场失效。已改写成：断言矩阵确实对称、转置**应当通过**，再用「改动单个非对角元」测真正的方向性故障。另修两条：一条测的是界的算术（宽容差下腿也接受，**腿不过度拒绝**），一条 1×1 形状用例改用真实的 default-single 标量。",
+    "third_leg_coverage_is_visible_when_escaped": "若 rubric 声明的文件名与 `ic/` 定出的对不上，腿记为**未覆盖**而不是「不一致」，`items_with_a_third_leg` 随之下降；一个都对不上时直接判失败。这样改名逃逸是**看得见**的，而不是静默通过。"
+  },
+  "warrant": "比较两个Moran scalar和完整3x3自/交叉相关矩阵的11个无量纲统计量；data/utilities.py:554-590从真实树leaf距离取逆并清零对角，CassiopeiaTree.get_distances:2119-2132沿树路径累计length，autocorrelation.py:100-106将W除以整个矩阵sum，再按X的population std(ddof=0)中心化标准化并计算X.T·Wn·X。四叶短归约、倒数、sqrt与BLAS积存在舍入及顺序差异：既有native两ULP校准11值全活动、最大差异1.3877787807814457e-16，合法身份重排最大1.1102230246251565e-16，float32 X/W运算输入精度代理最大2.6825028198729228e-8且通过。保留provisional absolute bound 1e-6、rtol=0，不机械贴合ULP spread；Pandas std依赖运算改ddof1与W除法改行归一分别让11值越界、最大差异0.07952678278015121和1.234963260005387，统计语义错误仍远超此界。GeneX/nUMI输出payload错绑拒6值、custom W叶行输入错绑拒1值、无效weight代替length的构造器输入反事实拒两个默认阶段10值；这些不是源码算法mutation。两个变量轴独立按角色对齐并比较全部元素，包含下三角；原nUMI/GeneY标准化相同与W对称仍有科学盲点。该bound待人工确认，精度代理不是GPU或altbuild，跨设备floor及CLI selfcheck尚未测量。"
+}
