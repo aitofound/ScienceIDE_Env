@@ -65,7 +65,9 @@ The leaf root is closed. The pinned source lives once under repo-level
 `code/<source>/`, named by `metadata.sciaccel.source`; a leaf never carries
 its own `code/`. `tests/` holds nothing but the Dockerfile, the driver and
 `checks/`: nothing is shared between checks. `check.json` is a JSON object
-whose only key is `labels`; exactly one check carries `acceleration`.
+whose only key is `labels`; no check has to be singled out as the timed
+workload, so the list may be empty (skill 5.17: what is timed, and on what, is
+decided downstream with the tasks).
 `target/` is flat, strict JSON. `comment/` is repository-visible, hidden at
 runtime and non-normative.
 
@@ -148,8 +150,9 @@ Reviewers should be able to answer yes to each of these:
 - Does the instruction describe the real module and output contract without
   leaking hidden oracle outputs?
 - Do checks cover module breadth, compare to the CPU original, and include a
-  materially worthwhile direct check carrying the `acceleration` label in
-  `check.json`?
+  materially worthwhile direct check of the module's expensive path? No check
+  needs to carry an `acceleration` label for that: since skill 5.17 the timed
+  workload is chosen downstream, with the tasks themselves.
 - Did the module owner decide and document the physical pass policy and
   tolerances, with evidence rather than guesses?
 - Does `solution/solve.sh` produce the oracle, and does the same `tests/test.sh`
