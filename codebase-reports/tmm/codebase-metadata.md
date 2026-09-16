@@ -8,8 +8,8 @@ Generated from the canonical JSON. Unknown values are visible; this report never
 | source payload | `code/tmm/` | CLI |
 | upstream pin | `462b63b517472b3b18245c98d70e700f4d312866` | human/state |
 | license | `MIT` | human/state |
-| source fingerprint | `aeac557f25691704a2e48cb30844cec204c6296ed6fd6b011c260a26697a3773` | CLI |
-| size | 14 files / 425905 bytes / 3158 text lines | CLI |
+| source fingerprint | `b40cbf753700426f60929d87a00180128ad00ec77f046d2383f693b785d9d422` | CLI |
+| size | 40 files / 761237 bytes / 11180 text lines | CLI |
 
 ### Build and run (Step 1.2: what was actually built and run natively)
 
@@ -41,7 +41,7 @@ Actually run: 15 of 16 attempted.
 | `sample2` | yes | 0.071 | no reference (a plot): transmission of a 300 nm film whose complex index is a scipy interp1d quadratic through five tab… | depends on scipy.interpolate.interp1d(kind='quadratic') on complex data; scipy calls interp1d legacy but it still runs on 1.18.1 |
 | `sample3` | yes | 0.032 | not compared (a plot against Handbook of Ellipsometry Fig. 1.14): psi and Delta of air/SiO2/Si at 70 degrees and 633 nm… | - |
 | `sample4` | yes | 0.02 | no reference (a plot): Poynting vector and absorption versus depth at 1000 positions across a two-film stack, one coh_t… | - |
-| `sample5` | yes | 8.43 | not compared (printed rgb=[0.0728 0.1514 0.4324], xyY=[0.2170 0.2073 0.1549] for 300 nm SiO2 on Si and a colour strip a… | colorpy 0.1.1 from PyPI is Python 2 only: import fails with ModuleNotFoundError: No module named 'colormodels'; the fish2000/ColorPy fork (LGPL-3.0) at commit …; colorpy.plots.spectrum_plot saves temp_plot.png into the current working directory; run in a scratch cwd; the irgb values are gamma-corrected integers 0-255, a discrete output; the linear rgb and xyY are the continuous quantities |
+| `sample5` | yes | 8.43 | not compared (printed rgb=[0.0728 0.1514 0.4324], xyY=[0.2170 0.2073 0.1549] for 300 nm SiO2 on Si and a colour strip a… | colorpy 0.1.1 from PyPI is Python 2 only: import fails with ModuleNotFoundError: No module named 'colormodels'; the fish2000 ColorPy fork (LGPL-3.0) at commit …; colorpy.plots.spectrum_plot saves temp_plot.png into the current working directory; run in a scratch cwd; the irgb values are gamma-corrected integers 0-255, a discrete output; the linear rgb and xyY are the continuous quantities |
 | `sample6` | yes | 0.046 | not compared (a plot against Mater. Trans. 51 (2010) Fig. 6a): p-polarised reflection of glass/Cr 5 nm/Au 30 nm/air at … | - |
 | `examples-notebook` | no | - | its code cells are the six samples of examples.py pasted with their plots; the same code paths were run through example… | - |
 
@@ -50,7 +50,7 @@ Pitfalls of running the codebase: 8
 - [run-all] the tests print difference fractions and always exit 0; nothing asserts -> a check recomputes the graded quantities (r, t, R, T, psi, Delta, kz, Poynting, absorption, vw_list, power_entering) and grades those; the printed text is never the observable
 - [run-all] stdout differs between processes depending on whether coh_overflow_test ran first (the opacity warning is printed once per process via a module global) and on the numpy major version (np.float64(...) reprs) -> grade numbers written to files, not stdout
 - [sample1] plt.show() blocks under an interactive backend -> MPLBACKEND=Agg and stub plt.show (or save figures instead)
-- [sample5] PyPI colorpy 0.1.1 fails to import on Python 3 (No module named 'colormodels') -> pip install the fish2000 ColorPy fork from GitHub at commit 4c9e5b2e334851b42626f9a1eda31197739b097e (github.com/fish2000/ColorPy) (LGPL-3.0); then examples.colors_were_imported is True and sample5 runs in 8.4 s
+- [sample5] PyPI colorpy 0.1.1 fails to import on Python 3 (No module named 'colormodels') -> use the fish2000 ColorPy fork at commit 4c9e5b2e334851b42626f9a1eda31197739b097e (LGPL-3.0), bundled with the source under third_party/colorpy and put on PYTHONPATH; then examples.colors_were_imported is True and sample5 runs in 8.4 s
 - [sample5] temp_plot.png appears in the working directory -> run in a scratch cwd; colorpy.plots.spectrum_plot saves its figure unconditionally
 - [general] Python 3.12 SyntaxWarning: invalid escape sequence '\c' when examples.py is compiled -> harmless; comes from '$^\circ$' in plot titles
 - [general] is_forward_angle decides the forward wave by comparing imag(n cos theta) with 100*EPSILON, and coh_tmm clamps imag(delta) > 35 while inc_tmm floors P < 1e-30 -> discrete choices in the source; the official decks sit far from the thresholds (imag(delta)=18850 in the overflow tests), which a rubric warrant should say
@@ -63,7 +63,7 @@ Not run:
 
 | module | approval | purpose / difference | owned files | owned text lines | collected tests | shared components |
 |---|---|---|---:|---:|---:|---|
-| `tmm` | approved | single whole-codebase module | 14 | 3158 | 14 | unknown |
+| `tmm` | approved | single whole-codebase module | 40 | 11180 | 14 | unknown |
 
 ### Shared code
 
@@ -76,7 +76,7 @@ Not run:
 | bucket | files | bytes | text lines |
 |---|---:|---:|---:|
 | shared | 0 | 0 | 0 |
-| owned | 14 | 425905 | 3158 |
+| owned | 40 | 761237 | 11180 |
 | overlapping_owned | 0 | 0 | 0 |
 | unclassified | 0 | 0 | 0 |
 
@@ -92,7 +92,8 @@ Not run:
 ### Gaps and warnings
 - upstream ships reference numbers only inside basic_test and position_resolved_test (Mathematica values); every other check is anchored by the pinned build's own output
 - the repository has no tags: the pin is the commit that set version 0.2.0, verified against the PyPI sdist
-- whether the colour example (sample5) should become a check, since it needs the LGPL-3.0 fish2000 ColorPy fork installed in the images (the packager's default: yes, installed from its pinned commit, never vendored)
+- code/tmm/ carries one addition to the upstream tree: third_party/colorpy (LGPL-3.0, 388 KB), added by the second source PR; the review CLI's tree-against-upstream comparison will list it
+- none: the colour example (sample5) becomes a check with the bundled colorpy fork; the packager's default recorded in the survey
 
 Artifacts: `codebase-metadata.json` (canonical) · `codebase-metadata.html` (self-contained detail)
 <!-- SCIACCEL_CODEBASE_METADATA_REPORT:END -->
