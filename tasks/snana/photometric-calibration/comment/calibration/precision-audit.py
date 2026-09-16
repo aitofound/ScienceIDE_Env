@@ -188,10 +188,13 @@ def hst_grid(a,trans,zp,sn,weight,denom,specs):
     slope_diff = abs(derivative[valid]-slopes[valid])
     result = {name:stats(a[name],b,(999,666)) for name,b in [('kcor_values',kvalues),('grid_magnitudes',mags),('mw_extinction_slopes',slopes)]}
     result['budget_checks'] = {name:budget_stats(a[name],b,specs[name]) for name,b in [('kcor_values',kvalues),('grid_magnitudes',mags),('mw_extinction_slopes',slopes)]}
+    mag_bound = specs['grid_magnitudes']['atol']
+    mw_bound = specs['mw_extinction_slopes']['atol']
     result['protective_flux'] = dict(max_flux_fraction=float(floor_fraction[valid].max()),
         cells_more_than_one_percent=int((floor_fraction[valid]>.01).sum()),
-        removing_floor_max_magnitude_change=float(d.max()),removing_floor_cells_exceed_2e_5_mag=int((d>2e-5).sum()))
-    result['secant_vs_zero_derivative'] = dict(max_abs=float(slope_diff.max()),cells_exceed_5e_5=int((slope_diff>5e-5).sum()))
+        removing_floor_max_magnitude_change=float(d.max()),magnitude_bound=mag_bound,
+        removing_floor_cells_exceed_bound=int((d>mag_bound).sum()))
+    result['secant_vs_zero_derivative'] = dict(max_abs=float(slope_diff.max()),bound=mw_bound,cells_exceed_bound=int((slope_diff>mw_bound).sum()))
     result['premature_float32_mag_rounding'] = stats(a['mw_extinction_slopes'],rounded_mag_slopes,(999,666))
     return result
 

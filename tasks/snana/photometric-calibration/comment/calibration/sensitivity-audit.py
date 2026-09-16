@@ -14,6 +14,8 @@ def rules(check):
     old=copy.deepcopy(new)
     for spec in old['comparison']['files']:
         if spec['name'] in ('zeropoints','snmag_summary'):spec['atol']=5e-4
+        elif spec['name'] in ('kcor_values','grid_magnitudes'):spec['atol']=2e-5
+        elif spec['name']=='mw_extinction_slopes':spec['atol']=5e-5
         spec.pop('peak_axis',None)
     return old,new
 for row in json.loads((args.source_probes/'report.json').read_text()):
