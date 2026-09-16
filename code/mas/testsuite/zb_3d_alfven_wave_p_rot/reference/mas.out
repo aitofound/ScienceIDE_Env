@@ -1,0 +1,506 @@
+
+ ### Input file contents:
+
+!
+! *** Grid resolution.
+!
+&topology
+  nr = 25
+  nt = 50
+  np = 100
+/
+&data
+!
+! *** Use the new style output text files.
+!
+  legacy_output_filenames = .false.
+!
+! *** Radial domain.
+!
+  r0 = 1.0
+  r1 = 2.5
+!
+! *** Time domain.
+!
+  tmax = 3.0
+!
+! *** Grid specifications.
+!
+  rfrac    = 0.0,1.0
+  drratio  = 5.0
+  nfrmesh  = 5
+  tfrac    = 0.0,0.5,1.0
+  dtratio  = 0.5,2.0
+  nftmesh  = 5
+  pfrac    = 0.0
+  dpratio  = 0.0
+  nfpmesh  = 5
+  phishift = 0.0
+!
+! *** Time step specifications.
+!
+  dtmax = 0.05
+  dtmin = 0.0001
+  dt_init = 0.0
+!
+! *** Output options.
+!
+  plotlist = 'br'
+  tpltxint = 0.0
+  slice_plotlist = ''
+  slice_tp_radii = 0.0
+  slice_txint = 0.0
+  trace_txint = 0.0
+  hdf32 = .false.
+  rs_final = .false.
+  trsdump = 0.0
+!
+! *** Model specification.
+!
+  advance_a    = .true.
+  advance_v    = .true.
+  advance_t    = .false.
+  advance_rho  = .false.
+  advance_pw   = .false.
+  advance_zw   = .false.
+  advance_fcs  = .false.
+  trace_particles = .false.
+  slund = 1.e30
+  visc = 1.e-5
+  gamma = 1.666666666666667
+  g0 = 0.0
+  br00 = 1.0
+  rho0 = 1.0
+  tbc0    = 20000.
+  tchromo = 20000.
+  tfloor  = 20000.
+  char_bc0 = .false.
+  char_bc1 = .false.
+  ubzero = .false.
+  filter_poles = .false.
+! *** Thermal conduction:
+  advance_tc = .false.
+  tcond = 0.0
+  alpha_nocoll = 0.0
+  t_cutoff1 = 500000.0
+  nfilt_kappa = 0
+!
+! *** Initial condition.
+!
+  initial_field = 'ALFVEN_WAVE2_ROTATED'
+  initial_plasma = 'ZERO-BETA'
+  wave_mode_r = 2
+  wave_mode_t = 1
+  wave_amplitude = 1e-4
+  wave_rotation_t = 1.1781
+!
+! *** Numerical algorithm options.
+!
+  cfl = 0.4
+  use_sts_visc = .false.
+  use_sts_tc   = .false.
+  visc_auto_subcycle = .false.
+  tc_auto_subcycle   = .false.
+  ifprec_t     = 3
+  ifprec_v     = 3
+  ifprec_pot2d = 3
+  ifprec_divb  = 3
+  epscg_a       = 1.e-9
+  epscg_v       = 1.e-9
+  epscg_t       = 1.e-9
+  epscg_potfld  = 1.e-9
+  epscg_newflux = 1.e-9
+  epscg_divb    = 1.e-9
+  ncgmax = 100000
+!
+/
+! -----------------------
+! Zero-beta Rotated Alfven Wave P
+! -----------------------
+!
+! Description goes here.
+!
+! -----------------------
+
+
+Code: MAS
+Version: 0.9.2.0git
+Updated on: 04/07/2025
+Source file: mas.F90
+Run ID: mas
+Run started on: 04/09/2025
+Run started at: 14:01:56
+Ran on machine: PREDSCI-GPU2
+Machine type: x86_64
+Compiler: GCC version 12.3.0
+Compiler Flags: -I /opt/psi/gnu/ext_deps/deps/hdf5/include -I /usr/lib/x86_64-linux-gnu/openmpi/lib/../../fortran/gfortran-mod-15/openmpi -I /usr/lib/x86_64-linux-gnu/openmpi/lib -march=alderlake -mmmx -mpopcnt -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx -mavx2 -mno-sse4a -mno-fma4 -mno-xop -mfma -mno-avx512f -mbmi -mbmi2 -maes -mpclmul -mno-avx512vl -mno-avx512bw -mno-avx512dq -mno-avx512cd -mno-avx512er -mno-avx512pf -mno-avx512vbmi -mno-avx512ifma -mno-avx5124vnniw -mno-avx5124fmaps -mno-avx512vpopcntdq -mno-avx512vbmi2 -mgfni -mvpclmulqdq -mno-avx512vnni -mno-avx512bitalg -mno-avx512bf16 -mno-avx512vp2intersect -mno-3dnow -madx -mabm -mno-cldemote -mclflushopt -mclwb -mno-clzero -mcx16 -mno-enqcmd -mf16c -mfsgsbase -mfxsr -mno-hle -msahf -mno-lwp -mlzcnt -mmovbe -mmovdir64b -mmovdiri -mno-mwaitx -mno-pconfig -mpku -mno-prefetchwt1 -mprfchw -mptwrite -mrdpid -mrdrnd -mrdseed -mno-rtm -mserialize -mno-sgx -msha -mshstk -mno-tbm -mno-tsxldtrk -mvaes -mwaitpkg -mno-wbnoinvd -mxsave -mxsavec -mxsaveopt -mxsaves -mno-a
+
+
+ ------------------------------------------------------------------------
+
+ ### COMMENT from START:
+ ### Timing has been turned ON for this run.
+
+ ### COMMENT from GENMESH:
+ ### Mesh information for coordinate r:
+
+ Number of mesh segments =            1
+
+ Segment      xi0       xi1               r0               r1            ratio
+    1    0.000000  1.000000       1.00000000       2.50000000       5.00000000
+
+ Mesh-point locations:
+      i                 r                dr             ratio
+      1        1.00000000
+      2        1.02891999        0.02891999
+      3        1.05881044        0.02989045        1.03355653
+      4        1.09040975        0.03159931        1.05717099
+      5        1.12416872        0.03375897        1.06834495
+      6        1.16035138        0.03618266        1.07179395
+      7        1.19915470        0.03880332        1.07242880
+      8        1.24077056        0.04161586        1.07248197
+      9        1.28540283        0.04463226        1.07248197
+     10        1.33327013        0.04786730        1.07248197
+     11        1.38460694        0.05133681        1.07248197
+     12        1.43966475        0.05505781        1.07248197
+     13        1.49871326        0.05904851        1.07248197
+     14        1.56204171        0.06332846        1.07248197
+     15        1.62996034        0.06791863        1.07248197
+     16        1.70280185        0.07284151        1.07248197
+     17        1.78092305        0.07812120        1.07248197
+     18        1.86470663        0.08378358        1.07248197
+     19        1.95456301        0.08985638        1.07248197
+     20        2.05092339        0.09636038        1.07238215
+     21        2.15416113        0.10323774        1.07137126
+     22        2.26428863        0.11012749        1.06673677
+     23        2.38036536        0.11607674        1.05402142
+     24        2.50000000        0.11963464        1.03065126
+
+ ### COMMENT from GENMESH:
+ ### Mesh information for coordinate t:
+
+ Number of mesh segments =            2
+
+ Segment      xi0       xi1               t0               t1            ratio
+    1    0.000000  0.500000       0.00000000       1.57079633       0.50000000
+    2    0.500000  1.000000       1.57079633       3.14159265       2.00000000
+
+ Mesh-point locations:
+      i                 t                dt             ratio
+      1        0.00000000
+      2        0.08729048        0.08729048
+      3        0.17347141        0.08618093        0.98728903
+      4        0.25777014        0.08429873        0.97815990
+      5        0.33983471        0.08206458        0.97349720
+      6        0.41959284        0.07975812        0.97189465
+      7        0.49708289        0.07749005        0.97156312
+      8        0.57236695        0.07528406        0.97153194
+      9        0.64550782        0.07314087        0.97153194
+     10        0.71656651        0.07105869        0.97153194
+     11        0.78560229        0.06903579        0.97153194
+     12        0.85267277        0.06707047        0.97153194
+     13        0.91783387        0.06516111        0.97153194
+     14        0.98113997        0.06330610        0.97153194
+     15        1.04264386        0.06150389        0.97153194
+     16        1.10239686        0.05975300        0.97153194
+     17        1.16044881        0.05805195        0.97153194
+     18        1.21684813        0.05639932        0.97153194
+     19        1.27164187        0.05479374        0.97153194
+     20        1.32487573        0.05323387        0.97153194
+     21        1.37659542        0.05171968        0.97155598
+     22        1.42685814        0.05026272        0.97182956
+     23        1.47577619        0.04891806        0.97324738
+     24        1.52360154        0.04782534        0.97766230
+     25        1.57079633        0.04719479        0.98681557
+     26        1.61799112        0.04719479        1.00000000
+     27        1.66581646        0.04782534        1.01336058
+     28        1.71473452        0.04891806        1.02284807
+     29        1.76499724        0.05026272        1.02748800
+     30        1.81671692        0.05171968        1.02898702
+     31        1.86995079        0.05323387        1.02927677
+     32        1.92474453        0.05479374        1.02930224
+     33        1.98114385        0.05639932        1.02930224
+     34        2.03919579        0.05805195        1.02930224
+     35        2.09894879        0.05975300        1.02930224
+     36        2.16045269        0.06150389        1.02930224
+     37        2.22375878        0.06330610        1.02930224
+     38        2.28891989        0.06516111        1.02930224
+     39        2.35599036        0.06707047        1.02930224
+     40        2.42502615        0.06903579        1.02930224
+     41        2.49608484        0.07105869        1.02930224
+     42        2.56922571        0.07314087        1.02930224
+     43        2.64450977        0.07528406        1.02930224
+     44        2.72199982        0.07749005        1.02930224
+     45        2.80175794        0.07975812        1.02926921
+     46        2.88382252        0.08206458        1.02891810
+     47        2.96812125        0.08429873        1.02722432
+     48        3.05430218        0.08618093        1.02232775
+     49        3.14159265        0.08729048        1.01287462
+
+ ### COMMENT from GENMESH:
+ ### Mesh information for coordinate p:
+
+ Number of mesh segments =            1
+
+ Segment      xi0       xi1               p0               p1            ratio
+    1    0.000000  1.000000       0.00000000       6.28318531       1.00000000
+
+ Mesh-point locations:
+      i                 p                dp             ratio
+      1        0.00000000        0.06411414        1.00000000
+      2        0.06411414        0.06411414        1.00000000
+      3        0.12822827        0.06411414        1.00000000
+      4        0.19234241        0.06411414        1.00000000
+      5        0.25645654        0.06411414        1.00000000
+      6        0.32057068        0.06411414        1.00000000
+      7        0.38468481        0.06411414        1.00000000
+      8        0.44879895        0.06411414        1.00000000
+      9        0.51291309        0.06411414        1.00000000
+     10        0.57702722        0.06411414        1.00000000
+     11        0.64114136        0.06411414        1.00000000
+     12        0.70525549        0.06411414        1.00000000
+     13        0.76936963        0.06411414        1.00000000
+     14        0.83348377        0.06411414        1.00000000
+     15        0.89759790        0.06411414        1.00000000
+     16        0.96171204        0.06411414        1.00000000
+     17        1.02582617        0.06411414        1.00000000
+     18        1.08994031        0.06411414        1.00000000
+     19        1.15405444        0.06411414        1.00000000
+     20        1.21816858        0.06411414        1.00000000
+     21        1.28228272        0.06411414        1.00000000
+     22        1.34639685        0.06411414        1.00000000
+     23        1.41051099        0.06411414        1.00000000
+     24        1.47462512        0.06411414        1.00000000
+     25        1.53873926        0.06411414        1.00000000
+     26        1.60285339        0.06411414        1.00000000
+     27        1.66696753        0.06411414        1.00000000
+     28        1.73108167        0.06411414        1.00000000
+     29        1.79519580        0.06411414        1.00000000
+     30        1.85930994        0.06411414        1.00000000
+     31        1.92342407        0.06411414        1.00000000
+     32        1.98753821        0.06411414        1.00000000
+     33        2.05165235        0.06411414        1.00000000
+     34        2.11576648        0.06411414        1.00000000
+     35        2.17988062        0.06411414        1.00000000
+     36        2.24399475        0.06411414        1.00000000
+     37        2.30810889        0.06411414        1.00000000
+     38        2.37222302        0.06411414        1.00000000
+     39        2.43633716        0.06411414        1.00000000
+     40        2.50045130        0.06411414        1.00000000
+     41        2.56456543        0.06411414        1.00000000
+     42        2.62867957        0.06411414        1.00000000
+     43        2.69279370        0.06411414        1.00000000
+     44        2.75690784        0.06411414        1.00000000
+     45        2.82102197        0.06411414        1.00000000
+     46        2.88513611        0.06411414        1.00000000
+     47        2.94925025        0.06411414        1.00000000
+     48        3.01336438        0.06411414        1.00000000
+     49        3.07747852        0.06411414        1.00000000
+     50        3.14159265        0.06411414        1.00000000
+     51        3.20570679        0.06411414        1.00000000
+     52        3.26982093        0.06411414        1.00000000
+     53        3.33393506        0.06411414        1.00000000
+     54        3.39804920        0.06411414        1.00000000
+     55        3.46216333        0.06411414        1.00000000
+     56        3.52627747        0.06411414        1.00000000
+     57        3.59039160        0.06411414        1.00000000
+     58        3.65450574        0.06411414        1.00000000
+     59        3.71861988        0.06411414        1.00000000
+     60        3.78273401        0.06411414        1.00000000
+     61        3.84684815        0.06411414        1.00000000
+     62        3.91096228        0.06411414        1.00000000
+     63        3.97507642        0.06411414        1.00000000
+     64        4.03919055        0.06411414        1.00000000
+     65        4.10330469        0.06411414        1.00000000
+     66        4.16741883        0.06411414        1.00000000
+     67        4.23153296        0.06411414        1.00000000
+     68        4.29564710        0.06411414        1.00000000
+     69        4.35976123        0.06411414        1.00000000
+     70        4.42387537        0.06411414        1.00000000
+     71        4.48798951        0.06411414        1.00000000
+     72        4.55210364        0.06411414        1.00000000
+     73        4.61621778        0.06411414        1.00000000
+     74        4.68033191        0.06411414        1.00000000
+     75        4.74444605        0.06411414        1.00000000
+     76        4.80856018        0.06411414        1.00000000
+     77        4.87267432        0.06411414        1.00000000
+     78        4.93678846        0.06411414        1.00000000
+     79        5.00090259        0.06411414        1.00000000
+     80        5.06501673        0.06411414        1.00000000
+     81        5.12913086        0.06411414        1.00000000
+     82        5.19324500        0.06411414        1.00000000
+     83        5.25735913        0.06411414        1.00000000
+     84        5.32147327        0.06411414        1.00000000
+     85        5.38558741        0.06411414        1.00000000
+     86        5.44970154        0.06411414        1.00000000
+     87        5.51381568        0.06411414        1.00000000
+     88        5.57792981        0.06411414        1.00000000
+     89        5.64204395        0.06411414        1.00000000
+     90        5.70615809        0.06411414        1.00000000
+     91        5.77027222        0.06411414        1.00000000
+     92        5.83438636        0.06411414        1.00000000
+     93        5.89850049        0.06411414        1.00000000
+     94        5.96261463        0.06411414        1.00000000
+     95        6.02672876        0.06411414        1.00000000
+     96        6.09084290        0.06411414        1.00000000
+     97        6.15495704        0.06411414        1.00000000
+     98        6.21907117        0.06411414        1.00000000
+     99        6.28318531        0.06411414        1.00000000
+
+ ------------------------------------------------------------------------
+
+ ### COMMENT from SET_DIAGNOSTICS:
+ Number of fields to plot =            1
+
+ Fields to plot:
+ Br
+
+ ------------------------------------------------------------------------
+
+ ### COMMENT from SET_DIAGNOSTICS:
+ Number of slice fields to plot =            0
+
+ ------------------------------------------------------------------------
+
+ ### COMMENT from SET_DIAGNOSTICS:
+ Number of diagnostic points =            0
+
+ ------------------------------------------------------------------------
+
+
+ ### COMMENT from START:
+ ### Upwind coefficients for the A equation:
+ UPWIND_AR =    1.0000000000000000     
+ UPWIND_AT =    1.0000000000000000     
+ UPWIND_AP =    1.0000000000000000     
+ UPWIND_A_R0 =    0.0000000000000000     
+
+ ### COMMENT from LOAD_POT2D_SOLVE:
+ ### pot2d preconditioner activated.
+ Matrix size per node (NxN) N:              1225
+ Matrix # of non-zeros per node M:          5783
+ Estimated memory usage per node:     0.36 MB
+
+
+ ### COMMENT from LOAD_POT2DH_SOLVE:
+ ### pot2dh preconditioners activated.
+ Matrix size per node (NxN) N:              1176
+ Matrix # of non-zeros per node M:          5734
+ Estimated memory usage per node:     0.35 MB
+
+ ### COMMENT from INIT_ALFVEN_WAVE2_rotated:
+ ### Alfven wave (type 2) parameters:
+
+ WAVE_MODE_R =            2
+ WAVE_MODE_T =            1
+ WAVE_MODE_T =    1.1780999999999999     
+ BR00 =    1.0000000000000000     
+ RHO0 =    1.0000000000000000     
+ VA =    1.0000000000000000     
+
+ ### COMMENT from INIT_ALFVEN_WAVE2: 
+ ### Normal mode frequency:
+
+ OMEGA =    4.1887902047863905     
+
+ ### COMMENT from LOAD_RESISTIVITY:
+ ### Using resistivity profile: UNIFORM
+
+ ### COMMENT from LOAD_VISCOSITY:
+ ### Using viscosity profile: UNIFORM
+
+ ### COMMENT from LOAD_V_ADVANCE:
+ ### Velocity preconditioner activated.
+ Matrix size per node (NxN) N:             79968
+ Matrix # of non-zeros per node M:       1155556
+ Estimated memory usage per node:    41.09 MB
+
+ ### COMMENT from CHECK_TIME_PROFILES:
+ ### There are no active time profiles.
+
+ ### COMMENT from DUMPHIST:
+ Wrote time histories to file: mas_history_a.out
+ Wrote time histories to file: mas_history_b.out
+
+Code: MAS
+Version: 0.9.2.0git
+Updated on: 04/07/2025
+Source file: mas.F90
+Run ID: mas
+Run ended on: 04/09/2025
+Run ended at: 14:02:05
+Ran on machine: PREDSCI-GPU2
+Machine type: x86_64
+Compiler: GCC version 12.3.0
+Compiler Flags: -I /opt/psi/gnu/ext_deps/deps/hdf5/include -I /usr/lib/x86_64-linux-gnu/openmpi/lib/../../fortran/gfortran-mod-15/openmpi -I /usr/lib/x86_64-linux-gnu/openmpi/lib -march=alderlake -mmmx -mpopcnt -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx -mavx2 -mno-sse4a -mno-fma4 -mno-xop -mfma -mno-avx512f -mbmi -mbmi2 -maes -mpclmul -mno-avx512vl -mno-avx512bw -mno-avx512dq -mno-avx512cd -mno-avx512er -mno-avx512pf -mno-avx512vbmi -mno-avx512ifma -mno-avx5124vnniw -mno-avx5124fmaps -mno-avx512vpopcntdq -mno-avx512vbmi2 -mgfni -mvpclmulqdq -mno-avx512vnni -mno-avx512bitalg -mno-avx512bf16 -mno-avx512vp2intersect -mno-3dnow -madx -mabm -mno-cldemote -mclflushopt -mclwb -mno-clzero -mcx16 -mno-enqcmd -mf16c -mfsgsbase -mfxsr -mno-hle -msahf -mno-lwp -mlzcnt -mmovbe -mmovdir64b -mmovdiri -mno-mwaitx -mno-pconfig -mpku -mno-prefetchwt1 -mprfchw -mptwrite -mrdpid -mrdrnd -mrdseed -mno-rtm -mserialize -mno-sgx -msha -mshstk -mno-tbm -mno-tsxldtrk -mvaes -mwaitpkg -mno-wbnoinvd -mxsave -mxsavec -mxsaveopt -mxsaves -mno-a
+
+
+ ### End of run ...
+
+ NTIME =         61
+ TIME =  3.0500000000E+00
+
+ ### Time advance information:
+ Average time step used =    5.0000000000000031E-002
+
+ -----------------------------------------
+ ### Field solver convergence information:
+ -----------------------------------------
+
+ ### Implicit resistivity advance:
+ Total number of solves =           61
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### Thermal conduction (e) advance:
+ Total number of solves =            0
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### Thermal conduction (p) advance:
+ Total number of solves =            0
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### Semi-implicit advance (predictor):
+ Total number of solves =           61
+ Total number of iterations =         1413
+ Average number of iterations per solve =           23
+
+ ### Semi-implicit advance (corrector):
+ Total number of solves =           61
+ Total number of iterations =         1490
+ Average number of iterations per solve =           24
+
+ ### Viscosity advance:
+ Total number of solves =           61
+ Total number of iterations =           48
+ Average number of iterations per solve =            0
+
+ ### Initial boundary potential field (2D):
+ Total number of solves =            0
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### Initial potential field (3D):
+ Total number of solves =            0
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### Boundary potential field (2D psi evolve):
+ Total number of solves =            0
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### Boundary potential field (2D phi evolve):
+ Total number of solves =            0
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### Divergence cleaning:
+ Total number of solves =            0
+ Total number of iterations =            0
+ Average number of iterations per solve =            0
+
+ ### CPU time used (on IPROC0):         9.05 seconds
+

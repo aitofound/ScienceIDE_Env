@@ -29,6 +29,46 @@ def rubric_tolerance(comp: dict) -> str:
     return tol
 
 
+def rubric_pass_policy(rb: dict) -> str:
+    """The pass policy as the human reads it: the rule the validator applies, in full, in one cell.
+
+    The rubric's own sentence wins (``comparison.rule``, recommended since 5.17.4). Otherwise the cell is composed from
+    what the comparison spec says: the policy, the bound with its scale, and every graded file group with its ``what``
+    (graded records or columns named), so the reader sees which physical quantities are compared, at which positions,
+    under which formula, without opening the rubric. Never truncated: the pass policy is the first human decision."""
+    comp = rb.get("comparison") if isinstance(rb.get("comparison"), dict) else {}
+    rule = comp.get("rule")
+    if isinstance(rule, str) and rule.strip():
+        return rule.strip()
+    pol = rb.get("policy") or "?"
+    if isinstance(comp.get("invariants"), list):
+        parts = []
+        for q in comp["invariants"]:
+            if not isinstance(q, dict):
+                continue
+            bound = ", ".join(f"{k}={q[k]:g}" for k in ("rtol", "atol", "max_relative_drift") if isinstance(q.get(k), (int, float)))
+            parts.append(f"{q.get('name')} ({q.get('mode') or 'agreement'}, {q.get('statistic') or 'final'}, {bound or 'no bound'})"
+                         + (f": {q['what']}" if isinstance(q.get("what"), str) else ""))
+        return f"{pol}: " + "; ".join(parts) if parts else f"{pol}: see rubric"
+    scale = comp.get("rtol_scale")
+    bound = ", ".join(f"{k}={comp[k]:g}" for k in ("atol", "rtol") if isinstance(comp.get(k), (int, float))) or "see rubric"
+    meaning = comp.get("meaning")
+    head = (f"{pol}: {meaning.strip()}" if isinstance(meaning, str) and meaning.strip() else
+            f"{pol}: |candidate - reference| <= " + (f"rtol x {scale}" if scale else "atol + rtol x |reference|") + f" ({bound}) at every graded position")
+    groups = []
+    for f in comp.get("files") or []:
+        if not isinstance(f, dict):
+            continue
+        sel = ""
+        if f.get("graded_records"):
+            sel = f" records {','.join(str(i) for i in f['graded_records'])}"
+        elif f.get("columns") or f.get("column") is not None:
+            sel = f" columns {f.get('columns') or f.get('column')}"
+        own = ", ".join(f"{k}={f[k]:g}" for k in ("atol", "rtol") if isinstance(f.get(k), (int, float)))
+        groups.append(f"{f.get('label') or f.get('path')}{sel}" + (f" ({own})" if own else "") + (f": {f['what']}" if isinstance(f.get("what"), str) else ""))
+    return head + ("; graded: " + "; ".join(groups) if groups else "")
+
+
 def check_row(leaf: Path, info: dict, rows: dict, times: dict, run_times: dict, builds: dict) -> dict:
     """One check's presentation row as data: every number from the rubric or the record."""
     name = info["name"]
@@ -54,7 +94,8 @@ def check_row(leaf: Path, info: dict, rows: dict, times: dict, run_times: dict, 
     r = rows.get(name) or {}
     labels = [x for x in (info.get("labels") or [])]
     return {"name": name, "upstream_test": rb.get("upstream_test") or "", "policy": rb.get("policy"), "chaotic": bool(rb.get("chaotic")),
-            "labels": labels, "observable": rb.get("observable") or "-", "tolerance": rubric_tolerance(comp), "spread": spread_v,
+            "labels": labels, "observable": rb.get("observable") or "-", "pass_policy": rubric_pass_policy(rb),
+            "tolerance": rubric_tolerance(comp), "spread": spread_v,
             "rubric_spread": spread, "margin": margin, "relbound": bool(relbound), "floor": floor,
             "variant": rb.get("variant") or "", "default_vs_upstream": rb.get("default_vs_upstream") or "-",
             "run_s": run_times.get(name, times.get(name, 0)), "build_s": builds.get(name, 0), "identical": bool(r.get("identical")),
@@ -67,11 +108,17 @@ def check_row(leaf: Path, info: dict, rows: dict, times: dict, run_times: dict, 
 def format_row(row: dict) -> str:
     pol = f"{row['policy']}" + ("; chaotic" if row["chaotic"] else "") + ("; " + ", ".join(row["labels"]) if row["labels"] else "")
     variant = row["variant"].split(";")[0].split(". ")[0][:90]
-    obs = row["observable"][:100]
+    obs = cell(row["observable"])           # never truncated: what is graded is the first human decision
+    rule = cell(row["pass_policy"])
     margin = row["margin"]
-    return (f"| {row['name']} ({row['upstream_test'].split('/')[-1]}) | {pol} | {obs} | {row['tolerance']} | {num(row['spread'])} | "
+    return (f"| {row['name']} ({row['upstream_test'].split('/')[-1]}) | {pol} | {obs} | {rule} | {row['tolerance']} | {num(row['spread'])} | "
             f"{('identical' if margin == float('inf') else num(margin, '.0f') + 'x') if margin is not None else 'not reported'} | {num(row['floor'])} | {variant} | {row['default_vs_upstream']} | "
             f"{row['run_s']:.0f} | {row['build_s']:.0f} | {identical_word(row['identical'], row['graded_identical'])} |")
+
+
+def cell(text: str) -> str:
+    """A table cell: one line, pipes escaped, the text whole."""
+    return " ".join(str(text).split()).replace("|", "\\|")
 
 
 def identical_word(byte_identical: bool, graded: bool) -> str:
@@ -80,10 +127,12 @@ def identical_word(byte_identical: bool, graded: bool) -> str:
     return "YES" if byte_identical else ("graded" if graded else "no")
 
 
-TABLE_HEAD = ["| check | policy | observable | tolerance | spread | margin | floor | variant | default vs upstream | run s | build s | identical |",
-              "|---|---|---|---|---|---|---|---|---|---|---|---|"]
-READING_ORDER = ("Read first: the rows this table flags (margin under 50 or over 10,000, chaotic, custom, identical, run time far from its "
-                 "declared value); then the catalogue, the warrants, comment/README.md, the records. identical YES means every output file "
+TABLE_HEAD = ["| check | policy | observable | pass policy | tolerance | spread | margin | floor | variant | default vs upstream | run s | build s | identical |",
+              "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+READING_ORDER = ("The pass policy column is the rule the check's validator applies, in full: which physical quantities are compared, at which "
+                 "positions, under which formula and scale, what is excluded; it is the first human decision and is read for every row. "
+                 "Read first: the rows this table flags (margin under 50 or over 10,000, chaotic, custom, identical, run time far from its "
+                 "declared value or above 300 s); then the catalogue, the warrants, comment/README.md, the records. identical YES means every output file "
                  "is byte-identical; 'graded' means every graded value is identical (the validator's distance is 0) while an ungraded file "
                  "differs, which reads the same way. The margin is the bound divided by the "
                  "worst graded value's error in the nominal-versus-variant run, from the validator's bound_fraction; 'not reported' means the "
@@ -111,6 +160,9 @@ def presentation(leaf: Path, allow_custom_drivers: bool) -> tuple[list[str], dic
     customs = [i["name"] for i in infos if "custom" in (i.get("labels") or [])]
     if customs:
         flags.append("custom: " + ", ".join(customs))
+    longs = [i["name"] for i in infos if run_times.get(i["name"], times.get(i["name"], 0)) > config.CHECK_RUNTIME_ADVISED_S]
+    if longs:
+        flags.append(f"run time above {config.CHECK_RUNTIME_ADVISED_S} s: " + ", ".join(longs) + " (the rubric's runtime_note says why)")
     rw = (sv or {}).get("reward") or {}
     cons = (sv or {}).get("consent") or {}
     host = (sv or {}).get("host") or {}
@@ -131,7 +183,7 @@ def presentation(leaf: Path, allow_custom_drivers: bool) -> tuple[list[str], dic
         f"**Suite.** run time {(sv or {}).get('suite_seconds_nominal') if sv else '-'} s, builds {str((sv or {}).get('build_seconds_nominal')) + ' s' if isinstance((sv or {}).get('build_seconds_nominal'), (int, float)) else 'not reported'}, against {budget:.0f} s (guidance) on {cpus} declared cpus; {(sv or {}).get('budget') or '-'}.",
         f"**Host and consent.** {host.get('hostname') or '-'} ({host.get('arch') or '-'}, {host.get('docker_cpus') or '-'} docker cpus) under consent where={cons.get('where') or '-'} at {cons.get('at') or '-'}.",
         f"**Lint and record.** lint {len(errs)} error(s), {len(warns)} warning(s); record {'fresh' if fresh else 'STALE'}; freshness gate {'ok' if fresh and sv and sv.get('result') == 'passed' else 'not ok'}; CI: see the PR checks.",
-        f"**Flags.** {'; '.join(flags) if flags else 'none (no custom checks)'}.",
+        f"**Flags.** {'; '.join(flags) if flags else 'none (no custom checks, every check under 300 s)'}.",
         f"**Since the previous round.** {changed}.",
     ]
     check_rows = [check_row(leaf, i, rows, times, run_times, builds) for i in infos]
@@ -158,8 +210,8 @@ def cmd_task_review(a) -> None:
              f"{len(infos)} checks; lint {len(errs)} error(s), {len(warns)} warning(s); self-validation "
              + (f"{sv.get('result')} at {sv.get('finished_at')}, {'fresh' if fresh else 'STALE against the current contract'}" if sv else "none"), "",
              "## 1. Summary table", "",
-             "| check | policy | labels | tolerance | spread (nominal vs variant) | floor | expected s | run s | build s | identical |",
-             "|---|---|---|---|---|---|---|---|---|---|"]
+             "| check | policy | pass policy | labels | tolerance | spread (nominal vs variant) | floor | expected s | run s | build s | identical |",
+             "|---|---|---|---|---|---|---|---|---|---|---|"]
     for i in infos:
         rb = read_json(leaf / "tests" / "checks" / i["name"] / "rubric.json") if (leaf / "tests" / "checks" / i["name"] / "rubric.json").is_file() else {}
         comp = rb.get("comparison") if isinstance(rb.get("comparison"), dict) else {}
@@ -170,15 +222,19 @@ def cmd_task_review(a) -> None:
         floor = ev.get("floor")
         floor_s = f"{floor:.3g}" if isinstance(floor, (int, float)) else "none"
         r = rows.get(i["name"]) or {}
-        lines.append(f"| {i['name']} | {rb.get('policy')}{' (chaotic)' if rb.get('chaotic') else ''} | {' '.join(i.get('labels') or []) or '-'} | {tol} | {spread_s} | {floor_s} | "
+        lines.append(f"| {i['name']} | {rb.get('policy')}{' (chaotic)' if rb.get('chaotic') else ''} | {cell(rubric_pass_policy(rb))} | {' '.join(i.get('labels') or []) or '-'} | {tol} | {spread_s} | {floor_s} | "
                      f"{i.get('expected_runtime_s') or '?'} | {run_times.get(i['name'], times.get(i['name'], 0)):.0f} | {builds.get(i['name'], 0):.0f} | {identical_word(bool(r.get('identical')), graded_identical(r))} |")
     ts = pipeline / "test-survey.json"
     if ts.is_file():
         rows_t = (read_json(ts).get("tests") or [])
         suitable = sum(1 for t in rows_t if t.get("suitable"))
+        left_out = [t for t in rows_t if not t.get("suitable")]
+        unreasoned = [t.get("id") for t in left_out if not str(t.get("why") or "").strip()]
         customs = [i["name"] for i in infos if "custom" in (i.get("labels") or [])]
-        lines += ["", f"Survey: {suitable} suitable official test(s) for this module; "
-                  f"custom checks: {customs or 'none'}."]
+        lines += ["", f"Survey: {len(rows_t)} distinct official test(s)/example(s) listed, {suitable} suitable (the exhaustive "
+                  f"default is one check each), {len(left_out)} left out"
+                  + (f", {len(unreasoned)} of them WITHOUT a reason: {', '.join(map(str, unreasoned))}" if unreasoned else " with a reason each")
+                  + f"; custom checks: {customs or 'none'}."]
     lines += ["", "## 2. The catalogue (task.toml equivalence_explanation) against the rubrics", "", (meta.get("equivalence_explanation") or "").strip(), "",
               "## 3. Warrants and variants, per check", ""]
     for i in infos:

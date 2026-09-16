@@ -1,0 +1,69 @@
+{
+  "experiment": "Suppress test-particle gravitational back reaction in the actual C implementation.",
+  "source_pin": "33549d1d50d616a95a6d6a79e5e2c9c3b3730b1f",
+  "mutation": "Replace r->testparticle_type by 0 in the four local _testparticle_type declarations in src/gravity.c.",
+  "modified_declarations": 4,
+  "original_sha256": "62ddbdecff7384fd680967a16c8a5adbef7b8f6db34c450f16f78b6040c8fbb8",
+  "mutant_sha256": "71254f4c3b8e4a1261e0d046002686e1697b39a2d097f039f41d8fa0433d2dab",
+  "build_seconds": 3.385552873999984,
+  "repository_source_unchanged": true,
+  "scope": "Native Linux x86_64 source mutation experiment, separate from formal Docker self-validation.",
+  "checks": [
+    {
+      "check": "basic-testparticles-0",
+      "role": "unaffected control",
+      "expected_pass": true,
+      "result": {
+        "passed": true,
+        "policy": "pointwise",
+        "distance": 0.0,
+        "bound_fraction": 0.0,
+        "values": 72,
+        "worst_key": null,
+        "reason": "all physical scalars within bound"
+      }
+    },
+    {
+      "check": "basic-testparticles-1",
+      "role": "physical fault detector",
+      "expected_pass": false,
+      "result": {
+        "passed": false,
+        "policy": "pointwise",
+        "distance": 0.017721905004807637,
+        "bound_fraction": 95371906.59573318,
+        "values": 72,
+        "worst_key": "gravity/frame4/star/y",
+        "reason": "physical tolerance exceeded"
+      }
+    },
+    {
+      "check": "compensated-testparticles-0",
+      "role": "unaffected control",
+      "expected_pass": true,
+      "result": {
+        "passed": true,
+        "policy": "pointwise",
+        "distance": 0.0,
+        "bound_fraction": 0.0,
+        "values": 72,
+        "worst_key": null,
+        "reason": "all physical scalars within bound"
+      }
+    },
+    {
+      "check": "compensated-testparticles-1",
+      "role": "physical fault detector",
+      "expected_pass": false,
+      "result": {
+        "passed": false,
+        "policy": "pointwise",
+        "distance": 0.01772190500480786,
+        "bound_fraction": 95371906.59573324,
+        "values": 72,
+        "worst_key": "gravity/frame4/star/y",
+        "reason": "physical tolerance exceeded"
+      }
+    }
+  ]
+}

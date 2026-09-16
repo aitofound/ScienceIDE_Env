@@ -1,0 +1,433 @@
+{
+  "module": "ph-linear-response",
+  "tests": [
+    {
+      "id": "ph-2d-metal",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_2d_metal/scf.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "2-D metallic TaS2: pw.x SCF then ph.x at Gamma. Covers 2-D Coulomb cutoff with a metallic occupancy in PHonon/PH/.",
+      "why": "Suitable. Added as check ph-2d-metal (revision 4, 2026-09-15). Measured sum 24.6 + 128.0 = 152.6 s on the x86 worker, over the leaf's 60 s check window; this deck reads a single explicit q vector (no ldisp grid), and a measured start_irr=1,last_irr=1 subset (22.7 s) never reaches ph.x's dynamical-matrix diagonalization, so no knob produces a gradable frequency under 60 s. Shipped as the full official chain; needs the curator's window ruling.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 176.42,
+      "suitable": true,
+      "runtime_measured": true,
+      "proposed_check": "ph-2d-metal"
+    },
+    {
+      "id": "ph-base-c-gamma",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_base/c.scf.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Diamond carbon at Gamma: pw.x SCF then ph.x with epsil=.true. (dielectric tensor and Born charges) on C.pz-rrkjus.UPF. One of the four selected ph_base chains.",
+      "why": "Selected. Measured sum 0.41 + 2.43 = 2.84 s; all steps Passed. policy=pointwise, chaotic=false (DFPT is not a chaotic time integration). One of four ph_base checks (section 7): C Gamma with epsil, USPP. Graded groups: energy, eigenvalues, phonon, dielectric, born. Entrypoints: ph.x (plus pw.x SCF).",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 2.84,
+      "suitable": true,
+      "runtime_measured": true,
+      "proposed_check": "ph-base-c-gamma"
+    },
+    {
+      "id": "ph-base-ni-x",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_base/ni.scf.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "FCC Ni at X: collinear spin-polarised pw.x SCF then ph.x at q=(0,0,1) on USPP Ni.pbe-nd-rrkjus.UPF.",
+      "why": "Suitable. Added as check ph-base-ni-x (revision 4, 2026-09-15). Measured sum 1.0 + 3.2 = 4.2 s on the x86 worker. Ground-state-only after floor-dropping (allowed-mixing-beta-0.3 drives eigenvalues and phonon past their caps, consistent with ni.scf.in's looser conv_thr=1e-8 versus the other ph_base decks); energy, fermi and forces remain graded, matching the four already-shipped ground-state-only checks.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 4.2,
+      "suitable": true,
+      "runtime_measured": true,
+      "proposed_check": "ph-base-ni-x"
+    },
+    {
+      "id": "ph-base-si-gamma",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_base/si.scf.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Silicon at Gamma: pw.x SCF then ph.x with epsil=.true. at q=(0,0,0) on Si.pz-vbc.UPF. Produces phonon frequencies, epsilon_infinity and Z*; this is the chain whose six Gamma frequencies reproduced the shipped benchmark only to 8.891e-01 cm^-1 (Phase A section 1.3).",
+      "why": "Selected. Measured sum 0.29 + 1.69 = 1.98 s; all steps Passed. policy=pointwise, chaotic=false (DFPT is not a chaotic time integration). One of four ph_base checks (section 7): Si Gamma with epsil. Graded groups: energy, eigenvalues, phonon, dielectric, born. Gamma acoustic modes need a separate post-ASR bound or exclusion (Phase A 8.891e-01 cm^-1 vs 0.05 cm^-1 provisional). Entrypoints: ph.x.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 1.98,
+      "suitable": true,
+      "runtime_measured": true,
+      "proposed_check": "ph-base-si-gamma"
+    },
+    {
+      "id": "ph-base-si-x",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_base/si.phX.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Silicon at X: the same pw.x SCF as the Gamma chain, then ph.x at q=(1,0,0) on Si.pz-vbc.UPF. Finite-q DFPT without the Gamma acoustic-sum-rule issue.",
+      "why": "Selected. Measured sum 0.29 + 1.73 = 2.02 s; all steps Passed. policy=pointwise, chaotic=false (DFPT is not a chaotic time integration). One of four ph_base checks (section 7): Si X, finite-q DFPT without the Gamma ASR issue. Graded groups: energy, eigenvalues, phonon. Entrypoints: ph.x. Path is si.phX.in because si.scf.in is shared with the Gamma chain.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 2.02,
+      "suitable": true,
+      "runtime_measured": true,
+      "proposed_check": "ph-base-si-x"
+    },
+    {
+      "id": "ph-base-nipaw-x",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_base/nipaw.scf.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "FCC Ni at X with PAW: collinear spin-polarised pw.x SCF (nspin=2, tprnfor) then ph.x at X on Ni.pbe-spn-kjpaw_psl.1.0.0.UPF. Heaviest ph_base chain (65.87 s).",
+      "why": "Not selected. Retired in revision 3: the chain runs ph.x with trans=.true. and no epsil, so phonon frequencies are the only DFPT quantity it produces; measured phonon floor_allowed=0.4135418323880913 cm^-1 from allowed-startingwfc-random; 100x that is 41.35 cm^-1, 20.7 times the upstream 2 cm^-1 cap, so the group cannot be graded under the revised CURATOR-DECISIONS section 6 rule of 2026-09-11. After that drop the check graded only energy and forces \u2014 quantities any correct SCF reproduces \u2014 and could not fail on the physics its module owns. Magnetic-plus-PAW DFPT coverage moves to ph-insulator-paw-magn-o2, whose deck sets epsil=.true. runtime_measured remains true (65.87 s); retired for grading, not for time.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 65.87,
+      "suitable": false,
+      "runtime_measured": true
+    },
+    {
+      "id": "ph-metal-al-elph",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_metal/al.scf.fit.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Aluminium electron-phonon chain: two pw.x SCFs, ph.x with electron_phonon=interpolated (trans=.true. then trans=.false. keeping _ph0), q2r.x, matdyn.x (freq and DOS), lambda.x. The only official chain that runs lambda.x.",
+      "why": "Selected. Measured sum 0.32 + 0.09 + 8.17 + 5.61 + 0.04 + 0.01 + 0.25 + 0.01 = 14.50 s; all steps Passed. policy=pointwise, chaotic=false (DFPT is not a chaotic time integration). Section 7 ph_metal Al elph chain. The only selected chain that runs lambda.x, and one of two that run q2r.x and matdyn.x. Graded groups: energy, eigenvalues, phonon, lambda (lambda.x and interpolated frequencies; drop lambda if the floor is large, section 6). Entrypoints: ph.x, q2r.x, matdyn.x, lambda.x.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 14.5,
+      "suitable": true,
+      "runtime_measured": true,
+      "proposed_check": "ph-metal-al-elph"
+    },
+    {
+      "id": "ph-u-metal-us-fe",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_U_metal_us/Fe.scf.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "DFPT+U on metallic Fe USPP: collinear spin-polarised pw.x SCF then ph.x.",
+      "why": "Suitable. Added as check ph-u-metal-us-fe (revision 4, 2026-09-15). Measured sum 8.4 + 148.0 = 156.4 s on the x86 worker, over the 60 s window; ph.x's own linear-response setup alone costs 50.9 s before any representation (measured), and this deck also reads a single explicit q (no ldisp grid), so no knob clears the window. Ground-state-only after floor-dropping (allowed-alpha-mix-0.3 drives phonon past its cap). Shipped as the full official chain; needs the curator's window ruling.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 170.64,
+      "suitable": true,
+      "runtime_measured": true,
+      "proposed_check": "ph-u-metal-us-fe"
+    },
+    {
+      "id": "ph-u-insulator-us-bn",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_U_insulator_us/BN.scf.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "DFPT+U on insulating BN USPP: pw.x SCF, ph.x at Gamma with epsil=.true., ph.x at a finite q. Hubbard response inside PHonon/PH/.",
+      "why": "Selected. Measured sum 2.08 + 8.97 + 6.11 = 17.16 s; all steps Passed. policy=pointwise, chaotic=false (DFPT is not a chaotic time integration). One of two ph_U_* (section 7): USPP BN insulator, Gamma (epsil) and finite q. Graded groups: energy, eigenvalues, phonon, dielectric, born. Entrypoints: ph.x.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 17.16,
+      "suitable": true,
+      "runtime_measured": true,
+      "proposed_check": "ph-u-insulator-us-bn"
+    },
+    {
+      "id": "ph-u-metal-paw-ni",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_U_metal_paw/Ni.scf.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "DFPT+U on metallic Ni PAW: collinear spin-polarised pw.x SCF (nspin=2, tprnfor, tstress, U Ni-3d 2.0) then ph.x at a finite q. 90.94 s native serial.",
+      "why": "Selected. Measured sum 10.59 + 80.35 = 90.94 s; all steps Passed. policy=pointwise, chaotic=false (DFPT is not a chaotic time integration). One of two ph_U_* (section 7): PAW Ni metal+U, 90.94 s inside 30-150 s. Graded groups: energy, eigenvalues, magnetization, forces, stress, phonon. Entrypoints: ph.x.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 90.94,
+      "suitable": true,
+      "runtime_measured": true,
+      "proposed_check": "ph-u-metal-paw-ni"
+    },
+    {
+      "id": "ph-u-insulator-paw-bn",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_U_insulator_paw/BN.scf.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "DFPT+U on insulating BN PAW: pw.x SCF, ph.x at Gamma with epsil=.true., ph.x at a finite q. PAW sibling of the selected US BN chain.",
+      "why": "Suitable. Added as check ph-u-insulator-paw-bn (revision 4, 2026-09-15). Measured sum 3.3 + 33.2 = 36.5 s on the x86 worker. Drops phonon, phonon_acoustic and born under allowed-alpha-mix-0.3, matching the already-shipped USPP sibling ph-u-insulator-us-bn's identical drop pattern; energy, eigenvalues, forces, stress and dielectric remain graded.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 36.45,
+      "suitable": true,
+      "runtime_measured": true,
+      "proposed_check": "ph-u-insulator-paw-bn"
+    },
+    {
+      "id": "ph-interpol-metal",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_interpol_metal/al.scf.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Al electron-phonon interpolation: pw.x SCF, ph.x (ldisp), dvscf_q2r.x, ph.x elph simple, ph.x elph interpol keeping _ph0. Exercises dvscf_q2r.x, which is not a module entrypoint.",
+      "why": "Suitable. Added as check ph-interpol-metal (revision 4, 2026-09-15). Measured sum 0.1 + 3.7 + 0.1 + 11.0 + 6.1 = 21.0 s on the x86 worker. Ground-state-only after floor-dropping (allowed-alpha-mix-0.3 drives phonon/phonon_acoustic past their caps); the electron-phonon lambda/gamma values electron_phonon='simple' prints inline are not graded (no dedicated output block, documented exclusion). Exercises dvscf_q2r.x, an entrypoint no other check builds.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 21.04,
+      "suitable": true,
+      "runtime_measured": true,
+      "proposed_check": "ph-interpol-metal"
+    },
+    {
+      "id": "ph-ahc-diam",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_ahc_diam/diam.scf.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Diamond anharmonic (AHC) chain: pw.x SCF/NSCF, ph.x, q2r.x, matdyn.x, dvscf_q2r.x, ph.x electron_phonon=ahc, postahc.x. postahc.x is not a module entrypoint.",
+      "why": "Suitable. Added as check ph-ahc-diam (revision 4, 2026-09-15). Measured sum 8.9 s on the x86 worker (full 16-step official chain). Grades only phonon/phonon_acoustic from the upstream DFPT step: the official diam.nscf.in/diam.nscf.nosym.in share the scf step's prefix/outdir and overwrite data-file-schema.xml before extraction (measured); postahc.x's self-energy floor rounds to 2x the upstream postahc_selfen cap. Exercises dvscf_q2r.x and postahc.x in full.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 8.89,
+      "suitable": true,
+      "runtime_measured": true,
+      "proposed_check": "ph-ahc-diam"
+    },
+    {
+      "id": "ph-ahc-bas",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_ahc_bas/scf.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "BAs anharmonic (AHC) chain: pw.x SCF/NSCF, ph.x with epsil=.true. and ldisp, q2r.x, matdyn.x, dvscf_q2r.x, ph.x electron_phonon=ahc, postahc.x.",
+      "why": "Not suitable (revision 4, 2026-09-15): probed on the x86 worker with the same nine-probe set as the other eight. All three candidate groups measure a computed bound past their upstream cap -- phonon (floor 0.712 cm^-1 from allowed-alpha-mix-0.3, computed 71.2 vs cap 2.0), phonon_acoustic (floor 32.6 cm^-1, computed 3264 vs cap 2.0), ahc_selfen (floor 3.0e-4 eV, computed 0.030 vs cap 5.0e-4) -- leaving nothing gradable. Probe evidence under comment/probes/ph-ahc-bas/.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 29.5,
+      "suitable": false,
+      "runtime_measured": true
+    },
+    {
+      "id": "ph-ni-nc-spinorbit-mag",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_Ni_nc_spinorbit_mag/Ni.scf.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Noncollinear spin-orbit magnetic phonons of FCC Ni: pw.x SCF with noncolin=.true. lspinorb=.true. starting_magnetization, then ph.x. Relativistic USPP Ni.rel-pbe-nd-rrkjus.UPF. 95.61 s native serial; heaviest selected chain inside the 30-150 s acceleration window.",
+      "why": "Selected. Measured sum 5.88 + 89.73 = 95.61 s; all steps Passed. policy=pointwise, chaotic=false (DFPT is not a chaotic time integration). Section 7 magnetic/spin-orbit phonons. 5.88 + 89.73 = 95.61 s, the heaviest selected chain in the 30-150 s acceleration window. Graded groups: energy, eigenvalues, magnetization, forces, phonon. Entrypoints: ph.x.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 95.61,
+      "suitable": true,
+      "runtime_measured": true,
+      "proposed_check": "ph-ni-nc-spinorbit-mag"
+    },
+    {
+      "id": "ph-insulator-us-magn-nio",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_insulator_us_magn/NiO.scf.1.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Antiferromagnetic NiO USPP: two collinear pw.x SCFs then ph.x at Gamma with epsil=.true.",
+      "why": "Not suitable. NiO.phG.in was killed at 179.99 s with rc 137 in Phase A (TSV verdict **FAILED**; Phase A section 1.2 disposition: unmeasured, three-minute native cap). Chain wall time 7.30 + 5.56 + 179.99 = 192.85 s exceeds 180 s. CURATOR-DECISIONS section 7: tests exceeding 3 min natively are recorded unmeasured and not selected. The curator has ruled this chain out.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 192.85,
+      "suitable": false,
+      "runtime_measured": false
+    },
+    {
+      "id": "ph-insulator-paw-magn-o2",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_insulator_paw_magn/O2.scf.1.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Spin-polarised O2 PAW: two pw.x SCFs then ph.x at Gamma with epsil=.true. trans=.true.",
+      "why": "Selected. Native packaging run 13.99 s (Phase A 1.29 + 1.38 + 12.19 = 14.86 s); every step Passed. policy=pointwise, chaotic=false (DFPT is not a chaotic time integration). Fills the CURATOR-DECISIONS section 7 magnetic + PAW DFPT slot, replacing ph-base-nipaw-x, and because the deck sets epsil=.true. it also yields the dielectric tensor and Born charges. Graded groups after the revised section 6 rule: energy, eigenvalues, magnetization, forces, stress, dielectric, born. Phonon and phonon_acoustic left (computed 943 and 525 vs cap 2). Entrypoints: ph.x (plus two pw.x SCFs).",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 14.86,
+      "suitable": true,
+      "runtime_measured": true,
+      "proposed_check": "ph-insulator-paw-magn-o2"
+    },
+    {
+      "id": "ph-2d-bn",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_2d/scf.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "2-D BN monolayer: pw.x SCF, ph.x with epsil=.true. ldisp nq=2x2x1, then two q2r.x+matdyn.x pairs (asr=crystal and asr=all). Covers q2r.x and matdyn.x on a 2-D insulator.",
+      "why": "Selected. Measured sum 1.76 + 18.75 + 0.02 + 0.01 + 0.02 + 0.01 = 20.57 s; all steps Passed. policy=pointwise, chaotic=false (DFPT is not a chaotic time integration). Section 7 ph_2d. Graded groups: energy, eigenvalues, phonon, dielectric, born; interpolated frequencies from matdyn. Entrypoints: ph.x, q2r.x, matdyn.x.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 20.57,
+      "suitable": true,
+      "runtime_measured": true,
+      "proposed_check": "ph-2d-bn"
+    },
+    {
+      "id": "ph-1d-ch4",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_1d/ch4.scf.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Isolated CH4: pw.x SCF, ph.x at Gamma with epsil=.true. trans=.true. zue=.true. fildyn=ch4.dyn.xml, dynmat.x with asr=zero-dim. Second dynmat.x chain (IR/Born); no lraman.",
+      "why": "Selected. Measured sum 2.96 + 8.55 + 0.01 = 11.52 s; all steps Passed. policy=pointwise, chaotic=false (DFPT is not a chaotic time integration). Section 7 ph_1d CH4 chain. Graded groups: energy, eigenvalues, phonon, dielectric, born, ir (dynmat; no lraman so not raman). Entrypoints: ph.x, dynmat.x. fildyn already ends in .xml.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 11.52,
+      "suitable": true,
+      "runtime_measured": true,
+      "proposed_check": "ph-1d-ch4"
+    },
+    {
+      "id": "ph-raman-h2o",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_raman/h2o.scf.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Isolated H2O: pw.x SCF, ph.x at Gamma with epsil=.true. lraman=.true. trans=.true., dynmat.x with asr=zero-dim. The only official chain that sets lraman; produces IR intensities, Raman activities and depolarization ratios. Phase A spot-check: dynmat_freqs identical, polariz 2.000e-04, depol identical.",
+      "why": "Selected. Measured sum 1.53 + 36.22 + 0.01 = 37.76 s; all steps Passed. policy=pointwise, chaotic=false (DFPT is not a chaotic time integration). Section 7 ph_raman: H2O scf -> ph epsil+lraman -> dynmat. Only lraman chain. Graded groups: energy, eigenvalues, phonon, dielectric, born, ir, raman. Entrypoints: ph.x, dynmat.x. 37.76 s, inside 30-150 s.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 37.76,
+      "suitable": true,
+      "runtime_measured": true,
+      "proposed_check": "ph-raman-h2o"
+    },
+    {
+      "id": "ph-restart-sic",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_restart/SiC.scf.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "SiC Gamma restart: pw.x SCF, ph.x recover=.false. (wipes _ph0), then three ph.x recover=.true. steps that keep _ph0 (driver code 10).",
+      "why": "Suitable. Added as check ph-restart-sic (revision 4, 2026-09-15). Measured sum 0.2 + 0.3 + 0.3 + 0.3 + 0.2 = 1.4 s on the x86 worker. All six candidate groups (energy, eigenvalues, dielectric, born, phonon, phonon_acoustic) survive with full headroom; the official deck's documented ph.x STOP 1 partial-convergence signal on its four niter_ph=5 restart calls is tolerated by this check's own run.sh copy, which still fails on a real CRASH file.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 1.4,
+      "suitable": true,
+      "runtime_measured": true,
+      "proposed_check": "ph-restart-sic"
+    },
+    {
+      "id": "ph-twochem",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_twochem/scf_twochem.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Two-chemical-potential phonons of Si: two pw.x+ph.x pairs, ph.x via driver code 11 (wipe _ph0, skip if CRASH).",
+      "why": "Suitable. Added as check ph-twochem (revision 4, 2026-09-15). Measured sum 0.1 + 0.9 + 0.2 + 1.2 = 2.4 s on the x86 worker. Both independent configurations (pair1, pair2) are ground-state-only after floor-dropping (allowed-mixing-beta-0.3/allowed-startingwfc-random drive eigenvalues and phonon/phonon_acoustic past their caps on both pairs); energy, forces and stress remain graded per pair. The official decks share QE's default prefix; this check's extract.py copy keys every group by pair identity instead of letting the second pair overwrite the first.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 2.42,
+      "suitable": true,
+      "runtime_measured": true,
+      "proposed_check": "ph-twochem"
+    },
+    {
+      "id": "ph-multipole",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_multipole/scf.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Multipole/quadrupole chain: driver 12 runs pw.x then pip-installs numpy/scipy/spglib and runs multipole.py; driver 13 runs ph.x then multipole.py post-processing. Needs the network.",
+      "why": "Not suitable. scf.in (driver 12) failed with rc 1 in 1.53 s in Phase A: run-ph.sh pip-installs numpy/scipy/spglib and runs a Python preprocessor, which needs the network. ph.in.01..04 were SKIPPED and not timed because the first step failed. CURATOR-DECISIONS and Phase A: ph_multipole is not_packaged.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 1.53,
+      "suitable": false,
+      "runtime_measured": false
+    },
+    {
+      "id": "ph-diag-direct",
+      "module": "ph-linear-response",
+      "path": "test-suite/ph_diag_direct/scf.in",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Al at Gamma with the two ph.x Sternheimer diagonalizers: pw.x SCF, ph.x diagonalization=davidson, ph.x diagonalization=direct. Exercises the inner solver of solve_linter.",
+      "why": "Selected. Measured sum 0.09 + 0.13 + 0.11 = 0.33 s; all steps Passed. policy=pointwise, chaotic=false (DFPT is not a chaotic time integration). Section 7 extra under 3 min: the two ph.x Sternheimer diagonalizers (davidson vs direct) on Al at Gamma. Graded groups: energy, eigenvalues, phonon. Entrypoints: ph.x. 0.33 s.",
+      "resources": {
+        "cpus": 8,
+        "memory_gb": 8,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.33,
+      "suitable": true,
+      "runtime_measured": true,
+      "proposed_check": "ph-diag-direct"
+    }
+  ]
+}
