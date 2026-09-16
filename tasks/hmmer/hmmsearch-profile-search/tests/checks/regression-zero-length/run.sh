@@ -106,6 +106,12 @@ case "$D" in
   max)       # the tutorial globins and SAB_MAX_SEQS random decoys: the --max workload
     cat "$SRC/tutorial/globins45.fa" >"$DATABASE"
     "$ESL/esl-shuffle" -G --seed 42 -N "$SAB_MAX_SEQS" -L 400 --amino >>"$DATABASE" ;;
+  shufflemix:*) # shufflemix:<stockholm>:<w1,w2,...>  the ungapped seed sequences of a shipped alignment (true hits), the same
+             # sequences regionally shuffled in windows of each listed size (borderline hits), and SAB_DECOYS random decoys
+    IFS=: read -r _ STO WS <<<"$D"
+    "$ESL/esl-reformat" -u fasta "$SRC/$STO" >"$W/seeds.fa"; cat "$W/seeds.fa" >"$DATABASE"
+    for w in ${WS//,/ }; do "$ESL/esl-shuffle" --seed 42 -w "$w" "$W/seeds.fa" | sed "s/^>\(.*\)-shuffled\$/>\1-w$w/" >>"$DATABASE"; done
+    "$ESL/esl-shuffle" -G --seed 42 -N "$SAB_DECOYS" -L 400 --amino >>"$DATABASE" ;;
   emit:*)    # emit:<N>:<seed>[:unilocal]  sequences sampled from the nominal profile with the pinned hmmemit
     IFS=: read -r _ N SEED MODE <<<"$D"
     EMIT=("$BIN/hmmemit" -N "$N" --seed "$SEED" -p); [ "${MODE:-}" = unilocal ] && EMIT+=(-L 0 --unilocal)
