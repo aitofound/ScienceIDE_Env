@@ -1,3 +1,4 @@
+import _seeded_eigsh  # noqa: F401  deterministic ARPACK start vectors (see the module)
 import json, os, sys
 import numpy as np
 from quspin.operators import quantum_LinearOperator

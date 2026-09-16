@@ -11,6 +11,7 @@ onsite Sx expectation value, for both boundary conditions.
 """
 from __future__ import annotations
 
+import _seeded_eigsh  # noqa: F401  deterministic ARPACK start vectors (see the module)
 import json
 import os
 import sys

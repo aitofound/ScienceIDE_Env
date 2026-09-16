@@ -21,6 +21,7 @@ spinless_fermion_basis_1d produce the same states and the same Hamiltonian.
 """
 from __future__ import annotations
 
+import _seeded_eigsh  # noqa: F401  deterministic ARPACK start vectors (see the module)
 import json
 import os
 import sys

@@ -7,6 +7,7 @@ times on [0, 0.5]. Grades <psi(t)|H|psi(t)> at each of the six times.
 """
 from __future__ import annotations
 
+import _seeded_eigsh  # noqa: F401  deterministic ARPACK start vectors (see the module)
 import json
 import os
 import sys

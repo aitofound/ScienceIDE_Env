@@ -1,3 +1,4 @@
+import _seeded_eigsh  # noqa: F401  deterministic ARPACK start vectors (see the module)
 import json, os, sys
 import numpy as np
 from quspin.basis import spin_basis_1d, photon_basis

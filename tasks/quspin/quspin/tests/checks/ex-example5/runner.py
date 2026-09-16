@@ -15,6 +15,7 @@ cannot occupy both site 0 and site L/2 at once), so t starts at 1 instead of
 """
 from __future__ import annotations
 
+import _seeded_eigsh  # noqa: F401  deterministic ARPACK start vectors (see the module)
 import json
 import os
 import sys

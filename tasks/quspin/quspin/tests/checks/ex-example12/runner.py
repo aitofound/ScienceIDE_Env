@@ -16,6 +16,7 @@ comparison well-defined regardless.
 """
 from __future__ import annotations
 
+import _seeded_eigsh  # noqa: F401  deterministic ARPACK start vectors (see the module)
 import json
 import os
 import sys
@@ -59,9 +60,18 @@ def main() -> int:
                ["zz", J2_list, drive, drive_args]]
     H = hamiltonian(static, dynamic, basis=basis_2d, dtype=np.float64, check_symm=False, check_herm=False)
 
-    E_raw, V = H.eigsh(time=0.0, k=n_top, which="LA")
-    E = np.sort(E_raw)
-    psi_0 = V[:, 0]  # upstream's own choice: the first returned eigenvector
+    # The top of this spectrum is the fully polarised S = N/2 multiplet, an
+    # exactly (N+1)-fold degenerate level (10 states at 3x3): ARPACK with k=10
+    # and which="LA" sometimes returns nine of them plus the next level down,
+    # depending on the start vector (measured: one graded value off by 3.0
+    # between two solves). The dense solver is exact here (Ns = 512), so the
+    # top n_top+2 eigenvalues come from numpy.linalg.eigh, which also reaches
+    # the first level below the multiplet; the initial state is the dense
+    # eigenvector of the largest eigenvalue (any state of the multiplet gives
+    # the same energy trace, both Hamiltonian terms being SU(2) symmetric).
+    E_all, V_all = np.linalg.eigh(np.asarray(H.toarray(time=0.0)))
+    E = np.sort(E_all)[-(n_top + 2):]
+    psi_0 = np.asarray(V_all)[:, int(np.argmax(E_all))].ravel()
 
     t = np.linspace(0.0, n_periods * 2 * np.pi / Omega, n_periods + 1)
     psi_t = H.evolve(psi_0, t[0], t, iterate=True, rtol=1e-12, atol=1e-12)
