@@ -1,0 +1,314 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+#  makeDataFiles_main.py
+
+# Created July 2021 by R.Kessler
+
+"""
+ Program to
+   + read data from user-specified source
+       (e.g., LSST-AP, LSST-DRP, SIRAH, DES, ZTF, or test with data folder)
+   + write data files in human-readable TEXT format (1 file per event)
+   + convert TEXT -> FITS format
+   + tar up TEXT files
+
+ For batch distribution, a separate submit-script should be able to
+ distribute jobs that are split by
+   + field (e.g., DDF or WFD)
+   + season (1-10)
+   + random sub-sample (see --nsplit and --isplit  inputs)
+
+ A "data_unit" corresponds to a single FIELD-SEASON-SUBSAMPLE.
+ A merge process combines data_units into more useful samples
+ such as entire season and ALL data.
+
+ Dec 20 2021: add --des_folder for SMP
+
+ Jul 05 2022: add --lsst-tom for reading alerts from LSST Tom --rknop
+
+ Jan 2025: add --lsst-fastdb
+
+"""
+
+# ============================================
+
+import os
+import argparse
+import glob
+import logging
+import subprocess
+import sys
+
+import yaml
+
+#from makeDataFiles_params import *
+import makeDataFiles_params as gpar
+import makeDataFiles_util   as util
+import write_data_snana     as write_snana
+
+from write_data_csv import csvWriter
+
+
+from read_data_lsst_fastdb   import data_lsst_fastdb
+from read_data_des_folder    import data_des_folder
+from read_data_sirah_folder  import data_sirah_folder
+from read_data_snana_folder  import data_snana_folder
+from read_data_ztf           import data_ztf_folder
+
+
+# =====================================
+def get_args():
+    parser = argparse.ArgumentParser()
+
+
+    msg = "Data source: LSST FASTDB"
+    parser.add_argument("--lsst_fastdb", help=msg, action="store_true")
+    
+    msg = "Data source: SIRAH pkl folder"
+    parser.add_argument("--sirah_folder", help=msg, type=str, default=None )
+
+    msg = "Data source: DES folder with SMP"
+    parser.add_argument("--des_folder", help=msg, type=str, default=None )
+
+    msg = "Data source: ZTF folder"
+    parser.add_argument("--ztf_folder", help=msg, type=str, default=None )
+
+    msg = "Data source: SNANA sim-data folder (for testing)"
+    parser.add_argument("--snana_folder", help=msg, type=str, default=None )
+
+    msg = "field name (e.g., SHALLOW, DEEP, etc ..)"
+    parser.add_argument("--field", help=msg, type=str, default=gpar.FIELD_VOID )
+
+    msg = "output SNANA format: top-directory for data"
+    parser.add_argument("--outdir_snana",
+                        help=msg, type=str, default=None )
+
+    msg = "output csv format: top-directory for data"
+    parser.add_argument("--outdir_csv",
+                        help=msg, type=str, default=None )
+
+    # - - - - - - - -
+
+    msg = "number of random sub-samples (default=1)"
+    parser.add_argument("--nsplitran", help=msg, type=int, default=1 )
+
+    msg = "do coadd by nite"
+    parser.add_argument("--coadd_by_nite", help=msg, action="store_true")
+    
+    msg = "photflag mask for detections (default=class value)"
+    parser.add_argument("--photflag_detect", help=msg, type=int, default=0)
+
+    msg = "photflag mask for garbage (default=class value)"
+    parser.add_argument("--photflag_garbage", help=msg, type=int, default=0)    
+    
+    msg = "define detction with this SNR (if no PHOTFLAG bit)"
+    parser.add_argument("--snr_detect", help=msg, type=float, default=None)    
+
+    msg = "select isplitran (1-nsplitran): default=-1 -> all"
+    parser.add_argument("--isplitran", help=msg, type=int, default=-1 )
+
+    msg = "select YEAR index (1-Nyear); default = -1 -> all"
+    parser.add_argument("-y", "--year", help=msg, type=int, default=-1 )
+
+    msg = "select SEASON index (1-Nseason); default = -1 -> all (same as --year)"
+    parser.add_argument("-s", "--season", help=msg, type=int, default=-1 )    
+
+    msg = "Select LSST events with MJD(first detection) "\
+           "in this NITE range (i.e. sunset to sunrise)"
+    parser.add_argument('--nite_detect_range',
+                        nargs='+', help=msg, type=float, default=None )
+    msg = "Select events with PEAKMJD in this range"
+    parser.add_argument('--peakmjd_range',
+                        nargs='+', help=msg, type=float, default=None )
+
+    msg = "number of events to process (default is all)"
+    parser.add_argument("--nevt", help=msg, type=int, default=99999999 )
+
+    msg = "increase output verbosity (default=True)"
+    parser.add_argument("-v", "--verbose", help=msg, action="store_true")
+
+    msg = "leave text files uncompressed"
+    parser.add_argument("--text", help=msg, action="store_true")
+
+    msg = "output yaml file (used by submit_batch_jobs)"
+    parser.add_argument("--output_yaml_file",
+                        help=msg, type=str, default=None )
+
+    msg = "output SNID/NAME_TRANSIENT/SUBSET table file for all events"
+    parser.add_argument("--output_snid_file",
+                        help=msg, type=str, default=None )
+
+    msg = "output garbage table file (garbage table to help debug)"
+    parser.add_argument("--output_garbage_file",
+                        help=msg, type=str, default=None )
+    
+    msg = "merge/postprocess output files (after jobs finish)"
+    parser.add_argument("--merge", help=msg, action="store_true")
+
+    msg = "Invoke pdb debugger at critical location; e.g. after reading data base"
+    parser.add_argument("--pdb", help=msg, action="store_true")
+
+    msg = "Developer Refactor index (pos=refac, neg=legacy)"
+    parser.add_argument("--refac", help=msg, type=int, default=0)    
+
+    # - - - -
+    args = parser.parse_args()
+
+    if args.outdir_snana:
+        args.outdir_snana = os.path.expandvars(args.outdir_snana)
+
+    if args.season:
+        args.year = args.season
+    elif args.year:
+        args.season = args.year
+        
+    if args.outdir_csv:
+        args.outdir_csv = os.path.expandvars(args.outdir_csv)
+
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit()
+
+    return args
+
+    # end get_args
+
+def restore_args_from_readme(args, readme_yaml):
+
+    # restore user args from readme_yaml that was 
+    # read from README file.
+    
+    args.lsst_fastdb  = None    
+    args.sirah_folder = None
+    args.des_folder   = None
+    args.ztf_folder   = None
+    args.snana_folder = None
+    
+    key = 'SOURCE_LSST_FASTDB'
+    if key in readme_yaml:
+        args.lsst_fastdb = readme_yaml[key] 
+        
+    key = 'SOURCE_SIRAH_FOLDER'
+    if key in readme_yaml:
+        args.sirah_folder = readme_yaml[key]
+
+    key = 'SOURCE_DES_FOLDER'
+    if key in readme_yaml:
+        args.des_folder = readme_yaml[key]
+
+    key = 'SOURCE_ZTF_FOLDER'
+    if key in readme_yaml:
+        args.ztf_folder = readme_yaml[key]
+        
+    key = 'SOURCE_SNANA_FOLDER'
+    if key in readme_yaml:
+        args.snana_folder = readme_yaml[key]
+
+    #args.field = readme_yaml['FIELD']
+
+    # end restore_args_from_readme
+
+def which_read_class(args):
+    read_class = None
+
+    # if merge process, read any one of the README files to
+    # recover the user-input logicals
+    if args.merge:
+        # restore args for merge process.
+        readme_file = None
+        if args.outdir_snana:
+            outdir      = args.outdir_snana
+            folder_list = glob.glob1(outdir, f"[!_TEXT]*")
+            for folder in folder_list:
+                if os.path.isdir(folder): break
+                
+            readme_file = f"{outdir}/{folder}/{folder}.README"
+
+        elif args.outdir_csv :
+            outdir   = args.outdir_csv
+            readme_file = f"{outdir}/DATA.README"
+
+        if readme_file :
+            readme_yaml = util.read_yaml(readme_file)
+            restore_args_from_readme(args, readme_yaml[gpar.DOCANA_KEY])
+
+    # - - - 
+        
+    if args.lsst_fastdb :
+        read_class       = data_lsst_fastdb
+        args.survey      = "LSST"
+        args.read_class  = "LSST_FASTDB"  # just a comment string
+        
+    elif args.sirah_folder :
+        read_class       = data_sirah_folder
+        args.survey      = "SIRAH"
+        args.read_class  = "SIRAH_DATA_FOLDER"
+        
+    elif args.des_folder :
+        read_class       = data_des_folder
+        args.survey      = "DES"        
+        args.read_class  = "DES_DATA_FOLDER"  # comment string
+        
+    elif args.ztf_folder :
+        read_class       = data_ztf_folder
+        args.survey      = "ZTF"
+        args.read_class  = "ZTF_DATA_FOLDER"
+        
+    elif args.snana_folder :
+        read_class        = data_snana_folder
+        snana_folder_base = os.path.basename(args.snana_folder)
+        args.survey       = util.get_survey_snana(snana_folder_base)
+        args.read_class   = "SNANA_DATA_FOLDER"        
+    else:
+        sys.exit("\nERROR: Could not determine program_class for makeDataFiles.")
+
+    return read_class
+
+    # end which_read_class
+
+# =============================================
+if __name__ == "__main__":
+    
+    args  = get_args()
+    logger_store = util.setup_logging(args)
+
+    logging.info("# =========== Begin makeDataFiles ================ ")
+    command = " ".join(sys.argv)
+    logging.info(f"# Command: {command}")
+    
+    # determine which program class (AP, DRP, test data)
+    read_class  = which_read_class(args)
+
+    # store inputs; for now just include command-line args, but later
+    # might include yaml contents from input file.
+    config_inputs =  {'args': args}
+
+    # init the data-source class
+    program = read_class(config_inputs)  # calls __init only
+
+    # check for merge process; then use outdir_xyz args to
+    # figure out which output format
+    if args.merge:
+        if args.outdir_snana:
+            write_snana.merge_snana_driver(args)
+
+        elif args.outdir_csv :
+            csv_writer = csvWriter( args, program.config_data )
+            csv_writer.merge_csv_driver()
+
+        sys.exit('Done with merge: exiting Main.')
+
+    # read data and write each event to text-format data files;
+    # these intermediate text files are useful for visual debugging,
+    # and they will be translated to binary below.
+    program.read_data_driver()
+
+    # translate TEXT -> FITS; allow multiple output formats
+    if args.outdir_snana :
+        write_snana.convert2fits_snana(args, program.config_data)
+
+    # final summary
+    program.final_summary()
+
+    # === END ===

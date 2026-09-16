@@ -1,0 +1,211 @@
+!
+! *** Grid resolution.
+!
+&topology
+  nr = 41
+  nt = 31
+  np = 61
+/
+&data
+!
+! *** Use the new style output text files.
+!
+  legacy_output_filenames = .false.
+!
+! *** Radial domain.
+!
+  r0 = 1.0
+  r1 = 10.0
+!
+! *** Time domain.
+!
+  tmax = 0.6
+  ntmax = 10
+!
+! *** Grid specifications.
+!
+  rfrac    = 0.0, 0.005878828, 0.01, 0.01028786, 1.0
+  drratio  = 1.0, 1.652847, 1.0, 807.7936
+  nfrmesh  = 5
+  tfrac    = 0.0, 3.821100E-01, 6.178900E-01, 1.000000E+00
+  dtratio  = 4.722366E-03, 1.0, 2.117582E+02
+  nftmesh  = 5
+  pfrac    = 0.0, 4.882110E-01, 4.885288E-01, 4.919749E-01, 4.943872E-01, 5.056128E-01, 5.080251E-01, 5.114712E-01, 5.117890E-01
+  dpratio  = 3.777893E-03, 1.0, 7.664169E-01, 7.996955E-01, 1.0, 1.250476E+00, 1.304773E+00, 1.0, 2.646978E+02
+  nfpmesh  = 5
+  phishift = 0.0
+!
+! *** Time step specifications.
+!
+  dtmax = 0.0005
+  dtmin = 0.000001
+  dt_init = 0.0002
+!
+! *** Output options.
+!
+  plotlist = 'vr'
+  tpltxint = 0.0
+  ipltxint = 1
+  slice_plotlist = ''
+  slice_tp_radii = 0.0
+  slice_txint = 0.0
+  trace_txint = 0.0
+  hdf32 = .false.
+  rs_final = .false.
+  trsdump = 0.0
+!
+! *** Model specification.
+!
+  advance_a    = .true.
+  advance_v    = .true.
+  advance_t    = .false.
+  advance_rho  = .false.
+  advance_pw   = .false.
+  advance_zw   = .false.
+  advance_fcs  = .false.
+  trace_particles = .false.
+  slund = 1.e12
+  visc = 0.002
+  gamma = 1.05
+  g0 = 0.0
+  br00 = 1.0
+  rho0 = 2.0
+  tbc0    = 20000.
+  tchromo = 20000.
+  tfloor  = 20000.
+  char_bc0 = .false.
+  char_bc1 = .false.
+  ubzero = .false.
+  filter_poles = .false.
+  zero_v_parallel=.true.
+! *** Thermal conduction:
+  advance_tc = .false.
+  tcond = 0.0
+  alpha_nocoll = 0.0
+  t_cutoff1 = 500000.0
+  nfilt_kappa = 0
+  dt_max_wave_cfl = 50.0
+!
+! *** Initial condition.
+!
+  initial_field = 'DIPOLE'
+  b0_dipole = 0.0
+  n_ssdip = 0
+  bnfile = ''
+  fluxrope_preserve_br0 = .false.
+! North Rope Position (STRAPPING FIELD ONLY)
+  tdm_fluxrope(1)%add = .true.
+  tdm_fluxrope(1)%rope_type = "parabolic"
+  tdm_fluxrope(1)%origin_t = 1.293025
+  tdm_fluxrope(1)%origin_p = 3.141593
+  tdm_fluxrope(1)%normal_t = 0.0
+  tdm_fluxrope(1)%normal_p = 1.0
+  tdm_fluxrope(1)%tilt_from_vertical = 0.
+  tdm_fluxrope(1)%apex_height = 0.025200
+  tdm_fluxrope(1)%footpoint_halfdistance = 0.061727
+  tdm_fluxrope(1)%minor_radius = 0.025190
+  tdm_fluxrope(1)%b_poloidal = 0.0
+  tdm_fluxrope(1)%handedness = -1
+  tdm_fluxrope(1)%delta = 0.1
+  tdm_fluxrope(1)%add_charges = .true.
+  tdm_fluxrope(1)%charge_magnitude=0.020000
+  tdm_fluxrope(1)%charge_halflength=0.042000
+! Center Rope Position (STRAPPING FIELD ONLY)
+  tdm_fluxrope(2)%add = .true.
+  tdm_fluxrope(2)%rope_type = "parabolic"
+  tdm_fluxrope(2)%origin_t = 1.570796
+  tdm_fluxrope(2)%origin_p = 3.141593
+  tdm_fluxrope(2)%normal_t = 0.0
+  tdm_fluxrope(2)%normal_p = 1.0
+  tdm_fluxrope(2)%tilt_from_vertical = 0.
+  tdm_fluxrope(2)%apex_height = 0.025200
+  tdm_fluxrope(2)%footpoint_halfdistance = 0.061727
+  tdm_fluxrope(2)%minor_radius = 0.025190
+  tdm_fluxrope(2)%handedness = -1
+  tdm_fluxrope(2)%b_poloidal = 0.0
+  tdm_fluxrope(2)%delta = 0.1
+  tdm_fluxrope(2)%add_charges = .true.
+  tdm_fluxrope(2)%charge_magnitude = 0.020000
+  tdm_fluxrope(2)%charge_halflength = 0.042000
+! Southern Rope Position (STRAPPING FIELD ONLY)
+  tdm_fluxrope(3)%add = .true.
+  tdm_fluxrope(3)%rope_type = "parabolic"
+  tdm_fluxrope(3)%origin_t = 1.848568
+  tdm_fluxrope(3)%origin_p = 3.141593
+  tdm_fluxrope(3)%normal_t = 0.0
+  tdm_fluxrope(3)%normal_p = 1.0
+  tdm_fluxrope(3)%tilt_from_vertical = 0.0
+  tdm_fluxrope(3)%apex_height = 0.0252
+  tdm_fluxrope(3)%footpoint_halfdistance = 0.061727
+  tdm_fluxrope(3)%minor_radius = 0.025190
+  tdm_fluxrope(3)%b_poloidal = 0.0
+  tdm_fluxrope(3)%handedness = -1
+  tdm_fluxrope(3)%delta = 0.1
+  tdm_fluxrope(3)%add_charges = .true.
+  tdm_fluxrope(3)%charge_magnitude = 0.020000
+  tdm_fluxrope(3)%charge_halflength = 0.042000
+! RBSL FLUX ROPES
+! North Flux Rope (mirrored path, no poloidal mirroring)
+  rbsl_fluxrope(1)%add = .true.
+  rbsl_fluxrope(1)%path_file = 'rbsltest_path_mirrored_north.h5'
+  rbsl_fluxrope(1)%axial_current = 0.85712693
+  rbsl_fluxrope(1)%minor_radius = 0.025190
+  rbsl_fluxrope(1)%handedness = -1
+  rbsl_fluxrope(1)%mirror_poloidal = .false.
+! Equator Flux Rope (torus path, no poloidal mirroring)
+  rbsl_fluxrope(2)%add = .true.
+  rbsl_fluxrope(2)%path_file = 'rbsltest_path_torus.h5'
+  rbsl_fluxrope(2)%axial_current = 0.85712693
+  rbsl_fluxrope(2)%minor_radius = 0.025190
+  rbsl_fluxrope(2)%handedness = -1
+  rbsl_fluxrope(2)%mirror_poloidal = .false.
+! Southern Flux Rope (mirrored path, with poloidal mirroring)
+  rbsl_fluxrope(3)%add = .true.
+  rbsl_fluxrope(3)%path_file = 'rbsltest_path_mirrored_south.h5'
+  rbsl_fluxrope(3)%axial_current = 0.85712693
+  rbsl_fluxrope(3)%minor_radius = 0.025190
+  rbsl_fluxrope(3)%handedness = -1
+  rbsl_fluxrope(3)%mirror_poloidal = .true.
+  initial_plasma = 'ZERO-BETA'
+!
+! *** Numerical algorithm options.
+!
+  cfl = 0.6
+  use_sts_visc = .false.
+  use_sts_tc   = .false.
+  visc_auto_subcycle = .false.
+  tc_auto_subcycle   = .false.
+  ifprec_t     = 3
+  ifprec_v     = 3
+  ifprec_pot2d = 3
+  ifprec_divb  = 3
+  epscg_a       = 1.e-9
+  epscg_v       = 1.e-9
+  epscg_t       = 1.e-9
+  epscg_potfld  = 1.e-9
+  epscg_newflux = 1.e-9
+  epscg_divb    = 1.e-9
+  ncgmax = 100000
+ /
+!=======================================================================================
+!
+! MAS TEST: zb_3d_fr_rbsl
+!---------------------------------------------------------------------
+! - This test is designed to test the RBSL fluxrope functionality in MAS
+!
+! - The setup is very similar to the test it was based on: zb_3d_fr_test2
+!
+! - The idea is to place three similar flux-ropes at different latitudes
+!  - The coronal path is like the TDm ropes in zb_3d_fr_test2, but the
+!    subsurface path and options differa
+!    - Rope1 (North): RBSL with mirrored path below corona.
+!    - Rope2 (Center): RBSL with full torus path.
+!    - Rope3 (South): RBSL, mirrored path, mirror_poloidal=.true.
+!
+! - Each rope has a strapping field provided by the TDm charge options.
+! 
+! - The end result shows how choosing various paths/parametrizations, you
+!   can get very different surface Br fields for the same coronal shape.
+! 
+! - The original test development was done by CD
+!
