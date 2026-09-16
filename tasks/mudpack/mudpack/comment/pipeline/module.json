@@ -1,0 +1,28 @@
+{
+  "module": {
+    "slug": "mudpack",
+    "title": "MUDPACK 5.0.1 multigrid elliptic PDE solvers",
+    "paths": [
+      "."
+    ],
+    "entrypoints": [
+      "test/t*.f drivers, one per solver: mud2/mud3 (real), cud2/cud3 (complex), muh2/muh3 and cuh2/cuh3 (hybrid), 2nd and 4th order (mud24 etc.), cr, sp and sa variants"
+    ],
+    "expensive_path": "multigrid V and W cycles: line and point Gauss-Seidel relaxation, restriction and prolongation over the grid hierarchy (mudcom.f) on 2D and 3D grids; the OpenMP directives target these loops",
+    "rationale": "The whole library is one module: one build (make, one static library), one test set, one scientific responsibility. MUDPACK 5.0.1 (Adams, NCAR) solves separable and nonseparable linear elliptic PDEs in 2D and 3D by multigrid iteration: real and complex, second- and fourth-order, with hybrid multigrid/direct variants, cross-derivative, separable and self-adjoint forms, and OpenMP directives on the relaxation loops. It is vendored from the NCAR-Classic-Libraries-for-Geophysics container repository as its own codebase because the container holds five unrelated libraries that share no source; this one is packaged alone.",
+    "excluded": [],
+    "hazards": [
+      "OpenMP is opt-in (-fopenmp); a threaded build may change reduction order",
+      "single precision by default; tcud3cr fails to converge in single precision, so the double-precision build is the reference",
+      "Fortran 90 extensions in a Fortran 77 body"
+    ]
+  },
+  "approval": {
+    "modules": [
+      "mudpack"
+    ],
+    "human_ref": "single-module default: the whole codebase is one module; no human decision at STOP 1, the cut is read in the source PR body at STOP 2",
+    "at": "2026-09-16T04:25:10Z"
+  },
+  "shared_infrastructure": []
+}

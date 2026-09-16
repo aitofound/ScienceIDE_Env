@@ -1,0 +1,60 @@
+{
+  "check": "cas9-lineage-tracing-simulator",
+  "policy": "pointwise",
+  "chaotic": false,
+  "upstream_test": "code/cassiopeia/test/simulator_tests/cas9_lineage_tracing_simulator_test.py",
+  "configuration": "官方 TestCas9LineageTracingDataSimulator:15-600 的**全部 12 个 test**：setUp 的 15 节点固定树（显式 `set_times`）与 5 个模拟器配置，展开为 4 个 `overlay_data` 用例、14 个异常配置、三次 `collapse_sites`、一次 `get_cassettes`、一组构造属性断言，以及标量/长度3/长度6 的参数广播等价性。`state_generating_distribution` 是 lambda，IC 里用一张**封闭词表**声明（目前只有 exponential 一种），produce.py 只认这一种、遇到别的直接报错——不是通用求值器，也不 eval 输入里的字符串。不新增任何数据、不新增任何配置。",
+  "observable": "4 个 overlay 用例的完整 character matrix 与逐节点 character state、叶序与节点序、继承不变量、每字符候选 state 数；三次 collapse_sites 的返回数组与剩余切点；get_cassettes 的返回；构造属性；参数广播归一后的 per-character priors 与 rates；14 个异常配置的异常类型名；两个辅助方法的结构不变量",
+  "expected_runtime_s": 30,
+  "default_vs_upstream": "**与上游持平或更严**：上游对 basic 配置硬编码了整张期望 character matrix（:368-385），本 check 判的正是同一张，并把另外 3 个 overlay 配置也一并逐值判起来（上游对它们只查形状与继承关系）。另外补判了逐节点 state（不止叶）与节点序。**主动放松一处**：`introduce_states` 与 `silence_cassettes` 的返回值不逐值受判、只判结构，理由见 evidence.disclosed_blind_spots.two_helpers_are_globally_seeded。**未删减任何上游覆盖**：13 条上游自己的断言已逐条在本 check 的产物上复核通过（含那张硬编码矩阵逐格相同），记录见 comment/README.md。",
+  "variant": "identical: 受判面几乎全是整数——character state、cut 位置、字符数、异常类型名。仅有的浮点是 mutation rate 与 state prior 这些**输入标量**的回读。对它们做两个 ULP 的扰动会挪动 Cas9 切割与沉默的伯努利判据落点，产生的不是亚量子抖动而是**离散的矩阵跳变**（整格整格地变），无法充当容差校准证据。按 SKILL 的规定，这种情况下 variant 显式相同、不提供校准证据，rubric 明说这一点。",
+  "altbuild": null,
+  "comparison": {
+    "atol": 1e-12,
+    "rtol": 1e-12,
+    "initial_conditions": [
+      "nominal",
+      "variant"
+    ],
+    "output": "results.npz",
+    "sections": [
+      "character_matrix",
+      "collapse",
+      "setup",
+      "broadcast",
+      "exceptions"
+    ]
+  },
+  "evidence": {
+    "self_validation_bound_fraction": {
+      "value": 0.0,
+      "knob_overrides": {
+        "SAB_JOBS": "4"
+      }
+    },
+    "self_validation_spread": {
+      "value": 0.0,
+      "knob_overrides": {
+        "SAB_JOBS": "4"
+      }
+    },
+    "self_validation_note": "`sab.py task selfcheck` 未运行，两格保持 null。手工判分记录与出处在 comment/README.md。",
+    "status": "provisional：2026-09-13 经原生跑通。**实测运行间散布恰为 0**——两次独立 produce 的 52 个数组逐个相同。上游硬编码的那张 8×9 character matrix 与本 check 的产物**逐格相同**。policy 与容差均未获人工批准。",
+    "graded_item_count": 64,
+    "third_leg_coverage": "**60 / 64 项独立复算**，是本 leaf 覆盖率最高的一条。全程不 import cassiopeia：`get_cassettes` 由 `range(0, n*size, size)` 导出；三次 `collapse_sites` 按源码 :349-366 的分箱语义独立重写（用 `bisect.bisect_right` 而不是 `np.digitize`）；14 个异常判据全部写死在构造函数里（:136-141 正整数 cassette 数与尺寸、:154-181 mutation_rate 的类型/负值/长度、:185-226 state_priors 的类型/长度/和为 1）；构造属性与参数广播由 IC 的标量直接导出；两条继承不变量从**受判的** `states_by_node` 与 IC 的边重算而非照抄产物里那个布尔；character matrix 的每一行必须等于对应叶在 `states_by_node` 里的那一行；叶序由边表里叶首次作为目标出现的顺序导出（不是字典序——'10' 会排到 '7' 前面）。**唯一没有第三条腿的是 4 个 `<用例>/states_by_node`**，即带种子的 Cas9 切割结果本身：复算它要连 numpy 的 Mersenne Twister 一起重写，误拒风险远大于收益。判决里 `third_leg_is_partial` 为 true 并把这 4 项逐名报出。",
+    "bound_derivation": "**受判面绝大部分是整数**，走 `np.array_equal` 精确比较，与 atol/rtol 无关：character state、cut 位置、字符数、异常类型名、各种计数与布尔。只有构造属性里回读的 silencing rate、per-character mutation rate、prior 之和，以及广播用例的归一结果是浮点，atol=rtol=1e-12 只用来吸收这些标量在回读与求和路径上的最后几位差异（`prior_sums` 是四个 float 相加，量级 1，误差在 1e-16 级）。**实测两次独立运行散布恰为 0**，1e-12 相对这条基线有十二个数量级的余量；这个余量代表跨平台的科学等价，不代表噪声。注意这条容差**兜不住 RNG 流本身的改变**——那会把整张矩阵改掉，先被整数项的精确比较挡下。",
+    "disclosed_blind_spots": {
+      "two_helpers_are_globally_seeded": "**`introduce_states` 与 `silence_cassettes` 的返回值不逐值受判，只判结构。** 源码 `:246-247` 显示构造参数 `random_seed` **只在 `overlay_data` 内部**调 `np.random.seed`；这两个方法被直接调用时根本不碰它，上游 test（:281、:300）是自己现设全局 `np.random.seed(...)`。全局种子不是本类的 API 承诺，一个正确的移植可以合法地换个顺序消耗全局流，按数值判会把它拒掉。改判必然成立的结构：`introduce_states` 只能改动被点名的 cut 位、改出来的值必须落在 state prior 的键集合里、其余位保持 0；`silence_cassettes` 的沉默必须以**整个 cassette** 为单位发生、值只能是 0 或缺失态。这与 pynndescent 在 `index-determinism/validate.py:4-11` 记录的是同一个问题。",
+      "seeded_cutting_has_no_third_leg": "4 个 `<用例>/states_by_node` **没有独立复算**——那是带种子的 Cas9 切割、沉默与继承的直接产物。它们只做两侧比较加上继承不变量与矩阵一致性的交叉约束；若参考侧本身错了，本 check 只能靠那两条约束发现，发现不了「换了一组同样自洽的 state」。这是 60/64 这个数字的唯一缺口，如实报出。",
+      "an_attribute_i_read_too_early": "`mutation_priors_per_character` 对 `state_generating_distribution` 配置来说是 `overlay_data` **之后**才填上的。我最初新建一个模拟器实例去读它，得到 `None` 并直接崩了。上游 :497-500 也是 overlay 后才断言它的长度。已改为复用跑过 overlay 的那个实例，并在 produce.py 里注明。",
+      "zero_port_forgeable": "`collapse_sites`、`get_cassettes`、构造属性与参数广播这些无 RNG 的项，答案可由 `ic/` 完全导出，一个只读 IC 的零移植候选能直接算出来——**这是本 leaf 已披露的 A0 问题在确定性 fixture 上的必然形态**，不因本 check 而加重。4 张种子化的 state 矩阵无法这样伪造。"
+    },
+    "human_decisions_pending": [
+      "policy 与 atol=rtol=1e-12 均为 provisional，未经人工签署。",
+      "`introduce_states` 与 `silence_cassettes` 只判结构不判数值——需人工确认这一放松（依据是源码 :246-247 显示它们不受构造种子约束）。",
+      "不为 `missing_data` 配置新增 overlay 用例（上游没有）——需人工确认这个取舍。",
+      "60/64 的第三条腿覆盖率是否可接受。"
+    ]
+  },
+  "warrant": "受判的是 Cas9 谱系追踪数据模拟器在一棵固定的 15 节点树上叠加出来的**字符矩阵本身**：每个细胞每个位点最终是未切、切成了哪个 state、还是缺失。**因为这些量是整数**，它们精确相等比较，与容差无关；判分器把这一点写死，RNG 流一旦改变就会在这里被挡下。**因为只有少数几个回读标量是浮点**，atol=rtol=1e-12 只吸收 libm 与求和路径的最后几位——实测两次独立运行散布恰为 0。**因为 `random_seed` 是构造参数且源码 :246-247 显示它只覆盖 `overlay_data`**，那 4 个 overlay 用例判数值是站得住的，上游自己也硬编码了整张期望矩阵；**而 `introduce_states`、`silence_cassettes` 不在它的覆盖之内**，只判结构。第三条腿覆盖 60/64：分箱折叠、异常判据、构造属性、参数广播、继承不变量与矩阵一致性全部用 stdlib 独立导出，唯独带种子的 4 张 state 矩阵不复算并如实报为缺口。policy 与容差为 provisional，未经人工签署。"
+}
