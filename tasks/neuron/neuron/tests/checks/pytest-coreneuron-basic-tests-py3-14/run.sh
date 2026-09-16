@@ -139,7 +139,11 @@ fi
 # Run the upstream test, exactly the upstream ctest invocation with paths mapped
 # into this build (pytest_coreneuron::basic_tests_py3.14).
 mkdir -p "$WORK/run"
-if [ -d "$BUILD/test/pytest_coreneuron/basic_tests_py3.14" ]; then cp -R "$BUILD/test/pytest_coreneuron/basic_tests_py3.14/." "$WORK/run/"; fi
+# the staged directory name carries the python minor version (3.13 on the
+# container image), so resolve it by glob instead of hardcoding one version
+STAGED=$(ls -d "$BUILD/test/pytest_coreneuron/basic_tests_py3."* 2>/dev/null | head -n 1)
+if [ -n "$STAGED" ]; then cp -R "$STAGED/." "$WORK/run/"; fi
+mkdir -p "$WORK/run/test/pytest_coreneuron"
 printf '{}' > "$WORK/run/test/pytest_coreneuron/test_nrntest_fast.json"
 export NEURONHOME="$BUILD/share/nrn"
 export NRNHOME="$BUILD"

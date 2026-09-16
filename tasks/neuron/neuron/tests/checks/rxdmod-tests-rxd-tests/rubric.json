@@ -3,8 +3,8 @@
   "policy": "pointwise",
   "chaotic": false,
   "upstream_test": "code/neuron/test/rxd",
-  "configuration": "the upstream ctest entry rxdmod_tests::rxd_tests: run the shipped reaction-diffusion pytest suite unchanged except for its own --save flag, which makes each data-comparison test write its recorded trajectory (time, all segment voltages, all rxd state values per sample) as a raw float64 file instead of comparing it against the bundled reference; the 93 saved files are the graded observable; every non-data test still runs and its assertions gate the exit status",
-  "observable": "the 93 raw float64 trajectory files the suite saves under its own --save mode, each holding the sampled time, voltage and rxd state values of one test's run",
+  "configuration": "the upstream ctest entry rxdmod_tests::rxd_tests: run the shipped reaction-diffusion pytest suite unchanged except for its own --save flag, which makes each data-comparison test write its recorded trajectory (time, all segment voltages, all rxd state values per sample) as a raw float64 file instead of comparing it against the bundled reference; the 94 saved files are the graded observable (one of them, multi_gridding_mix.dat, comes from a test upstream skips on Ubuntu hosts newer than 22 but runs on the container's Debian); every non-data test still runs and its assertions gate the exit status",
+  "observable": "the 94 raw float64 trajectory files the suite saves under its own --save mode, each holding the sampled time, voltage and rxd state values of one test's run",
   "expected_runtime_s": 32.8,
   "runtime_note": "under 300 s",
   "default_vs_upstream": "upstream",
@@ -236,6 +236,10 @@
       },
       {
         "path": "include_flux3d_cvode.dat",
+        "format": "f64"
+      },
+      {
+        "path": "multi_gridding_mix.dat",
         "format": "f64"
       },
       {
