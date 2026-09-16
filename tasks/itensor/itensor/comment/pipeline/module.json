@@ -1,0 +1,35 @@
+{
+  "module": {
+    "slug": "itensor",
+    "title": "ITensor tensor-network library and algorithms",
+    "paths": [
+      "."
+    ],
+    "entrypoints": [
+      "make",
+      "unittest/test-g",
+      "sample/dmrg",
+      "sample/dmrgj1j2",
+      "tutorial/06_DMRG/dmrg"
+    ],
+    "expensive_path": "BLAS/LAPACK-backed tensor contractions and iterative MPS/MPO ground-state sweeps at nontrivial bond dimension",
+    "rationale": "The repository is a cohesive C++ tensor-network library whose tensor, MPS/MPO, quantum-number and iterative-solver code share one build and one scientific I/O contract. A whole-codebase module preserves the upstream API and lets official unit tests, samples and tutorials define the fixed points without inventing a method-only boundary.",
+    "excluded": [
+      "Documentation-only files and generated build products are not source or checks.",
+      "Optional HDF5 tests remain unmeasured until the dependency is explicitly enabled and shown to be required by an official workflow."
+    ],
+    "hazards": [
+      "BLAS/LAPACK backend and thread count can change reduction order and floating-point output.",
+      "The current macOS host lacks usable C++ standard-library headers; native runtimes require Linux or a repaired toolchain.",
+      "The stable C++ v3 branch is older than the active Julia line; the pin and API line must remain explicit."
+    ]
+  },
+  "approval": {
+    "modules": [
+      "itensor"
+    ],
+    "human_ref": "用户明确要求继续推进：做吧",
+    "at": "2026-09-13T12:09:18Z"
+  },
+  "shared_infrastructure": []
+}
