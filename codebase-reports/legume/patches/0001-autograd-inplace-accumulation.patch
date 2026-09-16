@@ -4,10 +4,11 @@ This is the only vendored tree in the benchmark that differs from its pin.
 It is deliberate and was decided by the codebase owner; it is isolated in one
 commit so that `git show` on that commit is exactly the deviation.
 
-WHAT   Three in-place accumulations rewritten out-of-place, at two files:
-         legume/gme/gme.py:1720  rad_c['te'][clad_ind] += ...
-         legume/gme/gme.py:1743  rad_c['tm'][clad_ind] += ...
-         legume/utils.py:28      ftinv += ...
+WHAT   Four in-place accumulations rewritten out-of-place, at three files:
+         legume/gme/gme.py:1720   rad_c['te'][clad_ind] += ...
+         legume/gme/gme.py:1743   rad_c['tm'][clad_ind] += ...
+         legume/utils.py:28       ftinv += ...
+         legume/phc/layer.py:175  FT[ind0] += bd.abs(Vmax)
 
 WHY    Each accumulator is allocated as a plain numpy array (bd.zeros or
        np.zeros). Under the autograd backend the right-hand side is an
@@ -25,7 +26,10 @@ SAFE   For a plain numpy array `a = a + b` and `a += b` compute identical
        values; only allocation differs. Measured, not assumed: on the numpy
        backend, freqs, freqs_im and a reconstructed real-space field are
        sha256-identical between the pristine and patched trees. The third
-       site is exercised by that field comparison.
+       site is exercised by that field comparison. The fourth site's two
+       formulations are bit-identical on plain arrays when its branch fires,
+       checked over random trials (maxdiff 0.0), and differentiating geometry
+       with the branch NOT taken returns 9.25608383 on both trees.
 
 EFFECT tests/test_gme_grad.py: TypeError -> pass; whole suite 12 passed +
        1 failed -> 13 passed. Example notebook 08: TypeError -> passes in
@@ -35,16 +39,22 @@ EFFECT tests/test_gme_grad.py: TypeError -> pass; whole suite 12 passed +
        of Q factors now returns in one reverse-mode pass and agrees with finite
        differences to 2.7e-02, inside upstream's own 1e-1 test bound.
 
-KNOWN  One further instance of the same pattern is NOT fixed here:
-REMAIN   legume/phc/layer.py:175  FT[ind0] += bd.abs(Vmax)
-       in Layer.compute_exc_ft, the exciton potential transform, guarded by
-       `if FT[ind0][0] < 0`. No test and no example notebook reaches it, so it
-       is latent and unreproduced. A static scan for `X = zeros(...)` followed
-       by `X +=` found only these sites plus six in legume/primitives.py that
-       are correct (a vjp body receives concrete arrays, never boxes, and
-       test_primitives passes). That scan is a heuristic: it did not catch the
-       two gme.py sites, whose accumulator is built by a dict comprehension,
-       so the class may have further members on paths nothing executes.
+FOURTH legume/phc/layer.py:175, in Layer.compute_exc_ft (the exciton
+SITE   potential transform), is guarded by `if FT[ind0][0] < 0`. No test or
+       example takes that branch: test_polariton reaches the guard but reads
+       FT[ind0][0] == 0.0, so the line never runs upstream. It is nonetheless
+       a real defect, reproduced by differentiating a shape radius with a
+       negative Vmax: pristine raises TypeError ("only integer scalar arrays
+       can be converted to a scalar index"), patched returns 5.48617265, which
+       agrees with a central difference to 1.9e-11. Fixed with bd.where rather
+       than an index-assignment so it dispatches on both backends.
+
+SEARCH A static scan for `X = zeros(...)` followed by `X +=` found these sites
+       plus six in legume/primitives.py that are correct (a vjp body receives
+       concrete arrays, never boxes, and test_primitives passes). That scan is
+       a heuristic: it did not catch the two gme.py sites, whose accumulator is
+       built by a dict comprehension, so the class may have further members on
+       paths nothing executes.
 
 diff --git a/code/legume/legume/gme/gme.py b/code/legume/legume/gme/gme.py
 index ef2ea8dc7..b36f7eaf6 100644
