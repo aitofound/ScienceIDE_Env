@@ -38,7 +38,7 @@ WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 # the build tree, because a NEURON build is not relocatable. Cache layout and the
 # fingerprint recipe are described in comment/README.md under "## Build".
 BUILD_GROUP="cmake-tests-on"
-BUILD_SPEC="cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DNRN_ENABLE_INTERVIEWS=OFF -DNRN_ENABLE_MPI=OFF -DNRN_ENABLE_RX3D=ON -DNRN_ENABLE_CORENEURON=OFF -DNRN_ENABLE_TESTS=ON -DNRN_ENABLE_PERFORMANCE_TESTS=OFF -DNRN_3RDPARTY_USE_TESTS_RINGTEST=OFF -DNRN_3RDPARTY_USE_TESTS_TESTCORENRN=OFF -DNRN_3RDPARTY_USE_TESTS_NRNTEST=OFF -DNRN_3RDPARTY_USE_TESTS_REDUCED_DENTATE=OFF -DNRN_3RDPARTY_USE_TESTS_TQPERF=OFF"
+BUILD_SPEC="cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DNRN_ENABLE_INTERVIEWS=OFF -DNRN_ENABLE_MPI=OFF -DNRN_ENABLE_RX3D=ON -DNRN_ENABLE_CORENEURON=OFF -DNRN_ENABLE_TESTS=ON -DNRN_ENABLE_PERFORMANCE_TESTS=OFF EXTERNAL_TESTS_SUBDIR_REMOVED"
 BUILD_MODE=normal
 EXTRA_CMAKE_FLAGS=""
 if [ "$IC" = altbuild ]; then
@@ -56,6 +56,9 @@ build_neuron() {
   local root=$1
   mkdir -p "$root"
   cp -R "$SOURCE_DIR/." "$root/src"
+  # external test repos are fetched with git at configure time; no git or network
+  # in the container, and those suites are not graded, so drop the subdirectory
+  sed -i "s@^add_subdirectory(external)@# external tests removed for offline build@" "$root/src/test/CMakeLists.txt"
   mkdir -p "$root/build"
   ( cmake -S "$root/src" -B "$root/build" -DCMAKE_BUILD_TYPE=RelWithDebInfo \
       -DNRN_ENABLE_INTERVIEWS=OFF \
@@ -64,11 +67,6 @@ build_neuron() {
       -DNRN_ENABLE_CORENEURON=OFF \
       -DNRN_ENABLE_TESTS=ON \
       -DNRN_ENABLE_PERFORMANCE_TESTS=OFF \
-      -DNRN_3RDPARTY_USE_TESTS_RINGTEST=OFF \
-      -DNRN_3RDPARTY_USE_TESTS_TESTCORENRN=OFF \
-      -DNRN_3RDPARTY_USE_TESTS_NRNTEST=OFF \
-      -DNRN_3RDPARTY_USE_TESTS_REDUCED_DENTATE=OFF \
-      -DNRN_3RDPARTY_USE_TESTS_TQPERF=OFF \
       $EXTRA_CMAKE_FLAGS -DPYTHON_EXECUTABLE="$(command -v python3)" > "$root/build/configure.log" 2>&1 && \
     cmake --build "$root/build" --parallel "$SAB_MAKE_JOBS" > "$root/build/build.log" 2>&1 ) || {
       echo "run.sh: NEURON build failed" >&2
