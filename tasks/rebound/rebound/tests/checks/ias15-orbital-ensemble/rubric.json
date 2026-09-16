@@ -1,0 +1,54 @@
+{
+  "check": "ias15-orbital-ensemble",
+  "policy": "pointwise",
+  "chaotic": false,
+  "upstream_test": "rebound/tests/test_integrator.py::TestIntegrator.test_ias15",
+  "configuration": "The official 1000-Jupiter-period horizon is retained. SAB_REPEATS=64 systems use Jupiter x multiplied by (1 + system_index*1e-6) so each trajectory is distinct. Every physical state is sampled at four fixed times. This is an explicitly parameterized extension of the official deck.",
+  "observable": "Cartesian state, masses, total energy and angular momentum of every body at four fixed times in each outer Solar System.",
+  "expected_runtime_s": 26.0,
+  "runtime_note": "under 300 s",
+  "default_vs_upstream": "The official 1000-Jupiter-period horizon is retained. SAB_REPEATS=64 systems use Jupiter x multiplied by (1 + system_index*1e-6) so each trajectory is distinct. Every physical state is sampled at four fixed times. This is an explicitly parameterized extension of the official deck.",
+  "variant": "input.json changes perturb_ulps from 0 to 2; produce.py moves the explicitly selected active mass, position, semi-major axis or oscillator displacement toward +infinity by two binary64 ULPs.",
+  "altbuild": "GCC -O3 -mfma -ffp-contract=fast instead of baseline GCC -O3; source, nominal inputs and observation times are unchanged. The calibration host must support x86 FMA.",
+  "comparison": {
+    "atol": 1e-07,
+    "rtol": 1e-08,
+    "rule": "pointwise: every named scalar of observables.json (cartesian state, masses, total energy and angular momentum of every body at four fixed times in each outer Solar System) is compared by its physical key, body identity from the input deck and frame at a fixed physical time, |candidate - reference| <= atol + rtol x |reference| with atol=1e-07, rtol=1e-08, and the candidate must write exactly the reference key set; state, mass, total energy and angular momentum of every body at four fixed times through 1000 Jupiter periods in each of the 64 systems; the number of IAS15 steps taken is not graded.",
+    "files": [
+      {
+        "path": "observables.json",
+        "format": "named-json-scalars"
+      }
+    ]
+  },
+  "evidence": {
+    "floor": 4.660809516110476e-10,
+    "floor_how": "measured by selfcheck on 2026-09-16: run.sh altbuild (GCC -O3 -mfma -ffp-contract=fast instead of GCC -O3 on the same source and nominal inputs.) against run.sh nominal, graded with the check's own validate.py: all physical scalars within bound",
+    "self_validation_spread": 5.493263621758615e-10,
+    "self_validation_bound_fraction": 0.004144843790373059,
+    "native_investigation": {
+      "check": "ias15-orbital-ensemble",
+      "nominal_seconds": 10.226958086000081,
+      "variant_seconds": 10.222502058000032,
+      "variant_spread": 5.493263621758615e-10,
+      "variant_bound_fraction": 0.004144843790373059,
+      "altbuild_floor": 0.0,
+      "altbuild_identical": true,
+      "physical_fault": "Stop at 99% of every required physical output time while retaining the required output keys.",
+      "fault_bound_fraction": 195082920.1488808,
+      "scope": "Native Linux x86_64 investigation; not the CLI Docker self-validation record and not evidence of GPU equivalence."
+    },
+    "altbuild": {
+      "what": "GCC -O3 -mfma -ffp-contract=fast instead of GCC -O3 on the same source and nominal inputs.",
+      "distance": 4.660809516110476e-10,
+      "bound_fraction": 0.003516730437702459,
+      "identical": false,
+      "graded_identical": false,
+      "passed": true,
+      "reason": "all physical scalars within bound",
+      "at": "2026-09-16T09:38:44Z"
+    },
+    "floor_bound_fraction": 0.003516730437702459
+  },
+  "warrant": "This check compares Cartesian state, masses, total energy and angular momentum of every body at four fixed times in each outer Solar System. src/gravity.c evaluates gravitational interactions and the selected src/integrator_*.c advances the named bodies; compensated sums, splitting and adaptive error control change roundoff accumulation. The native two-ULP experiment measured maximum absolute spread 5.493263621758615e-10, using 0.0041448437903730592 of the proposed bound at the worst scalar. The native alternative-build floor was 0; identical graded output does not establish portability across architectures. The deliberately wrong problem (Stop at 99% of every required physical output time while retaining the required output keys.) was rejected at 195082920.14888081 times the bound. The user accepted this bound after calibration.\n\nSee evidence.altbuild and evidence.self_validation_bound_fraction for the CLI-measured FMA and two-ULP calibration of this contract. The user accepted these numerical bounds after calibration. These fixed-deck measurements are not a GPU performance result or an absolute scientific error estimate."
+}
