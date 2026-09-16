@@ -9,22 +9,39 @@
   "runtime_note": "under 300 s; SAB_DAYS shortens or extends the routed window",
   "default_vs_upstream": "official deck and map, shortened from 120 to 5 days and started from zero storage with generated forcing",
   "variant": "The analytic runoff rate is advanced by two binary32 ulps, from 0.0125 to 0.01250000186264515 m/day; this is the smallest perturbation retained in the netCDF forcing and calibrates numerical sensitivity without changing the routing problem.",
-  "altbuild": "none: the first calibration uses the generic two-ulp initial-condition variant; a legitimate alternative build may be added after the container build is verified",
+  "altbuild": "none: the container carries one supported gfortran build configuration, so no independent compiler or floating-point-mode floor is available",
   "comparison": {
-    "atol": 1e-6,
-    "rtol": 1e-6,
+    "atol": 0.001,
+    "rtol": 0.001,
+    "rule": "For every listed physical field at every structured-grid cell, require |candidate - reference| <= 1e-3 + 1e-3 * |reference|; grid-cell position is physical, while run metadata, build timings, and storage layout are excluded.",
     "files": [
-      {"path": "outflw.f64", "format": "f64", "skip_header_bytes": 0},
-      {"path": "flddph.f64", "format": "f64", "skip_header_bytes": 0},
-      {"path": "fldsto.f64", "format": "f64", "skip_header_bytes": 0},
-      {"path": "pthout.f64", "format": "f64", "skip_header_bytes": 0}
+      {
+        "path": "outflw.f64",
+        "format": "f64",
+        "skip_header_bytes": 0
+      },
+      {
+        "path": "flddph.f64",
+        "format": "f64",
+        "skip_header_bytes": 0
+      },
+      {
+        "path": "fldsto.f64",
+        "format": "f64",
+        "skip_header_bytes": 0
+      },
+      {
+        "path": "pthout.f64",
+        "format": "f64",
+        "skip_header_bytes": 0
+      }
     ]
   },
   "evidence": {
     "floor": null,
-    "floor_how": "pending first Docker self-validation: run.sh nominal versus run.sh variant on the chartered host",
-    "self_validation_spread": null,
-    "self_validation_bound_fraction": null
+    "floor_how": "No altbuild is declared; numerical sensitivity is measured by nominal versus the two-ulp forcing variant on Colima arm64 and corroborated by the native TACC x86_64 run.",
+    "self_validation_spread": 48.0,
+    "self_validation_bound_fraction": 0.026276974443354847
   },
-  "warrant": "The provisional mixed absolute/relative bound permits small cross-platform differences in semi-implicit local-inertial routing while rejecting a dropped bifurcation, reversed gradient, missing floodplain term, or materially wrong sea-level boundary. The short deterministic window limits amplification while exercising five daily forcing frames and hundreds of tidal updates. The exact floor and final tolerance will be set from calibration before submission."
+  "warrant": "The human-approved 1e-3 absolute plus 1e-3 relative bound allows a 0.1% implementation-scale difference in semi-implicit local-inertial routing while rejecting a dropped bifurcation, reversed gradient, missing floodplain term, or materially wrong sea-level boundary. On Colima arm64, the two-binary32-ulp runoff perturbation used at most 0.0263 of this bound, leaving about 38-fold headroom; the same maximum 48 m3 storage spread appeared in the native TACC x86_64 calibration. The five-day deterministic window limits amplification while exercising daily runoff frames and hundreds of tidal updates."
 }
