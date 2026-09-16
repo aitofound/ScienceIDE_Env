@@ -216,6 +216,8 @@ def _metadata_starter(cb: dict, mdoc: dict | None) -> dict:
         "codebase": {"description": "", "upstream_archive_sha256": None, "evidence": []},
         "measurement": {"included_paths": ["."], "excluded_paths": [], "source_extensions": [],
                         "test_path_markers": ["test", "tests", "tst"],
+                        "example_path_markers": list(config.DEFAULT_EXAMPLE_MARKERS),
+                        "third_party_paths": [],
                         "generated_vendor_third_party_notes": ""},
         "size": {},
         "approval": {},
@@ -306,6 +308,37 @@ def _metadata_report_doc(cb: dict, mdoc: dict | None, raw: dict, state: Path, wa
     source_rows = [row for row in files if is_source(row[0])] if source_extensions else []
     test_rows = [row for row in source_rows if is_test(row[0])]
     implementation_rows = [row for row in source_rows if not is_test(row[0])]
+    # The approximate five-way split behind the codebase page: production (source extensions outside test, example and
+    # declared third-party paths), tests, examples, third-party, other; every text file lands in exactly one bucket.
+    example_markers = [str(v).lower() for v in _metadata_list(authored_measurement.get("example_path_markers")) if str(v).strip()] \
+        or list(config.DEFAULT_EXAMPLE_MARKERS)
+    third_party_paths = [str(v).strip().strip("/") for v in _metadata_list(authored_measurement.get("third_party_paths")) if str(v).strip()]
+    def is_third_party(name: str) -> bool:
+        return any(name == p or name.startswith(p + "/") for p in third_party_paths)
+    def is_example(name: str) -> bool:
+        return any(part.lower() in example_markers for part in Path(name).parts[:-1])
+    buckets: dict[str, list] = {"production": [], "tests": [], "examples": [], "third_party": [], "other": []}
+    for row in text_rows:
+        name = row[0]
+        key = ("third_party" if is_third_party(name) else "tests" if is_test(name) else "examples" if is_example(name)
+               else "production" if (source_extensions and is_source(name)) else "other")
+        buckets[key].append(row)
+    def bucket_summary(rows: list) -> dict:
+        langs: dict[str, dict[str, int]] = {}
+        for name, _, _, lines in rows:
+            lang = config.LANG_BY_EXT.get(Path(name).suffix.lower(), "other")
+            entry = langs.setdefault(lang, {"files": 0, "text_physical_lines": 0})
+            entry["files"] += 1
+            entry["text_physical_lines"] += lines or 0
+        return {"files": len(rows), "text_physical_lines": sum(r[3] or 0 for r in rows),
+                "by_language": [{"language": k, **v} for k, v in sorted(langs.items(), key=lambda kv: -kv[1]["text_physical_lines"])]}
+    breakdown = {k: bucket_summary(v) for k, v in buckets.items()}
+    breakdown["third_party"]["paths"] = third_party_paths
+    breakdown["rule"] = ("approximate: a text file is third-party when under measurement.third_party_paths, else a test when under a "
+                         "test path marker or named test_*, else an example when under an example path marker, else production when its "
+                         "extension is in measurement.source_extensions, else other")
+    if not source_extensions:
+        breakdown = {}
 
     approved = approved_modules(mdoc)
     proposed_modules = [m for m in (mdoc or {}).get("modules", []) if isinstance(m, dict) and m.get("slug")]
@@ -467,6 +500,7 @@ def _metadata_report_doc(cb: dict, mdoc: dict | None, raw: dict, state: Path, wa
                    "symlink_rule": "count links without following them; external/parent targets are redacted",
                    "included_paths": include_paths, "excluded_paths": exclude_paths,
                    "source_extensions": source_extensions, "test_path_markers": test_markers,
+                   "example_path_markers": example_markers, "third_party_paths": third_party_paths,
                    "test_count_units": [key for key, _, _ in _METADATA_COUNT_SPECS],
                    "classification": "CLI-owned rules plus explicitly agent-authored source/test classification",
                    "agent_authored": _metadata_copy_public(authored_measurement, warnings, "measurement")}
@@ -482,7 +516,7 @@ def _metadata_report_doc(cb: dict, mdoc: dict | None, raw: dict, state: Path, wa
             "implementation_source_physical_lines": sum(row[3] or 0 for row in implementation_rows) if source_extensions else None,
             "test_source_files": len(test_rows) if source_extensions else None,
             "test_source_physical_lines": sum(row[3] or 0 for row in test_rows) if source_extensions else None,
-            "files_by_extension": extensions, "classification": "CLI-computed"}
+            "files_by_extension": extensions, "breakdown": breakdown, "classification": "CLI-computed"}
     accounted = shared_files | owned_files | overlap_files | unclassified_files
     reconciliation_ok = accounted == set(file_map) and sum(len(s) for s in (shared_files, owned_files, overlap_files, unclassified_files)) == len(file_map)
     overlaps = [{"path": name, "modules": sorted(file_owners[name])} for name in sorted(overlap_files)]
@@ -504,9 +538,23 @@ def _metadata_report_doc(cb: dict, mdoc: dict | None, raw: dict, state: Path, wa
     for section in ("codebase", "measurement", "shared_components", "modules", "official_tests", "classification_and_gaps"):
         if section not in raw:
             warnings.append(f"agent-authored {section} section is absent; unknown values remain visible")
+    runs_path = state / "runs.json"
+    if runs_path.is_file():
+        runs_doc = read_json(runs_path)
+        build_and_run = {"recorded": True,
+                         "build": _metadata_copy_public(runs_doc.get("build"), warnings, "build_and_run.build"),
+                         "landscape": _metadata_copy_public(_metadata_list(runs_doc.get("landscape")), warnings, "build_and_run.landscape"),
+                         "runs": _metadata_copy_public(_metadata_list(runs_doc.get("runs")), warnings, "build_and_run.runs"),
+                         "pitfalls": _metadata_copy_public(_metadata_list(runs_doc.get("pitfalls")), warnings, "build_and_run.pitfalls"),
+                         "not_run": _metadata_copy_public(_metadata_list(runs_doc.get("not_run")), warnings, "build_and_run.not_run"),
+                         "classification": "CLI-copied from the Step 1.2 record (runs.json); agent-measured on the native build"}
+    else:
+        build_and_run = {"recorded": False, "build": None, "landscape": [], "runs": [], "pitfalls": [], "not_run": [],
+                         "classification": "NOT RECORDED: Step 1.2 build-and-run was not done"}
+        warnings.append("Step 1.2 build-and-run is NOT recorded (no runs.json): the report cannot say what was built and actually run; skipping it is strongly advised against")
     result = {"schema_version": _METADATA_SCHEMA, "report_type": "codebase-metadata", "generated_at": now(),
               "informational": True, "non_blocking": True, "codebase": codebase, "measurement": measurement,
-              "size": size, "approval": approval_report, "shared_components": shared, "modules": cards,
+              "size": size, "approval": approval_report, "build_and_run": build_and_run, "shared_components": shared, "modules": cards,
               "official_tests": official, "classification_and_gaps": classification,
               "warnings": sorted(set(warnings))}
     if "notes" in raw:
@@ -569,7 +617,10 @@ def cmd_codebase_report(a) -> None:
     for warning in report.get("warnings", []):
         print(f"WARNING: {warning}")
     print("The fingerprint covers the measured source snapshot only; report files live outside code/<source>/.")
-    print("\nPRESENT TO THE HUMAN NOW: open or attach the self-contained HTML and paste the bounded Markdown summary in the human channel. Do not produce these artifacts silently; if fields are incomplete, present the visible unknowns and warnings too. This communication duty is not a report gate.\n")
-    print(markdown_text)
+    from .present import build_page, render_page_text
+    print("\nTHE CODEBASE PAGE, computed from the report. PRESENT THIS TO THE HUMAN NOW, verbatim, before anything else; it is also")
+    print("the source PR body (`sab.py codebase present --codebase <id> --markdown`). The bounded Markdown report is for information")
+    print("only, below the rule in the PR. Do not explore further before the human has seen this page.\n")
+    print(render_page_text(build_page(report), "the human reads this page at STOP 2 in the PR body: merge, send back, or change the cut"))
     print(STEP15_BRIEF.format(source=cb["source"], cb=a.codebase))
     next_line(f"present codebase-reports/{a.codebase}/codebase-metadata.html and the Markdown above to the human; then STOP 2 at the source PR for code/{cb['source']}/ (or report an explicit nonblocking omission)")

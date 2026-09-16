@@ -1,0 +1,455 @@
+  
+ _|      _|     _|_|       _|_|_|
+ _|_|  _|_|   _|    _|   _|
+ _|  _|  _|   _|_|_|_|     _|_|
+ _|      _|   _|    _|         _|
+ _|      _|   _|    _|   _|_|_|
+  
+ Magnetohydrodynamic Algorithm outside a Sphere
+                         Predictive Science Inc.
+
+ ### Input file contents:
+
+!
+! *** Grid resolution.
+!
+&topology
+  nr = 201
+  nt = 61
+  np = 3
+/
+&data
+!
+! *** Use the new style output text files.
+!
+  legacy_output_filenames = .false.
+!
+! *** Radial domain.
+!
+  r0 = 20.0
+  r1 = 215.0
+!
+! *** Time domain.
+!
+  tmax = 100.0
+!
+! *** Grid specifications.
+!
+  rfrac    = 0.0,1.0
+  drratio  = 1.0
+  nfrmesh  = 5
+  tfrac    = 0.0,1.0
+  dtratio  = 1.0
+  nftmesh  = 5
+  pfrac    = 0.0
+  dpratio  = 0.0
+  nfpmesh  = 5
+  phishift = 0.0
+!
+! *** Time step specifications.
+!
+  dtmax = 100.0
+  dtmin = 0.0001
+  dt_init = 0.0
+!
+! *** Output options.
+!
+  plotlist = 'vr','rho','br','t'
+  tpltxint = 10.0
+  hdf32 = .false.
+  rs_final = .false.
+  trsdump = 0.0
+!
+! *** Model specification.
+!
+  advance_a    = .true.
+  advance_v    = .true.
+  advance_t    = .true.
+  advance_rho  = .true.
+  advance_pw   = .false.
+  advance_zw   = .false.
+  advance_fcs  = .false.
+  trace_particles = .false.
+  slund = 1.e5
+  visc = 0.01
+  gamma = 1.5
+  g0 = 0.823
+  br00 = 0.0
+  rho0 = 14000.0
+  char_bc0 = .true.
+  char_bc1 = .true.
+  ubzero = .true.
+  filter_poles = .false.
+! *** Thermal conduction:
+  advance_tc = .false.
+  tcond = 0.0
+  alpha_nocoll = 0.0
+! *** Radiative loss:
+  radloss = 0.0
+!
+! *** Initial condition.
+!
+  initial_field = 'POTENTIAL_FIELD'
+  bnfile = "bc/br_ex001.h5"
+  b_in_gauss = .false.
+  initial_plasma = '2dfile'
+  twodfile_vr  = 'bc/vr_ex001.h5'
+  twodfile_t   = 'bc/t_ex001.h5'
+  twodfile_rho = 'bc/rho_ex001.h5'
+  const_t_rho = .true.
+!
+! *** Numerical algorithm options.
+!
+  cfl = 0.4
+  use_sts_visc = .false.
+  use_sts_tc   = .false.
+  visc_auto_subcycle = .false.
+  tc_auto_subcycle   = .false.
+  ifimplrad = 0
+  ifprec_t     = 1
+  ifprec_v     = 1
+  ifprec_pot2d = 3
+  ifprec_divb  = 3
+  epscg_a       = 1.e-9
+  epscg_v       = 1.e-9
+  epscg_t       = 1.e-9
+  epscg_potfld  = 1.e-9
+  epscg_newflux = 1.e-9
+  epscg_divb    = 1.e-9
+  ncgmax = 100000
+/
+&interplanetary
+  interplanetary_run = .true.
+  ip_radius = 20.
+  boundary_frame = 'FAKE_COROTATING'
+  brfile = "bc/br_ex"
+  btfile = "bc/bt_ex"
+  bpfile = "bc/bp_ex"
+  rhofile = "bc/rho_ex"
+  tfile = "bc/t_ex"
+  vrfile = "bc/vr_ex"
+  vtfile = "bc/vt_ex"
+  vpfile = "bc/vp_ex"
+  fcsfile = "bc/fcs_ex"
+  ip_sequence = 1
+  ip_node = 0
+/
+!
+
+
+Code: MAS
+Version: 0.9.2.1git
+Updated on: 04/23/2025
+Source file: mas.F90
+Run ID: mas
+Run started on: 04/28/2025
+Run started at: 18:21:44
+Ran on machine: PREDSCI-GPU2
+Machine type: x86_64
+Compiler: GCC version 12.3.0
+Compiler Flags: -I /opt/psi/gnu/ext_deps/deps/hdf5/include -I /usr/lib/x86_64-linux-gnu/openmpi/lib/../../fortran/gfortran-mod-15/openmpi -I /usr/lib/x86_64-linux-gnu/openmpi/lib -march=alderlake -mmmx -mpopcnt -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx -mavx2 -mno-sse4a -mno-fma4 -mno-xop -mfma -mno-avx512f -mbmi -mbmi2 -maes -mpclmul -mno-avx512vl -mno-avx512bw -mno-avx512dq -mno-avx512cd -mno-avx512er -mno-avx512pf -mno-avx512vbmi -mno-avx512ifma -mno-avx5124vnniw -mno-avx5124fmaps -mno-avx512vpopcntdq -mno-avx512vbmi2 -mgfni -mvpclmulqdq -mno-avx512vnni -mno-avx512bitalg -mno-avx512bf16 -mno-avx512vp2intersect -mno-3dnow -madx -mabm -mno-cldemote -mclflushopt -mclwb -mno-clzero -mcx16 -mno-enqcmd -mf16c -mfsgsbase -mfxsr -mno-hle -msahf -mno-lwp -mlzcnt -mmovbe -mmovdir64b -mmovdiri -mno-mwaitx -mno-pconfig -mpku -mno-prefetchwt1 -mprfchw -mptwrite -mrdpid -mrdrnd -mrdseed -mno-rtm -mserialize -mno-sgx -msha -mshstk -mno-tbm -mno-tsxldtrk -mvaes -mwaitpkg -mno-wbnoinvd -mxsave -mxsavec -mxsaveopt -mxsaves -mno-a
+
+
+Total number of ranks =      4
+
+Number of ranks in r =       4
+Number of ranks in t =       1
+Number of ranks in p =       1
+
+Global mesh dimension in r =    201
+Global mesh dimension in t =     61
+Global mesh dimension in p =      3
+
+Average # of mesh pts per rank in r =   50.2
+Average # of mesh pts per rank in t =   61.0
+Average # of mesh pts per rank in p =    3.0
+
+Estimated load imbalance =   1.96 %
+
+ >running
+
+NTIME =        1, TIME =     0.444600, DTIME =     0.444600 (flow)
+NTIME =        2, TIME =     0.884392, DTIME =     0.439791 (flow)
+NTIME =        3, TIME =     1.324183, DTIME =     0.439791 (flow)
+NTIME =        4, TIME =     1.763975, DTIME =     0.439791 (flow)
+NTIME =        5, TIME =     2.203766, DTIME =     0.439791 (flow)
+NTIME =        6, TIME =     2.643558, DTIME =     0.439791 (flow)
+NTIME =        7, TIME =     3.082540, DTIME =     0.438983 (flow)
+NTIME =        8, TIME =     3.520248, DTIME =     0.437708 (flow)
+NTIME =        9, TIME =     3.956715, DTIME =     0.436468 (flow)
+NTIME =       10, TIME =     4.391939, DTIME =     0.435223 (flow)
+NTIME =       11, TIME =     4.826064, DTIME =     0.434125 (flow)
+NTIME =       12, TIME =     5.258721, DTIME =     0.432657 (flow)
+NTIME =       13, TIME =     5.690109, DTIME =     0.431388 (flow)
+NTIME =       14, TIME =     6.120417, DTIME =     0.430308 (flow)
+NTIME =       15, TIME =     6.549606, DTIME =     0.429188 (flow)
+NTIME =       16, TIME =     6.977577, DTIME =     0.427971 (flow)
+NTIME =       17, TIME =     7.404301, DTIME =     0.426724 (flow)
+NTIME =       18, TIME =     7.829941, DTIME =     0.425640 (flow)
+NTIME =       19, TIME =     8.254510, DTIME =     0.424569 (flow)
+NTIME =       20, TIME =     8.678015, DTIME =     0.423506 (flow)
+NTIME =       21, TIME =     9.100499, DTIME =     0.422484 (flow)
+NTIME =       22, TIME =     9.521913, DTIME =     0.421414 (flow)
+NTIME =       23, TIME =     9.942245, DTIME =     0.420332 (flow)
+NTIME =       24, TIME =    10.361516, DTIME =     0.419271 (flow)
+NTIME =       25, TIME =    10.779839, DTIME =     0.418323 (flow)
+NTIME =       26, TIME =    11.197302, DTIME =     0.417463 (flow)
+NTIME =       27, TIME =    11.613762, DTIME =     0.416459 (flow)
+NTIME =       28, TIME =    12.029174, DTIME =     0.415412 (flow)
+NTIME =       29, TIME =    12.443652, DTIME =     0.414478 (flow)
+NTIME =       30, TIME =    12.857279, DTIME =     0.413627 (flow)
+NTIME =       31, TIME =    13.270141, DTIME =     0.412862 (flow)
+NTIME =       32, TIME =    13.682033, DTIME =     0.411892 (flow)
+NTIME =       33, TIME =    14.093012, DTIME =     0.410978 (flow)
+NTIME =       34, TIME =    14.503156, DTIME =     0.410144 (flow)
+NTIME =       35, TIME =    14.912545, DTIME =     0.409389 (flow)
+NTIME =       36, TIME =    15.321218, DTIME =     0.408673 (flow)
+NTIME =       37, TIME =    15.729001, DTIME =     0.407783 (flow)
+NTIME =       38, TIME =    16.135970, DTIME =     0.406969 (flow)
+NTIME =       39, TIME =    16.542199, DTIME =     0.406229 (flow)
+NTIME =       40, TIME =    16.947767, DTIME =     0.405567 (flow)
+NTIME =       41, TIME =    17.352620, DTIME =     0.404854 (flow)
+NTIME =       42, TIME =    17.756683, DTIME =     0.404062 (flow)
+NTIME =       43, TIME =    18.160024, DTIME =     0.403341 (flow)
+NTIME =       44, TIME =    18.562717, DTIME =     0.402693 (flow)
+NTIME =       45, TIME =    18.964819, DTIME =     0.402102 (flow)
+NTIME =       46, TIME =    19.366210, DTIME =     0.401392 (flow)
+NTIME =       47, TIME =    19.766900, DTIME =     0.400690 (flow)
+NTIME =       48, TIME =    20.166957, DTIME =     0.400057 (flow)
+NTIME =       49, TIME =    20.566443, DTIME =     0.399486 (flow)
+NTIME =       50, TIME =    20.965371, DTIME =     0.398928 (flow)
+NTIME =       51, TIME =    21.363617, DTIME =     0.398246 (flow)
+NTIME =       52, TIME =    21.761247, DTIME =     0.397630 (flow)
+NTIME =       53, TIME =    22.158321, DTIME =     0.397074 (flow)
+NTIME =       54, TIME =    22.554886, DTIME =     0.396565 (flow)
+NTIME =       55, TIME =    22.950872, DTIME =     0.395986 (flow)
+NTIME =       56, TIME =    23.346258, DTIME =     0.395387 (flow)
+NTIME =       57, TIME =    23.741104, DTIME =     0.394845 (flow)
+NTIME =       58, TIME =    24.135460, DTIME =     0.394356 (flow)
+NTIME =       59, TIME =    24.529347, DTIME =     0.393887 (flow)
+NTIME =       60, TIME =    24.922653, DTIME =     0.393306 (flow)
+NTIME =       61, TIME =    25.315432, DTIME =     0.392779 (flow)
+NTIME =       62, TIME =    25.707735, DTIME =     0.392303 (flow)
+NTIME =       63, TIME =    26.099603, DTIME =     0.391869 (flow)
+NTIME =       64, TIME =    26.490972, DTIME =     0.391369 (flow)
+NTIME =       65, TIME =    26.881830, DTIME =     0.390857 (flow)
+NTIME =       66, TIME =    27.272224, DTIME =     0.390394 (flow)
+NTIME =       67, TIME =    27.662199, DTIME =     0.389975 (flow)
+NTIME =       68, TIME =    28.051760, DTIME =     0.389561 (flow)
+NTIME =       69, TIME =    28.440825, DTIME =     0.389065 (flow)
+NTIME =       70, TIME =    28.829440, DTIME =     0.388615 (flow)
+NTIME =       71, TIME =    29.217647, DTIME =     0.388207 (flow)
+NTIME =       72, TIME =    29.605486, DTIME =     0.387839 (flow)
+NTIME =       73, TIME =    29.992873, DTIME =     0.387387 (flow)
+NTIME =       74, TIME =    30.379824, DTIME =     0.386951 (flow)
+NTIME =       75, TIME =    30.766378, DTIME =     0.386555 (flow)
+NTIME =       76, TIME =    31.152575, DTIME =     0.386196 (flow)
+NTIME =       77, TIME =    31.538389, DTIME =     0.385814 (flow)
+NTIME =       78, TIME =    31.923779, DTIME =     0.385391 (flow)
+NTIME =       79, TIME =    32.308786, DTIME =     0.385006 (flow)
+NTIME =       80, TIME =    32.693444, DTIME =     0.384658 (flow)
+NTIME =       81, TIME =    33.077778, DTIME =     0.384335 (flow)
+NTIME =       82, TIME =    33.461703, DTIME =     0.383924 (flow)
+NTIME =       83, TIME =    33.845255, DTIME =     0.383552 (flow)
+NTIME =       84, TIME =    34.228469, DTIME =     0.383214 (flow)
+NTIME =       85, TIME =    34.611377, DTIME =     0.382908 (flow)
+NTIME =       86, TIME =    34.993920, DTIME =     0.382543 (flow)
+NTIME =       87, TIME =    35.376103, DTIME =     0.382183 (flow)
+NTIME =       88, TIME =    35.757958, DTIME =     0.381855 (flow)
+NTIME =       89, TIME =    36.139516, DTIME =     0.381558 (flow)
+NTIME =       90, TIME =    36.520751, DTIME =     0.381235 (flow)
+NTIME =       91, TIME =    36.901642, DTIME =     0.380891 (flow)
+NTIME =       92, TIME =    37.282215, DTIME =     0.380573 (flow)
+NTIME =       93, TIME =    37.662501, DTIME =     0.380286 (flow)
+NTIME =       94, TIME =    38.042497, DTIME =     0.379996 (flow)
+NTIME =       95, TIME =    38.422162, DTIME =     0.379665 (flow)
+NTIME =       96, TIME =    38.801524, DTIME =     0.379362 (flow)
+NTIME =       97, TIME =    39.180608, DTIME =     0.379084 (flow)
+NTIME =       98, TIME =    39.559430, DTIME =     0.378822 (flow)
+NTIME =       99, TIME =    39.937933, DTIME =     0.378502 (flow)
+NTIME =      100, TIME =    40.316145, DTIME =     0.378212 (flow)
+NTIME =      101, TIME =    40.694091, DTIME =     0.377947 (flow)
+NTIME =      102, TIME =    41.071793, DTIME =     0.377702 (flow)
+NTIME =      103, TIME =    41.449193, DTIME =     0.377399 (flow)
+NTIME =      104, TIME =    41.826312, DTIME =     0.377119 (flow)
+NTIME =      105, TIME =    42.203176, DTIME =     0.376864 (flow)
+NTIME =      106, TIME =    42.579808, DTIME =     0.376632 (flow)
+NTIME =      107, TIME =    42.956159, DTIME =     0.376352 (flow)
+NTIME =      108, TIME =    43.332240, DTIME =     0.376081 (flow)
+NTIME =      109, TIME =    43.708075, DTIME =     0.375835 (flow)
+NTIME =      110, TIME =    44.083686, DTIME =     0.375611 (flow)
+NTIME =      111, TIME =    44.459041, DTIME =     0.375355 (flow)
+NTIME =      112, TIME =    44.834134, DTIME =     0.375093 (flow)
+NTIME =      113, TIME =    45.208990, DTIME =     0.374856 (flow)
+NTIME =      114, TIME =    45.583630, DTIME =     0.374640 (flow)
+NTIME =      115, TIME =    45.958035, DTIME =     0.374405 (flow)
+NTIME =      116, TIME =    46.332188, DTIME =     0.374153 (flow)
+NTIME =      117, TIME =    46.706113, DTIME =     0.373924 (flow)
+NTIME =      118, TIME =    47.079829, DTIME =     0.373716 (flow)
+NTIME =      119, TIME =    47.453328, DTIME =     0.373499 (flow)
+NTIME =      120, TIME =    47.826585, DTIME =     0.373257 (flow)
+NTIME =      121, TIME =    48.199621, DTIME =     0.373036 (flow)
+NTIME =      122, TIME =    48.572456, DTIME =     0.372836 (flow)
+NTIME =      123, TIME =    48.945091, DTIME =     0.372634 (flow)
+NTIME =      124, TIME =    49.317491, DTIME =     0.372401 (flow)
+NTIME =      125, TIME =    49.689680, DTIME =     0.372188 (flow)
+NTIME =      126, TIME =    50.061675, DTIME =     0.371995 (flow)
+NTIME =      127, TIME =    50.433483, DTIME =     0.371808 (flow)
+NTIME =      128, TIME =    50.805066, DTIME =     0.371583 (flow)
+NTIME =      129, TIME =    51.176444, DTIME =     0.371379 (flow)
+NTIME =      130, TIME =    51.547637, DTIME =     0.371193 (flow)
+NTIME =      131, TIME =    51.918654, DTIME =     0.371017 (flow)
+NTIME =      132, TIME =    52.289454, DTIME =     0.370801 (flow)
+NTIME =      133, TIME =    52.660059, DTIME =     0.370604 (flow)
+NTIME =      134, TIME =    53.030484, DTIME =     0.370426 (flow)
+NTIME =      135, TIME =    53.400743, DTIME =     0.370259 (flow)
+NTIME =      136, TIME =    53.770795, DTIME =     0.370051 (flow)
+NTIME =      137, TIME =    54.140657, DTIME =     0.369863 (flow)
+NTIME =      138, TIME =    54.510349, DTIME =     0.369691 (flow)
+NTIME =      139, TIME =    54.879882, DTIME =     0.369533 (flow)
+NTIME =      140, TIME =    55.249215, DTIME =     0.369334 (flow)
+NTIME =      141, TIME =    55.618368, DTIME =     0.369152 (flow)
+NTIME =      142, TIME =    55.987355, DTIME =     0.368988 (flow)
+NTIME =      143, TIME =    56.356188, DTIME =     0.368833 (flow)
+NTIME =      144, TIME =    56.724833, DTIME =     0.368645 (flow)
+NTIME =      145, TIME =    57.093305, DTIME =     0.368471 (flow)
+NTIME =      146, TIME =    57.461618, DTIME =     0.368313 (flow)
+NTIME =      147, TIME =    57.829779, DTIME =     0.368161 (flow)
+NTIME =      148, TIME =    58.197760, DTIME =     0.367981 (flow)
+NTIME =      149, TIME =    58.565577, DTIME =     0.367818 (flow)
+NTIME =      150, TIME =    58.933243, DTIME =     0.367666 (flow)
+NTIME =      151, TIME =    59.300758, DTIME =     0.367515 (flow)
+NTIME =      152, TIME =    59.668101, DTIME =     0.367343 (flow)
+NTIME =      153, TIME =    60.035288, DTIME =     0.367187 (flow)
+NTIME =      154, TIME =    60.402332, DTIME =     0.367044 (flow)
+NTIME =      155, TIME =    60.769226, DTIME =     0.366894 (flow)
+NTIME =      156, TIME =    61.135956, DTIME =     0.366730 (flow)
+NTIME =      157, TIME =    61.502536, DTIME =     0.366580 (flow)
+NTIME =      158, TIME =    61.868979, DTIME =     0.366444 (flow)
+NTIME =      159, TIME =    62.235277, DTIME =     0.366297 (flow)
+NTIME =      160, TIME =    62.601416, DTIME =     0.366140 (flow)
+NTIME =      161, TIME =    62.967412, DTIME =     0.365996 (flow)
+NTIME =      162, TIME =    63.333278, DTIME =     0.365866 (flow)
+NTIME =      163, TIME =    63.699001, DTIME =     0.365722 (flow)
+NTIME =      164, TIME =    64.064573, DTIME =     0.365572 (flow)
+NTIME =      165, TIME =    64.430007, DTIME =     0.365435 (flow)
+NTIME =      166, TIME =    64.795317, DTIME =     0.365310 (flow)
+NTIME =      167, TIME =    65.160486, DTIME =     0.365169 (flow)
+NTIME =      168, TIME =    65.525511, DTIME =     0.365025 (flow)
+NTIME =      169, TIME =    65.890406, DTIME =     0.364894 (flow)
+NTIME =      170, TIME =    66.255181, DTIME =     0.364775 (flow)
+NTIME =      171, TIME =    66.619816, DTIME =     0.364636 (flow)
+NTIME =      172, TIME =    66.984315, DTIME =     0.364498 (flow)
+NTIME =      173, TIME =    67.348688, DTIME =     0.364373 (flow)
+NTIME =      174, TIME =    67.712947, DTIME =     0.364260 (flow)
+NTIME =      175, TIME =    68.077069, DTIME =     0.364122 (flow)
+NTIME =      176, TIME =    68.441059, DTIME =     0.363990 (flow)
+NTIME =      177, TIME =    68.804930, DTIME =     0.363871 (flow)
+NTIME =      178, TIME =    69.168693, DTIME =     0.363763 (flow)
+NTIME =      179, TIME =    69.532319, DTIME =     0.363626 (flow)
+NTIME =      180, TIME =    69.895820, DTIME =     0.363501 (flow)
+NTIME =      181, TIME =    70.259206, DTIME =     0.363387 (flow)
+NTIME =      182, TIME =    70.622485, DTIME =     0.363279 (flow)
+NTIME =      183, TIME =    70.985633, DTIME =     0.363147 (flow)
+NTIME =      184, TIME =    71.348661, DTIME =     0.363028 (flow)
+NTIME =      185, TIME =    71.711580, DTIME =     0.362920 (flow)
+NTIME =      186, TIME =    72.074391, DTIME =     0.362811 (flow)
+NTIME =      187, TIME =    72.437077, DTIME =     0.362686 (flow)
+NTIME =      188, TIME =    72.799649, DTIME =     0.362572 (flow)
+NTIME =      189, TIME =    73.162117, DTIME =     0.362469 (flow)
+NTIME =      190, TIME =    73.524476, DTIME =     0.362359 (flow)
+NTIME =      191, TIME =    73.886716, DTIME =     0.362240 (flow)
+NTIME =      192, TIME =    74.248847, DTIME =     0.362131 (flow)
+NTIME =      193, TIME =    74.610880, DTIME =     0.362033 (flow)
+NTIME =      194, TIME =    74.972802, DTIME =     0.361922 (flow)
+NTIME =      195, TIME =    75.334611, DTIME =     0.361809 (flow)
+NTIME =      196, TIME =    75.696317, DTIME =     0.361706 (flow)
+NTIME =      197, TIME =    76.057929, DTIME =     0.361612 (flow)
+NTIME =      198, TIME =    76.419429, DTIME =     0.361500 (flow)
+NTIME =      199, TIME =    76.780821, DTIME =     0.361392 (flow)
+NTIME =      200, TIME =    77.142115, DTIME =     0.361294 (flow)
+NTIME =      201, TIME =    77.503320, DTIME =     0.361205 (flow)
+NTIME =      202, TIME =    77.864413, DTIME =     0.361092 (flow)
+NTIME =      203, TIME =    78.225402, DTIME =     0.360990 (flow)
+NTIME =      204, TIME =    78.586299, DTIME =     0.360896 (flow)
+NTIME =      205, TIME =    78.947103, DTIME =     0.360805 (flow)
+NTIME =      206, TIME =    79.307801, DTIME =     0.360698 (flow)
+NTIME =      207, TIME =    79.668401, DTIME =     0.360600 (flow)
+NTIME =      208, TIME =    80.028913, DTIME =     0.360512 (flow)
+NTIME =      209, TIME =    80.389331, DTIME =     0.360418 (flow)
+NTIME =      210, TIME =    80.749646, DTIME =     0.360316 (flow)
+NTIME =      211, TIME =    81.109870, DTIME =     0.360223 (flow)
+NTIME =      212, TIME =    81.470009, DTIME =     0.360139 (flow)
+NTIME =      213, TIME =    81.830052, DTIME =     0.360043 (flow)
+NTIME =      214, TIME =    82.189998, DTIME =     0.359946 (flow)
+NTIME =      215, TIME =    82.549857, DTIME =     0.359858 (flow)
+NTIME =      216, TIME =    82.909636, DTIME =     0.359779 (flow)
+NTIME =      217, TIME =    83.269316, DTIME =     0.359680 (flow)
+NTIME =      218, TIME =    83.628905, DTIME =     0.359589 (flow)
+NTIME =      219, TIME =    83.988410, DTIME =     0.359505 (flow)
+NTIME =      220, TIME =    84.347834, DTIME =     0.359424 (flow)
+NTIME =      221, TIME =    84.707163, DTIME =     0.359329 (flow)
+NTIME =      222, TIME =    85.066405, DTIME =     0.359242 (flow)
+NTIME =      223, TIME =    85.425569, DTIME =     0.359163 (flow)
+NTIME =      224, TIME =    85.784646, DTIME =     0.359077 (flow)
+NTIME =      225, TIME =    86.143634, DTIME =     0.358988 (flow)
+NTIME =      226, TIME =    86.502540, DTIME =     0.358907 (flow)
+NTIME =      227, TIME =    86.861372, DTIME =     0.358832 (flow)
+NTIME =      228, TIME =    87.220113, DTIME =     0.358741 (flow)
+NTIME =      229, TIME =    87.578770, DTIME =     0.358657 (flow)
+NTIME =      230, TIME =    87.937350, DTIME =     0.358580 (flow)
+NTIME =      231, TIME =    88.295854, DTIME =     0.358503 (flow)
+NTIME =      232, TIME =    88.654269, DTIME =     0.358415 (flow)
+NTIME =      233, TIME =    89.012605, DTIME =     0.358336 (flow)
+NTIME =      234, TIME =    89.370868, DTIME =     0.358264 (flow)
+NTIME =      235, TIME =    89.729051, DTIME =     0.358183 (flow)
+NTIME =      236, TIME =    90.087151, DTIME =     0.358100 (flow)
+NTIME =      237, TIME =    90.445176, DTIME =     0.358025 (flow)
+NTIME =      238, TIME =    90.803132, DTIME =     0.357956 (flow)
+NTIME =      239, TIME =    91.161004, DTIME =     0.357872 (flow)
+NTIME =      240, TIME =    91.518798, DTIME =     0.357794 (flow)
+NTIME =      241, TIME =    91.876521, DTIME =     0.357723 (flow)
+NTIME =      242, TIME =    92.234174, DTIME =     0.357653 (flow)
+NTIME =      243, TIME =    92.591745, DTIME =     0.357571 (flow)
+NTIME =      244, TIME =    92.949242, DTIME =     0.357497 (flow)
+NTIME =      245, TIME =    93.306672, DTIME =     0.357430 (flow)
+NTIME =      246, TIME =    93.664029, DTIME =     0.357357 (flow)
+NTIME =      247, TIME =    94.021308, DTIME =     0.357279 (flow)
+NTIME =      248, TIME =    94.378518, DTIME =     0.357209 (flow)
+NTIME =      249, TIME =    94.735663, DTIME =     0.357146 (flow)
+NTIME =      250, TIME =    95.092733, DTIME =     0.357069 (flow)
+NTIME =      251, TIME =    95.449729, DTIME =     0.356996 (flow)
+NTIME =      252, TIME =    95.806659, DTIME =     0.356930 (flow)
+NTIME =      253, TIME =    96.163525, DTIME =     0.356866 (flow)
+NTIME =      254, TIME =    96.520315, DTIME =     0.356790 (flow)
+NTIME =      255, TIME =    96.877037, DTIME =     0.356721 (flow)
+NTIME =      256, TIME =    97.233696, DTIME =     0.356659 (flow)
+NTIME =      257, TIME =    97.590287, DTIME =     0.356591 (flow)
+NTIME =      258, TIME =    97.946807, DTIME =     0.356520 (flow)
+NTIME =      259, TIME =    98.303261, DTIME =     0.356455 (flow)
+NTIME =      260, TIME =    98.659657, DTIME =     0.356396 (flow)
+NTIME =      261, TIME =    99.015981, DTIME =     0.356325 (flow)
+NTIME =      262, TIME =    99.372238, DTIME =     0.356257 (flow)
+NTIME =      263, TIME =    99.728434, DTIME =     0.356196 (flow)
+NTIME =      264, TIME =   100.084570, DTIME =     0.356136 (flow)
+
+Code: MAS
+Version: 0.9.2.1git
+Updated on: 04/23/2025
+Source file: mas.F90
+Run ID: mas
+Run ended on: 04/28/2025
+Run ended at: 18:21:45
+Ran on machine: PREDSCI-GPU2
+Machine type: x86_64
+Compiler: GCC version 12.3.0
+Compiler Flags: -I /opt/psi/gnu/ext_deps/deps/hdf5/include -I /usr/lib/x86_64-linux-gnu/openmpi/lib/../../fortran/gfortran-mod-15/openmpi -I /usr/lib/x86_64-linux-gnu/openmpi/lib -march=alderlake -mmmx -mpopcnt -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx -mavx2 -mno-sse4a -mno-fma4 -mno-xop -mfma -mno-avx512f -mbmi -mbmi2 -maes -mpclmul -mno-avx512vl -mno-avx512bw -mno-avx512dq -mno-avx512cd -mno-avx512er -mno-avx512pf -mno-avx512vbmi -mno-avx512ifma -mno-avx5124vnniw -mno-avx5124fmaps -mno-avx512vpopcntdq -mno-avx512vbmi2 -mgfni -mvpclmulqdq -mno-avx512vnni -mno-avx512bitalg -mno-avx512bf16 -mno-avx512vp2intersect -mno-3dnow -madx -mabm -mno-cldemote -mclflushopt -mclwb -mno-clzero -mcx16 -mno-enqcmd -mf16c -mfsgsbase -mfxsr -mno-hle -msahf -mno-lwp -mlzcnt -mmovbe -mmovdir64b -mmovdiri -mno-mwaitx -mno-pconfig -mpku -mno-prefetchwt1 -mprfchw -mptwrite -mrdpid -mrdrnd -mrdseed -mno-rtm -mserialize -mno-sgx -msha -mshstk -mno-tbm -mno-tsxldtrk -mvaes -mwaitpkg -mno-wbnoinvd -mxsave -mxsavec -mxsaveopt -mxsaves -mno-a
+
+
+ ### End of run ...
+
+ NTIME =        264
+ TIME =  1.0008456984E+02
+
+ ### CPU time used (on IPROC0):         0.70 seconds
+
