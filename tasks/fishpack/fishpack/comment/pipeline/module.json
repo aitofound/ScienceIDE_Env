@@ -1,0 +1,28 @@
+{
+  "module": {
+    "slug": "fishpack",
+    "title": "FISHPACK 4.1 separable elliptic PDE solvers",
+    "paths": [
+      "."
+    ],
+    "entrypoints": [
+      "test/t*.f drivers, one per solver: blktri, cblktri, cmgnbn, genbun, hstcrt, hstcsp, hstcyl, hstplr, hstssp, hw3crt, hwscrt, hwscsp, hwscyl, hwsplr, hwsssp, pois3d, poistg, sepeli, sepx4"
+    ],
+    "expensive_path": "cyclic reduction (blktri, genbun and gnbnaux, pois3d) and the FFT-based Helmholtz solves on the discretized grid; cost grows with the grid and the number of reduction levels",
+    "rationale": "The whole library is one module: one build (make, one static library), one test set, one scientific responsibility. FISHPACK 4.1 (Adams, Swarztrauber, Sweet, NCAR) solves second- and fourth-order finite-difference approximations of separable elliptic PDEs (Helmholtz, Poisson and general separable equations) in Cartesian, polar, cylindrical and spherical coordinates by cyclic reduction, with least-squares handling of singular problems and of coordinate singularities. It is vendored from the NCAR-Classic-Libraries-for-Geophysics container repository as its own codebase because the container holds five unrelated libraries that share no source; this one is packaged alone.",
+    "excluded": [],
+    "hazards": [
+      "single precision by default; the darwin.dp references use -fdefault-real-8 and the single-precision build agrees to only 1 to 4 digits",
+      "needs -std=legacy under gfortran >= 10",
+      "FISHPACK90 in the same upstream repository is the same solver set behind a Fortran 90 interface (not vendored)"
+    ]
+  },
+  "approval": {
+    "modules": [
+      "fishpack"
+    ],
+    "human_ref": "single-module default: the whole codebase is one module; no human decision at STOP 1, the cut is read in the source PR body at STOP 2",
+    "at": "2026-09-16T04:25:09Z"
+  },
+  "shared_infrastructure": []
+}
