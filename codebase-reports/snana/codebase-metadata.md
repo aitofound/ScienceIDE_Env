@@ -29,6 +29,10 @@ Build: `Native GNU C/C++ compilation of upstream wfit target on Midway Linux x86
 | wfit usage example | examples | 1 | `wfit.exe` | none |
 | Simulation unit tests | test-suite | 0 | `snlc_sim.exe with an external input deck and UNIT_TEST setting` | none |
 | Covariance validation utility | other | 0 | `check_create_covariance.py with BBC covariance configuration and products` | none |
+| Light-curve analysis (later candidate; not run) | regression | 49 | `SNANA_code_tests.py selects external task definitions for snana.exe, snlc_fit.exe, psnid.exe` | none |
+| Supernova simulation (later candidate; not run) | regression | 44 | `SNANA_code_tests.py selects external task definitions for snlc_sim.exe` | none |
+| Bias correction and distance estimation (later candidate; n… | regression | 15 | `SNANA_code_tests.py selects external task definitions for SALT2mu.exe` | none |
+| Photometric calibration (later candidate; not run) | regression | 1 | `SNANA_code_tests.py selects external task definitions for kcor.exe` | none |
 
 Actually run: 39 of 39 attempted.
 
@@ -78,9 +82,7 @@ Pitfalls of running the codebase: 6
 - [build] Pinned clean native build hits glibc APIs, then a separate fnam diagnostic bug when upstream Mac switches are enabled. -> Preserve the native Mac failure as a portability observation; the clean pinned-source build now succeeds natively on Midway Linux without any scientific-source patch.
 - [general] SNANA_TESTS was absent locally, although the Git repository carries only harness scripts. -> Located the official three-item WFIT list on Midway; copied only 12 required files (12,156,883 bytes) and recorded every hash. Full SNANA datasets were not copied.
 - [custom-probes] Summary chi-square is printed to one decimal, correlation to three decimals, residuals to four decimals. -> Compare full scientific grid and independent numerical oracle, and account for upstream output quantization in specified tolerances.
-- [midway-setup] The shared interactive SNANA setup contains unalias calls that return nonzero in a batch shell. Starting errexit before sourcing stops before compilation. -> Source the existing setup before enabling errexit/nounset for the actual isolated build and test commands.
-- [midway-python] The shared conda environment uses Python older than 3.8, so copytree(dirs_exist_ok=...) and shlex.join are unavailable. -> Use equivalent Python 3.7-compatible wrapper operations in the private scratch builder. No SNANA source change is needed.
-- [midway-compiler] The cc driver selected an older compiler whose default C dialect rejects loop-variable declarations. -> Select gcc/g++ explicitly and declare GNU99 for C and C++
+- [midway-setup] The shared interactive SNANA setup contains unalias calls that return
 
 [PR section truncated at 12,000 characters; canonical JSON and HTML retain the full report.]
 <!-- SCIACCEL_CODEBASE_METADATA_REPORT:END -->
