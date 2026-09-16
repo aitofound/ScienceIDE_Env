@@ -72,7 +72,7 @@ Not run:
 
 | module | approval | purpose / difference | owned files | owned text lines | collected tests | shared components |
 |---|---|---|---:|---:|---:|---|
-| `legume` | approved | Single module: there is nothing to differentiate it from. The cut is the whole codebase over paths ['.'] under the skill's whole-codebase default. legume is one pip-installable pa… | 115 | 38638 | 13 | unknown |
+| `legume` | approved | Single module: there is nothing to differentiate it from. The cut is the whole codebase over paths ['.'] under the skill's whole-codebase default. legume is one pip-installable pa… | 115 | 38638 | 27 | unknown |
 
 ### Shared code
 
@@ -92,10 +92,10 @@ Not run:
 
 | count | value | unit |
 |---|---:|---|
-| `test_files` | 10 | files |
-| `test_definitions` | 13 | source-level test definitions |
-| `collected_items` | 13 | framework-collected items |
-| `inner_cases` | 2 | inner cases |
+| `test_files` | 24 | files |
+| `test_definitions` | 27 | source-level test definitions |
+| `collected_items` | 27 | framework-collected items |
+| `inner_cases` | 8 | inner cases |
 
 ### Gaps and warnings
 - The code-split table's 'tests' bucket is larger than the test suite. Two things land in it that are not tests: tests/data/gme_gx_both.out, a 10,184-line text reference file, and the nine test_*.py files under docs/examples/legume/tests/, which match the classification rule's 'tests' path component. The real suite is 10 files and 720 lines of Python; the stale duplicate is 22 files, 3.7 MB and 618 lines of Python and is excluded from the official-test survey.
