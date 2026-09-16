@@ -1,0 +1,37 @@
+{
+  "module": {
+    "slug": "tmm",
+    "title": "tmm: transfer-matrix optics for multilayer thin films",
+    "paths": [
+      "."
+    ],
+    "entrypoints": [
+      "tmm_core.coh_tmm(pol, n_list, d_list, th_0, lam_vac): the coherent transfer-matrix solve of one stack at one wavelength and angle (r, t, R, T, power_entering, vw_list, kz_list, th_list)",
+      "tmm_core.inc_tmm(pol, n_list, d_list, c_list, th_0, lam_vac): the incoherent or mixed coherent/incoherent solve (R, T, VW_list, power_entering_list, the coherent sub-stack results)",
+      "tmm_core.ellips, unpolarized_RT, position_resolved, absorp_in_each_layer, absorp_analytic_fn, inc_absorp_in_each_layer, inc_find_absorp_analytic_fn: the derived observables",
+      "color.calc_reflectances and calc_spectrum and calc_color: film colour under an illuminant (needs colorpy)",
+      "tests.run_all(): the eight official tests; examples.sample1..sample6: the six official examples"
+    ],
+    "expensive_path": "Every solver call handles one wavelength, one angle and one polarisation with Python-level 2x2 complex matrix products and Fresnel coefficients per interface (coh_tmm: two loops over layers, then a backward sweep for vw_list; inc_tmm: two coh_tmm calls per coherent sub-stack plus the intensity transfer). Spectra, angle scans, thickness scans and every inverse-design loop are pure Python loops around it: sample5 alone makes 38,151 coh_tmm calls (8.4 s), sample1 1,200. What a port accelerates is the batched evaluation of many stacks, wavelengths and angles (the tmm_fast re-implementation reports about 100x from vectorisation and GPU execution).",
+    "rationale": "One package of 1,912 Python lines, one build (pip), one test file, one example file, one namespace; coh_tmm, inc_tmm, the derived observables and the colour layer share the same state (n_list, d_list, angles, the 2x2 matrices) and inc_tmm is built on coh_tmm, so no sub-part could carry its own task without the solver redesigning a sibling. The whole codebase is the module, slug tmm.",
+    "excluded": [
+      "examples.ipynb: the six samples of examples.py pasted into notebook cells; deduplicated to the .py, which exercises every code path the notebook holds",
+      "manual.pdf and manual_source/manual.lyx: documentation, nothing runs"
+    ],
+    "hazards": [
+      "color.py and examples.sample5 need colorpy; the PyPI colorpy 0.1.1 is Python 2 only (import colormodels fails on Python 3); the fish2000/ColorPy fork (LGPL-3.0) at commit 4c9e5b2e334851b42626f9a1eda31197739b097e imports and runs on 3.12, so the colour check adds an LGPL third-party dependency to the images (installed, never vendored)",
+      "is_forward_angle decides the forward wave by a floating-point comparison with a 100*EPSILON threshold, and snell and list_snell flip the angle on it; coh_tmm clamps imag(delta) > 35 and inc_tmm floors P < 1e-30: discrete choices on floating-point values, far from the thresholds in every official deck",
+      "coh_tmm prints an opacity warning once per process through a module global; stdout is therefore process-history dependent and is never a graded observable",
+      "examples end in matplotlib.pyplot.show() (headless runs need MPLBACKEND=Agg or a stub) and colorpy.plots writes temp_plot.png into the working directory",
+      "sample2 depends on scipy.interpolate.interp1d(kind='quadratic') on complex data, a legacy SciPy interface"
+    ]
+  },
+  "approval": {
+    "modules": [
+      "tmm"
+    ],
+    "human_ref": "single-module default: the whole codebase is one module; no human decision at STOP 1, the cut is read in the source PR body at STOP 2",
+    "at": "2026-09-16T05:09:23Z"
+  },
+  "shared_infrastructure": []
+}
