@@ -16,15 +16,39 @@ example problems alike) whose pass rate is the reward.
 
 Repository path ownership is documented in [`docs/root-layout.md`](docs/root-layout.md).
 
-## Design
+## The skill
 
-The packaging pipeline is specified in
-[`SPEC.html`](https://github.com/huangzesen/sciaccelbench-pipeline/blob/main/skill/package-sciaccel-task/SPEC.html)
-in `huangzesen/sciaccelbench-pipeline`. That document is the canonical
-source: the skill and its CLI are written against it, and a change of design
-is a change to it first. The skill and its CLI (`sab.py`) implement it; this
-repository pins the commit it runs in
-[`skills/package-sciaccel-task/PIPELINE_REVISION`](skills/package-sciaccel-task/PIPELINE_REVISION).
+Tasks are authored with the **package-sciaccel-task** skill, which lives in
+its own repository:
+
+> **https://github.com/huangzesen/sciaccelbench-pipeline**
+
+That repository holds the procedure
+([`SKILL.md`](https://github.com/huangzesen/sciaccelbench-pipeline/blob/main/skill/package-sciaccel-task/SKILL.md)),
+the design it implements
+([`SPEC.html`](https://github.com/huangzesen/sciaccelbench-pipeline/blob/main/skill/package-sciaccel-task/SPEC.html)),
+the pitfalls reference, the task and check templates, and the `sab` CLI that
+drives and checks every step. The SPEC is the canonical source: the skill and
+the CLI are written against it, and a change of design is a change to it
+first.
+
+This repository carries none of that text or code. Under
+[`skills/package-sciaccel-task/`](skills/package-sciaccel-task/) it keeps a
+pointer, the commit pin
+[`PIPELINE_REVISION`](skills/package-sciaccel-task/PIPELINE_REVISION) naming
+the pipeline commit that `main` runs, and the loader `scripts/sab.py` that
+runs the CLI from a clone at that commit. To work on a task:
+
+```bash
+git clone https://github.com/huangzesen/sciaccelbench-pipeline ../sciaccelbench-pipeline
+git -C ../sciaccelbench-pipeline checkout "$(cat skills/package-sciaccel-task/PIPELINE_REVISION)"
+python3 skills/package-sciaccel-task/scripts/sab.py status
+```
+
+Then read `../sciaccelbench-pipeline/skill/package-sciaccel-task/SKILL.md` and
+follow it. The loader also accepts a clone at `$SAB_PIPELINE` or `.pipeline/`
+and warns when the clone is not on the pinned commit. A pipeline release lands
+here as a one-line bump of the pin.
 
 ## Vocabulary
 
@@ -41,8 +65,9 @@ human curator owns every one of them.
 
 ## Authoring a task
 
-One CLI with two modes guides the process and validates what the agent
-writes; it does not write science, dispatch other agents, or merge.
+The skill's `sab` CLI, one tool with two modes, guides the process and
+validates what the agent writes; it does not write science, dispatch other
+agents, or merge. The steps below are the outline; the skill is the procedure.
 
 1. **Codebase phase.** Register a pinned codebase, decompose it into
    semi-independent modules (the human approves the cut), vendor the source
@@ -137,6 +162,8 @@ likely means no port happened.
 
 ## Validate locally
 
+With the pipeline clone in place (see *The skill*):
+
 ```bash
 python3 skills/package-sciaccel-task/scripts/sab.py validate-harbor --all tasks
 BASE_REF=origin/main npm run check
@@ -166,8 +193,8 @@ the current spec keep their own drivers until they are rebuilt.
 
 ## Contributing
 
-Submit tasks through a pull request. Open it once the module and the check set
-are clear, then add the checks, self-validation records, and narrative on the
+Read the skill first (see *The skill*), then submit tasks through a pull
+request. Open it once the module and the check set are clear, then add the checks, self-validation records, and narrative on the
 same branch. Review asks whether the module is real and manageable, the checks
 come from the official tests and cover the module, each pass policy is
 physical and shown achievable, the self-validation passed, and the
