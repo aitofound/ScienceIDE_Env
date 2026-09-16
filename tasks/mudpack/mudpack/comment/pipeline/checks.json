@@ -1,0 +1,580 @@
+{
+  "written_at": "2026-09-16T06:47:48Z",
+  "checks": [
+    {
+      "name": "tcud2",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tcud24",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tcud24cr",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tcud24sp",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tcud2cr",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tcud2sp",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tcud3",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tcud34",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tcud34sp",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 0.75 to 0.7500000000000002: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tcud3cr",
+      "policy": "invariants",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs. Measured on arm64/gfortran 15.2 this leaves err2 unchanged to 14 significant digits (same rounding path); measured on the worker (x86_64) it moved err2 from 0.09863272 (nominal) to 2.6234380368819... (variant) -- a 26x jump from the smallest possible input perturbation. This is the direct evidence that this check's outer correction is genuinely chaotic (a non-scaling, architecture-dependent jump from an infinitesimal input change, the same signature as the meep-mpb-eigensolver-two-state pitfall), not evidence of a broken variant.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size solve, including its 10-iteration outer cross-derivative correction) measured well under one second natively",
+      "bounds": [
+        10.0
+      ]
+    },
+    {
+      "name": "tcud3sp",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 0.75 to 0.7500000000000002: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tcuh2",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tcuh24",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tcuh24cr",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tcuh2cr",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tcuh3",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tcuh34",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tmud2",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tmud24",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tmud24cr",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tmud24sp",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tmud2cr",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tmud2sa",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `pd`, changed from 6.28319 to 6.283185307179588: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tmud2sp",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tmud3",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tmud34",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tmud34sp",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tmud3cr",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tmud3sa",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `rb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tmud3sp",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tmuh2",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `pd`, changed from 6.28319 to 6.283185307179588: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tmuh24",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `pd`, changed from 6.28319 to 6.283185307179588: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tmuh24cr",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tmuh2cr",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tmuh3",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    },
+    {
+      "name": "tmuh34",
+      "policy": "pointwise",
+      "expected_runtime_s": 2.0,
+      "labels": [],
+      "knobs": [
+        "SAB_CPUS=1  cores used; this is a fixed-size serial multigrid solve and does not scale with cores. MUDPACK ships OpenMP directives on its relaxation loops (515 lines across the library) but this build never passes -fopenmp, so they are inactive and the summation order is fixed; a threaded build is out of scope for this check (see comment/README.md)."
+      ],
+      "variant": "ic/variant/driver.f differs from ic/nominal/driver.f only in the literal value of `xb`, changed from 1 to 1.0000000000000004: exactly two upward binary64 ULPs (the build uses -fdefault-real-8, so Fortran REAL is 8-byte). This is an active input to the PDE problem set-up (a domain-extent bound the driver uses to place the grid and evaluate boundary/coefficient/exact-solution values), so the perturbation propagates into the right-hand side, the boundary conditions and the solved field.",
+      "altbuild": "the same pinned source (driver.f and code/mudpack/src) built with gfortran -O0 instead of -O2, same -fdefault-real-8 -std=legacy; MUDPACK's default build is already IEEE (no fast-math to flip), so -O0 is the same-compiler fallback axis",
+      "runtime_note": "under 300 s: the whole check (library build, driver compile and link, and the fixed-size single multigrid solve) measured well under one second natively",
+      "bounds": [
+        1e-10,
+        1e-09
+      ]
+    }
+  ]
+}
