@@ -1,0 +1,1197 @@
+<!-- The syntax is described by share/Scripts/CheckParam.pl and the manual -->
+
+<commandList name="MFLAMPA: SP Component">
+<set name="NameComp"          type="string" value="$SP"/>
+<set name="NameRestartOutDir" type="string" value="$NameComp/restartOUT"/>
+<set name="NamePlotDir"       type="string" value="$NameComp/IO2"/>
+
+List of commands used in the PARAM.in file for MFLAMPA configured as the SP 
+component of the SWMF.
+
+<commandgroup name="DOMAIN">
+
+<command name="ORIGIN">
+  <parameter name="ROrigin" type="real" min="1.0" default="2.5"/>
+  <parameter name="LonMin"  type="real" min="-359.0" max="359.0" default="0.0"/>
+  <parameter name="LatMin"  type="real" min="-90.0" max="89.0" default="-70.0"/>
+  <parameter name="LonMax"  type="real" min="1.0" max="360.0" default="360.0"/>
+  <parameter name="LatMax"  type="real" min="-89.0" max="90.0" default="70.0"/>
+
+#ORIGIN
+2.5			ROrigin [Rs]
+0.0			LonMin [deg]
+-70.0			LatMin [deg]
+360.0			LonMax [deg]
+70.0			LatMax [deg]
+
+Origin points on the surface R=ROrigin in the intervals of longitude,
+(LonMin,LonMax) and latitude, (LatMin,LatMax). Originating from these
+points are the magnetic field lines traced down from ROrigin to RScMin
+and up from ROrigin to RIhMax. 
+</command>
+</commandgroup>
+
+<commandgroup name="UNIT">
+
+<command name="PARTICLEENERGYUNIT">
+  <parameter name="ParticleEnergyUnit" type="string" default="keV"/>
+
+#PARTICLEENERGYUNIT
+keV			ParticleEnergyUnit
+
+The particle energy unit: for example, keV, MeV, GeV, etc.
+We use keV as the default value.
+</command>
+</commandgroup>
+
+<commandgroup name="STAND ALONE MODE">
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!! STAND ALONE PARAMETERS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+<command name="STARTTIME" if="$_IsFirstSession">
+  <parameter name="iYear"   type="integer" default="2000" />
+  <parameter name="iMonth"  type="integer" min="1" max="12" default="3"/>
+  <parameter name="iDay"    type="integer" min="1" max="31" default="21"/>
+  <parameter name="iHour"   type="integer" min="0" max="23" default="10"/>
+  <parameter name="iMinute" type="integer" min="0" max="59" default="45"/>
+  <parameter name="iSecond" type="integer" min="0" max="59" default="0"/>
+
+#STARTTIME
+2000			iYear
+   3			iMonth
+  22			iDay
+  10			iHour
+  45			iMinute
+   0			iSecond
+
+This command can only be used in the first session.
+
+The #STARTTIME command sets the date and time in Greenwich Mean Time
+(GMT) or Universal Time (UT) when the simulation starts.
+
+There is no default value.
+</command>
+
+<command name="SETREALTIME" if="$_IsStandAlone and $_IsFirstSession">
+  <parameter name="iYear"   type="integer" default="2000" />
+  <parameter name="iMonth"  type="integer" min="1" max="12" default="3"/>
+  <parameter name="iDay"    type="integer" min="1" max="31" default="21"/>
+  <parameter name="iHour"   type="integer" min="0" max="23" default="10"/>
+  <parameter name="iMinute" type="integer" min="0" max="59" default="45"/>
+  <parameter name="iSecond" type="integer" min="0" max="59" default="0"/>
+
+#SETREALTIME
+2000			iYear
+   3			iMonth
+  22			iDay
+  10			iHour
+  45			iMinute
+   0			iSecond
+
+This command can only be used in the first session and stand alone mode.
+
+Detailed descriptions are very similar to the ones in #STARTTIME,
+but here it is with check_stand_alone.
+</command>
+
+<command name="TIMEACCURATE" if="$_IsStandAlone">
+  <parameter name="IsTimeAccurate" type="logical" default="T" />
+
+#TIMEACCURATE
+T			IsTimeAccurate
+
+This command is only used in stand alone mode.
+
+Allows solving steady-state distribution (cosmic rays, seed population)
+by setting IsTimeAccurate to .false., implying that IsSteadyState is
+.true. in the code.
+</command>
+
+<command name="TIMESIMULATION" if="$_IsFirstSession" multiple="T">
+  <parameter name="SPTime" type="real" min="0.0" default="0.0" />
+
+#TIMESIMULATION
+1			SPTime [sec]
+
+This command can only be used in the first session.
+
+The SPTime variable contains the simulation time in seconds
+relative to the initial time set by the #STARTTIME command.
+The #TIMESIMULATION command and SPTime are saved into the restart
+header file, so the simulation can be continued from the same time. 
+This value can be overwritten by a subsequent #TIMESIMULATION command 
+if necessary.
+
+In SWMF the MFLAMPA time is checked against the global SWMF simulation time.
+
+The default value is SPTime=0.
+</command>
+
+<command name="NSTEP" if="$_IsFirstSession" multiple="T">
+  <parameter name="nStep" type="integer" min="0" default="0" />
+
+#NSTEP
+100			nStep
+
+This command can only be used in the first session.
+
+Set nStep for the component. Typically used in the restart.H header file.
+Generally it is not inserted in a PARAM.in file by the user, except
+when the number of steps are reset for extremely long runs, such as
+the operational run at NOAA SWPC, to avoid integer overflow.
+
+The default is nStep=0 as the starting time step with no restart.
+</command>
+
+<command name="BEGIN_COMP" multiple="T" if="$_IsStandAlone">
+
+This command is allowed in stand alone mode only for the sake of the 
+test suite, which contains these commands when the framework is tested.
+</command>
+
+<command name="END_COMP" multiple="T" if="$_IsStandAlone">
+
+This command is allowed in stand alone mode only for the sake of the 
+test suite, which contains these commands when the framework is tested.
+</command>
+
+<command name="SAVERESTART" if="$_IsStandAlone">
+  <parameter name="DoSaveRestart" type="logical" default="F" />
+  <parameter name="DnSaveRestart" type="integer" min="-1" default="-1" />
+  <parameter name="DtSaveRestart" type="real" min="-1.0" default="-1.0" />
+
+#SAVERESTART
+F			DoSaveRestart
+-1			DnSaveRestart
+-1.0			DtSaveRestart
+
+This command is only used in stand alone mode.
+
+Determine whether and when to save the restart file (STAND ALONE ONLY)
+Set default value as: False, -1, and -1.0
+</command>
+
+<command name="INCLUDE">
+  <parameter name="NameIncludeFile" type="string" 
+		default="RESTART.in" length="100" />
+
+#INCLUDE
+run_steady/SP/restartIN/restart.H			NameIncludeFile
+
+The NameIncludeFile parameter contains the name of the file to be included.
+The file name may be followed with a trailing comment if it is separated
+with at least 3 spaces or one TAB character.
+
+The #INCLUDE command can be used anywhere in the parameter file, even in
+the sections which contain the component specific parameters.
+
+For example, the information in the run/SP/restartIN/restart.H file or
+parameters specific to a component can be included.
+</command>
+
+<command name="RUN" if="$_IsStandAlone">
+
+#RUN
+
+This command is only used in stand alone mode.
+
+The #RUN command does not have any parameters. It signals the end
+of the current session, and makes MFLAMPA execute the session with
+the current set of parameters. The parameters for the next session
+start after the #RUN command. For the last session there is no
+need to use the #RUN command, since the #END command or simply
+the end of the PARAM.in file makes MFLAMPA execute the last session.
+</command>
+
+<command name="END" if="$_IsStandAlone">
+
+#END
+
+This command is only used in stand alone mode.
+
+The #END command signals the end of the included file or the
+end of the PARAM.in file. Lines following the #END command are
+ignored. It is not required to use the #END command. The end
+of the included file or PARAM.in file is equivalent with an 
+#END command in the last line.
+</command>
+
+</commandgroup>
+
+<commandgroup name="STOPPING CRITERIA">
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!! STOPPING CRITERIA !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+The commands in this group only work in stand alone mode.
+
+<command name="STOP" if="$_IsStandAlone">
+  <parameter name="nIterMax" type="integer" min="-1" default="-1" />
+  <parameter name="TimeMax" type="real"  min="-1.0" default="-1.0" />
+
+#STOP
+-1			nIterMax
+600.0			TimeMax [sec]
+
+This command is only used in stand alone mode.
+
+The nIterMax variable contains the maximum number of iterations
+{\it since the beginning of the current run} (in case of a restart,
+the time steps done before the restart do not count).
+If nIteration reaches this value the session is finished.
+The TimeMax variable contains the maximum simulation time
+relative to the initial time determined by the #STARTTIME command.
+If tSimulation reaches this value the session is finished.
+
+Using a negative value for either variables means that the
+corresponding condition is  not checked. 
+
+The #STOP command must be used in every session.
+</command>
+
+<command name="CHECKSTOPFILE" if="$_IsStandAlone">
+  <parameter name="DoCheckStopFile" type="logical" default="T" />
+
+#CHECKSTOPFILE
+T			DoCheckStopFile
+
+This command is only used in stand alone mode.
+
+If DoCheckStopFile is true then the code checks if the MFLAMPA.STOP file
+exists in the run directory. This file is deleted at the beginning of the
+run, so the user must explicitly create the file with e.g. the 
+"touch MFLAMPA.STOP" UNIX command. If the file is found in the run
+directory, the execution stops in a graceful manner. Restart files
+and plot files are saved as required by the appropriate parameters.
+
+The default is DoCheckStopFile=.true.
+</command>
+
+<command name="ECHO" if="$_IsStandAlone">
+  <parameter name="DoEcho" type="logical" default="T" />
+
+#ECHO
+T			DoEcho
+
+This command is only used in stand alone mode.
+
+If DoEcho is true then the code set the parameters to be echoed
+
+The default is DoEcho=.false.
+</command>
+
+
+<command name="CPUTIMEMAX" if="$_IsStandAlone">
+  <parameter name="CpuTimeMax" type="real" min="-1.0" default="-1.0" />
+
+#CPUTIMEMAX
+3600			CpuTimeMax [sec]
+
+This command is only used in stand alone mode.
+
+The CpuTimeMax variable contains the maximum allowed CPU time (wall clock
+time) for the execution of the current run. If the CPU time reaches this
+time, the execution stops in a graceful manner. Restart files and plot
+files are saved as required by the appropriate parameters.
+This command is very useful when the code is submitted to a batch
+queue with a limited wall clock time.
+
+The default value is -1.0, which means that the CPU time is not checked.
+To do the check the CpuTimeMax variable has to be set to a positive value.
+</command>
+</commandgroup>
+
+
+<commandgroup name="GRID">
+Parameters of the Lagrangian grid used in MFLAMPA
+
+<command name="CHECKGRIDSIZE" if="$_IsFirstSession">
+  <parameter name="nVertexMax" type="integer" min="1" default="2000" />
+  <parameter name="nLat"  type="integer" min="1" default="20" />
+  <parameter name="nLon"  type="integer" min="1" default="20" />
+
+#CHECKGRIDSIZE
+1000			nParticleMax
+4			nLat
+4			nLon
+
+This command can only be used in the first session.
+
+Check if the configured parameters of the Lagrangian grid match those
+assumed in the input files, which will usually be called in RESTART.
+</command>
+
+<command name="GRIDNODE" if="$_IsFirstSession">
+  <parameter name="nLat"  type="integer" min="1" default="20" />
+  <parameter name="nLon"  type="integer" min="1" default="20" />
+
+#GRIDNODE
+4			nLat
+4			nLon
+
+This command can only be used in the first session.
+
+Set the configured parameters of the Lagrangian grid, where nLat
+and nLon will be placed uniformly on the solar surface, for the
+field line footpoints.
+</command>
+
+<command name="GRIDNODEOFFSET" if="$_IsFirstSession and $_IsStandAlone">
+  <parameter name="iLatOffset"  type="integer" min="0" default="0" />
+  <parameter name="iLonOffset"  type="integer" min="0" default="0" />
+
+#GRIDNODESTART
+0			iLatOffset
+0			iLonOffset
+
+This command can only be used in the first session and in the standalone mode
+
+Set the configured parameters of the Lagrangian grid, where
+iLatOffset and iLonOffset denote the offset index for fieldlines
+along latitudes and longitude, respectively. Default values are 0.
+</command>
+
+<command name="TESTPOS" if="$_IsFirstSession">
+  <parameter name="iNodeTest"  type="integer" min="0" default="1" />
+  <parameter name="iParticleTest"  type="integer" min="0" default="10" />
+  <parameter name="iPTest"  type="integer" min="0" default="1" />
+
+#TESTPOS
+1			iNodeTest
+99			iParticleTest
+1			iPTest
+
+This command can only be used in the first session.
+
+Set the numbers for test node, position, and momentum.
+</command>
+
+<command name="TESTTRIANGULATE" if="$_IsFirstSession">
+  <parameter name="TestTriangulate"  type="logical" default="F" />
+  <parameter name="XLocTestTri"  type="real" default="214.0" />
+  <parameter name="YLocTestTri"  type="real" default="20.0" />
+  <parameter name="ZLocTestTri"  type="real" default="10.0" />
+
+#TESTTRIANGULATE
+T			TestTriangulate
+190.0			XLocTestTri [AU]
+100.0			YLocTestTri [AU]
+5.0			ZLocTestTri [AU]
+
+This command can only be used in the first session.
+
+Set the interpolated location in the unit of [AU] to test triangulation.
+</command>
+
+<command name="TRIANGULATION" if="$_IsFirstSession">
+  <parameter name="UsePoleTriangulation"  type="logical" default="F" />
+  <parameter name="UsePlanarTriangles"  type="logical" default="T" />
+
+#TESTPOS
+F			UsePoleTriangulation
+T			UsePlanarTriangles
+
+This command can only be used in the first session.
+
+Set options when making TRIANGULATION: (1) whether we manually include
+the north and south poles. Recommended to do if there are too few points;
+(2) whether we use planar or spherical triangles. Recommended to have
+spherical triangles if we set a specific radius.
+</command>
+
+<command name="SPREADGRID">
+  <parameter name="nSpreadLon"  type="integer" min="1" default="3" />
+  <parameter name="nSpreadLat"  type="integer" min="1" default="3" />
+
+#SPREADGRID
+6			nSpreadLon
+6			nSpreadLat
+
+Set the size of angular grid in longitude and latitude
+</command>
+
+<command name="SPREADSIGMA">
+  <parameter name="SigmaMode"  type="string" input="select">
+    <option name="const" default="T"/>
+    <option name="linear-lon"/>
+    <option name="linear-lat"/>
+    <option name="bilinear"/>
+  </parameter>
+  <parameter name="Sigma"  type="real" min="0.0" default="10.0"/>
+
+#SPREADSIGMA
+const			SigmaMode
+5.0			Sigma [deg]
+
+Set the sigma changes to the lines:
+SigmaMode is const: all line have the same characteristic spread
+SigmaMode is linear-lon: sigma changes linear by lines' longitude index
+SigmaMode is linear-lat: sigma changes linear by lines' latitude index
+SigmaMode is bilinear: sigma changes bilinear by lon and lat indexes
+Then we set the "Sigma" of the lines, namely the changes in degrees.
+</command>
+
+<command name="SPREADSOLIDANGLE">
+  <parameter name="RadiusRef"  type="real" min="-1.0" default="1.0"/>
+  <parameter name="SolidAngleRef"  type="real" min="-1.0" default="1.0"/>
+
+#SPREADSOLIDANGLE
+-1.0			RadiusRef [Rs]
+-1.0			Sigma [deg]
+
+Set reference radius and value of solid angle associated with lines.
+</command>
+
+<command name="COORDSYSTEM" alias="COORDINATESYSTEM" if="$_IsFirstSession">
+  <parameter name="TypeCoordSystem" type="string" input="select">
+    <option name="HGR" default="T"/>
+    <option name="HGI"/>
+    <option name="HGC"/>
+  </parameter>
+
+#COORDSYSTEM
+HGI			TypeCoordSystem
+
+This command can only be used in the first session.
+
+Type of heliocentric coordinate system used in MFLAMPA (HGI, HGR, HGC).
+</command>
+
+<command name="MOMENTUMGRID" if="$_IsFirstSession">
+  <parameter name="nP" type="integer" min="1" default="100" />
+
+#MOMENTUMGRID
+100			nP
+
+This command can only be used in the first session.
+
+Read the number of energy bins, usually from the restart.H file.
+</command>
+
+<command name="ENERGYRANGE" if="$_IsFirstSession">
+  <parameter name="EnergyMin" type="real" min="0.0" default="1.0E+1" />
+  <parameter name="EnergyMax" type="real" min="0.0" default="1.0E+7" />
+
+#ENERGYRANGE
+1.0E+1			EnergyMin
+1.0E+7			EnergyMax
+
+This command can only be used in the first session.
+
+Read energy range with the unit of keV as default, usually from the restart.H file.
+</command>
+
+<command name="PITCHANGLEGRID" if="$_IsFirstSession">
+  <parameter name="nMu" type="integer" min="1" default="1"/>
+
+#PITCHANGLEGRID
+1			nMu
+
+This command can only be used in the first session.
+
+Read the pitch angle information, determine whether we take the
+averaged value over all pitch angles. Also, we need to specify
+how many intervals in the range of [-1, 1] for pitch angle.
+</command>
+
+<command name="FLUXINITIAL" if="$_IsFirstSession">
+  <parameter name="FluxInitIo" type="real" min="0.0" default="0.01" />
+
+#FLUXINITIAL
+0.01			FluxInitIo [pfu]
+
+This command can only be used in the first session.
+
+Distribution is initialized to have integral flux:
+default value is set as 0.01 [pfu]. One can set this
+to a lower order of magnitude, e.g., 1.0E-5 pfu.
+</command>
+
+</commandgroup>
+
+<commandgroup name="ENERGYCHANNEL">
+
+<command name="ECHANNEL" if="$_IsFirstSession">
+  <parameter name="nFluxChannel" type="integer" min="1" default="6" />
+  <for name="iFluxChannel" from="1" to="$nFluxChannel">
+      <parameter name="EChannelIo_I" type="strings" min="3" max="3" >
+        <part name="KindFlux" type="string" input="select" required="T">
+          <option name="Integral intensity"     value="INT" />
+          <option name="Differential intensity" value="DIFF" />
+        </part>
+        <part name="EChannelLo" type="real" min="0.0" required="T"/>
+        <part name="EChannelHi" type="real" min="0.0" required="T"/>
+      </parameter>
+  </for>
+
+#ECHANNEL
+6			nFluxChannel
+INT 5 1.0E+4			EChannelIo_I [MeV]
+INT 10 1.0E+4			EChannelIo_I [MeV]
+INT 30 1.0E+4			EChannelIo_I [MeV]
+INT 50 1.0E+4			EChannelIo_I [MeV]
+INT 60 1.0E+4			EChannelIo_I [MeV]
+INT 100 1.0E+4			EChannelIo_I [MeV]
+
+This command can only be used in the first session.
+
+This is to set the self-defined flux channels. As default, the code uses
+the 6 channels of GOES. By setting self-defined flux channels, one will
+not use any satellite channels unless setting #ECHANNELSAT.
+
+For each self-defined energy channels, one needs to specify the type of
+flux, namely integral or diffential intensity, in the first input of
+EChannelIo_I. Then, one also needs to input the lower and upper bounds,
+in the unit of MeV, of the energy channel which the particle flux is
+integrated or averaged (differentiated) as the output. All the channels
+for fluxes saved in MH_data will be saved into MH_data_EChannel.H file.
+
+In MH_data and MH_data_EChannel.H files, the energy channels will be
+saved as flux_ChannelXX, from 01 to the summed nFluxChannel. Current
+maximum number of energy channels is 99.
+</command>
+
+<command name="ECHANNELSAT" if="$_IsFirstSession">
+  <parameter name="nFluxChannelSat" type="integer" min="1" default="1" />
+  <for name="iFluxChannelSat" from="1" to="$nFluxChannelSat">
+    <parameter name="NameSatellite" type="string" case="upper" default="GOES"/>
+  </for>
+
+#ECHANNELSAT
+1			nFluxChannelSat
+GOES			NameSatellite
+
+This command can only be used in the first session.
+
+This is to set the energy channels of specified satellites or instruments
+for convenient comparisons with observational data. These energy channels
+and also flux types, i.e., integral or differential intensity, have 
+already been written in the module, according to the energy bins from the
+original websites of observational data. By specifying satellites, one do
+not have to type each energy channel in #ECHANNEL (Of course, this is the
+alternative way to achieve this). All the channels for fluxes saved in
+MH_data will be saved into MH_data_EChannel.H file.
+
+If one does not specify anything, either by #ECHANNEL or #ECHANNELSAT,
+we will use the 6 energy channels of GOES as default. If one specifies
+#ECHANNEL and still wants to include the satellite energy channels, one
+needs to explicitly specify #ECHANNELSAT in this case. When including
+both #ECHANNEL and #ECHANNELSAT, the self-defined channels will always
+be set ahead of the satellite energy channels in the outputs.
+
+In MH_data and MH_data_EChannel.H files, the energy channels will be
+saved as flux_ChannelXX, from 01 to the summed nFluxChannel. Current
+maximum number of energy channels is 99.
+</command>
+
+</commandgroup>
+
+<commandgroup name="ENDBC">
+
+<command name="LOWERENDBC">
+   <parameter name="TypeLowerEndBc" type="string" case="lower" input="select"
+	      required="T">
+     <option name="inject"/>
+     <option name="float" default="T"/>
+     <option name="escape"/>
+   </parameter>
+
+#LOWERENDBC
+inject			TypeLowerEndBc
+
+For different cases of TypeLowerEndBc, different LowerEndSpectrum_I values
+are used in diffusion.
+
+For LowerEndSpectrum_I, it is the spectral extrapolation following
+the power law of SpectralIndex at the lower boundary when
+TypeLowerEndBc = "inject". Besides, one can set "float" (= current VDF
+at iVertex=1) and "escape" (= Background_I), especially for the
+steady-state GCR spectrum simulations. 
+
+</command>
+
+<command name="UPPERENDBC">
+  <parameter name="TypeUpperEndBc" type="string" input="select">
+    <option name="lism"/>
+    <option name="float"/>
+    <option name="escape" default="T"/>
+  </parameter>
+  <if expr="$TypeUpperEndBc eq 'lism'">
+    <parameter name="TypeLisBc" type="string" input="select">
+      <option name="usoskin" default="T"/>
+      <option name="corti"/>
+    </parameter>
+    <parameter name="UseModulationPot" type="logical" default="F"/>
+    <if expr="$UseModulationPot">
+      <parameter name="ModulationPot" type="real" min="1.0" default="600.0"/>
+    </if>
+  </if>
+
+#UPPERENDBC
+lism			TypeUpperEndBc
+usoskin			TypeLisBc
+T			UseModulationPot
+600.0			ModulationPot
+
+For different cases of TypeUpperEndBc,
+different UpperEndSpectrum_I values are used in diffusion.
+
+As for UpperEndSpectrum_I, we need to first determine the type of
+UpperEndBc, where LISM is the nominal one for use. If one wants to
+turn off the UpperEndSpectrum_I, TypeUpperEndBc should be set to
+"false" with no differences in lower and upper
+cases. For LISM, there are various models fitting or simulating
+the spectrum, read as TypeLisBc. Here we set Eq.(2) in Usoskin et
+al. 2005 as default. Then, we also need to determine whether we use
+LISM or the GCR spectrum at 1-2 AU. For the latter one, we also need
+the modulation potential (denoted as "phi" in Usoskin et al. 2005),
+which is temporal- and spatial- (and even energy-) dependent. We
+stick to the one derived by Oulu neutron monitor and published
+in the "Dataset 1" on https://cosmicrays.oulu.fi/phi/phi.html.
+</command>
+
+</commandgroup>
+
+
+<commandgroup name="ADVANCE">
+
+<command name="MOMENTUMBC">
+  <parameter name="TypeMomentumMinBc" type="string" input="select">
+    <option name="inject" default="T"/>
+    <option name="float"/>
+    <option name="grad"/>
+  </parameter>
+  <if expr="$TypeMomentumMinBc eq 'inject'">
+    <parameter name="SpectralIndex" type="real" default="5.0" />
+    <parameter name="EfficiencyInj" type="real" min="0.0" default="1.0" />
+  </if>
+  <parameter name="TypeMomentumMaxBc" type="string" input="select">
+    <option name="escape" default="T"/>
+    <option name="float"/>
+    <option name="grad"/>
+  </parameter>
+
+#MOMENTUMBC
+inject			TypeMomemtumMinBc
+5.0			SpectralIndex
+1.0			EfficiencyInj
+escape			TypeMomemtumMaxBc
+
+Set up parameters for the momentum boundary condition, controlling the
+types of BC at injection/minimum and maximum particle energies or its
+equivalent momentum. 
+
+Once can set "inject" as TypeMomemtumInjBc for injecting particles, e.g.,
+for SEP simulations and read parameters of the power-law spectrum of
+suprathermal particles at sqrt(2*mp*Ti) lt p lt Pinj:
+
+f(p) propto [Efficiency * (Spectral index - 3) / p**SpectralIndex]
+
+The injection efficiency is the ratio of suprathermal proton
+density to the total proton density. Should not exceed one,
+however, somewhat higher than one values may be of use.
+Default distribution is f(p) propto [1.0 * 2 / p**5].
+
+However, in other cases like for background GCRs, there is no need to
+inject particles. Then, one can set "float"/"floating"/"escape" for a
+floating/escape boundary at injection/minimum energy/momentum, meaning
+to set f(iP=0) = f(iP=1). One can also set "grad" to use the same gradient,
+i.e., grad:f(iP=0) to f(iP=1) remains the same as grad:f(iP=1) to f(iP=2)
+in geometric scale.
+
+It is the same for the maximum energy/momentum by setting TypeMomemtumMaxBc.
+Any other type is regarded as an unrecognized one at this stage.
+</command>
+
+
+<command name="CFL">
+  <parameter name="Cfl" type="real" min="0.0" max="1.0" default="0.9" />
+
+#CFL
+0.9			Cfl
+
+The CFL number for explicit scheme solving, for example, advection along
+energy axis in the phase space.
+</command>
+
+<command name="ADVECTION">
+  <parameter name="UsePoissonBracket" type="logical" default="T" />
+
+#ADVECTION
+F			UsePoissonBracket
+
+If UsePoissonBracket is True, the advection scheme is conservative
+Poisson bracket scheme; otherwise, it is non-conservative.
+
+This will be implemented later:
+parameter name="UseMuFocusing" type="logical" default="F"
+
+The default value is false.
+</command>
+
+<command name="FOCUSEDTRANSPORT">
+  <parameter name="UseBetatron" type="logical" default="F" />
+  <parameter name="UseInertialForce" type="logical" default="F" />
+  <parameter name="UseMuScattering" type="logical" default="F" />
+
+#FOCUSEDTRANSPORT
+F			UseBetatron
+F			UseInertialForce
+F			UseMuScattering
+
+When choosing to solve the focused transport equation, one should
+configure SP/MFLAMPA with nMu greater than 1; otherwise, there
+will be a warning and stop for the run.
+
+When solving the focused transport equation, we keep including
+the adiabatic focusing in the magnetic field (with such, we first
+have energy consevation), and the first-order Fermi accleration.
+One can also specify more terms of interest for the simulation,
+such as the betatron accleration (D(lnB)/Dt /= 0) and the
+inertial force (Du/Dt /= 0), by setting parameters of UseBetatron
+and UseInertialForce, respectively, in the PARAM.in file.
+
+In the focused transport equation solver, one can also determine
+whether to include the scattering term for pitch angle. If so,
+the coefficients (e.g., DMuMu and LamdbaMuMu) will be set up and
+the scattering with pitch angles will be included. One can also
+determine whether to solve the spatial diffusion by setting
+UseDiffusion in #DIFFUSION.
+
+The default values for both of these parameters are false.
+</command>
+
+</commandgroup>
+
+
+<commandgroup name="ACTION">
+
+<command name="RESTART">
+  <parameter name="DoRestart" type="logical" default="T" />
+
+#RESTART
+T			DoRestart
+
+The default value is true.
+</command>
+
+<command name="DORUN">
+  <parameter name="DoRun" type="logical" default="T" />
+
+#DORUN
+T			DoRun
+
+If DoRun is False, only magnetic field lines are extracted, but the
+particle distribution function is not solved.
+
+The default value is true.
+</command>
+
+<command name="TRACESHOCK">
+  <parameter name="DoTraceShock" type="logical" default="T" />
+
+#TRACESHOCK
+T			DoTraceShock
+
+If DoTraceShock is False, the shock wave is not traced and the density
+profile is not sharpened around it, which means that there is no shock
+accleration process involved.
+
+The default value is true.
+</command>
+
+<command name="IDENTIFYSHOCK">
+  <parameter name="nShockWidth" type="integer" min="1" default="10" />
+  <parameter name="nShockMargin" type="integer" min="1" default="50" />
+  <parameter name="dLogRhoThreshold" type="real" min="0.0" default="0.01" />
+
+#IDENTIFYSHOCK
+10			nShockWidth
+50			nShockMargin
+0.01			dLogRhoThreshold
+
+These parameters are used to identify the shock location:
+we use iShock-nShockWidth+1:iShock+nShockWidth to identify the
+minimal divU, which should be smaller than -dLogRhoThreshold.
+In this process, one should notice that the shock should not
+be too close to the end, so there is a number of nShockMargin
+settign for the "margin" distance.
+</command>
+
+<command name="DIFFUSIONPARA">
+  <parameter name="UseBtotal" type="logical" default="F" />
+  <parameter name="TypeMhdDiffusion" type="string" default="sokolov2004" />
+
+
+#DIFFUSIONPARA
+F			UseBtotal
+sokolov2004			TypeMhdDiffusion
+
+
+UseBtotal is for the turbulence calculation: when calculating (B/dB)**2,
+if UseBtotal=.true., B is given as sqrt(B**2+dB**2). The default value
+is false, and one can turn this on. 
+TypeMhdDiffusion is to determine how the turbulence (dB) is calculated
+from the MHD parameters. "giacalone1999" assumes a (dB)**2/(1+(k*lc)**(5/3))
+law for the power spectral density in the turbulence spectrum. "sokolov2004"
+is what we use from the Sokolov et al 2004 paper, assuming Ic*k**(-5/3) law
+with a correlation length setup in "ScaleTurbulence1AU".
+</command>
+
+<command name="USEFIXEDMFPUPSTREAM">
+  <parameter name="UseFixedUps" type="logical" default="F" />
+  <if expr="$UseFixedUps">
+    <parameter name="MeanFreePath0InAu" type="real" min="0.0" default="0.3" />
+  </if>
+  
+#USEFIXEDMFPUPSTREAM
+T			UseFixedUps
+0.3			MeanFreePath0InAu
+
+UseFixedUps is to determine whether we set the mean free path in upstream,
+with formulas described Li et al. (2003), doi: 10.1029/2002JA009666.
+The default value for UseFixedMeanFreePathUpstream is set as
+as false, and that for MeanFreePath0InAu is 0.3 [AU], one can
+also see Chen et al. (2024), doi: 10.3847/1538-4357/ad33c3.
+</command>
+
+<command name="DIFFUSION">
+  <parameter name="UseDiffusion" type="logical" default="T" />
+
+#DIFFUSION
+T             UseDiffusion
+
+Used for testing, to disable diffusion, which by default is true.
+</command>
+  
+</commandgroup>
+
+<commandgroup name="TURBULENCE">
+
+<command name="#SCALETURBULENCE">
+  <parameter name="ScaleTurbulenceType" type="string" default="const" />
+  <parameter name="ScaleTurbulence1AU" type="real" min="0.0" default="0.3" />
+
+#SCALETURBULENCE
+const			ScaleTurbulenceType
+0.3			ScaleTurbulence1AU [AU]
+
+The cut-off wavenumber of turbulence spectrum is k0 = 2*cPi/Scale.
+The default value is set as const (or constant), i.e., the
+value (e.g., 0.3 AU) of "ScaleTurbulence1AU" in the unit of [AU].
+</command>
+
+<command name="TURBULENTSPECTRUM">
+  <parameter name="UseTurbulentSpectrum" type="logical" default="F" />
+
+#TURBULENTSPECTRUM
+F			UseTurbulentSpectrum
+
+Determine whether we use the turbulence spectrum.
+Set the default value is false.
+</command>
+
+
+</commandgroup>
+
+<commandgroup name="INPUT/OUTPUT">
+<command name="USEDATETIME">
+  <parameter name="UseDateTime" type="logical" default="F" />
+
+#USEDATETIME
+T			UseDateTime 
+
+Set the format for the output file names like _eYYYYMMDD_HHMMSS tagging
+the file with real date and UT tume instant. When unset (default) the
+time tag looks like _tHHMMSS, where HHMMSS is the simulation time in hours-
+minutes-seconds passed after the initial time (set by the command #STARTTIME)
+</command>
+
+<command name="TIMING">
+  <parameter name="UseTiming" type="logical" default="F" />
+  <parameter name="nTiming" type="integer" default="-2"/>
+  <parameter name="nDepthTiming" type="integer" default="-1" />
+  <parameter name="TypeTimingReport" type="string" />
+
+#TIMING
+T			UseTiming
+-2			nTiming
+-1			nDepthTiming
+cumm			TypeTimingReport
+
+Set the timing format in SP component, but as default, we set
+UseTiming as False; if UseTiming is True, one should specify
+nTiming, nDepthTiming, and TypeTimingReport. nTiming is set to
+be -2 as default: greater than -3 means that it reports the time
+at each specified spot; greater than -2 means that it reports
+the time in each TIMELOOP; greater than 0 is needed, to show the
+timing results, if required (with speed as cells/second/PE/step).
+</command>
+
+<command name="SAVEINITIAL">
+  <parameter name="DoSaveInitial" type="logical" default="T" />
+
+#SAVEINITIAL
+T			DoSaveInitial 
+
+As the default (DoSaveInitial=T) the MFLAMPA saves datasets (at least the
+MHD information) starting from the initial state prior to the run. However,
+once MFLAMPA restarts, it is useful to set DoSaveInitial to F, in order
+to avoid rewriting the output files and eliminate duplicate tags in the file
+tag list, becuase the same output files and tags were saved at the end of 
+previous run.
+</command>
+
+<command name="READMHDATA">
+  <parameter name="DoReadMhData" type="logical" default="F" />
+  <parameter name="NameInputDir" type="string"/>
+
+#READMHDATA
+T			DoReadMhData
+MH_data/		NameInputDir
+
+Sets the name of input directory with MHD data.
+</command>
+
+<command name="MHDATA">
+  <parameter name="TypeFile" type="string" input="select">
+    <option name="idl" default="T" />
+    <option name="ascii" />
+    <option name="tec" />
+    <option name="real4" />
+    <option name="real8" />
+  </parameter>
+  <parameter name="nFileRead" type="integer" default="0"/>
+  <parameter name="NameTagFile" type="string" default=""/>
+
+#MHDATA
+idl			TypeFile
+120			nFileRead
+MH_data.lst		NameTagFile
+
+Sets type and format of the MHD input files. nFileRead and NameTagFile
+are always read but only used when UseAppendedRead is false in #READMHDATA.
+</command>
+
+<command name="APPENDMHDATA">
+  <parameter name="UseAppendedRead" type="logical" default="F"/>
+  <parameter name="UseAppendedWrite" type="logical" default="F"/>
+
+#APPENDMHDATA
+F			UseAppendedRead
+F			UseAppendedWrite
+
+Controls the format of MH_data input and output files. Both default to
+false and this command is optional.
+If UseAppendedRead is true, each field line is read from a single file
+with all time steps appended (MH_data_iLon_iLat.out).
+If UseAppendedWrite is true, all time steps for each field line are
+appended to a single output file (MH_data_iLon_iLat.out). The file is
+overwritten on the first write and appended to on subsequent writes.
+Note: input and output directories must be different when both
+UseAppendedRead and UseAppendedWrite are true.
+</command>
+
+<command name="NTAG">
+  <parameter name="nTag" type="integer" min="0" default="0" />
+
+#NTAG
+120			nTag  
+
+The number of different time-line tags of the MH_data files.
+</command>
+
+<command name="SATELLITE" if="$_IsFirstSession">
+  <parameter name="nSatellite" type="integer" min="0" default="0" />
+  <for name="iSatellite" from="1" to="$nSatellite">
+    <parameter name="NameTrajectoryFile" type="string" />
+  </for>
+
+#SATELLITE
+4				nSatellite
+../TRAJECTORY/earth.dat		NameTrajectoryFile
+../TRAJECTORY/sta.dat		NameTrajectoryFile
+../TRAJECTORY/psp.dat		NameTrajectoryFile
+../TRAJECTORY/solo.dat		NameTrajectoryFile
+
+This command can only be used in the first session.
+
+Set the satellites included for spectra outputs along the trajectory.
+nSatellite is the number of the satellite trajectory, TypeCoordSystem
+is the type of the coordinate system specified for the outputs and
+plotting same as in SP, and NameTrajectoryFile is the path of the
+trajectory file.
+</command>
+
+<command name="SAVEPLOT">
+  <parameter name="nFileOut" type="integer" min="0" default="0" />
+    <for name="iPlot" from="1" to="$nFileOut">
+      <parameter name="StringPlot" type="strings" case="lower"
+		 min="2" max="20" >
+        <part name="KindData" type="string" input="select">
+          <option name="MHD, fluxes 1D" value="mh1d" />
+          <option name="MHD, fluxes 2D" value="mh2d" />
+          <option name="MHD, fluxes timeline" value="mhtime" />
+          <option name="Distrubution function, 1D" value="distr1d" />
+          <option name="Distrubution function, 2D" value="distr2d" />
+          <option name="Distrubution function, timeline" value="distrtime" />
+          <option name="Distrubution function, along trajectory" value="distrtraj" />
+          <option name="Flux 2D"       value="flux2d" />
+          <option name="Flux timeline" value="fluxtime" />
+          <option name="Shock 2D"       value="shock2d" />
+          <option name="Shock timeline" value="shocktime" />
+        </part>
+        <part name="TypeFile" type="string" input="select" required="T">
+          <option name="ascii" value="ascii/idl" default="T"/>
+          <option name="tec" value="tec/tcp" />
+          <option name="real4" />
+          <option name="real8" />
+        </part>
+        <part name="NameVar" type="string" required="T" multiple="T"
+              input="select">
+          <option name="Flux"     value="flux" default="T"/>
+          <option name="LagrID"   value="lagrid"/>
+          <option name="X"        value="x"/>  
+          <option name="Y"        value="y"/>  
+          <option name="Z"        value="z"/>  
+          <option name="Rho"      value="rho"/>
+          <option name="T"        value="t"/>  
+          <option name="Ux"       value="ux"/> 
+          <option name="Uy"       value="uy"/> 
+          <option name="Uz"       value="uz"/> 
+          <option name="Bx"       value="bx"/> 
+          <option name="By"       value="by"/> 
+          <option name="Bz"       value="bz"/> 
+          <option name="Wave1"    value="wave1"/>
+          <option name="Wave2"    value="wave2"/>
+          <option name="R"       	value="r"/>  
+          <option name="D"        value="d"/>  
+          <option name="S"        value="s"/>  
+          <option name="U"        value="u"/>  
+          <option name="B"        value="b"/>  
+          <option name="RhoOld"   value="rhoold"/>
+          <option name="UOld"     value="uold"/>
+          <option name="BOld"     value="bold"/>
+          <option name="energy"   value="energy"/>
+          <option name="momentum" value="momentum"/>
+          <option name="distance" value="distance"/>
+          <option name="length"   value="length/linelength"/>
+          <option name="distribution function of energy [#/cm**2/s/sr/energy unit]"
+              value="def"/>
+          <option name="distribution function of energy [#/m**2/s/sr/energy unit]"
+              value="DEF"/>
+          <option name="canonical distribution function" value="cdf"/>
+        </part>
+      </parameter>
+      <if expr="$KindData=~/mh2d|mhtime|distr2d|distrtime|flux2d|fluxtime/">
+	      <parameter name="Radius" type="real" min="1.0" default="215.0"/>
+        <if expr="$KindData eq fluxtime">
+          <parameter name="Longitude" type="real"
+                min="-360.0" max="360.0" default="0.0"/>
+          <parameter name="Latitude" type="real"
+                min="-90.0" max="90.0" default="0.0"/>
+        </if>
+      </if>
+    </for>
+
+#SAVEPLOT
+11				nFileOut
+mh1d flux ascii			StringPlot
+mh2d flux ascii			StringPlot
+215.0				Radius [Rs] (read if mh2d/mhtime/distr2d/distrtime/flux2d/fluxtime)
+mhtime flux ascii			StringPlot
+215.0				Radius [Rs] (read if mh2d/mhtime/distr2d/distrtime/flux2d/fluxtime)
+distr1d momentum length cdf ascii	StringPlot
+distr1d energy distance def idl		StringPlot
+distr2d energy def idl		StringPlot
+215.0				Radius [Rs] (read if mh2d/mhtime/distr2d/distrtime/flux2d/fluxtime)
+distrtime energy def idl		StringPlot
+215.0				Radius [Rs] (read if mh2d/mhtime/distr2d/distrtime/flux2d/fluxtime)
+distrtraj def energy idl		StringPlot
+flux2d flux ascii		StringPlot
+215.0				Radius [Rs] (read if mh2d/mhtime/distr2d/distrtime/flux2d/fluxtime)
+fluxtime flux ascii		StringPlot
+215.0				Radius [Rs] (read if mh2d/mhtime/distr2d/distrtime/flux2d/fluxtime)
+30.0				Longitude [deg] (read if fluxtime)
+46.0				Latitude [deg] (read if fluxtime)
+shock2d ascii			StringPlot
+
+Sets the number and type of the plotfiles to save. For several types of plot,
+the radius of heliocentric spherical surface on which to plot may be also set.
+As a simple example, the #SAVEPLOT above show how to write the StringPlot to
+save all the formats we provide at the current stage. One can include more
+strings for the properties in between for each StringPlot. One also need to
+pay attention, that "mh1d" can only be saved once (appear once in #SAVEPLOT).
+
+Again, as an example, "mh1d" means to save 1D plot (for each magnetic field
+line) including coordinates and MHD variables; "R" means radial coordinate (R)
+plus fluxes; "idl" means to save the data in the idl format. Particularly,
+the "mh1d", "mh2d", "mhtime", "flux2d", and "fluxtime" save the integral
+particle intensity in the unit of p.f.u., for the Lon-Lat contour, along the
+time axis, with MHD data saved or not, respectively.
+
+For the differential particle intensity in the unit of p.f.u. per energy unit,
+"distr1d" saves all the values of the VDF (each momentum, at each coordinate
+along each fieldline), "distr2d" saves the VDF at fixed heliocentric distances
+for all fieldlines, "distrtime" saves the VDF at fixed radius along the timeline
+for each fieldline, and "distraj" only saves the VDF values interpolated to the
+specified satellite trajectories.
+
+For "distr1d", "cdf" represents the canonical distribution function, "def"
+means the differential energy function (intensity), saved in the unit of
+[#/cm**2/s/sr/energy unit], i.e., [pfu/energy unit], and "DEF" is to save the
+differential energy function in the unit of [#/m**2/s/sr/energy unit]. Here,
+the "energy" or "momentum" is the first axis, for the log10(kinetic energy)
+in the specified unit (default: keV) or the log10(momentum) normalized by the
+injection momentum, respectively. The "distance" or "length" is the second axis
+saved in the unit of solar radii, for the heliocentric distance or the field
+line length to the foot point on the Sun, respectively. If nMu is not 1, i.e.,
+solving the focused transport equation with anisotropic pitch angles, there
+will also be one axis for mu's value right after the momentum/energy axis in
+the "distr*"-formatted outputs, and the MhData integral flux is then the one
+averaged over all calculated pitch angles.
+
+For "distr2d", the StringPlot format is basically the same as it is in
+"distr1d", except that we do not use distance or length. Instead, one need
+to specify the radius for interpolating and saving the distribution function.
+This is also applicable to the parameters used for "distrtime".
+
+If using "distraj", one should also specify "#SATELLITE" and reset,
+"#TRIANGULATION" including 'UsePoleTriangulation' (default = F) and
+'UsePlanarTriangles' (default = T) before these lines.
+
+In normal cases, one should have at least 3 parameters for each StringPlot.
+However, if using "shock*", one should just have 2 parameters: save format
+and extension. "Shock2d" is to save outputs for Lon-Lat contour plot at
+each time step, while "ShockTime" is to save outputs along the time axis
+for each field line.
+
+In StringPlot, the first identifier is always a type of plot, the last
+identifier is a type of file, and the string variables in between denote the
+list of plot variables extra to the MHD ones.
+
+A Jupyter notebook comparing the differential (Distr*) and integral (Mh*)
+particle intensity outputs is SP/MFLAMPA/Scripts/mflampa_crosscheck.ipynb,
+which shows the absolute and relative differences are both very tiny and
+demonstrates these two types of outputs are consistent.
+
+Please send an email to Igor Sokolov for more information on this command.
+</command>
+
+<command name="NOUTPUT">
+  <parameter name="nOutput" type="integer" min="-1" default="1" />
+  <parameter name="DtOutput" type="real" min="-1.0" default="-1.0"/>
+  
+#NOUTPUT
+10				nOutput
+-1.0				DtOutput
+
+Frequency to plot: iteration or simulation time. This option is to output
+the results more frequently than the couple time, so the DtOutput is at
+most the couple time in SWMF runs.
+</command>
+</commandgroup>
+
+</commandList>

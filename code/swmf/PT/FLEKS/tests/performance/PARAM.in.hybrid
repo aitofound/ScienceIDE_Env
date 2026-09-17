@@ -1,0 +1,131 @@
+#DESCRIPTION
+Hybrid PIC (kinetic ions / fluid electrons) performance benchmark.  A Hall-term
+whistler wave (the standard hybrid workload) on a 1D periodic grid sized to be a
+representative scaling benchmark: 128 X cells, 2000 macroparticles/cell, so the
+particle mover and the explicit Ohm's-law + Faraday field advance both dominate
+the wall-clock.  This is the hybrid counterpart of performance/PARAM.in (the
+full-PIC beam benchmark) and is exercised by tests/validate_performance.py.
+
+Normalization matches the hybrid test family (whistler): lNormSI ~ d_i,
+uNormSI = speed of light (set to v_A so c/v_A = 1), so d_i ~ v_A ~ 1 and
+(for the proton) B ~ Omega_i ~ 1 in code units.  The Hall/whistler mode is
+sub-cycled (nBSubcycle = 8) so the explicit
+advance stays RK4-stable at dt = 0.02; this exercises the sub-cycling machinery
+that dominates the hybrid field-solver cost.
+
+#INITFROMSWMF
+F                       initFromSWMF
+
+#GEOMETRY
+-3.2                    xMin  [code units; Lx = 6.4 d_i]
+ 3.2                    xMax
+-0.05                   yMin
+ 0.05                   yMax
+-0.05                   zMin
+ 0.05                   zMax
+
+#NCELL
+128                     nCellX
+1                       nCellY
+1                       nCellZ
+
+#MAXBLOCKSIZE
+64                      maxBlockSizeX
+1                       maxBlockSizeY
+1                       maxBlockSizeZ
+
+#PERIODICITY
+T                       isPeriodicX
+T                       isPeriodicY
+T                       isPeriodicZ
+
+Standard Maxwell/GMRES solver disabled; use the Ohm's-law + Faraday hybrid
+field advance instead.
+#SOLVEEM
+F                       solveEM
+
+#HYBRIDPIC
+T                       useHybridPIC
+
+#AVGFIELDB
+T                       useAvgFieldB
+20                      nAvgFieldB
+
+Hall-only: resistive and electron-pressure-gradient terms off (both 0.0) to
+isolate the whistler dispersion (the standard hybrid workload).
+#RESISTIVITY
+0.0                     etaResistivity  [m^2/s, SI magnetic diffusivity]
+
+#ELECTRONTEMPERATURE
+0.0                     electronTemperature  [eV]
+1.0                     electronGamma
+1.0                     electronDensity0
+
+Sub-cycle the explicit Hall advance (limited by the grid-scale whistler mode).
+nBSubcycle = 8 exercises the sub-cycling machinery at 4x the cost of 32.
+#BSUBCYCLE
+8                       nBSubcycle
+
+Single kinetic ion species (q = m = 1); the electron is an implicit
+neutralizing massless fluid, so no electron particle species is present.
+#PLASMA
+1                       nSpecies
+1.0                     mass
+1.0                     charge
+
+#UNIFORMSTATE
+5.0                     rho [amu/cc]   Species 0: ions (n = 5 /cc)
+0.0                     ux [km/s]
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+10000.0                 T [K]
+1.0439e-8               bx [T]       uniform guide field Bx0 (B_code ~ 1)
+0.0                     by [T]
+0.0                     bz [T]
+0.0                     ex [V/m]
+0.0                     ey [V/m]
+0.0                     ez [V/m]
+
+#TESTCASE
+HybridWave
+
+#TIMESTEPPING
+T                       useFixedDt
+0.02                    dt
+
+#NORMALIZATION
+1.0e5                   lNormSI   [m]  ~ d_i so d_i ~ 1 in code units
+1.0e5                   uNormSI   [m/s] tNorm = 1 s; sets cLight_SI = uNormSI
+
+#MONITOR
+50                      dnReport
+
+#SAVELOG
+100                     dnSavePic
+100                     dnSavePT
+
+#PARTICLES
+2000                    nParticle per cell in X
+1                       nParticle per cell in Y
+1                       nParticle per cell in Z
+
+#COMOVING
+F                       solvePartInCoMov
+0                       nSmoothBackGroundU
+
+#UPWINDE
+F                       useUpwindE
+0.0                     limiterThetaE
+
+#UPWINDB
+F                       doSmoothB
+0.0                     theta
+
+#SAVEPLOT
+0                                 nPlot
+
+#STOP
+-1                      MaxIter
+1.0                     TimeMax
+
+#RUN

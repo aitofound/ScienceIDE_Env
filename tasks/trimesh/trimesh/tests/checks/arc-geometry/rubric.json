@@ -1,0 +1,241 @@
+{
+  "check": "arc-geometry",
+  "policy": "pointwise",
+  "chaotic": false,
+  "upstream_test": "code/trimesh/tests/test_arc.py",
+  "configuration": "64 analytic circle cases each in 2D and rotated 3D; radii .31..4.783, short and long angular spans .81..4.21; original semicircle and exact large-coordinate fixture; closed Arc bounds and to_threepoint geometry.",
+  "observable": "Every recovered center, radius, angular span, plane projector, control coordinate, closed circle bounds and physical endpoint angular direction; exact upstream regression geometry.",
+  "expected_runtime_s": 2.17,
+  "runtime_note": "under 300 s; actual Git Bash run.sh nominal 1.283s variant 1.266s; CPU threads 1; each capped 180s.",
+  "default_vs_upstream": "Narrows upstream 1000 random cases and radius/translation range to 64 deterministic analytic cases with no random stream. Original large-coordinate test strengthened with local linear circumcenter oracle. test_multiroot annulus sections/enclosure remains distinct and unimplemented. Discretization only collinear fallback covered; adaptive discretized sampling and Arc.length not claimed (source length formula includes a factor of two). No file fixtures needed.",
+  "variant": "Physical radius/extents multiplier 1.0 -> 1.0000000000000004, two binary64 ULPs. Same ray hit counts and circle identity/short-long branch; no random/adaptive output ordering. Changed physical values measured, not assumed.",
+  "altbuild": "none: existing native dependencies only; alternative dependency build not measured.",
+  "comparison": {
+    "rule": "Compare every physical array element under |candidate-reference| <= atol + rtol*|reference|. Arc rows are keyed by deterministic circle and dimension; angular endpoint directions are sorted physically, and plane projectors remove only legitimate normal-sign ambiguity. No storage order, scalar averages, or arbitrary normalization are graded.",
+    "atol": 1e-11,
+    "rtol": 1e-11,
+    "files": [
+      {
+        "path": "centers.npy",
+        "format": "npy"
+      },
+      {
+        "path": "radii.npy",
+        "format": "npy"
+      },
+      {
+        "path": "spans.npy",
+        "format": "npy"
+      },
+      {
+        "path": "plane_projectors.npy",
+        "format": "npy"
+      },
+      {
+        "path": "controls.npy",
+        "format": "npy"
+      },
+      {
+        "path": "circle_bounds.npy",
+        "format": "npy"
+      },
+      {
+        "path": "angle_endpoints.npy",
+        "format": "npy"
+      },
+      {
+        "path": "regressions.npy",
+        "format": "npy"
+      }
+    ]
+  },
+  "evidence": {
+    "floor": null,
+    "floor_how": "No alternate-build floor measured.",
+    "self_validation_spread": 3.730349362740526e-14,
+    "self_validation_bound_fraction": 0.0014385738044939043,
+    "fault_probes": [
+      {
+        "what": "radii(17,) +0.01",
+        "atol": 1e-11,
+        "bound_fraction": 532481363.15229017,
+        "distance": 0.010000000000000009,
+        "files": {
+          "angle_endpoints.npy": {
+            "bound_fraction": 0.0,
+            "max_abs_error": 0.0,
+            "values": 256,
+            "values_over_bound": 0
+          },
+          "centers.npy": {
+            "bound_fraction": 0.0,
+            "max_abs_error": 0.0,
+            "values": 384,
+            "values_over_bound": 0
+          },
+          "circle_bounds.npy": {
+            "bound_fraction": 0.0,
+            "max_abs_error": 0.0,
+            "values": 256,
+            "values_over_bound": 0
+          },
+          "controls.npy": {
+            "bound_fraction": 0.0,
+            "max_abs_error": 0.0,
+            "values": 384,
+            "values_over_bound": 0
+          },
+          "plane_projectors.npy": {
+            "bound_fraction": 0.0,
+            "max_abs_error": 0.0,
+            "values": 1152,
+            "values_over_bound": 0
+          },
+          "radii.npy": {
+            "bound_fraction": 532481363.15229017,
+            "max_abs_error": 0.010000000000000009,
+            "values": 128,
+            "values_over_bound": 1
+          },
+          "regressions.npy": {
+            "bound_fraction": 0.0,
+            "max_abs_error": 0.0,
+            "values": 9,
+            "values_over_bound": 0
+          },
+          "spans.npy": {
+            "bound_fraction": 0.0,
+            "max_abs_error": 0.0,
+            "values": 128,
+            "values_over_bound": 0
+          }
+        },
+        "passed": false,
+        "policy": "pointwise",
+        "reason": "radii.npy: 1 of 128 values exceed atol=1e-11 rtol=1e-11 (max |err| 1.000e-02)",
+        "rtol": 1e-11
+      },
+      {
+        "what": "spans(18,) +0.01",
+        "atol": 1e-11,
+        "bound_fraction": 191938579.6545065,
+        "distance": 0.009999999999999787,
+        "files": {
+          "angle_endpoints.npy": {
+            "bound_fraction": 0.0,
+            "max_abs_error": 0.0,
+            "values": 256,
+            "values_over_bound": 0
+          },
+          "centers.npy": {
+            "bound_fraction": 0.0,
+            "max_abs_error": 0.0,
+            "values": 384,
+            "values_over_bound": 0
+          },
+          "circle_bounds.npy": {
+            "bound_fraction": 0.0,
+            "max_abs_error": 0.0,
+            "values": 256,
+            "values_over_bound": 0
+          },
+          "controls.npy": {
+            "bound_fraction": 0.0,
+            "max_abs_error": 0.0,
+            "values": 384,
+            "values_over_bound": 0
+          },
+          "plane_projectors.npy": {
+            "bound_fraction": 0.0,
+            "max_abs_error": 0.0,
+            "values": 1152,
+            "values_over_bound": 0
+          },
+          "radii.npy": {
+            "bound_fraction": 0.0,
+            "max_abs_error": 0.0,
+            "values": 128,
+            "values_over_bound": 0
+          },
+          "regressions.npy": {
+            "bound_fraction": 0.0,
+            "max_abs_error": 0.0,
+            "values": 9,
+            "values_over_bound": 0
+          },
+          "spans.npy": {
+            "bound_fraction": 191938579.6545065,
+            "max_abs_error": 0.009999999999999787,
+            "values": 128,
+            "values_over_bound": 1
+          }
+        },
+        "passed": false,
+        "policy": "pointwise",
+        "reason": "spans.npy: 1 of 128 values exceed atol=1e-11 rtol=1e-11 (max |err| 1.000e-02)",
+        "rtol": 1e-11
+      },
+      {
+        "what": "centers(5, 1) +0.01",
+        "atol": 1e-11,
+        "bound_fraction": 606584171.5577189,
+        "distance": 0.010000000000000009,
+        "files": {
+          "angle_endpoints.npy": {
+            "bound_fraction": 0.0,
+            "max_abs_error": 0.0,
+            "values": 256,
+            "values_over_bound": 0
+          },
+          "centers.npy": {
+            "bound_fraction": 606584171.5577189,
+            "max_abs_error": 0.010000000000000009,
+            "values": 384,
+            "values_over_bound": 1
+          },
+          "circle_bounds.npy": {
+            "bound_fraction": 0.0,
+            "max_abs_error": 0.0,
+            "values": 256,
+            "values_over_bound": 0
+          },
+          "controls.npy": {
+            "bound_fraction": 0.0,
+            "max_abs_error": 0.0,
+            "values": 384,
+            "values_over_bound": 0
+          },
+          "plane_projectors.npy": {
+            "bound_fraction": 0.0,
+            "max_abs_error": 0.0,
+            "values": 1152,
+            "values_over_bound": 0
+          },
+          "radii.npy": {
+            "bound_fraction": 0.0,
+            "max_abs_error": 0.0,
+            "values": 128,
+            "values_over_bound": 0
+          },
+          "regressions.npy": {
+            "bound_fraction": 0.0,
+            "max_abs_error": 0.0,
+            "values": 9,
+            "values_over_bound": 0
+          },
+          "spans.npy": {
+            "bound_fraction": 0.0,
+            "max_abs_error": 0.0,
+            "values": 128,
+            "values_over_bound": 0
+          }
+        },
+        "passed": false,
+        "policy": "pointwise",
+        "reason": "centers.npy: 1 of 384 values exceed atol=1e-11 rtol=1e-11 (max |err| 1.000e-02)",
+        "rtol": 1e-11
+      }
+    ]
+  },
+  "warrant": "Human-approved bound as of 2026-09-17. Independent analytic geometry guards supplement but do not replace untouched source reference outputs. Single-point wrong positions, radii, angles and cavity parity faults must reject. Docker two-ULP calibration passed; the known lack of an alternate-build floor remains documented."
+}

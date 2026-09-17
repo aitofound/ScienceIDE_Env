@@ -1,0 +1,121 @@
+#DESCRIPTION
+Single-cell periodic hybrid-PIC regression test.
+
+The domain contains exactly ONE grid cell with periodic boundary conditions in
+all three directions. On a single cell there is no spatial variation, so every
+finite-difference gradient -- in particular curl B -- is identically zero.
+Because the Hall term of the generalized Ohm's law is (J x B)/rho with
+J = curl B / (4 pi), the Hall term is EXACTLY zero here. With a uniform plasma
+(zero bulk velocity) the convective term U_i x B also vanishes, so the electric
+field E stays zero and the guide field B is frozen: dB/dt = -curl E = 0.
+
+This test verifies that the hybrid solver does no spurious work when the Hall
+term must vanish: the magnetic energy Eb must stay constant (to round-off) and
+no NaN/blow-up may occur. It guards against a class of bugs where the Hall or
+convective term is applied even on a single-cell / no-curl configuration.
+
+#INITFROMSWMF
+F                       initFromSWMF
+
+#GEOMETRY
+-0.5                    xMin  [code units; Lx = 1]
+ 0.5                    xMax
+-0.5                    yMin
+ 0.5                    yMax
+-0.5                    zMin
+ 0.5                    zMax
+
+#NCELL
+1                       nCellX
+1                       nCellY
+1                       nCellZ
+
+#MAXBLOCKSIZE
+1                       maxBlockSizeX
+1                       maxBlockSizeY
+1                       maxBlockSizeZ
+
+#PERIODICITY
+T                       isPeriodicX
+T                       isPeriodicY
+T                       isPeriodicZ
+
+#SOLVEEM
+F                       solveEM
+
+#HYBRIDPIC
+T                       useHybridPIC
+
+Hall term ON (this test confirms it contributes exactly zero on a single cell).
+#HALLTERM
+T                       useHallTerm
+
+#BSUBCYCLE
+1                       nBSubcycle
+
+Single kinetic ion species (q = m = 1); electron is implicit neutralizing fluid.
+#PLASMA
+1                       nSpecies
+1.0                     mass
+1.0                     charge
+
+Uniform guide field Bx0; zero bulk velocity so U_i x B = 0 too.
+#UNIFORMSTATE
+5.0                     rho [amu/cc]   Species 0: ions (n = 5 /cc)
+0.0                     ux [km/s]
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+10000.0                 T [K]
+1.0439e-8               bx [T]       uniform guide field Bx0 (B_code ~ 1)
+0.0                     by [T]
+0.0                     bz [T]
+0.0                     ex [V/m]
+0.0                     ey [V/m]
+0.0                     ez [V/m]
+
+#TIMESTEPPING
+T                       useFixedDt
+0.02                    dt
+
+#NORMALIZATION
+1.0e5                   lNormSI   [m]  ~ d_i so d_i ~ 1 in code units
+1.0e5                   uNormSI   [m/s] tNorm = 1 s; sets cLight_SI = uNormSI
+
+#MONITOR
+50                      dnReport
+
+#SAVELOG
+1                       dnSavePic
+1                       dnSavePT
+
+Particles present (so rho > 0 and the cell is "active"), but uniform => curl B = 0.
+#PARTICLES
+4                       nParticle per cell in X
+4                       nParticle per cell in Y
+4                       nParticle per cell in Z
+
+#COMOVING
+F                       solvePartInCoMov
+0                       nSmoothBackGroundU
+
+#UPWINDE
+F                       useUpwindE
+0.0                     limiterThetaE
+
+#UPWINDB
+F                       doSmoothB
+0.0                     theta
+
+#SAVEPLOT
+1                       nPlot
+z=0 fluid ascii pic     plotString
+-1                      dn
+0.5                     dt
+1                       dx
+Bx By Bz Ex Ey Ez       varName
+
+#STOP
+-1                      MaxIter
+2.0                     TimeMax   frozen-field (curl B=0) run
+
+#RUN

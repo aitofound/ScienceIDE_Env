@@ -1,0 +1,90 @@
+!  Copyright (C) 2002 Regents of the University of Michigan,
+!  portions used with permission
+!  For more information, see http://csem.engin.umich.edu/tools/swmf
+!^CMP FILE IH
+!^CMP FILE PT
+
+!
+! Couple IH and PT components: IH -> PT.
+!
+module CON_couple_ih_pt
+
+  use CON_coupler
+
+  use CON_couple_points, ONLY: &
+       couple_points_init, couple_points, CouplePointsType
+  use IH_wrapper, ONLY: &
+       IH_get_grid_info, IH_find_points, IH_get_for_pt
+  use PT_wrapper, ONLY: &
+       PT_get_grid_info, PT_find_points, PT_put_from_ih
+
+  implicit none
+  save
+
+  private ! except
+
+  public :: couple_ih_pt_init ! initialize both couplings
+  public :: couple_ih_pt      ! couple IH to PT
+
+  ! revision history:
+  ! 03/16/2015 A.Michael and G.Toth - initial version
+
+  ! Router communicator info
+  type(CouplePointsType) :: CouplerIhToPt
+
+contains
+  !============================================================================
+  subroutine couple_ih_pt_init
+
+    ! Initialize IH->PT coupler.
+    ! This subroutine should be called from all PE-s
+
+    logical :: DoTest, DoTestMe
+
+    character(len=*), parameter:: NameSub = 'couple_ih_pt_init'
+    !--------------------------------------------------------------------------
+    call CON_set_do_test(NameSub, DoTest, DoTestMe)
+
+    if(DoTestMe)write(*,*) NameSub,' starting'
+
+    CouplerIhToPt%iCompTarget = PT_
+    CouplerIhToPt%iCompSource = IH_
+
+    ! Take information from both Grid_C(IH_) and Grid_C(PT_)
+    CouplerIhToPt%NameVar = trim(Grid_C(IH_)%NameVar)//' '//Grid_C(PT_)%NameVar
+    CouplerIhToPt%nVar    = Grid_C(IH_)%nVar + Grid_C(PT_)%nVar
+
+    call couple_points_init(CouplerIhToPt)
+
+    if(DoTestMe)write(*,*) NameSub,' finished'
+
+  end subroutine couple_ih_pt_init
+  !============================================================================
+  subroutine couple_ih_pt(tSimulation)
+    use CON_transfer_data, ONLY: transfer_real
+    real, intent(in) :: tSimulation
+
+    ! Couple between two components:
+    !    Inner Heliosphere          (IH) source
+    !    Particle Tracker           (PT) target
+    !
+    ! Send information from IH to PT.
+
+    logical :: DoTest, DoTestMe
+    real:: DtSi ! time step in SI units
+
+    character(len=*), parameter:: NameSub = 'couple_ih_pt'
+    !--------------------------------------------------------------------------
+    call CON_set_do_test(NameSub, DoTest, DoTestMe)
+
+    if(DoTest)write(*,*) NameSub,' starting iProc=', CouplerIhToPt%iProcWorld
+
+    call couple_points(CouplerIhToPt, IH_get_grid_info, IH_find_points, &
+         IH_get_for_pt, PT_get_grid_info, PT_put_from_ih)
+
+    if(DoTest)write(*,*) NameSub,' finished iProc=', CouplerIhToPt%iProcWorld
+
+  end subroutine couple_ih_pt
+  !============================================================================
+end module CON_couple_ih_pt
+!==============================================================================

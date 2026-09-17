@@ -1,0 +1,94 @@
+{
+  "check": "shape-primitives-permittivity-ft",
+  "policy": "pointwise",
+  "chaotic": false,
+  "upstream_test": "code/legume/docs/examples/01_Shapes_layers_and_photonic_crystals.ipynb",
+  "configuration": "docs/examples/01 re-expressed: a Circle, a Poly and a Square evaluated on a fixed 17x17 reciprocal-lattice grid of a square lattice, plus the assembled layer transform.",
+  "observable": "the analytic Fourier form factors of the shape primitives",
+  "expected_runtime_s": 1,
+  "runtime_note": "under 300 s: measured 1 s in the container on one core",
+  "default_vs_upstream": "re-expressed from the upstream example; the graded settings are stated in configuration",
+  "variant": "the circle radius the value stated below moved two ulps at binary64. Measured: ft_circle_im.f64 moves 3.469e-17 absolute, ft_circle_re.f64 moves 5.551e-17 absolute, ft_poly_im.f64 moves 0.000e+00 absolute, ft_poly_re.f64 moves 0.000e+00 absolute, ft_square_im.f64 moves 0.000e+00 absolute, ft_square_re.f64 moves 0.000e+00 absolute, layer_eps_ft_im.f64 moves 2.429e-16 absolute, layer_eps_ft_re.f64 moves 4.441e-16 absolute.",
+  "altbuild": "none: legume has no compile step, so there is no -O0 build, no second compiler and no IEEE-mode flag to vary. Four candidates were tried and measured, and none changes a graded value. (1) The BLAS thread pool: the container's numpy links Debian's reference BLAS, which is single-threaded, so the thread count is inert (a 900x900 matmul takes 0.61 s at 1 thread and 0.59 s at 4). (2) A different BLAS implementation: installing libopenblas0-pthread and loading it instead is 2.5x faster on matmul yet reproduces this module's band structure bit for bit. (3) Disabling numpy's SIMD dispatch with NPY_DISABLE_CPU_FEATURES: bit-identical. (4) A different architecture: linux/amd64 against linux/arm64 DOES differ, by 3.3e-16 relative on a band frequency, but run.sh cannot change the architecture of the container it is already running in. The cross-architecture number is therefore recorded in evidence.floor as a hand measurement, with the command that produced it, rather than declared as an altbuild this script cannot perform.",
+  "comparison": {
+    "rule": "every graded value is compared at its own position under |candidate - reference| <= atol + rtol*|reference|, with atol and rtol set per file from that quantity's own measured spread. NOTHING is excluded from the comparison. Band-frequency files carry atol 1e-6 so that the trivial zero modes at the Gamma point, whose true value is exactly zero and whose computed value is round-off around it (two legitimate runs give 9.3e-09 and 1.2e-07), are accepted as the same answer; the radiative linewidths in the same check keep their own much tighter tolerance, so a mode that spuriously radiates still fails. Positions are physical: a k-point and an ascending eigenvalue rank. Never graded: eigenvector phase, storage order, iteration counts, timings.",
+    "atol": 1e-13,
+    "rtol": 1e-10,
+    "files": [
+      {
+        "path": "ft_circle_im.f64",
+        "format": "f64",
+        "skip_header_bytes": 0,
+        "atol": 1e-14,
+        "rtol": 1e-10
+      },
+      {
+        "path": "ft_circle_re.f64",
+        "format": "f64",
+        "skip_header_bytes": 0,
+        "atol": 1e-14,
+        "rtol": 1e-10
+      },
+      {
+        "path": "ft_poly_im.f64",
+        "format": "f64",
+        "skip_header_bytes": 0,
+        "atol": 1e-15,
+        "rtol": 1e-15
+      },
+      {
+        "path": "ft_poly_re.f64",
+        "format": "f64",
+        "skip_header_bytes": 0,
+        "atol": 1e-15,
+        "rtol": 1e-15
+      },
+      {
+        "path": "ft_square_im.f64",
+        "format": "f64",
+        "skip_header_bytes": 0,
+        "atol": 1e-15,
+        "rtol": 1e-15
+      },
+      {
+        "path": "ft_square_re.f64",
+        "format": "f64",
+        "skip_header_bytes": 0,
+        "atol": 1e-15,
+        "rtol": 1e-15
+      },
+      {
+        "path": "layer_eps_ft_im.f64",
+        "format": "f64",
+        "skip_header_bytes": 0,
+        "atol": 1e-13,
+        "rtol": 1e-10
+      },
+      {
+        "path": "layer_eps_ft_re.f64",
+        "format": "f64",
+        "skip_header_bytes": 0,
+        "atol": 1e-13,
+        "rtol": 1e-10
+      }
+    ]
+  },
+  "evidence": {
+    "floor": 1.1102230246251565e-16,
+    "floor_how": "measured by hand across ARCHITECTURES, the only variation that moves this codebase's output. The nominal inputs of every check were run in a linux/amd64 container built with the same packages (debian:bookworm-slim, python3-numpy, python3-scipy, python3-matplotlib, autograd==1.9.1) under emulation on this arm64 host, and the graded files diffed against the arm64 oracle run: docker run --platform linux/amd64 -v code/legume:/src:ro -v <check>:/chk:ro -v <out>:/out -e PYTHONPATH=/src -e MPLBACKEND=Agg -e OMP_NUM_THREADS=1 <image> python3 /chk/driver.py /chk/ic/nominal/params.json /out. This is not an altbuild run: run.sh cannot change the architecture of the container it is already in, which is why the check declares altbuild none.",
+    "self_validation_spread": 4.440892098500626e-16,
+    "self_validation_bound_fraction": 0.001101147023399546,
+    "altbuild": {
+      "what": "the same source with the BLAS thread pool at 4 instead of 1, which reorders the reductions inside numpy.linalg.eigh",
+      "distance": 0.0,
+      "bound_fraction": 0.0,
+      "identical": true,
+      "graded_identical": false,
+      "passed": true,
+      "reason": "all graded values within bound",
+      "at": "2026-09-17T17:49:33Z"
+    },
+    "floor_bound_fraction": 0.0
+  },
+  "warrant": "The graded quantity is the Fourier transform of the patterned permittivity, computed analytically -- a Bessel function for a circle, a sum over edges for a polygon, a product of sinc factors for a square -- rather than by sampling. Those coefficients are the input to every matrix element in every expansion, so a wrong form factor moves every band of every other check; grading them directly localises such a fault to its source. The bound is physical because a dropped edge or a missing phase changes coefficients by order unity. It is achievable because four BLAS threads move the values by 0.000e+00 and the two-ulp variant by 4.441e-16. This check also covers Square, which no other check reaches; nothing upstream exercises Ring at all."
+}

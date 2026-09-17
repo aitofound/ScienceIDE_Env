@@ -1,0 +1,168 @@
+#DESCRIPTION
+Param/FIVEMOMENT/PARAM.in.alfven: Five-moment test with Alfven waves		StringDescription
+
+#POINTIMPLICIT
+T			UsePointImplicit
+0.5			BetaPointImplicit
+F			IsAsymmetric
+F			DoNormalizeCell
+
+#CHECKGRIDSIZE
+     100		nI
+       1		nJ
+       1		nK
+      10		MinBlockAll
+
+#PLANET
+NONE			NamePlanet
+
+#IOUNITS
+NONE			TypeIoUnit
+
+#NORMALIZATION
+NONE			TypeNormalization
+
+#LIGHTSPEED
+100.0			cLightDim
+
+#PLASMA
+1.0			FluidMass
+0.01			FluidMass
+1.0			IonCharge
+-1.0			IonCharge
+1.0			ElectronTemperatureRatio
+
+#UNIFORMSTATE
+1.0			StateVar Rho
+0.0			StateVar Ux
+0.0			StateVar Uy
+0.0			StateVar Uz
+1.0			StateVar Bx
+0.0			StateVar By
+0.0			StateVar Bz
+0.0			StateVar Ex
+0.0			StateVar Ey
+0.0			StateVar Ez
+0.0			StateVar HypE_
+0.01			StateVar P
+0.01			StateVar eRho
+0.0			StateVar eUx
+0.0			StateVar eUy
+0.0			StateVar eUz
+0.01			StateVar eP
+
+#GRID
+1			nRootBlock1
+1			nRootBlock2
+1			nRootBlock3
+-10000.			xMin
+ 10000.			xMax
+-1.			yMin
+ 1.			yMax
+-1.			zMin
+ 1.			zMax
+
+#OUTERBOUNDARY
+periodic		TypeBc1
+periodic		TypeBc2
+
+Wave parameters:
+
+Bx  = 1
+Rho = 1
+cA  = 1
+Bz  = 0
+Uz  = 0
+
+#WAVE
+By			NameVar       = Ampl*cos(2pi/LambdaX*x)
+10000.0			Width
+0.1			Amplitude = 0.1
+10000.0			LambdaX   = 1e4
+-1.0			LambdaY
+-1.0			LambdaZ
+0.0			Phase
+
+#WAVE
+Uy			NameVar     = cA * By / Bx
+10000.0			Width
+0.1			Amplitude
+10000.0			LambdaX
+-1.0			LambdaY
+-1.0			LambdaZ
+0.0			Phase
+
+#WAVE
+ElUy			NameVar     = Uey = Uy  since Jy=0
+10000.0			Width
+0.1			Amplitude
+10000.0			LambdaX
+-1.0			LambdaY
+-1.0			LambdaZ
+0.0			Phase
+
+#WAVE
+ElUz			NameVar     = Uez = Uz - Jz/(n*e) = -dBy/dx / (Rho/Mi)
+10000.0			Width       = 2pi/LambdaX*Ampl*sin(2pi/LambdaX*x)
+6.2831852e-05		Amplitude     2e-5*pi
+10000.0			LambdaX
+-1.0			LambdaY
+-1.0			LambdaZ
+-90.0			Phase       sin(x) = cos(x-90)
+
+#WAVE
+Ey			NameVar     = -Uez*Bx = -2pi/LambdaX*Ampl*sin(kX*x)
+10000.0			Width
+-6.2831852e-05		Amplitude 2e-4*pi
+10000.0			LambdaX
+-1.0			LambdaY
+-1.0			LambdaZ
+-90.0			Phase
+
+#WAVE
+Ez			NameVar     = Ez_ = +Uey * Bx
+10000.0			Width
+0.1			Amplitude
+10000.0			LambdaX
+-1.0			LambdaY
+-1.0			LambdaZ
+0.0			Phase
+
+#NONCONSERVATIVE
+T			UseNonConservative
+
+#SCHEME
+2			nOrder
+Rusanov			TypeFlux
+mc			TypeLimiter
+1.5			LimiterBeta
+
+#TIMESTEPPING
+2			nStage
+0.8			CflExpl
+
+#SAVERESTART
+F			DoSaveRestart
+
+#SAVELOGFILE
+T			DoSaveLogfile
+raw			StringLog
+50			DnSaveLogfile
+-1.			DtSaveLogfile
+
+#SAVEINITIAL
+T			DoSaveInitial
+
+#SAVEPLOT
+1			nPlotFile
+1d var idl_ascii		StringPlot
+-1			DnSavePlot
+500.0			DtSavePlot
+0.			DxSavePlot
+Rho Ux Uy Uz Bx By Bz P ElRho ElUx ElUy ElUz ElP		NameVars
+{default}		NamePars
+
+#STOP
+-1			MaxIteration
+10000.0			tSimulationMax
+

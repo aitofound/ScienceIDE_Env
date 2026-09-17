@@ -1,0 +1,261 @@
+\documentclass[a4paper, 11pt]{article}
+\usepackage{graphicx}
+\usepackage{amsmath,array}
+%\usepackage{tablefootnote}
+\usepackage{epstopdf}
+\author{Yuxi Chen}
+\title{Algorithm}
+\begin{document}
+\maketitle
+\newpage
+
+\section{Unit conversion}
+
+A physical quantity contains two parts: the value times the unit. For example, the weight of a table is $w = 50 kg = 50,000 g$, where 50 and 50,000 are the values, and kg and g are the units. If we define a new unit wg, which is defined as $1 wg = 2.5 kg$, then the table weight is $w = 20 wg$. In general, a physical quantity can be expressed as $u = \bar{u} u^*$, where $\bar{u}$ is the value/number and $u^*$ is the unit.  
+
+\subsection{Mass normalization}
+
+With the CGS unit, the particle motion equation is
+\begin{eqnarray}
+\frac{dv}{dt} = \frac{q}{m}(E + \frac{v}{c} \times B) 
+\label{eq:velocity_update}
+\end{eqnarray}
+In FLEKS, all quantities are normalized. The normalization should not introduce new constants. So, from eq.\ref{eq:velocity_update}, the following expression is obtaied
+\begin{equation}
+\frac{q_{cgs}^* E_{cgs}^* t_{cgs}^*}{m_{cgs}^* v_{cgs}^*} = 1.
+\label{eq:E1}
+\end{equation}
+From Gauss's law $\nabla\cdot E = 4\pi \rho$, we obtain 
+\begin{equation}
+E_{cgs}^* = \rho_{cgs} ^*x_{cgs}^*,
+\label{eq:E2}
+\end{equation}
+where $\rho_{cgs}^* = q_{cgs}^*/x_{cgs}^{*3}$ is the charge density instead of mass density. From eq.\ref{eq:E1} and eq.\ref{eq:E2}, we obtain 
+\begin{equation}
+q_{cgs}^*=v_{cgs}^* \sqrt{m_{cgs}^* x_{cgs}^*}.
+\label{eq:q1}
+\end{equation}
+
+In the code, $\bar{q}/(\bar{m}\bar{c}) = 1$ is required for a proton, so the normalization units $q_{cgs}^*$ and $m_{cgs}^*$ must satisfy 
+\begin{equation}
+q_{cgs}^*/(m_{cgs}^*v_{cgs}^*) = q_{cgs,p}/(m_{cgs,p}c_{cgs}),     
+\end{equation}
+where $q_{cgs,p}$ and $m_{cgs,p}$ are proton charge and mass in CGS unit, respectively. With eq.\ref{eq:q1}, we obtain the normalization mass in CGS unit:
+\begin{eqnarray}
+m_{cgs}^* = x_{cgs}^*(\frac{c_{cgs}m_{cgs,p}}{q_{cgs,p}})^2.
+\end{eqnarray}
+We note that $m_{cgs}^*$ also consists of the \textit{value} and the unit \textit{g}, and the expression above calculates its \textit{value}. Its \textit{value} in SI unit is calculated inside BATSRUS::ModPIC.f90, where the proton charge and mass are known in SI units. We need to convert the expression above into SI unit. Again, $m_{cgs}^*$ and $m_{SI}^*$ are the \textit{values} of the normalization mass in CGS and SI unit, respectively. If the normalization mass is 1.5kg, then $m_{SI}^* = 1.5$ and $m_{SI}^* = 1500$. The conversion is $m_{cgs}^* = 1000m_{SI}^*$. For the charge unit, $1C = 3\times 10^9 esu$ assume the speed of light is $3 \times 10^8m/s$. So, we have the following expression:
+\begin{eqnarray}
+1000m_{SI}^* = 100*x_{SI}^*(\frac{100*c_{SI}*1000*m_{SI,p}}{3\times10^9 q_{SI,p}})^2 \\
+m_{SI}^* = 10^7x_{SI}^*(\frac{m_{SI,p}}{q_{SI,p}})^2.
+\end{eqnarray}
+
+Once $m_{SI}^*$ is obtained, it is passed to FLEKS and converted to $m_{cgs}^*$. 
+
+\subsection{Length and velocity normalization}
+
+These two are free parameters. 
+
+\subsection{Charge and current normalization}
+
+$q_{cgs}^*=v_{cgs}^* \sqrt{m_{cgs}^* x_{cgs}^*}$, as it is shown in eq.\ref{eq:q1}. $j_{cgs}^* = q_{cgs}^*v_{cgs}^*/x_{cgs}^{*3}$
+
+\subsection{B and E normalization}
+
+B and E have the same unit in CGS. Substituting eq.\ref{eq:q1} into eq.\ref{eq:E1} to obtain $E_{cgs}^* = B_{cgs}^* = \sqrt{\frac{m_{cgs}^*}{x_{cgs}^*3}}v_{cgs}^*$ 
+
+\subsection{The consequences of changing light speed}
+
+Reducing the light speed changes the EM wave speed in the simulation, but it does change the interaction between magnetic field and particles. When we discuss the mass normalization, $\bar{q}/(\bar{m}\bar{c}) = 1$ instead of $\bar{q}/\bar{m} = 1$ is required, because there is no assumption of $\bar{c}=1$. The light speed in eq.\ref{eq:velocity_update} is always the physical light speed no matter what $v_{cgs}^*$ is choosen. For example, if $v_{cgs}^* = 0.1c$, $\bar{c}$ has to be 10, otherwise, $\bar{q}/(\bar{m}\bar{c}) = 1$ can not be satisfied. 
+
+Since reducing $v_{cgs}^*$ does not change the interaction between magnetic field and particle, the particle gyromotion, including gyro-radius and gyro-frequency, does not change. The inertial length is the gyro-radius of a particle with Alfven velocity, and neither gyromotion nor Alfven velocity changes, so the inertial length does not change with $v_{cgs}^*$.
+
+How about the interaction between the electric field and particles? Since $\bar{c} = \bar{q}/\bar{m}$, which is not necessarily be 1, the Coulomb force for a proton should be $\bar{q}/\bar{m}E = \bar{c}E$. However, in the code, $\bar{c}$ is ignored, which suggests the Coulomb force in the simulation is $\bar{c}$ times weaker than in reality. Is this reasonable? What is its consequence? It is to be clarified. 
+
+Most PIC simulations use reduced light speed, maybe the results are interpreted in a different way than FLEKS/MHD-EPIC, but I believe they also change the ratio between the Coulomb force and the $v \times B$ force. So, our approach of reducing light speed is probably reasonable. 
+
+\section{Particle mover}
+
+\subsection{Boris algorithm}
+
+FLEKS uses Boris particle mover: 
+\begin{eqnarray}
+\frac{\mathbf{v}^{n+1} - \mathbf{v}^{n}}{\Delta t} = \frac{q}{m}(\mathbf{E}^{n+\theta} + \bar{\mathbf{v}}\times\mathbf{B}) \\
+\frac{\mathbf{x}^{n+1/2} - \mathbf{x}^{n-1/2}}{\Delta t} = \mathbf{v}^n
+\end{eqnarray}
+where $\mathbf{v}$ is defined as $\bar{\mathbf{v}} = \frac{\mathbf{v}^{n+1} + \mathbf{v}^{n}}{2}$. The traditional method updates the velocity with the following steps.
+
+\begin{enumerate}
+    \item Acceleration 
+\begin{eqnarray}
+    \mathbf{v}^- = \mathbf{v}^{n} + \frac{q\Delta t}{2m}\mathbf{E}^{n+\theta}
+\end{eqnarray}
+
+    \item Rotation
+\begin{eqnarray} 
+    \mathbf{a} = \mathbf{v}^- + \mathbf{v}^- \times \mathbf{t} \\
+    \mathbf{v}^+ = \mathbf{v}^- + \mathbf{a} \times \mathbf{s}
+\end{eqnarray}
+    where $\mathbf{t} = \frac{q\Delta t}{2m} \mathbf{B}$, and $\mathbf{s} = \frac{2\mathbf{t}}{1+t^2}$.
+
+    \item  Acceleration
+\begin{eqnarray}    
+    \mathbf{v}^{n+1} = \mathbf{v}^+ + \frac{q\Delta t}{2m}\mathbf{E}^{n+\theta}
+\end{eqnarray}
+\end{enumerate}
+
+FLEKS solves the same velocity equation, but the implementation is slightly different.
+\begin{enumerate}
+    \item Acceleration 
+\begin{eqnarray}
+    \mathbf{v}^- = \mathbf{v}^{n} + \frac{q\Delta t}{2m}\mathbf{E}^{n+\theta}
+\end{eqnarray}
+
+\item Calculate $\bar{\mathbf{v}}$. 
+
+With the expressions of $\mathbf{v}^+$ and $\mathbf{v}^-$ above, it is easy (it is probably not straightforwad, but I do not know how to number equations in markdown) to obtain $\mathbf{v}^{n+1} - \mathbf{v}^{n} = \mathbf{v}^+ - \mathbf{v}^- + \frac{q\Delta t}{m} \mathbf{E}^{n+\theta}$. Substitute it into the velocity update equation to remove electric field from the expression $\frac{\mathbf{v}^{+} - \mathbf{v}^{-}}{\Delta t} = \frac{q}{m}\bar{\mathbf{v}}\times\mathbf{B}$. Since $\mathbf{v}^+ = 2\bar{\mathbf{v}} - \mathbf{v}^-$, we obtain the equation for $\bar{\mathbf{v}}$:
+\begin{eqnarray}
+  \bar{\mathbf{v}} = \mathbf{v}^- + \frac{q\Delta t}{2m} \bar{\mathbf{v}} \times \mathbf{B} = \mathbf{v}^- + \bar{\mathbf{v}} \times \mathbf{t}   
+\end{eqnarray}
+
+To solve this equation, we apply $\cdot \mathbf{t}$ to the expression of $\bar{\mathbf{v}}$ to obtain $\bar{\mathbf{v}} \cdot \mathbf{t} = \mathbf{v}^- \cdot \mathbf{t}$. Then we apply $\times \mathbf{t}$ to the expression of $\bar{\mathbf{v}}$ to obtain
+\begin{eqnarray}
+\bar{\mathbf{v}} \times \mathbf{t} = \mathbf{v}^- \times \mathbf{t} + \bar{\mathbf{v}} \times \mathbf{t} \times \mathbf{t} = \mathbf{v}^- \times \mathbf{t} + (\bar{\mathbf{v}} \cdot \mathbf{t})\mathbf{t} - t^2\bar{\mathbf{v}} = \mathbf{v}^- \times \mathbf{t} + (\mathbf{v}^- \cdot \mathbf{t})\mathbf{t} - t^2\bar{\mathbf{v}}
+\end{eqnarray}
+Substitute the expression of $\bar{\mathbf{v}} \times \mathbf{t}$ to the expression of $\bar{\mathbf{v}}$ to obtain 
+\begin{eqnarray}
+\bar{\mathbf{v}} = \frac{\mathbf{v}^- + \mathbf{v}^- \times \mathbf{t} + (\mathbf{v}^- \cdot \mathbf{t})\mathbf{t}}{1+t^2}
+\end{eqnarray}
+
+\item Then it is easy to obtain $\mathbf{v}^{n+1} = 2*\bar{\mathbf{v}} - \mathbf{v}^{n}$
+\end{enumerate}
+
+\subsection{Relativistic Boris algorithm}
+
+With $\mathbf{u} = \gamma \mathbf{v}$, the velocity update equation is
+\begin{eqnarray}
+\frac{\mathbf{u}^{n+1} - \mathbf{u}^{n}}{\Delta t} = \frac{q}{m}(\mathbf{E}^{n+\theta} + \bar{\mathbf{u}}\times \frac{\mathbf{B}}{\gamma ^{n+1/2}})
+\end{eqnarray}
+
+\begin{enumerate}
+    \item Convert $\mathbf{v}$ to $\mathbf{u}$
+    \item Acceleration
+\begin{eqnarray}
+    \mathbf{u}^- = \mathbf{u}^{n} + \frac{q\Delta t}{2m}\mathbf{E}^{n+\theta}
+\end{eqnarray}
+
+\item Calculate $\bar{\mathbf{u}}$ with
+\begin{eqnarray}
+\bar{\mathbf{u}} = \frac{\mathbf{u}^- + \mathbf{u}^- \times \mathbf{t} + (\mathbf{u}^- \cdot \mathbf{t})\mathbf{t}}{1+t^2}
+\end{eqnarray}
+where $\mathbf{t} = \frac{q\Delta t}{2m} \mathbf{B}/\gamma^{n+1/2}$. From the definition of $\gamma$ and $\mathbf{u} = \gamma \mathbf{v}$, $\gamma ^{n+1/2} = \sqrt{1+(u^-/c)^2}$ is obtained. 
+
+\item Then it is easy to obtain $\mathbf{u}^{n+1} = 2*\bar{\mathbf{u}} - \mathbf{u}^{n}$
+\item  Convert $\mathbf{u}$ back to $\mathbf{v}$
+\end{enumerate}
+
+\section{Hybrid PIC solver}
+
+FLEKS also provides a hybrid PIC field solver (\texttt{\#HYBRIDPIC},
+\texttt{useHybridPIC}) that treats ions as kinetic particles and electrons as a
+\emph{massless fluid} removed through a generalized Ohm's law. It is mutually
+exclusive with the full-PIC implicit solve (\texttt{\#SOLVEEM}).
+
+\subsection{The generalized Ohm's law}
+
+The electric field is assembled cell-centered from the ion moments and the magnetic field:
+\begin{equation}
+\mathbf{E} = -\mathbf{U}_i \times \mathbf{B}
+           + \eta\,\mathbf{J}
+           + \frac{\mathbf{J} \times \mathbf{B}}{\rho_q}
+           - \frac{\nabla P_e}{\rho_q}
+           - \frac{\eta_h}{4\pi}\,\nabla \times (\nabla^2 \mathbf{B}),
+\label{eq:ohmslaw}
+\end{equation}
+where
+\begin{itemize}
+  \item $-\mathbf{U}_i \times \mathbf{B}$ is the \emph{convection} term (always active),
+  \item $\eta\,\mathbf{J}$ is the \emph{resistive} term (controlled by \texttt{\#RESISTIVITY}),
+  \item $(\mathbf{J}\times\mathbf{B})/\rho_q$ is the \emph{Hall} term (\texttt{\#HALLTERM}),
+  \item $-\nabla P_e/\rho_q$ is the \emph{electron pressure / ambipolar} term
+        (\texttt{\#ELECTRONTEMPERATURE}),
+  \item $-(\eta_h/4\pi)\,\nabla\times(\nabla^2\mathbf{B})$ is the fourth-order
+        \emph{hyper-resistivity} term (\texttt{\#HYPERRESISTIVITY}).
+\end{itemize}
+The current is obtained from Amp\`ere's law (CGS), $\mathbf{J} = \nabla\times\mathbf{B}/(4\pi)$.
+The ion density and velocity used in the Ohm's law are the charge/mass moments deposited by the
+kinetic ions; the electron pressure gradient uses either an isothermal closure
+$P_e = T_e \rho$ ($\gamma=1$) or an adiabatic closure
+$P_e = P_0(\rho/\rho_0)^\gamma$. A minimum-density floor caps the $1/\rho_q$ factors in the
+Hall and pressure-gradient terms (\texttt{\#MINIMUMDENSITY}) so that cells with vanishing charge
+density do not produce unbounded contributions.
+
+\subsection{Cell-centered field layout}
+
+The hybrid path stores all fields \emph{cell-centered} ($\mathbf{B}$, $\mathbf{E}$, $\mathbf{J}$,
+and the ion moments) rather than node-collocated. The spatial curl and gradient operators use a
+$2\,dx$ central-difference stencil (\texttt{curl\_center\_to\_center}) whose discrete kernel
+annihilates the grid-scale Nyquist mode exactly, eliminating the grid-scale instability that
+otherwise forces heavy Hall sub-cycling. As a result the hybrid advance requires no
+center$\leftrightarrow$node round-trips.
+
+\subsection{Time integration of $\mathbf{B}$}
+
+The magnetic field is advanced by Faraday's law,
+\begin{equation}
+\frac{\partial \mathbf{B}}{\partial t} = -\nabla\times\mathbf{E},
+\end{equation}
+with $\mathbf{E}$ from eq.~\ref{eq:ohmslaw}. The Faraday update uses an explicit Runge--Kutta
+integrator on $\mathbf{B}$ --- classic fourth-order RK4 (default) or SSPRK3 --- selected with
+\texttt{\#FIELDINTEGRATOR}. Within one coarse step of size $\Delta t$, the total advance is always
+exactly one coarse step: \texttt{nBSubcycle} integrator steps of size
+$\Delta t/\texttt{nBSubcycle}$ are taken (\texttt{\#BSUBCYCLE}). Because RK4 has a large
+linear-stability region along the imaginary axis (where the oscillatory Hall--whistler modes live),
+a single sub-step is usually sufficient for stability.
+
+The scheme is second-order accurate in time via a staggered leapfrog with linear
+time-interpolation of the ion moments between the previous deposit $\mathbf{J}^{n-1/2}$ and the
+current one $\mathbf{J}^{n+1/2}$:
+\begin{equation}
+X(\texttt{hstep}) = (\tfrac{1}{2}-\texttt{hstep})\,X^{n-1/2}
+                  + (\tfrac{1}{2}+\texttt{hstep})\,X^{n+1/2},
+\end{equation}
+where \texttt{hstep} is the magnetic sub-step fraction. The particle Boris push (Section~2.1)
+uses the integer-step electric field from the previous field advance.
+
+\subsection{Noise control}
+
+The hybrid path offers two optional controls to damp PIC shot noise in the Ohm's law:
+an exponential moving average of $\mathbf{B}$ (\texttt{\#AVGFIELDB}) that replaces the
+instantaneous $\mathbf{B}$ inside the convection/Hall terms and in the Boris push, and
+digital-filter smoothing of the ion fluid moments before the Ohm's law (\texttt{\#SMOOTHMOMENTS}).
+The node-centred field mirrors are retained only as output bridges for the hybrid path: they are
+materialized lazily only when an explicit node-centered diagnostic (e.g.\ $dB/dt$) or plot output
+is requested.
+
+\section{Miscellaneous}
+\subsection{Calculate total pressure tensor from sub groups}
+Pressure tensor for each sub group is:
+\begin{eqnarray}
+    p^s_{m,n} = \frac{1}{V} \sum_{i=1} w_i^s (v_{i,m}^s-\bar{v}_m^s) (v_{i,n}^s-\bar{v}_n^s) 
+\end{eqnarray}
+where $V$ is the volume, and $\bar{v}_n^2$ and $\bar{v}_m^s$ are the average velocity of the sub group $s$. 
+
+The total pressure tensor is:
+\begin{eqnarray}
+    p_{m,n} = \frac{1}{V} \sum_{s}\sum_{i=1} w_i^s (v_{i,m}^s-\bar{v}_m) (v_{i,n}^s-\bar{v}_n)\\
+    \bar{v}_m = \frac{\sum_{s}\sum_{i=1} w_i^s v_{i,m}^s}{\sum_{s}\sum_{i=1} w_i^s} = \frac{\sum_s \rho_s \bar{v}_m}{\sum_{s}\rho_s} \\
+    \bar{v}_n = \frac{\sum_{s}\sum_{i=1} w_i^s v_{i,n}^s}{\sum_{s}\sum_{i=1} w_i^s} = = \frac{\sum_s \rho_s \bar{v}_n}{\sum_{s}\rho_s}
+\end{eqnarray}
+where $\rho_s$ is the density of sub group $s$, $\bar{v}_n$ and $\bar{v}_m$ are the average velocity of all particles
+
+\begin{eqnarray}
+    p_{m,n} = \frac{1}{V} \sum_{s}\sum_{i=1} w_i^s [(v_{i,m}^s- \bar{v}_m^s) + (\bar{v}_m^s -\bar{v}_m)] [(v_{i,n}^s- \bar{v}_n^s) + (\bar{v}_n^s  - \bar{v}_n)]\\
+    = \frac{1}{V} \sum_{s}\sum_{i=1} w_i^s[(v_{i,m}^s- \bar{v}_m^s)(v_{i,n}^s- \bar{v}_n^s)] + \\ \frac{1}{V} \sum_{s}\sum_{i=1} w_i^s[(v_{i,m}^s- \bar{v}_m^s)(\bar{v}_n^s - \bar{v}_n)] + \\
+    \frac{1}{V} \sum_{s}\sum_{i=1} w_i^s[(\bar{v}_m^s -\bar{v}_m)(v_{i,n}^s- \bar{v}_n^s)] + \\ \frac{1}{V} \sum_{s}\sum_{i=1} w_i^s[(\bar{v}_m^s -\bar{v}_m)(\bar{v}_n^s - \bar{v}_n)]
+\end{eqnarray}
+The second and third terms are zeros. The first term is simply the sum of all the sub group tensors. The fourth term is $\sum_s \rho_s [(\bar{v}_m^s -\bar{v}_m)(\bar{v}_n^s - \bar{v}_n)]$. So, the final expression is:
+\begin{eqnarray}
+    p_{m,n} = \sum_s p^s_{m,n} + \sum_s \rho_s [(\bar{v}_m^s -\bar{v}_m)(\bar{v}_n^s - \bar{v}_n)]
+\end{eqnarray}
+\end{document}

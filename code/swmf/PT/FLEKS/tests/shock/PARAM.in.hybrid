@@ -1,0 +1,129 @@
+
+#DESCRIPTION
+1D oblique shock test: flow along x into a reflecting left wall, open inflow
+right boundary.  The upstream magnetic field is inclined at 45 deg to the shock
+normal (the x axis). Hybrid mode.
+
+#INITFROMSWMF
+F                       initFromSWMF
+
+#GEOMETRY
+0.0                     xMin
+64.0                    xMax
+-0.5                    yMin
+ 0.5                    yMax
+-0.5                    zMin
+ 0.5                    zMax
+
+#NCELL
+64                      nCellX
+1                       nCellY
+1                       nCellZ
+
+#MAXBLOCKSIZE
+16                      maxBlockSizeX
+1                       maxBlockSizeY
+1                       maxBlockSizeZ
+
+#PERIODICITY
+F                       isPeriodicX
+T                       isPeriodicY
+T                       isPeriodicZ
+
+#FIELDBOXBOUNDARY
+outflow                 fieldBoxBoundaryLo
+fixed                   fieldBoxBoundaryHi
+periodic                fieldBoxBoundaryLo
+periodic                fieldBoxBoundaryHi
+periodic                fieldBoxBoundaryLo
+periodic                fieldBoxBoundaryHi
+
+#PARTICLEBOXBOUNDARY
+0                       iSpecies
+reflect                 particleBoxBoundaryLo
+inflow                  particleBoxBoundaryHi
+periodic                particleBoxBoundaryLo
+periodic                particleBoxBoundaryHi
+periodic                particleBoxBoundaryLo
+periodic                particleBoxBoundaryHi
+
+#SOLVEEM
+F                       solveEM
+
+#HYBRIDPIC
+T                       useHybridPIC
+
+#AVGFIELDB
+T                       useAvgFieldB
+20                      nAvgFieldB
+
+#HALLTERM
+T                       useHallTerm
+
+#BSUBCYCLE
+1                       nBSubcycle
+
+#ELECTRONTEMPERATURE
+141.0                   electronTemperature
+1.6667                  electronGamma
+5.0                     electronDensity0
+
+#PLASMA
+1                       nSpecies
+1.0                     mass
+1.0                     charge
+
+#INFLOW
+5.0                     rho [amu/cc]
+-713.0                  ux [km/s]
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+6.28e5                  T [K]
+
+motional E = -u x B = (0, -ux*Bz, 0); ux=-713e3 m/s, Bz=7.382e-9 T
+   -> Ey = -ux*Bz = +5.263e-3 V/m
+#UNIFORMSTATE
+5.0                     rho
+-713.0                  ux
+0.0                     uy
+0.0                     uz
+6.28e5                  T
+7.382e-9                bx
+0.0                     by
+7.382e-9                bz
+0.0                     ex
+5.263e-3                ey
+0.0                     ez
+
+#TIMESTEPPING
+T                       useFixedDt
+0.005                   dt
+
+#NORMALIZATION
+1.0e5                   lNormSI
+1.0e5                   uNormSI
+
+#MONITOR
+200                     dnReport
+
+#SAVELOG
+10                      dnSavePic
+10                      dnSavePT
+
+#PARTICLES
+100                     npcelx
+1                       npcely
+1                       npcelz
+
+#SAVEPLOT
+1                       nPlot
+y=0 fluid ascii planet     plotString
+-50                     dn
+5.0                     dt
+1                       dx
+
+#STOP
+-1                      MaxIter
+5.0                     TimeMax
+
+#RUN

@@ -1,0 +1,150 @@
+name: Release Trimesh
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  formatting:
+    name: Check Code Formatting
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - name: Set up Python
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      with:
+        python-version: "3.13"
+    - name: Install Formatting
+      run: |
+        pip install ruff
+    - name: Check Formatting
+      run: ruff check .
+  tests:
+    name: Run Unit Tests
+    needs: formatting
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        os: [ubuntu-latest, macos-latest, macos-15-intel, windows-latest]
+    steps:
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Test a minimal install
+      run: |
+        pip install --no-cache-dir .
+        python tests/test_minimal.py
+    - name: Install Trimesh
+      run: pip install --no-cache-dir .[easy,test]
+    - name: Run Pytest
+      run: pytest tests/
+
+  pypi:
+    name: Release To PyPi
+    needs: [tests, containers, corpus]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read  # for checkout
+      id-token: write  # for trusted publishing to PyPI
+    steps:
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - name: Set up Python
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      with:
+        python-version: '3.13'
+    - name: Check Candidate Version
+      if: github.ref != 'refs/heads/main'
+      run: python -c "from trimesh.version import __version__ as v; assert 'rc' in v.split('.')[2]"
+    - name: Install publishing dependencies
+      run: pip install build
+    - name: Build
+      run: pyproject-build --outdir dist .
+    - name: Publish
+      uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
+
+  containers:
+    if: github.ref == 'refs/heads/main'
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+    - name: Log In to Docker Hub
+      env:
+        DH_PASS: ${{ secrets.DH_PASS }}
+      run: echo "$DH_PASS" | docker login --username mikedh --password-stdin
+    - name: Checkout trimesh
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - name: Build Images And Docs
+      run: |
+        make tests # build docker images and run unit tests
+        make publish-docker # push images to docker hub
+        make docs # build sphinx docs
+    - name: Configure Pages
+      uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+    - name: Upload Pages artifact
+      uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+      with:
+        path: ./html
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
+    - name: Logout of registries
+      if: always()
+      run: |
+        docker logout
+
+  corpus:
+    runs-on: ubuntu-latest
+    name: Check Corpus Loading
+    steps:
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - name: Trimesh DiskCache
+      id: cache-resolvers
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: ~/.trimesh-cache
+        key: trimesh-cache
+    - name: Set up Python 3.10
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      with:
+         python-version: "3.10"
+    - name: Install Trimesh
+      run: pip install .[easy,test]
+    - name: Run Corpus Check
+      run: python tests/corpus.py -run
+
+  release:
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write  # for creating releases
+    name: Create GitHub Release
+    needs: [pypi]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: Tag Version
+        id: set_tag
+        run: |
+          export VER=$(python trimesh/version.py)
+          echo "tag_name=${VER}" >> "$GITHUB_OUTPUT"
+      - name: Create Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ steps.set_tag.outputs.tag_name }}" \
+            --title "Release ${{ steps.set_tag.outputs.tag_name }}" \
+            --generate-notes

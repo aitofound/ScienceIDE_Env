@@ -1,0 +1,24 @@
+COMPILE:
+  mkdir build
+  cd build
+  cmake ..
+  make 
+
+
+RUN:
+spectrum calculation
+  ./shieldSim --emin-p=1 --emax-p=100000 --emin-a=1 --emax-a=100000- --events=50000000
+
+spectrum visualization:
+(venv) g4vm[build]:python plot_shield_spectra.py shieldSim_spectra.dat  --save --format png --no-show --emin 2 --emax 30000
+
+dose bifinh the sielding:
+  407  ./shieldSim --spectrum=gcr_BON2020_LIS_alpha_only_10MeV_100GeV_shieldSim.dat --sweep --sweep-material=G4_Al --sweep-tmin=0.5 --sweep-tmax=30 --sweep-n=15 --sweep-log --scoring=G4_WATER:1,G4_Si:1 --events=200000
+  408  mv shieldSim_dose_sweep.dat shieldSim_species_alpha.dat
+  409  mv ~/Downloads/plot_4curves.py .
+  410  python3 plot_4curves.py shieldSim_species_proton.dat shieldSim_species_alpha.dat myplot.png
+  411  python3 plot_4curves.py shieldSim_species_proton.dat shieldSim_species_alpha.dat myplot.png --format=png --no-show
+  412  mv ~/Downloads/plot_4curves_log.py .
+  413  python3 plot_4curves_log.py shieldSim_species_proton.dat shieldSim_species_alpha.dat myplot.png --format=png --no-show
+
+

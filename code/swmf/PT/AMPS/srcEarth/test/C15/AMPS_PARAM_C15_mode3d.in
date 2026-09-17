@@ -1,0 +1,123 @@
+! =============================================================================
+! AMPS Earth validation C15
+! T05/TS05 driver interpolation, temporal continuity, and epoch reproducibility
+!
+! run_C15.py renders one independent Mode3D snapshot per validation case.  A
+! snapshot matrix is used instead of proposed TIME_SERIES/FIELD_UPDATE_DT input
+! sketches so C15 exercises only parser branches already used by C9, C18, and
+! C19: FIELD_MODEL, EPOCH, DRIVER_FILE, and RIGIDITY_LIST.
+!
+! Every T05 snapshot writes both the initialized Mode3D field and a small exact-
+! rigidity access product.  The runner can therefore distinguish driver-reader
+! defects from downstream cutoff changes.
+! =============================================================================
+
+#RUN_INFO
+RUN_ID                         __RUN_ID__
+
+#CALCULATION_MODE
+CALC_TARGET                    CUTOFF_RIGIDITY
+FIELD_EVAL_METHOD              GRID_3D
+
+#CUTOFF_RIGIDITY
+CUTOFF_EMIN                    __CUTOFF_EMIN_MEV__
+CUTOFF_EMAX                    __CUTOFF_EMAX_MEV__
+CUTOFF_MAX_PARTICLES           1
+CUTOFF_NENERGY                 16
+! RIGIDITY_LIST requires the VERTICAL parser token.  The explicit list below is
+! the authoritative access grid and is identical in every C15 case.
+CUTOFF_SAMPLING                VERTICAL
+CUTOFF_SEARCH_ALGORITHM        RIGIDITY_LIST
+CUTOFF_RIGIDITY_LIST_GV        __RIGIDITY_LIST_GV__
+CUTOFF_ACCESS_ABS_LAT_MIN      0.0
+CUTOFF_ACCESS_ABS_LAT_MAX      90.0
+CUTOFF_TRACE_POLICY            ACCURATE
+CUTOFF_BACKTRACE_CHARGE        REVERSED
+CUTOFF_TRACE_LIMIT_POLICY      UNRESOLVED
+CUTOFF_MAX_TRAJ_TIME           __MAX_TRACE_TIME_S__
+
+#PARTICLE_SPECIES
+SPECIES                        PROTON
+CHARGE                         1
+MASS_AMU                       1.007276466621
+
+#BACKGROUND_FIELD
+FIELD_MODEL                    __FIELD_MODEL__
+EPOCH                          __EPOCH__
+__DRIVER_DIRECTIVE__
+
+! Centered aligned dipole parameters make the DIPOLE control exactly invariant
+! under EPOCH changes.  They are harmless in T05 cases.
+DIPOLE_MOMENT                  1.0
+DIPOLE_TILT                    0.0
+
+! Parser-safe, deliberately constant fallbacks.  They are kept identical in all
+! T05 cases.  Thus the same-epoch sensitivity case can pass only if AMPS actually
+! consumes its different DRIVER_FILE; an ignored driver would leave the field
+! identical and fail C15.
+DST                            -20.0
+PDYN                           1.0
+IMF_BX                         0.0
+IMF_BY                         0.0
+IMF_BZ                         0.0
+SW_VX                          -400.0
+SW_N                           4.0
+G1                             0.0
+G2                             0.0
+G3                             0.0
+T05_W1                         0.0
+T05_W2                         0.0
+T05_W3                         0.0
+T05_W4                         0.0
+T05_W5                         0.0
+T05_W6                         0.0
+
+#MODE3D_MESH
+! Coarse but spatially nontrivial mesh: fast enough for a 15-case ROUTINE matrix
+! while retaining enough samples for a meaningful whole-field comparison.
+MODE3D_MESH_RES_EARTH_RE       __MESH_RES_EARTH_RE__
+MODE3D_MESH_RES_BOUNDARY_RE    __MESH_RES_BOUNDARY_RE__
+MODE3D_MESH_COARSENING         LINEAR
+MODE3D_MESH_EXPONENT           1.0
+
+#DOMAIN_BOUNDARY
+DOMAIN_X_MIN                  -__DOMAIN_HALF_SIZE_KM__
+DOMAIN_X_MAX                   __DOMAIN_HALF_SIZE_KM__
+DOMAIN_Y_MIN                  -__DOMAIN_HALF_SIZE_KM__
+DOMAIN_Y_MAX                   __DOMAIN_HALF_SIZE_KM__
+DOMAIN_Z_MIN                  -__DOMAIN_HALF_SIZE_KM__
+DOMAIN_Z_MAX                   __DOMAIN_HALF_SIZE_KM__
+R_INNER                        6371.2
+
+#SPECTRUM
+! Required by the common parser; exact-rigidity tracing does not integrate it.
+SPECTRUM_TYPE                  POWER_LAW
+SPEC_J0                        1.0
+SPEC_GAMMA                     3.0
+SPEC_E0                        100.0
+SPEC_EMIN                      0.1
+SPEC_EMAX                      20000.0
+
+#OUTPUT_DOMAIN
+! Two radii distinguish a low-altitude access boundary from the 9000-km region
+! used by full-orbit mover validation.  The same grid is used in every case.
+OUTPUT_MODE                    SHELLS
+SHELL_COUNT                    2
+SHELL_ALTS_KM                  500.0 9000.0
+SHELL_RES_DEG                  __SHELL_RES_DEG__
+
+#OUTPUT_OPTIONS
+! GSM keeps the centered-dipole control exactly invariant under EPOCH changes;
+! T05 still receives the requested epoch and time-dependent driver state.
+OUTPUT_COORDS                  GSM
+
+#NUMERICAL
+DT_TRACE                       __DT_TRACE_S__
+ADAPTIVE_DT                    T
+MAX_STEPS                      __MAX_STEPS__
+MAX_TRACE_TIME                 __MAX_TRACE_TIME_S__
+! Zero disables the energy-dependent cumulative-distance cap.  C15 varies only
+! field time/driver state, not the physical trajectory budget.
+MAX_TRACE_DISTANCE             0.0
+
+!#END

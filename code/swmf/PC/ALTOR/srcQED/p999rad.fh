@@ -1,0 +1,36 @@
+!==p999main.f90
+           rCommArray(1:nAngleProd)= (/radAngle(1:nAngle,1:nAngle2)/)
+           call MPIreduce_sum_r(rCommArray,rCommArrayGlob, &
+                nAngleProd)
+           if(mpiProc == mpiHost) then
+              open(unit=1,file='f_rad'//nameTimeStep//'.'//nameProcOut, &
+                   form='formatted')
+              rCommArrayGlob(1:nAngleProd)=rCommArrayGlob(1:nAngleProd)&
+                   *TWO/nPartCell*omega**2*mass(1) !!! radiation coef
+              write(1,*) nAngle,nAngle2,maxval(rCommArrayGlob(1:nAngleProd))
+              write(1,*) rCommArrayGlob(1:nAngleProd)
+              close(1)
+           end if
+           !
+           rCommArray(1:nFreqChiProd*4)=&
+                (/radFreqChi0(1:nFreq,1:nChi),radFreqChi1(1:nFreq,1:nChi),&
+                radFreqChiCos0(1:nFreq,1:nChi),radFreqChiCos1(1:nFreq,1:nChi)/)
+           call MPIreduce_sum_r(rCommArray,rCommArrayGlob, &
+                nFreqChiProd*4)
+           if(mpiProc == mpiHost) then
+              open(unit=1,file='f_chi'//nameTimeStep//'.'//nameProcOut, &
+                   form='formatted')
+              rCommArrayGlob(1:nFreqChiProd*4)=&
+                    rCommArrayGlob(1:nFreqChiProd*4)&
+                   *TWO/nPartCell*omega**2*mass(1) !!! radiation coef
+              write(1,*) nFreq,nChi,4,FreqMax &
+                   ,maxval(rCommArrayGlob(1:nFreqChiProd)) &
+                   ,maxval(rCommArrayGlob(nFreqChiProd+1:nFreqChiProd*2)) &
+                   ,maxval(rCommArrayGlob(nFreqChiProd*2+1:nFreqChiProd*3)) &
+                   ,maxval(rCommArrayGlob(nFreqChiProd*3+1:nFreqChiProd*4)) &
+                   ,ChiMax ! ??up 
+              write(1,*) rCommArrayGlob(1:nFreqChiProd*4)
+              close(1)
+           end if
+!==p999main.f90
+

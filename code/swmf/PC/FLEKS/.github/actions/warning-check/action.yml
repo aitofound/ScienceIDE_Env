@@ -1,0 +1,105 @@
+name: 'FLEKS compiler warning check'
+description: >-
+  Compile FLEKS in debug mode (-debug -O0) purely to surface compiler warnings.
+  Expects the SWMF-nested layout from the setup-swmf composite action
+  (FLEKS at SWMF/PC/FLEKS).
+inputs:
+  amrex-dim:
+    description: 'AMReX spatial dimension: "2d" or "3d".'
+    required: true
+  warning-summary:
+    description: 'Filename for the warning-check summary (relative to the tests dir).'
+    required: true
+    default: warning_check.md
+  summary-title:
+    description: 'Markdown heading for the job summary.'
+    required: true
+    default: FLEKS Compiler Warning Check
+runs:
+  using: 'composite'
+  steps:
+    - name: Compile FLEKS (-debug -O0) and collect warnings
+      working-directory: SWMF/PC/FLEKS
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        # Configure a debug, unoptimized build so the compiler emits every
+        # warning it can. This build is compile-only: nothing here is ever used
+        # to run the tests.
+        ./Config.pl -amrex${{ inputs.amrex-dim }} -lev=2 -u=Exo -debug -O0
+
+        # Compile, capturing ALL output (both stdout and stderr) to a log file.
+        LOG="warning_check_build.log"
+        set +e
+        make EXE -j$(nproc) > "$LOG" 2>&1
+        BUILD_STATUS=$?
+        set -e
+
+        SUMMARY="tests/${{ inputs.warning-summary }}"
+
+        if [ "$BUILD_STATUS" -ne 0 ]; then
+          echo "::error::Debug build (-debug -O0) failed to compile."
+          cat "$LOG"
+          {
+            echo "### ❌ Compiler warning check"
+            echo ""
+            echo "The \`-debug -O0\` build failed to compile:"
+            echo ""
+            echo '```'
+            tail -n 100 "$LOG"
+            echo '```'
+          } > "$SUMMARY"
+          exit 1
+        fi
+
+        # Detect compiler warnings. Match common warning prefixes emitted by
+        # g++, clang++, and gfortran so this is compiler-agnostic.
+        WARN_PATTERN='(warning:|Warning:|[:][0-9]+[:][0-9]*: warning:|remark #|converting .* to .* changes value|Possible change of value in conversion)'
+        # Exclude known non-compiler noise: GNU make messages (jobserver
+        # unavailable, Entering/Leaving directory) that match "warning:" but
+        # are not compiler diagnostics.
+        MAKE_NOISE_PATTERN='make(\[[0-9]+\])?: (warning: )?(jobserver unavailable|Entering directory|Leaving directory)'
+        # grep returns 1 when nothing matches after filtering, which is the
+        # success case; the `|| true` keeps `set -e` from aborting there.
+        grep -E -i "$WARN_PATTERN" "$LOG" | grep -E -iv "$MAKE_NOISE_PATTERN" > warning_check.txt || true
+        if [ -s warning_check.txt ]; then
+          echo "::error::Compiler warnings detected during debug build (-debug -O0):"
+          cat warning_check.txt
+          {
+            echo "### ⚠️ Compiler warnings"
+            echo ""
+            echo "The \`-debug -O0\` warning check found the following warnings:"
+            echo ""
+            echo '```'
+            cat warning_check.txt
+            echo '```'
+          } > "$SUMMARY"
+          exit 1
+        fi
+
+        echo "Compiler warning check passed: no compiler warnings."
+        {
+          echo "### ✅ Compiler warning check"
+          echo ""
+          echo "Compiled FLEKS with \`-debug -O0\` against AMReX ${{ inputs.amrex-dim }};"
+          echo "no compiler warnings were detected."
+          echo ""
+          echo "This build is compile-only and is never used to run tests."
+        } > "$SUMMARY"
+
+    - name: Write Job Summary
+      if: always()
+      shell: bash
+      run: |
+        {
+          echo "### 🔬 ${{ inputs.summary-title }}"
+          echo ""
+          if [ -f SWMF/PC/FLEKS/tests/${{ inputs.warning-summary }} ]; then
+            cat SWMF/PC/FLEKS/tests/${{ inputs.warning-summary }}
+            echo ""
+          else
+            echo "No warning-check summary was produced."
+            echo ""
+          fi
+        } >> $GITHUB_STEP_SUMMARY

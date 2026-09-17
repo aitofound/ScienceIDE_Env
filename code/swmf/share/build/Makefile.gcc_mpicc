@@ -1,0 +1,31 @@
+# C language related part of Makefile.conf: Makefile.gcc_mpicc
+C_COMPILER_NAME=gcc
+
+COMPILE.c     = gcc
+COMPILE.mpicc = mpicc
+COMPILE.mpicxx= mpicxx
+
+# DEBUGMEMORY = -fsanitize=address -fsanitize=undefined \
+# 	    -fno-sanitize-recover=all -fsanitize=float-divide-by-zero \
+# 	    -fsanitize=float-cast-overflow -fno-sanitize=null \
+# 	    -fno-sanitize=alignment
+
+LINK.cpp = ${COMPILE.c} -lstdc++
+
+CPPLIB = -lstdc++ -lmpi_cxx -lmpi++
+
+#DEBUGC =  -g -Wall -Wextra -Wno-unused-parameter 
+
+.SUFFIXES: .c .cpp
+
+OMPLIBC = -lgomp
+
+FLAGC = ${SEARCH_C} ${FLAGC_EXTRA} -c ${OPT3} ${OPENMPFLAG} ${DEBUGC}
+
+FLAGCC = ${FLAGC} -Wno-psabi -std=c++17
+
+.c.o:
+	${COMPILE.c} ${FLAGC} $< -o $@
+
+.cpp.o:
+	${COMPILE.mpicxx} ${FLAGCC} $< -o $@
