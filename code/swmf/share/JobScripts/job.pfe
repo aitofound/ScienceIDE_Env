@@ -1,0 +1,176 @@
+#!/bin/csh
+
+# Job script for Pleiades computer at NASA Ames.
+#
+# This file must be customized and run from the run directory! For example
+#
+#   cd run
+#   qsub job.pfe
+#
+# An alternative is to submit several jobs for different CPU types and
+# keep the first one that started:
+#
+#   qsub.pfe.pl job.pfe
+#
+# This can be used the for normal/long queues. For help, type 
+#
+#   qsub.pfe.pl -h
+#
+# For the devel queue only one job can be submitted. To see the number of
+# free nodes per machine type and queue use
+#
+# node_stats.sh
+# 
+# To check the status of submitted jobs, use
+#
+# qstat -u YOUR_USER_NAME
+# qstat v100@pbspl4 -u YOUR_USER_NAME # for v100 jobs
+#
+# Note that the run directory should be moved to the /nobackup filesystem,
+# otherwise the quota on the home directory will fill up before the run ends.
+# Even on the /nobackup system there is a limit on the number of files.
+# To see the disk quota limits and usage use
+#
+# lfs quota -u USERNAME /nobackupp1
+#
+# To avoid having too many output files post-processes every minut using
+#
+#    ./PostProc.pl -m -v -g -r=60 &> PostProc.log &
+#
+# either on the head node or in this job script by 
+# commenting out the two PostProc related lines below.
+#
+# Also use (in the BATSRUS section of the PARAM.in file) the command
+#
+# #RESTARTOUTFILE
+# one                             TypeRestartOutFile
+#
+# to reduce the number of files in the restart directory.
+#
+# To see the CPU allocation and usage on your accounts use
+#
+# acct_ytd
+#
+# For detailed information for a period of time, project and user(s):
+#
+# acct_query -b 10/31/15 -p s1359 -u all
+#
+
+#PBS -S /bin/csh
+#PBS -N SWMF
+
+# set the number of MPI processes by changing select and ncpus:
+# nProc = select*ncpus
+
+# To run with 2 MPI procs and 8 OpenMp threads use this (and see below)
+# (Note: the ompthreads=8 is the same as "setenv OMP_NUM_THREADS 8")
+#!! PBS -l select=16:ncpus=16:mpiprocs=2:ompthreads=8:model=san
+
+# To run on the 20-core Ivy Bridge nodes (3.2GB/core)
+#PBS -l select=16:ncpus=20:model=ivy
+
+# To run on the 24-core Haswell nodes (5.3GB/core)
+### PBS -l select=16:ncpus=24:model=has
+
+# To run on the 28-core Broadwell nodes (128GB/node or 4.5GB/core)
+### PBS -l select=16:ncpus=28:model=bro
+
+# To run on the 28-core Electra Broadwell nodes (128GB/node or 4.5GB/core)
+### PBS -l select=16:ncpus=28:model=bro_ele
+
+# To run on the 40-core Electra Skylake nodes (192GB/node or 4.8GB/core)
+### PBS -l select=16:ncpus=40:model=sky_ele
+
+# To run on the 40-core Aitken Cascade Lake nodes (192GB/node or 4.8GB/core)
+### PBS -l select=16:ncpus=40:model=cas_ait
+
+# To run on the 128-core Aitken Rome nodes (512GB/node or 4GB/core) 
+### PBS -l select=10:ncpus=128:model=rom_ait
+
+# To run on K40 GPU
+#!! PBS -l select=1:ncpus=16:model=san_gpu
+### PBS -q k40
+
+# To run on v100 GPU (up to 4)
+#!! PBS -lselect=1:ncpus=36:ngpus=1:model=sky_gpu
+#!! PBS -lselect=1:ncpus=48:ngpus=1:model=cas_gpu
+### PBS -q v100@pbspl4
+
+# The default is the "normal" queue with an 8 hour walltime limit.
+
+# To run in the long queue uncomment the following line,
+# and set the maximum walltime to up to 120 hours below. 
+### PBS -q long
+
+# To run in the development queue uncomment the following line,
+# and set the maximum walltime to 2 hours below. 
+# Note that self-submitting job scripts are not allowed anymore!
+### PBS -q devel
+
+#PBS -l walltime=8:00:00
+#PBS -j oe
+#PBS -m e
+
+# Specify group (account charged) if necessary
+### PBS -W group_list=...
+
+# cd into the run directory
+cd $PBS_O_WORKDIR
+
+# For PGI compilers uncomment the 3 lines below:
+#module purge; module load comp-pgi mpi-hpe idl python
+#setenv MPICC_CC pgcc
+#setenv MPICXX_CXX pgc++
+
+# Seems to be needed for HDF5 plots
+setenv MPI_TYPE_DEPTH 20
+
+# Set initial MPI launch timeout - Default is 60(s)
+# CPUs < 500         - Default 60 is enough
+# 500 < CPUs < 2000  - 300  is suggested
+# 2000 < CPUs < 5000 - 600  is suggested
+# 5000 < CPUs        - 1200 is suggested
+#setenv MPI_LAUNCH_TIMEOUT 1200
+
+# Start PostProc.pl in the background
+#./PostProc.pl -n=16 -g -r=60 >& PostProc.log &
+
+# Running with OpenMP may require the following settings
+# (For the SWMF use the #COMPONENTMAP command to define threads)
+#setenv MPI_DSM_DISTRIBUTE 0
+#setenv KMP_AFFINITY disabled
+#setenv OMP_NUM_THREADS 8
+#mpiexec -n 2 omplace BATRUS.exe > runlog_`date +%y%m%d%H%M`
+
+# run SWMF (the number of processors is already specified above)
+# the date/time stamp for runlog is only necessary for automated resubmission
+mpiexec ./SWMF.exe > runlog_`date +%y%m%d%H%M`
+
+# Request PostProc.pl to stop and wait for it to finish
+
+#sleep 60
+#touch PostProc.STOP; wait;
+
+exit
+
+# To use automated resubmission remove the 'exit' command above
+# and adapt the script below!
+#
+# Use the #CPUTIMEMAX and #CHECKSTOP commands in PARAM.in
+# so the code stops before the wall clock time is exceeded.
+
+# Do not continue unless the job finished successfully
+if(! -f SWMF.SUCCESS) exit
+
+# Do not continue if the whole run is done
+if(-f SWMF.DONE) exit
+
+# Link latest restart files
+./Restart.pl
+
+# Provide a PARAM.in.restart file if you wish and uncomment these lines:
+# if(! -f PARAM.in.start) cp PARAM.in PARAM.in.start
+# if(-f PARAM.in.restart) cp PARAM.in.restart PARAM.in
+
+# Resubmit job
+qsub job.pfe

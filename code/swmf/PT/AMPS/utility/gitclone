@@ -1,0 +1,105 @@
+#!/usr/bin/perl -s
+
+my $Help = ($h or $help);
+my $Sleep = ($s or $Sleep);
+my $History = $history;
+my $Date = $date;  # New date option
+
+use strict;
+
+my $swmf_software     = "git\@github.com:SWMFsoftware";
+my $csem_software     = "git\@gitlab.umich.edu:csem_software";
+my $solstice_software = "git\@gitlab.umich.edu:solstice-software";
+
+# The project name should be all capitalized.
+my %url = (
+    "BATSRUS_GPU"        => $csem_software,
+    "BATSRUS_GPU_SIMPLE" => $csem_software,
+    "LATEX"              => $csem_software,
+    "VAC"               => $csem_software,
+    "WSA"               => $csem_software,
+    "GITM"              => "https://github.com/GITMCode",
+    "VISANAMATLAB"      => "https://github.com/henry2004y",
+    "BATSRUS.jl"        => "https://github.com/henry2004y",
+    "PARAMINS_GEOSPACE" => $solstice_software,
+    "CME_LIST"          => $solstice_software,
+    "SWMF_PLOT_GEOSPACE" => $solstice_software,
+    "SUPERMAGSTATIONS"   => $solstice_software,
+    );
+
+my @repo = ("SWMF, AMPS, BATSRUS, CIMI2, FSAM, FLEKS, GITM2, MFLAMPA, PWOM ...", 
+            sort keys %url);
+
+if($Help or not @ARGV){
+    print "
+Clone a project from the proper git repository. 
+
+Usage:
+  gitclone [-h] [-s] [-history] [-date=YYYY-MM-DD] REPO [flags] [DIRNAME]
+
+-h -help      Print help message.
+
+-s -sleep     Sleep \$GITLABSLEEP seconds after the cloning if the 
+              \$GITLABSLEEP environment variable is set to avoid 
+              firewall protection against repeated access to the git server.
+
+-history      Clone with history. If not present the --depth 1 is used
+
+-date         Checkout repository state at specified date (format: YYYY-MM-DD)
+              Requires -history option to work properly.
+
+flags         Any git flag.
+DIRNAME       Name of local directory (default is same as REPO)
+REPO          Name of repository, including the following:\n\t\t", join("\n\t\t", @repo), "
+
+Examples:
+
+Clone BATSRUS repository from swmf_software with history:
+   gitclone -history BATSRUS
+
+Clone LATEX repository from csem_software without history into Papers/BIBTEX:
+   gitclone LATEX Papers/BIBTEX
+
+Clone BATSRUS as it was on January 1, 2023:
+   gitclone -history -date=2023-01-01 BATSRUS
+
+";
+    exit 0;
+}
+
+# Validate date format if provided
+if ($Date) {
+    die "Error: -date requires -history option\n" unless $History;
+    die "Error: Invalid date format. Use YYYY-MM-DD\n"
+        unless $Date =~ /^\d{4}-\d{2}-\d{2}$/;
+}
+
+my $project = $ARGV[0]; 
+$project =~ s/\.git$//;
+
+my $url = ($url{uc($project)} or $swmf_software);
+
+# Build the clone command
+my $command = "git clone";
+$command .= " --depth 1 --no-single-branch" unless $History;
+$command .= " $url/$ARGV[0]";
+
+# Add directory name if specified
+if ($ARGV[1] and $ARGV[1] !~ /^-/) {
+    $command .= " $ARGV[1]";
+}
+
+# If date is specified, add commands to checkout that specific date
+if ($Date) {
+    my $dir = ($ARGV[1] and $ARGV[1] !~ /^-/) ? $ARGV[1] : $ARGV[0];
+    $dir =~ s/\.git$//;
+    $command .= " && cd $dir && git checkout `git rev-list -n 1 --before=\"$Date 23:59:59\" master`";
+}
+
+# Add sleep command if needed
+$command .= "; sleep $ENV{GITLABSLEEP}" if ($ENV{GITLABSLEEP} and $Sleep);
+
+print "$command\n";
+`$command`;
+
+exit 0;

@@ -1,0 +1,134 @@
+#DESCRIPTION
+Hybrid-PIC conducting-field-wall test: a transverse shear-Alfven wave (HybridWave
+testcase) lives in a finite-x domain whose x faces are CONDUCTING (PEC) field
+boundaries and REFLECTING particle boundaries.  Validates that the conducting
+field BC (E_t=0, B_n=0) is wired into the hybrid cell-centred advance and that
+the run stays finite/stable (no NaN).
+
+#INITFROMSWMF
+F                       initFromSWMF
+
+#GEOMETRY
+-3.2                    xMin
+ 3.2                    xMax
+-0.05                   yMin
+ 0.05                   yMax
+-0.05                   zMin
+ 0.05                   zMax
+
+#NCELL
+32                      nCellX
+1                       nCellY
+1                       nCellZ
+
+#MAXBLOCKSIZE
+32                      maxBlockSizeX
+1                       maxBlockSizeY
+1                       maxBlockSizeZ
+
+#PERIODICITY
+F                       isPeriodicX
+T                       isPeriodicY
+T                       isPeriodicZ
+
+#FIELDBOXBOUNDARY
+conducting              fieldBoxBoundaryLo
+conducting              fieldBoxBoundaryHi
+periodic                fieldBoxBoundaryLo
+periodic                fieldBoxBoundaryHi
+periodic                fieldBoxBoundaryLo
+periodic                fieldBoxBoundaryHi
+
+Reflecting particle walls keep the ions (and hence the hybrid Ohm's-law moments)
+inside the cavity.
+#PARTICLEBOXBOUNDARY
+0                       iSpecies
+reflect                 particleBoxBoundaryLo
+reflect                 particleBoxBoundaryHi
+periodic                particleBoxBoundaryLo
+periodic                particleBoxBoundaryHi
+periodic                particleBoxBoundaryLo
+periodic                particleBoxBoundaryHi
+
+#SOLVEEM
+F                       solveEM
+
+#HYBRIDPIC
+T                       useHybridPIC
+
+#AVGFIELDB
+T                       useAvgFieldB
+20                      nAvgFieldB
+
+Ideal frozen-in Ohm's law (Hall OFF) so the wave is a driven by the motional
+field alone.
+#HALLTERM
+F                       useHallTerm
+
+#BSUBCYCLE
+1                       nBSubcycle
+
+#RESISTIVITY
+0.0                     etaResistivity
+
+#ELECTRONTEMPERATURE
+0.0                     electronTemperature
+1.0                     electronGamma
+1.0                     electronDensity0
+
+Single kinetic ion species (q = m = 1); the electron is the implicit massless
+neutralizing fluid.
+#PLASMA
+1                       nSpecies
+1.0                     mass
+1.0                     charge
+
+#UNIFORMSTATE
+5.0                     rho
+0.0                     ux
+0.0                     uy
+0.0                     uz
+10000.0                 T
+1.0439e-8               bx
+0.0                     by
+0.0                     bz
+0.0                     ex
+0.0                     ey
+0.0                     ez
+
+#TESTCASE
+HybridWave
+
+#TIMESTEPPING
+T                       useFixedDt
+0.02                    dt
+
+#NORMALIZATION
+1.0e5                   lNormSI
+1.0e5                   uNormSI
+
+#MONITOR
+50                      dnReport
+
+#SAVELOG
+10                      dnSavePic
+10                      dnSavePT
+
+#PARTICLES
+2000                    npcelx
+1                       npcely
+1                       npcelz
+
+#SAVEPLOT
+1                       nPlot
+z=0 var ascii pic       plotString
+100                     dn
+-1                      dt
+1                       dx
+rhoS0 uxS0 uyS0 uzS0 Bx By Bz Ex Ey Ez   plotVar
+
+#STOP
+-1                      MaxIter
+13.0                    TimeMax
+
+#RUN

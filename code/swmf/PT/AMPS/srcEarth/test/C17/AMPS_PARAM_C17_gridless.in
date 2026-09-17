@@ -1,0 +1,107 @@
+! ═══════════════════════════════════════════════════════════════
+! AMPS SEP geospace validation test C17
+! Dipole charge-sign and meridional-reflection symmetry
+!
+! Parser-compatible gridless input template.  run_C17.py renders the
+! observation POINTS block and runs the same centered dipole case twice:
+!   Run A: q = +1, arrival direction v
+!   Run B: q = -1, reflected arrival direction Mv, M(x,y,z)=(x,-y,z)
+!
+! For observation points in the x-z meridional plane of an aligned centered
+! dipole, B(Mx)=M B(x).  Since det(M)=-1, changing q to -q makes the reflected
+! forward trajectory obey the same equation.  The default DIRECT_ACCESS mode
+! compares the resulting three-state access cubes on a common rigidity grid.
+! UPPER_SCAN remains available as a legacy scalar-cutoff diagnostic.
+! ═══════════════════════════════════════════════════════════════
+
+#RUN_INFO
+RUN_ID                 __RUN_ID__
+
+#CALCULATION_MODE
+CALC_TARGET            CUTOFF_RIGIDITY
+FIELD_EVAL_METHOD      GRIDLESS
+
+#CUTOFF_RIGIDITY
+CUTOFF_EMIN            __CUTOFF_EMIN_MEV__
+CUTOFF_EMAX            __CUTOFF_EMAX_MEV__
+CUTOFF_MAX_PARTICLES   __CUTOFF_MAX_PARTICLES__
+CUTOFF_NENERGY         __CUTOFF_NENERGY__
+! The common AMPS parser requires VERTICAL whenever the cutoff algorithm is
+! DIRECT_ACCESS/PENUMBRA_SCAN or CUTOFF_RIGIDITY_LIST_GV is present.  The
+! directional sky grid below still controls the actual direction-resolved work;
+! this keyword selects the compatible scalar-cutoff parser contract.
+CUTOFF_SAMPLING        VERTICAL
+DIRECTIONAL_MAP        T
+DIRMAP_LON_RES         __DIRMAP_LON_RES__
+DIRMAP_LAT_RES         __DIRMAP_LAT_RES__
+CUTOFF_SEARCH_ALGORITHM __CUTOFF_SEARCH__
+CUTOFF_UPPER_SCAN_N    __CUTOFF_UPPER_SCAN_N__
+CUTOFF_SCAN_SPACING    LOG
+CUTOFF_TRACE_POLICY    ACCURATE
+CUTOFF_BACKTRACE_CHARGE SAME
+CUTOFF_TRACE_LIMIT_POLICY UNRESOLVED
+! DIRECT_ACCESS uses this explicit common grid and disables adaptive insertion
+! so every reflected sky-cell pair is compared at identical rigidity nodes.
+CUTOFF_RIGIDITY_LIST_GV __CUTOFF_RIGIDITY_LIST_GV__
+CUTOFF_DIRECT_ACCESS_ADAPTIVE F
+CUTOFF_MAX_TRAJ_TIME   __MAX_TRACE_TIME__
+! Do not place CUTOFF_UNRESOLVED_EXTENSION_* here.  Those keywords belong to a
+! newer optional C19 parser extension and are not accepted by the baseline AMPS
+! parser used by C17.  The compatible profile instead applies the full trace-time
+! budget to every trajectory.
+DIRMAP_COVERAGE        FULL_SPHERE
+
+#PARTICLE_SPECIES
+SPECIES                __SPECIES_NAME__
+CHARGE                 __CHARGE__
+MASS_AMU               __MASS_AMU__
+
+#BACKGROUND_FIELD
+FIELD_MODEL            DIPOLE
+DIPOLE_MOMENT          1.00
+DIPOLE_TILT            0.0
+
+#DOMAIN_BOUNDARY
+DOMAIN_X_MAX           35.0         ! Re
+DOMAIN_X_MIN           -35.0        ! Re
+DOMAIN_Y_MAX           35.0         ! Re
+DOMAIN_Y_MIN           -35.0        ! Re
+DOMAIN_Z_MAX           35.0         ! Re
+DOMAIN_Z_MIN           -35.0        ! Re
+R_INNER                1.0          ! Re
+
+#ELECTRIC_FIELD
+! No active electric-field keyword is set.  The default parser state is E=0.
+
+#SPECTRUM
+SPECTRUM_TYPE          POWER_LAW
+SPEC_J0                1.00e+4
+SPEC_GAMMA             3.50
+SPEC_E0                10.0
+SPEC_EMIN              1.0
+SPEC_EMAX              1000.0
+
+#OUTPUT_DOMAIN
+OUTPUT_MODE            POINTS
+COORDS                 GSM
+POINTS_BEGIN
+__POINTS_BLOCK__
+POINTS_END
+
+#NUMERICAL
+DT_TRACE               __DT_TRACE__
+ADAPTIVE_DT            __ADAPTIVE_DT__
+MAX_TRACE_TIME         __MAX_TRACE_TIME__
+! A nonzero cumulative path cap gives different physical-time budgets at
+! different rigidities and was the dominant source of the original C17
+! unresolved population.  Zero disables that cap; MAX_TRACE_TIME and the
+! physical boundaries remain active.
+MAX_TRACE_DISTANCE     __MAX_TRACE_DISTANCE_RE__
+! TRAP_* controls are intentionally omitted from this parser-compatible C17
+! deck.  They require the newer C19 trap-classifier parser and mover changes.
+GRIDLESS_MPI_SCHEDULER __GRIDLESS_MPI_SCHEDULER__
+GRIDLESS_MPI_DYNAMIC_CHUNK __GRIDLESS_MPI_DYNAMIC_CHUNK__
+GRIDLESS_PARALLEL      THREADS
+GRIDLESS_THREADS       __GRIDLESS_THREADS__
+
+!#END

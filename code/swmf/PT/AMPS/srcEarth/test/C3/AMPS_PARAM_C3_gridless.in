@@ -1,0 +1,72 @@
+! ═══════════════════════════════════════════════════════════════
+! AMPS SEP geospace validation test C3
+! Penumbra / upper-cutoff search regression, Mode3D shells
+!
+! Parser-compatible CCMC/RoR-style input.  The Python harness passes
+! CUTOFF_SEARCH_ALGORITHM, MPI scheduler, thread count, and Mode3D
+! field-evaluation selection on the command line.
+! ═══════════════════════════════════════════════════════════════
+
+#CALCULATION_MODE
+CALC_TARGET            CUTOFF_RIGIDITY
+FIELD_EVAL_METHOD      GRIDLESS
+
+#CUTOFF_RIGIDITY
+CUTOFF_EMIN            1.0          ! MeV/n; Rmin ~= 0.043331 GV for protons
+CUTOFF_EMAX            20000.0      ! MeV/n
+CUTOFF_MAX_PARTICLES   500          ! per injection point
+CUTOFF_NENERGY         50           ! log-spaced energy bins
+CUTOFF_SAMPLING        VERTICAL     ! C3 targets vertical access
+CUTOFF_MAX_TRAJ_TIME   600          ! sec; overwritten by run_C3.py if requested
+
+#PARTICLE_SPECIES
+SPECIES                PROTON
+CHARGE                 1
+MASS_AMU               1.0073
+
+#BACKGROUND_FIELD
+FIELD_MODEL            DIPOLE
+DIPOLE_MOMENT          1.00
+DIPOLE_TILT            0.0
+
+#DOMAIN_BOUNDARY
+DOMAIN_X_MAX           35.0         ! RE dayside
+DOMAIN_X_MIN           -35.0        ! RE nightside
+DOMAIN_Y_MAX           35.0         ! RE dusk
+DOMAIN_Y_MIN           -35.0        ! RE dawn
+DOMAIN_Z_MAX           35.0         ! RE north
+DOMAIN_Z_MIN           -35.0        ! RE south
+R_INNER                1.0          ! RE inner loss sphere
+
+#ELECTRIC_FIELD
+!COROTATION_E           NO
+!CONV_E_MODEL           VOLLAND_STERN
+
+!#TEMPORAL
+!TEMPORAL_MODE          TIME_SERIES
+
+#SPECTRUM
+SPECTRUM_TYPE          POWER_LAW
+SPEC_J0                1.00e+4
+SPEC_GAMMA             3.50
+SPEC_E0                10.0
+SPEC_EMIN              1.0
+SPEC_EMAX              1000.0
+
+#OUTPUT_DOMAIN
+OUTPUT_MODE            SHELLS
+SHELL_COUNT            1
+SHELL_ALTS_KM          9000.0
+SHELL_RES_DEG          30
+
+#OUTPUT_OPTIONS
+!OUTPUT_CUTOFF          T
+!OUTPUT_FORMAT          TECPLOT
+!OUTPUT_COORDS          GEO
+
+#NUMERICAL
+DT_TRACE               1.0
+MAX_TRACE_TIME         600
+MAX_TRACE_DISTANCE     300.0        ! RE; distance cap used to avoid long-time leakage
+
+!#END

@@ -1,0 +1,222 @@
+<!-- The syntax is described by share/Scripts/CheckParam.pl and the manual -->
+
+<commandList name="DGCPM: PS Component">
+
+List of PS commands used in the PARAM.in file.
+
+
+<set name="NameComp"          type="string" value="$_NameComp"/>
+<set name="NameRestartOutDir" type="string" value="$NameComp/restartOUT"/>
+<set name="NamePlotDir"       type="string" value="$NameComp/IO2"/>
+
+<commandgroup name="STAND ALONE MODE">
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!! STAND ALONE PARAMETERS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Options for configuring the model in stand-alone mode (no SWMF-interface.)
+Many of these are required if DGCPM is not called from the SWMF, redundant
+otherwise.
+
+</commandgroup>
+
+<commandgroup name="NUMERICAL SCHEME">
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!Numerics group!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Options for configuring the schemes and solvers, boundary conditions, 
+and other numerical options.
+
+<command name="TIMESTEP"><parameter name="DtStep" type="real"
+         default="10.0" min="0.0"/>
+#TIMESTEP
+10.0	DtStep
+
+Set the timestep for the simulation.  Default values are shown.
+
+</command>
+
+</commandgroup>
+
+<commandgroup name="PHYSICAL PARAMETERS">
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!Physics group!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+<command name="KP">
+  <parameter name="NameSourceKp" type="string" default="const"/>
+  <parameter name="ConstKp"      type="real" min="0" max="9" default="0"
+	     if="$NameSourceKp eq 'const'"/>
+  <parameter name="NameKpFile" type="string" if="$NameSourceKp eq 'file'"/>
+
+#KP
+const         NameSourceKp
+3.0           ConstKp
+
+#KP
+file          NameSourceKp
+kp_data.dat   NameKpFile
+  
+This command controls the behavior of the built-in Volland-Stern electric
+field model by setting the value of the Kp index -- the only input to VS.
+NameSourceKp sets the source for Kp, either via an NGDC-formatted file
+("file") or as a constant ("const").  If NameSourceKp is "const", then the
+"ConstKp" value is read and Kp is held constant at that value for all times
+in the simulation.  If NameSourceKp is "file", "NameKpFile" is read and
+sets the name of the input file.
+
+For an example input file, see DGCPM/Input/kp_test.dat.
+
+</command>
+
+
+<command name="FILLING">
+  <parameter name="EmptyPeriodClosed" type="real" min="0" default="3.0"/>
+  <parameter name="EmptyPeriodOpen"   type="real" min="0" default="1.0"/>
+  <parameter name="FillDays"          type="real" min="0" default="1.5"/>
+  <parameter name="FluxMax"           type="real" min="0" default="2.0E12"/>
+
+#FILLING
+3.0     EmptyPeriodClosed
+1.0     EmptyPeriodOpen
+1.5     FillDays
+
+Set parameters that control flux tube refilling and emptying: the time constant for closed flux tube loss ($\tau_{EmptyClosed}$), the time constant for open flux tube loss ($\tau_{EmptyOpen}$), and the time constant for flux tube refilling ($\tau_{Fill}$). All values above should be given in units of days; they are converted to seconds for use in the formulas below.
+
+Default values are shown. If FillDays is set to a negative number, no flux tube refilling will be applied.
+
+In DGCPM, filling and emptying of dayside, closed magnetic field lines works to drive each flux tube towards its saturation density, empirically determined by \emph{Carpenter and Anderson}, JGR, 1992 as,
+\begin{equation}
+n_{sat} = 10^{-0.3145 L + 3.9043)}
+\end{equation}
+given in electrons per cubic centimeter.
+
+On day side closed flux tubes where density is above $n_{sat}$, the density is dropped back to $n_{sat}$. If density is less than $n_{sat}$, a refilling flux is applied:
+
+\begin{equation}
+f_{refill} = f_{max}  \frac{n_{sat} - n}{n_{sat}}  \sin(\phi - \pi/4)
+\end{equation}
+
+...where $f_{max}$ is an estimate of the maximum number flux possible (e.g., refilling of an empty flux tube). This is calculated as,
+
+\begin{equation}
+f_{max} = \frac{2}{\tau_{Fill}} \frac{V_{min}}{L^3} L_{min} n_{sat,min}
+\end{equation}
+
+...where $L$ is the radial distance of the flux tube being refilled, $V_{min}$ and $L_{min}$ are the minimum flux tube volume within the entire computational domain and its radial distance, and $n_{sat,min}$ is the saturation density of the smallest flux tube by volume.
+The sine factor in the $f_{refill}$ formula scales refilling as a factor of solar zenith angle: flux tubes at local noon refill faster than flux tubes at local dawn or dusk.
+
+On open field lines, density decays:
+\begin{equation}
+n = n - \frac{1 - \Delta t}{\tau_{EmptyOpen}}
+\end{equation}
+where $\Delta t$ is the time step.
+
+Similarly, on night side closed flux tubes, density decays:
+\begin{equation}
+n = n - \frac{1 - \Delta t}{\tau_{EmptyClosed}}
+\end{equation}
+
+</command>
+
+</commandgroup>
+
+<commandgroup name="COUPLING PARAMETERS">
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!Coupling  group!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+<command name="GMCOUPLING">
+  <parameter name="iGmFluidCouple"  type="integer" min="1"   default="1"/>
+  <parameter name="TempPlasma" type="real"   min="0.01" default="2.0"/>
+
+#GMCOUPLING
+1			iGmFluidCouple
+2.0			TempPlasma (eV)
+
+This command controls the coupling of DGCPM's plasmasphere density and
+temperature to a GM component in the SWMF.  DGCPM will pass its density
+across its grid to GM.  Temperature is converted to thermal pressure
+based on the density of the plasma.  iGmFluidCouple sets the fluid to which
+density and pressure values are coupled if GM is using a multi-fluid approach.
+The default behavior is to couple to the first fluid.  If GM is in single
+fluid mode, this parameter has no impact.  TempPlasma sets the temperature of
+the plasmasphere in electron volts.
+
+Default values are shown.
+</command>
+
+</commandgroup>
+
+<commandgroup name="OUTPUT PARAMETERS">
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!Output  group!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+<command name="MLTSLICE">
+  <parameter name="nMltSlice"  type="integer" min="0"   default="4"/>
+  <parameter name="DtMltSlice" type="real"   min="1.0" default="300.0"/>
+
+#MLTSLICE
+4	nMltSlice
+300.0	DtMltSlice
+
+Save output extracted at a number (\textit{nMltSlice}) of evenly spaced 
+lines of constant MLT at a cadence of \textit{DtMltSlice} seconds.  
+Each slice will have its own
+file.  For example, if \textit{nMltSlice} is set to 4, output will extracted at 
+00, 06, 12, and 18 MLT.  The current limitation is that no interpolation is made,
+therefore the total number of azimuthal cells (default is 120) must be evenly
+divisible by \textit{nMltSlice}.  Default values are shown.
+
+</command>
+
+<command name="OUTPUT">
+  <parameter name="WriteStatic" type="logical"/>
+  <parameter name="WriteDynamic" type="logical"/>
+  <parameter name="OutputInterval" type="real"/>
+  <parameter name="OutputType" type="string"/>
+  <parameter name="MagneticType" type="string"/>
+
+#OUTPUT
+T                       DoWriteStatic
+T                       DoWriteDynamic
+600.                    OutputInterval
+SHORT                   OutputType
+DIPOLE                  MagneticType
+
+Configure full-domain output files ({\tt dgcpm*.dat} files).
+
+DoWriteStatic turns on static file writing. This is a one-time output file that contains information about the magnetic field configuration, flux tube volume, and grid. It is only relevant for dipole magnetic field configurations.
+MagneticType sets the field information to be included in the static output file; however, only DIPOLE is implemented at present.
+
+DoWriteDynamic turns on dynamic file writing. These are snapshots of density, velocity, and other variables written at a set interval. OutputInterval sets the frequency of dynamic file writing. 
+
+OutputType sets the values to be written to file.
+All files begin by outputing the grid as theta and phi of the ionospheric footpoints of the field lines (in degrees) and the X, Y coordinates of the field line equatorial crossings (in RE in SM coordinates).
+Not all units for output values are known.
+Options include:
+\begin{itemize}
+\item {\tt SHORT} - Density and electric potential ($cm^{-3}$, $V$)
+\item {\tt VELOCITY} - Density, potential, radial velocity, azimuthal velocity ($cm^{-3}$, $V$, $m/s$, $degrees/s$)
+\item {\tt POTENTIAL} - Density, electric potential ($cm^{-3}$, $V$)
+\item {\tt FLOWS} - Density, radial and azimuthal fluxes ($cm^{-3}$, ?, ?)
+\item {\tt OLD } - All variables in an obsolete/basic file format. Not recommended.
+\end{itemize}
+
+Default is to not write {\tt dgcpm*.dat}-type files.
+
+</command>
+
+<command name="LOG">
+  <parameter name="WriteLogFile" type="logical"/>
+#LOG
+T                       WriteLogFile
+
+This command toggles the writing of the DGCPM log file output.
+This file writes the cross plasmasphere potential ($kV$) and Kp index to file every five mintues of simulation time.
+Default action is to not write the log file.
+
+</command>
+
+</commandgroup>
+
+</commandList>

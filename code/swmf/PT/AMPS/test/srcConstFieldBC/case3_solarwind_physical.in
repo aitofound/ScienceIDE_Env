@@ -1,0 +1,144 @@
+# -----------------------------------------------------------------------------
+# example_solarwind.in
+#
+# ECSIM Constant-Field / BC Test: solar-wind-like uniform plasma (physical units)
+#
+# CONFIG PRECEDENCE:
+#   Defaults  ->  this input file (-i)  ->  command line (overrides file)
+#
+# EXAMPLE COMMAND LINES:
+#   1) Run exactly as configured in this file:
+#        ./amps_test -i example_solarwind.in
+#
+#   2) Override one parameter from the CLI (CLI wins over file):
+#        ./amps_test -i example_solarwind.in -ppc 200
+#
+#   3) Same case written fully on the CLI (no input file):
+#        ./amps_test -particles -L 128 16 16 \
+#          -sw-ncm3 5 -sw-TK 1e5 -sw-BnT 0 5 0 -sw-u-kms 400 0 0 \
+#          -sw-EvXB -ppc 100 -stencil-order=2
+#
+#
+#sw-evxb=1  # Compute convective E from bulk flow and B:  E = -u x B.
+            # Requires u (sw-u / sw-u-ms / sw-u-kms) and B (B=... or sw-BnT=...).
+            # Ignored if E is explicitly specified (E=..., sw-evm=..., sw-emvm=..., or CLI -E/-sw-EVm/-sw-EmVm).
+            # CLI equivalent: -sw-EvXB
+# NOTES:
+#   * -sw-EvXB computes the convective electric field using the correct MHD sign:
+#         E = - u x B
+#     Explicit E (via -E, -sw-EVm, -sw-EmVm, sw-evm, sw-emvm) overrides -sw-EvXB.
+#   * Units:
+#       sw-ncm3 : cm^-3
+#       sw-TK   : K
+#       sw-BnT  : nT
+#       sw-u-kms: km/s
+#       sw-evm  : V/m     (optional explicit E)
+#       sw-emvm : mV/m    (optional explicit E)
+# -----------------------------------------------------------------------------
+
+
+
+# Solar-wind-like uniform plasma specified in physical units
+mode=particles
+
+# A longer box helps with flow tests (centered at 0)
+L=12,12,12 
+
+# Solar wind physical parameters
+sw-ncm3=5
+sw-TK=100000
+sw-BnT=0,5,0
+sw-evxb=1 
+
+# Bulk flow in test units (you can later add -sw-ukms if you want physical velocity)
+#sw-u=0.05,0,0
+sw-u-kms=400,0,0
+
+# Target macro-particles per cell per species
+ppc=50
+
+# CFL factor used when computing the global particle time step from particle motion
+# (default is 0.2 if not specified)
+# cfl=0.2
+
+# Use stochastic rounding for ppc (default). To disable:
+# sw-no-round=1
+
+stencil-order=2
+
+# Domain electromagnetic BC on all faces: dirichlet | neumann
+bc=dirichlet
+
+# Optional: mark species as guiding-center (gyrokinetic) species for the *field solver*
+# coupling. This calls PIC::GYROKINETIC::SetGuidingCenterSpecies(spec,true) for each
+# listed index. Replace the index below with the electron species id in your setup.
+# gc-spec=1
+
+# =====================================================================
+# Particle mover selection (HELP / EXAMPLES)
+#
+# This test uses MoverTestConstBC() as a wrapper that dispatches to a
+# real mover per species via an array of function pointers:
+#   mover_table[spec] -> { Boris | Lapenta | Guiding Center }
+#
+# You can select:
+#   (1) a default mover for ALL species, and
+#   (2) optional per-species overrides.
+#
+# Valid mover names (case-insensitive):
+#   boris
+#   lapenta            (alias: lapenta2017)
+#   guiding-center     (aliases: guidingcenter, gc)
+#
+# Species index:
+#   The species index is the internal 0-based species id used by AMPS/PIC.
+#   Example: 0, 1, 2, ...
+#
+# Precedence / overrides:
+#   - Per-spec keys override the global "mover=" for that species.
+#   - Command-line options override the input file settings.
+#
+# --------------------------
+# OPTION A: one mover for all species
+# --------------------------
+# mover=boris
+# mover=lapenta
+# mover=guiding-center
+#
+# --------------------------
+# OPTION B: global default + per-spec overrides (recommended)
+# --------------------------
+# mover=boris
+# mover-spec=0,lapenta
+# mover-spec=2,guiding-center
+#
+# --------------------------
+# OPTION C: per-spec shorthand keys (equivalent to mover-spec)
+# --------------------------
+# mover=boris
+# mover0=guiding-center
+# mover1=lapenta
+# mover2=boris
+#
+# Notes:
+#   - "mover-spec=SPEC,NAME" can be repeated multiple times.
+#   - "moverN=NAME" is a shorthand for species N.
+# =====================================================================
+# And here are the matching command line examples (for your reference, not to paste into the file):
+#
+# One mover for all species:
+#
+# ./amps -i case1_constE.in -particles -mover lapenta
+#
+# Global + per-spec override:
+#
+# ./amps -i case1_constE.in -particles -mover boris -mover-spec 0 guiding-center
+#
+# Per-spec shorthand flags:
+#
+# ./amps -i case1_constE.in -particles -mover0 lapenta -mover1 boris
+#
+
+ mover=boris
+
+

@@ -1,0 +1,603 @@
+{
+  "codebase": "trimesh",
+  "build": {
+    "system": "setuptools build backend declared in pyproject.toml; pip editable install",
+    "commands": [
+      "python -m pip install --disable-pip-version-check -e .[easy,test]",
+      "python -m pip install --disable-pip-version-check -e . --no-deps --no-build-isolation --quiet"
+    ],
+    "wall_s": 2.502,
+    "ok": true,
+    "pitfalls": [
+      "The pipeline CLI requires Python >=3.11; the default Python 3.9.7 lacks tomllib.",
+      "The pinned pipeline has a SyntaxError under Python 3.11 in reviewer.py due to a backslash inside an f-string expression; Python 3.12 parses it, so the isolated environment uses Python 3.12.14."
+    ]
+  },
+  "landscape": [
+    {
+      "family": "pytest suite",
+      "kind": "test-suite",
+      "path": "tests",
+      "how_to_run": "python -m pytest tests",
+      "count": 757,
+      "reference_outputs": "none"
+    },
+    {
+      "family": "examples and notebooks",
+      "kind": "examples",
+      "path": "examples",
+      "how_to_run": "Run individual Python scripts or notebooks with their documented optional dependencies and interactive/display requirements.",
+      "count": 29,
+      "reference_outputs": "none"
+    }
+  ],
+  "runs": [
+    {
+      "id": "proximity-suite",
+      "path": "tests/test_proximity.py",
+      "command": "python -m pytest -q tests/test_proximity.py",
+      "ran": true,
+      "wall_s": 5.899,
+      "reproduced": "official assertions passed: 12/12; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "proximity-naive-comparison",
+      "path": "tests/test_proximity.py",
+      "command": "python -m pytest -q tests/test_proximity.py::NearestTest::test_nearest_naive",
+      "ran": true,
+      "wall_s": 5.322,
+      "reproduced": "official assertion passed: 1/1; indexed and naive results agree within upstream tolerance",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "ray-functional-subset",
+      "path": "tests/test_ray.py",
+      "command": "python -m pytest -q tests/test_ray.py -k 'not rps and not multiple_hits'",
+      "ran": true,
+      "wall_s": 8.805,
+      "reproduced": "official assertions passed: 9/9; 2 performance-oriented tests deselected",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "ray-throughput",
+      "path": "tests/test_ray.py",
+      "command": "python -m pytest -q tests/test_ray.py::test_rps",
+      "ran": true,
+      "wall_s": 3.694,
+      "reproduced": "official assertion passed: 1/1; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "ray-multiple-hits",
+      "path": "tests/test_ray.py",
+      "command": "python -m pytest -q tests/test_ray.py::test_multiple_hits",
+      "ran": true,
+      "wall_s": 2.798,
+      "reproduced": "official assertion passed: 1/1; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "thickness-suite",
+      "path": "tests/test_thickness.py",
+      "command": "python -m pytest -q tests/test_thickness.py",
+      "ran": true,
+      "wall_s": 2.377,
+      "reproduced": "official assertions passed: 5/5; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "triangle-closest-subset",
+      "path": "tests/test_triangles.py",
+      "command": "python -m pytest -q tests/test_triangles.py -k closest",
+      "ran": true,
+      "wall_s": 2.029,
+      "reproduced": "official assertions passed: 2/2; 4 unrelated tests deselected",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "sample-surface-distance",
+      "path": "tests/test_sample.py",
+      "command": "python -m pytest -q tests/test_sample.py::SampleTest::test_sample",
+      "ran": true,
+      "wall_s": 1.927,
+      "reproduced": "official assertion passed: 1/1; signed distance of sampled surface points within upstream 1e-4 bound",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "adjacency-suite",
+      "path": "tests/test_adjacency.py",
+      "command": "python -m pytest -q tests/test_adjacency.py",
+      "ran": true,
+      "wall_s": 1.922,
+      "reproduced": "official assertions passed: 1 passed in 1.30s; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "align-suite",
+      "path": "tests/test_align.py",
+      "command": "python -m pytest -q tests/test_align.py",
+      "ran": true,
+      "wall_s": 5.343,
+      "reproduced": "official assertions passed: 3 passed in 4.74s; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "bounds-suite",
+      "path": "tests/test_bounds.py",
+      "command": "python -m pytest -q tests/test_bounds.py",
+      "ran": true,
+      "wall_s": 34.563,
+      "reproduced": "official assertions passed: 11 passed, 38 warnings in 33.86s; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "curvature-suite",
+      "path": "tests/test_curvature.py",
+      "command": "python -m pytest -q tests/test_curvature.py",
+      "ran": true,
+      "wall_s": 3.141,
+      "reproduced": "official assertions passed: 3 passed in 2.56s; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "facets-suite",
+      "path": "tests/test_facets.py",
+      "command": "python -m pytest -q tests/test_facets.py",
+      "ran": true,
+      "wall_s": 1.765,
+      "reproduced": "official assertions passed: 2 passed in 1.22s; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "integral-mean-curvature-suite",
+      "path": "tests/test_integral_mean_curvature.py",
+      "command": "python -m pytest -q tests/test_integral_mean_curvature.py",
+      "ran": true,
+      "wall_s": 2.156,
+      "reproduced": "official assertions passed: 4 passed in 1.57s; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "normals-suite",
+      "path": "tests/test_normals.py",
+      "command": "python -m pytest -q tests/test_normals.py",
+      "ran": true,
+      "wall_s": 2.0,
+      "reproduced": "official assertions passed: 4 passed in 1.42s; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "nsphere-suite",
+      "path": "tests/test_nsphere.py",
+      "command": "python -m pytest -q tests/test_nsphere.py",
+      "ran": true,
+      "wall_s": 2.907,
+      "reproduced": "official assertions passed: 2 passed in 2.32s; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "points-suite",
+      "path": "tests/test_points.py",
+      "command": "python -m pytest -q tests/test_points.py",
+      "ran": true,
+      "wall_s": 2.234,
+      "reproduced": "official assertions passed: 13 passed in 1.66s; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "registration-suite",
+      "path": "tests/test_registration.py",
+      "command": "python -m pytest -q tests/test_registration.py",
+      "ran": true,
+      "wall_s": 13.922,
+      "reproduced": "official assertions passed: 9 passed in 13.30s; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "remesh-suite",
+      "path": "tests/test_remesh.py",
+      "command": "python -m pytest -q tests/test_remesh.py",
+      "ran": true,
+      "wall_s": 13.047,
+      "reproduced": "official assertions passed: 11 passed in 12.35s; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "section-suite",
+      "path": "tests/test_section.py",
+      "command": "python -m pytest -q tests/test_section.py",
+      "ran": true,
+      "wall_s": 4.047,
+      "reproduced": "official assertions passed: 12 passed, 36 warnings in 3.40s; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "segments-suite",
+      "path": "tests/test_segments.py",
+      "command": "python -m pytest -q tests/test_segments.py",
+      "ran": true,
+      "wall_s": 2.0,
+      "reproduced": "official assertions passed: 6 passed in 1.40s; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "smoothing-suite",
+      "path": "tests/test_smoothing.py",
+      "command": "python -m pytest -q tests/test_smoothing.py",
+      "ran": true,
+      "wall_s": 3.031,
+      "reproduced": "official assertions passed: 4 passed in 2.37s; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "voxel-suite",
+      "path": "tests/test_voxel.py",
+      "command": "python -m pytest -q tests/test_voxel.py",
+      "ran": true,
+      "wall_s": 5.016,
+      "reproduced": "official assertions passed: 15 passed in 4.36s; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "8-file-core-batch-geom",
+      "path": "tests/test_geom.py",
+      "command": "python -m pytest -q tests/test_ray.py tests/test_ray_upstream.py tests/test_thickness.py tests/test_triangles.py tests/test_sample.py tests/test_geom.py tests/test_graph.py tests/test_inertia.py --durations=20",
+      "ran": true,
+      "wall_s": 19.13,
+      "reproduced": "official assertions passed as part of a combined 67-node run; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "8-file-core-batch-graph",
+      "path": "tests/test_graph.py",
+      "command": "python -m pytest -q tests/test_ray.py tests/test_ray_upstream.py tests/test_thickness.py tests/test_triangles.py tests/test_sample.py tests/test_geom.py tests/test_graph.py tests/test_inertia.py --durations=20",
+      "ran": true,
+      "wall_s": 19.13,
+      "reproduced": "official assertions passed as part of a combined 67-node run; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "8-file-core-batch-inertia",
+      "path": "tests/test_inertia.py",
+      "command": "python -m pytest -q tests/test_ray.py tests/test_ray_upstream.py tests/test_thickness.py tests/test_triangles.py tests/test_sample.py tests/test_geom.py tests/test_graph.py tests/test_inertia.py --durations=20",
+      "ran": true,
+      "wall_s": 19.13,
+      "reproduced": "official assertions passed as part of a combined 67-node run; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "8-file-core-batch-ray-upstream",
+      "path": "tests/test_ray_upstream.py",
+      "command": "python -m pytest -q tests/test_ray.py tests/test_ray_upstream.py tests/test_thickness.py tests/test_triangles.py tests/test_sample.py tests/test_geom.py tests/test_graph.py tests/test_inertia.py --durations=20",
+      "ran": true,
+      "wall_s": 19.13,
+      "reproduced": "official assertions passed as part of a combined 67-node run; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "creation-suite",
+      "path": "tests/test_creation.py",
+      "command": "python -m pytest -q tests/test_creation.py",
+      "ran": true,
+      "wall_s": 3.985,
+      "reproduced": "official assertions passed: 18 passed in 3.39s; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "primitives-suite",
+      "path": "tests/test_primitives.py",
+      "command": "python -m pytest -q tests/test_primitives.py",
+      "ran": true,
+      "wall_s": 2.64,
+      "reproduced": "official assertions passed: 15 passed in 2.07s; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "transformations-suite",
+      "path": "tests/test_transformations.py",
+      "command": "python -m pytest -q tests/test_transformations.py",
+      "ran": true,
+      "wall_s": 1.985,
+      "reproduced": "official assertions passed: 11 passed in 1.43s; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "polygons-suite",
+      "path": "tests/test_polygons.py",
+      "command": "python -m pytest -q tests/test_polygons.py",
+      "ran": true,
+      "wall_s": 2.015,
+      "reproduced": "official assertions passed: 10 passed, 22 warnings in 1.45s; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "grouping-suite",
+      "path": "tests/test_grouping.py",
+      "command": "python -m pytest -q tests/test_grouping.py",
+      "ran": true,
+      "wall_s": 2.078,
+      "reproduced": "official assertions passed: 12 passed in 1.52s; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "runlength-suite",
+      "path": "tests/test_runlength.py",
+      "command": "python -m pytest -q tests/test_runlength.py",
+      "ran": true,
+      "wall_s": 1.829,
+      "reproduced": "official assertions passed: 21 passed in 1.25s; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "util-suite",
+      "path": "tests/test_util.py",
+      "command": "python -m pytest -q tests/test_util.py",
+      "ran": true,
+      "wall_s": 7.89,
+      "reproduced": "official assertions passed: 38 passed in 7.32s; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "vector-suite",
+      "path": "tests/test_vector.py",
+      "command": "python -m pytest -q tests/test_vector.py",
+      "ran": true,
+      "wall_s": 1.922,
+      "reproduced": "official assertions passed: 2 passed in 1.33s; no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "intersect-suite",
+      "path": "tests/test_intersect.py",
+      "command": "python -m pytest -q tests/test_intersect.py",
+      "ran": true,
+      "wall_s": 1.664,
+      "reproduced": "official assertions passed: 1 pytest node(s); no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": [
+        "line_line emitted a RuntimeWarning for the intentionally incompatible plane-normal case; all official assertions passed"
+      ]
+    },
+    {
+      "id": "interval-suite",
+      "path": "tests/test_interval.py",
+      "command": "python -m pytest -q tests/test_interval.py",
+      "ran": true,
+      "wall_s": 1.713,
+      "reproduced": "official assertions passed: 1 pytest node(s); no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "iteration-suite",
+      "path": "tests/test_iteration.py",
+      "command": "python -m pytest -q tests/test_iteration.py",
+      "ran": true,
+      "wall_s": 1.649,
+      "reproduced": "official assertions passed: 3 pytest node(s); no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "edges-suite",
+      "path": "tests/test_edges.py",
+      "command": "python -m pytest -q tests/test_edges.py",
+      "ran": true,
+      "wall_s": 1.801,
+      "reproduced": "official assertions passed: 1 pytest node(s); no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "entity-suite",
+      "path": "tests/test_entity.py",
+      "command": "python -m pytest -q tests/test_entity.py",
+      "ran": true,
+      "wall_s": 1.721,
+      "reproduced": "official assertions passed: 1 pytest node(s); no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "operators-suite",
+      "path": "tests/test_operators.py",
+      "command": "python -m pytest -q tests/test_operators.py",
+      "ran": true,
+      "wall_s": 2.048,
+      "reproduced": "official assertions passed: 1 pytest node(s); no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "path-creation-suite",
+      "path": "tests/test_path_creation.py",
+      "command": "python -m pytest -q tests/test_path_creation.py",
+      "ran": true,
+      "wall_s": 1.929,
+      "reproduced": "official assertions passed: 4 pytest node(s); no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "path-sample-suite",
+      "path": "tests/test_path_sample.py",
+      "command": "python -m pytest -q tests/test_path_sample.py",
+      "ran": true,
+      "wall_s": 1.723,
+      "reproduced": "official assertions passed: 2 pytest node(s); no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "permutate-suite",
+      "path": "tests/test_permutate.py",
+      "command": "python -m pytest -q tests/test_permutate.py",
+      "ran": true,
+      "wall_s": 4.57,
+      "reproduced": "official assertions passed: 3 pytest node(s); no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "poses-suite",
+      "path": "tests/test_poses.py",
+      "command": "python -m pytest -q tests/test_poses.py",
+      "ran": true,
+      "wall_s": 2.221,
+      "reproduced": "official assertions passed: 3 pytest node(s); no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "quadric-suite",
+      "path": "tests/test_quadric.py",
+      "command": "python -m pytest -q tests/test_quadric.py",
+      "ran": true,
+      "wall_s": 1.795,
+      "reproduced": "official assertions passed: 1 pytest node(s); no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "typed-suite",
+      "path": "tests/test_typed.py",
+      "command": "python -m pytest -q tests/test_typed.py",
+      "ran": true,
+      "wall_s": 1.773,
+      "reproduced": "official assertions passed: 3 pytest node(s); no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "units-suite",
+      "path": "tests/test_units.py",
+      "command": "python -m pytest -q tests/test_units.py",
+      "ran": true,
+      "wall_s": 2.38,
+      "reproduced": "official assertions passed: 6 pytest node(s); no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "mesh-suite",
+      "path": "tests/test_mesh.py",
+      "command": "python -m pytest -q tests/test_mesh.py",
+      "ran": true,
+      "wall_s": 17.033,
+      "reproduced": "official assertions passed: 6 pytest node(s); no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": [
+        "fixture loading emitted 31 third-party pycollada/NumPy deprecation warnings; all official assertions passed"
+      ]
+    },
+    {
+      "id": "repair-suite",
+      "path": "tests/test_repair.py",
+      "command": "python -m pytest -q tests/test_repair.py",
+      "ran": true,
+      "wall_s": 4.078,
+      "reproduced": "official assertions passed: 8 pytest node(s); no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "scenegraph-suite",
+      "path": "tests/test_scenegraph.py",
+      "command": "python -m pytest -q tests/test_scenegraph.py",
+      "ran": true,
+      "wall_s": 18.734,
+      "reproduced": "official assertions passed: 17 pytest node(s); no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "sweep-suite",
+      "path": "tests/test_sweep.py",
+      "command": "python -m pytest -q tests/test_sweep.py",
+      "ran": true,
+      "wall_s": 2.688,
+      "reproduced": "official assertions passed: 5 pytest node(s); no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "packing-suite",
+      "path": "tests/test_packing.py",
+      "command": "python -m pytest -q tests/test_packing.py",
+      "ran": true,
+      "wall_s": 11.047,
+      "reproduced": "official assertions passed: 6 pytest node(s); no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "scene-suite",
+      "path": "tests/test_scene.py",
+      "command": "python -m pytest -q tests/test_scene.py",
+      "ran": true,
+      "wall_s": 8.985,
+      "reproduced": "official assertions passed: 24 pytest node(s); no shipped numeric reference",
+      "outputs": [],
+      "pitfalls": []
+    }
+  ],
+  "pitfalls": [
+    {
+      "where": "build",
+      "symptom": "Default Python 3.9.7 cannot import pipeline tomllib dependency.",
+      "workaround": "Created a dedicated project-local CPython 3.12.14 Conda environment; no global environment was modified."
+    },
+    {
+      "where": "general",
+      "symptom": "Tests import optional spatial and geometry packages and some ray tests select Embree when available.",
+      "workaround": "Installed the upstream easy and test extras only inside the dedicated environment and recorded exact resolved versions."
+    },
+    {
+      "where": "ray-functional-subset",
+      "symptom": "The functional subset deliberately excludes the two explicit throughput/many-ray tests.",
+      "workaround": "Ran test_rps and test_multiple_hits separately under their own 180-second limits."
+    }
+  ],
+  "not_run": [
+    {
+      "what": "remaining unexecuted or not yet recorded official files and examples",
+      "why": "The inventory remains exhaustive; pending rows are provisional until each source/fixture/backend path receives a grounded decision."
+    }
+  ]
+}

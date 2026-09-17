@@ -1,0 +1,250 @@
+#PROGRESS
+1			DnProgressShort
+100			DnProgressLong
+
+#DESCRIPTION
+Param/2BODYPLOT/PARAM.in: Run GM and test 2Body plots		StringDescription
+
+#PLANET
+EARTH			NamePlanet
+
+#SAVERESTART
+F			DoSaveRestart
+
+#TIMEACCURATE
+T			IsTimeAccurate
+
+#STARTTIME
+1998			iYear
+05			iMonth
+04			iDay
+02			iHour
+00			iMinute
+00			iSecond
+
+! align rotation and magnetic axes with z axis
+#IDEALAXES
+
+#ROTATION
+F			UseRotation
+
+#MAGNETOSPHERE
+T			UseBody
+2.5			rBody
+3.5			rCurrents
+10.0			BodyNDim
+25000.0			BodyTDim
+
+#GRID
+1			nRootBlock1
+1			nRootBlock2
+1			nRootBlock3
+-224.			xMin
+  32.			xMax
+-128.			yMin
+ 128.			yMax
+-128.			zMin
+ 128.			zMax
+
+#GRIDBLOCKALL
+700			MaxBlock
+
+#GRIDRESOLUTION
+2.0			Resolution
+initial			StringShape
+
+!refine inside 1.5*rcurrents, rcurrents = 3.5
+#GRIDRESOLUTION
+1/8			Resolution
+sphere0			StringShape
+ 5.25			Radius
+
+!refine inner magnetosphere
+#GRIDRESOLUTION
+1.0			Resolution
+sphere0			StringShape
+17.5			Radius
+
+!refine body2
+#GRIDRESOLUTION
+1/8			Resolution
+box			StringShape
+-6.0			xMinBox
+-6.0			yMinBox
+14.0			zMinBox
+ 6.0			xMaxBox
+ 6.0			yMaxBox
+26.0			zMaxBox
+
+!refine the magnetotail
+#GRIDRESOLUTION
+4.0			Resolution
+box			StringShape
+-224.0			xMinBox
+ -64.0			yMinBox
+ -64.0			zMinBox
+  32.0			xMaxBox
+  64.0			yMaxBox
+  64.0			zMaxBox
+
+#GRIDRESOLUTION
+2.0			Resolution
+box			StringShape
+ -96.0			xMinBox
+ -32.0			yMinBox
+ -32.0			zMinBox
+  32.0			xMaxBox
+  32.0			yMaxBox
+  32.0			zMaxBox
+
+#GRIDRESOLUTION
+1.0			Resolution
+box			StringShape
+ -48.0			xMinBox
+ -16.0			yMinBox
+ -16.0			zMinBox
+  32.0			xMaxBox
+  16.0			yMaxBox
+  16.0			zMaxBox
+
+#GRIDRESOLUTION
+1/2			Resolution
+box			StringShape
+ -32.0			xMinBox
+  -8.0			yMinBox
+  -8.0			zMinBox
+  32.0			xMaxBox
+   8.0			yMaxBox
+   8.0			zMaxBox
+
+#GRIDRESOLUTION
+1/4			Resolution
+box			StringShape
+ -32.0			xMinBox
+  -8.0			yMinBox
+  -4.0			zMinBox
+   8.0			xMaxBox
+   8.0			yMaxBox
+   4.0			zMaxBox
+
+
+#OUTERBOUNDARY
+outflow			TypeBc1
+vary			TypeBc2
+float			TypeBc3
+float			TypeBc4
+float			TypeBc5
+float			TypeBc6
+
+#SECONDBODY
+T			UseBody2   ! Rest of the parameters read if .true.
+2.0			rBody2
+0.0			MassBody2Si
+20.0			Body2NDim (/ccm) density for fixed BC for rho_BLK
+35000.0			Body2TDim (K) temperature for fixed BC for P_BLK
+F			UseBody2Orbit
+0.			xBody2
+0.			yBody2
+20.			zBody2
+
+#DIPOLEBODY2
+0.0			BdpDimBody2x [nT]
+0.0			BdpDimBody2y [nT]
+-1200.0			BdpDimBody2z [nT]
+
+#INNERBOUNDARY
+ionosphere		TypeBcBody
+fixed			TypeBcBody2
+
+#MAGNETICINNERBOUNDARY
+1.0			B1rCoef
+
+#SAVELOGFILE
+T			DoSaveLogfile
+RAW			StringLog
+1			DnSaveLogfile
+-1.			DtSaveLogfile
+
+#TIMESTEPPING
+1			nStage
+0.6			CflExpl
+
+#SOLARWINDFILE
+T			UseSolarWindFile
+Param/EARTH/imf19980504.dat		NameSolarWindFile
+
+#SCHEME
+1			nOrder
+Rusanov			TypeFlux
+
+#NONCONSERVATIVE
+T			UseNonConservative
+
+#CONSERVATIVECRITERIA
+1			nConservCrit
+r			TypeConservCrit
+6.			rConserv
+
+#END_COMP GM -----------------------------------------------------------------
+
+
+#STOP
+-1			MaxIteration
+5.0			tSimulationMax
+
+#RUN ##########################################################################
+
+! Stop time is set to allow 2 AMRs
+
+#STOP
+-1			MaxIteration
+9.0			tSimulationMax
+
+#BEGIN_COMP GM ---------------------------------------------------------------
+
+#DOAMR
+T			DoAmr
+50			DnAmr
+-1			DtAmr
+T			IsStrictAmr
+
+! Since we use #AMRLIMIT above, the CoarsenLimit and RefineLimit
+! parameters are set to negative values below (seems to matter).
+
+#AMRCRITERIA
+1			nRefineCrit
+pjumpratio		TypeRefine
+1.3 			CoarsenLimit
+2.0			RefineLimit
+
+! A shell around rcurrents
+#GRIDLEVEL
+10			nLevel
+shell0			StringShape
+3.0			RadiusInner
+4.0			Radius
+
+#SCHEME
+2			nOrder
+Rusanov			TypeFlux
+minmod			TypeLimiter
+
+#TIMESTEPPING
+2			nStage
+0.8			CflExpl
+
+#SAVEPLOT
+2			nPlotFile
+y=0 FUL tec		StringPlot
+-1			DnSavePlot
+10.0			DtSavePlot
+y=0 VAR idl_ascii		StringPlot
+-1			DnSavePlot
+10.0			DtSavePlot
+-1.			DxSavePlot
+{MHD} amrlevel		NameVars
+g rbody			NamePars
+
+#END_COMP GM -----------------------------------------------------------------
+
+

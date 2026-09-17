@@ -1,0 +1,142 @@
+#DESCRIPTION
+Inflow / outflow open-boundary regression test for the HYBRID solver.
+
+A uniform magnetized hybrid plasma streams along +x (sub-Alfvenic, u = 0.2 v_A)
+through a 1D domain.  The -x face is an INFLOW boundary (BC::inflow): the ghost
+EM field is copied from the adjacent physical cell (zero-gradient) and a drifting
+Maxwellian flux is re-seeded in the ghost cells each step, maintaining the
+upstream state.  The +x face is an OUTFLOW boundary (BC::outflow): particles
+stream out freely and the ghost field is again a zero-gradient copy.
+
+A perfectly uniform streaming plasma is the exact steady solution, so this
+validates that the inflow/outflow pair keeps a uniform state uniform: ion
+kinetic energy and magnetic energy are conserved, the upstream density and
+velocity are preserved at the inflow face, and no spurious electric field
+develops.  This is the clean counterpart to the wip/hybrid-bc-regression shock
+attempt, which regressed the hybrid solver; here the inflow is built ONLY from
+the existing zero-gradient ghost-cell copy (Pic::use_float) and the existing
+Maxwellian particle re-seeding (Particles::add_particles_cell), with no extra
+flux accumulator or field-relaxation machinery.
+
+#INITFROMSWMF
+F                       initFromSWMF
+
+#GEOMETRY
+-3.2                    xMin  [code units; Lx = 6.4 d_i]
+ 3.2                    xMax
+-0.05                   yMin
+ 0.05                   yMax
+-0.05                   zMin
+ 0.05                   zMax
+
+#NCELL
+64                      nCellX
+1                       nCellY
+1                       nCellZ
+
+#MAXBLOCKSIZE
+64                      maxBlockSizeX
+1                       maxBlockSizeY
+1                       maxBlockSizeZ
+
+#PERIODICITY
+F                       isPeriodicX
+T                       isPeriodicY
+T                       isPeriodicZ
+
+#FIELDBOXBOUNDARY
+inflow                  fieldBoxBoundaryLo
+outflow                 fieldBoxBoundaryHi
+periodic                fieldBoxBoundaryLo
+periodic                fieldBoxBoundaryHi
+periodic                fieldBoxBoundaryLo
+periodic                fieldBoxBoundaryHi
+
+#PARTICLEBOXBOUNDARY
+0                       iSpecies
+inflow                  particleBoxBoundaryLo
+outflow                 particleBoxBoundaryHi
+periodic                particleBoxBoundaryLo
+periodic                particleBoxBoundaryHi
+periodic                particleBoxBoundaryLo
+periodic                particleBoxBoundaryHi
+
+#SOLVEEM
+F                       solveEM
+
+#HYBRIDPIC
+T                       useHybridPIC
+
+#HALLTERM
+F                       useHallTerm
+
+#RESISTIVITY
+0.0                     etaResistivity  [m^2/s, SI magnetic diffusivity]
+
+#ELECTRONTEMPERATURE
+0.0                     electronTemperature  [eV]
+1.0                     electronGamma
+1.0                     electronDensity0
+
+#INFLOW
+5.0                      rho [amu/cc]
+20.0                     ux [km/s]
+0.0                      uy [km/s]
+0.0                      uz [km/s]
+10000.0                  T [K]
+
+#BSUBCYCLE
+1                       nBSubcycle
+
+Single kinetic ion species (q = m = 1); the electron is an implicit
+neutralizing massless fluid, so no electron particle species is present.
+#PLASMA
+1                       nSpecies
+1.0                     mass
+1.0                     charge
+
+#UNIFORMSTATE
+5.0                     rho [amu/cc]   Species 0: ions (n = 5 /cc)
+20.0                    ux [km/s]      uniform bulk flow along +x (U_code = 0.2)
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+10000.0                 T [K]
+1.0439e-8               bx [T]       uniform guide field Bx0 (B_code ~ 1)
+0.0                     by [T]
+0.0                     bz [T]
+0.0                     ex [V/m]
+0.0                     ey [V/m]
+0.0                     ez [V/m]
+
+#TIMESTEPPING
+T                       useFixedDt
+0.02                    dt
+
+#NORMALIZATION
+1.0e5                   lNormSI   [m]  ~ d_i so d_i ~ 1 in code units
+1.0e5                   uNormSI   [m/s] tNorm = 1 s; sets cLight_SI = uNormSI
+
+#MONITOR
+50                      dnReport
+
+#SAVELOG
+1                       dnSavePic
+1                       dnSavePT
+
+#PARTICLES
+2000                    nParticle per cell in X
+1                       nParticle per cell in Y
+1                       nParticle per cell in Z
+
+#SAVEPLOT
+1                       nPlot
+z=0 fluid ascii pic     plotString
+-1                      dn
+10.0                    dt
+1                       dx
+
+#STOP
+-1                      MaxIter
+10.0                    TimeMax   ~1.6 ion gyroperiods (stability)
+
+#RUN

@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# Example Slurm job script for CSC Mahti supercomputer
+# hosted at CSC – Tieteen tietotekniikan keskus Oy (Finnish
+# Center for Information Technology).
+
+# Copy run directory to /scratch/<project> for best performance
+
+# Each node has 128 cpus.
+# The ntasks-per-node and cpus-per-task should multiply to equal 128.
+# Set cpus-per-task to 2 to share memory.
+# cpus-per-task is 8 for standard Vlasiator simulation - can be
+# optimized differently for SWMF.
+
+# For standard configuration, the following modules are loaded:
+#   1) gcc/11.2.0
+#   2) openmpi/4.1.2
+#   3) openblas/0.3.18-omp
+#   4) csc-tools
+#   5) StdEnv
+
+# machine login name: mahti-login14.mahti.csc.fi
+
+#SBATCH --job-name=SWMF            # job name
+#SBATCH --account=project_XXXXXXX  # account number
+#SBATCH --time=12:00:00            # run time (HH:MM:SS)
+#SBATCH --partition=medium         # queue name (small, medium, large)
+#SBATCH --nodes=5                  # number of nodes
+#SBATCH --ntasks-per-node=64       # 128 / cpus-per-task = ntasks-per-node
+#SBATCH --cpus-per-task=2          # required to share memory
+
+# Set the number of threads based on --cpus-per-task
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+export OMP_PLACES=cores
+
+export LC_CTYPE=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+
+# Run SWMF (the number of processors is already specified above)
+./PostProc.pl -r=600 -v &>> PostProg.log &
+srun SWMF.exe > runlog_`date +%y%m%d%H%M`
+
+# Write efficiency report in the job slurm file
+seff $SLURM_JOBID

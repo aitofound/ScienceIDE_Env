@@ -1,0 +1,288 @@
+<commandList name="AMPS: PT and PC Components">
+<commandgroup name="AMPS">
+<command name="SAVEIDL">
+  <parameter name="nPlotFile" type="integer" min="0" max="15" default="0" />
+  <for from="1" to="$nPlotFile">
+    <parameter name="StringPlot" type="strings" min="4" max="5">
+      <part name="plotarea" type="string" input="select"
+	    required="T">
+	<option name="3D" value="3d"/>
+	<option name="cut" value="cut"/>	  
+	<option name="x=" value="x=0"/>
+	<option name="y=" value="y=0"/>
+	<option name="z=" value="z=0"/>
+      </part>
+      <part name="plotvar" type="string" required="T"
+	    input="select">
+	<option name="MHD variables"    value="fluid" />
+	<option name="Set vars" value="var"/>  
+      </part>
+      <part name="plotform" type="string" input="select"
+	    required="T">
+	<option value="real4" name="IDL single prec"/>
+	<option value="real8" name="IDL double prec"/>
+	<option value="ascii" name="IDL ascii"/>
+      </part>
+      <part name="unit" type="string" input="select"
+	    required="T">
+	<option value="pic" name="PIC"/>
+	<option value="si" name="SI"/>
+	<option value="planet" name="PLANETARY"/>
+      </part>
+
+
+    </parameter>
+    <parameter name="DnSavePlot" type="integer" min="-1"
+	       default="-1"/>
+    <parameter name="DtSavePlot" type="real"    min="-1"
+	       default="-1.0"/>
+    <if expr="$plotarea =~ /\bdpl|cut|slc\b/">
+      <parameter name="xMinCut" type="real" />
+      <parameter name="xMaxCut" type="real" min="$xMinCut"/>
+      <parameter name="yMinCut" type="real" />
+      <parameter name="yMaxCut" type="real" min="$yMinCut"/>
+      <parameter name="zMinCut" type="real" />
+      <parameter name="zMaxCut" type="real" min="$zMinCut"/>
+    </if>
+    <parameter name="DxSavePlot" type="real" min="-1.0" default="-1.0" />
+    <if expr="$plotvar =~ /\bvar\b/i">
+      <parameter name="NameVars" type="string" length="200"/>
+    </if>
+  </for>
+    
+#SAVEIDL                                                                         
+3                                 nPlot
+z=0 var real4 planet              plotString                                      
+-1                                dn                                              
+20                                dt                                              
+1                                 dx                                              
+{fluid} numS0                     varName                                         
+y=0 fluid real4 pic               plotString                                      
+-100                              dn                                              
+5                                 dt                                              
+-1                                dx                                              
+cut fluid real8 si                plotString                                      
+-1                                dn                                              
+100                               dt                                              
+5                                 xMin                                            
+10                                xMax                                            
+-2                                yMin                                            
+2                                 yMax                                            
+-2                                zMin                                            
+2                                 zMax                                            
+1                                 dx                                              
+
+This command determines the IDL type output from AMPS.
+
+The first parameter is nPlotFile, which is the number of files to be saved.
+Each output starts with StringPlot, which specify the output region, variables,
+file format and variable units. The plotting frequencies DnOutput and DtOutput
+are following. DnOutput is needed and it only works for '3d' type
+field output. 
+
+StringPlot has the format:'domain variables format unit'.
+'domain' can be one of the following: \begin{verbatim} x=x0     - a 2D cut of x=x0 plane. 'x0' is the coordinate. y=y0     - a 2D cut of y=y0 plane. 'y0' is the coordinate. z=z0     - a 2D cut of z=z0 plane. 'z0' is the coordinate.
+3d       - the whole computational domain.
+1d       - the whole computational domain. It is essentially the same as '3d'.
+cut      - part of the 3D domain. Need to specifiy the output range.
+\end{verbatim}
+The value of 'variables' could be:
+\begin{verbatim}
+all                                 - all the PIC field variables of the first two species:
+   'qS0 qS1 Bx By Bz Ex Ey Ez jxS0 jyS0 jzS0 jxS1 jyS1 jzS1'
+fluid                               - all the FLUID field variables of the first two species:
+   'rhoS0 rhoS1 Bx By Bz Ex Ey Ez uxS0 uyS0 uzS0 uxS1 uyS1 uzS1 pS0 pS1 pXXS0 pYYS0 pZZS0 pXYS0 pXZS0 pYZS0 pXXS1 pYYS1 pZZS1 pXYS1 pXZS1 pYZS1'
+var                                 - read from parameter file
+\end{verbatim}
+
+qS0 and qS1 are charge densities, while rhos0 and rhos1 are mass densities.
+kXXS0 = sum(vx*vx), where vx is the particle velocity. So kXXS0 includes the
+effect of bulk velocity. But pXXS0 is true pressure that excludes
+the influence of the bulk velocity.
+
+The file format could be either 'real4' or 'ascii'. The 'unit' can be:
+\begin{verbatim}
+PIC  - normalized PIC unit.
+SI   - SI unit. The unit of current and electric field are not well defined. 
+PLANETARY - planetary unit. B field is in nT, velocity is in km/s, length is in planet radius, density is in amu/cm^3, pressure is in nPa. Current and electric field are not well defined. 
+\end{verbatim}
+
+Note:
+1) Available output variables are listed in the function PIC::CPLR::FLUID::get_var in pic_fluid.cpp.
+2) DxOutput is only functional for particles and 3d field output now.
+3) The position for "cut", "x=", "y="... is in BATSRUS coordinate.
+
+
+There is no plot file saved by default.
+</command>
+
+<command name="EFIELDSOLVER">
+  <parameter name="EFieldTol" type="real" default="1e-6"/>
+  <parameter name="EFieldIter" type="integer" default="200"/>
+  
+#EFIELDSOLVER
+1e-6                     EFieldTol
+200                      EFieldIter
+
+The tolerance and the maximum iteration number of the electric field 
+GMRES solver. The default values are shown above. 
+</command>
+    
+<command name="PARTICLES">
+  <parameter name="nPclx"  type="integer"/>
+  <parameter name="nPcly"  type="integer"/>
+  <parameter name="nPclz"  type="integer"/>
+  
+#PARTICLES
+5                  Particles per cell in X 
+6	           Particles per cell in Y 
+1	           Particles per cell in Z 
+
+The command sets particle numbers in each direction.
+</command>
+
+<command name="DISCRETIZATION">
+  <parameter name="theta" type="real" default="0.51"/>
+  <parameter name="gradRhoRatio" type="real" default="0.0"/>
+  <parameter name="cDiff" type="real" default="0.0"/>  
+  <parameter name="ratioDivC2C" type="real" default="0.1" />
+    
+#DISCRETIZATION
+0.51                        theta
+0.1                         ratioDivC2C
+
+The electric field is calculated at the time $t_{n+\theta}$. When $\theta$ 
+is 0.5, the total energy is conserved if ratioDivC2C is 0. However, 
+the exact energy conservation may produce artifical oscillations. 
+0.51-0.6 are typical values of $\theta$.
+
+'ratioDivC2C' is the ratio of div(E) calculated from extended stencil
+discretization. It helps to suppress short-wavelength oscillations. 
+Default values are shown.
+gradRhoRatio and cDiff are not used in AMPS yet.
+</command>
+
+<command name="DIVE">
+  <parameter name="doCorrectDivE" type="logical" default="T"/>
+  
+#DIVE
+T                         doCorrectDivE
+
+Turning on/off the accurate div(E) cleaning, which corrects the particle
+locations to satisfy Gauss's law: div(E) = net_charge. 
+Default is true as it is required for accuracy of long simulations.
+</command>
+
+<command name="RESTART">
+  <parameter name="isRestart" type="logical"/>
+  
+#RESTART
+T                         doCorrectDivE
+
+Determine if this is a restart run.
+
+</command>
+
+
+
+<command name="FIELDLINE">
+  <parameter name="ROrigin" type = "real" />
+  <parameter name="LonMin" type = "real" />
+  <parameter name="LonMax" type = "real" />
+  <parameter name="LatMin" type = "real" />
+  <parameter name="LatMax" type = "real" />
+  <parameter name="nLon" type = "integer" />
+  <parameter name="nLon" type = "integer" />  
+ 
+#FIELDLINE
+1.5     ROrigin
+-175    LonMin
+175     LonMax
+-85     LatMin
+85      LatMax
+5       nLon
+4       nLat
+
+Sets initial points for tracking field lines
+</command>
+
+<command name="SAMPLING"> 
+  <parameter name="SamplingMode" type="logical" /> 
+
+#SAMPLING
+F      SamplingMode
+
+if SamplingMode is false, AMPS' sampling procedure is disables. The default value is true
+</command> 
+
+
+
+<command name="SAMPLING_LENGTH">
+  <parameter name="SamplingLength" type="integer" />
+
+#SAMPLING_LENGTH
+2                       SamplingLength
+
+The number of iteractions that AMPS uses to commect the statistical information before output the numerical solution in a file
+</command>
+
+
+<command name="TIMESTEP">
+  <parameter name="TimeStep" type="real" />
+
+#TIMESTEP 
+2.0                      Dt 
+
+The command sets the time step that AMPS uses in the simulation
+</command>
+
+
+
+<command name="SAMPLING_OUTPUT_CADENCE">
+  <parameter name="SamplingOutputCadence" type="integer" />
+
+#SAMPLING_OUTPUT_CADENCE
+9                      SamplingOutputCadence 
+
+The cadence between starting sampled procedure for output AMPS' data file. #SAMPLING_OUTPUT_CADENCE is active only when #SAMPLING==false. It activates sampling periodically. Each time sampling is activated, it continues for #SAMPLING_LENGTH iterations, output data file, and disable sampling again.
+ 
+</command>
+
+
+
+
+<command name="TIMESTEPPING">
+  <parameter name="useSWMFDt" type="logical" />
+  <parameter name="useFixedDt" type="logical" /> 
+  <parameter name="fixedDt" type="real"/>
+
+#TIMESTEPPING
+F			useSWMFDt
+T			useFixedDt
+1			fixedDt
+
+If useSWMFDt is false, and useFixedDt is true, fixed time step will be
+used.
+
+</command>
+
+<command name="ELECTRON">
+  <parameter name="ElectronChargePerMass" type="real" default='-100'/>
+
+#ELECTRON
+-100                     ElectronChargePerMass
+
+This command sets the charge per mass in normalized unit for electrons.
+
+Default value is shown.
+</command>
+
+<command name="TEST">
+  <parameter name="DoTest" type="logical" default="F"/>
+#TEST
+T                       DoTest
+
+Switch on testing. Default is false.
+</command>
+</commandgroup>
+</commandList>

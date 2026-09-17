@@ -1,0 +1,142 @@
+#DESCRIPTION
+Param/JUPITER/PARAM.in: Test for Jupiter		StringDescription
+
+#PLANET
+JUPITER			NamePlanet
+
+#IDEALAXES
+
+#ROTATION
+T			UseRotation
+10.			RotationPeriod
+
+#STARTTIME
+2000			iYear
+1			iMonth
+1			iDay
+1			iHour
+0			iMinute
+0			iSecond
+0.0 			FracSecond
+
+#TIMEACCURATE
+F			IsTimeAccurate
+
+#SAVERESTART
+F			DoSaveRestart (Rest of parameters read if true)
+
+#GRIDBLOCKALL
+1440			MaxBlock
+
+#GRID
+       6		nRootBlock1
+       4		nRootBlock2
+       4		nRootBlock3
+ -6.400e2		xMin
+  1.280e2		xMax
+ -2.56e2		yMin
+  2.56e2		yMax
+ -2.56e2		zMin
+  2.56e2		zMax
+
+#GRIDRESOLUTION
+3.0			Resolution
+initial			StringShape
+
+#GRIDRESOLUTION
+3/2			Resolution
+sphere0			StringShape
+4.0			Radius
+
+#GRIDRESOLUTION
+3/8			Resolution
+ringz0			StringShape
+8.0			Height
+3.0			RadiusInner
+25.0			Radius
+
+#SOLARWIND
+0.200004			SwNDim [n/cc]
+200000.0		SwTDim [K] / 20eV
+-400.0			SwUxDim [km/s]
+0.0			SwUyDim [km/s]
+0.0			SwUzDim [km/s]
+0.0			SwBxDim [nT]
+0.0			SwByDim [nT]
+-1.			SwBzDim [nT]
+
+
+#MAGNETOSPHERE
+T			UseBody
+3.			rBody
+4.			rCurrents
+50.			BodyNDim (/ccm) density for fixed BC for rho_BLK
+35000.0			BodyTDim (K) temperature for fixed BC for P_BLK
+
+#NONCONSERVATIVE
+T			UseNonConservative
+
+#CONSERVATIVECRITERIA
+1			nConservCrit
+r			TypeConservCrit
+6.0			rConserv
+
+#SAVELOGFILE
+T			DoSaveLogfile
+VAR step		StringLog
+1			DnSaveLogfile
+-1.			DtSaveLogfile
+rho mx my mz bx by bz p pmin pmax jin jout jinmax joutmax rhosi_integrated		NameLogVars
+
+#SAVEPLOT
+2			nPlotFile
+y=0 VAR tec		StringPlot
+10000			DnSavePlot
+-1.			DtSavePlot
+rho ux uy uz bx by bz p jx jy jz dt dtblk cons impl rhosi		NameVars
+g rbody			NamePars
+z=0 VAR tec		StringPlot
+10000			DnSavePlot
+-1.			DtSavePlot
+rho ux uy uz bx by bz p jx jy jz dt dtblk cons impl rhosi		NameVars
+g rbody			NamePars
+
+#OUTERBOUNDARY
+outflow			TypeBc1
+inflow			TypeBc2
+float			TypeBc3
+float			TypeBc4
+float			TypeBc5
+float			TypeBc6
+
+#TIMESTEPPING
+1			nStage
+0.80			CflExpl
+
+#INNERBOUNDARY
+ionosphere		TypeBcBody
+
+#SCHEME
+1			nOrder
+Rusanov			TypeFlux
+
+#USERSWITCH
++source			StringSwitch
+
+#USERINPUTBEGIN -----------------------------------
+
+#MASSLOADING
+T			UseMassLoading
+F			AccelerateMassLoading
+F			USeHighEnergyPressure
+1.375			NeutralProfileConst
+2.5			ScaleHeight (deg)
+0.0			RecombinationRate (1/s)
+1.0e-4			IonizationRate (1/s)
+1e-13			CollisionCrossSection (cm2)
+
+#USERINPUTEND -------------------------------------
+
+#STOP
+50			MaxIteration
+-1.			tSimulationMax

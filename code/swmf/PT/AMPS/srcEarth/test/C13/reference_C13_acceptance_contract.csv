@@ -1,0 +1,10 @@
+gate_id,scope,default_severity,acceptance,scientific_reason
+execution_success,every case,HARD,AMPS return code equals zero,A scheduler branch that terminates cannot validate parallel correctness
+task_closure,every case,HARD,totalTasks equals reported sum and independently summed rank tasks,Lost or duplicated work can yield a plausible but incomplete map
+rank_coverage,every case,HARD,exactly one task-count line for every requested MPI rank,Closure without rank coverage can hide an idle or omitted rank
+task_inventory_geometry,every case,HARD,totalTasks equals the independently calculated number of shell coordinates,Prevents internally consistent closure on an incomplete spatial task inventory
+dynamic_task_count_imbalance,DYNAMIC cases with more than one rank,DIAGNOSTIC_BY_DEFAULT,report max rank tasks divided by average; hard only with a positive user limit,Dynamic work stealing intentionally gives more tasks to ranks that finish inexpensive trajectories sooner
+dipole_stormer_reference,one-rank DIPOLE moderate-latitude band,HARD,at least 95 percent valid and 95 percent within scan-aware Størmer tolerance for 30 to 45 degrees absolute latitude,Anchors parallel equivalence to a resolved independent analytical solution while C1/C12 retain full-latitude responsibility
+dipole_scheduler_equivalence,all DIPOLE cases,HARD,canonical binary64 scientific fingerprint exactly equals the one-rank DYNAMIC baseline,An analytic deterministic field should not depend on schedule or rank count
+t05_scheduler_equivalence,all T05 cases,HARD,coordinates and flags exact and cutoff values agree to relative 1e-7,T05 exercises the empirical production field without pretending an internal baseline is external truth
+rank_timing_balance,cases with explicit per-rank timing,DIAGNOSTIC_BY_DEFAULT,report max rank time divided by mean; hard only when user supplies a positive limit,Task counts do not measure the cost of individual trajectories

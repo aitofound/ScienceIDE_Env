@@ -1,0 +1,140 @@
+#DESCRIPTION
+Param/CRASH/PARAM.in.mixedcell		StringDescription
+
+#PLANET
+NONE
+
+#IOUNITS
+SI
+
+#NORMALIZATION
+READ
+1.0e-6			Micron
+1.0e+3			km/s
+1000.0			g/cm^3
+
+#TIMEACCURATE
+T			IsTimeAccurate
+
+#CHECKGRIDSIZE
+4			nI
+4			nJ
+2			nK
+250			MinBlockAll
+
+#GRID
+100			nRootBlockX
+10			nRootBlockY
+1			nRootBlockZ
+0.0			xMin
+5000.			xMax
+-250.			yMin
+ 250.			yMax
+-12.5			zMin
+ 12.5			zMax
+
+#SHOCKPOSITION
+1000.0			ShockPosition
+0.0			ShockSlope
+
+#SHOCKTUBE
+100.			LeftState Rho
+0.0			LeftState Ux 
+0.0			LeftState Uy
+0.0			LeftState Uz
+1.0			LeftState Be
+0.0			LeftState Xe
+0.0			LeftState Pl
+0.0			LeftState EInt
+2.0e+9			LeftState p
+1.0			RightState Rho
+0.0			RightState Ux
+0.0			RightState Uy
+0.0			RightState Uz
+0.0			RightState Be
+1.0			RightState Xe
+0.0			RightState Pl
+0.0			RightState EInt
+2.0e+4			RightState p
+
+#USERINPUTBEGIN ------------------------------------------------
+
+#MIXEDCELL
+T                       UseMixedCell
+0.97			MixLimit
+
+#TUBE
+0.0                     xEndTube
+200.0			rInnerTube
+590.0			rOuterTube
+1400.0			RhoDimTube
+6.5                     RhoDimOutside
+1.1e5                   pDimOutside
+-1.0                    xUniformXe
+
+#USERINPUTEND -------------------------------------------------
+
+Sheared boundary condition is used for non-zero shock slope
+
+#OUTERBOUNDARY
+float			xMinBc
+float			xMaxBc
+float			yMinBc
+float			yMaxBc
+float			zMinBc
+float			zMaxBc
+
+
+#TIMESTEPPING
+2			nStage
+0.8			CflExpl
+
+#SCHEME
+2			nOrder
+Godunov			TypeFlux
+mc			TypeLimiter
+1.2			LimiterBeta
+
+#LIMITER
+F
+F
+T
+M(1:3) EInt
+
+#SAVERESTART
+F			DoSaverestart
+
+This is set only for sake of the test_shocktube test
+#SAVEBINARY
+F			UseBinary
+
+#SAVELOGFILE
+T			DoSaveLogfile
+RAW			StringLogfile
+1			DnSaveLogfile
+-1.0			DtSaveLogfile
+
+#SAVEPLOT
+2			nPlotfile
+cut HD idl		PlotString
+-1              	DnSavePlot
+4.0e-7          	DtSavePlot
+0.0			Coord1MinCut
+5.0e4			Coord1MaxCut
+0.1			Coord2MinCut
+0.11			Coord2MaxCut
+0.1 	   		Coord3MinCut
+0.11			Coord3MaxCut
+0.0             	DxSavePlot
+z=0 VAR idl		PlotString
+-1                      DnSavePlot
+5.0e-8                  DtSavePlot
+0.0			DxSavePlot
+rho ux uy uz Eint p Xe Be Pl level
+gamma
+
+#STOP
+-1			
+4.0e-7
+
+#END

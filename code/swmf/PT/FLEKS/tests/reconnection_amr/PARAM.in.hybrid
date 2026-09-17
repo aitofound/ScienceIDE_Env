@@ -1,0 +1,178 @@
+#DESCRIPTION
+Magnetic reconnection (Fadeev current-sheet equilibrium) with the HYBRID
+solver (solveEM = F, generalized Ohm's law): kinetic ions / fluid electrons,
+on a TWO-LEVEL AMR grid backed by a 2D AMReX library (AMReX_SPACEDIM = 2,
+built with ./Config.pl -amrex2d -lev=2).  This is the full-PIC AMR
+reconnection test (tests/reconnection_amr/PARAM.in) with the field solver
+switched to the hybrid path: a thin layer around the central reconnecting
+current sheet (|y| < 7.85 d_i) is refined with REFINEREGION to 2x resolution,
+so the reconnection zone is resolved at dx = dy = 0.98 d_i while the outer
+region stays coarse.  Reconnection plane x-y; details in README.
+
+#INITFROMSWMF
+F                       initFromSWMF
+
+#GEOMETRY
+-31.4                   xMin  [code units; Lx = 2*pi*L*num_islands ~ 62.8 d_i]
+ 31.4                   xMax
+-15.7                   yMin  [code units; Ly = Lx/2 ~ 31.4 d_i]
+ 15.7                   yMax
+
+#NCELL  (level-0 / base grid)
+32                      nCellX
+16                      nCellY
+
+#MAXBLOCKSIZE
+16                      maxBlockSizeX
+2                       maxBlockSizeY
+
+#PERIODICITY
+T                       isPeriodicX
+F                       isPeriodicY
+
+Field boundary conditions on the box faces (periodic in x, outflow/float in y).
+#FIELDBOXBOUNDARY
+periodic                fieldBoxBoundaryLo  (x)
+periodic                fieldBoxBoundaryHi
+outflow                 fieldBoxBoundaryLo  (y)
+outflow                 fieldBoxBoundaryHi
+
+#PARTICLEBOXBOUNDARY
+0                       iSpecies
+periodic                particleBoxBoundaryLo
+periodic                particleBoxBoundaryHi
+outflow                 particleBoxBoundaryLo
+outflow                 particleBoxBoundaryHi
+
+Hybrid PIC field solver ON (generalized Ohm's law + Faraday RK4).
+Full PIC implicit Maxwell/GMRES solve OFF.
+#SOLVEEM
+F                       solveEM
+
+#HYBRIDPIC
+T                       useHybridPIC
+
+Resistive term ON (SI magnetic diffusivity). etaSI = 8.0e5 m^2/s converts to
+etaCode ~ 0.001 at uNormSI = 1.0e5.
+#RESISTIVITY
+8.0e5                   etaResistivity  [m^2/s]
+
+Electron pressure-gradient term ON (isothermal).
+#ELECTRONTEMPERATURE
+20.0                    electronTemperature  [eV]
+1.0                     electronGamma
+1.0                     electronDensity0
+
+Fourth-order hyper-resistivity (grid mode).  The refined level has dx_fine =
+0.98 d_i; eta_h is CFL-scaled per level as C_h * dx^4 / dt_sub so both levels
+get a stable, consistent diffusion coefficient.
+#HYPERRESISTIVITY
+0.0                     etaHyperSI      [m^4/s; unused in grid mode]
+grid                    etaHyperMode
+0.001                   etaHyperCh
+
+#MINIMUMDENSITY
+0.0                     rhoMinOhm
+
+Sub-cycle the B update.  The explicit Hall advance is limited by the discrete
+grid-scale whistler mode.  With dt = 0.02 and the fine-level dx = 0.98 d_i,
+nBSubcycle = 4 gives dt_sub = 0.005 (same as the full-PIC dt), safely inside
+the RK4 stability region for the compact 2-dx curl stencil.
+#BSUBCYCLE
+4                       nBSubcycle
+
+#FIELDINTEGRATOR
+rk4                     fieldIntegrator
+
+#AVGFIELDB
+T                       useAvgFieldB
+20                      nAvgFieldB
+
+Single kinetic ion species (q = m = 1); the electron is an implicit
+neutralizing massless fluid, so no electron particle species is present.
+#PLASMA
+1                       nSpecies
+1.0                     mass
+1.0                     charge
+
+#UNIFORMSTATE
+12.5                    rho [amu/cc]   background ions (n_code ~ nb = 0.2)
+0.0                     ux [km/s]
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+304000.0                T [K]          ion temperature (beta_i ~ 0.5)
+0.0                     bx [T]         guide field set by FadeevIC (bg = 0)
+0.0                     by [T]
+0.0                     bz [T]
+0.0                     ex [V/m]
+0.0                     ey [V/m]
+0.0                     ez [V/m]
+
+Fadeev current-sheet equilibrium initial condition.  The FadeevIC plugin seeds
+both nodeB (output mirror) and centerB (live hybrid field) on every AMR level,
+and applies the diamagnetic drift velocity kick so the hybrid ions are in
+force balance with the pressure gradient.
+#TESTCASE
+fadeev
+
+FadeevIC sub-parameters.
+#FADEEVIC
+5.0                     L        (current-sheet half-thickness / d_i)
+0.4                     eps      (island size ratio)
+2                       numIslands
+1.0                     b0       (reference field, code units)
+0.0                     bg       (guide-field ratio; 0 = anti-parallel)
+-0.05                   perturb  (m=1 seed amplitude)
+0.2                     nb       (background/peak density ratio)
+
+#TIMESTEPPING
+T                       useFixedDt
+0.02                    dt   (ion-scale; no electron timescale in hybrid)
+
+#NORMALIZATION
+1.0e5                   lNormSI   [m]  ~ d_i so d_i ~ 1 in code units
+1.0e5                   uNormSI   [m/s] tNorm = 1 s; sets cLight_SI = uNormSI
+
+#MONITOR
+100                     dnReport
+
+#SAVELOG
+10                      dnSavePic
+10                      dnSavePT
+
+#PARTICLES
+5                       nParticle per cell in X
+5                       nParticle per cell in Y
+
+#SAVEPLOT
+1                       nPlot
+z=0 fluid ascii planet  plotString   (z cut; degenerate z in true-2D build)
+-1                      dn
+1.0                     dt
+-1                      dx   (multi-level grid requires unstructured point output)
+
+#STOP
+-1                      MaxIter
+20.0                    TimeMax   ~3.2 ion gyroperiods (reconnection develops)
+
+#RUN
+
+AMR setup: a thin box layer around the current sheet (|y| < 7.85 d_i)
+is refined (REFINEREGION) to 2x resolution (REFINEMENTRATIO 2); see README.
+#REGION
+layer                   name
+box                     shape
+-31.4                   min
+ 31.4                   max
+-7.85                   min
+ 7.85                   max
+
+#REFINEREGION
+0                       iLev
++layer                  regions
+
+#GRIDEFFICIENCY
+1.0                     gridEfficiency
+
+#CONSTANTPPV
+F                       isPPVconstant   (per-cell particle count; PC static AMR)

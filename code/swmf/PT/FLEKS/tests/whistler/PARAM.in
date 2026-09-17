@@ -1,0 +1,107 @@
+#DESCRIPTION
+Full PIC (kinetic ions AND kinetic electrons) parallel whistler-Alfven wave
+test. The standard Maxwell/GMRES field solver advances E and B; both ion and
+electron species are kinetic, so this exercises the full electromagnetic PIC
+dispersion (electron + ion contributions) on the same whistler eigenmode used
+by the hybrid version (PARAM.in.hybrid).
+
+Same geometry/normalization as the hybrid variant (in code units
+d_i ~ v_A ~ B = Omega_i ~ 1; box Lx = 6.4 d_i). The n=1 whistler mode has
+omega ~ 0.49 rad/s, period T ~ 12.8 s. The two kinetic species are ions
+(q = m = 1) and electrons (q = -1, m = 1/1836) so the full whistler dispersion
+is reproduced.
+
+#INITFROMSWMF
+F                       initFromSWMF
+
+#GEOMETRY
+-3.2                    xMin  [code units; Lx = 6.4 d_i]
+ 3.2                    xMax
+-0.05                   yMin
+ 0.05                   yMax
+-0.05                   zMin
+ 0.05                   zMax
+
+#NCELL
+64                      nCellX
+1                       nCellY
+1                       nCellZ
+
+#MAXBLOCKSIZE
+64                      maxBlockSizeX
+1                       maxBlockSizeY
+1                       maxBlockSizeZ
+
+#PERIODICITY
+T                       isPeriodicX
+T                       isPeriodicY
+T                       isPeriodicZ
+
+#SOLVEEM
+T                       solveEM
+
+Two kinetic species: ions (q = 1, m = 1) and electrons (q = -1, m = 1/1836).
+The electron is kinetic here (unlike the hybrid variant where it is a fluid),
+so the PIC Maxwell solve carries the full whistler dispersion.
+#PLASMA
+2                       nS
+1.0                     mass           Species 0: ions
+1.0                     charge
+1.0/1836.0              mass           Species 1: electrons
+-1.0                    charge
+
+#UNIFORMSTATE
+5.0                     rho [amu/cc]   Species 0: ions (n = 5 /cc)
+0.0                     ux [km/s]
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+10000.0                 T [K]          ~ ions, code T ~ 0.2 (T_code = k_B T/uNorm^2)
+2.5552e-5               rho [amu/cc]   Species 1: electrons (n_e = n_i = 5 /cc)
+0.0                     ux [km/s]
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+5.4574                  T [K]          ~ electrons, code T ~ 0.2 (same T_code as ions)
+1.0439e-8               bx [T]       uniform guide field Bx0 (B_code ~ 1)
+0.0                     by [T]
+0.0                     bz [T]
+0.0                     ex [V/m]
+0.0                     ey [V/m]
+0.0                     ez [V/m]
+
+Same transverse circularly-polarized whistler seed (frac = 0.02) and Alfven
+velocity kick as the hybrid variant, applied to both species.
+#TESTCASE
+HybridWave
+
+#TIMESTEPPING
+T                       useFixedDt
+0.02                    dt
+
+#NORMALIZATION
+1.0e5                   lNormSI   [m]  ~ d_i so d_i ~ 1 in code units
+1.0e5                   uNormSI   [m/s] tNorm = 1 s; sets cLight_SI = uNormSI
+
+#MONITOR
+50                      dnReport
+
+#SAVELOG
+10                      dnSavePic
+10                      dnSavePT
+
+#PARTICLES
+250                     nParticle per cell in X
+1                       nParticle per cell in Y
+1                       nParticle per cell in Z
+
+#SAVEPLOT
+1                       nPlot
+z=0 fluid ascii pic     plotString
+100                     dn
+-1                      dt
+1                       dx
+
+#STOP
+-1                      MaxIter
+13.0                    TimeMax   ~1 whistler period (n=1 mode)
+
+#RUN

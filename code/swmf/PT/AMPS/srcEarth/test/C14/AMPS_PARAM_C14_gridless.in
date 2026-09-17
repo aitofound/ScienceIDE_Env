@@ -1,0 +1,79 @@
+! ═══════════════════════════════════════════════════════════════
+! AMPS SEP geospace validation test C14
+! Mode3D versus gridless cross-solver consistency, gridless branch
+!
+! Parser-compatible gridless shell input.  The Python harness supplies
+! UPPER_SCAN, optional particle mover (-mover), and gridless MPI scheduler
+! controls through the AMPS command line.  When --mover is selected, the same
+! mover is passed to this branch and the Mode3D branch.  run_C14.py also passes
+!   -cutoff-trace-policy ACCURATE
+! by default so the analytical C14 checks use the corrected F3-quality timestep
+! and exact boundary-event policy without changing the global LEGACY default used
+! by older cutoff regression tests.
+! ═══════════════════════════════════════════════════════════════
+
+#CALCULATION_MODE
+CALC_TARGET            CUTOFF_RIGIDITY
+FIELD_EVAL_METHOD      GRIDLESS
+
+#CUTOFF_RIGIDITY
+CUTOFF_EMIN            __CUTOFF_EMIN__      ! MeV/n
+CUTOFF_EMAX            __CUTOFF_EMAX__      ! MeV/n
+CUTOFF_MAX_PARTICLES   500                  ! per injection point
+CUTOFF_NENERGY         50                   ! log-spaced energy bins
+CUTOFF_SAMPLING        VERTICAL             ! C14 analytical Størmer comparison
+CUTOFF_MAX_TRAJ_TIME   __MAX_TRACE_TIME__   ! sec
+
+#PARTICLE_SPECIES
+SPECIES                PROTON
+CHARGE                 1
+MASS_AMU               1.0073
+
+#BACKGROUND_FIELD
+FIELD_MODEL            DIPOLE
+DIPOLE_MOMENT          1.00
+DIPOLE_TILT            0.0
+
+#DOMAIN_BOUNDARY
+DOMAIN_X_MAX           __DOMAIN_HALF_SIZE_RE__         ! RE dayside
+DOMAIN_X_MIN           -__DOMAIN_HALF_SIZE_RE__        ! RE nightside
+DOMAIN_Y_MAX           __DOMAIN_HALF_SIZE_RE__         ! RE dusk
+DOMAIN_Y_MIN           -__DOMAIN_HALF_SIZE_RE__        ! RE dawn
+DOMAIN_Z_MAX           __DOMAIN_HALF_SIZE_RE__         ! RE north
+DOMAIN_Z_MIN           -__DOMAIN_HALF_SIZE_RE__        ! RE south
+R_INNER                1.0          ! RE inner loss sphere
+
+#ELECTRIC_FIELD
+!COROTATION_E           NO
+!CONV_E_MODEL           VOLLAND_STERN
+
+!#TEMPORAL
+!TEMPORAL_MODE          TIME_SERIES
+
+#SPECTRUM
+SPECTRUM_TYPE          POWER_LAW
+SPEC_J0                1.00e+4
+SPEC_GAMMA             3.50
+SPEC_E0                10.0
+SPEC_EMIN              1.0
+SPEC_EMAX              1000.0
+
+#OUTPUT_DOMAIN
+OUTPUT_MODE            SHELLS
+SHELL_COUNT            __SHELL_COUNT__
+SHELL_ALTS_KM          __SHELL_ALTS_KM__
+SHELL_RES_DEG          __SHELL_RES_DEG__
+
+#OUTPUT_OPTIONS
+!OUTPUT_CUTOFF          T
+!OUTPUT_FORMAT          TECPLOT
+!OUTPUT_COORDS          GEO
+
+#NUMERICAL
+DT_TRACE               __DT_TRACE__
+ADAPTIVE_DT             __ADAPTIVE_DT__
+MAX_STEPS               __MAX_STEPS__
+MAX_TRACE_TIME         __MAX_TRACE_TIME__
+MAX_TRACE_DISTANCE     __MAX_TRACE_DISTANCE__
+
+!#END

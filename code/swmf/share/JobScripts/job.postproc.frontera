@@ -1,0 +1,41 @@
+#!/bin/bash
+#----------------------------------------------------
+#SBATCH -J SWMF_Post            # Job name
+#SBATCH -o myjob.o%j	   # Name of stdout output file
+#SBATCH -e myjob.e%j       # Name of stderr error file
+#SBATCH -p normal          # Queue (partition) name
+                           # Options: normal, skx-normal, skx-dev, skx-large
+#SBATCH -N 1		   # Total # of nodes 
+#SBATCH -n 1		   # Total # of mpi tasks
+#SBATCH -c 56		   # Total # of cpu per task
+#SBATCH -t 2:00:00	   # Run time (hh:mm:ss)
+#SBATCH --mail-user=
+#SBATCH --mail-type=all    # Send email at begin and end of job
+                           # Options: none, begin, end, fail, requeue, all
+###SBATCH -A AllocName     # Allocation name (req'd if you have more than 1)
+
+# Other commands must follow all #SBATCH directives...
+
+# If there is error messages like
+# ib_mlx5_log.c:174 Transport retry count exceeded on
+#    mlx5_1:1/RoCE (synd 0x15 vend 0x81 hw_synd 0/0)
+# add the following setting:
+# export UCX_TLS="knem,rc"
+
+module list
+pwd
+date
+
+# Set thread count (default value is 1)...
+
+export OMP_NUM_THREADS=1
+#OMP_PROC_BIND=spread
+
+# Use ibrun instead of mpirun or mpiexec. Use 1 MPI process only!
+# Use 56 threads
+# The -r=60 (repeat every 60 seconds) is only needed if new
+# files are being written by a running simulation
+
+ibrun -n 1 ./PostProc.pl -r=60 -noptec -n=56 >& PostProc.log
+
+

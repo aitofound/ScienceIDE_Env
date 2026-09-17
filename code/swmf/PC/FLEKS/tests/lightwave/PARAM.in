@@ -1,0 +1,110 @@
+#DESCRIPTION
+3D Light Wave in Periodic PIC with AMR (standalone FLEKS)
+
+#INITFROMSWMF
+F                       initFromSWMF
+
+#GEOMETRY
+-40.0                   xMin
+ 40.0                   xMax
+-30.0                   yMin
+ 30.0                   yMax
+-4.0                    zMin
+ 4.0                    zMax
+
+#NCELL
+80                      nCellX
+60                      nCellY
+8                       nCellZ
+
+#MAXBLOCKSIZE
+20                      maxBlockSizeX
+20                      maxBlockSizeY
+2                       maxBlockSizeZ
+
+#PERIODICITY
+T                       isPeriodicX
+T                       isPeriodicY
+T                       isPeriodicZ
+
+#SOLVEEM
+T                       solveEM
+
+#PLASMA
+1                       nSpecies
+0.01                    mass        Species 0: electron (background)
+-1.0                    charge
+
+#UNIFORMSTATE
+1.0                     rho [amu/cc]   Species 0: electron background
+0.0                     ux [km/s]
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+1.0e4                   T [K]
+0.0                     bx [T]
+0.0                     by [T]
+0.0                     bz [T]
+0.0                     ex [V/m]
+0.0                     ey [V/m]
+0.0                     ez [V/m]
+
+#NORMALIZATION
+1.0                     lNormSI
+1.0                     uNormSI
+
+#TESTCASE
+lightwave               testCase
+
+#TIMESTEPPING
+T                       useFixedDt
+0.4                     dt
+
+#DISCRETIZATION
+0.50                    theta
+0.0                     ratioDivC2C
+
+CAVEAT: line mirrors SWMF test25 (PARAM.in.test.FLEKS.AMR.LightWave.3D) for
+        byte-for-byte parity. The FieldSolver reads DISCRETIZATION values
+        POSITIONALLY (theta, then coefDiff); the keyword name is cosmetic.
+        0.0 disables the divergence-blending diffusion (coefDiff), giving the
+        intended energy-conserving transverse wave.
+
+#MONITOR
+10                      dnReport
+
+#DIVE
+F                       doCorrectDivE
+
+#REGION
+region1                name
+box                     shape
+-20.0                   min
+ 20.0                   max
+-15.0                   min
+ 15.0                   max
+-2.0                    min
+ 2.0                    max
+
+#REFINEREGION
+0                       iLev
++region1                regions
+
+#GRIDEFFICIENCY
+1.0                     gridEfficiency
+
+#RESAMPLING
+F                       doReSampling
+
+#SAVEPLOT
+1                       nPlot
+z=0 var ascii planet    plotString
+-1                      dnSavePlot
+10.0                    dtSavePlot
+-1                      dxSavePlot
+Ex Ey Ez Bx By Bz       plotVar
+
+#STOP
+-1                      MaxIter
+10.0                    TimeMax
+
+#RUN

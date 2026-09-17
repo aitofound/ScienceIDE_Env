@@ -1,0 +1,306 @@
+This tests GM-PC with identical layouts up on 4 processors,
+and different layout when run on different processors.
+
+#COMPONENTMAP
+GM  0 -1  1		CompMap runs on all PE-s
+PC  0  3  1		CompMap runs on 4 PE-s
+
+#DESCRIPTION
+Param/PARAM.in.test.GMPC.start: Run GM and PC in time accurate mode		StringDescription
+
+#PLANET
+NONE			NamePlanet
+
+#TIMEACCURATE
+T			IsTimeAccurate
+
+#PROGRESS
+1			DnProgressShort
+1			DnProgressLong
+
+
+#COUPLE2
+GM			NameComp1
+PC			NameComp2
+-1			DnCouple
+0.5			DtCouple
+
+#COUPLETIME
+GM			NameComp
+F			DoCoupleOnTime
+
+#BEGIN_COMP GM ---------------------------------------------------------------
+
+#IMPLICITENERGY
+F			UseImplicitEnergy
+
+#GRIDGEOMETRY
+rotatedcartesian		TypeGeometry
+
+#CHECKGRIDSIZE
+  8			nI
+  8			nJ
+  1			nK
+800			MinBlockAll
+
+#IOUNITS
+NONE			TypeIoUnit
+
+#NORMALIZATION
+NONE			TypeNormalization
+
+#PLASMA
+1.0			FluidMass 1 [amu]
+4.0			FluidMass 2 [amu]
+1.0			IonCharge 1 [e]
+1.0			IonCharge 2 [e]
+1.0			ElectronTemperatureRatio
+
+#NONCONSERVATIVE
+T			UseNonConservative
+
+#UNIFORMSTATE
+0.5			StateVar Rho
+0.03			StateVar Ux1
+0.04			StateVar Uy1
+0.0			StateVar Uz1
+0.2			StateVar Bx
+0.0			StateVar By
+0.0			StateVar Bz
+5.12E-4			StateVar Pe
+2.56e-4			StateVar p1
+0.5			StateVar Rho2
+0.03			StateVar Ux2
+0.04			StateVar Uy2
+0.0			StateVar Uz2
+2.56e-4			StateVar p2
+
+Whistler wave is cirularly polarized
+for both ion fluids.
+
+#WAVE
+Uy			NameVar
+10000.0			Width
+-0.0090663280		Amplitude  -0.01 for Alfven
+32.0			LambdaX
+-1.0			LambdaY
+-1.0			LambdaZ
+-90.0			Phase
+
+#WAVE
+Uz			NameVar
+1000.0			Width
++0.0090663280		Amplitude  +0.01 for Alfven
+32.0			LambdaX
+-1.0			LambdaY
+-1.0			LambdaZ
+180.0			Phase
+
+#WAVE
+OpUy			NameVar
+10000.0			Width
+-0.0090663280		Amplitude  -0.01 for Alfven
+32.0			LambdaX
+-1.0			LambdaY
+-1.0			LambdaZ
+-90.0			Phase
+
+#WAVE
+OpUz			NameVar
+1000.0			Width
++0.0090663280		Amplitude  +0.01 for Alfven
+32.0			LambdaX
+-1.0			LambdaY
+-1.0			LambdaZ
+180.0			Phase
+
+#WAVE
+By			NameVar
+1000.0			Width
+0.01			Amplitude
+32.0			LambdaX
+-1.0			LambdaY
+-1.0			LambdaZ
+-90.0			Phase
+
+#WAVE
+Bz			NameVar
+1000.0			Width
+-0.01			Amplitude
+32.0			LambdaX
+-1.0			LambdaY
+-1.0			LambdaZ
+180.0			Phase
+
+Put perturbations into pressures, but keep
+total Pe+Pi1+Pi2 constant
+
+#WAVE
+Pe			NameVar
+1000.0			Width
+1e-4			Amplitude
+32.0			LambdaX
+-1.0			LambdaY
+-1.0			LambdaZ
+180.0			Phase
+
+#WAVE
+p			NameVar
+1000.0			Width
+0.5e-4			Amplitude
+32.0			LambdaX
+-1.0			LambdaY
+-1.0			LambdaZ
+0.0			Phase
+
+#WAVE
+OpP			NameVar
+1000.0			Width
+0.5e-4			Amplitude
+32.0			LambdaX
+-1.0			LambdaY
+-1.0			LambdaZ
+0.0			Phase
+
+The grid is rotated by atan(3/4), the original shocktube is by -atan(4/3)
+so now rotate by tan(atan(3/4)- atan(4/3))) = -7/24
+#SHOCKPOSITION
+0.0			ShockPosition
+-7/24			ShockSlope
+
+#GRID
+32			nRootBlock1
+24			nRootBlock2
+1			nRootBlock3
+-160/3			xMin
+ 160/3  		xMax
+-160/4			yMin
+ 160/4			yMax
+-0.5			zMin
+ 0.5			zMax
+
+#FIXEDTIMESTEP
+T			UseDtFixed
+0.5			DtFixedDim
+
+
+#PICUNIT
+ 1.0			xUnitPicSi
+ 1.0			uUnitPicSi
+
+#PICGRID
+1			nPicGrid
+-26.458333333		xMinPic
+ 26.458333333		xMaxPic
+-19.791666667		yMinPic
+ 19.791666667		yMaxPic
+1.25/3			DxPic
+1.25/3			DyPic
+
+#OUTERBOUNDARY
+periodic		TypeBc1
+periodic		TypeBc2
+periodic		TypeBc3
+periodic		TypeBc4
+float			TypeBc5
+float			TypeBc6
+
+#HALLRESISTIVITY
+T			UseHallResist
+1.0			HallFactorMax
+0.0			HallCmaxFactor
+
+#TEST
+init_hall_resist		StringTest
+
+#B0SOURCE
+F			UseB0Source
+
+#SCHEME
+2			nOrder
+Rusanov			TypeFlux
+mc			TypeLimiter
+1.5			LimiterBeta
+
+RK
+3			nStage
+0.8			CflExpl
+
+#TIMESTEPPING
+2			nStage
+0.8			CflExpl
+
+#IMPLICIT
+F			UsePointImplicit
+F			UsePartImplicit
+T			UseFullImplicit
+100.0			CflImpl
+
+#SAVELOGFILE
+T			DoSaveLogfile
+raw			StringLog
+1			DnSaveLogfile
+-1.			DtSaveLogfile
+
+#SAVEINITIAL
+T			DoSaveInitial
+
+#SAVEPLOT
+1			nPlotFile
+z=0 all idl_ascii		StringPlot
+1			DnSavePlot
+-0.05			DtSavePlot
+0.			DxSavePlot
+
+#END_COMP GM -----------------------------------------------------------------
+
+#BEGIN_COMP PC ---------------------------------------------------------------
+
+#ELECTRON
+-100.0			ElectronChargePerMass ratio (qom)
+
+
+#TIMESTEPPING
+F			useSWMFDt
+T			useFixedDt
+0.5			dt
+
+#DIVE
+F			divECleanType
+
+#DISCRETIZATION
+0.51			theta
+0.1			gradRhoRatio
+0.1			cDiff
+0.0			DISCRETIZATION
+
+
+#PARTICLES
+10			nParticleX per cell in X
+10			nParticleY per cell in Y
+1			nParticleZ per cell in Z
+
+#SAVEIDL
+2			nPlotFile
+z=0 fluid ascii si		StringPlot
+4			DnSavePlot
+-1			DtSavePlot
+0			DxSavePlot
+cut particles1 ascii planet		StringPlot
+4			DnSavePlot
+-1			DtSavePlot
+-1			Coord1MinCut
+3			Coord1MaxCut
+0			Coord2MinCut
+2			Coord2MaxCut
+-1			Coord3MinCut
+1			Coord3MaxCut
+1			DxSavePlot
+
+#END_COMP PC -----------------------------------------------------------------
+
+#STOP
+-1			MaxIter
+2.0			TimeMax
+
+

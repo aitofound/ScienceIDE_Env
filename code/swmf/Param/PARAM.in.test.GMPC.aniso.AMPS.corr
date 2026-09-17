@@ -1,0 +1,287 @@
+ID Proc0 ProcEnd Stride nThread
+#COMPONENTMAP
+GM 1 -1 1 -1		CompMap runs on PEs 1... with MaxThread threads
+PC 0  3 1  1		CompMap runs on PEs 0..3 with 1 thread
+
+#DESCRIPTION
+Param/PARAM.in.test.GMPC.aniso.AMPS.corr: Run GM and PC in time accurate mode		StringDescription
+
+#PLANET
+NONE			NamePlanet
+
+SAVERESTART
+T			DoSaveRestart
+-1			DnSaveRestart
+100.0			DtSaveRestart
+
+#COUPLE2TIGHT
+GM			NameMaster
+PC			NameSlave
+T			DoCouple
+
+
+COUPLE2
+GM			NameComp1
+PC			NameComp2
+-1			DnCouple
+1.0			DtCouple
+
+#PROGRESS
+1			DnProgressShort
+1			DnProgressLong
+
+#BEGIN_COMP GM ---------------------------------------------------------------
+
+#IOUNITS
+NONE			TypeIoUnit
+
+#NORMALIZATION
+NONE			TypeNormalization
+
+#PLASMA
+1.0			FluidMass [amu]
+1.0			IonCharge [e]
+1.0			ElectronTemperatureRatio
+
+
+#NONCONSERVATIVE
+T			UseNonConservative
+
+
+#UNIFORMSTATE
+1.0			StateVar Rho
+0.0			StateVar Ux
+0.0			StateVar Uy
+0.0			StateVar Uz
+0.0			StateVar Bx
+0.04			StateVar By
+0.0			StateVar Bz
+4.5e-4			StateVar Ppar
+4.5e-4			StateVar p
+
+rho			= 1
+By			= 0.04
+cA			= By/sqrt(rho)   = 0.04
+cS			= sqrt(2*p/rho)  = 0.03
+cF			= sqrt(cA^2+cS^2)= 0.05
+lambda= 32
+t			= lambda/(cF) = 640.0
+
+p = pe = 2.25e-4
+vth			= sqrt(p/rho) = 0.015
+me = mi/25
+vthe  = 5*vth		= 0.075
+dx = 0.4
+dtmax = dx/vthe		= 5.333
+dt			= 0.2*dtmax   = 1.066
+
+#WAVE
+Rho			NameVar
+1000.0			Width
+0.1			Amplitude
+16.0			LambdaX
+-1.0			LambdaY
+-1.0			LambdaZ
+0.0			Phase
+
+#WAVE
+Ux			NameVar
+1000.0			Width
+0.005			Amplitude (rho1/rho0)*cF
+16.0			LambdaX
+-1.0			LambdaY
+-1.0			LambdaZ
+0.0			Phase
+
+#WAVE
+By			NameVar
+1000.0			Width
+0.004			Amplitude (rho1/rho0)*b0
+16.0			LambdaX
+-1.0			LambdaY
+-1.0			LambdaZ
+0.0			Phase
+
+#WAVE
+Ppar			NameVar
+10000.0			Width
+4.5e-5			Amplitude (rho1/rho0)*pPar0
+16.0			LambdaX
+-1.0			LambdaY
+-1.0			LambdaZ
+0.0			Phase
+
+#WAVE
+p			NameVar
+10000.0			Width
+7.5e-5			Amplitude (rho1/rho0)*5/3*p0
+16.0			LambdaX
+-1.0			LambdaY
+-1.0			LambdaZ
+0.0			Phase
+
+SHOCKPOSITION
+0.0			ShockPosition
+4/3			ShockSlope
+
+#GRID
+4			nRootBlock1
+4			nRootBlock2
+4			nRootBlock3
+-50.0			xMin
+ 50.0			xMax
+-50.0			yMin
+ 50.0			yMax
+-50.0			zMin
+ 50.0			zMax
+
+#CHECKGRIDSIZE
+  8			nI
+  8			nJ
+  8			nK
+400			MinBlockAll
+
+#FIXEDTIMESTEP
+T			UseDtFixed
+1.0			DtFixedDim
+
+#PICUNIT
+1.0			xUnitPicSi
+1.0			uUnitPicSi
+
+#PICGRID
+1			nPicGrid
+-8			xMinPic
+ 8 			xMaxPic
+-8			yMinPic
+ 8			yMaxPic
+-8			zMinPic
+ 8			zMaxPic
+1.0			DxPic
+1.0			DyPic
+1.0			DzPic
+
+
+
+
+ 5.0			Coord1MinCut
+ 25.0			Coord1MaxCut
+-20.0			Coord2MinCut
+ 20.0			Coord2MaxCut
+1.25/3			DxPic
+1.25/3			DyPic
+
+#OUTERBOUNDARY
+periodic		TypeBc1
+periodic		TypeBc2
+periodic		TypeBc3
+periodic		TypeBc4
+float			TypeBc5
+float			TypeBc6
+
+HALLRESISTIVITY
+T			UseHallResistFlux
+1.0			HallFactor
+0.0			HallCmaxFactor
+
+#TEST
+init_hall_resist		StringTest
+
+#B0SOURCE
+F			UseB0Source
+
+#SCHEME
+2			nOrder
+Rusanov			TypeFlux
+mc			TypeLimiter
+1.5			LimiterBeta
+
+RK
+3			nStage
+0.8			CflExpl
+
+#TIMESTEPPING
+2			nStage
+0.8			CflExpl
+
+#SAVELOGFILE
+T			DoSaveLogfile
+raw			StringLog
+1			DnSaveLogfile
+-1.			DtSaveLogfile
+
+#SAVEINITIAL
+T			DoSaveInitial
+
+#SAVEPLOT
+1			nPlotFile
+z=0 var idl_ascii		StringPlot
+1			DnSavePlot
+-0.05			DtSavePlot
+0.			DxSavePlot
+rho mx my bx by p		NameVars
+g rbody			NamePars
+
+#END_COMP GM -----------------------------------------------------------------
+
+#BEGIN_COMP PC ---------------------------------------------------------------
+
+#TIMESTEPPING
+F			useSWMFDt
+T			useFixedDt
+1.0			fixedDt
+
+#ELECTRON
+-25			ElectronChargePerMass
+
+#EFIELDSOLVER
+1e-8			EFieldTol
+200			EFieldIter
+
+
+
+#DISCRETIZATION
+0.5			theta
+0.0			gradRhoRatio
+0.0			cDiff
+0.1			ratioDivC2C
+
+#DIVE
+T			doCorrectDivE
+
+#PARTICLES
+5			nPclx per cell in X Region 1
+6			nPcly per cell in Y Region 1
+1			nPclz per cell in Z Region 1
+
+#SAVEIDL
+2			nPlotFile
+3d fluid ascii pic		StringPlot
+1			DnSavePlot
+-1.0			DtSavePlot
+1			DxSavePlot
+3d fluid ascii si		StringPlot
+1			DnSavePlot
+-1.0			DtSavePlot
+1			DxSavePlot
+
+#END_COMP PC -----------------------------------------------------------------
+
+#STOP
+-1			MaxIter
+5			TimeMax
+
+
+#END #########################################################################
+
+#RUN #########################################################################
+
+#COMPONENT
+GM			NameComp
+F			UseComp
+
+#STOP
+-1			MaxIteration
+15			tSimulationMax
+
+
