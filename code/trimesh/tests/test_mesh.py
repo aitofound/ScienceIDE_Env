@@ -1,0 +1,302 @@
+"""
+Load all the meshes we can get our hands on and check things, stuff.
+"""
+
+try:
+    from . import generic as g
+except BaseException:
+    import generic as g
+
+
+def test_meshes():
+    # make sure we can load everything we think we can
+    formats = g.trimesh.available_formats()
+    assert all(isinstance(i, str) for i in formats)
+    assert all(len(i) > 0 for i in formats)
+    assert all(i in formats for i in ["stl", "ply", "off", "obj", "glb"])
+
+    for mesh in g.get_meshes(raise_error=True):
+        # log file name for debugging
+        file_name = mesh.source.file_name
+
+        # ply files can return PointCloud objects
+        if file_name.startswith("points_"):
+            continue
+
+        g.log.info("Testing %s", file_name)
+        start = {mesh.__hash__(), mesh.__hash__()}
+        assert len(mesh.faces) > 0
+        assert len(mesh.vertices) > 0
+
+        # make sure vertex normals match vertices and are valid
+        assert mesh.vertex_normals.shape == mesh.vertices.shape
+        assert g.np.isfinite(mesh.vertex_normals).all()
+
+        # should be one per vertex
+        assert len(mesh.vertex_faces) == len(mesh.vertices)
+
+        # check some edge properties
+        assert len(mesh.edges) > 0
+        assert len(mesh.edges_unique) > 0
+        assert len(mesh.edges_sorted) == len(mesh.edges)
+        assert len(mesh.edges_face) == len(mesh.edges)
+
+        # check edges_unique
+        assert len(mesh.edges) == len(mesh.edges_unique_inverse)
+        assert g.np.allclose(
+            mesh.edges_sorted, mesh.edges_unique[mesh.edges_unique_inverse]
+        )
+        assert len(mesh.edges_unique) == len(mesh.edges_unique_length)
+
+        # euler number should be an integer
+        assert isinstance(mesh.euler_number, int)
+
+        # check bounding primitives
+        assert mesh.bounding_box.volume > 0.0
+        assert mesh.bounding_primitive.volume > 0.0
+
+        # none of these should have mutated anything
+        assert start == {mesh.__hash__(), mesh.__hash__()}
+
+        # run processing, again
+        mesh.process()
+
+        # still shouldn't have changed anything
+        assert start == {mesh.__hash__(), mesh.__hash__()}
+
+        if not (mesh.is_watertight and mesh.is_winding_consistent):
+            continue
+
+        assert len(mesh.facets) == len(mesh.facets_area)
+        assert len(mesh.facets) == len(mesh.facets_normal)
+        assert len(mesh.facets) == len(mesh.facets_boundary)
+
+        if len(mesh.facets) != 0:
+            faces = mesh.facets[mesh.facets_area.argmax()]
+            outline = mesh.outline(faces)
+            # check to make sure we can generate closed paths
+            # on a Path3D object
+            test = outline.paths  # NOQA
+
+        smoothed = mesh.smooth_shaded  # NOQA
+
+        assert abs(mesh.volume) > 0.0
+
+        mesh.section(plane_normal=[0, 0, 1], plane_origin=mesh.centroid)
+
+        sample = mesh.sample(1000)
+        even_sample = g.trimesh.sample.sample_surface_even(mesh, 100)  # NOQA
+        assert sample.shape == (1000, 3)
+        g.log.info("finished testing meshes")
+
+        # make sure vertex kdtree and triangles rtree exist
+
+        t = mesh.kdtree
+        assert hasattr(t, "query")
+        g.log.info("Creating triangles tree")
+        r = mesh.triangles_tree
+        assert hasattr(r, "intersection")
+        g.log.info("Triangles tree ok")
+
+        # face angles should have same
+        assert mesh.face_angles.shape == mesh.faces.shape
+        assert len(mesh.vertices) == len(mesh.vertex_defects)
+        assert len(mesh.principal_inertia_components) == 3
+
+        # make a ray query which may lead to unpicklable caching
+        dimension = (100, 3)
+        ray_origins = g.random(dimension)
+        ray_directions = g.np.tile([0, 0, 1], (dimension[0], 1))
+        ray_origins[:, 2] = mesh.bounds[0][2] - mesh.scale
+
+        # call additional C objects
+        assert mesh.kdtree is not None
+        assert mesh.triangles_tree is not None
+
+        # force ray object to be created
+        ray = mesh.ray.intersects_location(ray_origins, ray_directions)
+        assert ray is not None
+
+        # collect list of cached properties that are writeable
+        writeable = []
+
+        # make sure a roundtrip pickle works
+        # if the cache has non-pickleable stuff this will break
+        pickle = g.pickle.dumps(mesh)
+        assert isinstance(pickle, bytes)
+        assert len(pickle) > 0
+
+        r = g.pickle.loads(pickle)
+        assert r.faces.shape == mesh.faces.shape
+        assert g.np.isclose(r.volume, mesh.volume)
+
+        # we should have built up a bunch of stuff into
+        # our cache, so make sure all numpy arrays cached
+        # are read-only and not crazy
+        for name, cached in mesh._cache.cache.items():
+            # only check numpy arrays
+            if not isinstance(cached, g.np.ndarray):
+                continue
+
+            # nothing in the cache should be writeable
+            if cached.flags["WRITEABLE"]:
+                raise ValueError(f"{name} is writeable!")
+
+            # only check int, float, and bool
+            if cached.dtype.kind not in "ibf":
+                continue
+
+            # there should never be NaN values
+            if g.np.isnan(cached).any():
+                raise ValueError("NaN values in %s/%s", file_name, name)
+
+            # fields allowed to have infinite values
+            if name in ["face_adjacency_radius"]:
+                continue
+
+            # make sure everything is finite
+            if not g.np.isfinite(cached).all():
+                raise ValueError("inf values in %s/%s", file_name, name)
+
+        # ...still shouldn't have changed anything
+        assert start == {mesh.__hash__(), mesh.__hash__()}
+
+        # log the names of properties we need to make read-only
+        if len(writeable) > 0:
+            # TODO : all cached values should be read-only
+            g.log.error("cached properties writeable: {}".format(", ".join(writeable)))
+
+
+def test_mesh_2D():
+    # check a simple mesh with 2D vertices
+    m = g.trimesh.Trimesh(
+        vertices=g.random((100, 2)),
+        faces=g.np.arange(99, dtype=g.np.int64).reshape((-1, 3)),
+    )
+    # the face normals should be 3D (+Z)
+    assert m.face_normals.shape == m.faces.shape
+
+    rend = g.trimesh.rendering.mesh_to_vertexlist(m)
+    assert len(rend) > 1
+
+
+def test_remove_infinite_values_drops_dependent_faces():
+    # Regression test for https://github.com/mikedh/trimesh/issues/2445
+    #
+    # `remove_infinite_values` was checking `np.isfinite(self.faces)` which
+    # is always all-True (face indices are int64), so faces referencing a
+    # NaN/Inf vertex were never explicitly dropped. They then sneaked
+    # through `update_vertices`, whose inverse-index map defaults to 0
+    # for removed vertices — turning each face that touched a NaN vertex
+    # into a degenerate triangle (e.g. `[0,1,2]` -> `[0,1,0]`). Those
+    # degenerate faces crashed the renderer with `IndexError` on `mesh.show`.
+    vertices = g.np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [1.0, 1.0, 0.0],
+            [0.5, 0.5, g.np.nan],
+        ],
+        dtype=g.np.float64,
+    )
+    faces = g.np.array(
+        [
+            [0, 1, 2],
+            [1, 3, 2],
+            [0, 4, 1],
+            [1, 4, 3],
+            [3, 4, 2],
+        ],
+        dtype=g.np.int64,
+    )
+    mesh = g.trimesh.Trimesh(vertices=vertices.copy(), faces=faces.copy(), process=True)
+
+    # the non-finite vertex is gone
+    assert g.np.isfinite(mesh.vertices).all()
+    assert len(mesh.vertices) == 4
+
+    # the three faces that touched the NaN vertex are removed; the two
+    # entirely-finite faces survive without being remapped to degenerates
+    assert len(mesh.faces) == 2
+    # every surviving face references a valid vertex
+    assert (mesh.faces < len(mesh.vertices)).all()
+    # no surviving face is degenerate (no repeated vertex index)
+    assert (mesh.faces[:, 0] != mesh.faces[:, 1]).all()
+    assert (mesh.faces[:, 1] != mesh.faces[:, 2]).all()
+    assert (mesh.faces[:, 0] != mesh.faces[:, 2]).all()
+
+    # a scene-build round-trip should work without crashing now that the
+    # mesh contains only well-formed faces
+    scene = mesh.scene()
+    assert "geometry_0" in scene.geometry
+
+
+def test_remove_infinite_values_inf_vertex_drops_face():
+    # Companion to #2445: `np.inf` vertices should be dropped along with
+    # any face referencing them — the bug fix must cover both NaN and Inf.
+    vertices = g.np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.5, 0.5, g.np.inf],
+        ],
+        dtype=g.np.float64,
+    )
+    faces = g.np.array([[0, 1, 2], [0, 3, 1]], dtype=g.np.int64)
+    mesh = g.trimesh.Trimesh(vertices=vertices.copy(), faces=faces.copy(), process=True)
+
+    assert g.np.isfinite(mesh.vertices).all()
+    assert len(mesh.vertices) == 3
+    # only the all-finite face survives
+    assert len(mesh.faces) == 1
+    assert (mesh.faces < len(mesh.vertices)).all()
+
+
+def test_remove_infinite_values_no_op_on_finite_mesh():
+    # Sanity: when every vertex is finite, `remove_infinite_values` must
+    # not drop anything. Guards against an over-eager fix that would
+    # touch face counts on healthy meshes.
+    vertices = g.np.random.RandomState(0).random((40, 3))
+    # random integer faces, deduped so we don't start with degenerates
+    raw = g.np.random.RandomState(1).randint(0, 40, (50, 3))
+    faces = g.np.array([f for f in raw if len(set(f)) == 3], dtype=g.np.int64)
+
+    mesh = g.trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
+    n_v, n_f = len(mesh.vertices), len(mesh.faces)
+    mesh.remove_infinite_values()
+    assert len(mesh.vertices) == n_v
+    assert len(mesh.faces) == n_f
+
+
+def test_remove_infinite_values_edge_shapes():
+    # the guards live inside `update_faces` (early-returns on empty
+    # meshes and all-true masks) so degenerate shapes must work
+    empty = g.trimesh.Trimesh()
+    empty.remove_infinite_values()
+    assert len(empty.vertices) == 0
+    assert len(empty.faces) == 0
+
+    # NaN vertex with no faces at all is still removed
+    cloud = g.trimesh.Trimesh(
+        vertices=[[0.0, 0.0, 0.0], [g.np.nan, 0.0, 0.0]], process=False
+    )
+    cloud.remove_infinite_values()
+    assert len(cloud.vertices) == 1
+    assert g.np.isfinite(cloud.vertices).all()
+
+    # a NaN vertex referenced by no face drops no faces
+    mesh = g.trimesh.Trimesh(
+        vertices=[[0, 0, 0], [1, 0, 0], [0, 1, 0], [g.np.nan, 0, 0]],
+        faces=[[0, 1, 2]],
+        process=False,
+    )
+    mesh.remove_infinite_values()
+    assert len(mesh.vertices) == 3
+    assert mesh.faces.tolist() == [[0, 1, 2]]
+
+
+if __name__ == "__main__":
+    g.trimesh.util.attach_to_log()
+    test_mesh_2D()

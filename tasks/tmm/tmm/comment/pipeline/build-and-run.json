@@ -1,0 +1,364 @@
+{
+  "codebase": "tmm",
+  "build": {
+    "system": "pip (setuptools via pyproject.toml; pure Python, nothing compiles; the package 'tmm' is mapped onto the repository root)",
+    "commands": [
+      "python3.12 -m venv venv-tmm && venv-tmm/bin/pip install numpy scipy matplotlib   # numpy 2.5.3, scipy 1.18.1, matplotlib 3.11.2 on Python 3.12.3",
+      "SRC=<scratch copy of the checkout, directory named tmm>",
+      "python -m pip install --no-deps --target $SITE $SRC   # SRC = the scratch copy of the checkout, SITE = an empty target directory; 3.8 s wall, build isolation on",
+      "PKG=<a directory holding a symlink named tmm to the checkout>   # the alternative: the checkout itself as the package directory on PYTHONPATH; identical test output"
+    ],
+    "wall_s": 3.8,
+    "ok": true,
+    "pitfalls": [
+      "pip install --no-build-isolation fails in a bare Python 3.12 venv with ModuleNotFoundError: No module named 'setuptools' (venv no longer seeds setuptools); use the default build isolation or pip install setuptools first",
+      "the package is flat: pyproject.toml maps package 'tmm' to '.', so the checkout directory must be named tmm (or symlinked as such) to be importable without installing; the vendored tree under code/tmm/ has the right name by construction"
+    ]
+  },
+  "landscape": [
+    {
+      "family": "tests.py",
+      "kind": "test-suite",
+      "path": "tests.py",
+      "count": 8,
+      "how_to_run": "python -c \"import tmm.tests as t; t.run_all()\"   (no pytest, no assertions: each test prints difference fractions that should be zero within rounding)",
+      "reference_outputs": "partial",
+      "notes": "basic_test and position_resolved_test embed reference values from the author's earlier Mathematica program; the other six compare against physical identities (energy conservation, Poynting continuity, R+T=1, analytic vs numeric absorption, coherent vs incoherent averaging, overflow protection). Exit status is 0 whatever the numbers."
+    },
+    {
+      "family": "examples.py",
+      "kind": "examples",
+      "path": "examples.py",
+      "count": 6,
+      "how_to_run": "python -c \"import tmm.examples as ex; ex.sample1()\"  (each sample builds a Matplotlib figure and calls plt.show(); sample5 also prints rgb and xyY)",
+      "reference_outputs": "none",
+      "notes": "sample3 reproduces Handbook of Ellipsometry (Tompkins 2005) Fig. 1.14, sample6 reproduces Mater. Trans. 51 (2010) 1150 Fig. 6a, sample5 compares against a published SiO2-on-Si colour chart; no numbers ship. sample5 needs colorpy."
+    },
+    {
+      "family": "examples.ipynb",
+      "kind": "tutorials",
+      "path": "examples.ipynb",
+      "count": 6,
+      "how_to_run": "jupyter nbconvert --execute examples.ipynb",
+      "reference_outputs": "none",
+      "notes": "the six samples of examples.py pasted into notebook cells with their rendered plots; same code paths, deduplicated to examples.py"
+    },
+    {
+      "family": "manual",
+      "kind": "other",
+      "path": "manual.pdf",
+      "count": 0,
+      "how_to_run": "not runnable (documentation; manual_source/manual.lyx is its LyX source)",
+      "reference_outputs": "none",
+      "notes": "the user manual; physics derivations are in arXiv:1603.02720"
+    }
+  ],
+  "runs": [
+    {
+      "id": "run-all",
+      "family": "tests.py",
+      "path": "tests.py",
+      "command": "PYTHONPATH=$SITE MPLBACKEND=Agg python -c \"import tmm.tests as t; t.run_all()\"",
+      "ran": true,
+      "wall_s": 0.37,
+      "shortened": null,
+      "reproduced": "yes: 15 digits (basic_test and position_resolved_test against the embedded Mathematica values, largest difference fraction 1.0e-15; the identities hold to 1e-16)",
+      "outputs": [
+        "stdout: 89 text lines of difference fractions and printed arrays"
+      ],
+      "nondeterminism": "none seen: stdout byte-identical across two runs, and identical between the pip-installed package and the checkout on PYTHONPATH",
+      "pitfalls": [
+        "nothing asserts and the exit status is always 0: a check must recompute the graded quantities itself, never parse pass/fail",
+        "the opacity warning is printed once per process through a module global, so stdout depends on which tests ran earlier in the same process; grade numbers, never the text"
+      ]
+    },
+    {
+      "id": "basic-test",
+      "family": "tests.py",
+      "path": "tests.py",
+      "command": "PYTHONPATH=$PKG python -c \"import tmm.tests as t; t.basic_test()\"",
+      "ran": true,
+      "wall_s": 0.0012,
+      "shortened": null,
+      "reproduced": "yes: 15 digits (r, t, R, T for s and p, psi and Delta against Mathematica; largest difference fraction 1.0e-15 on t_s, Delta 6.5e-14 because Delta itself is 2.1e-3)",
+      "outputs": [
+        "stdout: 10 difference fractions"
+      ],
+      "nondeterminism": "none seen",
+      "pitfalls": []
+    },
+    {
+      "id": "position-resolved-test",
+      "family": "tests.py",
+      "path": "tests.py",
+      "command": "PYTHONPATH=$PKG python -c \"import tmm.tests as t; t.position_resolved_test()\"",
+      "ran": true,
+      "wall_s": 0.0021,
+      "shortened": null,
+      "reproduced": "yes: 15 digits (kz, Poynting vector and absorption at one depth against Mathematica, 2e-16 to 4e-16); absorption sums to 1 exactly; Poynting continuity and end-point identities at 1e-16; the finite-difference derivative check lands at 4.6e-12 (p) and 3.9e-11 (s), the O(h) stencil error, not a fault",
+      "outputs": [
+        "stdout: 16 difference fractions"
+      ],
+      "nondeterminism": "none seen",
+      "pitfalls": []
+    },
+    {
+      "id": "position-resolved-test2",
+      "family": "tests.py",
+      "path": "tests.py",
+      "command": "PYTHONPATH=$PKG python -c \"import tmm.tests as t; t.position_resolved_test2()\"",
+      "ran": true,
+      "wall_s": 0.002,
+      "shortened": null,
+      "reproduced": "no reference (identities only): absorption sums to 1 exactly with complex incident and final media; continuity and end-point identities at 1e-16; finite difference at 5e-11",
+      "outputs": [
+        "stdout: 10 difference fractions"
+      ],
+      "nondeterminism": "none seen",
+      "pitfalls": []
+    },
+    {
+      "id": "absorp-analytic-fn-test",
+      "family": "tests.py",
+      "path": "tests.py",
+      "command": "PYTHONPATH=$PKG python -c \"import tmm.tests as t; t.absorp_analytic_fn_test()\"",
+      "ran": true,
+      "wall_s": 0.0004,
+      "shortened": null,
+      "reproduced": "no reference (identities only): the analytic absorption function equals position_resolved to 0 and 1.7e-16, and its flipped copy agrees from the other side",
+      "outputs": [
+        "stdout: 4 difference fractions"
+      ],
+      "nondeterminism": "none seen",
+      "pitfalls": []
+    },
+    {
+      "id": "incoherent-test",
+      "family": "tests.py",
+      "path": "tests.py",
+      "command": "PYTHONPATH=$PKG python -c \"import tmm.tests as t; t.incoherent_test()\"",
+      "ran": true,
+      "wall_s": 0.25,
+      "shortened": null,
+      "reproduced": "no reference (identities only): inc_tmm against the closed-form three-layer sums and against coh_tmm at 1e-16 or exactly 0; the thickness-averaged (357 thicknesses) and wavelength-averaged (234 wavelengths) coherent runs agree with the incoherent result to 1.5e-5 to 8e-5, the finite-sample residual of the averaging, printed as 'discrepancy'",
+      "outputs": [
+        "stdout: 14 difference fractions, 4 discrepancy lines, two 2x4 arrays"
+      ],
+      "nondeterminism": "none seen",
+      "pitfalls": [
+        "the 'discrepancy' lines are 1e-5 by design (finite averaging), not failures; a check grades the computed values, not their closeness to zero"
+      ]
+    },
+    {
+      "id": "rt-test",
+      "family": "tests.py",
+      "path": "tests.py",
+      "command": "PYTHONPATH=$PKG python -c \"import tmm.tests as t; t.RT_test()\"",
+      "ran": true,
+      "wall_s": 0.0002,
+      "shortened": null,
+      "reproduced": "no reference (identities only): R+T=1 at a single interface to 4.4e-16, power_entering equals T to 3.5e-16",
+      "outputs": [
+        "stdout: 4 difference fractions"
+      ],
+      "nondeterminism": "none seen",
+      "pitfalls": []
+    },
+    {
+      "id": "coh-overflow-test",
+      "family": "tests.py",
+      "path": "tests.py",
+      "command": "PYTHONPATH=$PKG python -c \"import tmm.tests as t; t.coh_overflow_test()\"",
+      "ran": true,
+      "wall_s": 0.0011,
+      "shortened": null,
+      "reproduced": "no reference (identity only): the vw_list of the five-layer stack with a layer of imag(delta)=18850 agrees with the truncated three-layer stack in its first entries (printed, compared by eye: 0.6066665-0.1116073j both)",
+      "outputs": [
+        "stdout: the opacity warning once, two printed complex arrays"
+      ],
+      "nondeterminism": "none seen",
+      "pitfalls": [
+        "imag(delta) > 35 is clamped to 35 in coh_tmm and a warning is printed once per process; amplitudes behind the opaque layer come out at 1e-16 to 1e-32, so a pointwise bound on vw_list needs an absolute term"
+      ]
+    },
+    {
+      "id": "inc-overflow-test",
+      "family": "tests.py",
+      "path": "tests.py",
+      "command": "PYTHONPATH=$PKG python -c \"import tmm.tests as t; t.inc_overflow_test()\"",
+      "ran": true,
+      "wall_s": 0.0005,
+      "shortened": null,
+      "reproduced": "no reference (identity only): power_entering_list of the five-layer stack agrees with the three-layer stack in its first entries (0.4210526315789473 both)",
+      "outputs": [
+        "stdout: two printed lists; under numpy 2 the entries print as np.float64(...)"
+      ],
+      "nondeterminism": "none seen",
+      "pitfalls": [
+        "single-pass transmission P < 1e-30 is floored to 1e-30 in inc_tmm, which sets the 1.97e-30 entries behind the opaque layer; the printed list format depends on the numpy major version, so grade numbers, not text"
+      ]
+    },
+    {
+      "id": "sample1",
+      "family": "examples.py",
+      "path": "examples.py",
+      "command": "PYTHONPATH=$PKG MPLBACKEND=Agg python -c \"import matplotlib.pyplot as plt; plt.show=lambda *a,**k: None; import tmm.examples as ex; ex.sample1()\"",
+      "ran": true,
+      "wall_s": 0.166,
+      "shortened": null,
+      "reproduced": "no reference (a plot): reflection versus wavenumber, 400 points, normal incidence and 45-degree unpolarised; 1200 coh_tmm calls",
+      "outputs": [
+        "one Matplotlib figure (not saved)"
+      ],
+      "nondeterminism": "none seen",
+      "pitfalls": [
+        "every sample ends in plt.show(), which blocks under an interactive backend; run with MPLBACKEND=Agg and a stubbed plt.show",
+        "Python 3.12 prints SyntaxWarning: invalid escape sequence '\\c' for the '$^\\circ$' titles; harmless"
+      ]
+    },
+    {
+      "id": "sample2",
+      "family": "examples.py",
+      "path": "examples.py",
+      "command": "PYTHONPATH=$PKG MPLBACKEND=Agg python -c \"import matplotlib.pyplot as plt; plt.show=lambda *a,**k: None; import tmm.examples as ex; ex.sample2()\"",
+      "ran": true,
+      "wall_s": 0.071,
+      "shortened": null,
+      "reproduced": "no reference (a plot): transmission of a 300 nm film whose complex index is a scipy interp1d quadratic through five tabulated points, 400 wavelengths at normal incidence",
+      "outputs": [
+        "one Matplotlib figure (not saved)"
+      ],
+      "nondeterminism": "none seen",
+      "pitfalls": [
+        "depends on scipy.interpolate.interp1d(kind='quadratic') on complex data; scipy calls interp1d legacy but it still runs on 1.18.1"
+      ]
+    },
+    {
+      "id": "sample3",
+      "family": "examples.py",
+      "path": "examples.py",
+      "command": "PYTHONPATH=$PKG MPLBACKEND=Agg python -c \"import matplotlib.pyplot as plt; plt.show=lambda *a,**k: None; import tmm.examples as ex; ex.sample3()\"",
+      "ran": true,
+      "wall_s": 0.032,
+      "shortened": null,
+      "reproduced": "not compared (a plot against Handbook of Ellipsometry Fig. 1.14): psi and Delta of air/SiO2/Si at 70 degrees and 633 nm for 100 SiO2 thicknesses",
+      "outputs": [
+        "one Matplotlib figure (not saved)"
+      ],
+      "nondeterminism": "none seen",
+      "pitfalls": []
+    },
+    {
+      "id": "sample4",
+      "family": "examples.py",
+      "path": "examples.py",
+      "command": "PYTHONPATH=$PKG MPLBACKEND=Agg python -c \"import matplotlib.pyplot as plt; plt.show=lambda *a,**k: None; import tmm.examples as ex; ex.sample4()\"",
+      "ran": true,
+      "wall_s": 0.02,
+      "shortened": null,
+      "reproduced": "no reference (a plot): Poynting vector and absorption versus depth at 1000 positions across a two-film stack, one coh_tmm call",
+      "outputs": [
+        "one Matplotlib figure (not saved)"
+      ],
+      "nondeterminism": "none seen",
+      "pitfalls": []
+    },
+    {
+      "id": "sample5",
+      "family": "examples.py",
+      "path": "examples.py",
+      "command": "pip install the fish2000 ColorPy fork from GitHub at commit 4c9e5b2e334851b42626f9a1eda31197739b097e (github.com/fish2000/ColorPy) && PYTHONPATH=$PKG MPLBACKEND=Agg python -c \"import matplotlib.pyplot as plt; plt.show=lambda *a,**k: None; import tmm.examples as ex; ex.sample5()\"",
+      "ran": true,
+      "wall_s": 8.43,
+      "shortened": null,
+      "reproduced": "not compared (printed rgb=[0.0728 0.1514 0.4324], xyY=[0.2170 0.2073 0.1549] for 300 nm SiO2 on Si and a colour strip against a published chart): 81 thicknesses times 471 wavelengths, 38,151 coh_tmm calls plus colorpy XYZ integration",
+      "outputs": [
+        "stdout: rgb and xyY of the 300 nm case",
+        "temp_plot.png written twice into the working directory by colorpy.plots.spectrum_plot",
+        "three Matplotlib figures (not saved)"
+      ],
+      "nondeterminism": "none seen",
+      "pitfalls": [
+        "colorpy 0.1.1 from PyPI is Python 2 only: import fails with ModuleNotFoundError: No module named 'colormodels'; the fish2000/ColorPy fork (LGPL-3.0) at commit 4c9e5b2e imports and runs on 3.12",
+        "colorpy.plots.spectrum_plot saves temp_plot.png into the current working directory; run in a scratch cwd",
+        "the irgb values are gamma-corrected integers 0-255, a discrete output; the linear rgb and xyY are the continuous quantities"
+      ]
+    },
+    {
+      "id": "sample6",
+      "family": "examples.py",
+      "path": "examples.py",
+      "command": "PYTHONPATH=$PKG MPLBACKEND=Agg python -c \"import matplotlib.pyplot as plt; plt.show=lambda *a,**k: None; import tmm.examples as ex; ex.sample6()\"",
+      "ran": true,
+      "wall_s": 0.046,
+      "shortened": null,
+      "reproduced": "not compared (a plot against Mater. Trans. 51 (2010) Fig. 6a): p-polarised reflection of glass/Cr 5 nm/Au 30 nm/air at 633 nm over 300 angles from 30 to 60 degrees, the Kretschmann surface-plasmon dip",
+      "outputs": [
+        "one Matplotlib figure (not saved)"
+      ],
+      "nondeterminism": "none seen",
+      "pitfalls": []
+    },
+    {
+      "id": "examples-notebook",
+      "family": "examples.ipynb",
+      "path": "examples.ipynb",
+      "command": "jupyter nbconvert --execute examples.ipynb",
+      "ran": false,
+      "reason_not_run": "its code cells are the six samples of examples.py pasted with their plots; the same code paths were run through examples.py",
+      "pitfalls": []
+    }
+  ],
+  "pitfalls": [
+    {
+      "where": "build",
+      "symptom": "pip install --no-build-isolation: ModuleNotFoundError: No module named 'setuptools'",
+      "workaround": "let pip build in isolation (it fetches setuptools) or pip install setuptools first; or skip installing and put a directory named tmm on PYTHONPATH"
+    },
+    {
+      "where": "run-all",
+      "symptom": "the tests print difference fractions and always exit 0; nothing asserts",
+      "workaround": "a check recomputes the graded quantities (r, t, R, T, psi, Delta, kz, Poynting, absorption, vw_list, power_entering) and grades those; the printed text is never the observable"
+    },
+    {
+      "where": "run-all",
+      "symptom": "stdout differs between processes depending on whether coh_overflow_test ran first (the opacity warning is printed once per process via a module global) and on the numpy major version (np.float64(...) reprs)",
+      "workaround": "grade numbers written to files, not stdout"
+    },
+    {
+      "where": "sample1",
+      "symptom": "plt.show() blocks under an interactive backend",
+      "workaround": "MPLBACKEND=Agg and stub plt.show (or save figures instead)"
+    },
+    {
+      "where": "sample5",
+      "symptom": "PyPI colorpy 0.1.1 fails to import on Python 3 (No module named 'colormodels')",
+      "workaround": "pip install the fish2000 ColorPy fork from GitHub at commit 4c9e5b2e334851b42626f9a1eda31197739b097e (github.com/fish2000/ColorPy) (LGPL-3.0); then examples.colors_were_imported is True and sample5 runs in 8.4 s"
+    },
+    {
+      "where": "sample5",
+      "symptom": "temp_plot.png appears in the working directory",
+      "workaround": "run in a scratch cwd; colorpy.plots.spectrum_plot saves its figure unconditionally"
+    },
+    {
+      "where": "general",
+      "symptom": "Python 3.12 SyntaxWarning: invalid escape sequence '\\c' when examples.py is compiled",
+      "workaround": "harmless; comes from '$^\\circ$' in plot titles"
+    },
+    {
+      "where": "general",
+      "symptom": "is_forward_angle decides the forward wave by comparing imag(n cos theta) with 100*EPSILON, and coh_tmm clamps imag(delta) > 35 while inc_tmm floors P < 1e-30",
+      "workaround": "discrete choices in the source; the official decks sit far from the thresholds (imag(delta)=18850 in the overflow tests), which a rubric warrant should say"
+    }
+  ],
+  "not_run": [
+    {
+      "what": "examples.ipynb",
+      "why": "the same six samples as examples.py; running the .py exercised every code path the notebook holds"
+    },
+    {
+      "what": "manual.pdf and manual_source/manual.lyx",
+      "why": "documentation, nothing to run"
+    }
+  ]
+}

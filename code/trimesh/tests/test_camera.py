@@ -1,0 +1,141 @@
+try:
+    from . import generic as g
+except BaseException:
+    import generic as g
+
+import numpy as np
+
+
+class CameraTests(g.unittest.TestCase):
+    def test_K(self):
+        resolution = (320, 240)
+        fov = (60, 40)
+        camera = g.trimesh.scene.Camera(resolution=resolution, fov=fov)
+
+        # ground truth matrix
+        K_expected = np.array(
+            [[277.128, 0, 160], [0, 329.697, 120], [0, 0, 1]], dtype=np.float64
+        )
+
+        assert np.allclose(camera.K, K_expected, rtol=1e-3)
+
+        # check to make sure assignment from matrix works
+        K_set = K_expected.copy()
+        K_set[:2, 2] = 300
+        camera.K = K_set
+        assert np.allclose(camera.resolution, 600)
+
+    def test_consistency(self):
+        resolution = (320, 240)
+        focal = None
+        fov = (60, 40)
+        camera = g.trimesh.scene.Camera(resolution=resolution, focal=focal, fov=fov)
+        assert np.allclose(camera.fov, fov)
+        camera = g.trimesh.scene.Camera(
+            resolution=resolution, focal=camera.focal, fov=None
+        )
+        assert np.allclose(camera.fov, fov)
+
+    def test_focal_updates_on_resolution_change(self):
+        """
+        Test changing resolution with set fov updates focal.
+        """
+        base_res = (320, 240)
+        updated_res = (640, 480)
+        fov = (60, 40)
+
+        # start with initial data
+        base_cam = g.trimesh.scene.Camera(resolution=base_res, fov=fov)
+        # update both focal length and resolution
+        base_focal = base_cam.focal
+        base_cam.resolution = updated_res
+
+        assert not g.np.allclose(base_cam.focal, base_focal)
+
+        # camera created with same arguments should
+        # have the same values
+        new_cam = g.trimesh.scene.Camera(resolution=updated_res, fov=fov)
+        assert g.np.allclose(base_cam.focal, new_cam.focal)
+
+    def test_fov_updates_on_resolution_change(self):
+        """
+        Test changing resolution with set focal updates fov.
+        """
+        base_res = (320, 240)
+        updated_res = (640, 480)
+        focal = (100, 100)
+        base_cam = g.trimesh.scene.Camera(resolution=base_res, focal=focal)
+        base_fov = base_cam.fov
+        base_cam.resolution = updated_res
+        assert base_cam.fov is not base_fov
+        new_cam = g.trimesh.scene.Camera(
+            resolution=updated_res,
+            focal=focal,
+        )
+        np.testing.assert_allclose(base_cam.fov, new_cam.fov)
+
+    def test_lookat(self):
+        """
+        Test the "look at points" function
+        """
+        # original points
+        ori = np.array([[-1, -1], [1, -1], [1, 1], [-1, 1]])
+
+        # draw inside the block: `g.random` gave every iteration the same
+        # extents and offset so this tested one camera ten times
+        with g.RandomSeed() as r:
+            for _i in range(10):
+                # set the extents to be random but positive
+                extents = r.random() * 10
+                points = g.trimesh.util.stack_3D(ori.copy() * extents)
+
+                fov = g.np.array([20, 50])
+
+                # offset the points by a random amount
+                offset = (r.random(3) - 0.5) * 100
+                moved = points + offset
+                T = g.trimesh.scene.cameras.look_at(moved, fov)
+
+                # check using trig
+                check = (np.ptp(points, axis=0)[:2] / 2.0) / g.np.tan(np.radians(fov / 2))
+
+                # `look_at` returns a camera-to-world pose so the distance is
+                # from the camera back to what it's pointed at: comparing the
+                # world-to-camera translation against this only ever passed
+                # because the offset was a fixed large negative number
+                distance = T[2, 3] - moved[:, 2].mean()
+
+                # camera should be far enough back to fit every point in frame
+                assert distance + 1e-8 >= check.max()
+
+        # just run to test other arguments
+        # TODO(unknown): find the way to test it correctly
+        g.trimesh.scene.cameras.look_at(points, fov, center=points[0])
+        g.trimesh.scene.cameras.look_at(points, fov, distance=1)
+
+    def test_ray_index(self):
+        # make sure to_rays is giving valid indexes
+        s = g.trimesh.scene.Scene()
+        res = g.np.array([512, 512])
+        for i in range(0, 1000, 79):
+            current = res + i
+            s.camera.resolution = current
+            # get ray index of camera
+            rid = s.camera.to_rays()[1]
+            assert all(rid.min(axis=0) == 0)
+            assert all(rid.max(axis=0) == current - 1)
+
+    def test_scaled_copy(self):
+        s = g.get_mesh("cycloidal.3DXML")
+
+        s.units = "mm"
+        assert s.camera_transform.shape == (4, 4)
+
+        # the camera node should have been removed on copy
+        b = s.convert_units("m")
+        assert b.camera_transform.shape == (4, 4)
+
+
+if __name__ == "__main__":
+    g.trimesh.util.attach_to_log()
+    g.unittest.main()

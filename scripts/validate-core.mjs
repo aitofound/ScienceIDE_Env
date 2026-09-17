@@ -122,6 +122,7 @@ function* walk(abs, rel, opaqueRoots = new Set()) {
  *   issueForm            repo-relative path of the idea-tier issue form
  *   dirRe / legacyRe     optional slug-shape overrides; default `<prefix>-NNNN`
  *   slugRenames          optional { oldSlug: newSlug } declaring deliberate renames
+ *   slugMoved            optional { oldSlug: url } declaring packages moved to another repository
  *   dirShape             optional human name for that shape, used in errors
  *   baselineMapper       optional (name) => slug | null for legacy baseline
  *                        shapes; defaults to <prefix>-NNNN and <prefix>-NNNN.ya?ml
@@ -774,6 +775,10 @@ export function run(config) {
       return null;
     });
     const renames = config.slugRenames ?? {};
+    /* A slug whose whole package left this repository for another one. The
+       old name stays resolvable through the recorded destination, so this is
+       a declared move, not a vanishing. */
+    const moved = config.slugMoved ?? {};
     try {
       const baseline = new Set();
       const baselineLines = execFileSync(
@@ -797,6 +802,7 @@ export function run(config) {
         if (dirs.includes(oldSlug)) continue;
         const renamedTo = renames[oldSlug];
         if (renamedTo && dirs.includes(renamedTo)) continue;
+        if (moved[oldSlug]) continue;
         errors.push(
           renamedTo
             ? `${oldSlug}: declared renamed to '${renamedTo}', but tasks/${renamedTo}/ is not here`

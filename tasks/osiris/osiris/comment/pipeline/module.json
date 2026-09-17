@@ -1,0 +1,33 @@
+{
+  "module": {
+    "slug": "osiris",
+    "title": "OSIRIS",
+    "paths": [
+      "."
+    ],
+    "entrypoints": [
+      "configure",
+      "source/os-main.f03",
+      "decks/test/base-1d",
+      "decks/test/base-2d",
+      "decks/test/base-3d"
+    ],
+    "expensive_path": "The coupled PIC iteration advances particle phase-space state, deposits charge-conserving currents, updates electromagnetic fields, exchanges guard cells across MPI domains, and writes diagnostics; particle push and deposition scale with particle count while field updates and communication scale with grid size and decomposition.",
+    "rationale": "OSIRIS has one configure/Make build, one dimension-specific program entry point, one coupled simulation state, and one family of input decks. Particle, current, field, collision, diagnostic, restart, and load-balancing directories are internal algorithm stages rather than independently executable packages with separate scientific input/output contracts and official suites, so the whole-codebase default is the coherent module boundary.",
+    "excluded": [],
+    "hazards": [
+      "A native build requires an external Fortran compiler, MPI wrappers, and HDF5 Fortran libraries; they were unavailable on the investigation host.",
+      "Particle initialization and some physics models use pseudorandom generators; fixed seeds are available, but results can vary with MPI decomposition unless decomposition-independent RNG behavior is enabled.",
+      "The repository supplies official example decks but no checked-in numerical golden outputs or standalone regression harness.",
+      "Particle storage order, MPI rank layout, timings, and metadata are not stable scientific identities and must not be compared positionally in later checks."
+    ]
+  },
+  "approval": {
+    "modules": [
+      "osiris"
+    ],
+    "human_ref": "single-module default: the whole codebase is one module; no human decision at STOP 1, the cut is read in the source PR body at STOP 2",
+    "at": "2026-09-15T22:55:12Z"
+  },
+  "shared_infrastructure": []
+}

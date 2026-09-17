@@ -1,0 +1,125 @@
+{
+  "codebase": "osiris",
+  "build": {
+    "system": "configure and GNU Make",
+    "commands": [
+      "./configure -s macosx-m1.gnu -d 1 -t production",
+      "make -j2"
+    ],
+    "wall_s": 0.0,
+    "ok": false,
+    "pitfalls": [
+      "Configuration completed in less than one second, but make stopped in less than one second before compilation because config/osiris_config names /opt/homebrew/bin/mpif77 and this host has no GNU Fortran, MPI Fortran wrapper, or parallel-HDF5 Fortran toolchain. No dependency was installed and Docker was not used."
+    ]
+  },
+  "landscape": [
+    {
+      "family": "dimension-base-decks",
+      "kind": "test-suite",
+      "path": "decks/test",
+      "count": 3,
+      "how_to_run": "bin/osiris-<dimension>D.e decks/test/base-<dimension>d; add -t before the deck path for parse-only validation",
+      "reference_outputs": "none",
+      "notes": "Small 1D, 2D, and 3D two-stream PIC decks; upstream has no collector or numerical golden files."
+    },
+    {
+      "family": "plasma-wakefield-examples",
+      "kind": "examples",
+      "path": "decks/PWFAs",
+      "count": 3,
+      "how_to_run": "bin/osiris-2D.e decks/PWFAs/<rz-deck> or bin/osiris-3D.e decks/PWFAs/beam-focus-3D",
+      "reference_outputs": "none",
+      "notes": "Large cylindrical and Cartesian beam-focusing and injection configurations with long physical windows."
+    },
+    {
+      "family": "exact-pusher-example",
+      "kind": "examples",
+      "path": "decks/exact_pusher",
+      "count": 1,
+      "how_to_run": "bin/osiris-2D.e decks/exact_pusher/os-stdin-thermal",
+      "reference_outputs": "none",
+      "notes": "Thermal-particle example using the Yee field solver."
+    },
+    {
+      "family": "custom-field-solver-example",
+      "kind": "examples",
+      "path": "decks/custom-solver",
+      "count": 1,
+      "how_to_run": "bin/osiris-2D.e decks/custom-solver/os-stdin-custom-solver",
+      "reference_outputs": "none",
+      "notes": "Exercises the custom electromagnetic solver and filter path."
+    },
+    {
+      "family": "raw-particle-read-workflow",
+      "kind": "examples",
+      "path": "decks/raw_read",
+      "count": 4,
+      "how_to_run": "run os-stdin-rz to produce RAW-driver dumps, then run each RAW-reading deck with bin/osiris-2D.e from a directory containing the named RAW-driver-*.h5 input",
+      "reference_outputs": "none",
+      "notes": "Three consumer decks name RAW-driver-000000.h5 or RAW-driver-000010.h5, which are generated data and are not stored in the repository."
+    },
+    {
+      "family": "raw-reference-box-example",
+      "kind": "examples",
+      "path": "decks/raw-ref-box.3d",
+      "count": 1,
+      "how_to_run": "bin/osiris-3D.e decks/raw-ref-box.3d",
+      "reference_outputs": "none",
+      "notes": "Large 3D raw-diagnostic coordinate-reference example."
+    }
+  ],
+  "runs": [
+    {
+      "id": "base-1d-native",
+      "family": "dimension-base-decks",
+      "path": "decks/test/base-1d",
+      "command": "bin/osiris-1D.e decks/test/base-1d",
+      "ran": false,
+      "reason_not_run": "The native make stopped before producing bin/osiris-1D.e because the Fortran, MPI, and HDF5 toolchain is absent.",
+      "pitfalls": [
+        "A successful configure does not prove that the compiler and library paths in the selected checked-in system configuration exist on the host."
+      ]
+    },
+    {
+      "id": "base-2d-native",
+      "family": "dimension-base-decks",
+      "path": "decks/test/base-2d",
+      "command": "bin/osiris-2D.e decks/test/base-2d",
+      "ran": false,
+      "reason_not_run": "No 2D executable was built because the required native Fortran, MPI, and HDF5 toolchain is absent.",
+      "pitfalls": []
+    },
+    {
+      "id": "base-3d-native",
+      "family": "dimension-base-decks",
+      "path": "decks/test/base-3d",
+      "command": "bin/osiris-3D.e decks/test/base-3d",
+      "ran": false,
+      "reason_not_run": "No 3D executable was built because the required native Fortran, MPI, and HDF5 toolchain is absent.",
+      "pitfalls": []
+    }
+  ],
+  "pitfalls": [
+    {
+      "where": "build",
+      "symptom": "The checked-in macosx-m1.gnu configuration accepted configure but make failed immediately because /opt/homebrew/bin/mpif77 and the dependent native libraries do not exist on this host.",
+      "workaround": "At STOP 3, use a consented task image based on the repository's own config/docker recipe, or provide a matching native GNU Fortran, MPI, HDF5, and FFTW toolchain; do not treat configure success as a completed build."
+    },
+    {
+      "where": "general",
+      "symptom": "The raw_read consumer decks name RAW-driver-000000.h5 or RAW-driver-000010.h5, but those generated particle dumps are not stored in the repository.",
+      "workaround": "A self-contained check must generate the required RAW dump from the producer deck in the same check before invoking the consumer, and must expose the shortened producer window and dump cadence as knobs."
+    },
+    {
+      "where": "general",
+      "symptom": "Particle loading uses configurable random generators and explicit seeds, and results may also change with MPI spatial decomposition.",
+      "workaround": "Pin the generator, seed, precision, and decomposition for calibration; never compare unordered particle storage by slot, and prefer identity-keyed particle data or stable field and conservation observables."
+    }
+  ],
+  "not_run": [
+    {
+      "what": "All 13 official decks",
+      "why": "No dimension-specific executable could be produced natively on this host; the large production examples also require a deliberate shortened-window and reduced-resolution design before any sub-three-minute investigation run."
+    }
+  ]
+}

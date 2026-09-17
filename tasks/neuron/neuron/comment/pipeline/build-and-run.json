@@ -1,0 +1,395 @@
+{
+  "codebase": "neuron",
+  "build": {
+    "system": "cmake",
+    "commands": [
+      "# host: ubuntu@EC2 (8 vCPU, 30 GB RAM, Ubuntu 26.04, gcc 15.2.0, python 3.14); same recipe passed on RHEL8 + gcc 13.2 + python 3.12",
+      "sudo apt-get install -y build-essential cmake bison flex libreadline-dev python3-venv python3-dev git",
+      "git clone --branch 9.0.2 --recurse-submodules https://github.com/neuronsimulator/nrn nrn-9.0.2  # HEAD ba5783378c0aa1d9ac95b4454bea94b15c63f75d",
+      "python3 -m venv venv && pip install numpy 'cython<3.1' pytest plotly matplotlib anywidget",
+      "cmake $SRC -DCMAKE_INSTALL_PREFIX=$PREFIX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DNRN_ENABLE_INTERVIEWS=OFF -DNRN_ENABLE_MPI=OFF -DNRN_ENABLE_RX3D=ON -DNRN_ENABLE_CORENEURON=OFF -DNRN_ENABLE_TESTS=ON -DNRN_ENABLE_PERFORMANCE_TESTS=OFF -DNMODL_ENABLE_PYTHON_BINDINGS=OFF -DPYTHON_EXECUTABLE=$VENV/bin/python3  # 7 s on EC2 local disk, 55 s on cluster NFS",
+      "cmake --build . --parallel 8 --target install  # 142 s on 8 cores; 114 s on 16 cluster cores",
+      "export PATH=$PREFIX/bin:$PATH; export PYTHONPATH=$PREFIX/lib/python; python3 -c 'import neuron'  # prints 9.0.2"
+    ],
+    "wall_s": 149,
+    "ok": true,
+    "pitfalls": [
+      "Cython >= 3.1 crashes compiling share/lib/python/neuron/rxd/geometry3d/ctng.pyx ('Compiler crash in MarkParallelAssignments, AssertionError: <NOT CONSTANT>' with Cython 3.3.0); pin cython<3.1 (3.0.12 works)",
+      "NMODL_ENABLE_PYTHON_BINDINGS must stay OFF: compiling the bindings exhausts RAM",
+      "-DNRN_ENABLE_TESTS=ON does FetchContent at configure time: it needs network AND clones 5 test repos INTO the source tree at external/tests/ (nrntest, ringtest, reduced_dentate, testcorenrn, tqperf), so a tests-enabled configure dirties the checkout; build from a copy",
+      "capture the build exit code directly; piping the build through tail/tee and reading $? reports the pipe's exit and can hide a failed compile",
+      "the install is not relocatable and nrnivmodl needs a C compiler at runtime"
+    ]
+  },
+  "landscape": [
+    {
+      "family": "pyinit",
+      "kind": "test-suite",
+      "path": "test/pyinit",
+      "count": 88,
+      "how_to_run": "ctest -R '^pyinit'",
+      "reference_outputs": "none",
+      "notes": "interpreter startup and embedding matrix (nrniv -python, python -c import neuron, ...); assert-based"
+    },
+    {
+      "family": "hoctests",
+      "kind": "test-suite",
+      "path": "test/hoctests",
+      "count": 39,
+      "how_to_run": "ctest -R '^hoctests'",
+      "reference_outputs": "partial",
+      "notes": "HOC + Python API tests; several compare against JSON/dat expectations shipped in the test dir"
+    },
+    {
+      "family": "example_nmodl",
+      "kind": "examples",
+      "path": "share/examples/nrniv/nmodl",
+      "count": 36,
+      "how_to_run": "ctest -R '^example_nmodl'",
+      "reference_outputs": "none",
+      "notes": "builds and smoke-runs the shipped NMODL example mechanisms via nrnivmodl"
+    },
+    {
+      "family": "api",
+      "kind": "test-suite",
+      "path": "test/api",
+      "count": 6,
+      "how_to_run": "ctest -R '^api::'",
+      "reference_outputs": "none",
+      "notes": "C/C++ API"
+    },
+    {
+      "family": "nmodl_tests",
+      "kind": "test-suite",
+      "path": "test/nmodl",
+      "count": 5,
+      "how_to_run": "ctest -R '^nmodl_tests'",
+      "reference_outputs": "none",
+      "notes": "NMODL translator behavior (incl. paths with spaces)"
+    },
+    {
+      "family": "modlunit",
+      "kind": "test-suite",
+      "path": "src/modlunit",
+      "count": 5,
+      "how_to_run": "ctest -R '^modlunit_'",
+      "reference_outputs": "none",
+      "notes": "units checker on shipped mod files (hh, pattern, rand, stim, unitstest)"
+    },
+    {
+      "family": "mpi_init",
+      "kind": "test-suite",
+      "path": "test/CMakeLists.txt",
+      "count": 4,
+      "how_to_run": "ctest -R '^mpi_init'",
+      "reference_outputs": "none",
+      "notes": "MPI-disabled init paths still tested without mpiexec"
+    },
+    {
+      "family": "unit_tests",
+      "kind": "test-suite",
+      "path": "test/unit_tests",
+      "count": 3,
+      "how_to_run": "ctest -R '^unit_tests'",
+      "reference_outputs": "none",
+      "notes": "Catch2 C++ unit tests"
+    },
+    {
+      "family": "rxd",
+      "kind": "test-suite",
+      "path": "test/rxd",
+      "count": 129,
+      "how_to_run": "ctest -R 'rxdmod_tests' (one ctest entry running 129 pytest tests)",
+      "reference_outputs": "shipped",
+      "notes": "reaction-diffusion; compares against stored arrays in test/rxd/testdata (47 MB)"
+    },
+    {
+      "family": "external_nrntest",
+      "kind": "regression",
+      "path": "test/external/nrntest",
+      "count": 1,
+      "how_to_run": "ctest -R '^external_nrntest' (one entry, ~90 HOC decks via cmpdatfile)",
+      "reference_outputs": "shipped",
+      "notes": "historical nrntest repo, fetched at configure into external/tests/nrntest; each deck compared byte-wise to a shipped .cmp file"
+    },
+    {
+      "family": "external_ringtest",
+      "kind": "regression",
+      "path": "test/external/ringtest",
+      "count": 1,
+      "how_to_run": "ctest -R '^external_ringtest'",
+      "reference_outputs": "shipped",
+      "notes": "ring network spike-raster regression"
+    },
+    {
+      "family": "ringtest",
+      "kind": "regression",
+      "path": "test/ringtest",
+      "count": 1,
+      "how_to_run": "ctest -R '^ringtest'",
+      "reference_outputs": "shipped",
+      "notes": "in-tree ring network regression"
+    },
+    {
+      "family": "pytest_basic",
+      "kind": "test-suite",
+      "path": "test/pytest",
+      "count": 1,
+      "how_to_run": "ctest -R '^pytest::'",
+      "reference_outputs": "none",
+      "notes": "pytest bundle"
+    },
+    {
+      "family": "pytest_coreneuron",
+      "kind": "test-suite",
+      "path": "test/pytest_coreneuron",
+      "count": 1,
+      "how_to_run": "ctest -R '^pytest_coreneuron'",
+      "reference_outputs": "none",
+      "notes": "runs in NEURON-only mode when CoreNEURON is OFF"
+    },
+    {
+      "family": "connect_dend",
+      "kind": "regression",
+      "path": "test/hoc_tests/connect_dend",
+      "count": 1,
+      "how_to_run": "ctest -R '^connect_dend'",
+      "reference_outputs": "shipped",
+      "notes": "compares cell3soma.dat against shipped .ref"
+    },
+    {
+      "family": "coverage_tests",
+      "kind": "test-suite",
+      "path": "test/cover",
+      "count": 1,
+      "how_to_run": "ctest -R '^coverage_tests'",
+      "reference_outputs": "none",
+      "notes": ""
+    },
+    {
+      "family": "datahandle",
+      "kind": "test-suite",
+      "path": "test/datahandle",
+      "count": 1,
+      "how_to_run": "ctest -R '^datahandle'",
+      "reference_outputs": "none",
+      "notes": ""
+    },
+    {
+      "family": "nocmodl",
+      "kind": "test-suite",
+      "path": "src/nmodl",
+      "count": 1,
+      "how_to_run": "ctest -R '^nocmodl'",
+      "reference_outputs": "none",
+      "notes": "translator runs without environment"
+    },
+    {
+      "family": "benchmarks",
+      "kind": "benchmarks",
+      "path": "test/benchmarks",
+      "count": 1,
+      "how_to_run": "requires -DNRN_ENABLE_PERFORMANCE_TESTS=ON",
+      "reference_outputs": "none",
+      "notes": "not built in this configuration"
+    }
+  ],
+  "runs": [
+    {
+      "id": "ctest-full-suite",
+      "family": "all",
+      "path": "test",
+      "command": "ctest -j 8 --timeout 600 --output-junit ctest_results.xml",
+      "ran": true,
+      "wall_s": 36.4,
+      "shortened": false,
+      "reproduced": "195 of 196 ctest entries pass on EC2 (gcc 15.2); the 1 failure is a reference mismatch detailed in run external-nrntest. Same suite on RHEL8 + gcc 13.2: external_nrntest passes, 196/196 counting both hosts.",
+      "outputs": [
+        "ctest_results.xml (junit)",
+        "per-test stdout in ctest_run.log"
+      ],
+      "nondeterminism": "none observed across 2 hosts except the CONDUCTANCE deck below",
+      "pitfalls": []
+    },
+    {
+      "id": "rxd-pytest",
+      "family": "rxd",
+      "path": "test/rxd",
+      "command": "ctest -R 'rxdmod_tests' --output-on-failure",
+      "ran": true,
+      "wall_s": 32.8,
+      "shortened": false,
+      "reproduced": "yes: 129/129 pytest tests pass against the stored arrays in test/rxd/testdata (upstream's own comparison)",
+      "outputs": [
+        "pytest log inside ctest_run.log"
+      ],
+      "pitfalls": [
+        "needs plotly, matplotlib AND anywidget in the python env; a missing plotly or matplotlib fails ALL 129 tests at pytest collection, missing anywidget fails test_pltvar"
+      ]
+    },
+    {
+      "id": "external-nrntest",
+      "family": "external_nrntest",
+      "path": "test/external/nrntest",
+      "command": "ctest -R '^external_nrntest' --output-on-failure",
+      "ran": true,
+      "wall_s": 21.5,
+      "shortened": false,
+      "reproduced": "no: 1 of ~90 HOC decks (nmodl/CONDUCTANCE/test.hoc) differs from its shipped .cmp reference on gcc 15.2/Ubuntu 26.04 (an integer flag on line 2 reads 0 instead of 1); all decks including this one pass byte-identically on gcc 13.2/RHEL8. Comparison is bytewise (cmpdatfile), so these decks are compiler-sensitive.",
+      "outputs": [
+        "*.temp result files written next to each deck under external/tests/nrntest"
+      ],
+      "nondeterminism": "platform/compiler-sensitive bytewise references",
+      "pitfalls": [
+        "the deck runner writes .temp files into the fetched external/tests tree inside the source checkout"
+      ]
+    },
+    {
+      "id": "hoctests",
+      "family": "hoctests",
+      "path": "test/hoctests",
+      "command": "ctest -R '^hoctests'",
+      "ran": true,
+      "wall_s": 12.6,
+      "shortened": false,
+      "reproduced": "yes: upstream's own JSON/dat comparisons pass (39/39)",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "example-nmodl",
+      "family": "example_nmodl",
+      "path": "share/examples/nrniv/nmodl",
+      "command": "ctest -R '^example_nmodl'",
+      "ran": true,
+      "wall_s": 8.5,
+      "shortened": false,
+      "reproduced": "no reference (smoke runs; 36/36 pass)",
+      "outputs": [
+        "compiled mechanism libraries via nrnivmodl"
+      ],
+      "pitfalls": [
+        "nrnivmodl needs a working C compiler at test time"
+      ]
+    },
+    {
+      "id": "pyinit",
+      "family": "pyinit",
+      "path": "test/pyinit",
+      "command": "ctest -R '^pyinit'",
+      "ran": true,
+      "wall_s": 5.3,
+      "shortened": false,
+      "reproduced": "no reference (assert-based; 88/88 pass)",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "nmodl-tests",
+      "family": "nmodl_tests",
+      "path": "test/nmodl",
+      "command": "ctest -R '^nmodl_tests'",
+      "ran": true,
+      "wall_s": 3.4,
+      "shortened": false,
+      "reproduced": "no reference (assert-based; 5/5 pass)",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "pytest-coreneuron-fallback",
+      "family": "pytest_coreneuron",
+      "path": "test/pytest_coreneuron",
+      "command": "ctest -R '^pytest_coreneuron'",
+      "ran": true,
+      "wall_s": 3.3,
+      "shortened": false,
+      "reproduced": "no reference (assert-based; passes in NEURON-only mode)",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "unit-tests",
+      "family": "unit_tests",
+      "path": "test/unit_tests",
+      "command": "ctest -R '^unit_tests'",
+      "ran": true,
+      "wall_s": 2.1,
+      "shortened": false,
+      "reproduced": "no reference (Catch2 asserts; 3/3 pass)",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "external-ringtest",
+      "family": "external_ringtest",
+      "path": "test/external/ringtest",
+      "command": "ctest -R '^external_ringtest'",
+      "ran": true,
+      "wall_s": 1.9,
+      "shortened": false,
+      "reproduced": "yes: spike raster matches the shipped reference (upstream comparison)",
+      "outputs": [
+        "spike raster"
+      ],
+      "pitfalls": []
+    },
+    {
+      "id": "api-connect-cover-data-modlunit-mpi-nocmodl-ringtest-pytest",
+      "family": "small-families",
+      "path": "test",
+      "command": "ctest -R '^(api|connect_dend|coverage_tests|datahandle|modlunit_|mpi_init|nocmodl|ringtest$|pytest::)'",
+      "ran": true,
+      "wall_s": 2.7,
+      "shortened": false,
+      "reproduced": "yes where a reference exists (connect_dend .ref, ringtest raster), no reference for the rest; all pass",
+      "outputs": [],
+      "pitfalls": []
+    }
+  ],
+  "pitfalls": [
+    {
+      "where": "build",
+      "symptom": "Cython 3.3.0: 'Compiler crash in MarkParallelAssignments' on rxd geometry3d/ctng.pyx",
+      "workaround": "pin cython<3.1 in the build env"
+    },
+    {
+      "where": "rxd-pytest",
+      "symptom": "all 129 rxd tests fail at pytest collection with ModuleNotFoundError (plotly, then matplotlib), and test_pltvar fails with 'Please install anywidget'",
+      "workaround": "pip install plotly matplotlib anywidget before running the suite"
+    },
+    {
+      "where": "build",
+      "symptom": "configure with NRN_ENABLE_TESTS=ON needs network (FetchContent of 5 GitHub test repos) and clones them into external/tests/ INSIDE the source tree",
+      "workaround": "build from a disposable copy of the checkout; pre-clone and set FETCHCONTENT_SOURCE_DIR_<NAME> on offline machines"
+    },
+    {
+      "where": "external-nrntest",
+      "symptom": "bytewise .cmp comparison fails on one deck (nmodl/CONDUCTANCE) under gcc 15.2 while passing under gcc 13.2",
+      "workaround": "treat old nrntest decks as compiler-sensitive; pin the toolchain or exclude bytewise decks from cross-platform checks"
+    },
+    {
+      "where": "general",
+      "symptom": "python version drift changes nothing observable: suite passes on python 3.12.5 and 3.14",
+      "workaround": "none needed; noted for reproducibility"
+    }
+  ],
+  "not_run": [
+    {
+      "what": "test/benchmarks (performance suite)",
+      "why": "NRN_ENABLE_PERFORMANCE_TESTS=OFF in this build; benchmarks are not correctness tests"
+    },
+    {
+      "what": "MPI-dependent tests (test/parallel_tests, gjtests, music_tests, mpiexec variants)",
+      "why": "NRN_ENABLE_MPI=OFF; single-process build"
+    },
+    {
+      "what": "CoreNEURON/GPU test variants and external suites testcorenrn, tqperf, reduced_dentate, olfactory-bulb-3d, channel-benchmark",
+      "why": "NRN_ENABLE_CORENEURON=OFF (CPU-only headless build); these decks target the CoreNEURON backend or are long benchmarks"
+    },
+    {
+      "what": "InterViews GUI paths",
+      "why": "NRN_ENABLE_INTERVIEWS=OFF; headless"
+    }
+  ]
+}

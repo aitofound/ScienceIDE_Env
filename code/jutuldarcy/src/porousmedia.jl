@@ -1,0 +1,328 @@
+import Jutul: compute_half_face_trans, compute_face_trans
+
+"""
+    compute_peaceman_index(g::T, K, r, pos, dir; kwarg...) where T<:Jutul.JutulMesh
+
+Compute the Peaceman index for a given mesh.
+
+# Arguments
+- `g::JutulMesh`: Reservoir mesh
+- `K`: Permeability tensor or scalar.
+- `r`: Well radius.
+- `pos`: Position of the well (index of cell or IJK truplet).
+- `dir=:z`: Direction of the well, can be `:x`, `:y`, or `:z`.
+- `kwarg...`: Additional keyword arguments passed onto inner version of
+  function.
+
+# Returns
+- The computed Peaceman index.
+
+"""
+function compute_peaceman_index(g::T, K, r, pos, dir=:z; kwarg...) where T<:Jutul.JutulMesh
+    Δ = peaceman_cell_dims(g, pos)
+    K = Jutul.expand_perm(K, dim(g))
+    return compute_peaceman_index(Δ, K, r, dir; kwarg...)
+end
+
+"""
+    peaceman_cell_dims(g, pos)
+
+Calculate the dimensions of a cell in a grid for purposes of calculating the Peaceman index.
+
+# Arguments
+- `g`: The grid object containing the cell.
+- `pos`: The position of the cell within the grid.
+
+# Returns
+- A tuple containing the dimensions of the Peaceman cell.
+"""
+function peaceman_cell_dims(g, pos)
+    horz = get_mesh_entity_tag(g, Faces(), :orientation, :horizontal, throw = false)
+    vert = get_mesh_entity_tag(g, Faces(), :orientation, :vertical, throw = false)
+    if !(g isa UnstructuredMesh) || ismissing(horz) || ismissing(vert) || Jutul.dim(g) < 3
+        Δ = Jutul.cell_dims(g, pos)
+    else
+        index = cell_index(g, pos)
+        xy_min = SVector{2, Float64}(Inf, Inf)
+        xy_max = SVector{2, Float64}(-Inf, -Inf)
+
+        z_min = Inf
+        z_max = -Inf
+        for (e, face_set) in [(Faces(), g.faces), (BoundaryFaces(), g.boundary_faces)]
+            for face in face_set.cells_to_faces[index]
+                face_centroid, = Jutul.compute_centroid_and_measure(g, e, face)
+                if mesh_entity_has_tag(g, e, :orientation, :horizontal, face)
+                    z_min = min.(z_min, face_centroid[3])
+                    z_max = max.(z_max, face_centroid[3])
+                elseif mesh_entity_has_tag(g, e, :orientation, :vertical, face)
+                    xy_min = min.(xy_min, face_centroid[1:2])
+                    xy_max = max.(xy_max, face_centroid[1:2])
+                end
+            end
+        end
+        Δ = (xy_max[1] - xy_min[1], xy_max[2] - xy_min[2], z_max - z_min)
+        @assert all(x -> x > 0, Δ) "Cell dimensions were zero? Computed $Δ for cell $index."
+    end
+    return Δ
+end
+
+"""
+    compute_peaceman_index(Δ, K, radius, dir; kwargs...)
+
+Compute the Peaceman well index for a given grid block.
+
+# Arguments
+- `Δ`: The grid block size as a tuple `(dx, dy, dz)`
+- `K`: The permeability of the medium (Matrix for full tensor, or scalar).
+- `radius`: The well radius.
+- `dir::Symbol=:z`: Direction of the well, can be `:x`, `:y`, or `:z`.
+
+# Keyword Arguments
+- `net_to_gross = 1.0`: Net-to-gross ratio, used to scale the value for vertical directions.
+- `constant = 0.14`: Constant used in the calculation of the equivalent radius. TPFA specific.
+- `Kh = nothing`: Horizontal permeability, if not provided, it will be computed.
+- `drainage_radius = nothing`: Drainage radius, if not provided, it will be computed.
+- `skin = 0`: Skin factor, used to account for near-wellbore effects.
+- `check = true`: Flag to check for negative well index values.
+
+# Returns
+- `Float64`: The computed Peaceman well index.
+
+"""
+function compute_peaceman_index(Δ, K, radius, dir::Symbol = :z;
+        net_to_gross = 1.0,
+        constant = 0.14,
+        Kh = nothing,
+        drainage_radius = nothing,
+        skin = 0,
+        check = true
+    )
+    is_defaulted(x) = isnothing(x) || ismissing(x) || isnan(x)
+    if K isa Number
+        K = Diagonal(fill(K, 3))
+    end
+    K_d = diag(K)
+    Δx, Δy, Δz = Δ
+    Δz *= net_to_gross
+    if dir == :x || dir == :X
+        L, d1, d2 = Δx, Δy, Δz
+        i, j = 2, 3
+    elseif dir == :y || dir == :Y
+        d1, L, d2 = Δx, Δy, Δz
+        i, j = 1, 3
+    else
+        d1, d2, L = Δx, Δy, Δz
+        i, j = 1, 2
+        @assert dir == :z || dir == :Z "dir must be either :x, :y or :z (was :$dir)"
+    end
+    @assert L > 0
+    @assert d1 > 0
+    @assert d2 > 0
+    k1, k2 = K_d[i], K_d[j]
+
+    function kratio(l, v)
+        r = l/v
+        if isfinite(r)
+            return r
+        else
+            return zero(l)
+        end
+    end
+    k21 = kratio(k2, k1)
+    k12 = kratio(k1, k2)
+    ke  = sqrt(k1*k2)
+    if is_defaulted(drainage_radius)
+        re1 = 2 * constant * sqrt((d1^2)*sqrt(k21) + (d2^2)*sqrt(k12))
+        re2 = k21^(1/4) + k12^(1/4)
+        re = kratio(re1, re2)
+    else
+        re = drainage_radius
+    end
+
+    if is_defaulted(Kh)
+        Kh = L*ke
+    end
+    if radius < 1e-16
+        println("Warning: Well radius is extremely small ($radius), returning zero well index.")
+        WI = zero(promote_type(typeof(Kh), typeof(re), typeof(skin)))
+    else
+        WI = 2 * π * Kh / (log(re / radius) + skin)
+    end
+    if check && WI < 0
+        if re < radius
+            error("Equivalent Peaceman radius is smaller than well radius - computed Peaceman index was negative. Either the cell is too small, or the radius too big.")
+        else
+            error("Too large Skin factor - Equivalent Peaceman radius became negative during Peaceman index calculation.")
+        end
+    end
+    return WI
+end
+
+"""
+    compute_peaceman_index(Δ, K, radius, dir::Vector;
+        kwargs...
+    )
+
+Compute the Peaceman well index for a given grid block when the well is not aligned with one of the grid axes
+
+# Arguments
+As for `compute_peaceman_index(Δ, K, radius, dir::Symbol = :z; ...)`, except:
+- `dir::Vector`: Direction of the well segment through the cell block, weighted by segment length
+
+"""
+function compute_peaceman_index(Δ, K, radius, dir::Vector;
+        direction_is_normed = false,
+        kwargs...
+    )
+
+    normed_dir = direction_is_normed ? dir : dir./Δ
+    WI_squared = 0.0
+    for (dno, d) in enumerate([:x, :y, :z])
+        WI_d = compute_peaceman_index(Δ, K, radius, d; kwargs...)
+        WI_squared += (WI_d*normed_dir[dno])^2
+    end
+    WI = sqrt(WI_squared)
+
+    return WI
+
+end
+
+function compute_well_thermal_index(g::T, thermal_conductivity, radius, pos, dir=:z;
+        kwargs...
+    ) where T<:Jutul.JutulMesh
+    Δ = cell_dims(g, pos)
+    return compute_well_thermal_index(Δ, thermal_conductivity, radius, dir; kwargs...)
+end
+
+function compute_well_thermal_index(Δ, thermal_conductivity, radius, dir=:z;
+        casing_thickness = 0.0,
+        grouting_thickness = 0.0,
+        casing_thermal_conductivity = 20.0,
+        grouting_thermal_conductivity = 2.3,
+        peaceman_args...
+    )
+
+    radius > 0.0 || error("Well radius must be positive.")
+    0.0 <= casing_thickness < radius || error("Casing thickness must be non-negative and less than outer radius.")
+    grouting_thickness >= 0.0 || error("Grouting thickness must be non-negative.")
+    casing_thermal_conductivity > 0.0 || error("Casing thermal conductivity must be positive.")
+    grouting_thermal_conductivity > 0.0 || error("Grouting thermal conductivity must be positive.")
+
+    ro = radius
+    U = 0.0
+    # Conduction through casing
+    if casing_thickness > 0.0
+        ri = ro - casing_thickness
+        λc = casing_thermal_conductivity
+        U += log(ro/ri)/λc
+    end
+    # Conduction through grouting
+    if grouting_thickness > 0.0
+        rg = ro + grouting_thickness
+        λg = grouting_thermal_conductivity
+        U += log(rg/ro)/λg
+    end
+    # Conduction into reservoir
+    λr = thermal_conductivity
+    WIth0 = compute_peaceman_index(Δ, λr, ro + grouting_thickness, dir;
+        constant = 2*0.14, peaceman_args...)
+    L = length_from_cell_dims(Δ, dir)
+    U += 1/(WIth0/(2π*L))
+    #TODO: Implement flow-dependent conduction from bulk flow to pipe wall
+
+    # Convert to thermal indices
+    WIth = 2π*L/U
+    return WIth
+end
+
+function length_from_cell_dims(Δ, dir::Symbol)
+    d_index = findfirst(isequal(dir), [:x, :y, :z])
+    return Δ[d_index]
+end
+
+function length_from_cell_dims(Δ, dir)
+    return norm(dir, 2)
+end
+
+function Jutul.discretize_domain(d::DataDomain, system::MultiPhaseSystem, ::Val{:default}; kwarg...)
+    return discretized_domain_tpfv_flow(d; kwarg...)
+end
+
+function discretized_domain_tpfv_flow(domain::Jutul.DataDomain;
+        general_ad = false,
+        kgrad = nothing,
+        upwind = nothing,
+        weno_threshold = 0.0,
+        weno_do_clamp = false,
+        weno_epsilon = 1e-10
+    )
+    N = domain[:neighbors]
+    g = physical_representation(domain)
+    nc = number_of_cells(g)
+    # defaulted_disc = isnothing(kgrad) && isnothing(upwind)
+    kgrad_is_tpfa = (isnothing(kgrad) || eltype(kgrad) == TPFA || kgrad == :tpfa)
+    upw_is_tpfa = (isnothing(upwind) || eltype(upwind) == SPU || upwind == :spu)
+
+    is_tpfa = kgrad_is_tpfa && upw_is_tpfa
+    if is_tpfa
+        if general_ad
+            d = PotentialFlow(N, nc)
+        else
+            d = TwoPointPotentialFlowHardCoded(N, nc)
+        end
+    else
+        if kgrad == :tpfa_test
+            # Fallback version - use generic FVM assembly with TPFA.
+            kgrad = nothing
+        end
+        if kgrad isa Symbol
+            if kgrad == :tpfa
+                kgrad = nothing
+            else
+                K = domain[:permeability]
+                g = UnstructuredMesh(g)
+                T_base = reservoir_transmissibility(domain)
+                kgrad = Jutul.NFVM.ntpfa_decompose_faces(g, K, kgrad, tpfa_trans = T_base)
+            end
+        else
+            @assert isnothing(kgrad) || kgrad isa AbstractVector
+        end
+        if upwind isa Symbol
+            if upwind == :spu
+                upwind = nothing
+            elseif upwind == :weno
+                upwind = Jutul.WENO.weno_discretize(domain,
+                    threshold = weno_threshold,
+                    do_clamp = weno_do_clamp,
+                    epsilon = weno_epsilon
+                )
+            else
+                error("Unknown upwind scheme $upwind, must be :spu or :weno")
+            end
+        end
+        if general_ad
+            ad_flag = :generic
+        else
+            ad_flag = :fvm
+        end
+        d = PotentialFlow(N, nc, kgrad = kgrad, upwind = upwind, ad = ad_flag)
+    end
+    disc = (mass_flow = d, heat_flow = d)
+    G = MinimalTPFATopology(N, ncells = nc)
+    return DiscretizedDomain(G, disc)
+end
+
+function Jutul.discretize_domain(d::DataDomain{W}, system::MultiPhaseSystem, ::Val{:default}; kwarg...) where W<:Union{SimpleWell, MultiSegmentWell}
+    return discretized_domain_well(physical_representation(d); kwarg...)
+end
+
+function discretized_domain_well(W::MultiSegmentWell; kwarg...)
+    flow = WellSegmentFlow(W)
+    disc = (mass_flow = flow, heat_flow = flow)
+    return DiscretizedDomain(W, disc; kwarg...)
+end
+
+function discretized_domain_well(W::SimpleWell; z = nothing, kwarg...)
+    disc = (mass_flow = PotentialFlow(W), heat_flow = PotentialFlow(W))
+    return DiscretizedDomain(W, disc; kwarg...)
+end
