@@ -1,0 +1,244 @@
+{
+  "codebase": "cama-flood",
+  "build": {
+    "system": "GNU Fortran 16.2.0 with NetCDF-C/Fortran on macOS arm64",
+    "commands": [
+      "make -r clean",
+      "make -r all DSINGLE= DCDF=-DUseCDF_CMF INC=\"$(nf-config --fflags)\" LIB=\"$(nf-config --flibs) $(nc-config --libs)\""
+    ],
+    "wall_s": 7.472777,
+    "ok": true,
+    "pitfalls": [
+      "Use make -r: make's implicit Modula-2 rule otherwise intercepts .mod targets.",
+      "The stock gosh/compile.sh can exit zero after a failed make command.",
+      "Link both NetCDF-Fortran and NetCDF-C libraries."
+    ]
+  },
+  "landscape": [
+    {
+      "family": "common utility unit programs",
+      "path": "src/common/test",
+      "how_to_run": "Compile the support modules and each test program with gfortran, then run the executable from src/common.",
+      "kind": "test-suite",
+      "count": 5,
+      "reference_outputs": "shipped"
+    },
+    {
+      "family": "physical-process unit programs",
+      "path": "src/phys/test",
+      "how_to_run": "Compile each program against its physical-process modules and run its embedded assertions.",
+      "kind": "test-suite",
+      "count": 2,
+      "reference_outputs": "shipped"
+    },
+    {
+      "family": "heatlink unit programs",
+      "path": "src/heatlink/test",
+      "how_to_run": "Compile each program against heatlink and common support modules and run its embedded assertions.",
+      "kind": "test-suite",
+      "count": 9,
+      "reference_outputs": "shipped"
+    },
+    {
+      "family": "routing examples and option decks",
+      "path": "gosh",
+      "how_to_run": "Adapt BASE to a complete input installation, compile the selected configuration, and execute the shell deck.",
+      "kind": "examples",
+      "count": 9,
+      "reference_outputs": "none"
+    },
+    {
+      "family": "specialized routing examples",
+      "path": "etc",
+      "how_to_run": "Supply each deck's external map, forcing, restart, and optional parameter data, then execute its shell workflow.",
+      "kind": "examples",
+      "count": 13,
+      "reference_outputs": "none"
+    }
+  ],
+  "runs": [
+    {
+      "id": "test-datetime",
+      "path": "src/common/test/test_datetime.f90",
+      "command": "compile test_datetime.f90 with its support modules; run test_datetime from src/common",
+      "ran": true,
+      "wall_s": 0.190705,
+      "reproduced": "All embedded upstream assertions passed.",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "test-numeric-utils",
+      "path": "src/common/test/test_numeric_utils.f90",
+      "command": "compile test_numeric_utils.f90 with its support modules; run test_numeric_utils from src/common",
+      "ran": true,
+      "wall_s": 0.174967,
+      "reproduced": "All embedded upstream assertions passed.",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "test-heat-budget",
+      "path": "src/phys/test/test_heat_budget.f90",
+      "command": "compile test_heat_budget.f90 with its support modules; run test_heat_budget from src/phys",
+      "ran": true,
+      "wall_s": 0.198143,
+      "reproduced": "All embedded upstream assertions passed.",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "test-ice-cover",
+      "path": "src/phys/test/test_ice_cover.f90",
+      "command": "compile test_ice_cover.f90 with its support modules; run test_ice_cover from src/phys",
+      "ran": true,
+      "wall_s": 0.209996,
+      "reproduced": "All embedded upstream assertions passed.",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "test-heatlink-config",
+      "path": "src/heatlink/test/test_heatlink_config.f90",
+      "command": "compile and run test_heatlink_config from src/heatlink",
+      "ran": true,
+      "wall_s": 0.193168,
+      "reproduced": "All embedded upstream assertions passed.",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "test-heatlink-velocity",
+      "path": "src/heatlink/test/test_heatlink_velocity.f90",
+      "command": "compile and run test_heatlink_velocity from src/heatlink",
+      "ran": true,
+      "wall_s": 0.203976,
+      "reproduced": "All embedded upstream assertions passed.",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "test-river-ice-advection",
+      "path": "src/heatlink/test/test_river_ice_advection.f90",
+      "command": "compile and run test_river_ice_advection from src/heatlink",
+      "ran": true,
+      "wall_s": 0.199388,
+      "reproduced": "All embedded upstream assertions passed.",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "test-river-ice-advection-boundaries",
+      "path": "src/heatlink/test/test_river_ice_advection_boundaries.f90",
+      "command": "compile and run test_river_ice_advection_boundaries from src/heatlink",
+      "ran": true,
+      "wall_s": 0.210138,
+      "reproduced": "All embedded upstream assertions passed.",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "test-river-water-advection",
+      "path": "src/heatlink/test/test_river_water_advection.f90",
+      "command": "compile and run test_river_water_advection from src/heatlink",
+      "ran": true,
+      "wall_s": 0.197052,
+      "reproduced": "All embedded upstream assertions passed.",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "test-river-water-advection-boundaries",
+      "path": "src/heatlink/test/test_river_water_advection_boundaries.f90",
+      "command": "compile and run test_river_water_advection_boundaries from src/heatlink",
+      "ran": true,
+      "wall_s": 0.20505,
+      "reproduced": "All embedded upstream assertions passed.",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "test-river-water-advection-cold-inflow",
+      "path": "src/heatlink/test/test_river_water_advection_cold_inflow.f90",
+      "command": "compile and run test_river_water_advection_cold_inflow from src/heatlink",
+      "ran": true,
+      "wall_s": 0.208157,
+      "reproduced": "The upstream-expected nonzero exit and diagnostic were both observed.",
+      "outputs": [],
+      "pitfalls": [
+        "Exit status 1 is the expected assertion outcome for this negative test."
+      ]
+    },
+    {
+      "id": "test-river-water-ice-advection-energy",
+      "path": "src/heatlink/test/test_river_water_ice_advection_energy.f90",
+      "command": "compile and run test_river_water_ice_advection_energy from src/heatlink",
+      "ran": true,
+      "wall_s": 0.202438,
+      "reproduced": "All embedded upstream assertions passed.",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "test-water-storage-adapter",
+      "path": "src/heatlink/test/test_water_storage_adapter.f90",
+      "command": "compile and run test_water_storage_adapter from src/heatlink",
+      "ran": true,
+      "wall_s": 0.19546,
+      "reproduced": "All embedded upstream assertions passed.",
+      "outputs": [],
+      "pitfalls": []
+    },
+    {
+      "id": "mozambique-official-example",
+      "path": "etc/sealev_boundary/test5-moz_06min_sealev.sh",
+      "command": "sh test5-moz_06min_sealev.sh with BASE relocated, OMP_NUM_THREADS=1, and the original complete pinned inputs",
+      "ran": true,
+      "wall_s": 4.331898,
+      "reproduced": "Completed the full 2019-01-01 through 2019-05-01 routing window; upstream ships no numerical reference output.",
+      "outputs": [
+        "o_outflw2019.nc",
+        "o_flddph2019.nc",
+        "o_fldare2019.nc",
+        "o_fldsto2019.nc",
+        "o_pthout2019.nc",
+        "restart2019050100.nc"
+      ],
+      "pitfalls": [
+        "The redistributable vendored source omits the forcing/restart archive used by this official example."
+      ]
+    }
+  ],
+  "pitfalls": [
+    {
+      "where": "src/Makefile",
+      "symptom": "Plain make applies an implicit Modula-2 rule to Fortran .mod targets and invokes unavailable m2c.",
+      "workaround": "Build with make -r to disable built-in implicit rules."
+    },
+    {
+      "where": "gosh/compile.sh",
+      "symptom": "The wrapper can return exit status zero even when a later make invocation fails.",
+      "workaround": "Invoke make -r directly and verify that the expected executable was produced."
+    },
+    {
+      "where": "NetCDF link flags",
+      "symptom": "nf-config --flibs alone did not resolve all NetCDF-C symbols on the investigation host.",
+      "workaround": "Combine nf-config --flibs with nc-config --libs."
+    },
+    {
+      "where": "src/common/array_mod.f90",
+      "symptom": "Three common-container tests do not compile with gfortran 16.x because of assumed-length character allocation.",
+      "workaround": "Record them as upstream toolchain incompatibilities; do not patch the pinned source during investigation."
+    }
+  ],
+  "not_run": [
+    {
+      "what": "Twenty-one remaining official routing examples",
+      "why": "Their maps, forcing, restart, and optional levee/reservoir/sediment inputs are not present at the scripts' default paths in the vendored payload."
+    },
+    {
+      "what": "test_array_dict, test_key_table, and test_ranked_array",
+      "why": "Compilation is blocked by the gfortran 16.x array_mod incompatibility."
+    }
+  ]
+}
