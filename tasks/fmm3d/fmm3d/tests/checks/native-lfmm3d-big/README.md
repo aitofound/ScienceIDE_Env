@@ -14,7 +14,7 @@ ordering in the upstream program are retained.
 `1.0000000000000004`, two binary64 ULPs at unity. The memory-estimator check
 also adds one source and target because its outputs are discrete. Every random
 interface is seeded by the check; deterministic Fortran programs perturb their
-existing input scale. `altbuild` uses the nominal inputs with GNU `-O0` and
+existing input scale. `altbuild` uses the nominal inputs with GNU `-O1` and
 `-ffp-contract=off`. `run.sh --help` lists the runtime and CPU knobs.
 
 ## Output Contract

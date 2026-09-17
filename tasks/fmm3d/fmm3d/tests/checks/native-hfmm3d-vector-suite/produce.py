@@ -23,7 +23,7 @@ NUMBER = re.compile(
     r"(?<![A-Za-z0-9_])[-+]?(?:\d+\.\d*|\.\d+|\d+)(?:[EeDd][-+]?\d+)?"
 )
 UNSTABLE_LINE = re.compile(
-    r"(?:wall|\btime\b|\bspeed\b|elapsed|points?/sec|pts/sec|throughput|"
+    r"(?:wall|\btime\b|timing|\bspeed\b|speedup|elapsed|points?/sec|pts/sec|throughput|"
     r"unvectorized\s*:|vectorized\s*:|profile|done\s+in)", re.I
 )
 
@@ -73,7 +73,7 @@ def gnu_compiler(stem: str) -> str:
 
 
 def compiler_flags(mode: str) -> tuple[list[str], list[str], list[str]]:
-    opt = ["-O0", "-ffp-contract=off"] if mode == "altbuild" else ["-O2"]
+    opt = ["-O1", "-ffp-contract=off"] if mode == "altbuild" else ["-O2"]
     fflags = opt + [
         "-fPIC",
         "-std=legacy",
@@ -221,10 +221,56 @@ def strip_unstable_fortran_calls(text: str) -> str:
     return "".join(kept)
 
 
+def patch_legacy_wrapper_ier(text: str) -> str:
+    lines = text.splitlines(keepends=True)
+    patched = False
+    index = 0
+    while index < len(lines):
+        if re.search(r"(?i)\bcall\s+[hl]fmm3d_[a-z0-9_]+\s*\(", lines[index]) is None:
+            index += 1
+            continue
+        start = index
+        depth = 0
+        seen_open = False
+        while index < len(lines):
+            for char in lines[index]:
+                if char == "(":
+                    depth += 1
+                    seen_open = True
+                elif char == ")":
+                    depth -= 1
+            if seen_open and depth == 0:
+                break
+            index += 1
+        statement = "".join(lines[start : index + 1])
+        if re.search(r"(?i)\bier\s*\)\s*(?:!.*)?$", statement.rstrip()) is None:
+            close = lines[index].rfind(")")
+            lines[index] = lines[index][:close] + ",ier" + lines[index][close:]
+            patched = True
+        index += 1
+    text = "".join(lines)
+    if patched and re.search(r"(?im)^\s*integer(?:\s*\*\s*8)?[^\n!]*\bier\b", text) is None:
+        text = re.sub(
+            r"(?im)^(\s*implicit\s+none\s*)$",
+            r"\1\n      integer*8 ier",
+            text,
+        )
+    return text
+
+
 def patch_fortran(text: str, scale: float, offset: int, amplitude: float) -> str:
     text = scale_source(text, scale, offset)
     text = precision_formats(text)
     text = strip_unstable_fortran_calls(text)
+    text = patch_legacy_wrapper_ier(text)
+    # FMM3D's public Fortran routines use INTEGER*8, while a handful of its
+    # official drivers still declare their arguments as default INTEGER.
+    text = re.sub(r"(?im)^(\s*)integer(?!\s*\*)\b", r"\1integer*8", text)
+    text = re.sub(
+        r"(?im)^(\s*implicit\s+double\s+precision\s*\(a-h,o-z\)\s*)$",
+        r"\1\n  implicit integer*8 (i-n)",
+        text,
+    )
     if "call hfmm3d_memest" in text.lower():
         text = re.sub(r"(?i)double complex\s+zk,ier", "double complex zk,ier,ima", text)
         text = re.sub(
@@ -301,7 +347,12 @@ def run_native_fortran(
         env=env,
         timeout=180,
     )
-    return checked([str(exe)], cwd=work, env=env, timeout=spec["timeout_s"]).stdout
+    result = checked([str(exe)], cwd=work, env=env, timeout=spec["timeout_s"])
+    output = result.stdout
+    official_log = work / "pw_res.log"
+    if official_log.is_file():
+        output += "\n" + official_log.read_text()
+    return output
 
 
 def run_c(
@@ -512,7 +563,7 @@ def run_julia(
     module.write_text(module_text)
     official = scale_source((source / spec["source_path"]).read_text(), scale, offset)
     official = official.replace(
-        "using FMM3D", f'include({str(module)!r})\nusing .FMM3D'
+        "using FMM3D", f"include({json.dumps(str(module))})\nusing .FMM3D"
     )
     official = official.replace("using Random", "using Random\nRandom.seed!(6172)")
     official = re.sub(r"\brandn\(", "sab_randn(", official)
@@ -620,7 +671,9 @@ def run_octave(
         raise RuntimeError("Octave is required")
     mex = build_octave(source, mode, threads, env)
     official = scale_source((source / spec["source_path"]).read_text(), scale, offset)
-    official = re.sub(r"(?m)^\s*clear(?:\s.*)?$", "% disabled by the check runner", official)
+    official = re.sub(
+        r"(?m)^[ \t]*clear[ \t]*$", "% disabled by the check runner", official
+    )
     official = re.sub(r"\brand\s*\(", "sab_rand(", official)
     script = work / "official.m"
     script.write_text(official)
@@ -727,7 +780,7 @@ def run_vector_kernel(
         text = re.sub(r"(?<![A-Za-z0-9_])rand\(0\)", f"{amplitude:.17e}*rand(0)", text)
         text = re.sub(r"do\s+i\s*=\s*1\s*,\s*100", f"do i=1,{repeats}", text, flags=re.I)
     upstream.write_text(text)
-    opt = ["-O0", "-ffp-contract=off"] if mode == "altbuild" else ["-O2"]
+    opt = ["-O1", "-ffp-contract=off"] if mode == "altbuild" else ["-O2"]
     cxx = gnu_compiler("g++")
     fc = gnu_compiler("gfortran")
     obj = work / "libkernels.o"
@@ -766,6 +819,16 @@ def extract_metrics(output: str) -> list[tuple[str, float]]:
             value = float(token.replace("D", "E").replace("d", "e"))
             values.append((f"m{len(values) + 1:06d}", value))
     return values
+
+
+def extract_multipole_error(output: str) -> list[tuple[str, float]]:
+    match = re.search(
+        r"(?is)l2\s+rel\s+err[^\n]*\n\s*(" + NUMBER.pattern + r")",
+        output,
+    )
+    if match is None:
+        raise RuntimeError("official multipole test did not print its l2 relative error")
+    return [("l2_rel_err", float(match.group(1).replace("D", "E").replace("d", "e")))]
 
 
 def main() -> None:
@@ -808,7 +871,11 @@ def main() -> None:
             spec, source, work, mode, scale, offset, amplitude, threads, env
         )
         print(f"SAB_BUILD_SECONDS={time.monotonic() - build_start:.6f}", flush=True)
-        metrics = extract_metrics(output)
+        metrics = (
+            extract_multipole_error(output)
+            if spec["check"] == "native-hfmm3d-multipole"
+            else extract_metrics(output)
+        )
         if not metrics:
             tail = "\n".join(output.splitlines()[-60:])
             raise RuntimeError(f"official test produced no stable numeric metrics\n{tail}")

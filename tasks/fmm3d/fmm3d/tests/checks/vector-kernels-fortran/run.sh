@@ -6,7 +6,7 @@ if [ "${1:-}" = --help ]; then
     'SAB_SCALE=0.25  Multiplicative scale for upstream source/target counts.' \
     'SAB_CPUS=2  OpenMP threads and parallel build jobs.' \
     'SAB_REPEATS=3  Repetitions of each scalar/vector kernel call.' \
-    'altbuild: GNU -O0 -ffp-contract=off instead of -O2.'
+    'altbuild: GNU -O1 -ffp-contract=off instead of -O2.'
   exit 0
 fi
 : "${SOURCE_DIR:?}" "${OUT_DIR:?}" "${CHECK_DIR:?}"
