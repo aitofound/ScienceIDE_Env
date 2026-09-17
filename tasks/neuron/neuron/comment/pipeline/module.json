@@ -1,0 +1,33 @@
+{
+  "module": {
+    "slug": "neuron",
+    "title": "NEURON simulator (whole codebase, single module)",
+    "paths": [
+      "."
+    ],
+    "entrypoints": [
+      "nrniv (HOC/Python interpreter binary, src/ivoc + src/oc)",
+      "python -c 'import neuron' (share/lib/python/neuron)",
+      "nrnivmodl (compiles NMODL .mod mechanism files into a loadable library, bin/nrnivmodl)",
+      "nocmodl and the nmodl translator (src/nmodl, external/nmodl)"
+    ],
+    "expensive_path": "The time-stepping simulation core: cable-equation matrix setup and solve per timestep (src/nrnoc: treeset.cpp, fadvance.cpp, solve.cpp), per-mechanism channel-state integration generated from NMODL, event-driven spike delivery (src/nrncvode, NetCon/NetStim), and the reaction-diffusion operator-splitting solvers (share/lib/python/neuron/rxd with C/Cython kernels in src/nrnpython and share/lib/python/neuron/rxd/geometry3d). Long biophysical network simulations spend nearly all wall time in these loops.",
+    "rationale": "One community, one build (single CMake tree producing nrniv + one Python package), one official test suite (one ctest set of 196 entries spanning every subsystem). Internal variety (HOC interpreter, NMODL translator, rxd, CoreNEURON backend hooks) is subsystems behind one input/output contract: model description in, trajectories/spikes out. No candidate submodule has its own separate build and test life; CoreNEURON, the closest candidate, is vendored as a git submodule compiled into the same tree and exercised by the same ctest suite. Single-module default applies: the whole codebase is one module; no human decision at STOP 1, the cut is read in the source PR body at STOP 2.",
+    "excluded": [],
+    "hazards": [
+      "external/ vendors 12 git submodules (nmodl, coreneuron, catch2, eigen, ...); a shallow or non-recursive clone builds a different tree",
+      "configure with NRN_ENABLE_TESTS=ON clones 5 more test repos into external/tests/ inside the source tree (network at configure time, dirties the checkout)",
+      "rxd Cython sources fail to compile under Cython >= 3.1 (pin cython<3.1)",
+      "old external nrntest decks compare bytewise to shipped references and are compiler-sensitive (one deck flips under gcc 15.2 vs 13.2)",
+      "the install is not relocatable and nrnivmodl needs a C compiler at runtime"
+    ]
+  },
+  "approval": {
+    "modules": [
+      "neuron"
+    ],
+    "human_ref": "single-module default: the whole codebase is one module; no human decision at STOP 1, the cut is read in the source PR body at STOP 2",
+    "at": "2026-09-16T06:37:34Z"
+  },
+  "shared_infrastructure": []
+}
