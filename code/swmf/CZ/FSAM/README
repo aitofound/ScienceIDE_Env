@@ -1,0 +1,100 @@
+=========> Steps for running a convective dynamo simulation as described in Fan and Fang (2014, ApJ, 789, 35) <==========
+
+(1) go to "src" directory
+
+(2) in the "src" directory copy "../srcProblem/ModPar.dynamo.f90" to "ModPar.f90"
+(if desired, modify ModPar.f90 to change # of processors, which must satisfy the restriction given in comments in ModPar.f90)
+
+(3) in the "src" directory copy "../srcProblem/ModUserSetup.dynamo.f90" to "ModUserSetup.f90"
+
+(4) go up directory one level to the "FSAM" directory
+
+(5) type "make clean"
+
+(6) type "make", which creates the executable "xfsam.exe" in the "src" directory
+
+(7) create a director <RUNDIR> in your data disk where you want to run the code and store the output data
+
+(8) in the current "FSAM" directory, copy the "input/PARAM.in.dynamo" file to the "PARAM.in" file in <RUNDIR>, and copy the "input/gong.l4b.14" file to <RUNDIR>, and also copy the "src/xfsam.exe" executable file to <RUNDIR>
+
+(9) go to <RUNDIR>, and create your batch script (depending on your system) that executes "xfsam.exe" with the number of processors that is the same as the nproc specified in ModPar.f90. An example PBS script for running on Cheyenne is given in the "FSAM/input/pbsscript_hao" file.
+
+(10) After you run xfsam.exe with your batch script from some wall clock time, you would need to continue to do many restart runs in order to reach a steady state for the convective dynamo.  Restart data files ("*_rst.dat" files) are written after each run. To do restart run, edit the PARAM.in file to change the lines:
+
+F                                       DoRestart      ! irst
+0                                       ifile
+
+to the following:
+
+T                                       DoRestart      ! irst
+-1                                      ifile
+
+then run your batch script to run the same xfsam.exe in <RUNDIR>.
+
+=========> Output data files in <RUNDIR> <==========
+
+(1) 3D field data:
+
+The data for each physical field variables are written out in raw binary data files named as:
+b1_XXXX.physdat
+b2_XXXX.physdat
+b3_XXXX.physdat
+v1_XXXX.physdat
+v2_XXXX.physdat
+v3_XXXX.physdat
+s_XXXX.physdat
+p_XXXX.physdat
+
+where XXXX is the numbering of the output time step, and b1,b2,b3,v1,v2,v3,s,p indicate respectively files for field variables: br, bth, bph, vr, vth, vph, entropy change, pressure change.  These files for the fields are written out every constant time interval DnWriteData (in seconds of solar evolution) specified in PARAM.in.
+
+Use the IDL routine read_physdata.pro stored in the FSAM/idldir directory to read the 3D field data file in IDL.  For example to read a 3D field data file named b3_3125.physdat (which is a 3D data file for Bph) into IDL:
+
+IDL> filename='b3_3125.physdat'
+IDL> read_physdata,filename,time,nr_bph,nth_bph,nph_bph,r_bph,th_bph,ph_bph,bph 
+
+The above routine returns the following in IDL:
+TIME            DOUBLE    =    5.1138857e+09 : time of the output data 
+NR_BPH          LONG      =           97     : number of grid points in r
+NTH_BPH         LONG      =          512     : number of grid points in theta
+NPH_BPH         LONG      =          768     : number of grid points in phi
+R_BPH           DOUBLE    = Array[97]        : r grid positions for Bph
+TH_BPH          DOUBLE    = Array[512]       : theta grid positions for Bph
+PH_BPH          DOUBLE    = Array[768]       : phi grid positions for Bph
+BPH             DOUBLE    = Array[97, 512, 768] : Bph 3D data cube
+
+All quantities are given in CGS units.
+Note, the code uses staggered grid. So the different variables are located at different grid locations:  vector fields (br, bth, bph, vr, vth, vph) are at the cell faces and thermodynamic quantities are at cell centers.  Thus the grid locations for each field data cubes are also included in the 3D data file for that field, and are read in using the above IDL routine (for example: the r_bph, th_bph, ph_bph in the above example is the r, theta, phi grid positions for the Bphi field).
+
+The thermodynamic quantities outputted in the 3D data files: s_XXXX.physdat and p_XXXX.physdat are the 3D field of entropy change and pressure change, relative to a time independent 1D reference state of the convection zone (CZ). The reference state is an ideal, adiabatically stratified polytropic atmosphere with density stratification closely matching the density profile of the CZ in JCD's solar model.
+
+(2) The reference state data file:
+The density, temperature, pressure, gravity acceleration, and gamma (ratio of specific heats)
+profiles of the reference state are written in the output file refstate.dat in <RUNDIR>
+It can be read in IDL using the routine read_refstate.pro stored in the FSAM/idldir directory as the following example:
+
+IDL> filename='refstate.dat'
+IDL> read_refstate,filename,nr_ref,r_ref,d_ref,temp_ref,p_ref,gacc_ref,gamma_ref
+
+The above routine returns the following in IDL:
+NR_REF          LONG      =           96	: number of grid points in r for the 1-D reference state
+R_REF           DOUBLE    = Array[96]	:grid positions in r for the 1-D reference state profiles
+D_REF           DOUBLE    = Array[96]	:density profile for the 1-D reference state
+TEMP_REF        DOUBLE    = Array[96]	:temperature profile for the 1-D reference state
+P_REF           DOUBLE    = Array[96]	:pressure profile for the 1-D reference state
+GACC_REF        DOUBLE    = Array[96]	:gravitational acceleration profile for the 1-D reference state
+GAMMA_REF       DOUBLE    = Array[96]	:profile for the ratio of spacific heats for the 1-D reference state
+
+All quantities are given in CGS units.
+
+(3) Restart data files:
+
+The data cubes of all the dependent variables on the full grid (including the ghostzones) in the code units are written in raw binary data format in the following files
+b1_rst.dat
+b2_rst.dat
+b3_rst.dat
+v1_rst.dat
+v2_rst.dat
+v3_rst.dat
+s_rst.dat
+p_rst.dat
+These files are overwritten at an interval of a fixed number of iterations (DnSaveRestart specified in the PARAM.in) and also at the end of each run.  The files are read by the code for a restart run.

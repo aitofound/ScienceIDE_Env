@@ -1,0 +1,12 @@
+# Build rule for the Tsyganenko & Andreeva (2015) forecasting model (TA15)
+# Added to AMPS: 2026-02-26
+
+# TA15 is distributed as two Fortran entry points:
+#   TA_2015_B and TA_2015_N
+# We compile both into objects and link them with the C++ wrapper.
+
+ta15 :
+	${COMPILE.f77} ${Cflag3} TA15_B.for
+	${COMPILE.f77} ${Cflag3} TA15_N.for
+	${COMPILE.mpicxx} ${FLAGC} -std=c++14 TA15Interface.cpp -o TA15Interface.o
+	ar -src TA15.a TA15_B.o TA15_N.o TA15Interface.o

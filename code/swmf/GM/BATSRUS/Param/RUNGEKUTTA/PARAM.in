@@ -1,0 +1,107 @@
+#DESCRIPTION
+Param/RUNGEKUTTA/PARAM.in: Verification test for Runge-Kutta time integration
+
+! Only the friction term is needed from this module.
+#USERMODULE
+EXAMPLE FOR POINT IMPLICIT SOURCE, Toth
+
+#PLANET
+NONE			NamePlanet
+
+#IOUNITS
+NONE			TypeIoUnit
+
+#NORMALIZATION
+NONE			TypeNormalization
+
+#GRID
+1                       nRootBlock1
+1			nRootBlock2
+1			nRootBlock3
+-10.			xMin
+ 10.			xMax	   
+-1.			yMin	   
+ 1.			yMax	   
+-1.			zMin	   
+ 1.			zMax
+
+#USERSWITCH
++source			StringSwitch
+
+#USERINPUTBEGIN  ----------------------
+
+#FRICTION
+100.0			rFriction
+5.0			TauFriction
+
+#USERINPUTEND    ----------------------
+
+! Start with Ux = 1.0
+#SHOCKTUBE
+1.			LeftState rho
+1.			LeftState Ux
+0.			LeftState Uy
+0.			LeftState Uz
+1.			LeftState P
+1.			RightState rho
+1.			RightState Ux
+0.			RightState Uy
+0.			RightState Uz
+1.			RightState P
+
+#OUTERBOUNDARY
+float			xMinBc
+float			xMaxBc
+float			yMinBc
+float			yMaxBc
+float			zMinBc
+float			zMaxBc
+
+! Works with conservative too, but pressure changes slightly
+#NONCONSERVATIVE
+T			UseNonConservative
+
+! Any numerical scheme works
+#SCHEME
+1			nOrder
+Rusanov			TypeFlux
+
+! Vary time step from 1.0 to 0.5
+#FIXEDTIMESTEP
+T			UseFixedTimeStep
+1.0			DtFixed
+
+! Vary nStage from 1 to 3
+#RK
+2			nStage
+0.8			CflExpl
+
+! The average X momentum (Mx) should decay as exp(-time/5.0)
+#SAVELOGFILE
+T			DoSaveLogfile
+raw			StringLogfile
+1			DnSaveLogfile
+-1.			DtSaveLogfile
+
+#SAVERESTART
+F			DoSaverestart
+
+#SAVEPLOT
+1			nPlotfile
+cut raw idl		PlotString
+-1              	DnSavePlot
+1.0             	DtSavePlot
+-10.0			Coord1MinCut
++10.0			Coord1MaxCut
+-0.01			Coord2MinCut
+0.01			Coord2MaxCut
+-0.01			Coord3MinCut
+0.01			Coord3MaxCut
+0.0             	DxSavePlot
+
+! At the final time Ux should be exp(-10./5.)
+#STOP
+-1			MaxIteration
+10.0			tSimulationMax
+
+#END

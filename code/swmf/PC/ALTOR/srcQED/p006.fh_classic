@@ -1,0 +1,69 @@
+       if(logRadIn) then !--------------------------------------------------!
+          !
+          p2=( p-R(nDim+1:nDim+3,n) )*tmp2 !(p^{n+1/2}-p^{n-1/2})*gamma^{n}
+          !                                !new term to save in RD
+          d=p/sqrt(ONE+dot_product(p,p))          ! v^{n+1/2}
+          !
+	  tmp = dot_product(p2,p2) - dot_product(d,p2)**2 ! bracket to sum
+          p3=p2-RD(1:3,n) - d*tmp          ! radiation term 
+          !
+          p3=p3*radConst 
+          !RD(4:6,n)=p3               !temporal save for radiation term
+          !
+          p=p+p3                     ! momentum with radiation term 
+          !
+          RD(1:3,n)=p2       	! saved radiation term for the next step
+	  rad=rad+tmp 		! total radiation
+	  tmp3=sqrt(tmp)/tmp2	! distribution I/w
+          !	
+	  if (tmp > 1.e-5) then ! angular radiation distribution >
+		!
+		! Frequency
+		!	
+		if (nRD == 6) then ! for test particle	
+			RD(nRD-2,n)=dot_product(p2,p2) !sqrt(tmp)/tmp2
+			RD(nRD-1,n)=dot_product(d,p2)**2 !tmp2 !**2 !here error
+			RD(nRD,  n)=tmp2 !THREE*HALF*tmp2*sqrt(tmp)/dt/PI2
+		endif
+		!	
+		j=nint( &
+			alog( &
+				THREE*HALF*tmp2*sqrt(tmp)/dt/PI2 &
+				) &
+			/rFreqMax*nFreq &
+			)
+		!
+		if (j < 1) j=1	
+		if (j > nFreq) j=nFreq	
+	
+	  	tmp2=sqrt(dot_product(d,d)) 
+                !	
+	  	if(tmp2 > 1.e-5) then 	
+			i=nint(acos(d(1)/tmp2)/PI*nAngle)
+	  	else 
+			i=nAngle/2+1
+	  	end if
+	  	if (i < 1) i=1
+	  	if (i > nAngle) i=nAngle
+		!
+		! option for abs(d(2)) <= 1.e-5
+	  	if(abs(d(2)) > 1.e-5) then 
+			!k=nint(atan(d(3)/d(2))/PI*nAngle2)+nAngle2/2
+                        !k=nint(atan(d(3)/d(2))/PI*nAngle2/2) !+nAngle2/2
+                       	k=nint(atan(d(3)/d(2))/PI*nAngle2/2)+1	
+                        if( d(2) < ZERO ) &
+                                k=k+nAngle2/2
+                        if( (d(2) >= ZERO) .and. (d(3) < ZERO) ) &
+                                k=k+nAngle2
+	  	else 
+			k=1
+	  	end if
+		if (k < 1) k=k+nAngle2 !!! k=1	
+		if (k > nAngle2) k=k-nAngle2 !!! k=nAngle2
+		!	
+		radAngle(i,k)=radAngle(i,k)+tmp3
+		radFreq(i,k,j)=radFreq(i,k,j)+tmp3
+		!	
+	  end if	! angular radiation distribution <
+          !
+       end if !-------------------------------------------------------------!

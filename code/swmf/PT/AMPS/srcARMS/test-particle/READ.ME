@@ -1,0 +1,126 @@
+main.cpp — Monte Carlo guiding-center electrons on a field line
+================================================================================
+
+This utility reads a magnetic field line (sequence of points), computes arc-length
+coordinate s, reconstructs/uses the magnetic field, and runs a Monte-Carlo
+guiding-center (GC) test-particle transport model for electrons moving along the
+field line.
+
+The code is self-contained:
+  - main.cpp  (all logic and physics)
+  - outputs are Tecplot ASCII (.dat)
+
+--------------------------------------------------------------------------------
+1) Field-line file format
+--------------------------------------------------------------------------------
+The reader is tolerant to header/comment lines starting with '#', '!', or text.
+It supports these per-point row layouts:
+
+  (i)  4 columns:  x  y  z  Bmag
+  (ii) 6 columns:  x  y  z  Bx  By  Bz        (|B| computed)
+  (iii)7 columns:  x  y  z  Bx  By  Bz  Bmag  (|B| may be redundant)
+
+Your example file is case (i): it declares variables and then provides:
+  <Npoints>
+  x y z B
+
+IMPORTANT: For 4-column inputs (x y z Bmag), the file does not include B direction.
+We reconstruct a consistent B-vector using the geometric tangent of the field line:
+  Bvec(s) = |B|(s) * t_hat(s),  t_hat(s) ≈ dr/ds
+This avoids incorrectly treating the 4th column as Bx.
+
+--------------------------------------------------------------------------------
+2) Physics model (guiding center along s)
+--------------------------------------------------------------------------------
+State per particle:
+  s        : arc-length position along the line [m]
+  vpar     : parallel velocity [m/s]
+  mu_mag   : magnetic moment [J/T], held constant unless scattering is applied
+
+Equations advanced in SI:
+  ds/dt     = vpar
+  dvpar/dt  = (q/m) Epar  -  (mu_mag/m) d|B|/ds
+
+Pitch-angle cosine mu = cos(alpha) is computed from:
+  v_perp^2  = 2 mu_mag |B| / m
+  v^2       = vpar^2 + v_perp^2
+  mu        = vpar / sqrt(v^2)
+
+Optional pitch-angle diffusion (scattering):
+  dmu = sqrt(2 D dt) * N(0,1)
+After updating mu, (vpar, mu_mag) are reprojected to keep the state consistent.
+
+Boundary behavior:
+  If a particle leaves the field line domain (s<0 or s>L), it is DELETED (no reflection).
+
+Injection:
+  Particles are injected at s = inj_sfrac * L with a Maxwellian velocity distribution
+  defined by temperature T_eV. Pitch angle at injection is defined relative to the
+  local tangent direction.
+
+Acceleration:
+  Optional constant parallel electric field Epar (V/m) can be enabled.
+
+--------------------------------------------------------------------------------
+3) Sampling during transport (time-integrated PDFs)
+--------------------------------------------------------------------------------
+At EACH TIME STEP, every alive particle contributes one sample to histograms
+binned by:
+  - s-bin (0..L):  -nbins_s
+  - mu-bin (-1..1): -nbins_mu
+  - energy-bin [Emin_eV..Emax_eV]: -nbins_E, -Emin_eV, -Emax_eV
+  - vpar-bin [vpar_min..vpar_max]: -nbins_vpar, -vpar_min, -vpar_max
+
+At the end of the run, distributions are output PER s-bin (normalized per s-bin).
+
+--------------------------------------------------------------------------------
+4) Build
+--------------------------------------------------------------------------------
+  make
+
+--------------------------------------------------------------------------------
+5) Usage examples
+--------------------------------------------------------------------------------
+
+Help:
+  ./mc_fieldline -help
+
+Convert field line to Tecplot XY curves only (no particles):
+  ./mc_fieldline -fieldline /mnt/data/fieldline_32.txt -out demo -npart 0
+
+Run GC Monte Carlo, inject in the middle:
+  ./mc_fieldline -fieldline /mnt/data/fieldline_32.txt -out run \
+      -inj_sfrac 0.5 -T_eV 200 -npart 200000 -dt 1e-3 -tmax 1.0 \
+      -D 0.05 -nbins_s 100 -nbins_mu 100 -nbins_E 120 -Emax_eV 3000 \
+      -nbins_vpar 120 -seed 42
+
+Add constant parallel acceleration:
+  ./mc_fieldline -fieldline /mnt/data/fieldline_32.txt -out accel \
+      -inj_sfrac 0.25 -T_eV 100 -Epar_Vm 1e-3 -npart 100000 -dt 1e-3 -tmax 2.0
+
+--------------------------------------------------------------------------------
+6) Outputs (Tecplot ASCII)
+--------------------------------------------------------------------------------
+With -out PREFIX, the following files are produced:
+
+  PREFIX_fieldline.dat
+    XY-style curve along the field line:
+      s_m, absX_m, absY_m, absZ_m, Bx_T, By_T, Bz_T, B_T
+
+  PREFIX_mc_mu_s_2d.dat
+    Time-integrated pdf(s, mu) (ordered zone)
+
+  PREFIX_mc_E_s_2d.dat
+    Time-integrated pdf(s, E_eV) (ordered zone)
+
+  PREFIX_mc_vpar_s_2d.dat
+    Time-integrated pdf(s, vpar_mps) (ordered zone)
+
+  PREFIX_mc_mu_hist.dat
+    Final-time histogram of mu (for surviving particles only)
+
+  PREFIX_mc_mu_vs_s.dat
+    Final-time mu moments binned by s (for surviving particles only)
+
+--------------------------------------------------------------------------------
+

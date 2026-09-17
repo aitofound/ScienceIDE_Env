@@ -1,0 +1,71 @@
+! ═══════════════════════════════════════════════════════════════
+! AMPS SEP geospace validation test C5
+! Dipole mesh-interpolation convergence, Mode3D shells
+!
+! The test harness runs this input multiple times with
+! -mode3d-field-eval MESH and different Mode3D mesh-resolution CLI
+! controls.  The analytical Størmer solution is the reference.  An
+! optional ANALYTIC baseline run is used to confirm that the pusher and
+! cutoff search are functioning independently of mesh interpolation.
+!
+! Current-code controls such as UPPER_SCAN, scheduler/thread settings,
+! Mode3D field evaluation, and Mode3D mesh-resolution profile are passed
+! by run_C5.py on the command line.  The active input keywords below are
+! kept parser-compatible with the C1/C2/C3 validation templates.
+! ═══════════════════════════════════════════════════════════════
+
+#CALCULATION_MODE
+CALC_TARGET            CUTOFF_RIGIDITY
+FIELD_EVAL_METHOD      GRID_3D
+
+#CUTOFF_RIGIDITY
+CUTOFF_EMIN            1.0          ! MeV/n
+CUTOFF_EMAX            20000.0      ! MeV/n
+CUTOFF_MAX_PARTICLES   500          ! per injection point
+CUTOFF_NENERGY         50           ! log-spaced energy bins
+CUTOFF_SAMPLING        VERTICAL
+CUTOFF_MAX_TRAJ_TIME   600          ! sec
+
+#PARTICLE_SPECIES
+SPECIES                PROTON
+CHARGE                 1
+MASS_AMU               1.0073
+
+#BACKGROUND_FIELD
+FIELD_MODEL            DIPOLE
+DIPOLE_MOMENT          1.00
+DIPOLE_TILT            0.0
+
+#DOMAIN_BOUNDARY
+DOMAIN_X_MAX           35.0
+DOMAIN_X_MIN           -35.0
+DOMAIN_Y_MAX           35.0
+DOMAIN_Y_MIN           -35.0
+DOMAIN_Z_MAX           35.0
+DOMAIN_Z_MIN           -35.0
+R_INNER                1.0
+
+#ELECTRIC_FIELD
+
+#SPECTRUM
+SPECTRUM_TYPE          POWER_LAW
+SPEC_J0                1.00e+4
+SPEC_GAMMA             3.50
+SPEC_E0                10.0
+SPEC_EMIN              1.0
+SPEC_EMAX              1000.0
+
+#OUTPUT_DOMAIN
+OUTPUT_MODE            SHELLS
+SHELL_COUNT            1
+SHELL_ALTS_KM          9000.0
+SHELL_RES_DEG          30
+
+#OUTPUT_OPTIONS
+
+#NUMERICAL
+DT_TRACE               1.0
+MAX_TRACE_TIME         600
+MAX_TRACE_DISTANCE     400.0
+
+!#END

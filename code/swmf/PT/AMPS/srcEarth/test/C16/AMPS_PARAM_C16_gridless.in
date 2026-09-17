@@ -1,0 +1,113 @@
+! =============================================================================
+! AMPS Earth validation C16: trajectory termination and access-state closure
+!
+! This is a parser-compatible GRIDLESS/DIRECT_ACCESS template.  run_C16.py
+! replaces every marked template token and archives the rendered deck with each run.
+! C16 intentionally uses only controls already accepted by the common AMPS
+! parser.  In particular, it does not depend on optional unresolved-extension
+! or trap-classifier keywords.
+!
+! Scientific contract
+! -------------------
+! AMPS writes one access_state and one termination_code for every requested
+! (point, sky direction, rigidity) trajectory.  The runner checks the exact
+! mapping between those two quantities, the completeness of the access cube,
+! and classification stability as the physical trace-time budget increases.
+! =============================================================================
+
+#RUN_INFO
+RUN_ID                         __RUN_ID__
+
+#CALCULATION_MODE
+CALC_TARGET                    CUTOFF_RIGIDITY
+FIELD_EVAL_METHOD              GRIDLESS
+
+#CUTOFF_RIGIDITY
+! These energy limits are required by the common cutoff parser even though the
+! authoritative C16 samples are the exact rigidities listed below.
+CUTOFF_EMIN                    0.1
+CUTOFF_EMAX                    20000.0
+CUTOFF_MAX_PARTICLES           1
+CUTOFF_NENERGY                 8
+
+! DIRECT_ACCESS and CUTOFF_RIGIDITY_LIST_GV require the VERTICAL parser token.
+! DIRECTIONAL_MAP and DIRMAP_* still request the full direction-resolved cube.
+CUTOFF_SAMPLING                VERTICAL
+DIRECTIONAL_MAP                T
+DIRMAP_LON_RES                 __DIRMAP_LON_RES__
+DIRMAP_LAT_RES                 __DIRMAP_LAT_RES__
+DIRMAP_COVERAGE                FULL_SPHERE
+CUTOFF_SEARCH_ALGORITHM        DIRECT_ACCESS
+CUTOFF_RIGIDITY_LIST_GV        __CUTOFF_RIGIDITY_LIST_GV__
+
+! A fixed grid is essential for a trajectory-by-trajectory budget comparison:
+! adaptive insertion would make the sample keys depend on earlier outcomes.
+CUTOFF_DIRECT_ACCESS_ADAPTIVE  F
+CUTOFF_TRACE_POLICY            ACCURATE
+CUTOFF_BACKTRACE_CHARGE        REVERSED
+
+! Limits are represented as UNRESOLVED, never as physical shielding.  C16
+! verifies this policy from both ordinary model runs and deliberate limit probes.
+CUTOFF_TRACE_LIMIT_POLICY      UNRESOLVED
+CUTOFF_MAX_TRAJ_TIME           __MAX_TRACE_TIME__
+
+#PARTICLE_SPECIES
+SPECIES                        PROTON
+CHARGE                         1
+MASS_AMU                       1.007276466621
+
+#BACKGROUND_FIELD
+! The runner replaces this complete block.  DIPOLE is an analytic control;
+! T05 is the driven empirical-model validation case.
+__FIELD_BLOCK__
+
+#DOMAIN_BOUNDARY
+! Bare lengths are kilometers.  +/-40 Re prevents premature box exits from a
+! small domain while still giving an unambiguous OUTER_BOUNDARY_ALLOWED event.
+DOMAIN_X_MIN                  -254848.0
+DOMAIN_X_MAX                   254848.0
+DOMAIN_Y_MIN                  -254848.0
+DOMAIN_Y_MAX                   254848.0
+DOMAIN_Z_MIN                  -254848.0
+DOMAIN_Z_MAX                   254848.0
+R_INNER                        6371.2
+
+#ELECTRIC_FIELD
+! No electric-field keyword is set: the validation isolates magnetic tracing.
+
+#SPECTRUM
+! Required by the common parser; DIRECT_ACCESS uses the explicit rigidity list.
+SPECTRUM_TYPE                  POWER_LAW
+SPEC_J0                        1.0
+SPEC_GAMMA                     3.0
+SPEC_E0                        100.0
+SPEC_EMIN                      0.1
+SPEC_EMAX                      20000.0
+
+#OUTPUT_DOMAIN
+OUTPUT_MODE                    POINTS
+COORDS                         GSM
+POINTS_BEGIN
+__POINTS_BLOCK__
+POINTS_END
+
+#OUTPUT_OPTIONS
+OUTPUT_COORDS                  GSM
+
+#NUMERICAL
+! The three limits are varied independently by the runner.  Zero disables the
+! cumulative path-length cap for the ordinary budget-convergence matrix.
+DT_TRACE                       __DT_TRACE__
+ADAPTIVE_DT                    __ADAPTIVE_DT__
+MAX_STEPS                      __MAX_STEPS__
+MAX_TRACE_TIME                 __MAX_TRACE_TIME__
+MAX_TRACE_DISTANCE             __MAX_TRACE_DISTANCE_RE__
+
+! Explicit GRIDLESS scheduling makes the generated run reproducible and avoids
+! borrowing density/flux-specific threading flags from unrelated F-series tests.
+GRIDLESS_MPI_SCHEDULER         __GRIDLESS_MPI_SCHEDULER__
+GRIDLESS_MPI_DYNAMIC_CHUNK     __GRIDLESS_MPI_DYNAMIC_CHUNK__
+GRIDLESS_PARALLEL              THREADS
+GRIDLESS_THREADS               __GRIDLESS_THREADS__
+
+!#END

@@ -1,0 +1,69 @@
+*****************************************************************************************
+S. W. Bougher and D. Pawlowski:   M-GITM Dust Strom Simulations:  Nov. 21, 2011
+*****************************************************************************************
+
+1.	General Plan;
+	A.	Use the dataset input method to prescribe both NO_DUST and DUST_STORM
+		inputs maps  (LS vers LATITUDE) for the evolution of the model. Uses
+                the exact same readins and coding for model ingestion and application.
+	B.	Dave will re-configure the 2-D maps (latitude vs. longitude) from Jim
+		to conform to Dave's coding (since longitude variations do not exist): 
+
+                Tau = Tau (latitude, LS) only
+                CR = CR (latitude, LS) only
+
+	C.	4-Separate simulations will be made for the same time evolution of code;
+                yet different datasets as the driver:
+
+                Fall AGU
+                -------------------------------------
+                NO_Dust, No_Topo :  Baseline	
+                Dust_Storm, No_Topo: Perturbation	
+
+                Winter 2012
+                -------------------------------------
+                NO_Dust, W_Topo	:   Basline #2
+                Dust_Storm, W_Topo: Perturbation #2	
+
+	D.	Timeline will be the same for both cases: 67-SOLS, 42 degrees Ls
+
+                Dust Storm Evolution: 1-AUG-2003 to 6-OCT-2003
+                ----------------------------------------------
+                Spin-up: Ls = 232-247  (25-SOLS)
+                Onset  : Ls = 247-252  (8-SOLS)
+                Decay  : Ls = 252-274  (34-SOLS)
+
+2.	Standard Inputs:
+        -----------------
+	F10.7 = 150.
+ 	E(EUV-UV) = 0.21
+        CFL = 0.3 (conservative)
+        +- 20 m/sec maximum vertical velocity
+        F = UseUpdatesTurbulentConduction
+
+3.	Code modifications:
+	--------------------
+        --Code to ingest the opacity and CR datasets (Ls versus latitude) for each
+          separate case.
+        --Built upon the Viking /src upgrades and inprovements confirmed as best
+
+4.	Multiple job and UAM.in file method for simulation over the entire 67-SOLS
+        with a single initial job submission (Dave's method for long runs):
+        ----------------------------------------------------------------------------
+	-- Separate run directory for each case
+        -- New link for each case to the separate run directories
+        -- Separate UAM.in and job file suite (67 each) for each case 
+        -- Initiate the suite with qsub job.20030801  (first job file in series)
+        -- Create and retain separate RestartOut directories, one for each SOL
+        -- Create and retain separate *.bin.tar files, one for each SOL
+           (will be donwloaded individually); 1-hour *.bin files for each SOL
+
+        -- sample suite of 67 job and UAM.in files
+           cp /nobackupp30/dpawlows/Mars/20030801NoDust/*2003* .
+
+5.        Update /src code for use in no_dust and dstorm cases:
+          (preserve links in /src directory from .ConFig.pl)
+          -------------------------------------------------------
+          cp -d /home4/dpawlows/Mars/Steve/src/*.f90 .
+
+******************************************************************************************
