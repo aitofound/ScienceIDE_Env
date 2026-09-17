@@ -1,0 +1,710 @@
+"""
+resolvers.py
+---------------
+
+Provides a common interface to load assets referenced by name
+like MTL files, texture images, etc. Assets can be from ZIP
+archives, web assets, or a local file path.
+"""
+
+import abc
+import itertools
+import os
+from pathlib import Path
+from typing import TypeAlias
+
+# URL parsing for remote resources via WebResolver
+from urllib.parse import urlparse
+
+from . import caching, util
+from .typed import HttpSessionLike, Mapping
+
+
+class Resolver(util.ABC):
+    """
+    The base class for resolvers.
+    """
+
+    @abc.abstractmethod
+    def __init__(self, *args, **kwargs):
+        raise NotImplementedError("Use a resolver subclass!")
+
+    @abc.abstractmethod
+    def get(self, key):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def write(self, name: str, data):
+        raise NotImplementedError("`write` not implemented!")
+
+    @abc.abstractmethod
+    def namespaced(self, namespace: str):
+        raise NotImplementedError("`namespaced` not implemented!")
+
+    @abc.abstractmethod
+    def keys(self):
+        raise NotImplementedError("`keys` not implemented!")
+
+    def __getitem__(self, key: str):
+        return self.get(key)
+
+    def __setitem__(self, key: str, value):
+        return self.write(key, value)
+
+    def __contains__(self, key: str) -> bool:
+        return key in self.keys()
+
+
+class FilePathResolver(Resolver):
+    """
+    Resolve files from a source path on the file system.
+    """
+
+    def __init__(self, source: str, allow_anywhere: bool = False):
+        """
+        Resolve files based on a source path.
+
+        Parameters
+        ------------
+        source : str
+          File path where mesh was loaded from
+        allow_anywhere : bool
+          If True allow assets to reference paths outside the
+          resolver root, i.e. `../textures/thing.png` — the
+          pre-5.0 behavior.
+        """
+        # remove everything other than absolute path
+        clean = os.path.expanduser(os.path.abspath(str(source)))
+
+        self.allow_anywhere = bool(allow_anywhere)
+
+        self.clean = clean
+        if os.path.isdir(clean):
+            # if we were passed a directory use it
+            self.parent = clean
+        else:
+            # otherwise get the parent directory we've been passed
+            split = os.path.split(clean)
+            self.parent = split[0]
+
+        # exit if directory doesn't exist
+        if not os.path.isdir(self.parent):
+            raise ValueError(f"path `{self.parent} `not a directory!")
+
+        self.file_path = source
+        self.file_name = os.path.basename(source)
+
+    def keys(self):
+        """
+        List all files available to be loaded.
+
+        Yields
+        -----------
+        name : str
+          Name of a file which can be accessed.
+        """
+        parent = self.parent
+        for path, _, names in os.walk(self.parent):
+            # strip any leading parent key
+            if path.startswith(parent):
+                path = path[len(parent) :]
+            # yield each name
+            for name in names:
+                yield os.path.join(path, name)
+
+    def namespaced(self, namespace: str) -> "FilePathResolver":
+        """
+        Return a resolver which changes the root of the
+        resolver by an added namespace.
+
+        Parameters
+        -------------
+        namespace : str
+          Probably a subdirectory
+
+        Returns
+        --------------
+        resolver : FilePathResolver
+          Resolver with root directory changed.
+        """
+        return FilePathResolver(
+            os.path.join(self.parent, namespace), allow_anywhere=self.allow_anywhere
+        )
+
+    def absolute(self, name: str) -> Path:
+        """
+        Resolve an asset name to an absolute path under the
+        resolver root.
+
+        Parameters
+        ------------
+        name : str
+          Name of an asset relative to the resolver root.
+
+        Returns
+        ------------
+        path : pathlib.Path
+          Absolute resolved path.
+
+        Raises
+        ------------
+        ValueError
+          If the path escapes the resolver root and
+          `allow_anywhere` was not set.
+        """
+        parent = Path(self.parent).resolve()
+        path = (parent / name.strip()).resolve()
+        if not self.allow_anywhere and not path.is_relative_to(parent):
+            raise ValueError(
+                f"'{name}' escapes resolver root '{parent}' — pass "
+                + "`FilePathResolver(path, allow_anywhere=True)` to allow it"
+            )
+        return path
+
+    def get(self, name: str):
+        """
+        Get an asset, restricted to the resolver root.
+
+        Parameters
+        -------------
+        name : str
+          Name of the asset. Must resolve inside the resolver root.
+
+        Returns
+        ------------
+        data : bytes
+          Loaded data from asset.
+        """
+        candidates = (
+            name.strip(),
+            name.strip().lstrip("/"),
+            os.path.split(name)[-1],
+        )
+        for candidate in candidates:
+            try:
+                path = self.absolute(candidate)
+            except ValueError:
+                continue
+            if path.exists():
+                with open(path, "rb") as f:
+                    return f.read()
+        # if the requested name escaped the root this raises
+        # the actionable error instead of a plain not-found
+        self.absolute(name)
+        raise FileNotFoundError(name)
+
+    def write(self, name: str, data: str | bytes):
+        """
+        Write an asset to a file path, restricted to the resolver root.
+
+        Parameters
+        -----------
+        name : str
+          Name of the file to write. Must resolve inside the resolver root.
+        data : str or bytes
+          Data to write to the file.
+        """
+        with open(self.absolute(name), "wb") as f:
+            # handle encodings correctly for str/bytes
+            util.write_encoded(file_obj=f, stuff=data)
+
+
+class ZipResolver(Resolver):
+    """
+    Resolve files inside a ZIP archive.
+    """
+
+    def __init__(self, archive: dict | None = None, namespace: str | None = None):
+        """
+        Resolve files inside a ZIP archive as loaded by
+        trimesh.util.decompress
+
+        Parameters
+        -------------
+        archive : dict
+          Contains resources as file object
+        namespace : None or str
+          If passed will only show keys that start
+          with this value and this substring must be
+          removed for any get calls.
+        """
+        self.archive = archive
+        if isinstance(namespace, str):
+            self.namespace = namespace.strip().rstrip("/") + "/"
+        else:
+            self.namespace = None
+
+    def keys(self):
+        """
+        Get the available keys in the current archive.
+
+        Returns
+        -----------
+        keys : iterable
+          Keys in the current archive.
+        """
+        if self.namespace is not None:
+            namespace = self.namespace
+            length = len(namespace)
+            # only return keys that start with the namespace
+            # and strip off the namespace from the returned
+            # keys.
+            return [
+                k[length:]
+                for k in self.archive.keys()
+                if k.startswith(namespace) and len(k) > length
+            ]
+        return self.archive.keys()
+
+    def write(self, key: str, value) -> None:
+        """
+        Store a value in the current archive.
+
+        Parameters
+        -----------
+        key : hashable
+          Key to store data under.
+        value : str, bytes, file-like
+          Value to store.
+        """
+        if self.archive is None:
+            self.archive = {}
+        self.archive[key] = value
+
+    def get(self, name: str) -> bytes:
+        """
+        Get an asset from the ZIP archive.
+
+        Parameters
+        -------------
+        name : str
+          Name of the asset
+
+        Returns
+        -------------
+        data : bytes
+          Loaded data from asset
+        """
+        # not much we can do with None
+        if name is None:
+            return
+        # make sure name is a string
+        if hasattr(name, "decode"):
+            name = name.decode("utf-8")
+        # store reference to archive inside this function
+        archive = self.archive
+        # requested name not identical in
+        # storage so attempt to recover
+        if name not in archive:
+            # loop through unique results
+            for option in nearby_names(name, self.namespace):
+                if option in archive:
+                    # cleaned option is in archive
+                    # so store value and exit
+                    name = option
+                    break
+
+        # get the stored data
+        obj = archive[name]
+        # if the dict is storing data as bytes just return
+        if isinstance(obj, (bytes, str)):
+            return obj
+        # otherwise get it as a file object
+        # read file object from beginning
+        obj.seek(0)
+        # data is stored as a file object
+        data = obj.read()
+        obj.seek(0)
+        return data
+
+    def namespaced(self, namespace: str) -> "ZipResolver":
+        """
+        Return a "sub-resolver" with a root namespace.
+
+        Parameters
+        -------------
+        namespace : str
+          The root of the key to clip off, i.e. if
+          this resolver has key `a/b/c` you can get
+          'a/b/c' with resolver.namespaced('a/b').get('c')
+
+        Returns
+        -----------
+        resolver : Resolver
+          Namespaced resolver.
+        """
+        return ZipResolver(archive=self.archive, namespace=namespace)
+
+    def export(self) -> bytes:
+        """
+        Export the contents of the current archive as
+        a ZIP file.
+
+        Returns
+        ------------
+        compressed : bytes
+          Compressed data in ZIP format.
+        """
+        return util.compress(self.archive)
+
+
+class WebResolver(Resolver):
+    """
+    Resolve assets from a remote URL.
+    """
+
+    def __init__(
+        self,
+        url: str,
+        session: HttpSessionLike | None = None,
+        timeout: float = 30.0,
+    ):
+        """
+        Resolve assets from a base URL.
+
+        Parameters
+        --------------
+        url : str
+          Location where a mesh was stored or
+          directory where mesh was stored.
+        session : HttpSessionLike or None
+          Optional HTTP session used for fetches. Accepts
+          `httpx.Client` or `requests.Session`.
+        timeout : float
+          Per-request timeout in seconds.
+        """
+        if hasattr(url, "decode"):
+            url = url.decode("utf-8")
+
+        # parse string into namedtuple
+        parsed = urlparse(url)
+        # only http(s) is supported, reject `file://`, `gopher://`, etc.
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError(f"scheme {parsed.scheme!r} not in ('http', 'https')")
+
+        if session is None:
+            # an explicit session will be required in a future release
+            import warnings
+
+            warnings.warn(
+                "`WebResolver` without a `session` is deprecated "
+                + "and will require one in a future release. "
+                + "pass an `httpx.Client` or `requests.Session`.",
+                category=DeprecationWarning,
+                stacklevel=2,
+            )
+
+        self.session = session
+        self.timeout = timeout
+
+        # per-library request kwargs: httpx and requests disagree on
+        # the redirect kwarg name — this is also where any future
+        # library-specific options should live
+        library = "httpx" if session is None else type(session).__module__.split(".")[0]
+        if library == "httpx":
+            # also the bare httpx module fallback when no session was passed
+            self.request_kwargs = {"follow_redirects": True, "timeout": timeout}
+        elif library == "requests":
+            self.request_kwargs = {"allow_redirects": True, "timeout": timeout}
+        elif library == "aiohttp":
+            # an aiohttp session can only be constructed inside a running
+            # event loop and its connector binds to that loop, so a
+            # synchronous fetch can never legally drive one
+            raise ValueError(
+                "`aiohttp` sessions are async-only and bound to their creation "
+                + "loop: pass an `httpx.Client` or `requests.Session` instead"
+            )
+        else:
+            # a duck-typed session gets `get(url)` with no assumed kwargs
+            self.request_kwargs = {}
+
+        # we want a base url
+        split = [i for i in parsed.path.split("/") if len(i) > 0]
+
+        # if the last item in the url path is a filename
+        # move up a "directory" for the base path
+        if len(split) == 0:
+            path = ""
+        elif "." in split[-1]:
+            # clip off last item
+            path = "/".join(split[:-1])
+        else:
+            # recombine into string ignoring any double slashes
+            path = "/".join(split)
+
+        # save the URL we were created with, i.e.
+        # `https://stuff.com/models/thing.glb`
+        self.url = url
+        # save the root url, i.e. `https://stuff.com/models`
+        self.base_url = (
+            "/".join(
+                i
+                for i in [parsed.scheme + ":/", parsed.netloc.strip("/"), path.strip("/")]
+                if len(i) > 0
+            )
+            + "/"
+        )
+
+        # our string handling should have never inserted double slashes
+        assert "//" not in self.base_url[len(parsed.scheme) + 3 :]
+        # we should always have ended with a single slash
+        assert self.base_url.endswith("/")
+
+        self.file_name = url.split("/")[-1]
+
+    def get(self, name: str) -> bytes:
+        """
+        Get a resource from the remote site.
+
+        Parameters
+        -------------
+        name : str
+          Asset name, i.e. 'quadknot.obj.mtl'
+        """
+        import httpx
+
+        # remove leading and trailing whitespace
+        name = name.strip()
+
+        # the caller's session or the bare httpx module, both expose `.get`
+        client = self.session or httpx
+        response = client.get(self.base_url + name, **self.request_kwargs)
+
+        if response.status_code >= 300:
+            # try to strip off filesystem crap
+            if name.startswith("./"):
+                name = name[2:]
+            response = client.get(self.base_url + name, **self.request_kwargs)
+
+        # now raise if we don't have
+        response.raise_for_status()
+
+        # return the bytes of the response
+        return response.content
+
+    def get_base(self) -> bytes:
+        """
+        Fetch the data at the full URL this resolver was
+        instantiated with, i.e. `https://stuff.com/hi.glb`
+        this will return the response.
+
+        Returns
+        --------
+        content
+          The value at `self.url`
+        """
+        import httpx
+
+        # just fetch the url we were created with
+        response = (self.session or httpx).get(self.url, **self.request_kwargs)
+        response.raise_for_status()
+        return response.content
+
+    def namespaced(self, namespace: str) -> "WebResolver":
+        """
+        Return a namespaced version of current resolver.
+
+        Parameters
+        -------------
+        namespace : str
+          URL fragment
+
+        Returns
+        -----------
+        resolver : WebResolver
+          With sub-url: `https://example.com/{namespace}`
+        """
+        # propagate session/timeout so the child keeps the same posture
+        return WebResolver(
+            url=self.base_url + namespace,
+            session=self.session,
+            timeout=self.timeout,
+        )
+
+    def write(self, key, value):
+        raise NotImplementedError("`WebResolver` is read-only!")
+
+    def keys(self):
+        raise NotImplementedError("`WebResolver` can't list keys")
+
+
+class GithubResolver(Resolver):
+    def __init__(
+        self,
+        repo: str,
+        branch: str | None = None,
+        commit: str | None = None,
+        save: str | None = None,
+        session: HttpSessionLike | None = None,
+        timeout: float = 30.0,
+    ):
+        """
+        Get files from a remote Github repository by
+        downloading a zip file with the entire branch
+        or a specific commit.
+
+        Parameters
+        -------------
+        repo
+          In the format of `owner/repo`.
+        branch
+          The remote branch you want to get files from.
+        commit
+          The full commit hash: pass either this OR branch.
+        save
+          A path if you want to save results locally.
+        session : HttpSessionLike or None
+          Optional HTTP session used for fetches. Accepts
+          `httpx.Client` or `requests.Session`.
+        timeout : float
+          Per-request timeout in seconds.
+        """
+
+        if commit is not None:
+            # just get the exact commit
+            self.url = f"https://github.com/{repo}/archive/{commit}.zip"
+        elif branch is not None:
+            # gets the latest commit on the specified branch.
+            self.url = f"https://github.com/{repo}/archive/refs/heads/{branch}.zip"
+        else:
+            raise ValueError("`commit` or `branch` must be passed!")
+
+        # reuse the session handling and deprecation warning
+        self.resolver = WebResolver(url=self.url, session=session, timeout=timeout)
+
+        if save is not None:
+            self.cache = caching.DiskCache(save)
+        else:
+            self.cache = None
+
+    def keys(self):
+        """
+        List the available files in the repository.
+
+        Returns
+        ----------
+        keys : iterable
+          Keys available to the resolved.
+        """
+        return self.zipped.keys()
+
+    def write(self, name, data):
+        raise NotImplementedError("`write` not implemented!")
+
+    @property
+    def zipped(self) -> ZipResolver:
+        """
+        - opened zip file
+        - locally saved zip file
+        - retrieve zip file and saved
+        """
+
+        if hasattr(self, "_zip"):
+            return self._zip
+        # download the archive or get from disc
+        raw = self.cache.get(self.url, self.resolver.get_base)
+        # create a zip resolver for the archive
+        # the root directory in the zip is the repo+commit so strip that off
+        # so the keys are usable, i.e. "models" instead of "trimesh-2232323/models"
+        self._zip = ZipResolver(
+            {
+                k.split("/", 1)[1]: v
+                for k, v in util.decompress(
+                    util.wrap_as_stream(raw), file_type="zip"
+                ).items()
+            }
+        )
+
+        return self._zip
+
+    def get(self, key):
+        return self.zipped.get(key)
+
+    def namespaced(self, namespace):
+        """
+        Return a "sub-resolver" with a root namespace.
+
+        Parameters
+        -------------
+        namespace : str
+          The root of the key to clip off, i.e. if
+          this resolver has key `a/b/c` you can get
+          'a/b/c' with resolver.namespaced('a/b').get('c')
+
+        Returns
+        -----------
+        resolver : Resolver
+          Namespaced resolver.
+        """
+        return self.zipped.namespaced(namespace)
+
+
+def nearby_names(name, namespace=None):
+    """
+    Try to find nearby variants of a specified name.
+
+    Parameters
+    ------------
+    name : str
+      Initial name.
+
+    Yields
+    -----------
+    nearby : str
+      Name that is a lightly permutated version
+      of the initial name.
+    """
+
+    # the various operations that *might* result in a correct key
+    def trim(prefix, item):
+        if item.startswith(prefix):
+            return item[len(prefix) :]
+        return item
+
+    cleaners = [
+        lambda x: x,
+        lambda x: x.strip(),
+        lambda x: trim("./", x),
+        lambda x: trim(".\\", x),
+        lambda x: trim("\\", x),
+        lambda x: os.path.split(x)[-1],
+        lambda x: x.replace("%20", " "),
+    ]
+
+    if namespace is None:
+        namespace = ""
+
+    # make sure we don't return repeat values
+    hit = set()
+    for f in cleaners:
+        # try just one cleaning function
+        current = f(name)
+        if current in hit:
+            continue
+        hit.add(current)
+        yield namespace + current
+
+    for a, b in itertools.combinations(cleaners, 2):
+        # apply both clean functions
+        current = a(b(name))
+        if current in hit:
+            continue
+        hit.add(current)
+        yield namespace + current
+
+        # try applying in reverse order
+        current = b(a(name))
+        if current in hit:
+            continue
+        hit.add(current)
+        yield namespace + current
+
+    if ".." in name and namespace is not None:
+        # if someone specified relative paths give it one attempt
+        strip = namespace.strip("/").split("/")[: -name.count("..")]
+        strip.extend(name.split("..")[-1].strip("/").split("/"))
+        yield "/".join(strip)
+
+
+# most loaders can use a mapping in addition to a resolver
+ResolverLike: TypeAlias = Resolver | Mapping
