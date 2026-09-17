@@ -1,0 +1,52 @@
+{
+  "check": "solid-earth-tide",
+  "policy": "pointwise",
+  "chaotic": false,
+  "upstream_test": "code/rtklib/test/utest/t_ppp.c:utest3",
+  "configuration": "t_ppp.c:utest3 inputs: UTC 2010-06-07 01:02:03, TSKB ECEF [-3957198.431,3310198.621,3737713.474] m; tidedisp option 1, null ERP/ocean loading, unchanged default tide implementation.",
+  "observable": "ECEF solid-Earth displacement vector",
+  "expected_runtime_s": 0.01,
+  "runtime_note": "under 300 s; declared run-only budget based on native probes, Docker calibration confirmed the check is within this budget; compilation excluded",
+  "default_vs_upstream": "upstream physical inputs and correction switch; thin public-API driver prints displacement at 17 significant digits instead of 5 decimal places and does not grade the assertion residual.",
+  "variant": "Receiver ECEF Z changes from 3737713.474 to 3737713.474000001 m: two binary64 ULPs toward positive infinity. X/Y, UTC epoch and solid-Earth-only switch are unchanged. Perturbing X or Y alone rounded away in native probes; Z moves the graded vector.",
+  "altbuild": "Clang -O3 versus GCC -O3 with identical pinned source, flags and nominal inputs; no fast-math.",
+  "comparison": {
+    "rule": "Compare each of the three ECEF solid-Earth displacement components at the fixed official epoch and station with absolute error <= 0.001 m; require exactly three finite values. The test assertion residual, formatting and evaluation timing are excluded.",
+    "atol": 0.001,
+    "rtol": 0.0,
+    "files": [
+      {
+        "path": "displacement.txt",
+        "format": "float-text"
+      }
+    ]
+  },
+  "output_contract": {
+    "kind": "tide"
+  },
+  "evidence": {
+    "floor": 5.551115123125783e-17,
+    "floor_how": "measured by selfcheck on 2026-09-17: run.sh altbuild (Clang -O3 instead of GCC -O3, identical pinned source, flags and nominal inputs, no fast-math.) against run.sh nominal, graded with the check's own validate.py: maximum physical component error compared with metre bound",
+    "self_validation_spread": 2.7755575615628914e-17,
+    "self_validation_bound_fraction": 2.7755575615628914e-14,
+    "altbuild": {
+      "what": "Clang -O3 instead of GCC -O3, identical pinned source, flags and nominal inputs, no fast-math.",
+      "distance": 5.551115123125783e-17,
+      "bound_fraction": 5.551115123125783e-14,
+      "identical": false,
+      "graded_identical": false,
+      "passed": true,
+      "reason": "maximum physical component error compared with metre bound",
+      "at": "2026-09-17T05:51:07Z"
+    },
+    "floor_bound_fraction": 5.551115123125783e-14,
+    "fault_probes": {
+      "source": "authoring native preflight 20260917T054012Z; isolated checker probes, not pipeline-generated evidence",
+      "fault": "omitted solid-Earth displacement (zero vector)",
+      "verdict": "rejected",
+      "report": "comment/native-preflight.json"
+    }
+  },
+  "warrant": "The 0.001 m component bound is inherited directly from test/utest/t_ppp.c:utest3, which compares tidedisp against the official displacement vector. src/ppp.c:tidedisp applies the solid-Earth model and shared solar/lunar geometry to a fixed UTC epoch and station. This check compares the physical displacement, not a residual against zero. Omitting the tide returns zero and exceeds the bound by tens of millimetres; two-ULP station input changes are tiny relative to the upstream millimetre assertion. The retained official native suite passed; platform sensitivity is recorded by the GCC/Clang calibration.",
+  "tolerance_status": "Human finalized on 2026-09-17: 认可，继续本机复验并准备独立 Draft PR; full-day PPP component bound 0.10 m and tide component bound 0.001 m. Mac ARM64 evidence only; cross-architecture adequacy remains a Draft review item; SCC paused."
+}
