@@ -1,0 +1,138 @@
+# get UV from a docker copy
+FROM ghcr.io/astral-sh/uv:0.11.23 AS uv
+
+# use a vanilla Debian base image
+FROM debian:trixie-slim AS base
+
+# Copy uv binary from the builder stage
+COPY --from=uv uv /usr/local/bin/uv
+
+# Create a non-root user with `uid=499` and switch to it.
+RUN useradd -m -u 499 -s /bin/bash user && \
+    apt-get update && \
+    apt-get install --no-install-recommends -qq -y ca-certificates && \
+    apt-get clean -y && rm -rf /var/lib/apt/lists/*
+USER user
+
+WORKDIR /home/user
+
+# install a python `venv`
+# this seems a little silly since we're already in a container
+# but if you use Debian methods like `update-alternatives`
+# it won't provide a `pip` which works easily and it isn't
+# easy to know how system packages interact with pip packages
+ARG PYTHON_VERSION="3.14.4"
+RUN uv venv --python=python${PYTHON_VERSION} venv
+
+# Add `pip` script install location to $PATH
+ENV PATH="/home/user/venv/bin:$PATH"
+ENV VIRTUAL_ENV="/home/user/venv"
+# bash script that redirects `pip install X`->`uv pip install X`
+RUN echo '#!/bin/sh' > /home/user/venv/bin/pip && \
+    echo 'exec uv pip "$@"' >> /home/user/venv/bin/pip && \
+    chmod +x /home/user/venv/bin/pip
+
+# Install helper script to PATH.
+COPY --chmod=755 helpers/trimesh-setup /home/user/venv/bin
+
+#######################################
+## install things that need building
+FROM base AS build
+
+# the `easy` extra shouldn't need a build chain
+# unless we're on a brand new Python release
+ARG NEEDS_BUILDCHAIN="false"
+USER root
+# install build dependencies
+RUN if [ "$NEEDS_BUILDCHAIN" = "true" ]; then trimesh-setup --install build; fi
+USER user
+
+# copy in essential files
+COPY --chown=499 trimesh/ /home/user/trimesh
+COPY --chown=499 pyproject.toml /home/user/
+
+# install trimesh into the venv
+RUN pip install /home/user[easy]
+
+# recursively delete tests installed with libraries
+# these are about 30mb for no particular reason, and
+# if we break something we are doing this BEFORE tests
+RUN cd /home/user/venv && \
+    find . -type d -name tests -exec rm -rf {} + || true
+
+####################################
+### Build output image most things should run on
+FROM base AS output
+
+# just copy over the results of the compiled packages
+COPY --chown=499 --from=build /home/user/venv /home/user/venv
+
+###############################
+#### Run Unit Tests
+FROM output AS tests
+
+# copy in tests and supporting files
+COPY --chown=499 tests ./tests/
+COPY --chown=499 trimesh ./trimesh/
+COPY --chown=499 models ./models/
+COPY --chown=499 pyproject.toml .
+
+USER root
+RUN trimesh-setup --install=test,gmsh,gltf_validator,llvmpipe,binvox,blender,build
+USER user
+
+RUN bash -c "ldconfig & blender --version"
+
+# install things like pytest and make sure we're on Numpy 2.X
+RUN pip install .[all] && \
+    python -c "import numpy as n; assert(n.__version__.startswith('2'))"
+
+# check for lint problems and print the current python version
+RUN ruff check trimesh && \
+    python --version && \
+    python -c "from beartype import __version__ as v; print(v)"
+
+# run pytest wrapped with xvfb for simple viewer tests
+# print more columns so the short summary is usable
+# `--cov` leaves a `.coverage` data file the docs build turns into a report
+RUN COLUMNS=240 xvfb-run pytest \
+    --cov=trimesh \
+    --beartype-packages=trimesh \
+    -p no:ALL_DEPENDENCIES \
+    -p no:INCLUDE_RENDERING \
+    -p no:cacheprovider tests
+
+################################
+### Build Sphinx Docs
+FROM output AS build_docs
+
+USER root
+# install APT packages for docs
+RUN trimesh-setup --install docs
+USER user
+
+COPY --chown=499 README.md .
+COPY --chown=499 pyproject.toml .
+COPY --chown=499 docs ./docs/
+COPY --chown=499 examples ./examples/
+COPY --chown=499 models ./models/
+COPY --chown=499 trimesh ./trimesh/
+
+# pull the coverage data from the tests stage so the docs build can render
+# it into a styled report next to `trimesh` (same path pytest measured)
+COPY --chown=499 --from=tests /home/user/.coverage /home/user/.coverage
+
+# autodoc walks trimesh modules that import optional deps
+RUN pip install /home/user[easy,recommend]
+
+WORKDIR /home/user/docs
+RUN make clean && make
+
+### Copy just the docs so we can output them
+FROM scratch AS docs
+COPY --from=build_docs /home/user/docs/built/html/ ./
+
+### Make sure the output stage is the last stage so a simple
+# "docker build ." still outputs an expected image
+FROM output AS final
+

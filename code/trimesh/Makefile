@@ -1,0 +1,113 @@
+# See: https://clarkgrubb.com/makefile-style-guide
+MAKEFLAGS += --warn-undefined-variables
+SHELL := bash
+.SHELLFLAGS := -eu -o pipefail -c
+.DEFAULT_GOAL := all
+.DELETE_ON_ERROR:
+.SUFFIXES:
+
+
+# prefer `uv run python` so this works without a system python on PATH
+PYTHON := $(shell command -v uv >/dev/null && echo 'uv run python' || echo python)
+# get the trimesh semantic version
+VERSION := $(shell $(PYTHON) trimesh/version.py)
+# save the git short hash for tags
+GIT_SHA := $(shell git rev-parse --short HEAD)
+
+# the name of the docker images
+NAME=trimesh/trimesh
+REPO=docker.io
+IMAGE=$(REPO)/$(NAME)
+
+# the dockerfile location
+DOCKERFILE=helpers/Dockerfile
+
+# the tags we'll be applying
+TAG_LATEST=$(IMAGE):latest
+TAG_GIT_SHA=$(IMAGE):$(GIT_SHA)
+TAG_VERSION=$(IMAGE):$(VERSION)
+
+# This will output the help for each task
+# See: https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
+.PHONY: help
+help: ## Print usage help
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+.DEFAULT_GOAL := help
+
+# force amd64 builds on non-amd64 hosts (e.g. Apple Silicon)
+export DOCKER_DEFAULT_PLATFORM=linux/amd64
+
+# docker build arguments common to all build paths
+# NEEDS_BUILDCHAIN can probably be false once 3.14 matures a little more
+# `--build-arg=NEEDS_BUILDCHAIN=true`
+
+DOCKER_BUILD_ARGS=--progress=plain --file $(DOCKERFILE) 
+
+# build the output stage image using buildkit
+.PHONY: build
+build: ## Build the docker images
+	DOCKER_BUILDKIT=1 \
+	docker build \
+		$(DOCKER_BUILD_ARGS) \
+		--target output \
+		--tag $(TAG_LATEST) \
+		--tag $(TAG_VERSION) \
+		--tag $(TAG_GIT_SHA) \
+		.
+
+# build the tests stage of the image
+.PHONY: tests
+tests: ## Run unit tests inside docker images.
+	DOCKER_BUILDKIT=1 \
+	docker build \
+		$(DOCKER_BUILD_ARGS) \
+		--target tests \
+		.
+
+# run the `ty` type checker and print a per-file diagnostic-count table
+.PHONY: type-check
+type-check: ## Print a per-file `ty` type-check report
+	uv run --with ty python helpers/run_typecheck.py
+
+# build the docs inside our image and eject the contents
+# into `./html` directory
+.PHONY: docs
+docs: ## Build trimesh's sphinx docs
+	DOCKER_BUILDKIT=1 \
+	docker build \
+		$(DOCKER_BUILD_ARGS) \
+		--target docs \
+		--output html \
+		.
+
+.PHONY: bash
+bash: build ## Start a bash terminal in the image.
+	docker run -it $(TAG_LATEST) /bin/bash
+
+.PHONY: test-arch
+test-arch: ## Run tests on big-endian s390x and 32-bit i386 via QEMU emulation.
+	docker run --rm --platform linux/s390x \
+		-v $(CURDIR):/trimesh \
+		-w /trimesh \
+		debian:trixie-slim \
+		bash -c "apt-get update -qq && apt-get install -y -qq \
+	python3-numpy python3-pytest python3-pil python3-shapely python3-scipy python3-lxml \
+	python3-networkx python3-jsonschema python3-httpx python3-collada python3-rtree \
+	 && python3 -m pytest \
+	tests/test_ply.py tests/test_gltf.py tests/test_voxel.py \
+	tests/test_stl.py tests/test_dae.py tests/test_obj.py \
+	tests/test_runlength.py tests/test_encoding.py -v"
+	docker run --rm --platform linux/386 \
+		-v $(CURDIR):/trimesh \
+		-w /trimesh \
+		debian:trixie-slim \
+		bash -c "apt-get update -qq && apt-get install -y -qq \
+	python3-numpy python3-pytest python3-scipy python3-rtree \
+	 && python3 -m pytest \
+	tests/test_voxel.py tests/test_runlength.py tests/test_encoding.py -v"
+
+.PHONY: publish-docker
+publish-docker: build ## Publish Docker images.
+	docker push $(TAG_LATEST)
+	docker push $(TAG_VERSION)
+	docker push $(TAG_GIT_SHA)
