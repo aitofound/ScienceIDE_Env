@@ -1,0 +1,247 @@
+  
+ _|      _|     _|_|       _|_|_|
+ _|_|  _|_|   _|    _|   _|
+ _|  _|  _|   _|_|_|_|     _|_|
+ _|      _|   _|    _|         _|
+ _|      _|   _|    _|   _|_|_|
+  
+ Magnetohydrodynamic Algorithm outside a Sphere
+                         Predictive Science Inc.
+
+ ### Input file contents:
+
+!
+! *** Grid resolution.
+!
+&topology
+  nr = 25
+  nt = 50
+  np = 100
+/
+&data
+!
+! *** Use the new style output text files.
+!
+  legacy_output_filenames = .false.
+!
+! *** Radial domain.
+!
+  r0 = 1.0
+  r1 = 2.5
+!
+! *** Time domain.
+!
+  tmax = 3.0
+!
+! *** Grid specifications.
+!
+  rfrac    = 0.0,1.0
+  drratio  = 5.0
+  nfrmesh  = 5
+  tfrac    = 0.0,0.5,1.0
+  dtratio  = 0.5,2.0
+  nftmesh  = 5
+  pfrac    = 0.0
+  dpratio  = 0.0
+  nfpmesh  = 5
+  phishift = 0.0
+!
+! *** Time step specifications.
+!
+  dtmax = 0.05
+  dtmin = 0.0001
+  dt_init = 0.0
+!
+! *** Output options.
+!
+  plotlist = 'br'
+  tpltxint = 0.0
+  slice_plotlist = ''
+  slice_tp_radii = 0.0
+  slice_txint = 0.0
+  trace_txint = 0.0
+  hdf32 = .false.
+  rs_final = .false.
+  trsdump = 0.0
+!
+! *** Model specification.
+!
+  advance_a    = .true.
+  advance_v    = .true.
+  advance_t    = .false.
+  advance_rho  = .false.
+  advance_pw   = .false.
+  advance_zw   = .false.
+  advance_fcs  = .false.
+  trace_particles = .false.
+  slund = 1.e30
+  visc = 1.e-5
+  gamma = 1.666666666666667
+  g0 = 0.0
+  br00 = 1.0
+  rho0 = 1.0
+  tbc0    = 20000.
+  tchromo = 20000.
+  tfloor  = 20000.
+  char_bc0 = .false.
+  char_bc1 = .false.
+  ubzero = .false.
+  filter_poles = .false.
+! *** Thermal conduction:
+  advance_tc = .false.
+  tcond = 0.0
+  alpha_nocoll = 0.0
+  t_cutoff1 = 500000.0
+  nfilt_kappa = 0
+!
+! *** Initial condition.
+!
+  initial_field = 'ALFVEN_WAVE2_ROTATED'
+  initial_plasma = 'ZERO-BETA'
+  wave_mode_r = 2
+  wave_mode_t = 1
+  wave_amplitude = 1e-4
+  wave_rotation_t = 1.1781
+!
+! *** Numerical algorithm options.
+!
+  cfl = 0.4
+  use_sts_visc = .false.
+  use_sts_tc   = .false.
+  visc_auto_subcycle = .false.
+  tc_auto_subcycle   = .false.
+  ifprec_t     = 3
+  ifprec_v     = 3
+  ifprec_pot2d = 3
+  ifprec_divb  = 3
+  epscg_a       = 1.e-9
+  epscg_v       = 1.e-9
+  epscg_t       = 1.e-9
+  epscg_potfld  = 1.e-9
+  epscg_newflux = 1.e-9
+  epscg_divb    = 1.e-9
+  ncgmax = 100000
+!
+/
+! -----------------------
+! Zero-beta Rotated Alfven Wave P
+! -----------------------
+!
+! Description goes here.
+!
+! -----------------------
+
+
+Code: MAS
+Version: 0.9.2.0git
+Updated on: 04/07/2025
+Source file: mas.F90
+Run ID: mas
+Run started on: 04/09/2025
+Run started at: 14:01:56
+Ran on machine: PREDSCI-GPU2
+Machine type: x86_64
+Compiler: GCC version 12.3.0
+Compiler Flags: -I /opt/psi/gnu/ext_deps/deps/hdf5/include -I /usr/lib/x86_64-linux-gnu/openmpi/lib/../../fortran/gfortran-mod-15/openmpi -I /usr/lib/x86_64-linux-gnu/openmpi/lib -march=alderlake -mmmx -mpopcnt -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx -mavx2 -mno-sse4a -mno-fma4 -mno-xop -mfma -mno-avx512f -mbmi -mbmi2 -maes -mpclmul -mno-avx512vl -mno-avx512bw -mno-avx512dq -mno-avx512cd -mno-avx512er -mno-avx512pf -mno-avx512vbmi -mno-avx512ifma -mno-avx5124vnniw -mno-avx5124fmaps -mno-avx512vpopcntdq -mno-avx512vbmi2 -mgfni -mvpclmulqdq -mno-avx512vnni -mno-avx512bitalg -mno-avx512bf16 -mno-avx512vp2intersect -mno-3dnow -madx -mabm -mno-cldemote -mclflushopt -mclwb -mno-clzero -mcx16 -mno-enqcmd -mf16c -mfsgsbase -mfxsr -mno-hle -msahf -mno-lwp -mlzcnt -mmovbe -mmovdir64b -mmovdiri -mno-mwaitx -mno-pconfig -mpku -mno-prefetchwt1 -mprfchw -mptwrite -mrdpid -mrdrnd -mrdseed -mno-rtm -mserialize -mno-sgx -msha -mshstk -mno-tbm -mno-tsxldtrk -mvaes -mwaitpkg -mno-wbnoinvd -mxsave -mxsavec -mxsaveopt -mxsaves -mno-a
+
+
+Total number of ranks =      4
+
+Number of ranks in r =       1
+Number of ranks in t =       2
+Number of ranks in p =       2
+
+Global mesh dimension in r =     25
+Global mesh dimension in t =     50
+Global mesh dimension in p =    100
+
+Average # of mesh pts per rank in r =   25.0
+Average # of mesh pts per rank in t =   25.0
+Average # of mesh pts per rank in p =   50.0
+
+Estimated load imbalance =   0.00 %
+
+ >running
+
+NTIME =        1, TIME =     0.050000, DTIME =     0.050000 (dtmx)
+NTIME =        2, TIME =     0.100000, DTIME =     0.050000 (dtmx)
+NTIME =        3, TIME =     0.150000, DTIME =     0.050000 (dtmx)
+NTIME =        4, TIME =     0.200000, DTIME =     0.050000 (dtmx)
+NTIME =        5, TIME =     0.250000, DTIME =     0.050000 (dtmx)
+NTIME =        6, TIME =     0.300000, DTIME =     0.050000 (dtmx)
+NTIME =        7, TIME =     0.350000, DTIME =     0.050000 (dtmx)
+NTIME =        8, TIME =     0.400000, DTIME =     0.050000 (dtmx)
+NTIME =        9, TIME =     0.450000, DTIME =     0.050000 (dtmx)
+NTIME =       10, TIME =     0.500000, DTIME =     0.050000 (dtmx)
+NTIME =       11, TIME =     0.550000, DTIME =     0.050000 (dtmx)
+NTIME =       12, TIME =     0.600000, DTIME =     0.050000 (dtmx)
+NTIME =       13, TIME =     0.650000, DTIME =     0.050000 (dtmx)
+NTIME =       14, TIME =     0.700000, DTIME =     0.050000 (dtmx)
+NTIME =       15, TIME =     0.750000, DTIME =     0.050000 (dtmx)
+NTIME =       16, TIME =     0.800000, DTIME =     0.050000 (dtmx)
+NTIME =       17, TIME =     0.850000, DTIME =     0.050000 (dtmx)
+NTIME =       18, TIME =     0.900000, DTIME =     0.050000 (dtmx)
+NTIME =       19, TIME =     0.950000, DTIME =     0.050000 (dtmx)
+NTIME =       20, TIME =     1.000000, DTIME =     0.050000 (dtmx)
+NTIME =       21, TIME =     1.050000, DTIME =     0.050000 (dtmx)
+NTIME =       22, TIME =     1.100000, DTIME =     0.050000 (dtmx)
+NTIME =       23, TIME =     1.150000, DTIME =     0.050000 (dtmx)
+NTIME =       24, TIME =     1.200000, DTIME =     0.050000 (dtmx)
+NTIME =       25, TIME =     1.250000, DTIME =     0.050000 (dtmx)
+NTIME =       26, TIME =     1.300000, DTIME =     0.050000 (dtmx)
+NTIME =       27, TIME =     1.350000, DTIME =     0.050000 (dtmx)
+NTIME =       28, TIME =     1.400000, DTIME =     0.050000 (dtmx)
+NTIME =       29, TIME =     1.450000, DTIME =     0.050000 (dtmx)
+NTIME =       30, TIME =     1.500000, DTIME =     0.050000 (dtmx)
+NTIME =       31, TIME =     1.550000, DTIME =     0.050000 (dtmx)
+NTIME =       32, TIME =     1.600000, DTIME =     0.050000 (dtmx)
+NTIME =       33, TIME =     1.650000, DTIME =     0.050000 (dtmx)
+NTIME =       34, TIME =     1.700000, DTIME =     0.050000 (dtmx)
+NTIME =       35, TIME =     1.750000, DTIME =     0.050000 (dtmx)
+NTIME =       36, TIME =     1.800000, DTIME =     0.050000 (dtmx)
+NTIME =       37, TIME =     1.850000, DTIME =     0.050000 (dtmx)
+NTIME =       38, TIME =     1.900000, DTIME =     0.050000 (dtmx)
+NTIME =       39, TIME =     1.950000, DTIME =     0.050000 (dtmx)
+NTIME =       40, TIME =     2.000000, DTIME =     0.050000 (dtmx)
+NTIME =       41, TIME =     2.050000, DTIME =     0.050000 (dtmx)
+NTIME =       42, TIME =     2.100000, DTIME =     0.050000 (dtmx)
+NTIME =       43, TIME =     2.150000, DTIME =     0.050000 (dtmx)
+NTIME =       44, TIME =     2.200000, DTIME =     0.050000 (dtmx)
+NTIME =       45, TIME =     2.250000, DTIME =     0.050000 (dtmx)
+NTIME =       46, TIME =     2.300000, DTIME =     0.050000 (dtmx)
+NTIME =       47, TIME =     2.350000, DTIME =     0.050000 (dtmx)
+NTIME =       48, TIME =     2.400000, DTIME =     0.050000 (dtmx)
+NTIME =       49, TIME =     2.450000, DTIME =     0.050000 (dtmx)
+NTIME =       50, TIME =     2.500000, DTIME =     0.050000 (dtmx)
+NTIME =       51, TIME =     2.550000, DTIME =     0.050000 (dtmx)
+NTIME =       52, TIME =     2.600000, DTIME =     0.050000 (dtmx)
+NTIME =       53, TIME =     2.650000, DTIME =     0.050000 (dtmx)
+NTIME =       54, TIME =     2.700000, DTIME =     0.050000 (dtmx)
+NTIME =       55, TIME =     2.750000, DTIME =     0.050000 (dtmx)
+NTIME =       56, TIME =     2.800000, DTIME =     0.050000 (dtmx)
+NTIME =       57, TIME =     2.850000, DTIME =     0.050000 (dtmx)
+NTIME =       58, TIME =     2.900000, DTIME =     0.050000 (dtmx)
+NTIME =       59, TIME =     2.950000, DTIME =     0.050000 (dtmx)
+NTIME =       60, TIME =     3.000000, DTIME =     0.050000 (dtmx)
+NTIME =       61, TIME =     3.050000, DTIME =     0.050000 (dtmx)
+
+Code: MAS
+Version: 0.9.2.0git
+Updated on: 04/07/2025
+Source file: mas.F90
+Run ID: mas
+Run ended on: 04/09/2025
+Run ended at: 14:02:05
+Ran on machine: PREDSCI-GPU2
+Machine type: x86_64
+Compiler: GCC version 12.3.0
+Compiler Flags: -I /opt/psi/gnu/ext_deps/deps/hdf5/include -I /usr/lib/x86_64-linux-gnu/openmpi/lib/../../fortran/gfortran-mod-15/openmpi -I /usr/lib/x86_64-linux-gnu/openmpi/lib -march=alderlake -mmmx -mpopcnt -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx -mavx2 -mno-sse4a -mno-fma4 -mno-xop -mfma -mno-avx512f -mbmi -mbmi2 -maes -mpclmul -mno-avx512vl -mno-avx512bw -mno-avx512dq -mno-avx512cd -mno-avx512er -mno-avx512pf -mno-avx512vbmi -mno-avx512ifma -mno-avx5124vnniw -mno-avx5124fmaps -mno-avx512vpopcntdq -mno-avx512vbmi2 -mgfni -mvpclmulqdq -mno-avx512vnni -mno-avx512bitalg -mno-avx512bf16 -mno-avx512vp2intersect -mno-3dnow -madx -mabm -mno-cldemote -mclflushopt -mclwb -mno-clzero -mcx16 -mno-enqcmd -mf16c -mfsgsbase -mfxsr -mno-hle -msahf -mno-lwp -mlzcnt -mmovbe -mmovdir64b -mmovdiri -mno-mwaitx -mno-pconfig -mpku -mno-prefetchwt1 -mprfchw -mptwrite -mrdpid -mrdrnd -mrdseed -mno-rtm -mserialize -mno-sgx -msha -mshstk -mno-tbm -mno-tsxldtrk -mvaes -mwaitpkg -mno-wbnoinvd -mxsave -mxsavec -mxsaveopt -mxsaves -mno-a
+
+
+ ### End of run ...
+
+ NTIME =         61
+ TIME =  3.0500000000E+00
+
+ ### CPU time used (on IPROC0):         9.05 seconds
+

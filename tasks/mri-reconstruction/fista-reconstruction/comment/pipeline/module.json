@@ -1,0 +1,34 @@
+{
+  "module": {
+    "slug": "fista-reconstruction",
+    "title": "Classical FISTA MRI reconstruction",
+    "paths": [
+      "algorithms/classical/fista.py"
+    ],
+    "entrypoints": [
+      "tests/unit/test_fista.py",
+      "pipeline/reconstruction/reconstructor.py"
+    ],
+    "expensive_path": "The repeated forward FFT, masked residual, adjoint FFT, TV shrinkage, and momentum updates in the FISTA iteration loop.",
+    "rationale": "FISTA is a conceptually independent deterministic reconstruction kernel with direct upstream unit coverage and a small synthetic input contract.",
+    "excluded": [
+      "algorithms/ai: U-Net training/inference is GPU- and dataset-heavy",
+      "evaluation and visualization: downstream metrics and plotting are not part of the reconstruction kernel",
+      "algorithms/classical/admm.py: placeholder implementation without a complete official test"
+    ],
+    "hazards": [
+      "Numerical tolerance depends on FFT and floating-point implementation"
+    ]
+  },
+  "approval": {
+    "modules": [
+      "fista-reconstruction"
+    ],
+    "human_ref": "确认，只做 fista-reconstruction；不用 issue，直接提交 codebase 和 task PR",
+    "at": "2026-09-12T22:09:11Z"
+  },
+  "shared_infrastructure": [
+    "algorithms/utils/kspace.py",
+    "data/data_generator.py"
+  ]
+}

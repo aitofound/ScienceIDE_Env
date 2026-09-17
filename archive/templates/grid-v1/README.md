@@ -46,7 +46,7 @@ carrying a real slug would teach the wrong thing.
 
 **A guided path through all of this exists.** From a checkout of this
 repository, an agent with the `package-sciaccel-task` skill
-(`skills/package-sciaccel-task/`) will read the target codebase, ask you the
+(now in `huangzesen/sciaccelbench-pipeline`; `skills/package-sciaccel-task/` here points at it) will read the target codebase, ask you the
 questions only you can answer, and write the package. It does not replace
 this document — it walks it.
 
