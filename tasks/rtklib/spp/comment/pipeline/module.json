@@ -1,0 +1,59 @@
+{
+  "module": {
+    "slug": "spp",
+    "title": "GNSS single-point positioning",
+    "paths": [
+      "src/pntpos.c"
+    ],
+    "entrypoints": [
+      "app/rnx2rtkp/rnx2rtkp.c (RNX2RTKP -p 0)",
+      "src/pntpos.c:pntpos()"
+    ],
+    "expensive_path": "Repeated satellite state and correction evaluation followed by iterative weighted least-squares position/clock estimation for each observation epoch; Doppler velocity estimation when available. Current official examples are short, so no acceleration claim is established.",
+    "rationale": "User-selected narrow scope: the contributor explicitly said 先选SPP (select SPP first). RTKLIB remains the codebase identity and the entire pinned upstream tree is vendored. This is a documented exception to the whole-codebase default, not a claim that the sibling positioning algorithms use different physics. The proposed task will exercise the SPP scientific path through the unmodified RNX2RTKP single-point mode and its shared dependencies; curator acceptance remains pending.",
+    "excluded": [
+      "RTK/DGNSS and PPP positioning modes",
+      "CONVBIN, RTKRCV, STR2STR, GUI programs and miscellaneous utility applications",
+      "Bundled third-party libraries, documentation and legacy IDE/build artifacts"
+    ],
+    "hazards": [
+      "Eight explicitly single-point application targets primarily reuse one input dataset and vary serialization; they are not eight independent scientific scenarios.",
+      "An official time unit test contains an obsolete future leap-second expectation; stock all-unit compilation also has missing sources/linkage. These failures are retained in the native record.",
+      "RNX2RTKP can exit zero without producing a position: output presence and content require independent checking.",
+      "Native same-host repeatability is not an independent absolute-position validation. Coverage of Doppler velocity, multi-constellation data, fault detection and clock bias remains to be established.",
+      "No Docker run, scientific tolerance, nominal/variant calibration or task reward has been established."
+    ]
+  },
+  "approval": {
+    "modules": [
+      "spp"
+    ],
+    "human_ref": "先选SPP",
+    "at": "2026-09-17T03:16:21Z"
+  },
+  "shared_infrastructure": [
+    "src/rtklib.h",
+    "src/rtkcmn.c",
+    "src/rinex.c",
+    "src/postpos.c",
+    "src/rtkpos.c",
+    "src/solution.c",
+    "src/ephemeris.c",
+    "src/options.c",
+    "src/geoid.c",
+    "src/sbas.c",
+    "src/preceph.c",
+    "src/ionex.c",
+    "src/qzslex.c",
+    "src/lambda.c",
+    "src/ppp.c",
+    "src/ppp_ar.c",
+    "src/rtcm.c",
+    "src/rtcm2.c",
+    "src/rtcm3.c",
+    "src/rtcm3e.c",
+    "app/rnx2rtkp",
+    "test",
+    "data"
+  ]
+}
