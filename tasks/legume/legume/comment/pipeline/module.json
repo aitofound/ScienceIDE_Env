@@ -1,0 +1,40 @@
+{
+  "module": {
+    "slug": "legume",
+    "title": "legume — guided-mode expansion for photonic crystal slabs",
+    "paths": [
+      "."
+    ],
+    "entrypoints": [
+      "legume.GuidedModeExp(phc, gmax=...).run(kpoints=..., gmode_inds=..., numeig=..., compute_im=...) — the guided-mode expansion: photonic bands, radiative linewidths and quality factors of a multi-layer photonic crystal slab",
+      "legume.PlaneWaveExp(layer, gmax=...).run(kpoints=...) — plane-wave expansion for a purely 2D photonic crystal",
+      "legume.PhotCryst, Lattice, Layer, Circle, Poly, Ring — the geometry front end that every run is built from",
+      "legume.set_backend('autograd') — switches the numeric backend so every output is differentiable with respect to every geometric input",
+      "legume.ExcitonSchroedEq and legume.HopfieldPol — exciton and exciton-polariton coupling on top of a photonic band structure"
+    ],
+    "expensive_path": "One GuidedModeExp.run splits, measured by cProfile on a hexagonal slab over a 31-point G-M-K-G path, between two costs that scale differently. GuidedModeExp._construct_mat (legume/gme/gme.py:523) builds the Hermitian expansion matrix from the Fourier-transformed inverse permittivity and the slab's guided modes; inside it GuidedModeExp._compute_guided (gme.py:356) solves the transcendental slab dispersion relation with scipy brentq through legume/gme/slab_modes.py, 3,209 root-finds and 19,329 scalar evaluations of D22 at gmax=7. numpy.linalg.eigh then diagonalises that matrix. Construction dominates at small basis size and the eigensolve dominates at large: eigh is 22% of the run at gmax=5 (n_G=61), 48% at gmax=7 (n_G=127), 66% at gmax=9 (n_G=211), 74% at gmax=11 (n_G=313) and 82% at gmax=13 (n_G=451), crossing over at about gmax=7. The eigensolve is a LAPACK call in numpy, outside the vendored tree; the code this module owns is the matrix construction, the Fourier factorization of the permittivity in legume/phc/ and legume/gme/matrix_elements.py, the brentq guided-mode solver in legume/gme/slab_modes.py, and the custom autograd primitives for eigh and eigsh in legume/primitives.py.",
+    "rationale": "The whole-codebase default. legume is one pip-installable Python package of 8,587 production lines in 25 files, with one build (pip install -e), one test suite (python -m pytest tests) and one community of users. Its subpackages are stages of a single calculation rather than separate packages: legume/phc/ builds the geometry and its Fourier transform, legume/gme/ and legume/pwe/ expand the fields in that geometry, legume/pol/ and legume/exc/ couple excitons to the bands the expansion produced, and legume/primitives.py and legume/backend.py switch all of them between numpy and autograd. None of them has its own entry point, its own input/output contract or its own test target: the ten test files all drive the package through the same top-level legume namespace, and legume/pwe/ has no test of its own at all. A multi-module cut would fail both conditions the skill sets, so the cut is one module over paths ['.'].",
+    "excluded": [
+      "legume/viz.py (1,495 lines) and legume/print_utils.py, legume/print_backend.py, legume/gds.py (452 lines together): plotting, pretty-printing and GDS export. Owned by the module but no check grades them; they produce figures and console text, not physics.",
+      "docs/examples/legume/ (22 files, 3.7 MB, 618 lines of stale Python): a committed stale copy of an older repository root. Vendored byte-for-byte with the rest of the tree but excluded from the test survey; it is not an official test family."
+    ],
+    "hazards": [
+      "UPSTREAM DEFECT, autograd through radiative coupling. legume/gme/gme.py:1720 and :1743 add an autograd ArrayBox in place into a plain numpy array allocated by bd.zeros, so any differentiated run with compute_im=True (the default) raises TypeError. This breaks tests/test_gme_grad.py and example notebooks 06 and 08 — the tutorials for the package's headline feature, gradients of the quality factor. Reproduced identically on numpy 1.26.4 and 2.5.3, so it is not a numpy 2 regression; present since commit d663dd5 (2020-03-12) and in every tag. A two-line out-of-place rewrite makes the shipped test pass. Differentiation with compute_im=False works and gives correct gradients.",
+      "UPSTREAM DEFECT, a shadowing stale directory. docs/examples/legume/ has no __init__.py and shadows the installed package whenever the working directory is docs/examples/, so all 14 example notebooks fail at their first legume call when run where the documentation says to run them; its 9 test_*.py files also collide by basename with tests/, so bare `pytest` at the repository root dies with 9 collection errors. Only `python -m pytest tests` works.",
+      "Three of fourteen example notebooks (05, 15, 16) fail on numpy 2 for reasons inside the notebooks rather than the library: size-1-array %-formatting in 05 and 16, an int64 overflow (2*10**19) in 15. All three run on numpy 1.26.4. Upstream dropped its numpy<2 cap at 1.0.3 and its CI runs only `python -m pytest tests`, so the examples were never exercised against numpy 2.",
+      "Near-zero observables at high symmetry. At the Gamma point the two lowest bands are numerically zero (1.94e-08 and 7.40e-08 at gmax=7) and their relative error between two legitimate thread settings is 34-51% while the absolute difference is 4e-08. Every frequency above 1e-6 agrees to 9.6e-14 in the same comparison. Upstream's own tests slice off band 0 and add a 1e-10 floor. Any pointwise policy needs an absolute floor or must exclude those modes.",
+      "BLAS thread count changes the graded bits. Runs are byte-identical across processes at a fixed thread count and differ at the bit level between 1 and 8 threads. The thread count must be pinned by the check and never read from the host.",
+      "Root-finder tolerance floor. Guided modes come from scipy brentq under gmode_tol (default 1e-12), so the output carries a floor of about 1e-14 relative and does not respond proportionally to a small input perturbation: a two-ulp change moves the output 28.8x its own size, a 2000-ulp change only 0.27x. A two-ulp variant spread is therefore not meaningful calibration evidence here.",
+      "Eigenvector gauge. numpy.linalg.eigh fixes no phase convention. Between 1 and 8 BLAS threads the eigenvectors stayed in the same gauge (overlap magnitude 1.0, phase below 1e-22 rad), which shows determinism within one LAPACK build rather than agreement across implementations; a different eigensolver may legitimately return a different phase, so eigenvectors must not be graded raw.",
+      "A credential-shaped string is vendored. docs/examples/legume/README.md carries a Travis CI badge URL ending ?token=ZCPktA3Ki2eYVXYnfbrz. It is upstream's own published file for a service the project no longer uses, it is already public, and byte-for-byte vendoring keeps it; naming it here so a reviewer reads the assessment rather than discovering the string."
+    ]
+  },
+  "approval": {
+    "modules": [
+      "legume"
+    ],
+    "human_ref": "single-module default: the whole codebase is one module; no human decision at STOP 1, the cut is read in the source PR body at STOP 2",
+    "at": "2026-09-16T03:39:58Z"
+  },
+  "shared_infrastructure": []
+}
