@@ -1,0 +1,656 @@
+{
+  "module": "high-order-assembly",
+  "tests": [
+    {
+      "id": "hoa-ex0",
+      "module": "high-order-assembly",
+      "path": "examples/ex0.cpp",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The smallest complete MFEM program: H1 space on the default star mesh, DiffusionIntegrator assembled fully, PCG with Gauss-Seidel to 1e-12, writing sol.gf and mesh.mesh.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 1.0,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "It is the shortest path through FiniteElementSpace, BilinearForm::Assemble and RecoverFEMSolution that still produces a physical field, so it isolates a broken assembly from a broken solver or a broken space. Note that ex0 declares only -m and -o and rejects -no-vis, which is why the main timing sweep recorded it as rc 1; the runtime here comes from the corrected re-run. The diffusion and mass tensor-contraction kernels take a different path for every element geometry, because the sum factorization is written per reference cube, wedge, tetrahedron or triangle and the simplex kernels are a separate file (bilininteg_diffusion_pa_simplices.hpp). A port that gets one geometry right and another wrong is the ordinary failure, so the geometry is what this configuration holds fixed and grades. The solve is a converged CG to 1e-12 on a fixed mesh and space, so every graded degree of freedom is a physical value at a fixed location and pointwise is the right policy. The .gf and .mesh streams carry eight significant digits, so the bound cannot sit below about 1e-8 relative and the variant perturbation must start near there.",
+      "launches": 1,
+      "invocations": [
+        {
+          "binary": "ex0",
+          "args": "",
+          "seconds": 0.0
+        }
+      ],
+      "proposed_check": "poisson-minimal"
+    },
+    {
+      "id": "hoa-ex1-geometries",
+      "module": "high-order-assembly",
+      "path": "examples/ex1.cpp",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "One scalar Poisson problem run over every element family the library supports: quadrilaterals, a 2D mesh mixing triangles and quadrilaterals, the 3D Fichera corner in hexahedra, tetrahedra, a 3D mesh mixing hexahedra and tetrahedra, wedges, pyramids, a one-dimensional segment mesh, and a 2D surface embedded in 3D.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 4.43,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "These nine belong in one check because they are one experiment: the same problem, the same solver, the same tolerance, with only the reference element changed, so what the check grades is precisely the geometry dispatch. Each leg covers a distinct branch -- the mixed meshes force the tensor-product and simplex kernels to run inside one operator application and combine in one gather-add; the wedge is neither path and is the geometry most often left unported; pyramids carry a rational rather than polynomial basis and are the newest element family; the segment reduces sum factorization to a single contraction, the degenerate case whose loop bounds are easiest to get wrong; and the surface mesh makes the Jacobian rectangular, so the geometric factors become a pseudo-determinant and pseudo-inverse, a separate branch and a common porting gap. The Fichera re-entrant corner additionally puts a genuine gradient singularity in the field, so the graded values span several orders of magnitude rather than sitting in a narrow band. The diffusion and mass tensor-contraction kernels take a different path for every element geometry, because the sum factorization is written per reference cube, wedge, tetrahedron or triangle and the simplex kernels are a separate file (bilininteg_diffusion_pa_simplices.hpp). A port that gets one geometry right and another wrong is the ordinary failure, so the geometry is what this configuration holds fixed and grades. The solve is a converged CG to 1e-12 on a fixed mesh and space, so every graded degree of freedom is a physical value at a fixed location and pointwise is the right policy. The .gf and .mesh streams carry eight significant digits, so the bound cannot sit below about 1e-8 relative and the variant perturbation must start near there.",
+      "launches": 9,
+      "invocations": [
+        {
+          "binary": "ex1",
+          "args": "-m ../data/square-disc.mesh",
+          "seconds": 0.22
+        },
+        {
+          "binary": "ex1",
+          "args": "-m ../data/star-mixed.mesh",
+          "seconds": 0.21
+        },
+        {
+          "binary": "ex1",
+          "args": "-m ../data/fichera.mesh",
+          "seconds": 0.69
+        },
+        {
+          "binary": "ex1",
+          "args": "-m ../data/escher.mesh",
+          "seconds": 0.11
+        },
+        {
+          "binary": "ex1",
+          "args": "-m ../data/fichera-mixed.mesh",
+          "seconds": 0.1
+        },
+        {
+          "binary": "ex1",
+          "args": "-m ../data/toroid-wedge.mesh",
+          "seconds": 2.02
+        },
+        {
+          "binary": "ex1",
+          "args": "-m ../data/octahedron.mesh -o 1",
+          "seconds": 0.11
+        },
+        {
+          "binary": "ex1",
+          "args": "-m ../data/inline-segment.mesh",
+          "seconds": 0.37
+        },
+        {
+          "binary": "ex1",
+          "args": "-m ../data/star-surf.mesh",
+          "seconds": 0.6
+        }
+      ],
+      "proposed_check": "poisson-element-geometries"
+    },
+    {
+      "id": "hoa-ex1-periodic",
+      "module": "high-order-assembly",
+      "path": "examples/ex1.cpp",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Scalar Poisson on a periodic 2D annulus sector read from a Gmsh file.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.48,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Periodicity is implemented by identifying degrees of freedom in the element restriction rather than in the kernel, so this configuration grades the restriction and gather-add layer rather than the contraction. It is also the module's only Gmsh-format reader path. The diffusion and mass tensor-contraction kernels take a different path for every element geometry, because the sum factorization is written per reference cube, wedge, tetrahedron or triangle and the simplex kernels are a separate file (bilininteg_diffusion_pa_simplices.hpp). A port that gets one geometry right and another wrong is the ordinary failure, so the geometry is what this configuration holds fixed and grades. The solve is a converged CG to 1e-12 on a fixed mesh and space, so every graded degree of freedom is a physical value at a fixed location and pointwise is the right policy. The .gf and .mesh streams carry eight significant digits, so the bound cannot sit below about 1e-8 relative and the variant perturbation must start near there.",
+      "launches": 1,
+      "invocations": [
+        {
+          "binary": "ex1",
+          "args": "-m ../data/periodic-annulus-sector.msh",
+          "seconds": 0.48
+        }
+      ],
+      "proposed_check": "poisson-periodic-gmsh"
+    },
+    {
+      "id": "hoa-ex1-order-sweep",
+      "module": "high-order-assembly",
+      "path": "examples/ex1.cpp",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Scalar Poisson at order 2 on a quadratic mesh read from VTK, and at order 3 on a cubic mesh.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 6.25,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "The two registered order variants are one statement about the dispatch table and belong together: raising the order both lengthens the contraction and selects a different template instantiation, and running two orders is what separates a correct specialization from a correct generic fallback. The curved meshes mean the geometry is itself high order, not just the solution. Polynomial order sets the length of the one-dimensional contractions and selects a different template instantiation in the kernel dispatch table (fem/kernel_dispatch.hpp); the dispatch falls back to a generic kernel above the specialized orders, so an order sweep is what separates a correct specialization from a correct fallback. The field is a converged solve on a fixed space, hence pointwise. The .gf and .mesh streams carry eight significant digits, so the bound cannot sit below about 1e-8 relative and the variant perturbation must start near there.",
+      "launches": 2,
+      "invocations": [
+        {
+          "binary": "ex1",
+          "args": "-m ../data/square-disc-p2.vtk -o 2",
+          "seconds": 1.48
+        },
+        {
+          "binary": "ex1",
+          "args": "-m ../data/square-disc-p3.mesh -o 3",
+          "seconds": 4.77
+        }
+      ],
+      "proposed_check": "poisson-high-order-curved"
+    },
+    {
+      "id": "hoa-ex1-nurbs",
+      "module": "high-order-assembly",
+      "path": "examples/ex1.cpp",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Scalar Poisson on NURBS geometry at the mesh's own order, in 2D and on a 3D pipe.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 8.96,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "The 3D pipe is the case where the Jacobian varies along all three directions at every quadrature point, so the pair separates a 2D-only geometry bug from a general one. A NURBS mesh read with order -1 keeps the rational geometry but assembles through the ordinary H1 path, so the geometric factors at quadrature points come from a curved, non-affine map. That is the case where the per-quadrature-point geometry buffer, not the basis, carries the error. Converged solve, fixed space, pointwise. The .gf and .mesh streams carry eight significant digits, so the bound cannot sit below about 1e-8 relative and the variant perturbation must start near there.",
+      "launches": 2,
+      "invocations": [
+        {
+          "binary": "ex1",
+          "args": "-m ../data/square-disc-nurbs.mesh -o -1",
+          "seconds": 0.32
+        },
+        {
+          "binary": "ex1",
+          "args": "-m ../data/pipe-nurbs.mesh -o -1",
+          "seconds": 8.64
+        }
+      ],
+      "proposed_check": "poisson-nurbs-geometry"
+    },
+    {
+      "id": "hoa-ex1-nonconforming",
+      "module": "high-order-assembly",
+      "path": "examples/ex1.cpp",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Scalar Poisson on an already nonconforming hexahedral mesh.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.26,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "A nonconforming mesh inserts the conforming prolongation between the true degrees of freedom and the element vectors, so the operator the kernels see is P^T A P rather than A. This module owns neither the hierarchy nor the prolongation, but it must keep working underneath it. The diffusion and mass tensor-contraction kernels take a different path for every element geometry, because the sum factorization is written per reference cube, wedge, tetrahedron or triangle and the simplex kernels are a separate file (bilininteg_diffusion_pa_simplices.hpp). A port that gets one geometry right and another wrong is the ordinary failure, so the geometry is what this configuration holds fixed and grades. The solve is a converged CG to 1e-12 on a fixed mesh and space, so every graded degree of freedom is a physical value at a fixed location and pointwise is the right policy. The .gf and .mesh streams carry eight significant digits, so the bound cannot sit below about 1e-8 relative and the variant perturbation must start near there.",
+      "launches": 1,
+      "invocations": [
+        {
+          "binary": "ex1",
+          "args": "-m ../data/amr-hex.mesh",
+          "seconds": 0.26
+        }
+      ],
+      "proposed_check": "poisson-nonconforming-mesh"
+    },
+    {
+      "id": "hoa-ex1-static-cond",
+      "module": "high-order-assembly",
+      "path": "examples/ex1.cpp",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Scalar Poisson on a Mobius strip with static condensation enabled.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 2.82,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Static condensation changes which degrees of freedom the operator is assembled on while leaving the element kernels unchanged, so it separates a kernel fault from a reduction fault; the Mobius strip additionally makes the surface orientation non-orientable, which is the hardest case for the sign conventions the restriction carries. The diffusion and mass tensor-contraction kernels take a different path for every element geometry, because the sum factorization is written per reference cube, wedge, tetrahedron or triangle and the simplex kernels are a separate file (bilininteg_diffusion_pa_simplices.hpp). A port that gets one geometry right and another wrong is the ordinary failure, so the geometry is what this configuration holds fixed and grades. The solve is a converged CG to 1e-12 on a fixed mesh and space, so every graded degree of freedom is a physical value at a fixed location and pointwise is the right policy. The .gf and .mesh streams carry eight significant digits, so the bound cannot sit below about 1e-8 relative and the variant perturbation must start near there.",
+      "launches": 1,
+      "invocations": [
+        {
+          "binary": "ex1",
+          "args": "-m ../data/mobius-strip.mesh -o -1 -sc",
+          "seconds": 2.82
+        }
+      ],
+      "proposed_check": "poisson-static-condensation"
+    },
+    {
+      "id": "hoa-ex2-geometries",
+      "module": "high-order-assembly",
+      "path": "examples/ex2.cpp",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Linear elasticity of a two-material cantilever on triangular, hexahedral and wedge meshes.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 2.08,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "ElasticityIntegrator is a vector-valued kernel whose element matrix couples the displacement components through the Lame coefficients; it is a separate kernel file from scalar diffusion and it is the one whose component ordering (byNODES against byVDIM) a port most often gets wrong. The three geometries are the same experiment as the scalar geometry sweep, now with components: 3D carries three of them and the full symmetric gradient, where the elasticity partial-assembly buffer is largest, and wedges route the vector kernel through the mixed simplex/tensor path, the combination least covered elsewhere. Converged solve on a fixed space, so pointwise on the displacement field. The .gf and .mesh streams carry eight significant digits, so the bound cannot sit below about 1e-8 relative and the variant perturbation must start near there.",
+      "launches": 3,
+      "invocations": [
+        {
+          "binary": "ex2",
+          "args": "-m ../data/beam-tri.mesh",
+          "seconds": 0.08
+        },
+        {
+          "binary": "ex2",
+          "args": "-m ../data/beam-hex.mesh",
+          "seconds": 1.41
+        },
+        {
+          "binary": "ex2",
+          "args": "-m ../data/beam-wedge.mesh",
+          "seconds": 0.59
+        }
+      ],
+      "proposed_check": "elasticity-element-geometries"
+    },
+    {
+      "id": "hoa-ex2-order3-sc",
+      "module": "high-order-assembly",
+      "path": "examples/ex2.cpp",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Linear elasticity at order 3 with static condensation.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 2.43,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "High order plus static condensation is the configuration where the vector kernel and the reduction interact; it also raises the contraction length, which is what the acceleration of this module is about. Converged solve, pointwise. The .gf and .mesh streams carry eight significant digits, so the bound cannot sit below about 1e-8 relative and the variant perturbation must start near there.",
+      "launches": 1,
+      "invocations": [
+        {
+          "binary": "ex2",
+          "args": "-m ../data/beam-quad.mesh -o 3 -sc",
+          "seconds": 2.43
+        }
+      ],
+      "proposed_check": "elasticity-order3-static-condensation"
+    },
+    {
+      "id": "hoa-ex2-nurbs",
+      "module": "high-order-assembly",
+      "path": "examples/ex2.cpp",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Linear elasticity on a 3D NURBS beam.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 1.68,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Curved rational geometry under the vector kernel. A NURBS mesh read with order -1 keeps the rational geometry but assembles through the ordinary H1 path, so the geometric factors at quadrature points come from a curved, non-affine map. That is the case where the per-quadrature-point geometry buffer, not the basis, carries the error. Converged solve, fixed space, pointwise. The .gf and .mesh streams carry eight significant digits, so the bound cannot sit below about 1e-8 relative and the variant perturbation must start near there.",
+      "launches": 1,
+      "invocations": [
+        {
+          "binary": "ex2",
+          "args": "-m ../data/beam-hex-nurbs.mesh",
+          "seconds": 1.68
+        }
+      ],
+      "proposed_check": "elasticity-nurbs-geometry"
+    },
+    {
+      "id": "hoa-ex7-sphere",
+      "module": "high-order-assembly",
+      "path": "examples/ex7.cpp",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Screened Poisson on an isoparametric triangulation of the unit sphere at order 2 with four refinements, and the same problem on a quadrilateral sphere with the refined nodes snapped back onto the exact sphere. Both print the L2 error against the exact solution.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.19,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "This is one of the few examples with an exact solution, so its printed L2 error is an independent scalar the check grades beside the field; the sphere makes the element Jacobian rectangular everywhere. The two legs differ in whether the geometry is recomputed at every refinement: snapping changes the nodes each time, so the geometric factors must be rebuilt rather than inherited, which separates a stale geometry cache from a correct one. Converged solve, pointwise on the field and on the printed error. The .gf and .mesh streams carry eight significant digits, so the bound cannot sit below about 1e-8 relative and the variant perturbation must start near there.",
+      "launches": 2,
+      "invocations": [
+        {
+          "binary": "ex7",
+          "args": "-e 0 -o 2 -r 4",
+          "seconds": 0.08
+        },
+        {
+          "binary": "ex7",
+          "args": "-e 1 -o 2 -r 4 -snap",
+          "seconds": 0.11
+        }
+      ],
+      "proposed_check": "screened-poisson-sphere"
+    },
+    {
+      "id": "hoa-ex29-surface",
+      "module": "high-order-assembly",
+      "path": "examples/ex29.cpp",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "A PDE on a 2D surface embedded in 3D, in its default configuration and at order 4 with a different surface type and static condensation. Both print the L2 error.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.01,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "The tangential-gradient form of the diffusion operator is a distinct coefficient path from the volume case. Order 4 is above the specialized kernel instantiations, so the second leg takes the generic fallback path and the pair together separates a correct specialization from a correct fallback. Polynomial order sets the length of the one-dimensional contractions and selects a different template instantiation in the kernel dispatch table (fem/kernel_dispatch.hpp); the dispatch falls back to a generic kernel above the specialized orders, so an order sweep is what separates a correct specialization from a correct fallback. The field is a converged solve on a fixed space, hence pointwise. The .gf and .mesh streams carry eight significant digits, so the bound cannot sit below about 1e-8 relative and the variant perturbation must start near there.",
+      "launches": 2,
+      "invocations": [
+        {
+          "binary": "ex29",
+          "args": "",
+          "seconds": 0.0
+        },
+        {
+          "binary": "ex29",
+          "args": "-mt 3 -o 4 -sc",
+          "seconds": 0.01
+        }
+      ],
+      "proposed_check": "surface-pde"
+    },
+    {
+      "id": "hoa-ex39-attributes",
+      "module": "high-order-assembly",
+      "path": "examples/ex39.cpp",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Poisson with material and boundary regions selected by named attribute sets, in the default configuration and with the essential boundary selected by name.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 2.01,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Named attribute sets drive which integrator sees which element, so this grades the marker arrays that gate the kernels (the PA Markers unit case covers the same mechanism from below). Changing the essential set changes which degrees of freedom are eliminated before the operator is applied, which is the boundary path of the assembly layer rather than the interior kernel. Converged solve, pointwise. The .gf and .mesh streams carry eight significant digits, so the bound cannot sit below about 1e-8 relative and the variant perturbation must start near there.",
+      "launches": 2,
+      "invocations": [
+        {
+          "binary": "ex39",
+          "args": "",
+          "seconds": 0.76
+        },
+        {
+          "binary": "ex39",
+          "args": "-ess \"Southern Boundary\"",
+          "seconds": 1.25
+        }
+      ],
+      "proposed_check": "attribute-sets"
+    },
+    {
+      "id": "hoa-perf-matrix-free",
+      "module": "high-order-assembly",
+      "path": "miniapps/performance/ex1.cpp",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The templated high-performance Poisson solver on the Fichera corner, fully matrix-free, preconditioned by a low-order-refined operator.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 49.8,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "This is the module's accelerator path: no matrix is ever stored, every CG iteration is a sum-factorized operator application, and the templated evaluator is the code an accelerator port has to carry over. It is kept as its own check, separate from the assembly-path comparison below, so the matrix-free path is graded alone; no check carries an acceleration label (skill 5.17.0). The solve converges to a fixed tolerance on a fixed space, so the field is graded pointwise.",
+      "launches": 1,
+      "invocations": [
+        {
+          "binary": "ex1",
+          "args": "-m ../../data/fichera.mesh -perf -mf -pc lor",
+          "seconds": 49.8
+        }
+      ],
+      "proposed_check": "high-order-matrix-free-lor"
+    },
+    {
+      "id": "hoa-perf-assembly-paths",
+      "module": "high-order-assembly",
+      "path": "miniapps/performance/ex1.cpp",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The same Fichera problem with the templated evaluator but a fully assembled matrix, and through the standard non-templated assembly path.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 175.43,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "These two are the control for the matrix-free check: same physics, same space, different assembly level and different evaluator, so the three runs together localize a fault to the templated evaluator, the assembly level, or the physics. They belong in one check because neither number means anything without the other. Converged solve, pointwise.",
+      "launches": 2,
+      "invocations": [
+        {
+          "binary": "ex1",
+          "args": "-m ../../data/fichera.mesh -perf -asm -pc ho",
+          "seconds": 73.14
+        },
+        {
+          "binary": "ex1",
+          "args": "-m ../../data/fichera.mesh -std -asm -pc ho",
+          "seconds": 102.29
+        }
+      ],
+      "proposed_check": "high-order-assembly-path-comparison"
+    },
+    {
+      "id": "hoa-perf-nurbs-mf",
+      "module": "high-order-assembly",
+      "path": "miniapps/performance/ex1.cpp",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The matrix-free templated solver on curved NURBS geometry.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 4.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 63.57,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Matrix-free evaluation on a non-affine curved map is where the per-quadrature geometry buffer dominates memory traffic, which is the part of the acceleration story the affine cases do not show. Converged solve, pointwise.",
+      "launches": 1,
+      "invocations": [
+        {
+          "binary": "ex1",
+          "args": "-m ../../data/pipe-nurbs.mesh -perf -mf -pc lor",
+          "seconds": 63.57
+        }
+      ],
+      "proposed_check": "high-order-matrix-free-nurbs"
+    },
+    {
+      "id": "hoa-unit-pa-kernels",
+      "module": "high-order-assembly",
+      "path": "tests/unit/fem/test_pa_kernels.cpp",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Partially assembled against fully assembled operator action, over dimensions, orders and mesh files, for the mass, diffusion and vector-diffusion integrators, and for partial assembly restricted to a subset of elements or boundary attributes.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.047999999999999994,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "These four cases are one file and one statement: the action of an operator must not depend on how it was assembled. That is the sharpest statement of what a partial-assembly port must preserve, and it is made with no solver in the path, so a failure localizes immediately. Diffusion carries the gradient contraction and the full geometric factor tensor, the kernel with the most arithmetic and the most room for a wrong index; the vector kernel is where component ordering enters, so grading its action catches a port that transposed byNODES and byVDIM; and marker arrays gate which elements a kernel touches, so a port that ignores them silently integrates over the whole domain and still produces a plausible field. The comparison is of one operator applied to one fixed vector, so pointwise.",
+      "launches": 4,
+      "invocations": [
+        {
+          "case": "PA Mass",
+          "seconds": 0.01,
+          "exe": "unit_tests"
+        },
+        {
+          "case": "PA Diffusion",
+          "seconds": 0.005,
+          "exe": "unit_tests"
+        },
+        {
+          "case": "PA Vector Diffusion",
+          "seconds": 0.028,
+          "exe": "unit_tests"
+        },
+        {
+          "case": "PA Markers",
+          "seconds": 0.005,
+          "exe": "unit_tests"
+        }
+      ],
+      "proposed_check": "pa-kernel-actions"
+    },
+    {
+      "id": "hoa-unit-pa-diagonal",
+      "module": "high-order-assembly",
+      "path": "tests/unit/fem/test_pa_diagonal.cpp",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The operator diagonal assembled through the partial-assembly path, compared with the full-assembly diagonal, for diffusion and for elasticity.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.467,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "The diagonal is a separate kernel from the action and it is what every Jacobi smoother consumes, so a port that forgets it produces a correct operator with a broken preconditioner. Elasticity is the module's only vector operator with coupling between components, so its diagonal exercises the block structure the scalar case cannot. It is a vector of physical per-degree-of-freedom values, hence pointwise.",
+      "launches": 2,
+      "invocations": [
+        {
+          "case": "Diffusion Diagonal PA",
+          "seconds": 0.453,
+          "exe": "unit_tests"
+        },
+        {
+          "case": "Elasticity Diagonal PA",
+          "seconds": 0.014,
+          "exe": "unit_tests"
+        }
+      ],
+      "proposed_check": "pa-operator-diagonals"
+    },
+    {
+      "id": "hoa-unit-assembly-levels",
+      "module": "high-order-assembly",
+      "path": "tests/unit/fem/test_assembly_levels.cpp",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "One bilinear form run at LEGACY, FULL, ELEMENT, PARTIAL and NONE assembly levels, requiring the same operator action from all of them, for an H1 space and for a discontinuous L2 space.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.711,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "This is the single test that states the module's whole contract: five assembly levels, one answer. A port that changes any level in isolation fails here. L2 removes the gather-add from the picture and adds face terms, so together with the H1 case it says whether a fault sits in the kernel or in the restriction. The graded object is one operator action on a fixed vector, so pointwise.",
+      "launches": 2,
+      "invocations": [
+        {
+          "case": "H1 Assembly Levels",
+          "seconds": 0.425,
+          "exe": "unit_tests"
+        },
+        {
+          "case": "L2 Assembly Levels",
+          "seconds": 0.286,
+          "exe": "unit_tests"
+        }
+      ],
+      "proposed_check": "assembly-levels-equivalence"
+    },
+    {
+      "id": "hoa-unit-quadinterp",
+      "module": "high-order-assembly",
+      "path": "tests/unit/fem/test_quadinterpolator.cpp",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "Interpolation of values, gradients, determinants and physical derivatives from a grid function to quadrature points, compared against the reference evaluation.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.001,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "The quadrature interpolator is the layer every kernel in this module and in two others builds on, and it is tested here with no operator around it, so a failure localizes immediately. Its output is a physical field sampled at fixed quadrature points, hence pointwise.",
+      "launches": 1,
+      "invocations": [
+        {
+          "case": "QuadratureInterpolator",
+          "seconds": 0.001,
+          "exe": "unit_tests"
+        }
+      ],
+      "proposed_check": "quadrature-interpolator"
+    },
+    {
+      "id": "hoa-unit-fa-determinism",
+      "module": "high-order-assembly",
+      "path": "tests/unit/fem/test_fa_determinism.cpp",
+      "policy": "pointwise",
+      "chaotic": false,
+      "exercises": "The same operator assembled twice, required to produce bit-identical sparse matrices.",
+      "resources": {
+        "cpus": 1,
+        "memory_gb": 2.0,
+        "mpi_ranks": 1
+      },
+      "upstream_runtime_s": 0.002,
+      "runtime_measured": true,
+      "suitable": true,
+      "why": "Upstream added this test because assembly order is not reproducible across backends; as a check it states exactly which part of the module is allowed to reorder its summation and which is not. The graded object is the assembled matrix entry by entry on a fixed sparsity pattern, so pointwise.",
+      "launches": 1,
+      "invocations": [
+        {
+          "case": "FA Determinism",
+          "seconds": 0.002,
+          "exe": "unit_tests"
+        }
+      ],
+      "proposed_check": "full-assembly-determinism"
+    }
+  ]
+}
