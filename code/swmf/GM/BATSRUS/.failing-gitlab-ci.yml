@@ -1,0 +1,48 @@
+#image: ubuntu:latest
+image: ubuntu:22.04
+
+variables:
+  GCC_V: 9
+  OMPI_ALLOW_RUN_AS_ROOT: 1
+  OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
+
+stages:
+  - build
+  - test
+
+install:
+  stage: build
+  before_script:
+    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client git -y )'
+    - apt-get install -y make
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY_SHARE" | tr -d '\r' | ssh-add -
+    - echo "$SSH_PRIVATE_KEY_UTIL" | tr -d '\r' | ssh-add -
+    - echo "$SSH_PRIVATE_KEY_BATL" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - gitlab_hostname=$(echo "${CI_REPOSITORY_URL}" | sed -e 's|https\?://gitlab-ci-token:.*@||g' | sed -e 's|/.*||g')
+    - ssh-keyscan "${gitlab_hostname}" >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    - perl -e '$a=`find * -type f -size +1M`; die "Files exceeding 1M size limit $a\n" if $a; exit 0'
+    - ./Config.pl -compiler=gfortran -install
+  artifacts:
+    paths:
+      - share
+      - util
+      - srcBATL
+    expire_in: 1 hour
+
+validity:
+  stage: test
+  before_script:
+    - apt-get update -y && apt-get install --yes gcc gfortran g++ make
+    - DEBIAN_FRONTEND=noninteractive apt-get install --yes openmpi-bin libopenmpi-dev
+    - chmod +x share/Scripts/CheckEmptyFile.sh
+  script:
+    - ./Config.pl -O0 -compiler=gfortran -install
+    - make -j test_hallmhd NP=1
+    - ./share/Scripts/CheckEmptyFile.sh test_hallmhd.diff
+    
+# vim: softtabstop=2 shiftwidth=2

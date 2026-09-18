@@ -1,0 +1,1104 @@
+#ifndef AMREX_ARRAY_H_
+#define AMREX_ARRAY_H_
+#include <AMReX_Config.H>
+
+#include <AMReX.H>
+#include <AMReX_GpuQualifiers.H>
+#include <AMReX_GpuControl.H>
+#include <AMReX_BLassert.H>
+#include <AMReX_SPACE.H>
+#include <AMReX_REAL.H>
+#include <AMReX_Algorithm.H>
+#include <AMReX_Dim3.H>
+#include <AMReX_Order.H>
+
+#include <array>
+#include <memory>
+#include <utility>
+#include <sstream>
+#include <type_traits>
+
+namespace amrex {
+
+    /// \ingroup amrex_linear_containers
+    /// An alias to `std::array`.
+    template <class T, std::size_t N>
+    using Array = std::array<T,N>;
+
+    using RealArray = Array<Real, AMREX_SPACEDIM>;
+    using IntArray  = Array<int , AMREX_SPACEDIM>;
+
+}
+
+namespace amrex {
+    /**
+     * \class amrex::GpuArray
+     * \ingroup amrex_linear_containers
+     * \brief Fixed-size array that can be used on GPU.
+     * \tparam T Data Type
+     * \tparam N Size
+     */
+    template <class T, unsigned int N>
+    struct GpuArray
+    {
+        using value_type = T;
+        using reference_type = T&;
+
+        /**
+         * GpuArray elements are indexed using square brackets, as with any
+         * other array.
+         */
+        AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        const T& operator [] (int i) const noexcept {
+#if defined(AMREX_DEBUG) || defined(AMREX_BOUND_CHECK)
+            index_assert(i);
+#endif
+            return arr[i];
+        }
+
+        /**
+         * GpuArray elements are indexed using square brackets, as with any
+         * other array.
+         */
+        AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        T& operator [] (int i) noexcept {
+#if defined(AMREX_DEBUG) || defined(AMREX_BOUND_CHECK)
+            index_assert(i);
+#endif
+            return arr[i];
+        }
+
+        /**
+         * Returns a \c const pointer to the underlying data of a GpuArray object.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        const T* data () const noexcept { return arr; }
+
+        /**
+         * Returns a pointer to the underlying data of a GpuArray object.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        T* data () noexcept { return arr; }
+
+        /**
+         * Returns the number of elements in the GpuArray object as an
+         * unsigned integer.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        static constexpr unsigned int size () noexcept { return N; }
+
+        /**
+         * Returns a \c const pointer address to the first element of the
+         * GpuArray object.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        const T* begin () const noexcept { return arr; }
+
+        /**
+         * Returns a const pointer address right after the last element of the
+         * GpuArray object.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        const T* end () const noexcept { return arr + N; }
+
+        /**
+         * Returns a pointer address to the first element of the
+         * GpuArray object.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        T* begin () noexcept { return arr; }
+
+        /**
+         * Returns a pointer address right after the last element of the
+         * GpuArray object.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        T* end () noexcept { return arr + N; }
+
+        /**
+         * Fills in all of the elements in the GpuArray object to the same
+         * value.
+         *
+         * \param value The fill value
+         */
+        AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        void fill ( const T& value ) noexcept
+        { for (unsigned int i = 0; i < N; ++i) { arr[i] = value; } }
+
+        /**
+         * Returns the sum of all elements in the GpuArray object.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        constexpr T sum () const noexcept
+        {
+            T s = 0;
+            for (unsigned int i = 0; i < N; ++i) { s += arr[i]; }
+            return s;
+        }
+
+        /**
+         * Returns the product of all elements in the GpuArray object.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        T product () const noexcept
+        {
+            T p = 1;
+            for (unsigned int i = 0; i < N; ++i) { p *= arr[i]; }
+            return p;
+        }
+
+        AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        GpuArray<T,N>& operator+= (GpuArray<T,N> const& a) noexcept
+        {
+            for (unsigned int i = 0; i < N; ++i) {
+                arr[i] += a.arr[i];
+            }
+            return *this;
+        }
+
+#if defined(AMREX_DEBUG) || defined(AMREX_BOUND_CHECK)
+#if defined(AMREX_USE_HIP)
+        AMREX_GPU_HOST_DEVICE AMREX_NO_INLINE
+#else
+        AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+#endif
+        static void index_assert (int i)
+        {
+            if (i < 0 || static_cast<unsigned int>(i) >= N) {
+                AMREX_IF_ON_DEVICE((
+                    AMREX_DEVICE_PRINTF(" (%d) is out of bound (0:%d)\n",
+                                        i, N-1);
+                    amrex::Abort();
+                ))
+                AMREX_IF_ON_HOST((
+                    std::stringstream ss;
+                    ss << " (" << i << ") is out of bound (0:" << N-1 <<")";
+                    amrex::Abort(ss.str());
+                ))
+            }
+        }
+#endif
+
+        /// \cond DOXYGEN_IGNORE
+        T arr[amrex::max(N,1U)];
+        /// \endcond
+    };
+}
+
+namespace amrex {
+
+    /**
+     * \class amrex::Array1D
+     * \ingroup amrex_linear_containers
+     * \brief A GPU-compatible one-dimensional array.
+     *
+     * Array1D is a C-style array wrapper in a struct. It has no user-declared
+     * constructors. It's a trivial aggregate with a standard layout.
+     *
+     * \tparam T   Value data type
+     * \tparam XLO Index for inclusive lower bound. Can be non-zero or negative.
+     * \tparam XHI Index for inclusive upper bound.
+     */
+    template <class T, int XLO, int XHI>
+    struct Array1D
+    {
+        /**
+         * Returns the number of elements in the Array1D object as an unsigned
+         * integer.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        static constexpr unsigned int size () noexcept { return (XHI-XLO+1); }
+
+        /**
+         * Returns the index of the lower bound of the Array1D object.
+         * Can be other than 0.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        static constexpr int lo () noexcept { return XLO; }
+
+        /**
+         * Returns the index of the upper bound of the Array1D object.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        static constexpr int hi () noexcept { return XHI; }
+
+        /**
+         * Returns the number of elements in the Array1D object as an unsigned
+         * integer.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        static constexpr unsigned int len () noexcept { return (XHI-XLO+1); }
+
+        /**
+         * Returns a \c const pointer address to the first element of the
+         * Array1D object.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        const T* begin () const noexcept { return arr; }
+
+        /**
+         * Returns a \c const pointer address right after the last element of the
+         * Array1D object.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        const T* end () const noexcept { return arr + XHI-XLO+1; }
+
+        /**
+         * Returns a pointer address to the first element of the
+         * Array1D object.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        T* begin () noexcept { return arr; }
+
+        /**
+         * Returns a pointer address right after the last element of the
+         * Array1D object.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        T* end () noexcept { return arr + XHI-XLO+1; }
+
+        /**
+         * The elements of an Array1D object are accessed using parentheses,
+         * e.g. \c array(i), instead of using square brackets.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        const T& operator() (int i) const noexcept {
+#if defined(AMREX_DEBUG) || defined(AMREX_BOUND_CHECK)
+            index_assert(i);
+#endif
+            return arr[i-XLO];
+        }
+
+        /**
+         * The elements of an Array1D object are accessed using parentheses,
+         * e.g. array(i), instead of using square brackets.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        T& operator() (int i) noexcept {
+#if defined(AMREX_DEBUG) || defined(AMREX_BOUND_CHECK)
+            index_assert(i);
+#endif
+            return arr[i-XLO];
+        }
+
+        /**
+         * Returns the sum of all elements in the Array1D object.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        constexpr T sum () const noexcept
+        {
+            T s = 0;
+            for (int i = XLO; i <= XHI; ++i) { s += arr[i-XLO]; }
+            return s;
+        }
+
+        /**
+         * Returns the product of all elements in the Array1D object.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        constexpr T product() const noexcept
+        {
+            T p = 1;
+            for (int i = 0; i < (XHI-XLO+1); ++i) {
+                p *= arr[i];
+            }
+            return p;
+        }
+#if defined(AMREX_DEBUG) || defined(AMREX_BOUND_CHECK)
+#if defined(AMREX_USE_HIP)
+        AMREX_GPU_HOST_DEVICE AMREX_NO_INLINE
+#else
+        AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+#endif
+        static void index_assert (int i)
+        {
+            if (i<XLO || i>XHI) {
+                AMREX_IF_ON_DEVICE((
+                    AMREX_DEVICE_PRINTF(" (%d) is out of bound (%d:%d)\n",
+                                        i, XLO, XHI);
+                    amrex::Abort();
+                ))
+                AMREX_IF_ON_HOST((
+                    std::stringstream ss;
+                    ss << " (" << i << ") is out of bound ("
+                    << XLO << ":" << XHI << ")";
+                    amrex::Abort(ss.str());
+                ))
+            }
+        }
+#endif
+
+        /// \cond DOXYGEN_IGNORE
+        T arr[(XHI-XLO+1)];
+        /// \endcond
+    };
+
+    /**
+     * \class amrex::Array2D
+     * \ingroup amrex_linear_containers
+     * \brief A GPU-compatible two-dimensional array.
+     *
+     * Array2D objects can be indexed according to Fortran column-major
+     * order (first index moving fastest) or C/C++ row-major order (last
+     * index moving fastest). If not specified, Fortran order is assumed.
+     *
+     * \tparam T   Value data type.
+     * \tparam XLO Index for inclusive lower bound in \a x dimension. Can be other than 0.
+     * \tparam XHI Index for inclusive upper bound in \a x dimension.
+     * \tparam YLO Index for inclusive lower bound in \a y dimension. Can be other than 0.
+     * \tparam YHI Index for inclusive upper bound in \a y dimension.
+     * \tparam ORDER Either Order::C (C/C++ row-major order) or
+     *               Order::F (Fortran column-major order, which is the
+     *               default if not given)
+     */
+    template <class T, int XLO, int XHI, int YLO, int YHI,
+              Order ORDER = Order::F>
+    struct Array2D
+    {
+        /**
+         * Returns the total number of elements of the Array2D object as an
+         * unsigned integer.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        static constexpr unsigned int size() noexcept { return (XHI-XLO+1)*(YHI-YLO+1); }
+
+        /**
+         * Returns the inclusive lower bound of the Array2D object in the
+         * \a x direction.
+         * Can be other than 0.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        static constexpr int xlo () noexcept { return XLO; }
+
+        /**
+         * Returns the inclusive upper bound of the Array2D object in the
+         * \a x direction.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        static constexpr int xhi () noexcept { return XHI; }
+
+
+        /**
+         * Returns the number of elements of the Array2D object in the
+         * \a x direction as an unsigned integer.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        static constexpr unsigned int xlen () noexcept { return (XHI-XLO+1); }
+
+        /**
+         * Returns the inclusive lower bound of the Array2D object in the
+         * \a y direction.
+         * Can be other than 0.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        static constexpr int ylo () noexcept { return YLO; }
+
+        /**
+         * Returns the inclusive upper bound of the Array2D object in the
+         * \a y direction.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        static constexpr int yhi () noexcept { return YHI; }
+
+
+        /**
+         * Returns the number of elements of the Array2D object in the
+         * \a y direction as an unsigned integer.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        static constexpr unsigned int ylen () noexcept { return (YHI-YLO+1); }
+
+        /**
+         * Returns a \c const pointer address to the first element of the
+         * Array2D object, as if the object is treated as one-dimensional.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        const T* begin () const noexcept { return arr; }
+
+        /**
+         * Returns a \c const pointer address right after the last element of the
+         * Array2D object, as if the object is treated as one-dimensional.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        const T* end () const noexcept { return arr + (XHI-XLO+1)*(YHI-YLO+1); }
+
+        /**
+         * Returns a pointer address to the first element of the
+         * Array2D object, as if the object is treated as one-dimensional.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        T* begin () noexcept { return arr; }
+
+        /**
+         * Returns a pointer address right after the last element of the
+         * Array2D object, as if the object is treated as one-dimensional.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        T* end () noexcept { return arr + (XHI-XLO+1)*(YHI-YLO+1); }
+
+        /**
+         * The elements of an Array2D object are accessed using parentheses,
+         * e.g. \c array(i,j), instead of using square brackets.
+         *
+         * \param i Index in \a x dimension.
+         * \param j Index in \a y dimension.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        const T& operator() (int i, int j) const noexcept {
+#if defined(AMREX_DEBUG) || defined(AMREX_BOUND_CHECK)
+            index_assert(i, j);
+#endif
+            if constexpr (ORDER == Order::F) {
+                return arr[i+j*(XHI-XLO+1)-(YLO*(XHI-XLO+1)+XLO)];
+            } else {
+                return arr[j+i*(YHI-YLO+1)-(XLO*(YHI-YLO+1)+YLO)];
+            }
+        }
+
+        /**
+         * The elements of an Array2D object are accessed using parentheses,
+         * e.g. \c array(i,j), instead of using square brackets.
+         *
+         * \param i Index in \a x dimension.
+         * \param j Index in \a y dimension.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        T& operator() (int i, int j) noexcept {
+#if defined(AMREX_DEBUG) || defined(AMREX_BOUND_CHECK)
+            index_assert(i, j);
+#endif
+            if constexpr (ORDER == Order::F) {
+                return arr[i+j*(XHI-XLO+1)-(YLO*(XHI-XLO+1)+XLO)];
+            } else {
+                return arr[j+i*(YHI-YLO+1)-(XLO*(YHI-YLO+1)+YLO)];
+            }
+        }
+
+        /**
+         * When called without any arguments, returns the sum of all
+         * elements in the Array2D object.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        constexpr T sum () const noexcept
+        {
+            T s = 0;
+            for (int i = 0; i < (XHI-XLO+1)*(YHI-YLO+1); ++i) {
+                s += arr[i];
+            }
+            return s;
+        }
+
+        /**
+         * When called with two arguments, performs a sum reduction over
+         * the specified \c axis, for a particular location index \c loc.
+         *
+         * \param axis The dimension to reduce (0 for \a x dimension,
+         *             1 for \a y dimension)
+         * \param loc  The appropriate location index
+         *
+         * This can be used, for instance, to calculate the sum over the \a y
+         * dimension of an Array2D object that was instantiated as
+         * \code{.cpp}
+         *     Array2D<amrex::Real, 1, M, 1, N> array;
+         * \endcode
+         *
+         * One could instantiate an Array1D object to hold the results,
+         * \code{.cpp}
+         *     Array1D<amrex::Real, 1, M> vec;
+         * \endcode
+         * and then perform the summation for each element of the resulting
+         * vector.
+         * \code{.cpp}
+         *     for (int i = 1; i <= M; ++i) {
+         *         vec(i) = array.sum(1,i)
+         *     }
+         * \endcode
+         * In this example, the axis is 1 and the location index is \c i.
+         *
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        constexpr T sum (int axis, int loc) const noexcept
+        {
+            T s = 0;
+            if        (axis == 0) {
+                int j = loc;
+                for (int i = XLO; i <= XHI; ++i) {
+                    s += this->operator()(i,j);
+                }
+            } else if (axis == 1) {
+                int i = loc;
+                for (int j = YLO; j <= YHI; ++j) {
+                    s += this->operator()(i,j);
+                }
+            }
+            return s;
+        }
+
+        /**
+         * When called without any arguments, returns the product of all
+         * elements in the Array2D object.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        constexpr T product () const noexcept
+        {
+            T p = 1;
+            for (int i = 0; i < (XHI-XLO+1)*(YHI-YLO+1); ++i) {
+                p *= arr[i];
+            }
+            return p;
+        }
+
+        /**
+         * When called with two arguments, performs a product reduction over
+         * the specified \c axis, for a particular location index \c loc.
+         *
+         * \param axis The dimension to reduce (0 for \a x dimension,
+         *             1 for \a y dimension)
+         * \param loc  The appropriate location index
+         *
+         * This can be used, for instance, to calculate the product over the \a x
+         * dimension of an Array2D object that was instantiated as
+         * \code{.cpp}
+         *     Array2D<amrex::Real, 1, M, 1, N> array;
+         * \endcode
+         *
+         * One could instantiate an Array1D object to hold the results with,
+         * \code{.cpp}
+         *     Array1D<amrex::Real, 1, N> vec;
+         * \endcode
+         * and then perform the product for each element of the resulting
+         * vector.
+         *
+         * \code{.cpp}
+         *     for (int j = 1; j <= N; ++j) {
+         *         vec(j) = array.sum(0,j)
+         *     }
+         * \endcode
+         * In this example, the axis is 0 and the location index is \c j.
+         *
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        constexpr T product (int axis, int loc) const noexcept
+        {
+            T p = 1;
+            if        (axis == 0) {
+                int j = loc;
+                for (int i = XLO; i <= XHI; ++i) {
+                    p *= this->operator()(i,j);
+                }
+            } else if (axis == 1) {
+                int i = loc;
+                for (int j = YLO; j <= YHI; ++j) {
+                    p *= this->operator()(i,j);
+                }
+            }
+            return p;
+        }
+#if defined(AMREX_DEBUG) || defined(AMREX_BOUND_CHECK)
+#if defined(AMREX_USE_HIP)
+        AMREX_GPU_HOST_DEVICE AMREX_NO_INLINE
+#else
+        AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+#endif
+        static void index_assert (int i, int j)
+        {
+            if (i<XLO || i>XHI || j<YLO || j>YHI) {
+                AMREX_IF_ON_DEVICE((
+                    AMREX_DEVICE_PRINTF(" (%d,%d) is out of bound (%d:%d,%d:%d)\n",
+                                        i, j, XLO, XHI, YLO, YHI);
+                    amrex::Abort();
+                ))
+                AMREX_IF_ON_HOST((
+                    std::stringstream ss;
+                    ss << " (" << i << "," << j
+                    << ") is out of bound ("
+                    << XLO << ":" << XHI << ","
+                    << YLO << ":" << YHI << ")";
+                    amrex::Abort(ss.str());
+                ))
+            }
+        }
+#endif
+
+        /// \cond DOXYGEN_IGNORE
+        T arr[(XHI-XLO+1)*(YHI-YLO+1)];
+        /// \endcond
+    };
+
+
+    /**
+     * \class amrex::Array3D
+     * \ingroup amrex_linear_containers
+     * \brief A GPU-compatible three-dimensional array.
+     *
+     * Array3D objects can be indexed according to Fortran column-major
+     * order (first index moving fastest) or C/C++ row-major order (last
+     * index moving fastest). If not specified, Fortran order is assumed.
+     *
+     * \tparam T   Value data type.
+     * \tparam XLO Index for inclusive lower bound in \a x dimension. Can be other than 0.
+     * \tparam XHI Index for inclusive upper bound in \a x dimension.
+     * \tparam YLO Index for inclusive lower bound in \a y dimension. Can be other than 0.
+     * \tparam YHI Index for inclusive upper bound in \a y dimension.
+     * \tparam ZLO Index for inclusive lower bound in \a z dimension. Can be other than 0.
+     * \tparam ZHI Index for inclusive upper bound in \a z dimension.
+     * \tparam ORDER Either Order::C (C/C++ row-major order) or
+     *               Order::F (Fortran column-major order, which is the
+     *               default if not given)
+     */
+    template <class T, int XLO, int XHI, int YLO, int YHI, int ZLO, int ZHI,
+              Order ORDER=Order::F>
+    struct Array3D
+    {
+        /**
+         * Returns the total number of elements in the Array3D object as an
+         * unsigned integer.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        static constexpr unsigned int size () noexcept { return (XHI-XLO+1)*(YHI-YLO+1)*(ZHI-ZLO+1); }
+
+        /**
+         * Returns the inclusive lower bound of the Array3D object in the
+         * \a x direction.
+         * Can be other than 0.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        static constexpr int xlo () noexcept { return XLO; }
+
+        /**
+         * Returns the inclusive upper bound of the Array3D object in the
+         * \a x direction.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        static constexpr int xhi () noexcept { return XHI; }
+
+        /**
+         * Returns the number of elements of the Array3D object in the
+         * \a x direction as an unsigned integer.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        static constexpr unsigned int xlen () noexcept { return (XHI-XLO+1); }
+
+        /**
+         * Returns the inclusive lower bound of the Array3D object in the
+         * \a y direction.
+         * Can be other than 0.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        static constexpr int ylo () noexcept { return YLO; }
+
+        /**
+         * Returns the inclusive upper bound of the Array3D object in the
+         * \a y direction.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        static constexpr int yhi () noexcept { return YHI; }
+
+
+        /**
+         * Returns the number of elements of the Array3D object in the
+         * \a y direction as an unsigned integer.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        static constexpr unsigned int ylen () noexcept { return (YHI-YLO+1); }
+
+        /**
+         * Returns the inclusive lower bound of the Array3D object in the
+         * \a z direction.
+         * Can be other than 0.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        static constexpr int zlo () noexcept { return ZLO; }
+
+        /**
+         * Returns the inclusive upper bound of the Array3D object in the
+         * \a z direction.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        static constexpr int zhi () noexcept { return ZHI; }
+
+        /**
+         * Returns the number of elements of the Array3D object in the
+         * \a z direction as an unsigned integer.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        static constexpr unsigned int zlen () noexcept { return (ZHI-ZLO+1); }
+
+        /**
+         * Returns a \c const pointer address to the first element of the
+         * Array3D object, as if the object is treated as one-dimensional.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        const T* begin () const noexcept { return arr; }
+
+        /**
+         * Returns a \c const pointer address right after the last element of the
+         * Array3D object, as if the object is treated as one-dimensional.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        const T* end () const noexcept { return arr + (XHI-XLO+1)*(YHI-YLO+1)*(ZHI-ZLO+1); }
+
+        /**
+         * Returns a pointer address to the first element of the
+         * Array3D object, as if the object is treated as one-dimensional.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        T* begin () noexcept { return arr; }
+
+        /**
+         * Returns a pointer address right after the last element of the
+         * Array3D object, as if the object is treated as one-dimensional.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        T* end () noexcept { return arr + (XHI-XLO+1)*(YHI-YLO+1)*(ZHI-ZLO+1); }
+
+        /**
+         * The elements of an Array3D object are accessed using parentheses,
+         * e.g. \c array(i,j,k), instead of using square brackets.
+         *
+         * \param i Index in \a x dimension.
+         * \param j Index in \a y dimension.
+         * \param k Index in \a z dimension.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        const T& operator() (int i, int j, int k) const noexcept {
+#if defined(AMREX_DEBUG) || defined(AMREX_BOUND_CHECK)
+            index_assert(i, j, k);
+#endif
+            if constexpr (ORDER == Order::F) {
+                return arr[i+j*(XHI-XLO+1)+k*((XHI-XLO+1)*(YHI-YLO+1))
+                           -(ZLO*((XHI-XLO+1)*(YHI-YLO+1))+YLO*(XHI-XLO+1)+XLO)];
+            } else {
+                return arr[k+j*(ZHI-ZLO+1)+i*((ZHI-ZLO+1)*(YHI-YLO+1))
+                           -(XLO*((ZHI-ZLO+1)*(YHI-YLO+1))+YLO*(ZHI-ZLO+1)+ZLO)];
+            }
+        }
+
+        /**
+         * The elements of an Array3D object are accessed using parentheses,
+         * e.g. \c array(i,j,k), instead of using square brackets.
+         *
+         * \param i Index in \a x dimension.
+         * \param j Index in \a y dimension.
+         * \param k Index in \a z dimension.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        T& operator() (int i, int j, int k) noexcept {
+#if defined(AMREX_DEBUG) || defined(AMREX_BOUND_CHECK)
+            index_assert(i, j, k);
+#endif
+            if constexpr (ORDER == Order::F) {
+                return arr[i+j*(XHI-XLO+1)+k*((XHI-XLO+1)*(YHI-YLO+1))
+                           -(ZLO*((XHI-XLO+1)*(YHI-YLO+1))+YLO*(XHI-XLO+1)+XLO)];
+            } else {
+                return arr[k+j*(ZHI-ZLO+1)+i*((ZHI-ZLO+1)*(YHI-YLO+1))
+                           -(XLO*((ZHI-ZLO+1)*(YHI-YLO+1))+YLO*(ZHI-ZLO+1)+ZLO)];
+            }
+        }
+
+        /**
+         * When called without any arguments, returns the sum of all
+         * elements in the Array3D object.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        constexpr T sum () const noexcept
+        {
+            T s = 0;
+            for (int i = 0; i < (XHI-XLO+1)*(YHI-YLO+1)*(ZHI-ZLO+1); ++i) {
+                s += arr[i];
+            }
+            return s;
+        }
+
+        /**
+         * When called with three arguments, performs a sum reduction over
+         * the specified \c axis, for a particular set of location indices \c loc0
+         * and \c loc1.
+         *
+         * \param axis The dimension to reduce (0 for \a x dimension,
+         *             1 for \a y dimension, 2 for \a z dimension)
+         * \param loc0 The appropriate location index (either \c i or \c j)
+         * \param loc1 The appropriate location index (either \c j or \c k)
+         *
+         * This can be used, for instance, to calculate the sum over the \a x
+         * dimension of an Array3D object that was instantiated as
+         * \code{.cpp}
+         *     Array3D<amrex::Real, 1, M, 1, N, 1, K> array;
+         * \endcode
+         *
+         * One could instantiate an Array2D object to hold the results,
+         * \code{.cpp}
+         *     Array2D<amrex::Real, 1, N, 1, K> mat;
+         * \endcode
+         * and then perform the summation for each element of the resulting
+         * matrix.
+         * \code{.cpp}
+         *     for     (int j = 1; j <= N; ++j) {
+         *         for (int k = 1; k <= K; ++k) {
+         *             mat(j,k) = array.sum(0,j,k)
+         *         }
+         *     }
+         * \endcode
+         * In this example, the axis is 0 and the location indices are \c loc0 = \c j
+         * and \c loc1 = \c k. For axis = 1, the location indices are treated as
+         * \c loc0 = \c i and \c loc1 = \c k; for axis = 2, \c loc0 = \c j and \c loc1 = \c k.
+         *
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        constexpr T sum (int axis, int loc0, int loc1) const noexcept
+        {
+            T s = 0;
+            if        (axis == 0) {
+                int j = loc0;
+                int k = loc1;
+                for (int i = XLO; i <= XHI; ++i) {
+                    s += this->operator()(i,j,k);
+                }
+            } else if (axis == 1) {
+                int i = loc0;
+                int k = loc1;
+                for (int j = YLO; j <= YHI; ++j) {
+                    s += this->operator()(i,j,k);
+                }
+            } else if (axis == 2) {
+                int i = loc0;
+                int j = loc1;
+                for (int k = ZLO; k <= ZHI; ++k) {
+                    s += this->operator()(i,j,k);
+                }
+            }
+            return s;
+        }
+
+        /**
+         * When called without any arguments, returns the product of all
+         * elements in the Array3D object.
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        constexpr T product () const noexcept
+        {
+            T p = 1;
+            for (int i = 0; i < (XHI-XLO+1)*(YHI-YLO+1)*(ZHI-ZLO+1); ++i) {
+                p *= arr[i];
+            }
+            return p;
+        }
+
+
+        /**
+         * When called with three arguments, performs a product reduction over
+         * the specified \c axis, for a particular set of location indices \c loc0
+         * and \c loc1.
+         *
+         * \param axis The dimension to reduce (0 for \a x dimension,
+         *             1 for \a y dimension, 2 for \a z dimension)
+         * \param loc0 The appropriate location index (either \c i or \c j)
+         * \param loc1 The appropriate location index (either \c j or \c k)
+         *
+         * This can be used, for instance, to calculate the sum over the \a z
+         * dimension of an Array3D object that was instantiated as
+         * \code{.cpp}
+         *     Array3D<amrex::Real, 1, M, 1, N, 1, K> array;
+         * \endcode
+         *
+         * One could instantiate an Array2D object to hold the results,
+         * \code{.cpp}
+         *     Array2D<amrex::Real, 1, M, 1, N> mat;
+         * \endcode
+         * and then perform the summation for each element of the resulting
+         * matrix.
+         * \code{.cpp}
+         *     for     (int j = 1; j <= N; ++j) {
+         *         for (int i = 1; i <= M; ++i) {
+         *             mat(i,j) = array.sum(2,i,j)
+         *         }
+         *     }
+         * \endcode
+         * In this example, the axis is 2 and the location indices are \c loc0 = \c i
+         * and \c loc1 = \c j. For axis = 0, the location indices are treated as
+         * \c loc0 = \c j and \c loc1 = \c k; for axis = 1, \c loc0 = \c i and \c loc1 = \c k.
+         *
+         */
+        [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+        constexpr T product (const int axis, const int loc0, const int loc1) const noexcept
+        {
+            T p = 1;
+            if        (axis == 0) {
+                int j = loc0;
+                int k = loc1;
+                for (int i = XLO; i <= XHI; ++i) {
+                    p *= this->operator()(i,j,k);
+                }
+            } else if (axis == 1) {
+                int i = loc0;
+                int k = loc1;
+                for (int j = YLO; j <= YHI; ++j) {
+                    p *= this->operator()(i,j,k);
+                }
+            } else if (axis == 2) {
+                int i = loc0;
+                int j = loc1;
+                for (int k = ZLO; k <= ZHI; ++k) {
+                    p *= this->operator()(i,j,k);
+                }
+            }
+            return p;
+        }
+
+#if defined(AMREX_DEBUG) || defined(AMREX_BOUND_CHECK)
+#if defined(AMREX_USE_HIP)
+        AMREX_GPU_HOST_DEVICE AMREX_NO_INLINE
+#else
+        AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+#endif
+        static void index_assert (int i, int j, int k)
+        {
+            if (i<XLO || i>XHI || j<YLO || j>YHI || k<ZLO || k>ZHI) {
+                AMREX_IF_ON_DEVICE((
+                    AMREX_DEVICE_PRINTF(" (%d,%d,%d) is out of bound (%d:%d,%d:%d,%d:%d)\n",
+                                        i, j, k, XLO, XHI, YLO, YHI, ZLO, ZHI);
+                    amrex::Abort();
+                ))
+                AMREX_IF_ON_HOST((
+                    std::stringstream ss;
+                    ss << " (" << i << "," << j << "," << k
+                    << ") is out of bound ("
+                    << XLO << ":" << XHI << ","
+                    << YLO << ":" << YHI << ","
+                    << ZLO << ":" << ZHI << ")";
+                    amrex::Abort(ss.str());
+                ))
+            }
+        }
+#endif
+
+        /// \cond DOXYGEN_IGNORE
+        T arr[(XHI-XLO+1)*(YHI-YLO+1)*(ZHI-ZLO+1)];
+        /// \endcond
+    };
+}
+
+namespace amrex
+{
+    /**
+     * \brief Create an array of pointers from an array of objects.
+     *
+     * This utility returns a \c std::array<T*,AMREX_SPACEDIM> whose elements point
+     * to the objects stored in the input array \p a.
+     *
+     * This pattern is commonly used in %AMReX because many APIs accept \c
+     * std::array<T*,AMREX_SPACEDIM> to indicate that the ownership of the
+     * referenced objects remains with the caller, while still allowing the
+     * callee to modify their contents. Using pointer arrays also makes the
+     * APIs usable in more situations, since the caller may not store their
+     * objects in a \c std::array<T,AMREX_SPACEDIM>. By constructing a
+     * temporary pointer array, caller-owned objects from other container
+     * types or layouts can still be passed to these APIs.
+     *
+     * \sa amrex::GetVecOfPtrs
+     */
+    template <class T, typename = typename T::FABType>
+    std::array<T*,AMREX_SPACEDIM> GetArrOfPtrs (std::array<T,AMREX_SPACEDIM>& a) noexcept
+    {
+        return {{AMREX_D_DECL(a.data(), a.data()+1, a.data()+2)}};
+    }
+
+    /**
+     * \brief Create an array of pointers from an array of std::unique_ptr objects.
+     *
+     * This utility returns a \c std::array<T*,AMREX_SPACEDIM> whose elements point
+     * to the objects stored in the input array \p a.
+     *
+     * This pattern is commonly used in %AMReX because many APIs accept \c
+     * std::array<T*,AMREX_SPACEDIM> to indicate that the ownership of the
+     * referenced objects remains with the caller, while still allowing the
+     * callee to modify their contents. Using pointer arrays also makes the
+     * APIs usable in more situations, since the caller may not store their
+     * objects in a \c std::array<T,AMREX_SPACEDIM>. By constructing a
+     * temporary pointer array, caller-owned objects from other container
+     * types or layouts can still be passed to these APIs.
+     *
+     * \sa amrex::GetVecOfPtrs
+     */
+    template <class T>
+    std::array<T*,AMREX_SPACEDIM> GetArrOfPtrs (const std::array<std::unique_ptr<T>,AMREX_SPACEDIM>& a) noexcept
+    {
+        return {{AMREX_D_DECL(a[0].get(), a[1].get(), a[2].get())}};
+    }
+
+    /**
+     * \brief Create an array of const-qualified pointers from an array of objects.
+     *
+     * This utility returns a \c std::array<T const*,AMREX_SPACEDIM> whose
+     * elements point to the objects stored in the input array \p a.
+     *
+     * This pattern is commonly used in %AMReX because many APIs accept \c
+     * std::array<T const*,AMREX_SPACEDIM> to indicate that the ownership of
+     * the referenced objects remains with the caller and the objects will
+     * not be modified. Using pointer arrays also makes the APIs usable in
+     * more situations, since the caller may not store their objects in a \c
+     * std::array<T,AMREX_SPACEDIM>. By constructing a temporary pointer
+     * array, caller-owned objects from other container types or layouts can
+     * still be passed to these APIs.
+     *
+     * \sa amrex::GetVecOfConstPtrs
+     */
+    template <class T>
+    std::array<T const*,AMREX_SPACEDIM> GetArrOfConstPtrs (const std::array<T,AMREX_SPACEDIM>& a) noexcept
+    {
+        return {{AMREX_D_DECL(a.data(), a.data()+1, a.data()+2)}};
+    }
+
+    /**
+     * \brief Create an array of const-qualified pointers from an array of
+     *        non-const-qualified pointers.
+     *
+     * \sa amrex::GetVecOfConstPtrs
+     */
+    template <class T>
+    std::array<T const*,AMREX_SPACEDIM> GetArrOfConstPtrs (const std::array<T*,AMREX_SPACEDIM>& a) noexcept
+    {
+        return {{AMREX_D_DECL(a[0], a[1], a[2])}};
+    }
+
+    /**
+     * \brief Create an array of const-qualified pointers from an array of
+     *        std::unique_ptr objects.
+     *
+     * This utility returns a \c std::array<T const*,AMREX_SPACEDIM> whose
+     * elements point to the objects stored in the input array \p a.
+     *
+     * This pattern is commonly used in %AMReX because many APIs accept \c
+     * std::array<T const*,AMREX_SPACEDIM> to indicate that the ownership of
+     * the referenced objects remains with the caller and the objects will
+     * not be modified. Using pointer arrays also makes the APIs usable in
+     * more situations, since the caller may not store their objects in a \c
+     * std::array<T,AMREX_SPACEDIM>. By constructing a temporary pointer
+     * array, caller-owned objects from other container types or layouts can
+     * still be passed to these APIs.
+     *
+     * \sa amrex::GetVecOfConstPtrs
+     */
+    template <class T>
+    std::array<T const*,AMREX_SPACEDIM> GetArrOfConstPtrs (const std::array<std::unique_ptr<T>,AMREX_SPACEDIM>& a) noexcept
+    {
+        return {{AMREX_D_DECL(a[0].get(), a[1].get(), a[2].get())}};
+    }
+
+}
+
+namespace amrex
+{
+    inline XDim3 makeXDim3 (const Array<Real,AMREX_SPACEDIM>& a) noexcept
+    {
+#if (AMREX_SPACEDIM == 1)
+        return XDim3{a[0], 0., 0.};
+#elif (AMREX_SPACEDIM == 2)
+        return XDim3{a[0], a[1], 0.};
+#else
+        return XDim3{a[0], a[1], a[2]};
+#endif
+    }
+}
+
+#endif

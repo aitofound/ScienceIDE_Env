@@ -1,0 +1,31 @@
+name: PARAM.XML PDF Manual
+
+on:
+  pull_request:
+
+jobs:
+  pdf-manual:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout FLEKS
+        uses: actions/checkout@v6
+
+      - name: Install LaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y texlive-latex-base texlive-latex-extra
+
+      - name: Install SWMF documentation tools
+        run: |
+          git clone --depth 1 https://github.com/SWMFsoftware/share.git share
+
+      - name: Configure documentation paths
+        run: |
+          printf 'PCDIR := %s\nSCRIPTDIR := %s/share/Scripts\n' "$PWD" "$PWD" > Makefile.def
+          touch Makefile.conf
+
+      - name: Build PARAM.XML PDF manual
+        run: |
+          make PDF
+          test -s Doc/USERMANUAL.pdf

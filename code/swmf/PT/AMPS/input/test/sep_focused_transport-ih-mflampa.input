@@ -1,0 +1,34 @@
+
+#include input/test/sep_focused_transport--borovikov.input
+
+#main 
+CouplerMode=swmf !!T96 !ices !!off, ices, swmf
+#endmain
+
+#General
+  InitialSampleLength=100 
+
+  MaxMeshRefinmentLevel=0
+  EnforceRequestedMeshResolution=off !on,off
+
+  BlockCells=2,2,2
+  GhostCells=1,1,1
+
+
+! OutputMode=off !DistributedFiles !!SingleFile !SingleFile,DistributedFiles
+
+  define _PIC_PARTICLE_MOVER__RELATIVITY_MODE_ _PIC_MODE_ON_
+
+  !the macro supress using 'AMPS2SWMF::iShockWaveSegmentTable' in the SEP model
+  define _SEP_SHOCK_LOCATION_COUPLER_TABLE_ _PIC_MODE_ON_ ! _PIC_MODE_ON_, _PIC_MODE_OFF_
+
+  define _PIC_DISCONNECTED_MPI_PROCESSES_ _PIC_MODE_ON_
+
+  define _PIC_PARTICLE_MOVER__MOVE_PARTICLE_TIME_STEP_(ptr,LocalTimeStep,node) PIC::Mover::FieldLine::Mover_SecondOrder(ptr,LocalTimeStep,node)
+  define _PIC_FIELD_LINE_MODE_  _PIC_MODE_ON_
+  define _USE_MAGNETIC_MOMENT_  _PIC_MODE_ON_
+
+ define _PIC_USER_PARTICLE_PROCESSING__MODE_  _PIC_MODE_ON_
+ define _PIC_USER_PARTICLE_PROCESSING__FUNCTION_(ptr,FirstParticleCell,node)   SEP::Scattering::AIAA2005::Process(ptr,FirstParticleCell,node)
+
+#endGeneral

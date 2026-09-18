@@ -1,0 +1,75 @@
+#!/usr/bin/perl -s
+
+my $Help = ($h or $help);
+my $Sleep = ($s or $sleep);
+my $History = $history;
+
+use strict;
+
+my $swmf_software     = "git\@github.com:SWMFsoftware";
+
+# The project name should be all capitalized.
+my %url = (
+    "BATSRUS.JL"         => "https://github.com/henry2004y",
+    "GITM"               => "git\@github.com:GITMCode",
+    "MGITM"              => "git\@github.com:dpawlows",
+    "PWOM"               => "git\@github.com:nasa",
+    "VAC"                => "https://github.com/gtoth-umich",
+    "VISANAMATLAB"       => "https://github.com/henry2004y",
+    "ESMF"               => "https://github.com/esmf-org",
+    "IPE"                => "git\@github.com:sword-swx-coe",
+    "COMIO"              => "git\@github.com:NOAA-SWPC"
+    );
+
+my @repo = ("SWMF, AMPS, BATSRUS, CIMI, FSAM, FLEKS, GITM2, MGITM, MFLAMPA, PWOM ...", 
+            sort keys %url);
+
+if($Help or not @ARGV){
+    print "
+Clone a project from the proper git repository. 
+
+Usage:
+  gitclone [-h] [-s] [-history] REPO [flags] [DIRNAME]
+
+-h -help      Print help message.
+
+-s -sleep     Sleep \$GITHUBSLEEP seconds after the cloning if the
+              \$GITHUBSLEEP environment variable is set to avoid
+              firewall protection against repeated access to the git server.
+
+-history      Clone with history. If not present the --depth 1 is used
+
+flags         Any git flag.
+DIRNAME       Name of local directory (default is same as REPO)
+REPO          Name of repository, including the following:\n\t\t", join("\n\t\t", @repo), "
+
+Examples:
+
+Clone BATSRUS repository with history:
+
+   gitclone -history BATSRUS
+
+Clone LATEX repositiry without history into Papers/BIBTEX:
+
+   gitclone LATEX Papers/BIBTEX
+
+";
+    exit 0;
+}
+
+
+
+
+my $project = $ARGV[0]; $project =~ s/\.git$//;
+
+my $url = ($url{uc($project)} or $swmf_software);
+
+$ARGV[0] .= " --depth 1 --no-single-branch" unless $History;
+
+my $command = "git clone $url/".join(" ", @ARGV);
+$command .= "; sleep $ENV{GITHUBSLEEP}" if ($ENV{GITHUBSLEEP} and $Sleep);
+
+print "$command\n";
+`$command`;
+
+exit 0;

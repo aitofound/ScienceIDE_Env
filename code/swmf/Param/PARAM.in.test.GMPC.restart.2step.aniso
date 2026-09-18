@@ -1,0 +1,138 @@
+#COMPONENTMAP
+GM  0 -1  1		CompMap runs on all PE-s
+PC  0  3  1		CompMap runs on 4 PE-s
+
+! Restart header for SWMF
+#INCLUDE
+RESTART.in		NameRestartFile
+
+#DESCRIPTION
+Param/PARAM.in.test.GMPC.restart.2step.aniso:		StringDescription
+
+#PROGRESS
+1			DnProgressShort
+1			DnProgressLong
+
+#SAVERESTART
+F			DoSaveRestart
+
+#COUPLE2
+GM			NameComp1
+PC			NameComp2
+-1			DnCouple
+1.28			DtCouple
+
+
+#BEGIN_COMP GM ---------------------------------------------------------------
+
+! Restart header for GM
+#INCLUDE
+GM/restartIN/restart.H
+
+#SAVEINITIAL
+T			DoSaveInitial
+
+#PLASMA
+1.0			FluidMass [amu]
+1.0			IonCharge [e]
+1.0			ElectronTemperatureRatio
+
+#NONCONSERVATIVE
+T			UseNonConservative
+
+#PICGRIDUNIT
+2			nPicGrid
+1.0			xUnitPicSi [m]
+1			uUnitPicSi [m/s] Speed of light for the first PIC region
+1			ScalingFactor
+1			xUnitPicSi [m]
+2			uUnitPicSi [m/s] Speed of light for the second PIC region
+2			ScalingFactor
+
+#PICGRID
+2			nPicGrid
+-25.1			xMinPic
+-5.0			xMaxPic
+-20.0			yMinPic
+ 20.0			yMaxPic
+1.25/3			DxPic
+1.25/3			DyPic
+ 5.0			xMinPic
+ 25.0			xMaxPic
+-20.0			yMinPic
+ 20.0			yMaxPic
+1.25/3			DxPic
+1.25/3			DyPic
+
+#OUTERBOUNDARY
+periodic		TypeBc1
+periodic		TypeBc2
+periodic		TypeBc3
+periodic		TypeBc4
+float			TypeBc5
+float			TypeBc6
+
+HALLRESISTIVITY
+T			UseHallResistFlux
+1.0			HallFactor
+0.0			HallCmaxFactor
+
+#TEST
+init_hall_resist		StringTest
+
+#B0SOURCE
+F			UseB0Source
+
+#SCHEME
+2			nOrder
+Rusanov			TypeFlux
+mc			TypeLimiter
+1.5			LimiterBeta
+
+#FIXEDTIMESTEP
+T			UseDtFixed
+640/500			DtFixedDim
+
+#TIMESTEPPING
+2			nStage
+0.8			CflExpl
+
+#SAVELOGFILE
+T			DoSaveLogfile
+raw			StringLog
+1			DnSaveLogfile
+-1.			DtSaveLogfile
+
+#SAVEPLOT
+1			nPlotFile
+z=0 var idl_ascii		StringPlot
+1			DnSavePlot
+-0.05			DtSavePlot
+0.			DxSavePlot
+rho mx my bx by p		NameVars
+g rbody			NamePars
+
+#END_COMP GM -----------------------------------------------------------------
+
+#BEGIN_COMP PC ---------------------------------------------------------------
+
+#RESTART
+T			DoRestart
+
+#TIMESTEPPING
+F			useSWMFDt
+T			useFixedDt
+1.28			dt
+
+#SAVEIDL
+1			nPlotFile
+z=0 fluid ascii si		StringPlot
+4			DnSavePlot
+-1			DtSavePlot
+1			DxSavePlot
+
+#END_COMP PC -----------------------------------------------------------------
+
+#STOP
+-1			MaxIter
+5.12			TimeMax

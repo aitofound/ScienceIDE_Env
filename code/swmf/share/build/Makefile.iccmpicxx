@@ -1,0 +1,25 @@
+# C language related part of Makefile.conf: Makefile.iccmpicxx
+C_COMPILER_NAME=icc
+# This file is for Yellowstone (and similar) system with Intel C compiler
+
+COMPILE.c     = icc
+COMPILE.mpicc = mpicc
+COMPILE.mpicxx= mpicxx
+
+LINK.cpp = ${COMPILE.c} -lstdc++
+
+CPPLIB = -lstdc++ -lmpi++
+
+#DEBUGC =  -g -traceback -ftrapuv -debug all
+
+.SUFFIXES: .c .cpp
+
+FLAGC = ${SEARCH_C} ${FLAGC_EXTRA} -c ${OPT3} ${OPENMPFLAG} #${DEBUGC}
+
+FLAGCC = ${FLAGC} -std=c++17
+
+.c.o:
+	${COMPILE.c} ${FLAGC} $< -o $@
+
+.cpp.o:
+	${COMPILE.mpicxx} ${FLAGCC} $< -o $@

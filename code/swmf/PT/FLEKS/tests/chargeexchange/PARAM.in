@@ -1,0 +1,143 @@
+#DESCRIPTION
+Charge Exchange Source Test for H+O with Chamberlain Neutral Profile
+
+#INITFROMSWMF
+F                       initFromSWMF
+
+#GEOMETRY
+-9.0e6                  xMin
+ 9.0e6                  xMax
+-1.0                    yMin
+ 1.0                    yMax
+-1.0                    zMin
+ 1.0                    zMax
+
+#NCELL
+32                      nCellX
+1                       nCellY
+1                       nCellZ
+
+#MAXBLOCKSIZE
+32                      maxBlockSizeX
+1                       maxBlockSizeY
+1                       maxBlockSizeZ
+
+#PERIODICITY
+T                       isPeriodicX
+T                       isPeriodicY
+T                       isPeriodicZ
+
+#SOLVEEM
+T                       solveEM
+
+#PLASMA
+3                       nSpecies
+0.01                    mass        Species 0: electron
+-1.0                    charge
+1.0                     mass        Species 1: H+ (light background)
+1.0                     charge
+16.0                    mass        Species 2: O+ (heavy, ion species for CX & gets source)
+1.0                     charge
+
+#UNIFORMSTATE
+0.05                    rho [amu/cc]   Species 0: electron (quasi-neutral)
+0.0                     ux [km/s]
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+10000.0                 T [K]
+5.0                     rho [amu/cc]   Species 1: H+ background
+-400.0                  ux [km/s]
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+10000.0                 T [K]
+1.0e-12                 rho [amu/cc]   Species 2: O+ background (tiny seed)
+0.0                     ux [km/s]
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+10000.0                 T [K]
+5.0e-9                  bx [T]
+0.0                     by [T]
+0.0                     bz [T]
+0.0                     ex [V/m]
+0.0                     ey [V/m]
+0.0                     ez [V/m]
+
+#SOURCE
+T                       useSource
+
+#BODYSIZE
+3.0e6                   radius        Mars-like planet radius
+
+#EXOSPHERE
+Chamberlain             typeProfile
+2                       nComponent
+1.0e10                  n0            H component: light species, large scale height
+2000.0e3                H0
+300.0                   T0
+0.0                     k0
+5.0e10                  n0            O component: heavy species, small scale height
+300.0e3                 H0
+300.0                   T0
+0.0                     k0
+
+#CHARGEEXCHANGE
+2                       nIonSpecies
+2.0e-12                 sigmaCX       H neutral - H+ ion [cm^2]
+1.0e-12                 sigmaCX       H neutral - O+ ion [cm^2]
+1.5e-12                 sigmaCX       O neutral - H+ ion [cm^2]
+1.0e-12                 sigmaCX       O neutral - O+ ion [cm^2]
+
+#TIMESTEPPING
+T                       useFixedDt
+0.1                     dt
+
+#NORMALIZATION
+1000.0                  lNormSI
+1.0e6                   uNormSI
+
+#MONITOR
+1                       dnReport
+
+#PARTICLES
+4                       nParticle per cell in X
+1                       nParticle per cell in Y
+1                       nParticle per cell in Z
+
+#COMOVING
+T                       solvePartInCoMov
+5                       nSmoothBackGroundU
+
+#UPWINDE
+T                       useUpwindE
+1                       limiterTheta
+
+#UPWINDB
+T                       doSmoothB
+1                       theta
+
+#SMOOTHJ
+T
+1
+0.5
+
+#EFIELDSOLVER
+1.0e-6                  EFieldTol
+200                     EFieldIter
+
+#DIVE
+T
+1
+
+#SAVEPLOT
+1                       nPlot
+z=0 var ascii planet    plotString
+-1                      dn
+1.0                     dt
+1                       dx
+rhoS2                   NameVars
+
+#STOP
+10                      MaxIter
+1.0                     TimeMax
+
+#RUN

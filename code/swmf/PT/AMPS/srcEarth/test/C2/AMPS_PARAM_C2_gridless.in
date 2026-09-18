@@ -1,0 +1,92 @@
+! ═══════════════════════════════════════════════════════════════
+! AMPS SEP geospace validation test C2
+! Dipole longitude and north/south symmetry, gridless shells
+!
+! This is the gridless companion of the parser-compatible Mode3D input.
+! It follows the same CCMC/RoR-style layout as AMPS_PARAM_test.in.  The
+! only active difference is FIELD_EVAL_METHOD GRIDLESS; MPI scheduler and
+! cutoff-search controls are passed by run_C2.py on the command line.
+! ═══════════════════════════════════════════════════════════════
+
+#CALCULATION_MODE
+CALC_TARGET            CUTOFF_RIGIDITY
+FIELD_EVAL_METHOD      GRIDLESS
+
+#CUTOFF_RIGIDITY
+CUTOFF_EMIN            1.0          ! MeV/n
+CUTOFF_EMAX            20000.0      ! MeV/n
+CUTOFF_MAX_PARTICLES   500          ! per injection point
+CUTOFF_NENERGY         50           ! log-spaced energy bins
+CUTOFF_SAMPLING        VERTICAL     ! VERTICAL or ISOTROPIC
+CUTOFF_MAX_TRAJ_TIME   600        ! sec — max trajectory integration time
+
+#PARTICLE_SPECIES
+SPECIES                PROTON
+CHARGE                 1            ! elementary charge
+MASS_AMU               1.0073       ! atomic mass units
+
+#BACKGROUND_FIELD
+FIELD_MODEL            DIPOLE
+DIPOLE_MOMENT          1.00         ! multiples of M_E
+DIPOLE_TILT            0.0          ! deg from GSM Z-axis
+
+#DOMAIN_BOUNDARY
+!BOUNDARY_TYPE          BOX          ! rectangular box in GSM
+DOMAIN_X_MAX           35.0         ! RE dayside
+DOMAIN_X_MIN           -35.0        ! RE nightside
+DOMAIN_Y_MAX           35.0         ! RE dusk
+DOMAIN_Y_MIN           -35.0        ! RE dawn
+DOMAIN_Z_MAX           35.0         ! RE north
+DOMAIN_Z_MIN           -35.0        ! RE south
+R_INNER                1.0          ! RE inner loss sphere
+
+#ELECTRIC_FIELD
+!COROTATION_E           NO
+!CONV_E_MODEL           VOLLAND_STERN
+!VS_KP                  AUTO
+!VS_GAMMA               2.0
+!VS_A                   0.78468
+!VS_INPUT_MODE          OMNIWEB
+
+!#TEMPORAL
+!TEMPORAL_MODE          TIME_SERIES
+!EVENT_START            2017-09-07T00:00
+!EVENT_END              2017-09-10T20:00
+!FIELD_UPDATE_DT        5
+!INJECT_DT              30
+!TS_INPUT_MODE          OMNIWEB
+
+#SPECTRUM
+SPECTRUM_TYPE          POWER_LAW
+SPEC_J0                1.00e+4
+SPEC_GAMMA             3.50
+SPEC_E0                10.0
+SPEC_EMIN              1.0
+SPEC_EMAX              1000.0
+
+#OUTPUT_DOMAIN
+OUTPUT_MODE            SHELLS
+SHELL_COUNT            1
+SHELL_ALTS_KM          9000.0
+SHELL_RES_DEG          30
+
+#OUTPUT_OPTIONS
+!FLUX_TYPE              DIFFERENTIAL
+!OUTPUT_CUTOFF          T
+!OUTPUT_PITCH           F
+!OUTPUT_FORMAT          NETCDF4
+!OUTPUT_COORDS          GEO
+!ENERGY_BINS            1 5 10 30 100 300 1000
+
+#NUMERICAL
+! Parallel settings are supplied by run_C2.py via CLI:
+!   -gridless-mpi-scheduler <scheduler>
+!   -gridless-mpi-dynamic-chunk <chunk>
+!   -density-threads <nt>
+!N_PARTICLES            10000
+!MAX_BOUNCE             500
+DT_TRACE               1.0
+MAX_TRACE_TIME         600
+MAX_TRACE_DISTANCE     0.0
+
+!#END

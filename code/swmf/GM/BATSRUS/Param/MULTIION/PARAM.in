@@ -1,0 +1,109 @@
+#DESCRIPTION
+Param/MULTIION/PARAM.in: multiion+Pe shocktube test		StringDescription
+
+#SHOCKHEATING
+0.25			PeShockHeatingFraction
+-0.5			PiShockHeatingFraction
+
+#POINTIMPLICIT
+T			UsePointImplicit
+0.5			BetaPointImplicit
+T			IsAsymmetric
+F			DoNormalizeCell
+
+#PLANET
+NONE			NamePlanet
+
+! Use planetary units so that the multi-ion effects are in reasonable range
+#IOUNITS
+NONE			TypeIoUnit
+
+#NORMALIZATION
+NONE			TypeNormalization
+
+#CHECKGRIDSIZE
+64			nI
+1			nJ
+1			nK
+4			MinBlockAll
+
+#GRID
+4			nRootBlock1
+1			nRootBlock2
+1			nRootBlock3
+-128.			xMin
+ 128.			xMax
+-1.			yMin
+ 1.			yMax
+-1.			zMin
+ 1.			zMax
+
+! 90 per cent H+ and 10 percent O+
+#SHOCKTUBE
+18.0			LeftState Rho H+
+-100.			LeftState Ux
+0.			LeftState Uy
+0.			LeftState Uz
+0.0			LeftState Bx
+0.0			LeftState By
+-16.0			LeftState Bz
+1e6			LeftState Pe
+1e6			LeftState P
+1.8			LeftState Rho O+
+-100.			LeftState Ux
+0.			LeftState Uy
+0.			LeftState Uz
+1e5			LeftState P
+4.5			RightState Rho H+
+-400.			RightState Ux
+0.			RightState Uy
+0.			RightState Uz
+0.0			RightState Bx
+0.0			RightState By
+-4.0			RightState Bz
+1e4			RightState Pe
+1e5			RightState P
+0.45			RightState Rho O+
+-400.			RightState Ux
+0.			RightState Uy
+0.			RightState Uz
+1e4			RightState P
+
+#OUTERBOUNDARY
+float			TypeBc1
+float			TypeBc2
+
+#TIMESTEPPING
+2			nStage
+0.8			CflExpl
+
+#SCHEME
+2			nOrder
+Rusanov			TypeFlux
+mc3			TypeLimiter
+1.5			LimiterBeta
+
+#SAVELOGFILE
+T			DoSaveLogfile
+raw			StringLog
+1			DnSaveLogfile
+-1.			DtSaveLogfile
+
+#SAVERESTART
+F			DoSaveRestart
+
+#PLOTFILENAME
+second			NameMaxTimeUnit
+
+Save ASCII IDL file for comparison with reference solution
+
+#SAVEPLOT
+1			nPlotFile
+idl_ascii 1d MHD		StringPlot
+-1			DnSavePlot
+0.05			DtSavePlot
+0.0			DxSavePlot
+
+#STOP
+-1			MaxIteration
+0.2			tSimulationMax

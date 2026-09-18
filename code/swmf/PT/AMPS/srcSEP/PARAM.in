@@ -1,0 +1,436 @@
+Begin session: 1
+
+#COMPONENTMAP
+SC  0 5  1 1		CompMap
+IH  0 -1  1 1	CompMap
+PT  0  11  1  -1          CompMap
+
+#DESCRIPTION
+Param/PARAM.in.test.SCIHSP: Input file for testing SC-IH-SP model for SEPs, includes Threaded-Field-Line		StringDescription
+
+#TIMEACCURATE
+T			IsTimeAccurate
+
+#FIELDLINE
+PT			NameTarget
+2			nSource
+SC			NameSource
+1.05			RScMin
+21			RScMax
+IH			NameSource
+19			RIhMin
+2200			RIhMax
+
+
+#TEST
+couple_mh_sp		StringTest
+
+#INCLUDE
+RESTART.in
+
+#BEGIN_COMP SC ---------------------------------------------------------------
+
+#INCLUDE
+SC/restartIN/restart.H
+
+#PLASMA
+1.0			FluidMass [amu]
+1.0			IonCharge [e]
+1.0			ElectronTemperatureRatio
+
+#FIELDLINETHREAD
+T			UseFieldLineThreads
+45			nPointThreadMax
+3.0e-3			DsThreadMin
+
+#THREADEDBC
+T			UseAlignedVelocity
+T			DoConvergenceCheck
+second			TypeBc
+1e-6			Tolerance
+20			MaxIter
+
+#BODY
+T			UseBody
+1.0			rBody
+1.5e8			BodyNDim
+1.5e6			BodyTDim
+
+#BODY
+F			UseBody
+
+#HARMONICSFILE
+SC/Param/CR2077_GNG.dat		NameHarmonicsFile
+
+#CURLB0
+T			UseCurlB0
+2.5			rCurrentFreeB0
+F			UseB0MomentumFlux
+
+#USERSWITCH
++init +ic		StringSwitch
+
+#POYNTINGFLUX
+1.1e6			PoyntingFluxPerBSi [J/m^2/s/T]
+
+#CORONALHEATING
+turbulentcascade		TypeCoronalHeating
+T			UseWaveReflection
+1.5e5			LperpTimesSqrtBSi
+0.0			rMinWaveReflection
+F			UseSurfaceWaveRefl
+
+#HEATPARTITIONING
+stochasticheating		TypeHeatPartitioning
+0.34			StochasticExponent
+0.18			StochasticAmplitude
+
+
+#HEATCONDUCTION
+T			UseHeatConduction
+spitzer			TypeHeatConduction
+
+#HEATFLUXREGION
+T			UseHeatFluxRegion
+5.0			rCollisional
+-8.0			rCollisionless
+
+#HEATFLUXCOLLISIONLESS
+T			UseHeatFluxCollisionless
+1.05			CollisionlessAlpha
+
+#TEST
+krylov radiative_cooling		StringTest
+
+#SEMIIMPLICIT
+T			UseSemiImplicit
+parcond			TypeSemiImplicit
+
+#SEMIKRYLOV
+GMRES			TypeKrylov
+1.0e-5			ErrorMaxKrylov
+10			MaxMatvecKrylov
+
+#RADIATIVECOOLING
+T			UseRadCooling
+
+#LOOKUPTABLE
+radcool			NameTable
+load			NameCommand
+SC/Param/RadCoolCorona.dat		NameFile
+ascii			TypeFile
+
+#LOOKUPTABLE
+TR			NameTable
+load			NameCommand
+SC/Param/TR.dat		NameFile
+ascii			TypeFile
+
+
+---------------------------------------------------
+#GRIDBLOCKALL
+1200			MaxBlock
+
+#REGION
+test			NameRegion
+box_gen			StringShape
+5.0			xMinBox
+180.0			yMinBox
+0.0			zMinBox
+32.0			xMaxBox
+360.0			yMaxBox
+90.0			zMaxBox
+
+#AMRCRITERIALEVEL
+2			nRefineCrit
+Level			StringRefine
+2			RefineTo
+2			CoarsenFrom
+Level test		StringRefine
+3			RefineTo
+3			CoarsenFrom
+
+
+#DOAMR
+T			DoAmr
+-1			DnAmr
+1			DtAmr
+T			IsStrictAmr
+
+#TIMESTEPPING
+2			nStage
+0.8			CflExpl
+
+#MINIMUMPRESSURE
+1.0E-9			pMinDim
+1.0e-9			PeMinDim
+
+#MINIMUMTEMPERATURE
+5.0e4			TminDim
+5.0e4			TeMinDim
+
+#SCHEME
+2			nOrder (1 or 2)
+Sokolov			TypeFlux (Roe, Rusanov, Linde, Sokolov
+mc3			TypeLimiter
+1.2			LimiterBeta
+
+#LIMITER
+T			UseLogRhoLimiter
+T			UseLogPLimiter
+F			UseRhoRatioLimiter
+
+#NONCONSERVATIVE
+T			UseNonConservative
+
+
+#MESSAGEPASS
+all			TypeMessagePass
+
+#TVDRESCHANGE
+T			UseTvdReschange
+
+#SAVELOGFILE
+T			DoSaveLogfile
+RAW			StringLog
+1			DnSaveLogfile
+-1.			DtSaveLogfile
+
+#COARSEAXIS
+T			UseCoarseAxis
+2			nCoarseLayer
+
+#OUTERBOUNDARY
+fieldlinethreads		TypeBc1   user for spherical and user_outerbcs
+float			TypeBc2
+none			TypeBc3
+none			TypeBc4
+none			TypeBc5
+none			TypeBc6
+
+#SAVEPLOT
+1			nPlotFile
+pnt mhd tec		StringPlot
+10			DnSavePlot
+-1.			DtSavePlot
+
+#PARTICLELINE
+T			UseParticles
+106			nFieldLineMax
+1000			nParticlePerLine
+-1			SpaceStepMin
+-1			SpaceStepMax
+import			InitMode
+T			UseBRAlignment
+0.7			CosBRAngleMax
+F			UseBUAlignment
+
+
+#SAVEINITIAL
+T			DoSaveInitial
+
+
+#END_COMP SC -----------------------------------------------------------------
+
+#BEGIN_COMP IH ---------------------------------------------------------------
+
+#INCLUDE
+IH/restartIN/restart.H
+
+#PLASMA
+1.0			FluidMass [amu]
+1.0			IonCharge [e]
+1.0			ElectronTemperatureRatio
+
+#GRIDBLOCKALL
+6800			MaxBlock
+
+#DOAMR
+F			DoAmr
+
+#INNERBOUNDARY
+buffergrid		TypeBcBody
+
+#HELIOBUFFERGRID
+2			nRBuff
+64			nLonBuff
+32			nLatBuff
+18.0			RBuffMin
+20.0			RBuffMax
+
+#OUTERBOUNDARY
+float			TypeBc1
+float			TypeBc2
+float			TypeBc3
+float			TypeBc4
+float			TypeBc5
+float			TypeBc6
+
+#RESCHANGE
+T			UseAccurateReschange
+
+#USERSWITCH
++init			StringSwitch
+
+#CORONALHEATING
+turbulentcascade		TypeCoronalHeating
+T			UseWaveReflection
+1.5e5			LperpTimesSqrtBSi
+0.0			rMinWaveReflection
+F			UseSurfaceWaveRefl
+
+#RESISTIVITY
+T			UseResistivity
+user			TypeResistivity
+0.0			Eta0Si     ! not used
+
+#RESISTIVITYOPTIONS
+F			UseResistiveFlux
+F			UseJouleHeating
+T			UseHeatExchange
+
+#HEATFLUXCOLLISIONLESS
+T			UseHeatFluxCollisionless
+1.05			CollisionlessAlpha
+
+#SCHEME
+2			nOrder
+Sokolov			TypeFlux
+mc3			TypeLimiter
+1.2			LimiterBeta
+
+#NONCONSERVATIVE
+T			UseNonConservative
+
+#TIMESTEPPING
+2			nStage
+0.8			CflExpl
+
+#DIVB
+T			UseDivbSource
+T			UseDivbDiffusion
+F			UseProjection
+F			UseConstrainB
+
+#SAVELOGFILE
+T			DoSaveLogfile
+RAW			StringLog
+1			DnSaveLogfile
+-1.			DtSaveLogfile
+
+#SAVEINITIAL
+T			DoSaveInitial
+
+#PARTICLELINE
+T			UseParticles
+106			nFieldLineMax
+1000			nParticlePerLine
+-1			SpaceStepMin
+-1			SpaceStepMax
+import			InitMode
+F			UseBRAlignment
+F			UseBUAlignment
+
+
+#SAVEPLOT
+1			nPlotFile
+pnt mhd tec		StringPlot
+10 			DnSavePlot
+-1.			DtSavePlot
+
+
+#END_COMP IH -----------------------------------------------------------------
+
+#BEGIN_COMP PT ---------------------------------------------------------------
+
+#STRICT
+
+!#COORDSYSTEM
+!HGI                     TypeCoordSystem
+
+!#TIMESTEPPING
+!F                       useSWMFDt
+!T                       useFixedDt
+!1.0                     fixedDt
+
+
+
+#SEP_PITCH_ANGLE_SCATTERING_FUCTION
+Jokopii                      ModelType  [none,Jokopii] 
+
+#SEP_PITCH_ANGLE_JOKOPII_DIFFUSION 
+1.0E-10 		k_ref_min
+1.0E-7			k_ref_max
+1.0			the location for which k_ref_min and k_ref_max are defined in AU
+fraction		[fraction,awsom] the source of the dB/B
+0.05			fraction of magnetic field that contributes to diffusion 
+-2			power index
+
+#SEP_INJECTION_FL 
+160                    NumberParticles per iteration
+0.1                      min energy [MeV]
+1                     max energy [MeV]
+shock               location of particle injection [beginning - beginning of a shield line, shock - at the location of wave]
+
+#SEP_INJECTION_TYPE_FL 
+Sokolov2004AJ 		PowerLaw		power-law injection energy spectrum : [PowerLaw,Sokolov2004AJ] 
+4			spectral index
+3.4E-4			Injection Efficiency Constant 
+
+#SEP_SAMPLING_LOCATION_FL
+6			the number of sampled points
+16*rsun                  16 R sun
+0.2*au                     heliocentric distancies where the particles willbe sampled
+0.4*au 
+0.6*au 
+0.8*au 
+1.0*au 
+
+#LOCATE_SHOCK
+density_ratio		disabled,density_variation,density_bump,density_ratio
+
+#SHOCK_SPEED
+1000.0
+
+#END_COMP PT -----------------------------------------------------------------
+
+
+#COUPLE1
+SC			NameSource
+IH			NameTarget
+-1			DnCouple
+1.0			DtCouple
+
+#COUPLE1
+SC			NameSource
+PT			NameTarget
+-1			DnCouple
+1.0			DtCouple
+
+#COUPLE1
+IH			NameSource
+PT			NameTarget
+-1			DnCouple
+1.0			DtCouple
+
+#STOP
+-1			MaxIter
+21			TimeMax
+
+End session: 1
+#RUN ##########################################################################
+Begin session: 2
+
+#BEGIN_COMP SC ---------------------------------------------------------------
+
+#DOAMR
+F			DoAmr
+
+#END_COMP SC -----------------------------------------------------------------
+
+#STOP
+-1			MaxIter
+80000			TimeMax
+
+End session: 2
+#END ##########################################################################

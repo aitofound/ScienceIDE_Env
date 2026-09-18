@@ -1,0 +1,105 @@
+#==============================================================================
+# test_aniso_sinalpha.in
+# Anisotropic PAD: SINALPHA_N n=2 (perpendicular/pancake distribution)
+#==============================================================================
+! EXPECTED BEHAVIOUR
+! --------------------
+! f_PAD(alpha) = sin^2(alpha) = 1 - cos^2(alpha)
+! where alpha = pitch angle of the trajectory at the domain boundary exit point.
+!
+! Reference ratio n_aniso/n_iso from semi-analytic straight-line computation
+! (valid because rL > 21 Re >> 9 Re domain at all points for E >= 5 GeV):
+!
+!   8Re equator: ratio = 0.7892  (equatorial field is mostly perpendicular to
+!                                 outward-radial, so exit velocities tend to be
+!                                 oblique-to-field -> moderate sin^2 weight)
+!   8Re pole:    ratio = 0.3023  (field at polar exits is mostly along Z = along v
+!                                 -> cos(alpha) large -> sin^2 small)
+!   6Re equator: ratio = 0.7127
+!
+! Physical interpretation: SINALPHA_N models a radiation-belt-like pancake PAD
+! (particles drift perpendicular to field). This type of distribution boosts the
+! equatorial density (particles tend to cross the equatorial boundary
+! perpendicular to B) and suppresses the polar density.
+!
+! Companion script: python3 test_density_aniso.py
+
+#CALCULATION_MODE
+  CALC_TARGET        DENSITY_SPECTRUM
+  FIELD_EVAL_METHOD  GRIDLESS
+
+#BACKGROUND_FIELD
+  FIELD_MODEL        DIPOLE
+  DIPOLE_MOMENT      1.0
+  DIPOLE_TILT        0.0
+
+#DOMAIN_BOUNDARY
+  DOMAIN_X_MAX       57340.8   ! km =  9.0 Re
+  DOMAIN_X_MIN      -57340.8   ! km = -9.0 Re
+  DOMAIN_Y_MAX       57340.8   ! km =  9.0 Re
+  DOMAIN_Y_MIN      -57340.8   ! km = -9.0 Re
+  DOMAIN_Z_MAX       57340.8   ! km =  9.0 Re
+  DOMAIN_Z_MIN      -57340.8   ! km = -9.0 Re
+  R_INNER            6434.9    ! km = 1.01 Re
+
+#DENSITY_SPECTRUM
+  DS_EMIN            5000.0    ! MeV = 5 GeV  [rL > 21 Re at all 3 points >> 9 Re domain]
+  DS_EMAX            50000.0   ! MeV = 50 GeV
+  DS_NINTERVALS      40        ! 41 log-spaced bins
+  DS_ENERGY_SPACING  LOG
+  DS_BOUNDARY_MODE   ANISOTROPIC
+
+#SPECTRUM
+  ! Power-law differential intensity: J_b(E) = J0 * (E/E0)^(-GAMMA)
+  ! Units as registered by the solver: J0 in m^-2 s^-1 sr^-1 MeV^-1
+  !
+  ! IMPORTANT: Verify that these key names match your spectrum.h
+  ! InitGlobalSpectrumFromKeyValueMap() implementation. Common alternatives:
+  !   SPECTRAL_INDEX instead of GAMMA
+  !   E_REFERENCE instead of E0_MEV
+  !   J_REFERENCE instead of J0
+  !
+  SPECTRUM_TYPE      POWER_LAW
+  SPEC_J0                1.00e+4   ! p/cm2/s/sr/(MeV/n)
+  SPEC_GAMMA             3.50         ! spectral index
+  SPEC_E0                10.0          ! MeV/n pivot
+  SPEC_EMIN              1.0          ! MeV/n
+  SPEC_EMAX              20000.0       ! MeV/n
+
+#NUMERICAL
+  DT_TRACE           0.5
+  MAX_STEPS          200000
+  MAX_TRACE_TIME     600.0
+
+  DS_BOUNDARY_MODE   ANISOTROPIC
+
+#BOUNDARY_ANISOTROPY
+  BA_PAD_MODEL        SINALPHA_N    ! f(alpha) = sin^2(alpha) = 1 - cos^2(alpha)
+  BA_PAD_EXPONENT     2.0           ! n=2: pancake / perpendicular distribution
+  BA_SPATIAL_MODEL    UNIFORM
+
+#OUTPUT_DOMAIN
+  OUTPUT_MODE   POINTS
+  POINTS_BEGIN
+  !  X_km         Y_km      Z_km      Description
+  POINT  50969.6       0.0       0.0       ! TC-EQ8: 8 Re equator (GSM x-axis)
+  POINT      0.0       0.0   50969.6       ! TC-PL8: 8 Re magnetic pole (+Z)
+  POINT  38227.2       0.0       0.0       ! TC-EQ6: 6 Re equator
+  POINTS_END
+
+#ENERGY_CHANNELS
+  ! Integral-flux output channels: F_ch = 4pi * int[E1,E2] T(E)*Jb(E) dE  [m^-2 s^-1]
+  ! NOTE: the solver energy grid is 5-50 GeV.
+  !   CH1 [10-100 MeV] and CH2 [100 MeV-1 GeV] lie BELOW the grid; solver returns 0.
+  !   CH3 [1-10 GeV]  clips to [5-10 GeV]  (within grid).
+  !   CH4 [10-20 GeV] clips to [10-20 GeV] (fully within grid).
+  ! Analytic reference (power-law gamma=2, T=T_eff):
+  !   F_ch = 4pi * T_eff * J0 * E0^2 * (1/lo - 1/hi)  where lo,hi = clipped limits
+  !
+  ! NAME    E1_MeV    E2_MeV
+  CH_BEGIN
+    CH1       10.0     100.0   ! 10-100 MeV  — below grid, expect F=0
+    CH2      100.0    1000.0   ! 100 MeV-1 GeV — below grid, expect F=0
+    CH3     1000.0   10000.0   ! 1-10 GeV — clips to [5000,10000 MeV] in grid
+    CH4    10000.0   20000.0   ! 10-20 GeV — fully within grid [5000,50000 MeV]
+  CH_END

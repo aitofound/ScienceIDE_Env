@@ -1,0 +1,50 @@
+
+#include input/earth-geospace_boundary_injection_sw_t96.input
+
+#General
+  TrajectoryTracing=on 
+  MaxSampledTrajectoryNumber=1000
+  
+  ReferenceInjectionParticleNumber=100000
+
+  InitialSampleLength=1000
+
+! define _PIC_PARTICLE_TRACKER_MODE_ _PIC_MODE_OFF_
+! define _PIC_PARTICLE_TRACKER__RUNTIME_OUTPUT_ _PIC_MODE_ON_
+   define _PIC_PARTICLE_TRACKER__TRACKING_CONDITION_(x,v,spec,ParticleData) Earth::ParticleTracker::TrajectoryTrackingCondition(x,v,spec,ParticleData)
+
+  SaveParticleRestartFile=off \\  !on,off
+    file=ParticleData.restart \\
+    SaveMode=overwrite  \\ !overwrite, newfile
+    IterationInterval=200
+
+  define _PIC_PARTICLE_MOVER__MOVE_PARTICLE_TIME_STEP_(ptr,LocalTimeStep,node) Earth::Earth3DForward::MoverManager(ptr,LocalTimeStep,node)
+
+#endGeneral
+
+#Mesh
+  define _AMR_READ_SAVE_CENTER_NODE_MEASURE__MODE_ _OFF_AMR_MESH_
+#endMesh
+
+#Sampling
+
+ PitchAngleDistributionSampling=off  !on, off
+ EnergyDistributionSamplingRelativistic=off  !on, off
+
+
+#endSampling
+
+#block ../input/earth.input.pl
+  GCR=off
+  SEP=off 
+  SW=off 
+
+! SepEnergySpectrumFile=sep-spectrum-09102017-event.dat
+
+! ParticleDataSamplingMode=on \\
+!   function=Earth::Sampling::ParticleData::SampleParticleData
+
+  ParticleDataSamplingMode=on \\
+    function=Earth::Mode3DForward::cDensity3D::SampleParticleData
+
+#endblock

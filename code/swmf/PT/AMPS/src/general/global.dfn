@@ -1,0 +1,40 @@
+//Types of symmetry
+#define no_symmetry           0
+#define cylindrical_symmetry  1
+#define spherical_symmetry    2
+
+// Error handling macros
+#define MPI_CHECK(call) \
+  if((call) != MPI_SUCCESS) { \
+    cerr << "MPI error calling \""#call"\"\n"; \
+    exit(__LINE__,__FILE__); }
+
+
+//Compilation mode (pure MPI or MPI+OpenMP)
+#define _COMPILATION_MODE__MPI_     0
+#define _COMPILATION_MODE__HYBRID_  1
+
+//using AVX instructions in calculations 
+#define _AVX_INSTRUCTIONS_USAGE_MODE__256_  0
+#define _AVX_INSTRUCTIONS_USAGE_MODE__512_  1
+#define _AVX_INSTRUCTIONS_USAGE_MODE__OFF_  2
+#define _AVX_INSTRUCTIONS_USAGE_MODE__ON_ _AVX_INSTRUCTIONS_USAGE_MODE__256_
+
+#define _OFF_ 0
+#define _ON_  1
+
+//definition of the exit function used for terminating the code exection in case of an error
+#define _GENERIC_EXIT_FUNCTION__EXIT_      0
+#define _GENERIC_EXIT_FUNCTION__MPI_ABORT_ 1 
+
+//Definitions of the macros that controls using of AVX in the individual parts of AMPS 
+#define _AVX_PARTICLE_MOVER_ _ON_
+#define _AVX_MATMUL_ _ON_
+
+//Align state vectors/arrays when possible and needed
+#define _ALIGN_STATE_VECTORS_ _OFF_
+
+//type of the random numberdenerator 
+#define _RND_MODE_DEFAULT_           0
+#define _RND_MODE_MERSENNE_TWISTER_  1
+

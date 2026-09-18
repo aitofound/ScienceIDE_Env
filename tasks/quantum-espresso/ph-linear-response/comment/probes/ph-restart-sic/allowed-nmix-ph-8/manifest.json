@@ -1,7 +1,8 @@
 {
-  "at": "2026-09-15T11:12:41Z",
+  "at": "2026-09-17T22:37:30Z",
+  "build_flavour": "default -O3 native, /tmp/sciaccel-qe-ph/default cache",
   "check": "ph-restart-sic",
-  "command": "CHECK_DIR=/tmp/probes/ph-restart-sic/allowed-nmix-ph-8 OUT_DIR=/tmp/probes/ph-restart-sic/allowed-nmix-ph-8-out SOURCE_DIR=/workspace/code bash run.sh nominal",
+  "command": "SOURCE_DIR=/home/kk/ScienceAccelBench-ph/code/quantum-espresso OUT_DIR=/home/kk/qe-work/ph2/probes-run/out/ph-restart-sic/allowed-nmix-ph-8 CHECK_DIR=/home/kk/qe-work/ph2/probes-run/scratch/ph-restart-sic/allowed-nmix-ph-8 TMPDIR=/tmp/sciaccel-qe-ph-native-probes SAB_MAKE_JOBS=8  bash run.sh nominal",
   "edit": [
     {
       "changed": true,
@@ -40,20 +41,28 @@
       "old": null
     }
   ],
-  "env": null,
   "host": {
     "arch": "x86_64",
-    "hostname": "fdd996413039",
-    "ncpu": 88
+    "gfortran": "GNU Fortran (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0",
+    "hostname": "LKK",
+    "ncpu": 24,
+    "os": "Linux-6.6.114.1-microsoft-standard-WSL2-x86_64-with-glibc2.35"
   },
   "kind": "allowed",
   "name": "nmix-ph-8",
+  "original_probe_log": "SAB_BUILD_SECONDS=0\nrun.sh: reused /tmp/sciaccel-qe-ph/default (stamp matches configure line + FFLAGS/CFLAGS; earlier check of this solve built it)\nrun.sh: ph.x < SiC.phG.restart1.in exited 1 (allow_nonzero: official ph_restart partial-convergence STOP, no CRASH file)\nrun.sh: ph.x < SiC.phG.restart2.in exited 1 (allow_nonzero: official ph_restart partial-convergence STOP, no CRASH file)\nrun.sh: ph.x < SiC.phG.restart3.in exited 1 (allow_nonzero: official ph_restart partial-convergence STOP, no CRASH file)\nrun.sh: ph.x < SiC.phG.restart4.in exited 1 (allow_nonzero: official ph_restart partial-convergence STOP, no CRASH file)\nextract.py: missing graded groups ['dielectric', 'born', 'phonon', 'phonon_acoustic']; have ['eigenvalues', 'energy']",
+  "qe_message": "No convergence has been achieved",
+  "qe_stdout_file": "/home/kk/qe-work/ph2/restart-sic-diag2/nmix/run/test-suite/ph_restart/SiC.phG.restart4.in.out",
+  "qe_stdout_tail": "     dvqpsi_us    :      0.01s CPU      0.01s WALL (      24 calls)\n     dvqpsi_us_on :      0.00s CPU      0.00s WALL (      24 calls)\n\n     add_vuspsi   :      0.00s CPU      0.00s WALL (     574 calls)\n     addusdbec    :      0.00s CPU      0.00s WALL (      72 calls)\n\n     drhodvus     :      0.00s CPU      0.00s WALL (       1 calls)\n     lr_addusdden :      0.00s CPU      0.00s WALL (       6 calls)\n\n      General routines\n     calbec       :      0.00s CPU      0.00s WALL (    1356 calls)\n     fft          :      0.01s CPU      0.01s WALL (      94 calls)\n     ffts         :      0.00s CPU      0.00s WALL (      30 calls)\n     fftw         :      0.02s CPU      0.03s WALL (    5340 calls)\n     davcio       :      0.00s CPU      0.00s WALL (     330 calls)\n     write_rec    :      0.00s CPU      0.00s WALL (       7 calls)\n\n      Additional routines\n     ch_psi       :      0.03s CPU      0.04s WALL (     574 calls)\n     last         :      0.01s CPU      0.01s WALL (     574 calls)\n     Hesh         :      0.00s CPU      0.00s WALL (     574 calls)\n     ch_psi_all_k :      0.00s CPU      0.01s WALL (     574 calls)\n     ch_psi_calbe :      0.00s CPU      0.00s WALL (     574 calls)\n     h_psi_bgrp   :      0.02s CPU      0.03s WALL (     574 calls)\n     h_psi        :      0.02s CPU      0.03s WALL (     574 calls)\n     h_psi:pot    :      0.02s CPU      0.03s WALL (     574 calls)\n     h_psi:calbec :      0.00s CPU      0.00s WALL (     574 calls)\n     s_psi_bgrp   :      0.00s CPU      0.00s WALL (    1220 calls)\n     s_psi        :      0.00s CPU      0.00s WALL (    1220 calls)\n\n\n     PHONON       :      0.14s CPU      0.16s WALL\n\n\n   This run was terminated on:  15:35:43  17Sep2026            \n\n=------------------------------------------------------------------------------=\n   JOB DONE.\n=------------------------------------------------------------------------------=\nSTOP 1",
+  "reason": "not_applicable: ph.x recover=.true. restart path with this mixer change does not finish a gradable dynamical matrix inside the official four calls at niter_ph=5. QE on restart4: 'No convergence has been achieved'. extract.py then failed with missing graded groups ['dielectric', 'born', 'phonon', 'phonon_acoustic']; have ['eigenvalues', 'energy']. This is a property of the check's niter_ph=5 budget, not a packaging crash. The allowed set that enters floor_allowed is allowed-altbuild, allowed-mixing-beta-0.3, allowed-startingwfc-random, allowed-omp-threads-2.",
   "run": {
-    "elapsed_s": 1.637561559677124,
+    "elapsed_s": 0.967,
     "exit_code": 1,
-    "log": "/tmp/probes/ph-restart-sic/allowed-nmix-ph-8-out/run.log",
-    "ok": false
+    "ic": "nominal",
+    "log": "/home/kk/qe-work/ph2/probes-run/out/ph-restart-sic/allowed-nmix-ph-8/run.log",
+    "ok": false,
+    "timed_out": false
   },
-  "status": "failed",
-  "what": "set nmix_ph = 8 in &inputph; set nmix_ph = 8 in &inputph; set nmix_ph = 8 in &inputph; set nmix_ph = 8 in &inputph"
+  "status": "not_applicable",
+  "what": "inputph nmix_ph unset (QE default 4) \u2192 8"
 }

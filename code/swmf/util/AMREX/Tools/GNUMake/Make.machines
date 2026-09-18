@@ -1,0 +1,135 @@
+# This file defines which_site and which_computer.
+# Thus this decides which Make.$(which_site) file is included by Make.defs.
+
+which_site := unknown
+which_computer := unknown
+
+ifdef HOSTNAME
+  host_name_env := $(strip $(HOSTNAME))
+else ifdef HOST
+  host_name_env := $(strip $(HOST))
+else
+  host_name_env := unknown
+endif
+
+host_name := $(shell hostname -f)
+host_name_short := $(shell hostname -s)
+
+# MACHINES supported
+
+ifdef NERSC_HOST
+ifeq ($(NERSC_HOST), perlmutter)
+  which_site := nersc
+  which_computer := perlmutter
+endif
+
+# Test machines for Perlmutter.
+# Uses "which_computer=perlmutter" to get the same configuration.
+ifeq ($(NERSC_HOST), alvarez)
+  which_site := nersc
+  which_computer := perlmutter
+endif
+ifeq ($(NERSC_HOST), muller)
+  which_site := nersc
+  which_computer := perlmutter
+endif
+endif
+
+ifeq ($(LMOD_SITE_NAME),OLCF)
+  ifeq ($(findstring crusher, $(host_name)), crusher)
+    which_site := olcf
+    which_computer := crusher
+  endif
+
+  ifeq ($(findstring frontier, $(host_name)), frontier)
+    which_site := olcf
+    which_computer := frontier
+  endif
+endif
+
+ifeq ($(findstring alcf.anl.gov, $(host_name)),alcf.anl.gov)
+  ifeq ($(findstring polaris, $(host_name)), polaris)
+    which_site := alcf
+    which_computer := polaris
+  endif
+endif
+
+ifeq ($(findstring tuolumne, $(host_name)), tuolumne)
+  which_site := llnl
+  which_computer := tuolumne
+endif
+
+ifeq ($(findstring sierra, $(host_name)), sierra)
+  which_site := llnl
+  which_computer := sierra
+endif
+
+ifeq ($(findstring lassen, $(host_name)), lassen)
+  which_site := llnl
+  which_computer := lassen
+endif
+
+ifeq ($(findstring butte, $(host_name)), butte)
+  which_site := llnl
+  which_computer := butte
+endif
+
+ifeq ($(findstring ray, $(host_name)), ray)
+  which_site := llnl
+  which_computer := ray
+endif
+
+ifeq ($(findstring rzmanta, $(host_name)), rzmanta)
+  which_site := llnl
+  which_computer := rzmanta
+endif
+
+ifeq ($(findstring rzansel, $(host_name)), rzansel)
+  which_site := llnl
+  which_computer := rzansel
+endif
+
+ifeq ($(findstring asterix, $(host_name)), asterix)
+  which_site := flash
+  which_computer := asterix
+endif
+
+ifeq ($(findstring aurora, $(host_name)), aurora)
+ifneq ($(findstring alcf.anl.gov, $(host_name)),alcf.anl.gov)
+  which_site := hs
+  which_computer := aurora
+endif
+endif
+
+ifeq ($(findstring kestrel, $(NREL_CLUSTER)), kestrel)
+  which_site := nrel
+  which_computer := kestrel
+endif
+
+ifeq ($(findstring daint, $(host_name)), daint)
+  which_site := cscs
+  which_computer := daint
+endif
+
+ifeq ($(findstring magnus, $(host_name)), magnus)
+  which_site := pawsey
+  which_computer := magnus
+endif
+
+ifeq ($(findstring raijin, $(host_name)), raijin)
+  which_site := nci
+  which_computer := raijin
+endif
+
+ifneq (,$(filter $(host_name_env),poplar redwood tulip))
+  which_site := frontier-coe
+  which_computer := $(host_name_env)
+endif
+
+ifeq ($(findstring "cray.com", $(host_name)),"cray.com")
+ifeq ($(findstring birch, $(host_name)),birch)
+  which_site := frontier-coe
+  which_computer := $(host_name_env)
+endif
+endif
+

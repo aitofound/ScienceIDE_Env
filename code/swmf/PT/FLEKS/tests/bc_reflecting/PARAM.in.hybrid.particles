@@ -1,0 +1,139 @@
+#DESCRIPTION
+Reflecting-wall particle-boundary-condition test (pure particle push) - HYBRID PIC
+(kinetic ions / massless fluid electrons).
+
+Hybrid counterpart of PARAM.in (full-PIC).  The single kinetic ion species
+streams toward the +x wall; both x faces are REFLECTING particle boundaries
+(normal velocity flipped, position mirrored).  The shared particle-BC hook
+(reflect_or_delete_particle) is exercised in the hybrid cell-centred mover,
+so particle number and kinetic energy must be conserved.
+
+The Ohm's law is kept minimal (ideal frozen-in: no Hall, no resistivity, no
+electron pressure gradient) so the motional (u x B) field stays small and the
+reflecting-wall physics is isolated from hybrid field-evolution artifacts.
+
+#INITFROMSWMF
+F                       initFromSWMF
+
+#GEOMETRY
+-3.2                    xMin  [code units; Lx = 6.4 d_i]
+ 3.2                    xMax
+-0.05                   yMin
+ 0.05                   yMax
+-0.05                   zMin
+ 0.05                   zMax
+
+#NCELL
+8                       nCellX
+1                       nCellY
+1                       nCellZ
+
+#MAXBLOCKSIZE
+16                      maxBlockSizeX
+1                       maxBlockSizeY
+1                       maxBlockSizeZ
+
+#PERIODICITY
+F                       isPeriodicX
+T                       isPeriodicY
+T                       isPeriodicZ
+
+#FIELDBOXBOUNDARY
+conducting              fieldBoxBoundaryLo
+conducting              fieldBoxBoundaryHi
+periodic                fieldBoxBoundaryLo
+periodic                fieldBoxBoundaryHi
+periodic                fieldBoxBoundaryLo
+periodic                fieldBoxBoundaryHi
+
+#PARTICLEBOXBOUNDARY
+0                       iSpecies
+reflect                 particleBoxBoundaryLo  (x)
+reflect                 particleBoxBoundaryHi
+periodic                particleBoxBoundaryLo  (y)
+periodic                particleBoxBoundaryHi
+periodic                particleBoxBoundaryLo  (z)
+periodic                particleBoxBoundaryHi
+
+Standard Maxwell/GMRES solver disabled; use the Ohm's-law + Faraday hybrid
+field advance.  The field solver is secondary here -- the particle REFLECT
+boundary is the object under test.
+#SOLVEEM
+F                       solveEM
+
+#HYBRIDPIC
+T                       useHybridPIC
+
+Hall term ON so the Ohm's-law stencil reads the ion moments (rho, momentum) in
+the wall ghost cells -- this exercises the hybrid-only centerPlasma ghost BC
+(apply_centerPlasma_BC) at the reflecting x-walls.  Resistivity and the
+electron-pressure-gradient stay OFF so the motional + Hall fields are the only
+drivers.
+#HALLTERM
+T                       useHallTerm
+
+#BSUBCYCLE
+1                       nBSubcycle
+
+#RESISTIVITY
+0.0                     etaResistivity  [m^2/s]
+
+#ELECTRONTEMPERATURE
+0.0                     electronTemperature  [eV]
+1.0                     electronGamma
+1.0                     electronDensity0
+
+Single kinetic ion species (q = m = 1); the electron is the implicit massless
+neutralizing fluid.
+#PLASMA
+1                       nSpecies
+1.0                     mass
+1.0                     charge
+
+#UNIFORMSTATE
+5.0                     rho [amu/cc]   Species 0: ions
+80.0                    ux [km/s]      bulk flow toward +x wall (U_code = 0.8)
+4.0                     uy [km/s]      small oblique component (~2.9 deg)
+0.0                     uz [km/s]
+10000.0                 T [K]
+0.0                     bx [T]
+0.0                     by [T]
+5.2195e-9               bz [T]         guide field, tangential to the x-wall
+0.0                     ex [V/m]
+0.0                     ey [V/m]
+0.0                     ez [V/m]
+
+#TIMESTEPPING
+T                       useFixedDt
+0.02                    dt
+
+#NORMALIZATION
+1.0e5                   lNormSI   [m]
+1.0e5                   uNormSI   [m/s]   speed of light cLight_SI = uNormSI
+
+#MONITOR
+50                      dnReport
+
+#SAVELOG
+1                       dnSavePic
+1                       dnSavePT
+
+#PARTICLES
+100                     npcelx
+1                       npcely
+1                       npcelz
+
+#SAVEPLOT
+1                       nPlot
+z=0 var ascii pic       plotString
+-1                      dn
+10.0                    dt
+1                       dx
+rhoS0 uxS0 uyS0 uzS0 Bx By Bz Ex Ey Ez   plotVar
+
+#STOP
+-1                      MaxIter
+12.0                    TimeMax   (transit = Lx/U_code = 6.4/0.8 = 8; 12 covers a
+                                  full transit + one reflection)
+
+#RUN

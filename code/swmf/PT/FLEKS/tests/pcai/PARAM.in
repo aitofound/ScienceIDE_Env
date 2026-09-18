@@ -1,0 +1,179 @@
+#DESCRIPTION
+Hybrid PIC (kinetic ions / fluid electrons) Proton Cyclotron Anisotropy
+Instability (PCAI) wave test.
+
+1D-3V: the ion temperature is anisotropic (bi-Maxwellian) with
+  T_perp/T_par = 3, beta_par = 1,
+so the plasma exceeds the proton-cyclotron anisotropy instability threshold
+  P_perp/P_par - 1 ~ S / beta_par^0.4   (S ~ 1)
+and a left-hand circularly-polarized (Alfven/ion-cyclotron) wave grows parallel
+to the guide field at the linear-theory rate gamma/Omega_ci = 0.162.  This
+validates the hybrid solver's capture of an electromagnetic anisotropy
+instability driven by ion free energy (no net current / beam).
+
+The anisotropic distribution is seeded by the WAVEIC anisoTPerpOverTPar option:
+the UNIFORMSTATE temperature T is interpreted as the PARALLEL temperature T_par,
+and the WaveIC thermal-velocity hook inflates the two components perpendicular
+to the guide field (x) by sqrt(T_perp/T_par) = sqrt(3).  The initial state has
+NO E or B field perturbation (frac = 0): only the uniform guide field plus the
+pressure/temperature anisotropy.  The instability therefore grows purely from the
+anisotropic ion free energy and the ~1% thermal-noise floor, without a seeded
+B_y/B_z mode.  The growth rate is measured from the total transverse-field norm
+sqrt(sum(By^2)) / sqrt(sum(Bz^2)) in tests/pcai/validate.py.
+
+Normalization is chosen for a clean time conversion: lNormSI = uNormSI = 1.0e5
+  so tNorm = 1.0 s and TimeMax == T_code == t*Omega_ci directly (dt = 0.01 s
+  gives dt*Omega_ci = 0.01).  The guide field gives B_code ~ 1 (Omega_ci = 1):
+  bx = 1.044e-8 T (Omega_ci(SI) = eB/m_p = 1 rad/s); v_A ~ 1.02 (not set to 1).
+Physical inputs: n = 5 /cc, B = 10.44 nT, v_A ~ 102 km/s,
+T_par ~ 6.28e5 K (beta_par = 1), T_perp = 3 T_par.
+
+The box is Lx = 10.5 d_i, 64 cells (dx = 0.164 d_i); the box-fundamental
+k d_i = 2*pi/10.5 = 0.598 lies in the unstable band of the parallel
+proton-cyclotron mode and the box holds one growing wavelength (waveMode = 1).
+Run to t*Omega_ci = 40 (TimeMax = 40 s), long enough to grow from the
+thermal-noise floor and saturate (~0.24); fields saved every 500 steps (~8
+frames inside the growth window [0.2, 0.85]*amp_max for a reliable fit).
+
+#INITFROMSWMF
+F                       initFromSWMF
+
+#GEOMETRY
+-5.25                   xMin  [code units; Lx = 10.5 d_i]
+ 5.25                   xMax
+-0.05                   yMin
+ 0.05                   yMax
+-0.05                   zMin
+ 0.05                   zMax
+
+#NCELL
+64                      nCellX
+1                       nCellY
+1                       nCellZ
+
+#MAXBLOCKSIZE
+64                      maxBlockSizeX
+1                       maxBlockSizeY
+1                       maxBlockSizeZ
+
+#PERIODICITY
+T                       isPeriodicX
+T                       isPeriodicY
+T                       isPeriodicZ
+
+#SOLVEEM
+F                       solveEM
+
+#HYBRIDPIC
+T                       useHybridPIC
+
+#AVGFIELDB
+F                       useAvgFieldB
+20                      nAvgFieldB
+
+useAvgFieldB = F disables FLEKS's EMA time-averaging of B (reference uses no
+B time-averaging).
+
+#RESISTIVITY
+0.0                     etaResistivity  [m^2/s, SI magnetic diffusivity]
+
+Warm massless fluid electrons with T_e = T_par (54.2 eV = 6.28e5 K), adiabatic
+index gamma = 5/3.  Cold electrons (Te = 0) do not produce the instability (the
+n=1 mode just oscillates), while warm electrons, whose pressure-gradient term
+couples to the parallel density perturbation of the parallel proton-cyclotron
+mode, do drive the growth.
+#ELECTRONTEMPERATURE
+54.2                    electronTemperature  [eV]  (T_e = T_par = 6.28e5 K)
+1.6667                  electronGamma             (5/3)
+1.0                     electronDensity0
+
+Charge-density floor for the 1/rho factors in the Hall term and the
+electron-pressure-gradient term.  The reference clamps rho at max(rho, 0.05);
+raising the floor from the default (1e-6) to 0.05 prevents (J x B)/rho and
+grad(Pe)/rho from blowing up if the density dips locally in the high-amplitude
+nonlinear phase.
+#MINIMUMDENSITY
+0.05                    rhoMinOhm
+
+#BSUBCYCLE
+1                       nBSubcycle
+
+Time-integration for the hybrid Faraday (B) update.  "rk4" evaluates E at the
+time-centred B (B_stage + B^n)/2 in the generalized Ohm's law at each stage.
+#FIELDINTEGRATOR
+rk4                     fieldIntegrator
+
+Single kinetic ion species (q = m = 1); the electron is an implicit
+neutralizing massless fluid, so no electron particle species is present.
+#PLASMA
+1                       nSpecies
+1.0                     mass
+1.0                     charge
+
+#UNIFORMSTATE
+5.0                     rho [amu/cc]   Species 0: ions (n = 5 /cc)
+0.0                     ux [km/s]
+0.0                     uy [km/s]
+0.0                     uz [km/s]
+6.28e5                  T [K]        T_par (beta_par = 1; B doubled so T ~ B^2)
+1.044e-8                bx [T]       guide field Bx0 (B_code~1, Omega_ci(SI)=1)
+0.0                     by [T]
+0.0                     bz [T]
+0.0                     ex [V/m]
+0.0                     ey [V/m]
+0.0                     ez [V/m]
+
+#TESTCASE
+hybridwave
+
+#WAVEIC
+1                       waveMode            box-fundamental unstable mode
+0.0                     frac                NO B perturbation (matches reference)
+3.0                     anisoTPerpOverTPar  T_perp/T_par anisotropy ratio
+
+#TIMESTEPPING
+T                       useFixedDt
+0.01                    dt            dt*Omega_ci = 0.01
+
+#NORMALIZATION
+1.0e5                   lNormSI   [m]  ~ d_i so d_i ~ 1 in code units
+1.0e5                   uNormSI   [m/s] tNorm = lNormSI/uNormSI = 1.0 s
+                                          (v_A ~ 1.02 in code units; NOT 1 --
+                                           only tNorm = 1 matters here)
+
+#MONITOR
+50                      dnReport
+
+#SAVELOG
+10                      dnSavePic
+10                      dnSavePT
+
+#PARTICLES
+600                     nParticle per cell in X   (reduced for a ~1-min run)
+1                       nParticle per cell in Y
+1                       nParticle per cell in Z
+
+#COMOVING
+F                       solvePartInCoMov
+0                       nSmoothBackGroundU
+
+#UPWINDE
+F                       useUpwindE
+0.0                     limiterThetaE
+
+#UPWINDB
+F                       doSmoothB
+0.0                     theta
+
+#SAVEPLOT
+1                       nPlot
+z=0 fluid ascii pic     plotString
+500                     dn
+-1                      dt
+1                       dx
+
+#STOP
+-1                      MaxIter
+40.0                    TimeMax      t*Omega_ci = 40 ~ 6.4 gyro-periods (tNorm=1)
+
+#RUN

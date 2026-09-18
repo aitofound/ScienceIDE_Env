@@ -1,0 +1,160 @@
+#DESCRIPTION
+Wave injection (shear Alfven): a By wave plus matching velocity kick is injected at the -x boundary face via the WAVEBC boundary into an initially uniform magnetized hybrid plasma, and propagates along +x.
+
+#INITFROMSWMF
+F                       initFromSWMF
+
+#GEOMETRY
+-3.2                    xMin
+ 3.2                    xMax
+-0.05                   yMin
+ 0.05                   yMax
+-0.05                   zMin
+ 0.05                   zMax
+
+#NCELL
+64                      nCellX
+1                       nCellY
+1                       nCellZ
+
+#MAXBLOCKSIZE
+64                      maxBlockSizeX
+1                       maxBlockSizeY
+1                       maxBlockSizeZ
+
+#PERIODICITY
+F                       isPeriodicX
+T                       isPeriodicY
+T                       isPeriodicZ
+
+#FIELDBOXBOUNDARY
+wave                    fieldBoxBoundaryLo
+outflow                 fieldBoxBoundaryHi
+periodic                fieldBoxBoundaryLo
+periodic                fieldBoxBoundaryHi
+periodic                fieldBoxBoundaryLo
+periodic                fieldBoxBoundaryHi
+
+#PARTICLEBOXBOUNDARY
+0                       iSpecies
+coupled                 particleBoxBoundaryLo
+coupled                 particleBoxBoundaryHi
+periodic                particleBoxBoundaryLo
+periodic                particleBoxBoundaryHi
+periodic                particleBoxBoundaryLo
+periodic                particleBoxBoundaryHi
+
+#SOLVEEM
+F                       solveEM
+
+#HYBRIDPIC
+T                       useHybridPIC
+
+#AVGFIELDB
+T                       useAvgFieldB
+20                      nAvgFieldB
+
+#RESISTIVITY
+0.0                     etaResistivity
+
+#ELECTRONTEMPERATURE
+0.0                     electronTemperature
+1.0                     electronGamma
+1.0                     electronDensity0
+
+#BSUBCYCLE
+8                       nBSubcycle
+
+#PLASMA
+1                       nSpecies
+1.0                     mass
+1.0                     charge
+
+#UNIFORMSTATE
+5.0                     rho
+0.0                     ux
+0.0                     uy
+0.0                     uz
+10000.0                 T
+1.0439e-8               bx
+0.0                     by
+0.0                     bz
+0.0                     ex
+0.0                     ey
+0.0                     ez
+
+#WAVEBC
+1                       nWaveFace
+0                       direction
+lo                      side
+2                       nComp
+0                       iField
+-1                      iSpecies
+0                       profile
+1.0439e-10              amplitude
+1.0                     frequency
+6.4e5                   waveLength
+0.0                     phase
+1.0                     dir_x
+0.0                     dir_y
+0.0                     dir_z
+0.0                     pol_x
+1.0                     pol_y
+0.0                     pol_z
+0.0                     tStart
+-1.0                    tEnd
+0.0                     rampTime
+0.0                     tCenter
+1.0                     tWidth
+2                       iField
+-1                      iSpecies
+0                       profile
+-1.0439e-7              amplitude
+1.0                     frequency
+6.4e5                   waveLength
+0.0                     phase
+1.0                     dir_x
+0.0                     dir_y
+0.0                     dir_z
+0.0                     pol_x
+1.0                     pol_y
+0.0                     pol_z
+0.0                     tStart
+-1.0                    tEnd
+0.0                     rampTime
+0.0                     tCenter
+1.0                     tWidth
+
+#TIMESTEPPING
+T                       useFixedDt
+0.02                    dt
+
+#NORMALIZATION
+1.0e5                   lNormSI
+1.0e5                   uNormSI
+
+#MONITOR
+50                      dnReport
+
+#SAVELOG
+10                      dnSavePic
+10                      dnSavePT
+
+#PARTICLES
+2000                    nParticle
+1                       nParticle
+1                       nParticle
+
+#SAVEPLOT
+1                       nPlot
+z=0 var ascii pic       plotString
+-1                      dn
+1.0                     dt
+1                       dx
+rhoS0 Bx By Bz Ex Ey Ez uxS0 uyS0 uzS0   plotVar
+
+#STOP
+-1                      MaxIter
+10.0                    TimeMax
+
+#RUN
