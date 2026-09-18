@@ -1,0 +1,833 @@
+diff --git a/python/sglang/srt/layers/attention/flashattention_backend.py b/python/sglang/srt/layers/attention/flashattention_backend.py
+index 9283ebd9ed..85b6623ce9 100644
+--- a/python/sglang/srt/layers/attention/flashattention_backend.py
++++ b/python/sglang/srt/layers/attention/flashattention_backend.py
+@@ -405,6 +405,22 @@ class FlashAttentionBackend(AttentionBackend):
+         forward_batch: ForwardBatch,
+         in_capture: bool = False,
+     ):
++        """Dispatch full-CG metadata: plain EXTEND (prefill) vs decode modes."""
++        forward_mode = forward_batch.forward_mode
++        if forward_mode.is_extend() and not (
++            forward_mode.is_target_verify()
++            or forward_mode.is_draft_extend_v2()
++            or forward_mode.is_dllm_extend()
++        ):
++            self._init_full_cg_prefill_metadata(forward_batch, in_capture)
++        else:
++            self._init_full_cg_decode_metadata(forward_batch, in_capture)
++
++    def _init_full_cg_decode_metadata(
++        self, forward_batch: ForwardBatch, in_capture: bool
++    ):
++        """Capture/replay metadata for the decode-runner full-CG modes
++        (decode / idle / target_verify / draft_extend)."""
+         bs = forward_batch.batch_size
+         req_pool_indices = forward_batch.req_pool_indices
+         seq_lens = forward_batch.seq_lens
+@@ -496,6 +512,61 @@ class FlashAttentionBackend(AttentionBackend):
+                 out_cache_loc=out_cache_loc,
+             )
+ 
++    def _init_full_cg_prefill_metadata(
++        self, forward_batch: ForwardBatch, in_capture: bool
++    ):
++        """Capture/replay metadata for plain EXTEND under full prefill CUDA
++        graph. Mirrors the eager extend branch of init_forward_metadata, with
++        three capture-contract differences:
++
++        - all tensors live in dedicated preallocated buffers (the captured
++          kernels hold their addresses; refilled in place each replay);
++        - cu_seqlens_q always gets its own buffer (the eager no-prefix path
++          aliases it to cu_seqlens_k — under capture that would permanently
++          weld q to the k buffer and break prefix replays);
++        - max_seq_len_q / max_seq_len_k are baked at capture as upper bounds
++          (the bucket's num_tokens / max_context_len): the kernel reads real
++          work extents from the cu_seqlens / cache_seqlens device buffers.
++        """
++        if self.page_size != 1:
++            raise ValueError(
++                "Full prefill CUDA graph on the FlashAttention backend "
++                f"currently supports page_size=1 only, got {self.page_size}."
++            )
++        bs = forward_batch.batch_size
++        if in_capture and getattr(self, "full_cg_prefill_metadata", None) is None:
++            device = forward_batch.seq_lens.device
++            m = FlashAttentionMetadata()
++            m.cache_seqlens_int32 = torch.zeros((bs,), dtype=torch.int32, device=device)
++            m.cu_seqlens_q = torch.zeros((bs + 1,), dtype=torch.int32, device=device)
++            m.cu_seqlens_k = torch.zeros((bs + 1,), dtype=torch.int32, device=device)
++            m.page_table = torch.zeros(
++                (bs, self.max_context_len), dtype=torch.int32, device=device
++            )
++            self.full_cg_prefill_metadata = m
++        m = self.full_cg_prefill_metadata
++        assert m is not None and bs == m.cache_seqlens_int32.shape[0], (
++            "full-CG prefill metadata must be created at capture with the same "
++            "fixed request-slot count used at replay"
++        )
++
++        seq_lens = forward_batch.seq_lens[:bs]
++        m.cache_seqlens_int32.copy_(seq_lens)
++        m.cu_seqlens_k[1:].copy_(torch.cumsum(seq_lens, dim=0))
++        m.cu_seqlens_q[1:].copy_(
++            torch.cumsum(forward_batch.extend_seq_lens[:bs], dim=0)
++        )
++        max_seq_len_k = int(forward_batch.seq_lens_cpu[:bs].max().item())
++        if max_seq_len_k > 0:
++            m.page_table[:, :max_seq_len_k].copy_(
++                self.req_to_token[forward_batch.req_pool_indices[:bs], :max_seq_len_k]
++            )
++        if in_capture:
++            # Baked into the captured kernel launches; upper bounds only.
++            m.max_seq_len_q = forward_batch.positions.numel()
++            m.max_seq_len_k = self.max_context_len
++        self.forward_metadata = m
++
+     def init_forward_metadata(self, forward_batch: ForwardBatch):
+         """Initialize forward metadata hence all layers in the forward pass can reuse it."""
+         metadata = FlashAttentionMetadata()
+diff --git a/python/sglang/srt/layers/attention/flashinfer_backend.py b/python/sglang/srt/layers/attention/flashinfer_backend.py
+index da22da6289..9869cdd87c 100644
+--- a/python/sglang/srt/layers/attention/flashinfer_backend.py
++++ b/python/sglang/srt/layers/attention/flashinfer_backend.py
+@@ -170,6 +170,12 @@ class PrefillMetadata:
+ # Reuse this workspace buffer across all flashinfer wrappers
+ global_workspace_buffer = None
+ 
++# Safety margin on the computed split-kv worst case for the dedicated
++# full-CG prefill workspace (absorbs allocator alignment and minor
++# flashinfer sizing drift across versions). Sizing logic lives in
++# FlashInferAttnBackend._full_cg_prefill_workspace_bytes.
++FULL_CG_PREFILL_WORKSPACE_MARGIN = 1.25
++
+ # Use as a fast path to override the indptr in flashinfer's plan function
+ # This is used to remove some host-to-device copy overhead.
+ global_override_indptr_cpu = None
+@@ -477,6 +483,12 @@ class FlashInferAttnBackend(AttentionBackend):
+         self.decode_cuda_graph_metadata = {}
+         self.prefill_cuda_graph_metadata = {}  # For verify
+         self.draft_extend_cuda_graph_metadata = {}  # For draft extend
++        # Plain EXTEND under full prefill CUDA graph: one wrapper set
++        # shared across all captured num_tokens buckets (bs fixed at 1).
++        # Created lazily on first capture in _prepare_cuda_graph_metadata.
++        self.full_cg_prefill_wrappers: Optional[
++            List[BatchPrefillWithPagedKVCacheWrapper]
++        ] = None
+ 
+     @staticmethod
+     def _resolve_swa_kv_pool(model_runner: ModelRunner) -> Optional[BaseSWAKVPool]:
+@@ -697,6 +709,24 @@ class FlashInferAttnBackend(AttentionBackend):
+                 encoder_lens=encoder_lens[:bs] if encoder_lens is not None else None,
+                 spec_info=spec_info,
+             )
++        elif forward_mode.is_extend():
++            # Plain EXTEND under full prefill CUDA graph. plan() runs
++            # out-of-graph against capture-stable wrappers; captured kernels
++            # read the refreshed state at replay. Must stay below the
++            # target-verify / draft-extend / dllm branches (also is_extend()).
++            # Split-kv must stay on — its block_valid_mask is the only
++            # early-exit for the captured fixed grid's padded/stale tiles.
++            self.indices_updater_prefill.update(
++                req_pool_indices[:bs],
++                seq_lens[:bs],
++                seq_lens_cpu[:bs] if seq_lens_cpu is not None else None,
++                seq_lens_sum,
++                prefix_lens=forward_batch.extend_prefix_lens[:bs],
++                prefill_wrappers=self.full_cg_prefill_wrappers,
++                use_ragged=False,
++                encoder_lens=encoder_lens[:bs] if encoder_lens is not None else None,
++                spec_info=None,
++            )
+         else:
+             raise ValueError("Invalid forward mode")
+ 
+@@ -915,6 +945,116 @@ class FlashInferAttnBackend(AttentionBackend):
+             )
+         return wrappers
+ 
++    @staticmethod
++    def _full_cg_prefill_workspace_bytes(
++        num_slots: int,
++        max_num_tokens: int,
++        *,
++        num_qo_heads: int,
++        num_kv_heads: int,
++        head_dim: int,
++        device: torch.device,
++    ) -> int:
++        """Split-kv worst-case float-workspace demand for the plain-EXTEND
++        cudagraph wrappers, mirroring flashinfer's PrefillPlan sizing
++        (scheduler.cuh, enable_cuda_graph=True) for the largest captured
++        bucket:
++
++          cta_tile_q = FA2DetermineCtaTileQ(max packed qo len, head_dim)
++          tiles      = ceil(max_rows * gqa / cta_tile_q) + batch_size - 1
++          padded     = max(2 * num_SMs / num_kv_heads, tiles)
++          tmp_v      = num_qo_heads * padded * cta_tile_q * head_dim * fp32
++          tmp_s      = num_qo_heads * padded * cta_tile_q * fp32
++
++        Split-kv must stay enabled for these wrappers — its
++        block_valid_mask is what lets the padded/stale tiles of the fixed
++        captured grid exit early at replay; without it every replay
++        re-runs capture-sized attention (measured ~6.5 ms/layer). If a
++        future flashinfer outgrows the margin, plan() fails loudly at
++        startup ("Increase the workspace buffer size").
++        """
++        gqa_group_size = num_qo_heads // num_kv_heads
++        max_qo_len = (max_num_tokens - num_slots + 1) * gqa_group_size
++        if max_qo_len > 64 and head_dim < 256:
++            cta_tile_q = 128
++        elif max_qo_len > 16:
++            cta_tile_q = 64
++        else:
++            cta_tile_q = 16
++        tiles = -(-max_num_tokens * gqa_group_size // cta_tile_q) + num_slots - 1
++        num_sm = torch.cuda.get_device_properties(device).multi_processor_count
++        padded_batch_size = max((2 * num_sm) // num_kv_heads, tiles)
++        per_row = num_qo_heads * padded_batch_size * cta_tile_q * 4
++        tmp_v = per_row * head_dim
++        tmp_s = per_row
++        return int((tmp_v + tmp_s) * FULL_CG_PREFILL_WORKSPACE_MARGIN)
++
++    def _create_full_cg_prefill_wrappers(
++        self, num_slots: int, max_num_tokens: int
++    ) -> list:
++        """Wrappers for plain EXTEND captured under a full prefill CUDA
++        graph. plan() must keep its internal state at capture-stable
++        addresses (use_cuda_graph=True); the decode-side cuda-graph
++        wrappers permanently pin the shared workspace via their own
++        plans, so these get a dedicated workspace sized from the largest
++        captured bucket. The request-slot count is fixed at capture (the
++        runner pads real batches up to it with zero-length sentinel
++        requests); kv indices cover up to num_slots sequences of
++        max_context_len.
++        """
++        device = self.workspace_buffer.device
++        self.full_cg_prefill_req_slots = num_slots
++        upd = self.indices_updater_prefill
++        workspace_bytes = self._full_cg_prefill_workspace_bytes(
++            num_slots,
++            max_num_tokens,
++            num_qo_heads=upd.num_qo_heads,
++            num_kv_heads=upd.num_kv_heads,
++            head_dim=upd.head_dim,
++            device=device,
++        )
++        logger.info(
++            "Full-CG prefill workspace: %.0f MB (max bucket %d tokens, "
++            "%d request slots)",
++            workspace_bytes / (1024 * 1024),
++            max_num_tokens,
++            num_slots,
++        )
++        self.full_cg_prefill_workspace_buffer = torch.empty(
++            workspace_bytes, dtype=torch.uint8, device=device
++        )
++        self.full_cg_prefill_qo_indptr = [
++            torch.zeros((num_slots + 1,), dtype=torch.int32, device=device)
++            for _ in range(self.num_wrappers)
++        ]
++        self.full_cg_prefill_kv_indptr = [
++            torch.zeros((num_slots + 1,), dtype=torch.int32, device=device)
++            for _ in range(self.num_wrappers)
++        ]
++        # call_begin_forward materializes paged_kernel_lens_sum + 256
++        # indices; size the fixed buffer for the worst case.
++        self.full_cg_prefill_kv_indices = [
++            torch.zeros(
++                (num_slots * self.max_context_len + 256,),
++                dtype=torch.int32,
++                device=device,
++            )
++            for _ in range(self.num_wrappers)
++        ]
++        return [
++            BatchPrefillWithPagedKVCacheWrapper(
++                self.full_cg_prefill_workspace_buffer,
++                "NHD",
++                use_cuda_graph=True,
++                backend=self.prefill_backend,
++                qo_indptr_buf=self.full_cg_prefill_qo_indptr[i],
++                paged_kv_indptr_buf=self.full_cg_prefill_kv_indptr[i],
++                paged_kv_indices_buf=self.full_cg_prefill_kv_indices[i],
++                paged_kv_last_page_len_buf=self.kv_last_page_len[:num_slots],
++            )
++            for i in range(self.num_wrappers)
++        ]
++
+     def _prepare_cuda_graph_metadata(
+         self,
+         bs: int,
+@@ -942,6 +1082,14 @@ class FlashInferAttnBackend(AttentionBackend):
+             prefill_wrappers = self._create_prefill_wrappers(bs, use_custom_mask=False)
+             self.draft_extend_cuda_graph_metadata[bs] = prefill_wrappers
+             self.forward_metadata = PrefillMetadata(prefill_wrappers, False, False)
++        elif forward_mode.is_extend():
++            if self.full_cg_prefill_wrappers is None:
++                self.full_cg_prefill_wrappers = self._create_full_cg_prefill_wrappers(
++                    bs, num_tokens
++                )
++            self.forward_metadata = PrefillMetadata(
++                self.full_cg_prefill_wrappers, False, False
++            )
+         else:
+             raise ValueError(f"Invalid mode: {forward_mode=}")
+ 
+diff --git a/python/sglang/srt/model_executor/cuda_graph_config.py b/python/sglang/srt/model_executor/cuda_graph_config.py
+index f1a2542c63..271bef043f 100644
+--- a/python/sglang/srt/model_executor/cuda_graph_config.py
++++ b/python/sglang/srt/model_executor/cuda_graph_config.py
+@@ -52,10 +52,15 @@ ALLOWED_BACKENDS_PER_PHASE = {
+         Backend.TC_PIECEWISE,
+         Backend.DISABLED,
+     ),
+-    # full is rejected for prefill — full CUDA graph capture only
+-    # fits fixed-shape and prefill is variable-shape. Use breakable
+-    # or tc_piecewise for prefill.
+-    Phase.PREFILL: (Backend.BREAKABLE, Backend.TC_PIECEWISE, Backend.DISABLED),
++    # full for prefill captures one whole-forward graph per num_tokens
++    # bucket (bs=1 only); replay pads num_tokens up to the nearest
++    # captured bucket. Opt-in: the padding waste is the operator's call.
++    Phase.PREFILL: (
++        Backend.FULL,
++        Backend.BREAKABLE,
++        Backend.TC_PIECEWISE,
++        Backend.DISABLED,
++    ),
+ }
+ 
+ # Per-phase settings schema. Keys other than backend are runner-level
+@@ -63,9 +68,10 @@ ALLOWED_BACKENDS_PER_PHASE = {
+ # backend-specific knob (only meaningful when backend == tc_piecewise).
+ # For prefill, bs carries the captured shape size (token count for
+ # tc_piecewise, request count for breakable) — one shape knob per phase.
++# full_prefill_max_req is prefill-only and only meaningful when backend == full.
+ ALLOWED_KEYS_PER_PHASE = {
+     Phase.DECODE: ("backend", "max_bs", "bs", "tc_compiler"),
+-    Phase.PREFILL: ("backend", "max_bs", "bs", "tc_compiler"),
++    Phase.PREFILL: ("backend", "max_bs", "bs", "tc_compiler", "full_prefill_max_req"),
+ }
+ 
+ 
+@@ -78,6 +84,12 @@ class PhaseConfig:
+     bs: Optional[List[int]] = None
+     # Only meaningful when backend == tc_piecewise; ignored otherwise.
+     tc_compiler: str = "eager"
++    # Only meaningful for the prefill phase with backend == full: max number of
++    # request slots baked into each captured graph. Real bs <= full_prefill_max_req
++    # reuses the graph (unused slots become zero-length sentinels); larger
++    # batches fall back to eager. Ignored by BCG (bs=1 only) and TC_PIECEWISE
++    # (bs-invariant via torch.compile). None auto-derives chunked_prefill_size // 512.
++    full_prefill_max_req: Optional[int] = None
+ 
+ 
+ def default_prefill_backend() -> str:
+diff --git a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+index 6734ab615f..377379dd5b 100644
+--- a/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
++++ b/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py
+@@ -20,13 +20,21 @@ Backend selection comes from cuda_graph_config.prefill:
+   - "breakable" — BreakableCudaGraphBackend: segmented capture (no
+                       torch.compile). Captures with bs=1; rejects multi-req
+                       prefill in can_run_graph.
+-  - "full"      — rejected at config validation; not supported for prefill.
++  - "full"      — FullCudaGraphBackend: one whole-forward graph per
++                      num_tokens bucket, captured with a fixed number of
++                      request slots (cuda_graph_config.prefill.full_prefill_max_req). Replay
++                      pads num_tokens up to the nearest bucket and pads
++                      the request axis with zero-length sentinel requests;
++                      bs > slots falls back to eager. Attention metadata
++                      follows the decode-style 2-step contract
++                      (init_forward_metadata_out_graph before capture/replay).
+   - "disabled"  — handled at the model_runner level — runner not
+                       constructed.
+ """
+ 
+ from __future__ import annotations
+ 
++import copy
+ import inspect
+ import logging
+ import warnings
+@@ -64,6 +72,9 @@ from sglang.srt.model_executor.runner.shape_key import ShapeKey
+ from sglang.srt.model_executor.runner_backend.breakable_cuda_graph_backend import (
+     BreakableCudaGraphBackend,
+ )
++from sglang.srt.model_executor.runner_backend.full_cuda_graph_backend import (
++    FullCudaGraphBackend,
++)
+ from sglang.srt.model_executor.runner_backend.utils import (
+     resolve_prefill_backend,
+ )
+@@ -247,6 +258,10 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+         self._prefill_static_buffers: Optional[Dict[str, torch.Tensor]] = None
+         self.static_draft_hidden_states: Optional[torch.Tensor] = None
+         self.layer_model = None
++        # Set before resolve_prefill_backend — TcPiecewise's _run_compile_pass
++        # calls back into capture_prepare which reads this. Full overrides below
++        # once the backend type is known.
++        self._capture_req_slots = 1
+         try:
+             self.backend = resolve_prefill_backend(self)
+         except RuntimeError as e:
+@@ -256,7 +271,21 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+                     f"{prefill_failure_msg(_prefill_backend_name)}"
+                 )
+             raise
+-        if isinstance(self.backend, BreakableCudaGraphBackend):
++        self._is_full_backend = isinstance(self.backend, FullCudaGraphBackend)
++        if self._is_full_backend:
++            max_req = (
++                model_runner.server_args.cuda_graph_config.prefill.full_prefill_max_req
++            )
++            if max_req is None:
++                # Auto: scale request slots with the chunked prefill size.
++                max_req = max(model_runner.server_args.chunked_prefill_size // 512, 1)
++            self._capture_req_slots = min(max_req, self.max_bs)
++        self._full_cg_seq_lens_cpu = (
++            torch.zeros((self._capture_req_slots,), dtype=torch.int64, device="cpu")
++            if self._is_full_backend
++            else None
++        )
++        if isinstance(self.backend, (BreakableCudaGraphBackend, FullCudaGraphBackend)):
+             with torch.device(self.device):
+                 self._prefill_static_buffers = {
+                     name: torch.zeros((self.max_bs,), dtype=torch.int64)
+@@ -295,18 +324,10 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+             {} if self.use_captured_attn_metadata else None
+         )
+ 
+-        # --- BCG: resolve inner layer_model for capture/replay --------
+-        # BCG captures only the inner transformer stack (layer_model.forward)
+-        # — not the outer model.forward. The outer's tail (logits_processor /
+-        # pooler) has bs-shaped kernels that would bake bs=1 into the captured
+-        # graph and break multi-req replay. At replay, we monkey-patch
+-        # layer_model.forward to replay the captured graph and return the
+-        # captured hidden states; the outer model.forward then runs
+-        # logits_processor eagerly on top with the live multi-req metadata.
+-        # Mirrors main's BreakableCudaGraphRunner. (Slot pre-init lives
+-        # above next to _prefill_static_buffers — TcPiecewise's compile
+-        # pass runs during backend construction and reads self.layer_model.)
+-        if isinstance(self.backend, BreakableCudaGraphBackend):
++        # BCG and Full CG capture only the transformer body (layer_model.forward),
++        # not the LM head + logits_processor — the eager tail keeps the captured
++        # graph bs-invariant so req_slots is not bound by an (req_slots, vocab) buffer.
++        if isinstance(self.backend, (BreakableCudaGraphBackend, FullCudaGraphBackend)):
+             language_model = getattr(
+                 self.model_runner.model, "language_model", self.model_runner.model
+             )
+@@ -318,9 +339,9 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+                 self.layer_model = language_model
+             else:
+                 raise RuntimeError(
+-                    f"BCG could not resolve inner layer_model on "
+-                    f"{type(language_model).__name__}; BCG is unsupported for "
+-                    f"this model architecture."
++                    f"{type(self.backend).__name__} could not resolve inner "
++                    f"layer_model on {type(language_model).__name__}; "
++                    f"this backend is unsupported for this model architecture."
+                 )
+             params = list(inspect.signature(self.layer_model.forward).parameters)
+             self._input_embeds_arg_idx = (
+@@ -337,6 +358,7 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+         self.capture()
+ 
+         self.raw_num_tokens = 0
++        self.raw_bs = 0
+ 
+     def _is_mamba_track_enabled(self) -> bool:
+         return (
+@@ -496,8 +518,29 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+         """Replay-time metadata refresh for the BCG-with-captured-metadata
+         contract. For opt-in backends, refresh the stashed per-bucket
+         metadata in place against the current batch; otherwise fall back
+-        to the generic eager init."""
++        to the generic eager init. Full CG instead refreshes the
++        capture-stable wrapper state planned at capture time with the
++        real seq_lens / prefix_lens; the captured kernels read the
++        updated state at replay."""
+         attn_backend = self.model_runner.attn_backend
++        if self._is_full_backend:
++            # Slot-padded shallow view: plan() must see exactly req_slots
++            # entries (real values in [:bs], sentinels in [bs:req_slots]
++            # already populated by replay_prepare).
++            r = self._capture_req_slots
++            bs = forward_batch.batch_size
++            s = self._prefill_static_buffers
++            self._full_cg_seq_lens_cpu.zero_()
++            self._full_cg_seq_lens_cpu[:bs].copy_(forward_batch.seq_lens_cpu)
++            padded_view = copy.copy(forward_batch)
++            padded_view.batch_size = r
++            padded_view.seq_lens = s["seq_lens"][:r]
++            padded_view.seq_lens_cpu = self._full_cg_seq_lens_cpu
++            padded_view.req_pool_indices = s["req_pool_indices"][:r]
++            padded_view.extend_seq_lens = s["extend_seq_lens"][:r]
++            padded_view.extend_prefix_lens = s["extend_prefix_lens"][:r]
++            attn_backend.init_forward_metadata_out_graph(padded_view)
++            return
+         if not self.use_captured_attn_metadata:
+             attn_backend.init_forward_metadata(forward_batch)
+             return
+@@ -510,6 +553,8 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+         )
+ 
+     def can_run_graph(self, forward_batch: ForwardBatch) -> bool:
++        if self._is_full_backend and forward_batch.batch_size > self._capture_req_slots:
++            return False
+         if forward_batch.input_embeds is not None:
+             return False
+         if forward_batch.replace_embeds is not None:
+@@ -571,27 +616,30 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+         capture_prepare signature.
+         """
+         buffers = self.buffers
+-        bs = 1
++        bs = self._capture_req_slots
++        # Slot 0 carries num_tokens; slots 1..bs-1 are zero-length sentinels.
++        lens_cpu = [num_tokens] + [0] * (bs - 1)
++        start_loc_cpu = [0] + [num_tokens] * (bs - 1)
+ 
+         with torch.device(self.device):
+             shape_inputs = {
+                 "req_pool_indices": torch.arange(bs, device=self.device),
+-                "seq_lens": torch.tensor([num_tokens], device=self.device),
+-                "orig_seq_lens": torch.tensor([num_tokens], device=self.device),
+-                "extend_seq_lens": torch.tensor([num_tokens], device=self.device),
+-                "extend_prefix_lens": torch.tensor([0], device=self.device),
+-                "extend_start_loc": torch.tensor([0], device=self.device),
++                "seq_lens": torch.tensor(lens_cpu, device=self.device),
++                "orig_seq_lens": torch.tensor(lens_cpu, device=self.device),
++                "extend_seq_lens": torch.tensor(lens_cpu, device=self.device),
++                "extend_prefix_lens": torch.zeros((bs,), dtype=torch.int64),
++                "extend_start_loc": torch.tensor(start_loc_cpu, device=self.device),
+             }
+         if self._prefill_static_buffers is not None:
+             s = self._prefill_static_buffers
+-            s["seq_lens"][:bs].fill_(num_tokens)
+-            s["extend_seq_lens"][:bs].fill_(num_tokens)
++            s["seq_lens"][:bs].copy_(shape_inputs["seq_lens"])
++            s["extend_seq_lens"][:bs].copy_(shape_inputs["extend_seq_lens"])
+             s["extend_prefix_lens"][:bs].zero_()
+-            s["extend_start_loc"][:bs].zero_()
++            s["extend_start_loc"][:bs].copy_(shape_inputs["extend_start_loc"])
+             s["req_pool_indices"][:bs].copy_(
+                 torch.arange(bs, device=s["req_pool_indices"].device)
+             )
+-            s["orig_seq_lens"][:bs].fill_(num_tokens)
++            s["orig_seq_lens"][:bs].copy_(shape_inputs["orig_seq_lens"])
+             for name in _PREFILL_STATIC_FIELDS:
+                 shape_inputs[name] = s[name][:bs]
+ 
+@@ -640,7 +688,7 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+                 seq_lens=shape_inputs["seq_lens"],
+                 next_token_logits_buffer=self._next_token_logits_buffer(bs),
+                 orig_seq_lens=shape_inputs["orig_seq_lens"],
+-                seq_lens_cpu=torch.tensor([num_tokens], device="cpu"),
++                seq_lens_cpu=torch.tensor(lens_cpu, device="cpu"),
+                 out_cache_loc=_slot("out_cache_loc"),
+                 seq_lens_sum=num_tokens,
+                 mamba_track_indices=(
+@@ -664,9 +712,11 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+                 extend_seq_lens=shape_inputs["extend_seq_lens"],
+                 extend_prefix_lens=shape_inputs["extend_prefix_lens"],
+                 extend_start_loc=shape_inputs["extend_start_loc"],
+-                extend_prefix_lens_cpu=torch.tensor([0], device="cpu"),
+-                extend_seq_lens_cpu=torch.tensor([num_tokens], device="cpu"),
+-                extend_logprob_start_lens_cpu=torch.tensor([num_tokens], device="cpu"),
++                extend_prefix_lens_cpu=torch.zeros(
++                    (bs,), dtype=torch.int64, device="cpu"
++                ),
++                extend_seq_lens_cpu=torch.tensor(lens_cpu, device="cpu"),
++                extend_logprob_start_lens_cpu=torch.tensor(lens_cpu, device="cpu"),
+                 positions=_slot("positions"),
+                 global_num_tokens_gpu=global_num_tokens_gpu,
+                 global_num_tokens_for_logprob_gpu=global_num_tokens_for_logprob_gpu,
+@@ -732,7 +782,10 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+         """
+         num_tokens = size
+         forward_batch, attn_backend = self.capture_prepare(num_tokens)
+-        self._init_forward_metadata_for_capture(forward_batch, num_tokens)
++        if self._is_full_backend:
++            attn_backend.init_forward_metadata_out_graph(forward_batch, in_capture=True)
++        else:
++            self._init_forward_metadata_for_capture(forward_batch, num_tokens)
+ 
+         def run_once():
+             return self._run_forward(forward_batch, num_tokens)
+@@ -768,6 +821,7 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+         self.raw_num_tokens = num_tokens
+ 
+         bs = forward_batch.batch_size
++        self.raw_bs = bs
+ 
+         self.buffer_registry.fill_from(
+             forward_batch,
+@@ -876,7 +930,7 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+             ),
+         )
+ 
+-        # Under Breakable, copy serving-time values into the static
++        # Under Breakable / Full, copy serving-time values into the static
+         # buffers so the addresses captured segments hold stay live with
+         # current data.
+         if self._prefill_static_buffers is not None:
+@@ -889,6 +943,20 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+             s["req_pool_indices"][:bs].copy_(forward_batch.req_pool_indices)
+             if forward_batch.orig_seq_lens is not None:
+                 s["orig_seq_lens"][:bs].copy_(forward_batch.orig_seq_lens)
++            if self._is_full_backend and bs < self._capture_req_slots:
++                # Sentinel tail for slots [bs:req_slots]: the captured graph
++                # reads all req_slots entries (e.g. the logits-processor
++                # cumsum), so stale values from the previous replay must be
++                # cleared. Zero lengths make the sentinels no-ops;
++                # extend_start_loc sentinels sit at the flat end of the real
++                # tokens.
++                r = self._capture_req_slots
++                s["seq_lens"][bs:r].zero_()
++                s["extend_seq_lens"][bs:r].zero_()
++                s["extend_prefix_lens"][bs:r].zero_()
++                s["extend_start_loc"][bs:r].fill_(self.raw_num_tokens)
++                s["req_pool_indices"][bs:r].zero_()
++                s["orig_seq_lens"][bs:r].zero_()
+ 
+         # Refresh the static buffer the captured graph reads from.
+         if (
+@@ -915,16 +983,13 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+             raw_num_tokens = self.raw_num_tokens
+ 
+             if self.layer_model is not None:
+-                # BCG path. The captured graph is a bs=1 replay of
+-                # layer_model.forward. Monkey-patch layer_model.forward to
+-                # call backend.replay (which fires the captured graph and
+-                # returns the captured hidden_states), then drive the outer
+-                # model.forward eagerly with the live multi-req
+-                # static_forward_batch. The outer's logits_processor /
+-                # pooler then runs on top with live multi-req metadata.
++                # BCG / Full: replay the captured body, run the LM head +
++                # logits_processor eagerly. For Full, slice hidden_states to
++                # raw_num_tokens and pass the raw forward_batch so the eager
++                # tail runs at raw_bs.
+                 shape_key = ShapeKey(size=self._static_num_tokens)
++                full_path = self._is_full_backend
+                 static_n = self._static_num_tokens
+-
+                 ie_idx = self._input_embeds_arg_idx
+ 
+                 def replay_layer_forward(*args, **layer_kwargs):
+@@ -944,12 +1009,17 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+                             self.buffer_registry.get_slot("input_embeds").slice_for(
+                                 1, static_n
+                             ).copy_(ie[:static_n])
+-                    return self.backend.replay(
+-                        shape_key, static_forward_batch, **kwargs
+-                    )
++                    hs = self.backend.replay(shape_key, static_forward_batch, **kwargs)
++                    return hs[:raw_num_tokens] if full_path else hs
+ 
+                 original_layer_forward = self.layer_model.forward
+                 self.layer_model.forward = replay_layer_forward
++                # For Full, run the eager LM head + logits_processor against
++                # the raw user-facing batch so the tail's req_slots-sized work and
++                # buffers collapse to real bs. For BCG, static_forward_batch
++                # IS the raw batch (bs=1 has no padding), so we keep the
++                # existing call unchanged.
++                tail_batch = forward_batch if full_path else static_forward_batch
+                 try:
+                     with (
+                         forward_context(
+@@ -967,9 +1037,9 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+                         ),
+                     ):
+                         output = self.model_runner.model.forward(
+-                            static_forward_batch.input_ids,
+-                            static_forward_batch.positions,
+-                            static_forward_batch,
++                            tail_batch.input_ids,
++                            tail_batch.positions,
++                            tail_batch,
+                             **kwargs,
+                         )
+                 finally:
+@@ -977,7 +1047,8 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+             else:
+                 # TC_PIECEWISE path. backend.replay calls the compiled
+                 # outer model.forward directly (torch.compile handles
+-                # multi-req via bs-invariant FX-traced kernels).
++                # multi-req via bs-invariant FX-traced kernels). Full/BCG use
++                # the captured-body path above; only tc_piecewise reaches here.
+                 with (
+                     forward_context(
+                         ForwardContext(attn_backend=self.model_runner.attn_backend)
+@@ -994,7 +1065,9 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+                     ),
+                 ):
+                     output = self.backend.replay(
+-                        self._static_num_tokens, static_forward_batch, **kwargs
++                        ShapeKey(size=self._static_num_tokens),
++                        static_forward_batch,
++                        **kwargs,
+                     )
+ 
+             if isinstance(output, LogitsProcessorOutput):
+@@ -1005,8 +1078,11 @@ class PrefillCudaGraphRunner(BaseCudaGraphRunner):
+                     and output.mm_input_embeds is not None
+                 ):
+                     mm_input_embeds = output.mm_input_embeds[: self.raw_num_tokens]
++                logits_rows = (
++                    self.raw_bs if self._is_full_backend else self.raw_num_tokens
++                )
+                 return LogitsProcessorOutput(
+-                    next_token_logits=output.next_token_logits[: self.raw_num_tokens],
++                    next_token_logits=output.next_token_logits[:logits_rows],
+                     hidden_states=(
+                         output.hidden_states[: self.raw_num_tokens]
+                         if output.hidden_states is not None
+diff --git a/python/sglang/srt/model_executor/runner_backend/utils.py b/python/sglang/srt/model_executor/runner_backend/utils.py
+index f2eb8f31c0..fe6e874aa7 100644
+--- a/python/sglang/srt/model_executor/runner_backend/utils.py
++++ b/python/sglang/srt/model_executor/runner_backend/utils.py
+@@ -115,5 +115,10 @@ def resolve_prefill_backend(
+             enable_memory_saver=model_runner.server_args.enable_memory_saver,
+             debug_eager=model_runner.server_args.debug_cuda_graph,
+         )
+-    # Default: tc_piecewise. (prefill, full) is rejected at config validation.
++    if backend_name == Backend.FULL:
++        return FullCudaGraphBackend(
++            cuda_graph_runner,
++            enable_memory_saver=model_runner.server_args.enable_memory_saver,
++        )
++    # Default: tc_piecewise.
+     return TcPiecewiseCudaGraphBackend(cuda_graph_runner)
+diff --git a/python/sglang/srt/server_args.py b/python/sglang/srt/server_args.py
+index ed1ee9627c..324a5be2d8 100644
+--- a/python/sglang/srt/server_args.py
++++ b/python/sglang/srt/server_args.py
+@@ -1396,7 +1396,7 @@ class ServerArgs:
+         ),
+     ] = None
+     cuda_graph_backend_prefill: A[
+-        Optional[Literal["breakable", "tc_piecewise", "disabled"]],
++        Optional[Literal["full", "breakable", "tc_piecewise", "disabled"]],
+         Arg(
+             help="Backend for the prefill phase. Folds into cuda_graph_config[prefill].backend.",
+             choices=Backend.ALL,
+@@ -3161,6 +3161,14 @@ class ServerArgs:
+         self._parse_cuda_graph_config()
+         self._apply_cuda_graph_compatibility()
+         self._validate_cuda_graph_config()
++        # Warn on the final resolved config (not inside the compat cascade —
++        # that path is skipped when the user explicitly sets the backend,
++        # which is the only way to get 'full' for prefill today).
++        if self.cuda_graph_config.prefill.backend == Backend.FULL:
++            logger.warning(
++                "cuda_graph_config[prefill].backend='full' is experimental. "
++                "Use breakable or tc_piecewise for production workloads."
++            )
+ 
+     def _parse_cuda_graph_config(self):
+         """Resolve cuda_graph_config from explicit JSON, per-phase
+@@ -3238,6 +3246,8 @@ class ServerArgs:
+             self._disable_tc_piecewise_cudagraph_if_incompatible()
+         elif self.cuda_graph_config.prefill.backend == Backend.BREAKABLE:
+             self._disable_breakable_cudagraph_if_incompatible()
++        elif self.cuda_graph_config.prefill.backend == Backend.FULL:
++            self._disable_full_prefill_cudagraph_if_incompatible()
+ 
+     def _disable_tc_piecewise_cudagraph_if_incompatible(self):
+         from sglang.srt.arg_groups.overrides import resolved_view as _resolved_view
+@@ -3354,6 +3364,19 @@ class ServerArgs:
+                 self.cuda_graph_config.prefill.backend = Backend.DISABLED
+                 return
+ 
++    def _disable_full_prefill_cudagraph_if_incompatible(self):
++        """Full prefill CG: empty rule list today; see the experimental warning."""
++        rules = []
++        for name, predicate in rules:
++            if predicate():
++                logger.warning(
++                    "Full prefill CUDA graph is incompatible with %s; "
++                    "disabling prefill CUDA graph.",
++                    name,
++                )
++                self.cuda_graph_config.prefill.backend = Backend.DISABLED
++                return
++
+     def _disable_prefill_cuda_graph_for_deepseek_trtllm_mla(self):
+         """Disable prefill CUDA graph for dsr1 by default when using the trtllm_mla
+         attention backend. Under any captured prefill CUDA graph (tc_piecewise or
+diff --git a/test/registered/cuda_graph/full_prefill/test_full_cuda_graph_prefill.py b/test/registered/cuda_graph/full_prefill/test_full_cuda_graph_prefill.py
+new file mode 100644
+index 0000000000..6e0eeb3326
+--- /dev/null
++++ b/test/registered/cuda_graph/full_prefill/test_full_cuda_graph_prefill.py
+@@ -0,0 +1,69 @@
++"""Integration test for the full prefill CUDA graph backend.
++
++Spins up Qwen3-8B with --cuda-graph-backend-prefill=full and checks
++mgsm_en accuracy, mirroring the breakable-CG integration test.
++
++The attention backend is pinned to flashinfer: plain EXTEND under full
++CUDA graph requires the backend's init_forward_metadata_out_graph to
++support extend (capture-stable plan state). flashinfer and the
++FlashAttention backend (fa4; fa3 untested — needs SM90 hardware)
++implement it; flashinfer is pinned here for CI-hardware portability
++(fa4 requires Blackwell).
++"""
++
++import unittest
++
++from sglang.srt.utils import kill_process_tree
++from sglang.test.ci.ci_register import register_cuda_ci
++from sglang.test.run_eval import run_eval
++from sglang.test.test_utils import (
++    DEFAULT_TIMEOUT_FOR_SERVER_LAUNCH,
++    DEFAULT_URL_FOR_TEST,
++    CustomTestCase,
++    SimpleNamespace,
++    popen_launch_server,
++)
++
++# CI Registration — large suite to fit the integration test's server startup.
++register_cuda_ci(est_time=79, stage="base-b", runner_config="1-gpu-large")
++
++
++class TestFullCudaGraphPrefill(CustomTestCase):
++    """Integration: Qwen3-8B with --cuda-graph-backend-prefill=full on mgsm_en."""
++
++    @classmethod
++    def setUpClass(cls):
++        cls.model = "Qwen/Qwen3-8B"
++        cls.base_url = DEFAULT_URL_FOR_TEST
++        cls.process = popen_launch_server(
++            cls.model,
++            cls.base_url,
++            timeout=DEFAULT_TIMEOUT_FOR_SERVER_LAUNCH,
++            other_args=[
++                "--cuda-graph-backend-prefill=full",
++                "--attention-backend=flashinfer",
++            ],
++        )
++
++    @classmethod
++    def tearDownClass(cls):
++        kill_process_tree(cls.process.pid)
++
++    def test_gsm8k_accuracy(self):
++        args = SimpleNamespace(
++            base_url=self.base_url,
++            model=self.model,
++            eval_name="mgsm_en",
++            num_examples=1319,
++            num_threads=1024,
++        )
++
++        metrics = run_eval(args)
++        score = metrics["score"]
++        print(f"mgsm_en accuracy with full prefill CUDA graph: {score:.3f}")
++
++        self.assertGreaterEqual(score, 0.80)
++
++
++if __name__ == "__main__":
++    unittest.main()
