@@ -97,21 +97,7 @@ plausibly be.
 
 ## The pass policy
 
-Pointwise under the finalised bounds: energy atol 1e-05 Ha; polarization
-atol 1e-05 e/bohr^2 (both `provisional` won: floor_allowed and 100x spread
-were both well under the 5e-06/1e-06 provisional defaults —
-`comment/probes/pbtio3-berry-nscf/allowed-startingwfc-random` gave the
-largest energy floor at 2.399411869191681e-08 Ha, and
-`allowed-diagonalization-cg` the largest polarization floor at
-9.481584723088077e-11 e/bohr^2). There is no upstream testcode tolerance
-for the Berry-phase polarization: `code/quantum-espresso/test-suite/pw_berry`
-has no entry in the `[PW]` `tolerance` tuple in
-`test-suite/userconfig.tmp` (upstream does not automatically numerically
-grade this deck at all), so unlike every other group in this leaf,
-`polarization` has no upstream cap to clamp against and cannot be dropped
-by the section-6 cap rule; its bound is the section-6 `computed` value with
-no ceiling, which the curator should treat as provisional evidence rather
-than a value inherited from upstream. Tolerances otherwise finalised under
+Pointwise under the finalised bounds: energy atol 1e-05 Ha; polarization atol 1e-06 e/bohr^2.  Tolerances otherwise finalised under
 CURATOR-DECISIONS section 6 (2026-09-11 rule): computed = max(provisional,
 100x allowed-variation floor, 100x self-validation spread); probes retained
 under `comment/probes/pbtio3-berry-nscf/`.

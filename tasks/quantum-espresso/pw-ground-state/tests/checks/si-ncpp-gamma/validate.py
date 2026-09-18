@@ -25,7 +25,12 @@ def flatten_group(name: str, data: object) -> np.ndarray:
     """Turn one metrics group into a 1-D float64 array in a physical order."""
     if name == "energy":
         return np.array([float(data["etot"])], dtype=np.float64)
-    if name == "fermi":
+    if name in ("fermi_energy", "homo"):
+        if not isinstance(data, dict):
+            return np.array([float(data)], dtype=np.float64)
+        preferred = "fermi_energy" if name == "fermi_energy" else "highestOccupiedLevel"
+        if preferred in data:
+            return np.array([float(data[preferred])], dtype=np.float64)
         keys = sorted(data.keys())
         return np.array([float(data[k]) for k in keys], dtype=np.float64)
     if name == "magnetization":
