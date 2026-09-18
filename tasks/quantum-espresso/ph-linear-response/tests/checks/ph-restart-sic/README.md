@@ -30,10 +30,13 @@ when the stamp (configure line plus the exact FFLAGS/CFLAGS) matches;
 
 ## The pass policy
 
-Pointwise on `metrics.json` groups: energy, eigenvalues, dielectric, born, phonon, phonon_acoustic. energy atol 5e-08; eigenvalues atol 1e-05; dielectric atol 0.05; born atol 0.05; phonon atol 1; phonon_acoustic atol 1.
+Pointwise on `metrics.json` groups: energy, eigenvalues, dielectric, born, phonon, phonon_acoustic. energy atol 5e-08; eigenvalues atol 1e-05; dielectric atol 0.001; born atol 0.001; phonon atol 0.1; phonon_acoustic atol 1.
 Eigenvalue spectra are canonicalized within each physical k point; phonon and phonon_acoustic come from the final accumulated dynamical matrix after all four restart calls.
-Bounds are the CURATOR-DECISIONS section 6 finalisation on this x86_64 host, drafted from allowed-variation probes and confirmed by the leaf's one selfcheck (nominal/variant/altbuild).
+Dropped from the graded set at STOP 4: none.
+`allowed-alpha-mix-0.3` and `allowed-nmix-ph-8` are not in the floor set: QE prints `No convergence has been achieved` on the fourth recover=.true. call at niter_ph=5 and writes no dynamical-matrix XML.
+Bounds are the CURATOR-DECISIONS section 6 finalisation on this WSL x86_64 host, drafted from the allowed probes that produced a dynamical matrix.
+
 
 ## Evidence
 
-Allowed-variation and fault probes are under `comment/probes/ph-restart-sic/`. All six candidate groups survive with large headroom (largest allowed-variation floor 0.0015 cm^-1 on phonon_acoustic against a 1 cm^-1 bound); this is the cleanest of the nine new chains.
+Allowed-variation and fault probes are under `comment/probes/ph-restart-sic/`, all rerun on this WSL host. Mixing-beta is the largest remaining allowed driver. The two ph mixer probes (alpha_mix, nmix_ph) are recorded not_applicable with QE's own 'No convergence has been achieved' on restart4.
