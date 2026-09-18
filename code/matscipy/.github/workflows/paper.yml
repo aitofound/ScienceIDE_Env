@@ -1,0 +1,25 @@
+name: Paper
+
+on:
+  push:
+    branches: [ master ]
+    paths: [ 'paper/**' ]
+  pull_request:
+    branches: [ master ]
+    paths: [ 'paper/**' ]
+
+jobs:
+  paper:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: openjournals/openjournals-draft-action@master
+        with:
+          journal: joss
+          paper-path: paper/paper.md
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: paper
+          path: paper/paper.pdf
