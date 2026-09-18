@@ -103,15 +103,16 @@ def extract(xml_path: Path) -> dict:
         raise SystemExit("extract_xml.py: no occupied eigenvalues in <ks_energies>")
     metrics["eigenvalues"] = eigs
 
-    fermi: dict = {}
+    # Two groups, one XML element each. A metal deck typically writes
+    # <fermi_energy>; a gapped deck typically writes both <fermi_energy>
+    # and <highestOccupiedLevel> (often the same float). Some decks write
+    # neither. Never invent a value that the XML does not carry.
     fe = child(bands, "fermi_energy")
-    ho = child(bands, "highestOccupiedLevel")
     if fe is not None and text_floats(fe):
-        fermi["fermi_energy"] = text_floats(fe)[0]
+        metrics["fermi_energy"] = {"fermi_energy": text_floats(fe)[0]}
+    ho = child(bands, "highestOccupiedLevel")
     if ho is not None and text_floats(ho):
-        fermi["highestOccupiedLevel"] = text_floats(ho)[0]
-    if fermi:
-        metrics["fermi"] = fermi
+        metrics["homo"] = {"highestOccupiedLevel": text_floats(ho)[0]}
 
     mag = child(out, "magnetization")
     if mag is not None and (text_bool(child(mag, "lsda")) or text_bool(child(mag, "noncolin"))):
