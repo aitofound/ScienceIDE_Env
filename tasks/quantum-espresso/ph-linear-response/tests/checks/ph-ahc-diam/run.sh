@@ -220,6 +220,24 @@ for step in chain["steps"]:
         Path("dynmat.out").write_bytes(Path(out_name).read_bytes())
     if exe == "lambda.x":
         Path("lambda.out").write_bytes(Path(out_name).read_bytes())
+    # diam.nscf.in / diam.nscf.nosym.in share prefix='diam' and outdir='.'
+    # with the scf step and overwrite diam.save/data-file-schema.xml. Snapshot
+    # the scf XML immediately after that step's JOB DONE, before any nscf.
+    if exe == "pw.x" and inp == "diam.scf.in":
+        import shutil
+        out_text = Path(out_name).read_text(encoding="utf-8", errors="replace")
+        if "JOB DONE." not in out_text:
+            sys.stderr.write("run.sh: pw.x < diam.scf.in did not print JOB DONE.\n")
+            sys.stderr.write(out_text[-4000:])
+            raise SystemExit(1)
+        schema = Path("diam.save") / "data-file-schema.xml"
+        if not schema.is_file():
+            hits = list(Path(".").glob("**/data-file-schema.xml"))
+            sys.stderr.write(
+                f"run.sh: missing {schema} after the scf step JOB DONE; glob hits {hits}\n"
+            )
+            raise SystemExit(1)
+        shutil.copy(schema, Path("scf-data-file-schema.xml"))
 PY
 
 python3 "$CHECK_DIR/extract.py" --run-dir "$RUN" --chain "$CHAIN_JSON" --out "$OUT_DIR/metrics.json"

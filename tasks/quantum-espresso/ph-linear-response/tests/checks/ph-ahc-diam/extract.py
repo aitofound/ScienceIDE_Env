@@ -298,18 +298,35 @@ def main() -> int:
     chain = json.loads(Path(a.chain).read_text(encoding="utf-8"))
     wanted = list(chain["groups"])
     metrics: dict = {}
-
-    for prefix in chain.get("scf_prefixes", []):
-        schema = run / f"{prefix}.save" / "data-file-schema.xml"
-        if not schema.is_file():
-            # QE sometimes writes outdir/prefix.save
-            hits = list(run.glob(f"**/{prefix}.save/data-file-schema.xml"))
-            schema = hits[0] if hits else schema
-        if schema.is_file():
-            parsed = parse_schema(schema)
-            for k, v in parsed.items():
-                if k in wanted:
-                    metrics[k] = v
+    gs_names = ("energy", "eigenvalues", "fermi", "forces", "stress", "magnetization")
+    gs_wanted = [g for g in wanted if g in gs_names]
+    snapshot = run / "scf-data-file-schema.xml"
+    if gs_wanted:
+        # The nscf/nscf.nosym steps share the scf prefix/outdir and overwrite
+        # diam.save/data-file-schema.xml. Ground-state groups come from the
+        # snapshot run.sh took immediately after the scf JOB DONE.
+        if not snapshot.is_file():
+            raise SystemExit(
+                "extract.py: missing scf-data-file-schema.xml snapshot in the run "
+                "directory; run.sh must copy the scf XML before any nscf step "
+                "overwrites diam.save/data-file-schema.xml"
+            )
+        parsed = parse_schema(snapshot)
+        for k, v in parsed.items():
+            if k in wanted:
+                metrics[k] = v
+    else:
+        for prefix in chain.get("scf_prefixes", []):
+            schema = run / f"{prefix}.save" / "data-file-schema.xml"
+            if not schema.is_file():
+                # QE sometimes writes outdir/prefix.save
+                hits = list(run.glob(f"**/{prefix}.save/data-file-schema.xml"))
+                schema = hits[0] if hits else schema
+            if schema.is_file():
+                parsed = parse_schema(schema)
+                for k, v in parsed.items():
+                    if k in wanted:
+                        metrics[k] = v
 
     phonon: list[float] = []
     phonon_ac: list[float] = []
