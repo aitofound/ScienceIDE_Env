@@ -131,14 +131,6 @@ Do not hand-edit generated registry projections. If a package changes, inspect
 the generator output and run the repository gates again. Do not claim a GPU,
 CPU-oracle, self-test, or verifier step passed unless it actually ran.
 
-## Grandfathered packages
-
-`archive/templates/grid-v1/` retains its existing pre-grid/grid contract and is
-intentionally untouched. Its plural `checks/` × `targets/` roots, per-check
-image flow, and legacy projection rules are valid for that package only. It is
-not an example for a new Harbor leaf; do not mix it with singular `target/`,
-`tests/checks/`, or `code/`.
-
 ## Review checklist
 
 Reviewers should be able to answer yes to each of these:
