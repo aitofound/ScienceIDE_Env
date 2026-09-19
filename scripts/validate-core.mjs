@@ -14,7 +14,7 @@
  * per-status file sets, the size caps, the merged canary policy (a hard error
  * on the first line of task.toml and instruction.md, a warning when the line
  * is missing near the top of any other text file), slug permanence against a
- * baseline ref, the archived grid-template pass, and the field-code vocabulary read from
+ * baseline ref, and the field-code vocabulary read from
  * registry/fields.json — with the issue form's Field dropdown held to the same
  * codes. Everything with a benchmark's science in it — reward contracts,
  * embargo mathematics, data-plane and egress policy, Dockerfile hygiene —
@@ -118,7 +118,6 @@ function* walk(abs, rel, opaqueRoots = new Set()) {
  *   canaryToml           the exact first line of every task.toml
  *   canaryMd             the exact first line of every instruction.md
  *   canaryLine           the marker substring warned about elsewhere
- *   templateSlug         the placeholder slug archive/templates/grid-v1/ must keep, e.g. 'sa-0000'
  *   issueForm            repo-relative path of the idea-tier issue form
  *   dirRe / legacyRe     optional slug-shape overrides; default `<prefix>-NNNN`
  *   slugRenames          optional { oldSlug: newSlug } declaring deliberate renames
@@ -211,20 +210,12 @@ export function run(config) {
      misnamed package, a stray file, a symlink would otherwise merge green and
      then silently never render — the site's own filter is exactly the
      <prefix>-NNNN directories, so anything else in tasks/ is a mistake by
-     construction. The archived grid-v1 specimen is outside this scan and gets
-     its own historical-template pass further down. */
+     construction. */
   const tasksDir = path.join(root, 'tasks');
   if (!fs.existsSync(tasksDir)) {
     errors.push(`no tasks/ directory at ${tasksDir}`);
     return { errors, warnings, packages, template, fields };
   }
-  /* Packages live in one of two roots. `tasks/` is what the registry offers;
-     `archive/` holds packages that are not on offer and are still fully
-     validated - the manifest, the layout and the canaries all still apply,
-     because an archived package that has quietly rotted is not archived, it is
-     lost. Slug permanence is unaffected: the slug still resolves, so a record
-     in registry/runs.yaml naming it is still a record of something. */
-  const archiveDir = path.join(root, 'archive');
   const dirs = [];
   const locations = new Map();
   const harborMarkers = ['code', 'environment', 'tests', 'solution', 'target', 'comment'];
@@ -278,16 +269,6 @@ export function run(config) {
       }
     }
   }
-  /* archive/ is historical and remains a direct legacy namespace. */
-  if (fs.existsSync(archiveDir)) {
-    for (const e of fs.readdirSync(archiveDir, { withFileTypes: true })
-                      .sort((a, b) => a.name.localeCompare(b.name))) {
-      if (e.name === 'templates') continue; // historical fixtures, not task packages
-      if (e.isDirectory() && dirRe.test(e.name)) {
-        register(e.name, path.join(archiveDir, e.name), 'archive', `archive/${e.name}`);
-      }
-    }
-  }
   dirs.sort();
   if (!dirs.length && !errors.length) {
     errors.push(`tasks/ has no ${dirShape}/ packages`);
@@ -312,7 +293,7 @@ export function run(config) {
   if (process.env.BASE_REF) {
     try {
       const out = execFileSync(
-        'git', ['diff', '--name-only', process.env.BASE_REF, '--', 'tasks/', 'archive/'],
+        'git', ['diff', '--name-only', process.env.BASE_REF, '--', 'tasks/'],
         { cwd: root, encoding: 'utf8' },
       );
       changed = new Set();
@@ -694,66 +675,6 @@ export function run(config) {
     }
     if (!blank(ns.resource_class) && !RESOURCE_CLASSES.has(String(ns.resource_class))) {
       errors.push(`${slug}/task.toml: resource_class '${ns.resource_class}' is not one of R0–R5`);
-    }
-  }
-
-  /* The archived grid-v1 template is outside the tasks/ scan on purpose. It
-     remains executable historical evidence, so it keeps a narrow integrity
-     pass: caps, canaries, a parseable placeholder manifest, and vocabulary
-     consistency. It is not an active authoring entrance. */
-  const TPL = path.join(root, 'archive', 'templates', 'grid-v1');
-  if (!fs.existsSync(TPL)) {
-    errors.push('archive/templates/grid-v1/ is missing — the archived grid-template evidence must remain intact');
-  } else {
-    for (const f of walk(TPL, 'archive/templates/grid-v1')) {
-      const size = fs.statSync(f.abs).size;
-      if (size > caps.blob) {
-        errors.push(`${f.rel}: ${(size / 1e6).toFixed(1)} MB exceeds the ${(caps.blob / 1e6).toFixed(0)} MB per-file cap`);
-      } else if (size > caps.text && !isBinary(f.abs)) {
-        errors.push(`${f.rel}: ${(size / 1e6).toFixed(1)} MB of text exceeds the ${(caps.text / 1e6).toFixed(0)} MB per-text-file cap`);
-      }
-    }
-    const tplToml = path.join(TPL, 'task.toml');
-    const tplMd = path.join(TPL, 'instruction.md');
-    if (!fs.existsSync(tplToml)) {
-      errors.push('archive/templates/grid-v1: no task.toml — the template must model the manifest it asks for');
-    } else {
-      if (firstLine(tplToml) !== config.canaryToml) {
-        errors.push(`archive/templates/grid-v1/task.toml: first line must be the canary comment '${config.canaryToml}'`);
-      }
-      try {
-        const tpl = parseTOML(fs.readFileSync(tplToml, 'utf8'));
-        template = { toml: tpl };
-        const wantTplName = `${config.taskPrefix}${config.templateSlug}`;
-        if (String(tpl?.task?.name ?? '') !== wantTplName) {
-          errors.push(`archive/templates/grid-v1/task.toml: [task] name must stay '${wantTplName}' — the name a submitter replaces`);
-        }
-        if (config.slugInNamespace && String(tpl?.metadata?.[config.namespace]?.slug ?? '') !== config.templateSlug) {
-          errors.push(`archive/templates/grid-v1/task.toml: [metadata.${config.namespace}] slug must stay '${config.templateSlug}' — the number a submitter replaces`);
-        }
-        const tplOuter = Object.keys(tpl?.metadata ?? {}).filter((k) => !conventionalKeys.has(k));
-        if (tplOuter.length) {
-          errors.push(
-            `archive/templates/grid-v1/task.toml: key(s) ${tplOuter.map((k) => `'${k}'`).join(', ')} sit directly under ` +
-            `[metadata] — the template must model the namespace it asks for`,
-          );
-        }
-        const tplUnknown = Object.keys(tpl?.metadata?.[config.namespace] ?? {})
-          .filter((k) => !allowedKeys.has(k) && !claimedKeys.has(k));
-        if (tplUnknown.length) {
-          errors.push(
-            `archive/templates/grid-v1/task.toml: [metadata.${config.namespace}] key(s) ${tplUnknown.map((k) => `'${k}'`).join(', ')} ` +
-            `not in the validator's vocabulary — a submitter copying this file would be rejected`,
-          );
-        }
-      } catch (e) {
-        errors.push(`archive/templates/grid-v1/task.toml: unparseable TOML — ${String(e.message).split('\n')[0]}`);
-      }
-    }
-    if (!fs.existsSync(tplMd)) {
-      errors.push('archive/templates/grid-v1: no instruction.md — the template must model the package floor');
-    } else if (firstLine(tplMd) !== config.canaryMd) {
-      errors.push(`archive/templates/grid-v1/instruction.md: first line must be the canary comment '${config.canaryMd}'`);
     }
   }
 

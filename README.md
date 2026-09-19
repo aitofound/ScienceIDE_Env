@@ -14,8 +14,6 @@ of a pinned codebase, that generic task statement, and a suite of **checks**
 derived from the codebase's official tests (its test suites and its standard
 example problems alike) whose pass rate is the reward.
 
-Repository path ownership is documented in [`docs/root-layout.md`](docs/root-layout.md).
-
 ## Where the pipeline is
 
 The packaging skill, its SPEC and the `sab` CLI live in
@@ -137,9 +135,8 @@ test:report-gate`.
 
 ## Legacy packages
 
-`archive/templates/grid-v1/` retains its grandfathered pre-grid/grid contract
-and is intentionally not migrated. Existing leaves under `tasks/` that predate
-the current spec keep their own drivers until they are rebuilt.
+Existing leaves under `tasks/` that predate the current spec keep their own
+drivers until they are rebuilt.
 
 ## Contributing
 
