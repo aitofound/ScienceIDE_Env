@@ -1,0 +1,37 @@
+{
+  "module": {
+    "slug": "brian2",
+    "title": "Brian2 spiking neural network simulator (whole codebase, single module)",
+    "paths": [
+      "."
+    ],
+    "entrypoints": [
+      "python -c 'import brian2' (the package is the product; models are Python scripts using NeuronGroup/Synapses/Network)",
+      "brian2.test() (official test driver, brian2/tests/__init__.py:run, repeats the pytest suite per codegen target)",
+      "prefs.codegen.target = 'numpy'|'cython' (runtime targets, brian2/codegen/runtime/)",
+      "set_device('cpp_standalone') (generated C++ project, brian2/devices/cpp_standalone/)"
+    ],
+    "expensive_path": "simulation time loops: per-timestep state updates, threshold/reset and synaptic propagation over the network; cost scales with neurons x synapses x timesteps, plus one-off Cython/C++ compilation of every generated code object",
+    "rationale": "one Python package with one official test suite and one driver; the four codegen targets are configurations of the same objects, not separable components, and the official tests parametrize over targets via pytest markers",
+    "excluded": [
+      "docs_sphinx/ and tutorials/ (documentation, no simulation code)",
+      "dev/ (maintainer tools, incl. run_examples.py docs harness)",
+      "brian2/sphinxext/ (Sphinx extensions, not exercised by simulation tests)"
+    ],
+    "hazards": [
+      "RNG streams differ between runtime device and cpp_standalone device: same seed does not reproduce across targets (RuntimeDevice.seed -> np.random.seed vs seed queued into generated C++ main)",
+      "Synapses.connect(p=...) draws rand() in generated code: stochastic unless seeded",
+      "cython runtime target compiles into an on-disk per-user cache (filelock): first runs pay compile time, cache dir must be writable",
+      "test_neurongroup.py::test_namespace_warnings is order-dependent: fails in a full-file run, passes alone (warning bookkeeping leaks between tests)",
+      "brian2/tests/test_network.py contains very slow or hanging entries in this environment (full file exceeded 9 min; under per-test diagnosis)"
+    ]
+  },
+  "approval": {
+    "modules": [
+      "brian2"
+    ],
+    "human_ref": "single-module default: the whole codebase is one module; no human decision at STOP 1, the cut is read in the source PR body at STOP 2",
+    "at": "2026-09-16T14:58:54Z"
+  },
+  "shared_infrastructure": []
+}

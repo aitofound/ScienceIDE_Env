@@ -1,0 +1,65 @@
+{
+  "check": "ex-synapses-spatial-connections",
+  "policy": "invariants",
+  "chaotic": false,
+  "upstream_test": "code/brian2/examples/synapses/spatial_connections.py",
+  "configuration": "the official example deck examples/synapses/spatial_connections.py, run as shipped (SAB_DURATION_SCALE 1.0 = upstream window) against the pip-installed brian2 2.10.1 package (codegen target auto: Cython runtime), one single-threaded process, matplotlib Agg with show() disabled; the RNG (numpy and brian2.seed) is seeded from ic/<ic>/seed.txt before the deck runs; the deck builds no monitor, so the driver then reads from the deck namespace the synapse count of the distance-rule connect, the out-degree of each of the 400 grid neurons under it (one row per neuron), and the synapse count of the Gaussian-probability connect",
+  "expected_runtime_s": 30,
+  "runtime_note": "under 300 s",
+  "default_vs_upstream": "upstream",
+  "variant": "a different RNG seed (12346 instead of 12345): the deck's stochastic elements (random connectivity, noise terms, Poisson inputs) draw a different realization, which exercises the policy on statistics that must be seed-robust; a deck that seeds itself or draws nothing produces an identical variant and the calibration records that it supplies no evidence",
+  "altbuild": "none: brian2 is a Python/Cython package built one way by pip; runtime codegen variation is not a build and the seed variant already probes legitimate numerical variation",
+  "evidence": {
+    "spread": null,
+    "spread_how": "selfcheck runs nominal and variant (seeds 12345/12346) and records the spread of each graded quantity in self-validation.json",
+    "self_validation_spread": 0.00024705083070841825,
+    "self_validation_bound_fraction": 0.008
+  },
+  "comparison": {
+    "rule": "distance-rule synapse count and the min and max out-degree exact (atol 0); Gaussian-probability synapse count within atol 500",
+    "invariants": [
+      {
+        "name": "n-deterministic",
+        "file": "n_deterministic.txt",
+        "format": "text",
+        "column": 0,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 0.0,
+        "atol": 0.0
+      },
+      {
+        "name": "deg-deterministic-min",
+        "file": "deg_deterministic.txt",
+        "format": "text",
+        "column": 0,
+        "mode": "agreement",
+        "statistic": "min",
+        "rtol": 0.0,
+        "atol": 0.0
+      },
+      {
+        "name": "deg-deterministic-max",
+        "file": "deg_deterministic.txt",
+        "format": "text",
+        "column": 0,
+        "mode": "agreement",
+        "statistic": "max",
+        "rtol": 0.0,
+        "atol": 0.0
+      },
+      {
+        "name": "n-stochastic",
+        "file": "n_stochastic.txt",
+        "format": "text",
+        "column": 0,
+        "mode": "agreement",
+        "statistic": "final",
+        "rtol": 0.0,
+        "atol": 500.0
+      }
+    ]
+  },
+  "warrant": "The deck connects a 20x20 grid (25 um spacing) twice. The distance rule (< 120 um) is deterministic: 22400 synapses, out-degree 22 at the corners and 69 inside, reproduced exactly by any correct build, and a wrong distance, unit or grid coordinate changes them by whole synapses. The second connect draws each pair i != j with p = min(1, 1.5*exp(-d^2/(2*(60 um)^2))): the expected count computed from the grid is 16176.9 with binomial standard deviation 72.4, so two independent seeds differ with standard deviation 102.4. The 500 bound is about 4.9 of those; 6 seeds measured 16064 to 16195. Dropping the clip at 1 or the factor 2 in the Gaussian moves the expected count by thousands.",
+  "observable": "the synapse count of the distance-rule connect, the out-degree of each of the 400 grid neurons under it (one row per neuron), and the synapse count of the Gaussian-probability connect"
+}
