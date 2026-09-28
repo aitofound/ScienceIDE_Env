@@ -53,6 +53,7 @@ Vendored trees are kept byte-identical to their pins, so no licence file is adde
 | `phantom` | https://github.com/danieljprice/phantom | `e53ea16758d2a261680506852a528f21270dca1c` | GPL-3.0 | `LICENSE` |
 | `pinocchio` | https://github.com/stack-of-tasks/pinocchio | `2ae77666e894a39127b283dcce3e2399ec19242d` | BSD-2-Clause | `LICENSE` |
 | `pluto` | https://plutocode.ph.unito.it/ | `sha256:1ba5527b76d49fdd78ae24dbfbdad085ec83393748f1e618516a9d63bd945787` | GPL-2.0 | `COPYING` |
+| `pyabel` | https://github.com/PyAbel/PyAbel | `f16723713e118a2eeef9bc7ba17efd57ad074093` | MIT | `LICENSE.txt` |
 | `pyamg` | https://github.com/pyamg/pyamg | `0c021343e7dce3274f0d587fd60be2bd0ae53495` | MIT | `LICENSE.txt` |
 | `pymatgen` | https://github.com/materialsproject/pymatgen | `0428f232a569ffe6b16fa030d38ea35a56d70fd6` | MIT | `LICENSE` |
 | `pymatgen-core` | https://github.com/materialsproject/pymatgen-core | `73af4e53f5f24e1dcf11e0d94ca13be10ea956ad` | MIT | `LICENSE` |
